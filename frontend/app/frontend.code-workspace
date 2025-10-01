@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../backend-gin"
+		},
+		{
+			"path": "../../ballerina-db"
+		}
+	],
+	"settings": {
+		"codium.codeCompletion.enable": false
+	}
+}
