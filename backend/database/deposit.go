@@ -11,6 +11,7 @@ type DepositAddress struct {
 	UserID  uint   `gorm:"uniqueIndex"`
 	Address string `gorm:"uniqueIndex"`
         LastBalance float64 `gorm:"default:0"`
+        LastBalanceWei string `gorm:"type:text;default:'0'"`
 }
 
 // AutoMigrate di InitDB()
