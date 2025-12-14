@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { getApiBase } from "../lib/api";
 
 export default function ProfileSidebar({ onClose }) {
   const [user, setUser] = useState({ name: "", balance: 0 });
@@ -9,7 +10,7 @@ export default function ProfileSidebar({ onClose }) {
     try {
       const t = localStorage.getItem("token");
       if (!t) return;
-      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "https://instrument-fwd-remedy-ecommerce.trycloudflare.com"}/api/user/me`, { headers: { Authorization: `Bearer ${t}` } })
+      fetch(`${getApiBase()}/api/user/me`, { headers: { Authorization: `Bearer ${t}` } })
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(data => setUser({ name: data.name || "", balance: data.balance || 0 }))
         .catch(() => {});

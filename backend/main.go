@@ -35,8 +35,8 @@ func main() {
 	corsConfig.AllowOrigins = []string{frontend}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
 	router.Use(cors.New(corsConfig))
-        // Serve file statis: /static/...
-        router.Static("/static", "./public")
+	// Serve file statis: /static/...
+	router.Static("/static", "./public")
 
 	api := router.Group("/api")
 	{
@@ -52,7 +52,7 @@ func main() {
 			account.GET("/me", middleware.AuthMiddleware(), handlers.GetMyAccountHandler)
 			account.PUT("", middleware.AuthMiddleware(), handlers.UpdateMyAccountHandler)
 			account.POST("/change-username", middleware.AuthMiddleware(), handlers.ChangeUsernamePaidHandler)
-                        account.PUT("/avatar", middleware.AuthMiddleware(), handlers.UploadAvatarHandler)
+			account.PUT("/avatar", middleware.AuthMiddleware(), handlers.UploadAvatarHandler)
 		}
 
 		user := api.Group("/user")
@@ -67,11 +67,12 @@ func main() {
 		{
 			threads.GET("/categories", handlers.GetCategoriesHandler)
 			threads.GET("/category/:slug", handlers.GetThreadsByCategoryHandler)
+			threads.GET("/latest", handlers.GetLatestThreadsHandler)
 			threads.GET("/:id", middleware.AuthMiddleware(), handlers.GetThreadDetailHandler)
 			threads.POST("", middleware.AuthMiddleware(), handlers.CreateThreadHandler)
-                        threads.GET("/me", middleware.AuthMiddleware(), handlers.GetMyThreadsHandler)
-                        threads.PUT("/:id", middleware.AuthMiddleware(), handlers.UpdateThreadHandler)
-      		}
+			threads.GET("/me", middleware.AuthMiddleware(), handlers.GetMyThreadsHandler)
+			threads.PUT("/:id", middleware.AuthMiddleware(), handlers.UpdateThreadHandler)
+		}
 
 		// Marketplace endpoints (sprint skeleton)
 		orders := api.Group("/orders")
@@ -93,23 +94,21 @@ func main() {
 			badges.GET("/:id", handlers.GetBadgeDetailHandler)
 		}
 
+		balance := api.Group("/balance")
+		{
+			balance.GET("/refill/info", handlers.GetRefillBalanceInfoHandler)
+			balance.GET("/refill/address", middleware.AuthMiddleware(), handlers.GetRefillDepositAddressHandler)
+			balance.POST("/transfer", middleware.AuthMiddleware(), handlers.TransferBalanceHandler)
+		}
 
-        	balance := api.Group("/balance")
-         	{
-		balance.GET("/refill/info", handlers.GetRefillBalanceInfoHandler)
-		balance.GET("/refill/address", middleware.AuthMiddleware(), handlers.GetRefillDepositAddressHandler)
-		balance.POST("/transfer", middleware.AuthMiddleware(), handlers.TransferBalanceHandler)
-        	}
-               
-               router.POST("/api/rag/index-chunk", handlers.IndexChunkHandler)
-               router.GET("/api/rag/ask", handlers.AskHandler)
-               router.GET("/api/rag/answer", handlers.AnswerHandler)
-               router.POST("/api/rag/index-long", handlers.IndexLongHandler)
-               router.POST("/api/rag/index-thread/:id", handlers.IndexThreadByIDHandler)
-               router.GET("/api/rag/debug-chunks/:thread_id", handlers.DebugChunksHandler)
-       	}
+		router.POST("/api/rag/index-chunk", handlers.IndexChunkHandler)
+		router.GET("/api/rag/ask", handlers.AskHandler)
+		router.GET("/api/rag/answer", handlers.AnswerHandler)
+		router.POST("/api/rag/index-long", handlers.IndexLongHandler)
+		router.POST("/api/rag/index-thread/:id", handlers.IndexThreadByIDHandler)
+		router.GET("/api/rag/debug-chunks/:thread_id", handlers.DebugChunksHandler)
+	}
 
 	log.Println("Server backend berjalan di http://localhost:8080")
 	router.Run(":8080")
 }
-

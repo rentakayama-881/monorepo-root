@@ -5,30 +5,32 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import ProfileSidebar from "./ProfileSidebar";
-
-// Kategori threads - konsisten
-const threadCategories = [
-  "Mencari Pekerjaan","Cryptocurrency","Software","Dokter buka praktek","Kerja Lepas","Iklan","Akuntansi","Dropshiper","Jasa Tugas Kantor","Akun Digital","HP & Komputer","Drama Korea","Jasa Tugas Belajar","Kolaborator Ph.D","Marketing Offline","Investor","Anti Penipuan","Bantuan Darurat","Cari Relasi","AI Digest","Masa Depan-Ku","Report Massal","Email Transaksional","Script","Programming"
-];
-
-function slugify(name) {
-  return name.toLowerCase()
-    .replace(/\./g,"")
-    .replace(/&/g,"-")
-    .replace(/\s+/g,"-")
-    .replace(/[^a-z0-9-]/g,"")
-    .replace(/-+/g,"-")
-    .replace(/^-|-$/g,"");
-}
+import { fetchCategories } from "../lib/categories";
 
 export default function Header() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   useEffect(() => {
     try { setIsAuthed(!!localStorage.getItem("token")); } catch (_) {}
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCategories() {
+      setLoadingCategories(true);
+      const fetched = await fetchCategories();
+      if (!cancelled) {
+        setCategories(fetched);
+        setLoadingCategories(false);
+      }
+    }
+    loadCategories();
+    return () => { cancelled = true; };
   }, []);
 
   return (
@@ -65,12 +67,18 @@ export default function Header() {
             {/* Dropdown kategori */}
             {categoriesOpen && (
               <div className="absolute top-full left-0 mt-2 w-56 max-h-96 overflow-y-auto bg-white border border-neutral-200 rounded shadow-lg z-dropdown animate-fadeIn">
-                {threadCategories.map(cat => (
-                  <Link key={cat} href={`/category/${slugify(cat)}`}
-                    className="block px-4 py-2 text-sm text-neutral-700 hover:bg-blue-50 hover:text-blue-700 transition"
-                    onClick={() => setCategoriesOpen(false)}
-                  >{cat}</Link>
-                ))}
+                {loadingCategories ? (
+                  <div className="px-4 py-2 text-sm text-neutral-500">Memuat kategori…</div>
+                ) : categories.length === 0 ? (
+                  <div className="px-4 py-2 text-sm text-neutral-500">Kategori belum tersedia</div>
+                ) : (
+                  categories.map(cat => (
+                    <Link key={cat.slug} href={`/category/${cat.slug}`}
+                      className="block px-4 py-2 text-sm text-neutral-700 hover:bg-blue-50 hover:text-blue-700 transition"
+                      onClick={() => setCategoriesOpen(false)}
+                    >{cat.name}</Link>
+                  ))
+                )}
               </div>
             )}
           </div>
