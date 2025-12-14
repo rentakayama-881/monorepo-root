@@ -1,11 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
-
-// Kategori threads - konsisten dengan sumber project
-const threadCategories = [
-  "Mencari Pekerjaan","Cryptocurrency","Software","Dokter buka praktek","Kerja Lepas","Iklan","Akuntansi","Dropshiper","Jasa Tugas Kantor","Akun Digital","HP & Komputer","Drama Korea","Jasa Tugas Belajar","Kolaborator Ph.D","Marketing Offline","Investor","Anti Penipuan","Bantuan Darurat","Cari Relasi","AI Digest","Masa Depan-Ku","Report Massal","Email Transaksional","Script","Programming"
-];
+import { useEffect, useState } from "react";
+import { fetchCategories } from "../lib/categories";
 
 const popularTopics = [
   { label: "AI & Machine Learning", href: "/category/ai-digest" },
@@ -15,23 +11,28 @@ const popularTopics = [
   { label: "Anti Penipuan", href: "/category/anti-penipuan" },
 ];
 
-function slugify(name) {
-  return name.toLowerCase()
-    .replace(/\./g,"")
-    .replace(/&/g,"-")
-    .replace(/\s+/g,"-")
-    .replace(/[^a-z0-9-]/g,"")
-    .replace(/-+/g,"-")
-    .replace(/^-|-$/g,"");
-}
-
 export default function Sidebar({ open, onClose }) {
   const [search, setSearch] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
-  // Filter kategori
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCategories() {
+      setLoadingCategories(true);
+      const fetched = await fetchCategories();
+      if (!cancelled) {
+        setCategories(fetched);
+        setLoadingCategories(false);
+      }
+    }
+    loadCategories();
+    return () => { cancelled = true; };
+  }, []);
+
   const filteredCategories = search.trim()
-    ? threadCategories.filter(cat => cat.toLowerCase().includes(search.toLowerCase()))
-    : threadCategories;
+    ? categories.filter(cat => cat.name.toLowerCase().includes(search.toLowerCase()))
+    : categories;
 
   return (
     <>
@@ -115,17 +116,19 @@ export default function Sidebar({ open, onClose }) {
           <div>
             <div className="font-semibold text-sm text-neutral-500 mb-2">Kategori Threads</div>
             <nav className="flex flex-col gap-1">
-              {filteredCategories.length === 0 ? (
+              {loadingCategories ? (
+                <div className="py-2 px-4 text-neutral-400 text-sm">Memuat kategori…</div>
+              ) : filteredCategories.length === 0 ? (
                 <div className="py-2 px-4 text-neutral-400 text-sm">Tidak ditemukan…</div>
               ) : (
                 filteredCategories.map(cat => (
                   <Link
-                    key={cat}
-                    href={`/category/${slugify(cat)}`}
+                    key={cat.slug}
+                    href={`/category/${cat.slug}`}
                     className="block py-2 px-4 rounded-lg font-medium text-neutral-700 hover:bg-blue-50 hover:text-blue-700 transition"
                     onClick={onClose}
                   >
-                    {cat}
+                    {cat.name}
                   </Link>
                 ))
               )}
