@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { getApiBase } from "@/lib/api";
 
 export default function AISearchPage() {
   const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+    getApiBase();
 
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);

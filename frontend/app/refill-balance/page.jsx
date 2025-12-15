@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getApiBase } from "@/lib/api";
 
 export default function RefillBalancePage() {
-  const API = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"}/api`;
+  const API = `${getApiBase()}/api`;
   const [info, setInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

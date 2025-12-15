@@ -50,8 +50,8 @@ func GetThreadsByCategoryHandler(c *gin.Context) {
 	items := make([]ThreadListItem, 0, len(threads))
 	for _, t := range threads {
 		uname := ""
-		if t.User.Name != nil {
-			uname = *t.User.Name
+		if t.User.Username != nil {
+			uname = *t.User.Username
 		}
 		items = append(items, ThreadListItem{
 			ID:        t.ID,
@@ -73,8 +73,8 @@ func GetThreadDetailHandler(c *gin.Context) {
 		return
 	}
 	uname := ""
-	if thr.User.Name != nil {
-		uname = *thr.User.Name
+	if thr.User.Username != nil {
+		uname = *thr.User.Username
 	}
 	var content interface{}
 	_ = json.Unmarshal(thr.ContentJSON, &content)
@@ -129,8 +129,8 @@ func GetLatestThreadsHandler(c *gin.Context) {
 	out := make([]gin.H, 0, len(threads))
 	for _, t := range threads {
 		uname := ""
-		if t.User.Name != nil {
-			uname = *t.User.Name
+		if t.User.Username != nil {
+			uname = *t.User.Username
 		}
 		out = append(out, gin.H{
 			"id":         t.ID,
