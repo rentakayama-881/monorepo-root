@@ -2,9 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation"; // <--- PERUBAHAN 1: Import useParams
 
-export default function ThreadDetailPage({ params }) {
-  const { id } = params;
+export default function ThreadDetailPage() { // <--- PERUBAHAN 2: Hapus props params
+  const params = useParams(); // <--- PERUBAHAN 3: Pakai hook
+  
+  // Pastikan id diambil dengan aman (unwrap)
+  const id = params?.id; 
+
   const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
   const [data, setData] = useState(null);
@@ -14,13 +19,23 @@ export default function ThreadDetailPage({ params }) {
   const isAuthed = typeof window !== "undefined" ? !!localStorage.getItem("token") : false;
 
   useEffect(() => {
+    // Cek Login
     if (!isAuthed) {
       setError("Anda harus login untuk melihat thread.");
       setLoading(false);
       return;
     }
+
+    // --- PERUBAHAN 4: PENTING! ---
+    // Jangan fetch kalau ID belum ada atau masih undefined
+    if (!id || id === 'undefined') {
+        return;
+    }
+
     let cancelled = false;
     const token = localStorage.getItem("token");
+
+    setLoading(true); // Set loading true saat mulai fetch
 
     fetch(`${API}/api/threads/${id}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => (res.ok ? res.json() : Promise.reject(new Error("Gagal membaca thread"))))
@@ -179,3 +194,4 @@ function formatDate(ts) {
     return "";
   }
 }
+
