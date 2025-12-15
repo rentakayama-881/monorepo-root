@@ -16,10 +16,13 @@ func GetUserInfoHandler(c *gin.Context) {
 	}
 	user := userIfc.(*models.User)
 	name := ""
-	if user.Name != nil { name = *user.Name }
+	if user.Username != nil {
+		name = *user.Username
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"email":      user.Email,
 		"name":       name,
+		"username":   name,
 		"avatar_url": user.AvatarURL,
 		"balance":    user.Balance,
 	})

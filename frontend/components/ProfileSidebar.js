@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getApiBase } from "../lib/api";
 
 export default function ProfileSidebar({ onClose }) {
-  const [user, setUser] = useState({ name: "", balance: 0 });
+  const [user, setUser] = useState({ username: "", balance: 0 });
 
   useEffect(() => {
     try {
@@ -12,12 +12,12 @@ export default function ProfileSidebar({ onClose }) {
       if (!t) return;
       fetch(`${getApiBase()}/api/user/me`, { headers: { Authorization: `Bearer ${t}` } })
         .then(r => r.ok ? r.json() : Promise.reject())
-        .then(data => setUser({ name: data.name || "", balance: data.balance || 0 }))
+        .then(data => setUser({ username: data.username || data.name || "", balance: data.balance || 0 }))
         .catch(() => {});
     } catch (_) {}
   }, []);
 
-  if (!user.name) return null;
+  if (!user.username) return null;
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -27,7 +27,7 @@ export default function ProfileSidebar({ onClose }) {
   return (
     <div className="absolute right-0 top-14 z-50 w-72 bg-white border rounded shadow-lg p-4 space-y-2">
       <div className="flex justify-between items-center">
-        <div className="font-semibold text-lg">{user.name}</div>
+        <div className="font-semibold text-lg">{user.username}</div>
         <button onClick={onClose} className="text-sm px-2 py-1 rounded bg-neutral-100 hover:bg-neutral-200">✕</button>
       </div>
       <div className="text-sm text-neutral-600">

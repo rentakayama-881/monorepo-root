@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
-        "path/filepath"
-        "strings"
-        "time"
-        "os"
-        "fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"backend-gin/database"
 	"backend-gin/models"
@@ -17,12 +17,12 @@ import (
 )
 
 type UpdateAccountRequest struct {
-	FullName       *string               `json:"full_name"`
-	Bio            *string               `json:"bio"`
-	Pronouns       *string               `json:"pronouns"`
-	Company        *string               `json:"company"`
-	Telegram       *string               `json:"telegram"`
-	SocialAccounts []map[string]string   `json:"social_accounts"` // arbitrary list of { label, url }
+	FullName       *string             `json:"full_name"`
+	Bio            *string             `json:"bio"`
+	Pronouns       *string             `json:"pronouns"`
+	Company        *string             `json:"company"`
+	Telegram       *string             `json:"telegram"`
+	SocialAccounts []map[string]string `json:"social_accounts"` // arbitrary list of { label, url }
 }
 
 type ChangeUsernameRequest struct {
@@ -32,7 +32,10 @@ type ChangeUsernameRequest struct {
 // GET /api/account/me
 func GetMyAccountHandler(c *gin.Context) {
 	userIfc, ok := c.Get("user")
-	if !ok { c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"}); return }
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 	user := userIfc.(*models.User)
 
 	var socials interface{}
@@ -40,24 +43,29 @@ func GetMyAccountHandler(c *gin.Context) {
 		_ = json.Unmarshal(user.SocialAccounts, &socials)
 	}
 	name := ""
-	if user.Name != nil { name = *user.Name }
+	if user.Username != nil {
+		name = *user.Username
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"email": user.Email,
-		"username": name,
-		"full_name": user.FullName,
-		"bio": user.Bio,
-		"pronouns": user.Pronouns,
-		"company": user.Company,
-		"telegram": user.Telegram,
+		"email":           user.Email,
+		"username":        name,
+		"full_name":       user.FullName,
+		"bio":             user.Bio,
+		"pronouns":        user.Pronouns,
+		"company":         user.Company,
+		"telegram":        user.Telegram,
 		"social_accounts": socials,
-		"balance": user.Balance,
+		"balance":         user.Balance,
 	})
 }
 
 // PUT /api/account
 func UpdateMyAccountHandler(c *gin.Context) {
 	userIfc, ok := c.Get("user")
-	if !ok { c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"}); return }
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 	user := userIfc.(*models.User)
 
 	var req UpdateAccountRequest
@@ -66,11 +74,21 @@ func UpdateMyAccountHandler(c *gin.Context) {
 		return
 	}
 
-	if req.FullName != nil { user.FullName = req.FullName }
-	if req.Bio != nil { user.Bio = *req.Bio }
-	if req.Pronouns != nil { user.Pronouns = *req.Pronouns }
-	if req.Company != nil { user.Company = *req.Company }
-	if req.Telegram != nil { user.Telegram = *req.Telegram }
+	if req.FullName != nil {
+		user.FullName = req.FullName
+	}
+	if req.Bio != nil {
+		user.Bio = *req.Bio
+	}
+	if req.Pronouns != nil {
+		user.Pronouns = *req.Pronouns
+	}
+	if req.Company != nil {
+		user.Company = *req.Company
+	}
+	if req.Telegram != nil {
+		user.Telegram = *req.Telegram
+	}
 	if req.SocialAccounts != nil {
 		b, _ := json.Marshal(req.SocialAccounts)
 		user.SocialAccounts = datatypes.JSON(b)
@@ -86,11 +104,14 @@ func UpdateMyAccountHandler(c *gin.Context) {
 // Deducts Rp100.000 from balance and updates unique username
 func ChangeUsernamePaidHandler(c *gin.Context) {
 	userIfc, ok := c.Get("user")
-	if !ok { c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"}); return }
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 	user := userIfc.(*models.User)
 
 	var req ChangeUsernameRequest
-	if err := c.ShouldBindJSON(&req); err != nil || req.NewUsername == "" {
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.NewUsername) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "username baru wajib diisi"})
 		return
 	}
@@ -122,7 +143,7 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 		}
 		user.Balance -= price
 		name := req.NewUsername
-		user.Name = &name
+		user.Username = &name
 		return nil
 	}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal memproses perubahan username"})
@@ -134,92 +155,96 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 // Public projection used by GetPublicUserProfileHandler will include new fields
 func BuildPublicProfile(u *models.User) gin.H {
 	var socials interface{}
-	if len(u.SocialAccounts) > 0 { _ = json.Unmarshal(u.SocialAccounts, &socials) }
+	if len(u.SocialAccounts) > 0 {
+		_ = json.Unmarshal(u.SocialAccounts, &socials)
+	}
 	name := ""
-	if u.Name != nil { name = *u.Name }
+	if u.Username != nil {
+		name = *u.Username
+	}
 	return gin.H{
-		"username": name,
-		"full_name": u.FullName,
-		"bio": u.Bio,
-		"pronouns": u.Pronouns,
-		"company": u.Company,
-		"telegram": u.Telegram,
+		"username":        name,
+		"full_name":       u.FullName,
+		"bio":             u.Bio,
+		"pronouns":        u.Pronouns,
+		"company":         u.Company,
+		"telegram":        u.Telegram,
 		"social_accounts": socials,
-		"avatar_url": u.AvatarURL,
-		"id": u.ID,
+		"avatar_url":      u.AvatarURL,
+		"id":              u.ID,
 	}
 }
 
 // PUT /api/account/avatar
 func UploadAvatarHandler(c *gin.Context) {
-    userIfc, ok := c.Get("user")
-    if !ok {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-        return
-    }
-    user := userIfc.(*models.User)
+	userIfc, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	user := userIfc.(*models.User)
 
-    file, header, err := c.Request.FormFile("file")
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "file tidak ditemukan"})
-        return
-    }
-    defer file.Close()
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file tidak ditemukan"})
+		return
+	}
+	defer file.Close()
 
-    // Validasi ukuran (misal max 2MB)
-    if header.Size > 2*1024*1024 {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "ukuran file maksimal 2MB"})
-        return
-    }
+	// Validasi ukuran (misal max 2MB)
+	if header.Size > 2*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ukuran file maksimal 2MB"})
+		return
+	}
 
-    // Validasi ekstensi
-    ext := strings.ToLower(filepath.Ext(header.Filename))
-    allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true}
-    if !allowed[ext] {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "format gambar harus .jpg .jpeg .png atau .webp"})
-        return
-    }
+	// Validasi ekstensi
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true}
+	if !allowed[ext] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "format gambar harus .jpg .jpeg .png atau .webp"})
+		return
+	}
 
-    // Pastikan folder ada
-    if err := os.MkdirAll("public/avatars", 0755); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membuat folder penyimpanan"})
-        return
-    }
+	// Pastikan folder ada
+	if err := os.MkdirAll("public/avatars", 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membuat folder penyimpanan"})
+		return
+	}
 
-    // Simpan file
-    filename := fmt.Sprintf("avatars/u%d_%d%s", user.ID, time.Now().Unix(), ext)
-    dst := filepath.Join("public", filename)
+	// Simpan file
+	filename := fmt.Sprintf("avatars/u%d_%d%s", user.ID, time.Now().Unix(), ext)
+	dst := filepath.Join("public", filename)
 
-    // Simpan dari stream
-    out, err := os.Create(dst)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membuat file"})
-        return
-    }
-    defer out.Close()
-    if _, err := out.ReadFrom(file); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan file"})
-        return
-    }
+	// Simpan dari stream
+	out, err := os.Create(dst)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membuat file"})
+		return
+	}
+	defer out.Close()
+	if _, err := out.ReadFrom(file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan file"})
+		return
+	}
 
-    // Bangun absolute URL (aware proxy/tunnel)
-    scheme := c.GetHeader("X-Forwarded-Proto")
-    if scheme == "" {
-        if c.Request.TLS != nil {
-            scheme = "https"
-        } else {
-            scheme = "http"
-        }
-    }
-    host := c.Request.Host
-    avatarURL := fmt.Sprintf("%s://%s/static/%s", scheme, host, filename)
+	// Bangun absolute URL (aware proxy/tunnel)
+	scheme := c.GetHeader("X-Forwarded-Proto")
+	if scheme == "" {
+		if c.Request.TLS != nil {
+			scheme = "https"
+		} else {
+			scheme = "http"
+		}
+	}
+	host := c.Request.Host
+	avatarURL := fmt.Sprintf("%s://%s/static/%s", scheme, host, filename)
 
-    // Update user
-    user.AvatarURL = avatarURL
-    if err := database.DB.Save(user).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan avatar ke profil"})
-        return
-    }
+	// Update user
+	user.AvatarURL = avatarURL
+	if err := database.DB.Save(user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan avatar ke profil"})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{"avatar_url": avatarURL})
+	c.JSON(http.StatusOK, gin.H{"avatar_url": avatarURL})
 }

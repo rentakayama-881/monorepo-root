@@ -42,8 +42,10 @@ func main() {
 	{
 		auth := api.Group("/auth")
 		{
-			auth.GET("/github", handlers.GithubLoginHandler)
-			auth.GET("/github/callback", handlers.GithubCallbackHandler)
+			auth.POST("/register", handlers.RegisterHandler)
+			auth.POST("/login", handlers.LoginHandler)
+			auth.POST("/verify/request", handlers.RequestVerification)
+			auth.POST("/verify/confirm", handlers.ConfirmVerification)
 			auth.POST("/username", middleware.AuthMiddleware(), handlers.CreateUsernameHandler)
 		}
 

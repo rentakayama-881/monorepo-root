@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { getApiBase } from "@/lib/api";
 
 export default function CategoryThreadsPage() {
   const params = useParams();
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+  const API = getApiBase();
 
   useEffect(() => {
     setLoading(true);
