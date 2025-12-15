@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation"; // <--- PERUBAHAN 1: Import useParams
+import { getApiBase } from "@/lib/api";
 
 export default function ThreadDetailPage() { // <--- PERUBAHAN 2: Hapus props params
   const params = useParams(); // <--- PERUBAHAN 3: Pakai hook
@@ -10,7 +11,7 @@ export default function ThreadDetailPage() { // <--- PERUBAHAN 2: Hapus props pa
   // Pastikan id diambil dengan aman (unwrap)
   const id = params?.id; 
 
-  const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+  const API = getApiBase();
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +47,12 @@ export default function ThreadDetailPage() { // <--- PERUBAHAN 2: Hapus props pa
     return () => { cancelled = true; };
   }, [API, id, isAuthed]);
 
-  if (!isAuthed) return <div className="text-sm text-red-600">{error || "Anda harus login untuk melihat thread."}</div>;
+  if (!isAuthed) return (
+    <div className="text-sm text-neutral-800 bg-neutral-50 border border-neutral-200 rounded-md p-4">
+      <div className="font-medium">Anda harus login untuk melihat thread.</div>
+      <Link href="/login" className="text-blue-700 hover:underline text-sm">Masuk sekarang</Link>
+    </div>
+  );
 
   return (
     <section className="max-w-4xl mx-auto py-12 px-4">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getApiBase } from "@/lib/api";
 
 export default function SetUsernamePage() {
   const [username, setUsername] = useState("");
@@ -36,7 +37,7 @@ export default function SetUsernamePage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/username`, {
+      const res = await fetch(`${getApiBase()}/api/auth/username`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getApiBase } from "@/lib/api";
 
 export default function TransferBalancePage() {
-  const API = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"}/api`;
+  const API = `${getApiBase()}/api`;
   const [user, setUser] = useState({ name: "", balance: 0 });
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");

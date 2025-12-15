@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { getApiBase } from "@/lib/api";
 
 export default function UserProfilePage() {
   const { username } = useParams();
@@ -10,7 +11,7 @@ export default function UserProfilePage() {
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+  const API = getApiBase();
 
   useEffect(() => {
     setLoading(true);

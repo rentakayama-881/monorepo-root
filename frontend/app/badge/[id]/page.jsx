@@ -1,10 +1,11 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { getApiBase } from "@/lib/api";
 
 export default function BadgeDetailPage({ params }) {
   const { id } = use(params);
-  const API = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"}/api`;
+  const API = `${getApiBase()}/api`;
   const [badge, setBadge] = useState(null);
 
   useEffect(() => {

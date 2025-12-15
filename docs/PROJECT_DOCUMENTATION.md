@@ -3,11 +3,11 @@
 Dokumen ini merangkum struktur, arsitektur saat ini, visi jangka panjang (North Star), serta daftar tugas lanjutan untuk monorepo ini. Fokusnya mencakup tiga pilar utama: backend Go, frontend Next.js, dan smart contract Solidity.
 
 ## Arsitektur Saat Ini
-- **Lapisan backend**: REST API berbasis Gin dengan middleware JWT, integrasi OAuth GitHub, worker pemantau deposit/transfer, dan modul RAG yang memakai Cohere serta PostgreSQL/pgvector untuk penyimpanan embedding.
+- **Lapisan backend**: REST API berbasis Gin dengan middleware JWT, autentikasi email+password (bcrypt), worker pemantau deposit/transfer, dan modul RAG yang memakai Cohere serta PostgreSQL/pgvector untuk penyimpanan embedding.
 - **Lapisan frontend**: Aplikasi Next.js (app router) dengan komponen UI kustom, halaman otentikasi, akun, transfer saldo, badge, AI search, dsb. Header dan sidebar berbagi daftar kategori yang konsisten dengan backend.
 - **Lapisan kontrak**: Kumpulan smart contract (Escrow, EscrowFactory, FeeLogic, Staking, ArbitrationAdapter) yang mengelola escrow USDT, fee dinamis, staking, serta adapter arbitrase.
 - **Alur data utama**:
-  1. Pengguna login via GitHub OAuth → backend membuat JWT → frontend menyimpan token untuk memanggil API.
+  1. Pengguna daftar/login dengan email+password → backend membuat JWT → frontend menyimpan token untuk memanggil API; verifikasi email menggunakan token yang dicetak di log server/dev.
   2. Thread & user API memakai PostgreSQL melalui GORM; konten thread dapat diindeks ke pgvector lewat endpoint RAG.
   3. Saldo pengguna dan deposit on-chain diawasi worker; transfer saldo dan refill memanfaatkan alamat HD wallet yang dibuat per pengguna.
   4. Marketplace/escrow disiapkan melalui kombinasi backend (order/dispute records) dan smart contract untuk eksekusi dana.
@@ -105,7 +105,7 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `contracts/interfaces/AggregatorV3Interface.sol` — interface Chainlink aggregator (digunakan pada FeeLogic/Adapter).
 
 ## North Star Doc
-- **Misi Produk**: Menjadi platform komunitas terintegrasi yang menggabungkan forum, marketplace escrow, dan utilitas AI/RAG untuk konten komunitas dengan pengalaman login sederhana via GitHub.
+- **Misi Produk**: Menjadi platform komunitas terintegrasi yang menggabungkan forum, marketplace escrow, dan utilitas AI/RAG untuk konten komunitas dengan pengalaman login sederhana via email/password.
 - **Sasaran 6–12 bulan**:
   - Transaksi marketplace on-chain → off-chain status sinkron otomatis; tidak ada tindakan manual admin untuk release/refund.
   - Pencarian & rekomendasi AI (RAG) menyediakan jawaban dengan sumber akurat <2 detik median latency.
@@ -134,3 +134,13 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 ## Catatan Tambahan
 - File README lama di frontend dihapus karena sudah tidak relevan; dokumentasi digantikan oleh dokumen ini.
 - Node_modules tidak didokumentasi per file; gunakan package-lock untuk melihat dependensi runtime.
+
+## What changed
+- Mengganti OAuth GitHub dengan autentikasi email + password lengkap dengan hash bcrypt, JWT, dan token verifikasi email yang disimpan di database.
+- Menambahkan halaman UI login, register, dan verifikasi email bergaya GitHub serta memastikan helper `getApiBase` dipakai konsisten untuk memanggil API.
+- Membersihkan rujukan GitHub lama dan menambah limiter sederhana untuk endpoint sensitif.
+
+## Next steps
+- Tambah delivery email sebenarnya (SMTP/provider) dan ganti log link dev dengan pengiriman email produksi.
+- Perluas cakupan tes otomatis (Go/Next) agar flow register → verifikasi → login tetap terjaga.
+- Audit user lama (hasil OAuth) untuk migrasi password/username agar bisa login via email.

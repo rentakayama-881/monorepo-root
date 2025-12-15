@@ -58,6 +58,7 @@ func migrateAndSeed() {
 		&models.Category{},
 		&models.Thread{},
 		&models.Transfer{},
+		&models.EmailVerificationToken{},
 		&DepositAddress{},
 		// marketplace tables
 		&models.Order{},

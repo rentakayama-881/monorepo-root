@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Alert from "../../components/ui/Alert";
+import { getApiBase } from "@/lib/api";
 
 export default function AccountPage() {
-  const API = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"}/api`;
+  const API = `${getApiBase()}/api`;
   const authed = useMemo(() => { try { return !!localStorage.getItem("token"); } catch { return false; } }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

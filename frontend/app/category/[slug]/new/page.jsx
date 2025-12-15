@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { getApiBase } from "@/lib/api";
 
 export default function CreateThreadPage() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function CreateThreadPage() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+  const API = getApiBase();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
