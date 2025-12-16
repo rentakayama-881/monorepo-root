@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import ProfileSidebar from "./ProfileSidebar";
 import { fetchCategories } from "../lib/categories";
+import { getToken, TOKEN_KEY } from "@/lib/auth";
 
 export default function Header() {
   const [isAuthed, setIsAuthed] = useState(false);
@@ -15,8 +16,28 @@ export default function Header() {
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
+    // ✅ ganti effect auth lama jadi sinkron + listener
   useEffect(() => {
-    try { setIsAuthed(!!localStorage.getItem("token")); } catch (_) {}
+    const sync = () => {
+      try {
+        setIsAuthed(!!getToken());
+      } catch (_) {}
+    };
+
+    sync();
+
+    const onStorage = (e) => {
+      // kalau token berubah dari tab lain
+      if (e.key === TOKEN_KEY) sync();
+    };
+
+    window.addEventListener("auth:changed", sync);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("auth:changed", sync);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   useEffect(() => {

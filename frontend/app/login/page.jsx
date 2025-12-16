@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getApiBase } from "@/lib/api";
+import { setToken } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,10 +27,10 @@ export default function LoginPage() {
       if (!res.ok) {
         throw new Error(data.error || "Gagal masuk. Periksa email/password.");
       }
-      try {
-        localStorage.setItem("token", data.token);
-      } catch (_) {}
+
+      setToken(data.token);
       router.push("/");
+
     } catch (e) {
       setError(e.message || "Terjadi kesalahan");
     } finally {
