@@ -87,7 +87,6 @@ func RegisterHandler(c *gin.Context) {
 		PasswordHash:  string(hash),
 		EmailVerified: false,
 		AvatarURL:     "",
-		Balance:       0,
 	}
 	if username != "" {
 		user.Username = &username

@@ -13,7 +13,6 @@ import (
 	"backend-gin/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
 type UpdateAccountRequest struct {
@@ -55,7 +54,6 @@ func GetMyAccountHandler(c *gin.Context) {
 		"company":         user.Company,
 		"telegram":        user.Telegram,
 		"social_accounts": socials,
-		"balance":         user.Balance,
 	})
 }
 
@@ -101,7 +99,7 @@ func UpdateMyAccountHandler(c *gin.Context) {
 }
 
 // POST /api/account/change-username
-// Deducts Rp100.000 from balance and updates unique username
+// Updates unique username without balance deductions
 func ChangeUsernamePaidHandler(c *gin.Context) {
 	userIfc, ok := c.Get("user")
 	if !ok {
@@ -116,13 +114,6 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 		return
 	}
 
-	// Check sufficient balance: price 100000 IDR
-	const price = 100000.0
-	if user.Balance < price {
-		c.JSON(http.StatusPaymentRequired, gin.H{"error": "Saldo tidak cukup. Butuh Rp.100.000"})
-		return
-	}
-
 	// Check username availability
 	var count int64
 	database.DB.Model(&models.User{}).Where("name = ?", req.NewUsername).Count(&count)
@@ -131,25 +122,13 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 		return
 	}
 
-	// Update within transaction: deduct balance then set username
-	if err := database.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&models.User{}).Where("id = ?", user.ID).
-			Updates(map[string]interface{}{"balance": gorm.Expr("balance - ?", price)}).Error; err != nil {
-			return err
-		}
-		// set username
-		if err := tx.Model(&models.User{}).Where("id = ?", user.ID).Update("name", req.NewUsername).Error; err != nil {
-			return err
-		}
-		user.Balance -= price
-		name := req.NewUsername
-		user.Username = &name
-		return nil
-	}); err != nil {
+	if err := database.DB.Model(&models.User{}).Where("id = ?", user.ID).Update("name", req.NewUsername).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal memproses perubahan username"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "ok", "new_username": req.NewUsername, "balance": user.Balance})
+	name := req.NewUsername
+	user.Username = &name
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "new_username": req.NewUsername})
 }
 
 // Public projection used by GetPublicUserProfileHandler will include new fields

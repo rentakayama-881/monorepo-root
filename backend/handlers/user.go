@@ -24,7 +24,6 @@ func GetUserInfoHandler(c *gin.Context) {
 		"name":       name,
 		"username":   name,
 		"avatar_url": user.AvatarURL,
-		"balance":    user.Balance,
 	})
 }
 

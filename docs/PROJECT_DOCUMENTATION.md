@@ -3,14 +3,13 @@
 Dokumen ini merangkum struktur, arsitektur saat ini, visi jangka panjang (North Star), serta daftar tugas lanjutan untuk monorepo ini. Fokusnya mencakup tiga pilar utama: backend Go, frontend Next.js, dan smart contract Solidity.
 
 ## Arsitektur Saat Ini
-- **Lapisan backend**: REST API berbasis Gin dengan middleware JWT, autentikasi email+password (bcrypt), worker pemantau deposit/transfer, dan modul RAG yang memakai Cohere serta PostgreSQL/pgvector untuk penyimpanan embedding.
-- **Lapisan frontend**: Aplikasi Next.js (app router) dengan komponen UI kustom, halaman otentikasi, akun, transfer saldo, badge, AI search, dsb. Header dan sidebar berbagi daftar kategori yang konsisten dengan backend.
-- **Lapisan kontrak**: Kumpulan smart contract (Escrow, EscrowFactory, FeeLogic, Staking, ArbitrationAdapter) yang mengelola escrow USDT, fee dinamis, staking, serta adapter arbitrase.
+- **Lapisan backend**: REST API berbasis Gin dengan middleware JWT, autentikasi email+password (bcrypt), serta modul RAG yang memakai Cohere dan PostgreSQL/pgvector. Fitur saldo/refill/transfer kustodian dihapus; backend tidak menyimpan dana pengguna dan berfokus pada thread, akun, serta skeleton marketplace/escrow.
+- **Lapisan frontend**: Aplikasi Next.js (app router) dengan komponen UI kustom, halaman otentikasi, akun, badge, AI search, dsb. Header dan sidebar berbagi daftar kategori yang konsisten dengan backend; panel profil tidak lagi menampilkan saldo atau link refill/transfer.
+- **Lapisan kontrak**: Kumpulan smart contract (Escrow, EscrowFactory, FeeLogic, Staking, ArbitrationAdapter) yang mengelola escrow USDT, fee dinamis, staking, serta adapter arbitrase untuk alur non-kustodian.
 - **Alur data utama**:
   1. Pengguna daftar/login dengan email+password → backend membuat JWT → frontend menyimpan token untuk memanggil API; verifikasi email menggunakan token yang dicetak di log server/dev.
   2. Thread & user API memakai PostgreSQL melalui GORM; konten thread dapat diindeks ke pgvector lewat endpoint RAG.
-  3. Saldo pengguna dan deposit on-chain diawasi worker; transfer saldo dan refill memanfaatkan alamat HD wallet yang dibuat per pengguna.
-  4. Marketplace/escrow disiapkan melalui kombinasi backend (order/dispute records) dan smart contract untuk eksekusi dana.
+  3. Marketplace/escrow disiapkan melalui kombinasi backend (order/dispute records) dan smart contract untuk eksekusi dana; pemantauan saldo/refill off-chain tidak digunakan lagi.
 
 ## Peta File
 Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
@@ -21,36 +20,36 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `contracts/` — smart contract Solidity.
 
 ### Backend (Go)
-- `backend/main.go` — entrypoint server Gin: memuat env, inisialisasi DB, worker deposit/transfer, konfigurasi CORS, static file `/static`, dan mendaftarkan semua grup route `/api`. 
+- `backend/main.go` — entrypoint server Gin: memuat env, inisialisasi DB/config, konfigurasi CORS, static file `/static`, dan mendaftarkan semua grup route `/api` tanpa worker saldo.
 - `backend/go.mod` / `backend/go.sum` — dependensi Go module.
 - `backend/.gitignore` — pengecualian file build/env.
 - `backend/config/config.go` — memuat konfigurasi OAuth GitHub & JWT key dari environment variables.
 - `backend/database/db.go` — koneksi PostgreSQL (DATABASE_URL/dsn), automigrate model, dan seeding kategori thread.
-- `backend/database/deposit.go` — model `DepositAddress` dan helper untuk membuat/mendapat alamat deposit berbasis HD wallet per pengguna.
+- (dihapus) `backend/database/deposit.go` — tidak ada lagi tabel/logic alamat deposit.
 - `backend/dto/github.go` — struct respons data GitHub (email/id/avatar) untuk proses OAuth.
 - `backend/dto/create_username.go` — payload pembuatan username baru.
 - `backend/dto/create_thread.go` — payload membuat thread (title, category_id, content json, dsb.).
 - `backend/dto/update_thread.go` — payload memperbarui thread (title/summary/content/meta).
-- `backend/dto/transfer.go` — payload transfer saldo (recipient_username, amount).
-- `backend/handlers/account.go` — handler akun: ambil profil sendiri, update profil, ubah username berbayar, upload avatar, dan builder profil publik.
+- (dihapus) `backend/dto/transfer.go` — payload transfer saldo tidak lagi digunakan.
+- `backend/handlers/account.go` — handler akun: ambil profil sendiri, update profil, ubah username (tanpa saldo), upload avatar, dan builder profil publik.
 - `backend/handlers/badge_detail.go` — handler detail badge individual.
 - `backend/handlers/badges.go` — handler daftar badge milik pengguna.
-- `backend/handlers/balance.go` — info refill saldo & endpoint ambil alamat deposit pengguna.
+- (dihapus) `backend/handlers/balance.go` — info refill/alat deposit kustodian dihapus.
 - `backend/handlers/marketplace.go` — skeleton endpoint order/dispute (GET/PUT) dan rate Chainlink.
 - `backend/handlers/oauth.go` — login & callback OAuth GitHub.
 - `backend/handlers/rag.go` — endpoint RAG: indeks teks panjang, indeks chunk, ask/answer QA, indeks thread by ID, debug chunk.
 - `backend/handlers/threads.go` — handler kategori thread, thread per kategori, detail thread, membuat & memperbarui thread.
-- `backend/handlers/transfer.go` — handler transfer saldo antar pengguna.
+- (dihapus) `backend/handlers/transfer.go` — transfer saldo kustodian dihapus.
 - `backend/handlers/user.go` — handler info user terautentikasi dan profil publik berdasar username.
 - `backend/handlers/user_threads.go` — handler daftar thread per user (publik & milik sendiri).
 - `backend/handlers/username.go` — handler pembuatan username setelah login OAuth.
 - `backend/middleware/auth.go` — middleware JWT wajib untuk route yang membutuhkan autentikasi.
 - `backend/middleware/auth_optional.go` — middleware JWT opsional (meneruskan context jika token ada).
 - `backend/middleware/jwt.go` — helper parsing & validasi JWT token dari header Authorization.
-- `backend/models/user.go` — model pengguna (email, username, avatar, saldo, profil & sosial sebagai JSON).
+- `backend/models/user.go` — model pengguna (email, username, avatar, profil & sosial sebagai JSON) tanpa field saldo.
 - `backend/models/credential.go` — model kredensial terhubung ke user.
 - `backend/models/thread.go` — model kategori & thread (JSON content/meta, relasi user/kategori).
-- `backend/models/transfer.go` — model transfer saldo antar pengguna (status, hold_until).
+- (dihapus) `backend/models/transfer.go` — tidak ada tabel transfer saldo.
 - `backend/models/marketplace.go` — model order, dispute, promotion, dan volume ledger untuk alur escrow marketplace.
 - `backend/utils/chunker.go` — utilitas pemisah teks menjadi chunk untuk indeks RAG.
 - `backend/utils/cohere.go` — client Cohere untuk pembuatan embedding teks.
@@ -58,10 +57,9 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `backend/utils/cohere_chat.go` — helper panggil chat Cohere untuk jawaban RAG.
 - `backend/utils/jsonflatten.go` — flatten konten JSON sebelum embedding.
 - `backend/utils/pgvector.go` — helper koneksi pgvector/SQL untuk penyimpanan embedding & query similarity.
-- `backend/utils/hdwallet.go` — pembuatan alamat HD wallet (deposit) berdasar user ID.
+- (dihapus) `backend/utils/hdwallet.go` — tidak ada lagi alamat HD wallet kustodian.
 - `backend/utils/rate.go` — kalkulasi rate berdasarkan data Chainlink (ETH-USD & IDR) dengan fallback default.
-- `backend/worker/deposit_monitor.go` — worker memantau saldo deposit on-chain & sinkronisasi.
-- `backend/worker/transfer_monitor.go` — worker memantau transfer/balance updates.
+- `backend/worker/event_worker.go` — placeholder worker event-driven untuk integrasi on-chain escrow (tanpa menyimpan saldo di backend).
 - `backend/worker/event_worker.go` — placeholder worker event-driven untuk integrasi on-chain.
 
 ### Frontend (Next.js)
@@ -79,9 +77,7 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `frontend/app/account/page.jsx` — pengelolaan profil/username/avatar & sosial; fetch/update via API.
 - `frontend/app/threads/page.jsx` — daftar thread/kategori (placeholder data, siap integrasi API).
 - `frontend/app/ai-search/page.jsx` — form tanya-jawab AI yang memanggil endpoint RAG backend dan menampilkan sumber.
-- `frontend/app/contact-support/page.jsx` — form laporan & transfer saldo dengan fetch ke `/balance/transfer`.
-- `frontend/app/refill-balance/page.jsx` — mengambil info refill & alamat deposit dari backend untuk pengguna login.
-- `frontend/app/transfer-balance/page.jsx` — form transfer saldo antar pengguna (mirip contact-support tanpa form support).
+- `frontend/app/contact-support/page.jsx` — form laporan dukungan sederhana (tanpa alur saldo kustodian).
 - `frontend/app/pengajuan-badge/page.jsx` — form pengajuan badge dengan field upload/link portofolio.
 - `frontend/app/rules-content/page.jsx` — halaman aturan komunitas dan panduan posting.
 - `frontend/app/about-content/page.jsx` — halaman statis tentang platform.
@@ -89,7 +85,7 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `frontend/app/favicon.ico` — ikon situs.
 - `frontend/components/Header.js` — header global dengan navigasi, search bar, tombol login/logout, dan tombol toggle sidebar mobile.
 - `frontend/components/Sidebar.js` — sidebar kategori/topik populer dengan pencarian & link navigasi.
-- `frontend/components/ProfileSidebar.js` — panel profil ringkas + saldo dan quick links.
+- `frontend/components/ProfileSidebar.js` — panel profil ringkas untuk navigasi akun/thread tanpa saldo atau link refill/transfer.
 - `frontend/components/ui/Button.jsx` — komponen tombol dengan varian (primary/ghost/outline) & state loading.
 - `frontend/components/ui/Input.jsx` — input teks dengan label/helper/error state.
 - `frontend/components/ui/Alert.jsx` — komponen alert sukses/error/info.
@@ -128,7 +124,7 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
   - Tambahkan pengamanan reentrancy & alamat sink biaya yang nyata pada `Escrow.sol`.
   - Unit test untuk FeeLogic/Staking/EscrowFactory agar alur fee & staking tervalidasi.
 - **Ops & Observability**
-  - Tambahkan log/metric untuk worker deposit/transfer (Prometheus/OpenTelemetry) dan healthcheck endpoint.
+  - Tambahkan log/metric untuk listener/event worker escrow on-chain (Prometheus/OpenTelemetry) dan healthcheck endpoint.
   - Siapkan pipeline CI lint/test untuk Go, Next.js, dan Solidity (Foundry/Hardhat).
 
 ## Catatan Tambahan

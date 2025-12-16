@@ -11,7 +11,6 @@ import (
 	"backend-gin/database"
 	"backend-gin/handlers"
 	"backend-gin/middleware"
-	"backend-gin/worker"
 	"github.com/joho/godotenv"
 )
 
@@ -22,9 +21,6 @@ func main() {
 	}
 
 	database.InitDB()
-	worker.RunDepositMonitor()
-	worker.RunTransferMonitor()
-
 	config.InitConfig()
 	router := gin.Default()
 	corsConfig := cors.DefaultConfig()
@@ -94,13 +90,6 @@ func main() {
 		badges := api.Group("/badges")
 		{
 			badges.GET("/:id", handlers.GetBadgeDetailHandler)
-		}
-
-		balance := api.Group("/balance")
-		{
-			balance.GET("/refill/info", handlers.GetRefillBalanceInfoHandler)
-			balance.GET("/refill/address", middleware.AuthMiddleware(), handlers.GetRefillDepositAddressHandler)
-			balance.POST("/transfer", middleware.AuthMiddleware(), handlers.TransferBalanceHandler)
 		}
 
 		router.POST("/api/rag/index-chunk", handlers.IndexChunkHandler)
