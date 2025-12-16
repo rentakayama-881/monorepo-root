@@ -75,8 +75,9 @@ func main() {
 		// Marketplace endpoints (sprint skeleton)
 		orders := api.Group("/orders")
 		{
-			orders.GET(":id", middleware.AuthMiddleware(), handlers.GetOrderHandler)
-			orders.PUT(":id", middleware.AuthMiddleware(), handlers.UpdateOrderHandler)
+			orders.POST("", middleware.AuthOptionalMiddleware(), handlers.CreateOrderHandler)
+			orders.POST(":orderId/attach", handlers.AttachEscrowHandler)
+			orders.GET(":orderId", handlers.GetOrderStatusHandler)
 		}
 
 		disputes := api.Group("/disputes")

@@ -10,5 +10,5 @@
 ## Next Steps (verified)
 - Hubungkan halaman daftar/detail thread lain agar memakai endpoint real (termasuk `/api/threads/latest` dan `/api/threads/:id`).
 - Tambahkan handling error/loading yang konsisten pada fetch client-side (mis. komponen lain yang masih memakai placeholder).
-- Dokumentasikan konfigurasi environment frontend/backend (termasuk `NEXT_PUBLIC_API_BASE_URL` dan `FRONTEND_BASE_URL`).
-- Rancang ulang alur escrow non-kustodian: gunakan event listener on-chain sebagai dasar sinkronisasi order/dispute, bukan penyimpanan saldo di backend.
+- Dokumentasikan konfigurasi environment frontend/backend (termasuk `NEXT_PUBLIC_API_BASE_URL`, `BACKEND_SIGNER_PRIVATE_KEY`, dan `ESCROW_FACTORY_ADDRESS`).
+- Lengkapi alur escrow non-kustodian dengan listener on-chain yang memvalidasi event `EscrowDeployed`/`Funded`/`Released` lalu mengubah status order di DB (tanpa menyimpan saldo).
