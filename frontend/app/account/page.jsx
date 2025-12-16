@@ -129,7 +129,7 @@ export default function AccountPage() {
       const txt = await r.text();
       if (!r.ok) throw new Error(txt || "Gagal mengganti username");
       const data = JSON.parse(txt);
-      setOk(`Username diubah menjadi ${data.new_username}. Saldo sekarang Rp ${Number(data.balance).toLocaleString('id-ID')}`);
+      setOk(`Username diubah menjadi ${data.new_username}.`);
       setUsername(data.new_username);
       setNewUsername("");
     } catch (e) { setError(String(e.message || e)); } finally { setChgLoading(false); }
