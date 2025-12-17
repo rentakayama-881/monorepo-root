@@ -7,8 +7,14 @@ import (
 )
 
 const (
-	OrderStatusCreated  = "created"
-	OrderStatusDeployed = "deployed"
+	OrderStatusCreated   = "created"
+	OrderStatusDeployed  = "deployed"
+	OrderStatusFunded    = "funded"
+	OrderStatusDelivered = "delivered"
+	OrderStatusDisputed  = "disputed"
+	OrderStatusResolved  = "resolved"
+	OrderStatusRefunded  = "refunded"
+	OrderStatusReleased  = "released"
 )
 
 // Order is the off-chain record backing a non-custodial escrow deployment request.
