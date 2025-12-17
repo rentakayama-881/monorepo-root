@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getApiBase } from "@/lib/api";
+import { setToken } from "@/lib/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -37,9 +38,14 @@ export default function RegisterPage() {
       if (!res.ok) {
         throw new Error(data.error || "Gagal mendaftar");
       }
-      setInfo("Akun dibuat. Cek log server untuk tautan verifikasi email lalu login setelah diverifikasi.");
+      if (data.token) {
+        setToken(data.token);
+        router.replace("/");
+        return;
+      }
+      setInfo("Registrasi berhasil. Cek email untuk verifikasi lalu lanjutkan login.");
       setForm({ email: "", password: "", username: "", full_name: "" });
-      setTimeout(() => router.push("/login"), 400);
+      setTimeout(() => router.replace("/login?registered=1"), 600);
     } catch (e) {
       setError(e.message || "Terjadi kesalahan");
     } finally {
@@ -105,7 +111,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full inline-flex justify-center items-center rounded-md bg-black text-white px-4 py-2 text-sm font-medium hover:bg-neutral-900 disabled:opacity-60"
+              className="w-full inline-flex justify-center items-center rounded-md border border-neutral-900 bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:bg-black disabled:opacity-60 shadow-sm"
             >
               {loading ? "Mendaftarkan..." : "Daftar"}
             </button>

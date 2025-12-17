@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import ProfileSidebar from "./ProfileSidebar";
 import { fetchCategories } from "../lib/categories";
-import { getToken, TOKEN_KEY } from "@/lib/auth";
+import { AUTH_CHANGED_EVENT, getToken, TOKEN_KEY } from "@/lib/auth";
 
 export default function Header() {
   const [isAuthed, setIsAuthed] = useState(false);
@@ -16,7 +16,6 @@ export default function Header() {
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
-    // ✅ ganti effect auth lama jadi sinkron + listener
   useEffect(() => {
     const sync = () => {
       try {
@@ -31,11 +30,11 @@ export default function Header() {
       if (e.key === TOKEN_KEY) sync();
     };
 
-    window.addEventListener("auth:changed", sync);
+    window.addEventListener(AUTH_CHANGED_EVENT, sync);
     window.addEventListener("storage", onStorage);
 
     return () => {
-      window.removeEventListener("auth:changed", sync);
+      window.removeEventListener(AUTH_CHANGED_EVENT, sync);
       window.removeEventListener("storage", onStorage);
     };
   }, []);

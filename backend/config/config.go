@@ -17,6 +17,7 @@ var (
 	BackendSignerAddress    common.Address
 	EscrowFactoryAddress    common.Address
 	ChainID                 = big.NewInt(0)
+	RPCURL                  string
 )
 
 func InitConfig() {
@@ -55,5 +56,10 @@ func InitConfig() {
 	EscrowFactoryAddress = common.HexToAddress(factory)
 	if EscrowFactoryAddress == (common.Address{}) {
 		log.Fatal("ERROR: invalid ESCROW_FACTORY_ADDRESS")
+	}
+
+	RPCURL = os.Getenv("RPC_URL")
+	if RPCURL == "" {
+		log.Println("WARN: RPC_URL tidak disetel; worker event akan nonaktif")
 	}
 }

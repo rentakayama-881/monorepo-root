@@ -1,17 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center text-sm text-neutral-600">Memuat formulir…</div>}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const registeredNotice = searchParams.get("registered") === "1";
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -29,7 +40,7 @@ export default function LoginPage() {
       }
 
       setToken(data.token);
-      router.push("/");
+      router.replace("/");
 
     } catch (e) {
       setError(e.message || "Terjadi kesalahan");
@@ -47,6 +58,11 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white border border-neutral-200 rounded-lg shadow-sm p-6">
+          {registeredNotice && (
+            <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+              Registrasi berhasil. Verifikasi email Anda lalu masuk.
+            </div>
+          )}
           <form className="space-y-4" onSubmit={onSubmit}>
             <div className="space-y-2">
               <label className="text-sm font-medium text-neutral-800">Email</label>
@@ -74,7 +90,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full inline-flex justify-center items-center rounded-md bg-black text-white px-4 py-2 text-sm font-medium hover:bg-neutral-900 disabled:opacity-60"
+              className="w-full inline-flex justify-center items-center rounded-md border border-neutral-900 bg-neutral-900 text-white px-4 py-2 text-sm font-semibold hover:bg-black disabled:opacity-60 shadow-sm"
             >
               {loading ? "Memproses..." : "Masuk"}
             </button>

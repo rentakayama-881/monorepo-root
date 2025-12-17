@@ -36,12 +36,19 @@ func CreateOrderHandler(c *gin.Context) {
 		return
 	}
 
-	buyerAddr := common.HexToAddress(req.BuyerWallet)
-	sellerAddr := common.HexToAddress(req.SellerWallet)
-	if buyerAddr == (common.Address{}) || sellerAddr == (common.Address{}) {
+	buyerWallet := strings.ToLower(strings.TrimSpace(req.BuyerWallet))
+	sellerWallet := strings.ToLower(strings.TrimSpace(req.SellerWallet))
+	if !common.IsHexAddress(buyerWallet) || !common.IsHexAddress(sellerWallet) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "buyer_wallet dan seller_wallet wajib berupa alamat hex"})
 		return
 	}
+	if req.AmountUSDT == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "amount_usdt harus lebih besar dari 0"})
+		return
+	}
+
+	buyerAddr := common.HexToAddress(buyerWallet)
+	sellerAddr := common.HexToAddress(sellerWallet)
 
 	orderIDBytes := make([]byte, 32)
 	if _, err := rand.Read(orderIDBytes); err != nil {
@@ -103,11 +110,27 @@ func AttachEscrowHandler(c *gin.Context) {
 		return
 	}
 
-	escrowAddr := common.HexToAddress(req.EscrowAddress)
-	if escrowAddr == (common.Address{}) {
+	escrowAddress := strings.ToLower(strings.TrimSpace(req.EscrowAddress))
+	txHash := strings.TrimSpace(req.TxHash)
+
+	if !common.IsHexAddress(escrowAddress) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "escrow_address tidak valid"})
 		return
 	}
+
+	normalizedTxHash := strings.ToLower(strings.TrimPrefix(txHash, "0x"))
+	if len(normalizedTxHash) != 64 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tx_hash tidak valid"})
+		return
+	}
+	if _, err := hex.DecodeString(normalizedTxHash); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tx_hash tidak valid"})
+		return
+	}
+
+	txHash = "0x" + normalizedTxHash
+
+	escrowAddr := common.HexToAddress(escrowAddress)
 
 	var order models.Order
 	if err := database.DB.Where("order_id_hex = ?", orderID).First(&order).Error; err != nil {
@@ -116,7 +139,7 @@ func AttachEscrowHandler(c *gin.Context) {
 	}
 
 	order.EscrowAddress = strings.ToLower(escrowAddr.Hex())
-	order.TxHash = req.TxHash
+	order.TxHash = txHash
 	order.Status = models.OrderStatusDeployed
 
 	if err := database.DB.Save(&order).Error; err != nil {
@@ -190,11 +213,16 @@ func normalizeOrderID(raw string) string {
 	if id == "" {
 		return ""
 	}
-	if !strings.HasPrefix(id, "0x") {
-		id = "0x" + id
-	}
-	if len(id) != 66 {
+
+	id = strings.ToLower(id)
+	id = strings.TrimPrefix(id, "0x")
+
+	if len(id) != 64 {
 		return ""
 	}
-	return strings.ToLower(id)
+	if _, err := hex.DecodeString(id); err != nil {
+		return ""
+	}
+
+	return "0x" + id
 }

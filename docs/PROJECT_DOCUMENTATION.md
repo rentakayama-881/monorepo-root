@@ -3,8 +3,8 @@
 Dokumen ini merangkum struktur, arsitektur saat ini, visi jangka panjang (North Star), serta daftar tugas lanjutan untuk monorepo ini. Fokusnya mencakup tiga pilar utama: backend Go, frontend Next.js, dan smart contract Solidity.
 
 ## Arsitektur Saat Ini
-- **Lapisan backend**: REST API berbasis Gin dengan middleware JWT, autentikasi email+password (bcrypt), serta modul RAG yang memakai Cohere dan PostgreSQL/pgvector. Fitur saldo/refill/transfer kustodian dihapus; backend tidak menyimpan dana pengguna dan berfokus pada thread, akun, serta order escrow non-kustodian bertanda tangan backend signer.
-- **Lapisan frontend**: Aplikasi Next.js (app router) dengan komponen UI kustom, halaman otentikasi, akun, badge, AI search, dsb. Header dan sidebar berbagi daftar kategori yang konsisten dengan backend; panel profil tidak lagi menampilkan saldo atau link refill/transfer.
+- **Lapisan backend**: REST API berbasis Gin dengan middleware JWT, autentikasi email+password (bcrypt), serta modul RAG yang memakai Cohere dan PostgreSQL/pgvector. Worker on-chain (`backend/worker/event_worker.go`) memakai `RPC_URL` + tabel `chain_cursors` untuk memproses event `EscrowDeployed` (factory) dan `Funded/Delivered/DisputeOpened/Resolved/Refunded/Released` (escrow) lalu memperbarui status order (created → deployed → funded/delivered/disputed → resolved/refunded/released). Fitur saldo/refill/transfer kustodian dihapus.
+- **Lapisan frontend**: Aplikasi Next.js (app router) dengan komponen UI kustom, halaman otentikasi, akun, badge, AI search, serta alur escrow. Header dan sidebar berbagi daftar kategori yang konsisten dengan backend; header memantau event `auth:changed` agar status login sinkron antar tab. Panel profil tidak menampilkan saldo; alur `/orders/new` dan `/orders/[orderId]` menampilkan state escrow end-to-end.
 - **Lapisan kontrak**: Kumpulan smart contract (Escrow, EscrowFactory, FeeLogic, Staking, ArbitrationAdapter) yang mengelola escrow USDT, fee dinamis, staking, serta adapter arbitrase untuk alur non-kustodian.
 - **Alur escrow (MVP)**: backend signer menandatangani tuple `(orderId, buyer, seller, amountUSDT, chainId, factoryAddress)` menggunakan prefiks EIP-191; `EscrowFactory` memverifikasi signature dan menerbitkan event `EscrowDeployed(bytes32 orderId, address escrow, address buyer, address seller, uint256 amountUSDT)`; frontend `/orders/new` memakai signature itu untuk mengirim tx `deployEscrow` dan menyimpan tx hash + alamat escrow via endpoint `POST /api/orders/:orderId/attach`.
 - **Alur data utama**:
@@ -24,7 +24,7 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `backend/main.go` — entrypoint server Gin: memuat env, inisialisasi DB/config, konfigurasi CORS, static file `/static`, dan mendaftarkan semua grup route `/api` (auth/account/user/threads/disputes + order escrow non-kustodian).
 - `backend/go.mod` / `backend/go.sum` — dependensi Go module.
 - `backend/.gitignore` — pengecualian file build/env.
-- `backend/config/config.go` — memuat konfigurasi JWT, chain_id, alamat factory, dan private key signer backend untuk menandatangani payload deploy escrow.
+- `backend/config/config.go` — memuat konfigurasi JWT, chain_id, alamat factory, private key signer backend, serta `RPC_URL` untuk worker event on-chain.
 - `backend/database/db.go` — koneksi PostgreSQL (DATABASE_URL/dsn), automigrate model, dan seeding kategori thread.
 - (dihapus) `backend/database/deposit.go` — tidak ada lagi tabel/logic alamat deposit.
 - `backend/dto/github.go` — struct respons data GitHub (email/id/avatar) untuk proses OAuth.
@@ -52,7 +52,8 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `backend/models/credential.go` — model kredensial terhubung ke user.
 - `backend/models/thread.go` — model kategori & thread (JSON content/meta, relasi user/kategori).
 - (dihapus) `backend/models/transfer.go` — tidak ada tabel transfer saldo.
-- `backend/models/marketplace.go` — model order non-kustodian (order_id_hex, buyer_user_id nullable, buyer/seller wallet, amount_usdt minor unit, chain_id, escrow_address, tx_hash, status created/deployed) plus dispute/promotion/volume ledger.
+- `backend/models/marketplace.go` — model order non-kustodian (order_id_hex, buyer_user_id nullable, buyer/seller wallet, amount_usdt minor unit, chain_id, escrow_address, tx_hash, status created/deployed/funded/delivered/disputed/resolved/refunded/released) plus dispute/promotion/volume ledger.
+- `backend/models/cursor.go` — tabel `chain_cursors` untuk menyimpan block terakhir per chain/cursor yang telah diproses worker event.
 - `backend/utils/chunker.go` — utilitas pemisah teks menjadi chunk untuk indeks RAG.
 - `backend/utils/cohere.go` — client Cohere untuk pembuatan embedding teks.
 - `backend/utils/cohere_rerank.go` — utilitas rerank hasil pencarian dengan Cohere.
@@ -61,8 +62,7 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `backend/utils/pgvector.go` — helper koneksi pgvector/SQL untuk penyimpanan embedding & query similarity.
 - (dihapus) `backend/utils/hdwallet.go` — tidak ada lagi alamat HD wallet kustodian.
 - `backend/utils/rate.go` — kalkulasi rate berdasarkan data Chainlink (ETH-USD & IDR) dengan fallback default.
-- `backend/worker/event_worker.go` — placeholder worker event-driven untuk integrasi on-chain escrow (tanpa menyimpan saldo di backend).
-- `backend/worker/event_worker.go` — placeholder worker event-driven untuk integrasi on-chain.
+- `backend/worker/event_worker.go` — worker event-driven yang memfilter log EscrowFactory/Escrow, menjaga cursor block, dan memperbarui status order berdasarkan event on-chain.
 
 ### Frontend (Next.js)
 - `frontend/.gitignore` — pengecualian build/node.
@@ -74,8 +74,9 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `frontend/app/layout.js` — layout root, metadata situs, injeksi Header global & kontainer konten.
 - `frontend/app/globals.css` — panduan desain/global style (variabel tema, utility class, komponen dasar).
 - `frontend/app/page.js` — landing page hero, daftar kategori, placeholder thread terbaru, dan link aturan.
-- `frontend/app/orders/new/page.jsx` — alur MVP escrow: hubungkan wallet, minta backend membuat order + signature, kirim transaksi deployEscrow langsung via `window.ethereum`, lalu POST attach ke backend.
-- `frontend/app/login/page.jsx` — halaman login GitHub (membangun URL oauth & redirect).
+- `frontend/app/orders/new/page.jsx` — alur MVP escrow: hubungkan wallet, minta backend membuat order + signature, kirim transaksi deployEscrow langsung via `window.ethereum`, POST attach ke backend, lalu redirect ke detail order.
+- `frontend/app/orders/[orderId]/page.jsx` — halaman detail status escrow (order_id, tx_hash, escrow_address, buyer, seller, amount, chain_id) dengan fetch backend.
+- `frontend/app/login/page.jsx` — halaman login email/password memakai helper `setToken` + redirect, dibungkus Suspense untuk penggunaan `useSearchParams`.
 - `frontend/app/set-username/page.jsx` — form set username awal pasca-OAuth.
 - `frontend/app/account/page.jsx` — pengelolaan profil/username/avatar & sosial; fetch/update via API.
 - `frontend/app/threads/page.jsx` — daftar thread/kategori (placeholder data, siap integrasi API).
@@ -110,19 +111,18 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
   - Pencarian & rekomendasi AI (RAG) menyediakan jawaban dengan sumber akurat <2 detik median latency.
   - Profil pengguna kaya (avatar, sosial, badge) yang konsisten antara web & data on-chain (saldo/stake) dengan downtime <0.5%.
 - **Prinsip Desain**: keamanan token/JWT, keandalan worker event-driven, DX front-backend konsisten (schema dto), dan auditabilitas on-chain/off-chain.
-- **Key Metrics**: success rate login OAuth, rata-rata waktu respon RAG, conversion rate escrow selesai tanpa sengketa, error rate worker sinkronisasi, dan waktu deploy ke produksi.
+- **Key Metrics**: success rate login email/password, rata-rata waktu respon RAG, conversion rate escrow selesai tanpa sengketa, error rate worker sinkronisasi, dan waktu deploy ke produksi.
 - **Peta Evolusi**: mulai dari skeleton order/dispute → tambahkan listener on-chain + notifikasi; AI search berbasis konten thread aktual; front-end mengonsumsi API nyata; penguatan integrasi staking/fee di UI.
 
 ## To-Do / Next Steps
 - **Backend**
-  - Lengkapi implementasi order/dispute + koneksi ke event on-chain di `worker/event_worker.go`.
+  - Perkaya worker escrow dengan retry/backoff saat RPC gagal dan logging granular untuk event dispute/resolution.
   - Tambah endpoint detail thread publik (`/threads/:id` tanpa auth) agar link front-end tidak memerlukan token.
-  - Validasi input & rate limiting untuk endpoint RAG serta transfer saldo.
-  - Sediakan dokumentasi env (.env.example) untuk konfigurasi database, Cohere, dan JWT/HD wallet.
+  - Dokumentasikan env (.env.example) end-to-end (JWT, signer key, `RPC_URL`, factory address, Cohere/DB) dan validasi input RAG.
 - **Frontend**
-  - Hubungkan halaman thread, AI search, refill, dan transfer dengan API produksi (ganti placeholder/dummy data).
-  - Tambahkan halaman detail thread & komponen list yang membaca konten `ContentJSON` (table/section) dari backend.
-  - Integrasikan notifikasi sukses/error yang konsisten di seluruh form (akun, transfer, badge).
+  - Hubungkan halaman thread & AI search ke data backend aktual dengan state loading/error konsisten.
+  - Tambah polling/refresh status di `/orders/[orderId]` dan CTA UI untuk aksi deliver/dispute ketika kontrak mendukung.
+  - Samakan komponen notifikasi/sukses/error di form akun, escrow, badge.
 - **Smart Contract**
   - Tambahkan pengamanan reentrancy & alamat sink biaya yang nyata pada `Escrow.sol`.
   - Unit test untuk FeeLogic/Staking/EscrowFactory agar alur fee & staking tervalidasi.
@@ -135,11 +135,11 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - Node_modules tidak didokumentasi per file; gunakan package-lock untuk melihat dependensi runtime.
 
 ## What changed
-- Mengganti OAuth GitHub dengan autentikasi email + password lengkap dengan hash bcrypt, JWT, dan token verifikasi email yang disimpan di database.
-- Menambahkan halaman UI login, register, dan verifikasi email bergaya GitHub serta memastikan helper `getApiBase` dipakai konsisten untuk memanggil API.
-- Membersihkan rujukan GitHub lama dan menambah limiter sederhana untuk endpoint sensitif.
+- Menambahkan worker sinkronisasi event EscrowFactory/Escrow dengan cursor block (`chain_cursors`) dan konfigurasi `RPC_URL` agar status order otomatis mengikuti event on-chain.
+- Memperketat validasi order (alamat/amount/tx hash), menambah status lifecycle escrow, serta meluncurkan halaman `/orders/new` → `/orders/[orderId]` end-to-end.
+- Menyelaraskan state auth di frontend (helper `auth.js`, Header listener, login Suspense) dan memperhalus form UI login/register.
 
 ## Next steps
 - Tambah delivery email sebenarnya (SMTP/provider) dan ganti log link dev dengan pengiriman email produksi.
-- Perluas cakupan tes otomatis (Go/Next) agar flow register → verifikasi → login tetap terjaga.
-- Audit user lama (hasil OAuth) untuk migrasi password/username agar bisa login via email.
+- Perluas cakupan tes otomatis (Go/Next) agar flow register → verifikasi → login serta alur escrow tetap terjaga.
+- Tambah monitoring/alerting untuk worker event escrow dan UI aksi deliver/dispute ketika kontrak siap.

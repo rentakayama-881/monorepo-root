@@ -63,6 +63,7 @@ func migrateAndSeed() {
 		&models.Dispute{},
 		&models.Promotion{},
 		&models.VolumeLedger{},
+		&models.ChainCursor{},
 	); err != nil {
 		panic("AutoMigrate gagal: " + err.Error())
 	}
