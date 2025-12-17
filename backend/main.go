@@ -26,7 +26,7 @@ func main() {
 	corsConfig := cors.DefaultConfig()
 	frontend := os.Getenv("FRONTEND_BASE_URL")
 	if frontend == "" {
-		frontend = "https://frontend-three-xi-51.vercel.app/"
+		frontend = "https://monorepo-root-dun.vercel.app"
 	}
 	corsConfig.AllowOrigins = []string{frontend}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
@@ -77,7 +77,7 @@ func main() {
 		{
 			orders.POST("", middleware.AuthOptionalMiddleware(), handlers.CreateOrderHandler)
 			orders.POST(":orderId/attach", handlers.AttachEscrowHandler)
-			orders.GET(":orderId", handlers.GetOrderStatusHandler)
+			orders.GET("/:orderId", handlers.GetOrderStatusHandler)
 		}
 
 		disputes := api.Group("/disputes")
