@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getApiBase } from '../../../lib/api';
 
 const DEPLOY_SELECTOR = '0xd8075080';
@@ -84,6 +85,9 @@ export default function NewOrderPage() {
   const [txHash, setTxHash] = useState('');
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const router = useRouter();
 
   const factoryAddress = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
 
@@ -109,14 +113,17 @@ export default function NewOrderPage() {
     e.preventDefault();
     setError('');
     setStatus('');
+    setIsSubmitting(true);
 
     const minor = parseAmountMinor();
     if (!minor) {
       setError('Nominal USDT tidak valid.');
+      setIsSubmitting(false);
       return;
     }
     if (!buyerAddress) {
       setError('Hubungkan wallet terlebih dahulu.');
+      setIsSubmitting(false);
       return;
     }
 
@@ -142,6 +149,8 @@ export default function NewOrderPage() {
     } catch (err) {
       setError(err.message || 'Terjadi kesalahan');
       setStatus('');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -194,6 +203,7 @@ export default function NewOrderPage() {
       throw new Error('Gagal menyimpan escrow di backend');
     }
     setStatus('Escrow berhasil dibuat dan disimpan.');
+    router.push(`/orders/${orderMeta.order_id}`);
   };
 
   return (
@@ -241,7 +251,8 @@ export default function NewOrderPage() {
         </div>
         <button
           type="submit"
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-60"
+          disabled={isSubmitting}
         >
           Buat & Deploy Escrow
         </button>

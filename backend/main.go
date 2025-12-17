@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -11,6 +12,7 @@ import (
 	"backend-gin/database"
 	"backend-gin/handlers"
 	"backend-gin/middleware"
+	"backend-gin/worker"
 	"github.com/joho/godotenv"
 )
 
@@ -22,6 +24,7 @@ func main() {
 
 	database.InitDB()
 	config.InitConfig()
+	worker.StartEventWorker(context.Background())
 	router := gin.Default()
 	corsConfig := cors.DefaultConfig()
 	frontend := os.Getenv("FRONTEND_BASE_URL")
@@ -76,7 +79,7 @@ func main() {
 		orders := api.Group("/orders")
 		{
 			orders.POST("", middleware.AuthOptionalMiddleware(), handlers.CreateOrderHandler)
-			orders.POST(":orderId/attach", handlers.AttachEscrowHandler)
+			orders.POST("/:orderId/attach", handlers.AttachEscrowHandler)
 			orders.GET("/:orderId", handlers.GetOrderStatusHandler)
 		}
 
