@@ -3,7 +3,7 @@ import Image from "next/image";
 import { fetchCategories } from "../lib/categories";
 import { getApiBase } from "../lib/api";
 
-// Menggunakan komponen UI yang sudah siap
+// Import komponen UI (Pastikan file ini ada di components/ui/)
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 
@@ -45,6 +45,9 @@ export default async function Home() {
     : "/threads";
 
   return (
+    // PERBAIKAN DI SINI:
+    // Saya hapus border/shadow di section utama ini.
+    // Jadi halaman paling bawah akan bersih (putih/polos), tidak ada garis dobel.
     <section className="mx-auto max-w-5xl px-4 py-10">
       
       {/* --- HERO SECTION --- */}
@@ -57,13 +60,13 @@ export default async function Home() {
             Temukan thread, kategori, dan fitur komunitas yang dirancang ringkas. Semua tampilan kini lebih tajam dan profesional.
           </p>
           <div className="flex flex-wrap gap-4">
-            {/* Tombol Navigasi menggunakan Button.jsx baru */}
+            {/* Tombol Navigasi: Border tetap ada (diurus oleh komponen Button) */}
             <Button href="/threads" variant="primary">Lihat Semua Thread</Button>
             <Button href={primaryCategoryHref} variant="secondary">Kategori Utama</Button>
           </div>
         </div>
         
-        {/* Gambar Vector - Wrapper border saya hilangkan biar tidak "dobel kotak" */}
+        {/* Gambar Vector */}
         <div className="hidden flex-1 items-center justify-end md:flex">
           <Image 
             src="/images/vectorised-1758374067909.svg" 
@@ -71,7 +74,7 @@ export default async function Home() {
             width={280} 
             height={280} 
             priority
-            className="dark:opacity-80" // Sedikit redup di dark mode biar nyaman
+            className="dark:opacity-80"
           />
         </div>
       </div>
@@ -87,7 +90,7 @@ export default async function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {categories.map(cat => (
               <Link key={cat.slug} href={`/category/${cat.slug}`} className="block h-full">
-                {/* Card otomatis handle border & hover. Tanpa shadow tebal. */}
+                {/* Card Kategori: Border halus tetap ada (bawaan Card.jsx) */}
                 <Card className="flex h-full items-center justify-center p-6 text-center hover:bg-neutral-50 dark:hover:bg-neutral-900">
                   <span className="font-semibold text-base text-neutral-900 dark:text-white">
                     {cat.name}
@@ -114,6 +117,7 @@ export default async function Home() {
           {threads.length > 0 ? (
             threads.map(th => (
               <Link key={th.id} href={`/thread/${th.id}`} className="block h-full">
+                {/* Card Thread: Border halus tetap ada, hover biru tetap ada */}
                 <Card className="flex h-full flex-col justify-between p-5">
                   <div>
                     <h3 className="mb-2 text-lg font-semibold leading-tight text-neutral-900 dark:text-white">
@@ -150,7 +154,8 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* Bagian Aturan/SARA SUDAH DIHAPUS sesuai permintaan */}
+      {/* Bagian bawah (Footer Area) KOSONG. 
+          Tidak ada div 'Aturan' lagi, jadi border jelek di bawah otomatis hilang. */}
 
     </section>
   );
