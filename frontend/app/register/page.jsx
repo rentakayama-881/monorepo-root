@@ -13,6 +13,11 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
+  const inputClass =
+    "w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-800";
+  const primaryButton =
+    "w-full inline-flex justify-center items-center rounded-md bg-neutral-900 px-3 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900";
+
   function update(key, value) {
     setForm((f) => ({ ...f, [key]: value }));
   }
@@ -60,7 +65,7 @@ export default function RegisterPage() {
         <p className="text-sm text-slate-600">Daftar dengan email, pilih username (opsional), dan mulai eksplorasi.</p>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-800">Email</label>
@@ -69,7 +74,7 @@ export default function RegisterPage() {
               required
               value={form.email}
               onChange={(e) => update("email", e.target.value)}
-              className="input"
+              className={inputClass}
               placeholder="you@example.com"
             />
           </div>
@@ -81,7 +86,7 @@ export default function RegisterPage() {
               value={form.password}
               minLength={8}
               onChange={(e) => update("password", e.target.value)}
-              className="input"
+              className={inputClass}
               placeholder="Minimal 8 karakter"
             />
           </div>
@@ -91,7 +96,7 @@ export default function RegisterPage() {
               type="text"
               value={form.username}
               onChange={(e) => update("username", e.target.value)}
-              className="input"
+              className={inputClass}
               placeholder="username"
             />
           </div>
@@ -101,7 +106,7 @@ export default function RegisterPage() {
               type="text"
               value={form.full_name}
               onChange={(e) => update("full_name", e.target.value)}
-              className="input"
+              className={inputClass}
               placeholder="Nama panggilan atau lengkap"
             />
           </div>
@@ -110,15 +115,15 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full inline-flex justify-center items-center btn text-sm"
+            className={primaryButton}
           >
             {loading ? "Mendaftarkan..." : "Daftar"}
           </button>
         </form>
       </div>
 
-      <div className="text-center text-sm text-slate-700">
-        Sudah punya akun? <Link href="/login" className="text-blue-700 hover:underline">Masuk</Link>
+      <div className="text-center text-sm text-neutral-700">
+        Sudah punya akun? <Link href="/login" className="font-medium text-neutral-900 underline">Masuk</Link>
       </div>
     </div>
   );

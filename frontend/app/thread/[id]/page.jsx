@@ -48,36 +48,36 @@ export default function ThreadDetailPage() { // <--- PERUBAHAN 2: Hapus props pa
   }, [API, id, isAuthed]);
 
   if (!isAuthed) return (
-    <div className="text-sm text-neutral-800 bg-neutral-50 border border-neutral-200 rounded-md p-4">
+    <div className="rounded-md border border-neutral-200 bg-white p-4 text-sm text-neutral-800">
       <div className="font-medium">Anda harus login untuk melihat thread.</div>
-      <Link href="/login" className="text-blue-700 hover:underline text-sm">Masuk sekarang</Link>
+      <Link href="/login" className="text-sm font-medium text-neutral-900 underline">Masuk sekarang</Link>
     </div>
   );
 
   return (
-    <section className="max-w-4xl mx-auto py-12 px-4">
+    <section className="mx-auto max-w-4xl px-4 py-10">
       {loading ? (
         <div className="text-sm">Loading...</div>
       ) : error ? (
         <div className="text-sm text-red-600">{error}</div>
       ) : data ? (
-        <div className="border rounded-xl bg-white shadow-md p-8">
+        <div className="rounded-lg border border-neutral-200 bg-white p-7 shadow-sm">
           {/* Judul thread */}
-          <h1 className="text-3xl font-bold text-black mb-3">{data.title}</h1>
+          <h1 className="mb-3 text-2xl font-semibold text-neutral-900">{data.title}</h1>
           {/* Info thread */}
-          <div className="flex flex-wrap items-center gap-5 text-sm text-neutral-500 mb-5">
+          <div className="mb-5 flex flex-wrap items-center gap-4 text-sm text-neutral-600">
             <span>{formatDate(data.created_at)}</span>
             <span>•</span>
             <span>
               Kategori:{" "}
-              <Link href={`/category/${encodeURIComponent(data.category?.slug || "")}`} className="underline hover:text-blue-700">
+              <Link href={`/category/${encodeURIComponent(data.category?.slug || "")}`} className="font-medium text-neutral-900 underline">
                 {data.category?.name || data.category?.slug}
               </Link>
             </span>
             <span>•</span>
             <span>
               Oleh:{" "}
-              <Link href={`/user/${encodeURIComponent(data.user?.username || "")}`} className="underline hover:text-blue-700">
+              <Link href={`/user/${encodeURIComponent(data.user?.username || "")}`} className="font-medium text-neutral-900 underline">
                 {data.user?.username}
               </Link>
             </span>
@@ -88,19 +88,18 @@ export default function ThreadDetailPage() { // <--- PERUBAHAN 2: Hapus props pa
               <img
                 src={data.meta.image}
                 alt="Gambar Thread"
-                className="rounded-lg w-full max-h-[420px] object-cover border"
-                style={{ background: "#f7f7f7" }}
+                className="w-full max-h-[420px] rounded-md border border-neutral-200 object-cover"
               />
             </div>
           )}
           {/* Ringkasan */}
           {data.summary && (
-            <p className="text-lg leading-relaxed text-neutral-800 mb-6">{data.summary}</p>
+            <p className="mb-6 text-base leading-relaxed text-neutral-800">{data.summary}</p>
           )}
           {/* Konten utama */}
           <article>
             {data.content_type === "text" ? (
-              <div className="prose prose-neutral max-w-none text-base leading-relaxed mb-8" style={{ whiteSpace: "pre-wrap" }}>
+              <div className="mb-8 whitespace-pre-wrap text-base leading-relaxed text-neutral-900">
                 {typeof data.content === "string"
                   ? data.content
                   : (data.content && JSON.stringify(data.content, null, 2)) || "Tidak ada konten."}
@@ -111,24 +110,24 @@ export default function ThreadDetailPage() { // <--- PERUBAHAN 2: Hapus props pa
           </article>
           {/* Telegram Contact */}
           {data.meta?.telegram && (
-            <div className="mt-8 flex items-center gap-2 text-base">
-              <span className="font-medium">Contact Telegram:</span>
+            <div className="mt-8 flex items-center gap-2 text-base text-neutral-800">
+              <span className="font-medium text-neutral-900">Contact Telegram:</span>
               <a
                 href={`https://t.me/${data.meta.telegram.replace(/^@/, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline text-blue-700 hover:text-blue-900"
+                className="font-medium text-neutral-900 underline"
               >
                 {data.meta.telegram}
               </a>
             </div>
           )}
           {/* Aksi navigasi */}
-          <div className="mt-10 flex gap-4">
-            <Link href={`/threads`} className="px-5 py-2 rounded bg-neutral-100 text-black font-medium hover:bg-neutral-200 transition">
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href={`/threads`} className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-100">
               ← Kembali ke Threads
             </Link>
-            <Link href={`/category/${encodeURIComponent(data.category?.slug || "")}`} className="px-5 py-2 rounded bg-black text-white font-medium hover:bg-neutral-900 transition">
+            <Link href={`/category/${encodeURIComponent(data.category?.slug || "")}`} className="inline-flex items-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800">
               Lihat Kategori
             </Link>
           </div>
@@ -163,12 +162,12 @@ function ContentTable({ content }) {
 function Table({ rows }) {
   return (
     <div className="overflow-x-auto my-4">
-      <table className="w-full bg-white text-sm border border-neutral-200 rounded shadow-sm">
+      <table className="w-full rounded-md border border-neutral-200 bg-white text-sm shadow-sm">
         <tbody>
           {rows.map((r, i) => (
             <tr key={i} className={i % 2 ? "bg-neutral-50" : "bg-white"}>
-              <td className="align-top p-2 w-40 font-semibold border-b border-neutral-100">{r.label}</td>
-              <td className="align-top p-2 border-b border-neutral-100">{renderValue(r.value)}</td>
+              <td className="w-40 align-top border-b border-neutral-100 p-2 font-semibold text-neutral-900">{r.label}</td>
+              <td className="align-top border-b border-neutral-100 p-2 text-neutral-800">{renderValue(r.value)}</td>
             </tr>
           ))}
         </tbody>

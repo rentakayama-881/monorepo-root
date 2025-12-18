@@ -91,6 +91,11 @@ export default function NewOrderPage() {
 
   const factoryAddress = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
 
+  const inputClass =
+    'w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900';
+  const primaryButton =
+    'inline-flex items-center justify-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60';
+
   const connectWallet = async () => {
     setError('');
     if (!window.ethereum) {
@@ -207,29 +212,29 @@ export default function NewOrderPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow">
-      <h1 className="text-2xl font-bold mb-4">Buat Order Escrow</h1>
-      <p className="text-sm text-gray-600 mb-6">
+    <div className="mx-auto max-w-2xl rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <h1 className="mb-4 text-2xl font-semibold text-neutral-900">Buat Order Escrow</h1>
+      <p className="mb-6 text-sm text-neutral-700">
         Langkah cepat MVP: backend menandatangani payload order, wallet Anda mendeploy Escrow lewat factory,
         lalu backend disinkronkan dengan alamat escrow dan tx hash.
       </p>
 
-      <div className="flex items-center gap-2 mb-4">
+      <div className="mb-4 flex items-center gap-2">
         <button
           type="button"
           onClick={connectWallet}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className={primaryButton}
         >
           {buyerAddress ? 'Wallet Terhubung' : 'Hubungkan Wallet'}
         </button>
-        {buyerAddress && <span className="text-sm text-gray-700">{buyerAddress}</span>}
+        {buyerAddress && <span className="text-sm text-neutral-700">{buyerAddress}</span>}
       </div>
 
       <form onSubmit={handleCreate} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Alamat Seller</label>
           <input
-            className="w-full border rounded px-3 py-2"
+            className={inputClass}
             value={sellerWallet}
             onChange={(e) => setSellerWallet(e.target.value)}
             placeholder="0x..."
@@ -239,7 +244,7 @@ export default function NewOrderPage() {
         <div>
           <label className="block text-sm font-medium mb-1">Jumlah (USDT)</label>
           <input
-            className="w-full border rounded px-3 py-2"
+            className={inputClass}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="10.5"
@@ -251,14 +256,14 @@ export default function NewOrderPage() {
         </div>
         <button
           type="submit"
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-60"
+          className={primaryButton}
           disabled={isSubmitting}
         >
           Buat & Deploy Escrow
         </button>
       </form>
 
-      {status && <p className="mt-4 text-blue-700 text-sm">{status}</p>}
+      {status && <p className="mt-4 text-sm text-neutral-800">{status}</p>}
       {error && <p className="mt-2 text-red-600 text-sm">{error}</p>}
 
       {(orderId || escrowAddress) && (
