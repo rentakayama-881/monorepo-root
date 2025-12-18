@@ -1,12 +1,12 @@
 # AUTH
 
-Panduan autentikasi email + password yang menggantikan OAuth GitHub.
+Panduan autentikasi email + password (tanpa OAuth eksternal).
 
 ## Endpoint
 - `POST /api/auth/register`: `{ email, password, username?, full_name? }`
   - Validasi email dan password (>=8 karakter). Username opsional maksimal 64 karakter.
   - Password di-hash dengan bcrypt. Email harus unik. Username unik bila diisi.
-  - Membuat token verifikasi email (24 jam) dan mencetak tautan ke log server (lihat bagian Dev verification).
+  - Membuat token verifikasi email (24 jam) dan mencetak tautan ke log server (lihat bagian Dev verification). Respons dev menyiapkan `verification.dev_token` + `verification.link` untuk memudahkan uji lokal; token JWT tidak dikirim sebelum email terverifikasi.
 - `POST /api/auth/login`: `{ email, password }` → `{ token, user }`
   - Membalas 403 dengan `verification_required: true` jika email belum diverifikasi.
   - Token JWT menaruh claim email dan berlaku 24 jam (kunci: `JWT_SECRET`).
@@ -15,7 +15,7 @@ Panduan autentikasi email + password yang menggantikan OAuth GitHub.
 - `POST /api/auth/verify/confirm`: `{ token }`
   - Menandai `EmailVerified=true` bila token valid & belum kedaluwarsa.
 - `POST /api/auth/username`: set username satu kali pasca login (wajib Authorization Bearer).
-- `GET /api/user/me`: profil singkat pengguna login (email, username, balance, avatar).
+- `GET /api/user/me`: profil singkat pengguna login (`email`, `username`, `avatar_url`).
 
 ## Rate limiting
 Login, register, dan permintaan verifikasi dibatasi in-memory per IP (login 10/mnt, register 6/mnt, verify 10/mnt). Sesuaikan di `backend/handlers/auth.go` bila diperlukan.

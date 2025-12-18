@@ -1,10 +1,12 @@
 # NORTH_STAR (As-Is)
 
+Dokumen ini menjadi rujukan tunggal untuk misi/target jangka menengah. `docs/PROJECT_DOCUMENTATION.md` hanya menautkan ke halaman ini agar tidak ada duplikasi isi.
+
 ## As-Is (verified)
 - Backend Go menggunakan Gin dengan JWT middleware, login/register email+password, verifikasi email via token, dan route REST yang didefinisikan di `backend/main.go` (mis. `/api/threads/categories`, `/api/threads/latest`, `/api/threads/:id`, `/api/orders`). Worker event on-chain aktif memakai `RPC_URL` + `chain_cursors` untuk memproses `EscrowDeployed`/event escrow dan memperbarui status order.
 - Model `Category` dan `Thread` disimpan lewat GORM dan dimuat dengan relasi user/kategori pada handler threads (`backend/handlers/threads.go`). Model order mencakup siklus status created→deployed→funded/delivered/disputed→resolved/refunded/released.
 - Frontend Next.js App Router menampilkan header/sidebar global (`frontend/components/Header.js`, `frontend/components/Sidebar.js`) dan landing page (`frontend/app/page.js`) yang kini membaca kategori serta thread terbaru langsung dari API. Header merespons event `auth:changed` untuk sinkronisasi token tanpa refresh.
-- JWT disimpan di `localStorage` dan dipakai untuk memanggil endpoint yang memerlukan auth; halaman `/login`, `/register`, dan `/verify-email` menggunakan form email/password dengan helper `setToken`/`clearToken`. Flow escrow ada di `/orders/new` (create order + deploy + attach) dan `/orders/[orderId]` (status view).
+- JWT disimpan di `localStorage` dan dipakai untuk memanggil endpoint yang memerlukan auth; halaman `/login`, `/register`, dan `/verify-email` menggunakan form email/password dengan helper `setToken`/`clearToken`. Register mensyaratkan verifikasi email (tautan/token dari backend) sebelum login. Flow escrow ada di `/orders/new` (create order + deploy + attach) dan `/orders/[orderId]` (status view).
 - Fitur saldo/refill/transfer kustodian telah dihapus; UI profil hanya menampilkan navigasi akun/thread tanpa saldo.
 
 ## Next Steps (verified)
