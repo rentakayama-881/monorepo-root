@@ -18,6 +18,9 @@ export default function CreateThreadPage() {
 
   const API = getApiBase();
 
+  const inputClass =
+    "w-full rounded-md border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(""); setSuccess("");
@@ -60,21 +63,20 @@ export default function CreateThreadPage() {
   };
 
   return (
-    <section className="max-w-2xl mx-auto w-full py-12 px-4">
-      <div className="mb-7">
-        <h2 className="text-3xl font-bold mb-2 text-black">Buat Thread Baru</h2>
-        <div className="text-neutral-500 text-base">
+    <section className="mx-auto w-full max-w-2xl px-4 py-10">
+      <div className="mb-6">
+        <h2 className="mb-2 text-2xl font-semibold text-neutral-900">Buat Thread Baru</h2>
+        <div className="text-base text-neutral-600">
           Kategori: <span className="font-medium capitalize">{params.slug.replace(/-/g, " ")}</span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white border rounded-xl shadow p-8 space-y-7 card" autoComplete="off">
-        {/* Judul */}
+      <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm" autoComplete="off">
         <div>
-          <label className="block mb-2 text-sm font-semibold text-black">Judul Thread <span className="text-red-500">*</span></label>
+          <label className="mb-2 block text-sm font-semibold text-neutral-900">Judul Thread <span className="text-red-500">*</span></label>
           <input
             required
-            className="w-full border rounded-lg px-4 py-2 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+            className={inputClass}
             value={title}
             maxLength={100}
             onChange={(e) => setTitle(e.target.value)}
@@ -82,11 +84,10 @@ export default function CreateThreadPage() {
           />
         </div>
 
-        {/* Ringkasan */}
         <div>
-          <label className="block mb-2 text-sm font-semibold text-black">Ringkasan (optional)</label>
+          <label className="mb-2 block text-sm font-semibold text-neutral-900">Ringkasan (optional)</label>
           <textarea
-            className="w-full border rounded-lg px-4 py-2 bg-neutral-50 min-h-[70px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+            className={`${inputClass} min-h-[90px]`}
             rows={3}
             maxLength={300}
             value={summary}
@@ -95,12 +96,11 @@ export default function CreateThreadPage() {
           />
         </div>
 
-        {/* Konten detail */}
         <div>
-          <label className="block mb-2 text-sm font-semibold text-black">Konten Thread <span className="text-red-500">*</span></label>
+          <label className="mb-2 block text-sm font-semibold text-neutral-900">Konten Thread <span className="text-red-500">*</span></label>
           <textarea
             required
-            className="w-full border rounded-lg px-4 py-2 bg-neutral-50 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+            className={`${inputClass} min-h-[140px] font-mono`}
             rows={6}
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -108,44 +108,35 @@ export default function CreateThreadPage() {
           />
         </div>
 
-        {/* Upload gambar (sementara URL dulu) */}
         <div>
-          <label className="block mb-2 text-sm font-semibold text-black">Gambar (optional)</label>
+          <label className="mb-2 block text-sm font-semibold text-neutral-900">Gambar (optional)</label>
           <input
             type="url"
-            className="w-full border rounded-lg px-4 py-2 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+            className={inputClass}
             value={image}
             onChange={(e) => setImage(e.target.value)}
             placeholder="URL gambar (opsional)"
           />
         </div>
 
-        {/* Contact Telegram */}
         <div>
-          <label className="block mb-2 text-sm font-semibold text-black">Contact Telegram <span className="text-red-500">*</span></label>
+          <label className="mb-2 block text-sm font-semibold text-neutral-900">Contact Telegram <span className="text-red-500">*</span></label>
           <input
             required
-            className="w-full border rounded-lg px-4 py-2 bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+            className={inputClass}
             value={telegram}
             maxLength={50}
             onChange={(e) => setTelegram(e.target.value)}
-            placeholder="@username"
+            placeholder="username (tanpa @)"
           />
         </div>
 
-        {/* Tombol submit */}
-        <div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full px-5 py-2.5 rounded-lg bg-black text-white font-semibold transition hover:bg-neutral-900 disabled:opacity-50 text-base"
-          >
-            {loading ? "Membuat..." : "Buat Thread"}
-          </button>
-        </div>
+        {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+        {success && <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{success}</div>}
 
-        {error && <div className="text-sm text-red-600 text-center">{error}</div>}
-        {success && <div className="text-sm text-green-600 text-center">{success}</div>}
+        <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60">
+          {loading ? "Membuat..." : "Buat Thread"}
+        </button>
       </form>
     </section>
   );

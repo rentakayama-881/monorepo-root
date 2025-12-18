@@ -138,23 +138,23 @@ export default function AccountPage() {
   if (!authed) return <Alert type="error" message="Anda harus login untuk mengelola akun." />;
 
   return (
-    <div className="max-w-2xl space-y-4">
+    <div className="max-w-2xl space-y-4 text-neutral-900">
       <h2 className="text-xl font-semibold">Account</h2>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm">
-          <span className="spinner" /> Loading...
+        <div className="flex items-center gap-2 text-sm text-neutral-700">
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900" /> Loading...
         </div>
       ) : (
         <>
-          <section className="border rounded p-4">
+          <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
             <h3 className="font-medium">Foto Profil</h3>
             <div className="mt-3 flex items-start gap-4">
               <div className="shrink-0">
                 <img
                   src={avatarPreview || avatarUrl || "/avatar-default.png"}
                   alt="Avatar"
-                  className="w-16 h-16 rounded-full border object-cover bg-neutral-50"
+                  className="h-16 w-16 rounded-full border border-neutral-200 bg-neutral-50 object-cover"
                 />
               </div>
               <div className="flex-1 space-y-2">
@@ -189,7 +189,7 @@ export default function AccountPage() {
             </div>
           </section>
 
-          <section className="border rounded p-4">
+          <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
             <h3 className="font-medium">Profil</h3>
             <form onSubmit={saveAccount} className="mt-3 space-y-3">
               <Input
@@ -198,10 +198,10 @@ export default function AccountPage() {
                 onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
               />
               <div>
-                <label className="text-sm">Bio</label>
+                <label className="text-sm font-medium text-neutral-900">Bio</label>
                 <textarea
                   rows={3}
-                  className="input"
+                  className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900"
                   value={form.bio}
                   onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
                 />
@@ -269,10 +269,10 @@ export default function AccountPage() {
             </form>
           </section>
 
-          <section className="border rounded p-4">
+          <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
             <h3 className="font-medium">Username</h3>
             <div className="text-sm">Saat ini: <b>{username || "(belum ada)"}</b></div>
-            <div className="text-xs text-neutral-600 mt-1">Ganti username berbayar Rp.100.000. Saldo IDR akan dipotong otomatis.</div>
+            <div className="mt-1 text-xs text-neutral-600">Ganti username berbayar Rp.100.000. Saldo IDR akan dipotong otomatis.</div>
             <div className="mt-2 flex gap-2">
               <Input
                 placeholder="Username baru"

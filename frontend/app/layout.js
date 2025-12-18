@@ -17,10 +17,10 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="id">
-      <body className="antialiased min-h-dvh bg-slate-50 text-slate-900">
+      <body className="min-h-dvh bg-neutral-50 text-neutral-900">
         <Header />
         <main className="pt-[4.25rem] min-h-screen px-4 pb-12 sm:px-6">
-          <div className="mx-auto max-w-6xl bg-white rounded-xl border border-slate-200 shadow-sm px-4 sm:px-8 py-8 sm:py-10">
+          <div className="mx-auto max-w-5xl bg-white rounded-lg border border-neutral-200 shadow-sm px-4 sm:px-8 py-8 sm:py-10">
             {children}
           </div>
         </main>

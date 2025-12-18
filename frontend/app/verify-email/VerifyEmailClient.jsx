@@ -54,8 +54,8 @@ export default function VerifyEmailClient() {
 
   return (
     <div className="w-full max-w-lg mx-auto space-y-4">
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 space-y-3">
-        <h1 className="text-lg font-semibold text-slate-900">Verifikasi Email</h1>
+      <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+        <h1 className="text-lg font-semibold text-neutral-900">Verifikasi Email</h1>
 
         <div className={`rounded-md border px-4 py-3 text-sm ${styles[status] || styles.pending}`}>
           {message}
@@ -64,7 +64,7 @@ export default function VerifyEmailClient() {
         {status === "success" && (
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 text-sm text-blue-700 hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-900 underline"
           >
             Lanjut ke halaman login →
           </Link>

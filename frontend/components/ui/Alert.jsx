@@ -8,12 +8,12 @@ import PropTypes from "prop-types";
  * - children: node (optional, custom isi)
  */
 export default function Alert({ type = "info", message = "", children, className = "" }) {
-  const base = "alert";
+  const base = "rounded-md border px-3 py-2 text-sm";
   const typeClass = {
-    error: "alert-error",
-    success: "alert-success",
-    info: "",
-  }[type] || "";
+    error: "border-red-200 bg-red-50 text-red-700",
+    success: "border-green-200 bg-green-50 text-green-700",
+    info: "border-neutral-200 bg-neutral-50 text-neutral-800",
+  }[type] || "border-neutral-200 bg-neutral-50 text-neutral-800";
   return (
     <div className={`${base} ${typeClass} ${className}`} role="alert" tabIndex={-1}>
       {message}

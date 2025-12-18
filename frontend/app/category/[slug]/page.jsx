@@ -21,42 +21,42 @@ export default function CategoryThreadsPage() {
   }, [API, params.slug]);
 
   return (
-    <section className="max-w-6xl mx-auto w-full py-10 px-4">
-      <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <section className="mx-auto w-full max-w-5xl px-4 py-10">
+      <header className="mb-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold capitalize text-black tracking-tight">
+          <h1 className="text-2xl font-semibold capitalize tracking-tight text-neutral-900">
             {params.slug.replace(/-/g, " ")}
           </h1>
-          <p className="text-neutral-600 text-base mt-2">
+          <p className="mt-2 text-base text-neutral-700">
             Diskusi dan thread terbaru di kategori ini. Temukan insight, relasi, dan peluang baru.
           </p>
         </div>
         <Link
           href={`/category/${params.slug}/new`}
-          className="inline-block px-6 py-2 rounded-lg bg-black text-white font-semibold shadow hover:bg-neutral-900 transition"
+          className="inline-flex items-center justify-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
         >
           + Buat Thread
         </Link>
       </header>
       {loading ? (
-        <div className="text-center py-10 text-neutral-500">Memuat thread...</div>
+        <div className="py-10 text-center text-neutral-600">Memuat thread...</div>
       ) : threads.length === 0 ? (
-        <div className="text-center py-10 text-neutral-400">Belum ada thread di kategori ini.</div>
+        <div className="py-10 text-center text-neutral-500">Belum ada thread di kategori ini.</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {threads.map(thread => (
             <Link
               key={thread.id}
               href={`/thread/${thread.id}`}
-              className="group border rounded-2xl bg-white p-6 flex flex-col shadow hover:shadow-xl transition-all"
+              className="flex flex-col rounded-lg border border-neutral-200 bg-white p-5 shadow-sm hover:bg-neutral-50"
             >
-              <h2 className="font-semibold text-xl group-hover:text-blue-700 line-clamp-2 text-black">{thread.title}</h2>
-              <p className="text-neutral-700 text-base mt-3 line-clamp-3">{thread.summary}</p>
-              <div className="flex items-center gap-2 text-xs mt-4 text-neutral-500">
+              <h2 className="text-lg font-semibold leading-snug text-neutral-900">{thread.title}</h2>
+              <p className="mt-3 text-sm leading-relaxed text-neutral-700">{thread.summary}</p>
+              <div className="mt-4 flex items-center gap-2 text-xs text-neutral-600">
                 <span>Dibuat oleh</span>
                 <Link
                   href={`/user/${thread.username}`}
-                  className="underline font-medium group-hover:text-blue-700"
+                  className="font-medium text-neutral-900 underline"
                   onClick={e => e.stopPropagation()}
                 >
                   @{thread.username}

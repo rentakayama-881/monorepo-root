@@ -15,19 +15,21 @@ export default function Input({
   className = "",
   ...rest
 }) {
+  const inputStyles =
+    "w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900";
   return (
     <div className="mb-3">
       {label && (
-        <label className="block text-sm font-medium mb-1">{label}</label>
+        <label className="mb-1 block text-sm font-medium text-neutral-900">{label}</label>
       )}
       <input
         type={type}
-        className={`input ${error ? "border-red-600" : ""} ${className}`}
+        className={`${inputStyles} ${error ? "border-red-500" : ""} ${className}`}
         aria-invalid={!!error}
         {...rest}
       />
       {error && (
-        <div className="text-xs text-red-600 mt-1">{error}</div>
+        <div className="mt-1 text-xs text-red-600">{error}</div>
       )}
     </div>
   );

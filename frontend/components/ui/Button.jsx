@@ -20,22 +20,25 @@ export default function Button({
   ...rest
 }) {
   const base =
-    "btn transition-fast font-medium";
+    "inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
   const variantClass = {
-    primary: "bg-blue-600 hover:bg-blue-700 text-white",
-    secondary: "bg-neutral-100 hover:bg-neutral-200 text-black border border-neutral-200",
-    danger: "bg-red-600 hover:bg-red-700 text-white",
-  }[variant] || variantClass.primary;
+    primary: "bg-neutral-900 text-white hover:bg-neutral-800 focus-visible:outline-neutral-900",
+    secondary: "border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-100 focus-visible:outline-neutral-900",
+    danger: "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-700",
+  }[variant] || "bg-neutral-900 text-white hover:bg-neutral-800 focus-visible:outline-neutral-900";
 
   return (
     <button
       type={type}
       disabled={disabled || loading}
-      className={`${base} ${variantClass} ${disabled ? "opacity-60 cursor-not-allowed" : ""} ${className}`}
+      className={`${base} ${variantClass} ${disabled || loading ? "opacity-60 cursor-not-allowed" : ""} ${className}`}
       {...rest}
     >
       {loading && (
-        <span className="spinner mr-2 align-middle" aria-label="Loading" />
+        <span
+          className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-current align-middle"
+          aria-label="Loading"
+        />
       )}
       {children}
     </button>

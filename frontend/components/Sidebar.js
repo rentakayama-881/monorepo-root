@@ -37,20 +37,16 @@ export default function Sidebar({ open, onClose }) {
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-overlay w-80 bg-white border-r border-slate-200 shadow-2xl transition-transform duration-200 md:hidden flex flex-col`}
-        style={{
-          transform: open ? "translateX(0)" : "translateX(-100%)",
-          maxHeight: "100vh",
-        }}
+        className={`fixed inset-y-0 left-0 z-40 w-80 max-h-screen bg-white border-r border-neutral-200 shadow-xl transition-transform duration-200 md:hidden flex flex-col ${open ? "translate-x-0" : "-translate-x-full"}`}
         aria-label="Sidebar"
         aria-hidden={!open}
       >
         {/* Sticky header */}
-        <div className="sticky top-0 bg-white z-10 border-b border-slate-100 flex flex-col gap-3 px-6 pt-4 pb-4 shadow-sm">
+        <div className="sticky top-0 z-10 flex flex-col gap-3 border-b border-neutral-100 bg-white px-6 pt-4 pb-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-base tracking-tight text-slate-900">Menu</span>
+            <span className="text-base font-semibold tracking-tight text-neutral-900">Menu</span>
             <button
-              className="p-1 rounded-md hover:bg-slate-100"
+              className="rounded-md p-1 text-neutral-800 hover:bg-neutral-100"
               onClick={onClose}
               aria-label="Tutup menu"
               type="button"
@@ -61,32 +57,28 @@ export default function Sidebar({ open, onClose }) {
             </button>
           </div>
           {/* Navigasi utama */}
-          <nav className="flex gap-2 font-medium text-sm flex-wrap">
-            <Link href="/" className="py-1.5 px-3 rounded-lg hover:bg-slate-100" onClick={onClose}>Home</Link>
-            <Link href="/about-content" className="py-1.5 px-3 rounded-lg hover:bg-slate-100" onClick={onClose}>Tentang Kami</Link>
-            <Link href="/rules-content" className="py-1.5 px-3 rounded-lg hover:bg-slate-100" onClick={onClose}>Aturan</Link>
-            <Link href="/contact-support" className="py-1.5 px-3 rounded-lg hover:bg-slate-100" onClick={onClose}>Contact Support</Link>
-            <Link href="/pengajuan-badge" className="py-1.5 px-3 rounded-lg hover:bg-slate-100" onClick={onClose}>Pengajuan Badge</Link>
+          <nav className="flex flex-wrap gap-2 text-sm font-medium text-neutral-800">
+            <Link href="/" className="rounded-md px-3 py-1.5 hover:bg-neutral-100" onClick={onClose}>Home</Link>
+            <Link href="/about-content" className="rounded-md px-3 py-1.5 hover:bg-neutral-100" onClick={onClose}>Tentang Kami</Link>
+            <Link href="/rules-content" className="rounded-md px-3 py-1.5 hover:bg-neutral-100" onClick={onClose}>Aturan</Link>
+            <Link href="/contact-support" className="rounded-md px-3 py-1.5 hover:bg-neutral-100" onClick={onClose}>Contact Support</Link>
+            <Link href="/pengajuan-badge" className="rounded-md px-3 py-1.5 hover:bg-neutral-100" onClick={onClose}>Pengajuan Badge</Link>
           </nav>
           {/* AI Search */}
           <div className="pt-2">
             <Link
               href="/ai-search"
-              className="block w-full py-2 px-4 rounded-lg bg-blue-50 text-blue-700 font-semibold shadow hover:bg-blue-100 transition"
+              className="block w-full rounded-md border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-100"
               onClick={onClose}
               aria-label="AI Search"
             >
-              <span className="inline-flex items-center gap-2">
-                <svg width="18" height="18" fill="none" viewBox="0 0 18 18"><circle cx="8" cy="8" r="7" stroke="#2563eb" strokeWidth="2"/><path d="M14.5 14.5L11.5 11.5" stroke="#2563eb" strokeWidth="2"/>
-                </svg>
-                AI Search
-              </span>
+              <span className="inline-flex items-center gap-2">AI Search</span>
             </Link>
           </div>
           {/* Search kategori */}
           <input
             type="text"
-            className="mt-3 w-full input"
+            className="mt-3 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-800"
             placeholder="Cari kategori thread…"
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -95,16 +87,16 @@ export default function Sidebar({ open, onClose }) {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 px-6 pb-8 pt-4 overflow-y-auto space-y-6" style={{ overscrollBehavior: "contain" }}>
+        <div className="flex-1 space-y-6 overflow-y-auto px-6 pb-8 pt-4" style={{ overscrollBehavior: "contain" }}>
           {/* Topik diskusi populer */}
           <div>
-            <div className="font-semibold text-xs uppercase tracking-wide text-slate-500 mb-2">Topik Diskusi Populer</div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Topik Diskusi Populer</div>
             <nav className="flex flex-col gap-2">
               {popularTopics.map(topic => (
                 <Link
                   key={topic.label}
                   href={topic.href}
-                  className="block py-2 px-4 rounded-lg font-medium text-slate-700 hover:bg-slate-100 transition"
+                  className="block rounded-md px-4 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-100"
                   onClick={onClose}
                 >
                   {topic.label}
@@ -115,18 +107,18 @@ export default function Sidebar({ open, onClose }) {
 
           {/* Kategori threads */}
           <div>
-            <div className="font-semibold text-xs uppercase tracking-wide text-slate-500 mb-2">Kategori Threads</div>
-            <nav className="flex flex-col gap-1.5">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Kategori Threads</div>
+            <nav className="flex flex-col gap-1.5 text-sm">
               {loadingCategories ? (
-                <div className="py-2 px-4 text-slate-400 text-sm">Memuat kategori…</div>
+                <div className="px-4 py-2 text-neutral-500">Memuat kategori…</div>
               ) : filteredCategories.length === 0 ? (
-                <div className="py-2 px-4 text-slate-400 text-sm">Tidak ditemukan…</div>
+                <div className="px-4 py-2 text-neutral-500">Tidak ditemukan…</div>
               ) : (
                 filteredCategories.map(cat => (
                   <Link
                     key={cat.slug}
                     href={`/category/${cat.slug}`}
-                    className="block py-2 px-4 rounded-lg font-medium text-slate-700 hover:bg-slate-100 transition"
+                    className="block rounded-md px-4 py-2 font-medium text-neutral-800 hover:bg-neutral-100"
                     onClick={onClose}
                   >
                     {cat.name}
@@ -141,7 +133,7 @@ export default function Sidebar({ open, onClose }) {
       {/* Overlay untuk mobile */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/30 md:hidden"
+          className="fixed inset-0 z-30 bg-black/30 md:hidden"
           onClick={onClose}
           aria-label="Sidebar Overlay"
         />
