@@ -32,5 +32,3 @@ Email verification for user@example.com: http://localhost:3000/verify-email?toke
 ```
 Buka tautan tersebut di browser (atau panggil `POST /api/auth/verify/confirm` dengan token) untuk menyelesaikan verifikasi. Token juga dikembalikan di respons register/verify untuk memudahkan testing lokal; jangan gunakan respons tersebut di produksi.
 
-## Kompatibilitas
-User lama hasil OAuth GitHub tidak memiliki password hash. Buat akun baru atau migrasikan data secara manual dengan mengisi `PasswordHash` dan `EmailVerified` sebelum mengaktifkan login email.
