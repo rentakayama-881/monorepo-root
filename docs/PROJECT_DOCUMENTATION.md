@@ -72,12 +72,13 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `frontend/eslint.config.mjs` — aturan ESLint proyek.
 - `frontend/postcss.config.mjs` — konfigurasi PostCSS/Tailwind import.
 - `frontend/app/layout.js` — layout root, metadata situs, injeksi Header global & kontainer konten.
-- `frontend/app/globals.css` — panduan desain/global style (variabel tema, utility class, komponen dasar).
+- `frontend/app/globals.css` — panduan desain/global style (variabel tema, utility class, komponen dasar) plus preset Tailwind v4 (`@plugin @tailwindcss/container-queries` & `@tailwindcss/typography`), outline-ring fokus aksesibel, serta penyesuaian preferensi warna gelap.
 - `frontend/app/page.js` — landing page hero, daftar kategori, placeholder thread terbaru, dan link aturan.
 - `frontend/app/orders/new/page.jsx` — alur MVP escrow: hubungkan wallet, minta backend membuat order + signature, kirim transaksi deployEscrow langsung via `window.ethereum`, POST attach ke backend, lalu redirect ke detail order.
 - `frontend/app/orders/[orderId]/page.jsx` — halaman detail status escrow (order_id, tx_hash, escrow_address, buyer, seller, amount, chain_id) dengan fetch backend.
 - `frontend/app/login/page.jsx` — halaman login email/password memakai helper `setToken` + redirect, dibungkus Suspense untuk penggunaan `useSearchParams`.
 - `frontend/app/set-username/page.jsx` — form set username awal pasca-OAuth.
+- `frontend/components/ui/GridTileImage.jsx` / `frontend/components/ui/Label.jsx` — komponen kartu gambar dengan overlay label harga/keterangan (posisi bawah/center) dan efek hover interaktif.
 - `frontend/app/account/page.jsx` — pengelolaan profil/username/avatar & sosial; fetch/update via API.
 - `frontend/app/threads/page.jsx` — daftar thread/kategori (placeholder data, siap integrasi API).
 - `frontend/app/ai-search/page.jsx` — form tanya-jawab AI yang memanggil endpoint RAG backend dan menampilkan sumber.
