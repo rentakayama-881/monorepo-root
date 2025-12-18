@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,50 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func buildCORSConfig() cors.Config {
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+
+	frontend := strings.TrimSpace(os.Getenv("FRONTEND_BASE_URL"))
+	if frontend == "" {
+		frontend = "https://monorepo-root-dun.vercel.app"
+	}
+
+	allowedOriginsEnv := os.Getenv("CORS_ALLOWED_ORIGINS")
+	rawOrigins := []string{}
+	if allowedOriginsEnv != "" {
+		rawOrigins = strings.Split(allowedOriginsEnv, ",")
+	} else {
+		rawOrigins = []string{frontend}
+	}
+
+	allowedSet := map[string]struct{}{}
+	allowedList := []string{}
+	for _, origin := range rawOrigins {
+		clean := strings.TrimSpace(origin)
+		if clean == "" {
+			continue
+		}
+		if _, exists := allowedSet[clean]; exists {
+			continue
+		}
+		allowedSet[clean] = struct{}{}
+		allowedList = append(allowedList, clean)
+	}
+
+	corsConfig.AllowOrigins = allowedList
+	corsConfig.AllowOriginFunc = func(origin string) bool {
+		if origin == "" {
+			return true
+		}
+		_, ok := allowedSet[origin]
+		return ok
+	}
+
+	return corsConfig
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -26,19 +71,14 @@ func main() {
 	config.InitConfig()
 	worker.StartEventWorker(context.Background())
 	router := gin.Default()
-	corsConfig := cors.DefaultConfig()
-	frontend := os.Getenv("FRONTEND_BASE_URL")
-	if frontend == "" {
-		frontend = "https://monorepo-root-dun.vercel.app"
-	}
-	corsConfig.AllowOrigins = []string{frontend}
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
-	router.Use(cors.New(corsConfig))
+	router.Use(cors.New(buildCORSConfig()))
 	// Serve file statis: /static/...
 	router.Static("/static", "./public")
 
 	api := router.Group("/api")
 	{
+		api.GET("/health", handlers.HealthHandler)
+
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", handlers.RegisterHandler)
@@ -104,20 +144,19 @@ func main() {
 		router.GET("/api/rag/debug-chunks/:thread_id", handlers.DebugChunksHandler)
 	}
 
-                // --- BAGIAN INI YANG DIUBAH ---
-        
-        // Ambil port dari Environment Variable (Inject dari Render)
-        port := os.Getenv("PORT")
-        
-        // Jika kosong (artinya sedang jalan di laptop/local), pakai 8080
-        if port == "" {
-            port = "8080"
-        }
+	// --- BAGIAN INI YANG DIUBAH ---
 
-        log.Println("Server backend berjalan di port " + port)
-        
-        // Jalankan server dengan port dinamis
-        // Tambahkan "0.0.0.0" agar bisa diakses dari luar container Render
-        router.Run("0.0.0.0:" + port)
+	// Ambil port dari Environment Variable (Inject dari Render)
+	port := os.Getenv("PORT")
+
+	// Jika kosong (artinya sedang jalan di laptop/local), pakai 8080
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Println("Server backend berjalan di port " + port)
+
+	// Jalankan server dengan port dinamis
+	// Tambahkan "0.0.0.0" agar bisa diakses dari luar container Render
+	router.Run("0.0.0.0:" + port)
 }
-

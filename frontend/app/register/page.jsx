@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getApiBase } from "@/lib/api";
+import { fetchJson } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 
 export default function RegisterPage() {
@@ -34,15 +34,11 @@ export default function RegisterPage() {
         username: form.username || undefined,
         full_name: form.full_name || undefined,
       };
-      const res = await fetch(`${getApiBase()}/api/auth/register`, {
+      const data = await fetchJson(`/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || "Gagal mendaftar");
-      }
       if (data.token) {
         setToken(data.token);
         router.replace("/");

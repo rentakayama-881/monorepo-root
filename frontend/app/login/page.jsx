@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getApiBase } from "@/lib/api";
+import { fetchJson } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 
 export default function LoginPage() {
@@ -34,15 +34,11 @@ function LoginForm() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`${getApiBase()}/api/auth/login`, {
+      const data = await fetchJson(`/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || "Gagal masuk. Periksa email/password.");
-      }
 
       setToken(data.token);
       router.replace("/");

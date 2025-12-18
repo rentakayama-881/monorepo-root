@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getApiBase } from '../../../lib/api';
+import { fetchJson } from '../../../lib/api';
 
 const DEPLOY_SELECTOR = '0xd8075080';
 const ESCROW_DEPLOYED_TOPIC = '0xe993d834de25b762f3fd5499ffa250d00bd10953e20eee7cd06e9dbb0280b3a1';
@@ -134,7 +134,7 @@ export default function NewOrderPage() {
 
     try {
       setStatus('Membuat order di backend...');
-      const res = await fetch(`${getApiBase()}/api/orders`, {
+      const data = await fetchJson(`/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -143,10 +143,6 @@ export default function NewOrderPage() {
           amount_usdt: minor,
         }),
       });
-      if (!res.ok) {
-        throw new Error('Gagal membuat order');
-      }
-      const data = await res.json();
       setOrderId(data.order_id);
       setSignature(data.signature);
       setStatus('Mendeploy escrow lewat wallet...');
@@ -199,14 +195,11 @@ export default function NewOrderPage() {
     setEscrowAddress(parsed.escrow);
     setStatus('Sinkron ke backend...');
 
-    const attach = await fetch(`${getApiBase()}/api/orders/${orderMeta.order_id}/attach`, {
+    await fetchJson(`/api/orders/${orderMeta.order_id}/attach`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ escrow_address: parsed.escrow, tx_hash: tx }),
     });
-    if (!attach.ok) {
-      throw new Error('Gagal menyimpan escrow di backend');
-    }
     setStatus('Escrow berhasil dibuat dan disimpan.');
     router.push(`/orders/${orderMeta.order_id}`);
   };

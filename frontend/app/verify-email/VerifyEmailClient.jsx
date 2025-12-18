@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { getApiBase } from "@/lib/api";
+import { fetchJson } from "@/lib/api";
 
 export default function VerifyEmailClient() {
   const params = useSearchParams();
@@ -22,14 +22,12 @@ export default function VerifyEmailClient() {
     setStatus("pending");
     setMessage("Memverifikasi token...");
 
-    fetch(`${getApiBase()}/api/auth/verify/confirm`, {
+    fetchJson(`/api/auth/verify/confirm`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
     })
-      .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || "Gagal memverifikasi email");
+      .then((data) => {
         if (cancelled) return;
 
         setStatus("success");
