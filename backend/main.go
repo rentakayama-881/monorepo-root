@@ -104,6 +104,20 @@ func main() {
 		router.GET("/api/rag/debug-chunks/:thread_id", handlers.DebugChunksHandler)
 	}
 
-	log.Println("Server backend berjalan di http://localhost:8080")
-	router.Run(":8080")
+                // --- BAGIAN INI YANG DIUBAH ---
+        
+        // Ambil port dari Environment Variable (Inject dari Render)
+        port := os.Getenv("PORT")
+        
+        // Jika kosong (artinya sedang jalan di laptop/local), pakai 8080
+        if port == "" {
+            port = "8080"
+        }
+
+        log.Println("Server backend berjalan di port " + port)
+        
+        // Jalankan server dengan port dinamis
+        // Tambahkan "0.0.0.0" agar bisa diakses dari luar container Render
+        router.Run("0.0.0.0:" + port)
 }
+
