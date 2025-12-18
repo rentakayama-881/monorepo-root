@@ -3,7 +3,7 @@ import Image from "next/image";
 import { fetchCategories } from "../lib/categories";
 import { getApiBase } from "../lib/api";
 
-// Import komponen UI (Pastikan file ini ada di components/ui/)
+// Pastikan file komponen ini ada (Button.jsx & Card.jsx)
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 
@@ -45,22 +45,21 @@ export default async function Home() {
     : "/threads";
 
   return (
-    // PERBAIKAN DI SINI:
-    // Saya hapus border/shadow di section utama ini.
-    // Jadi halaman paling bawah akan bersih (putih/polos), tidak ada garis dobel.
-    <section className="mx-auto max-w-5xl px-4 py-10">
+    // WRAPPER UTAMA:
+    // Disini kita set max-w-5xl supaya konten tetap rapi di tengah.
+    // Tapi TIDAK ADA border/bg-white disini. Jadi backgroundnya nyatu sama layout (abu-abu).
+    <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       
       {/* --- HERO SECTION --- */}
-      <div className="mb-16 flex flex-col items-start gap-10 md:flex-row md:items-center">
+      <div className="mb-14 flex flex-col items-start gap-10 md:flex-row md:items-center">
         <div className="flex-1">
-          <h1 className="mb-6 text-4xl font-bold tracking-tight text-neutral-900 dark:text-white sm:text-5xl">
+          <h1 className="mb-6 text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl">
             Platform komunitas dan utilitas digital yang rapi
           </h1>
-          <p className="mb-8 max-w-2xl text-lg leading-relaxed text-neutral-600 dark:text-neutral-400">
+          <p className="mb-8 max-w-2xl text-lg leading-relaxed text-neutral-600">
             Temukan thread, kategori, dan fitur komunitas yang dirancang ringkas. Semua tampilan kini lebih tajam dan profesional.
           </p>
           <div className="flex flex-wrap gap-4">
-            {/* Tombol Navigasi: Border tetap ada (diurus oleh komponen Button) */}
             <Button href="/threads" variant="primary">Lihat Semua Thread</Button>
             <Button href={primaryCategoryHref} variant="secondary">Kategori Utama</Button>
           </div>
@@ -68,21 +67,23 @@ export default async function Home() {
         
         {/* Gambar Vector */}
         <div className="hidden flex-1 items-center justify-end md:flex">
-          <Image 
-            src="/images/vectorised-1758374067909.svg" 
-            alt="Community Vector" 
-            width={280} 
-            height={280} 
-            priority
-            className="dark:opacity-80"
-          />
+          {/* Hapus background kotak di gambar biar lebih clean */}
+          <div className="p-4"> 
+            <Image 
+              src="/images/vectorised-1758374067909.svg" 
+              alt="Community Vector" 
+              width={280} 
+              height={280} 
+              priority
+            />
+          </div>
         </div>
       </div>
 
       {/* --- KATEGORI GRID --- */}
       <div className="mb-16">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Kategori</h2>
+          <h2 className="text-2xl font-semibold text-neutral-900">Kategori</h2>
           <Button href={primaryCategoryHref} variant="outline" className="text-sm">Lihat semua →</Button>
         </div>
         
@@ -90,9 +91,9 @@ export default async function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {categories.map(cat => (
               <Link key={cat.slug} href={`/category/${cat.slug}`} className="block h-full">
-                {/* Card Kategori: Border halus tetap ada (bawaan Card.jsx) */}
-                <Card className="flex h-full items-center justify-center p-6 text-center hover:bg-neutral-50 dark:hover:bg-neutral-900">
-                  <span className="font-semibold text-base text-neutral-900 dark:text-white">
+                {/* Card Kategori: Putih di atas background abu-abu layout. Kontras & Cakep! */}
+                <Card className="flex h-full items-center justify-center p-6 text-center hover:bg-neutral-50 transition-all">
+                  <span className="font-semibold text-base text-neutral-900">
                     {cat.name}
                   </span>
                 </Card>
@@ -100,7 +101,7 @@ export default async function Home() {
             ))}
           </div>
         ) : (
-          <div className="py-10 text-center text-neutral-500 bg-neutral-50 rounded-lg border border-neutral-100 dark:bg-neutral-900 dark:border-neutral-800">
+          <div className="py-10 text-center text-neutral-500 rounded-lg border border-dashed border-neutral-300">
             Kategori belum tersedia.
           </div>
         )}
@@ -109,7 +110,7 @@ export default async function Home() {
       {/* --- THREAD TERBARU --- */}
       <div className="mb-12">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Thread Terbaru</h2>
+          <h2 className="text-2xl font-semibold text-neutral-900">Thread Terbaru</h2>
           <Button href="/threads" variant="outline" className="text-sm">Lihat semua →</Button>
         </div>
         
@@ -117,19 +118,18 @@ export default async function Home() {
           {threads.length > 0 ? (
             threads.map(th => (
               <Link key={th.id} href={`/thread/${th.id}`} className="block h-full">
-                {/* Card Thread: Border halus tetap ada, hover biru tetap ada */}
-                <Card className="flex h-full flex-col justify-between p-5">
+                <Card className="flex h-full flex-col justify-between p-5 hover:border-neutral-300 transition-colors">
                   <div>
-                    <h3 className="mb-2 text-lg font-semibold leading-tight text-neutral-900 dark:text-white">
+                    <h3 className="mb-2 text-lg font-semibold leading-tight text-neutral-900">
                         {th.title}
                     </h3>
-                    <p className="mb-4 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 line-clamp-2">
+                    <p className="mb-4 text-sm leading-relaxed text-neutral-600 line-clamp-2">
                         {th.summary}
                     </p>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-                    <span className="font-medium text-neutral-900 dark:text-neutral-200">
+                  <div className="flex items-center gap-2 text-xs text-neutral-500">
+                    <span className="font-medium text-neutral-900">
                         {th.username || "Anonim"}
                     </span>
                     <span>•</span>
@@ -137,7 +137,7 @@ export default async function Home() {
                     {th.category && (
                       <>
                         <span>•</span>
-                        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-600 border border-neutral-200">
                           {th.category.name || th.category.slug}
                         </span>
                       </>
@@ -147,15 +147,12 @@ export default async function Home() {
               </Link>
             ))
           ) : (
-             <div className="py-10 text-center text-neutral-500 bg-neutral-50 rounded-lg border border-neutral-100 dark:bg-neutral-900 dark:border-neutral-800">
+             <div className="py-10 text-center text-neutral-500 rounded-lg border border-dashed border-neutral-300">
                Belum ada thread terbaru.
              </div>
           )}
         </div>
       </div>
-
-      {/* Bagian bawah (Footer Area) KOSONG. 
-          Tidak ada div 'Aturan' lagi, jadi border jelek di bawah otomatis hilang. */}
 
     </section>
   );
