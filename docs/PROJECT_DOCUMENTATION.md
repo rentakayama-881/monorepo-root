@@ -22,6 +22,7 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 
 ### Backend (Go)
 - `backend/main.go` — entrypoint server Gin: memuat env, inisialisasi DB/config, konfigurasi CORS, static file `/static`, dan mendaftarkan semua grup route `/api` (auth/account/user/threads/disputes + order escrow non-kustodian).
+- `backend/main.go` — entrypoint server Gin: memuat env, inisialisasi DB/config, konfigurasi CORS, static file `/static`, dan mendaftarkan semua grup route `/api` (auth/account/user/threads/disputes + order escrow non-kustodian) plus healthcheck ringan `GET /api/health`.
 - `backend/go.mod` / `backend/go.sum` — dependensi Go module.
 - `backend/.gitignore` — pengecualian file build/env.
 - `backend/config/config.go` — memuat konfigurasi JWT, chain_id, alamat factory, private key signer backend, serta `RPC_URL` untuk worker event on-chain.
@@ -129,6 +130,10 @@ Detail visi dan target jangka menengah dipusatkan pada `docs/NORTH_STAR.md` agar
 - **Ops & Observability**
   - Tambahkan log/metric untuk listener/event worker escrow on-chain (Prometheus/OpenTelemetry) dan healthcheck endpoint.
   - Siapkan pipeline CI lint/test untuk Go, Next.js, dan Solidity (Foundry/Hardhat).
+
+## Healthcheck & CORS
+- **Endpoint**: `GET /api/health` (tanpa autentikasi) mengembalikan JSON ringan `{ ok, time, chain_id, escrow_factory, backend_signer, version }` tanpa query database untuk memastikan respon cepat.
+- **Lingkungan**: `CORS_ALLOWED_ORIGINS` dapat diisi daftar origin dipisah koma (mis. `https://monorepo-root-dun.vercel.app,https://adapted.trycloudflare.com,http://localhost:3000`). Jika tidak di-set, backend memakai `FRONTEND_BASE_URL` sebagai origin yang diizinkan.
 
 ## Catatan Tambahan
 - File README lama di frontend dihapus karena sudah tidak relevan; dokumentasi digantikan oleh dokumen ini.

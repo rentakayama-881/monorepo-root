@@ -1,5 +1,6 @@
 import "./globals.css";
 import Header from "../components/Header";
+import ApiStatusBanner from "../components/ApiStatusBanner";
 
 export const metadata = {
   title: "Ballerina",
@@ -20,6 +21,7 @@ export default function RootLayout({ children }) {
       {/* Tambah 'antialiased' biar font lebih tajam ala Vercel */}
       <body className="min-h-dvh bg-neutral-50 text-neutral-900 antialiased">
         <Header />
+        <ApiStatusBanner />
         
         {/* PERUBAHAN DISINI: 
             1. Saya hapus <div> pembungkus yang punya border/bg-white.

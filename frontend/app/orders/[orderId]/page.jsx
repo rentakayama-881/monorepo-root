@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { getApiBase } from '../../../lib/api';
+import { fetchJson } from '../../../lib/api';
 
 function normalizeOrderId(raw) {
   const trimmed = (raw || '').trim().toLowerCase();
@@ -33,11 +33,7 @@ export default function OrderDetailPage() {
         return;
       }
       try {
-        const res = await fetch(`${getApiBase()}/api/orders/${incomingId}`, { cache: 'no-store' });
-        if (!res.ok) {
-          throw new Error('Order tidak ditemukan');
-        }
-        const data = await res.json();
+        const data = await fetchJson(`/api/orders/${incomingId}`, { cache: 'no-store' });
         setOrder(data);
       } catch (err) {
         setError(err.message || 'Gagal memuat order');
