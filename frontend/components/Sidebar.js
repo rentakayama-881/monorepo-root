@@ -37,35 +37,36 @@ export default function Sidebar({ open, onClose }) {
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-overlay w-80 bg-white border-r border-neutral-200 shadow-2xl transition-transform duration-200 md:hidden flex flex-col`}
+        className={`fixed inset-y-0 left-0 z-overlay w-80 bg-white border-r border-slate-200 shadow-2xl transition-transform duration-200 md:hidden flex flex-col`}
         style={{
           transform: open ? "translateX(0)" : "translateX(-100%)",
           maxHeight: "100vh",
         }}
         aria-label="Sidebar"
+        aria-hidden={!open}
       >
         {/* Sticky header */}
-        <div className="sticky top-0 bg-white z-10 border-b border-neutral-100 flex flex-col gap-3 px-6 pt-4 pb-4 shadow-sm">
+        <div className="sticky top-0 bg-white z-10 border-b border-slate-100 flex flex-col gap-3 px-6 pt-4 pb-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-lg tracking-tight">Menu</span>
+            <span className="font-semibold text-base tracking-tight text-slate-900">Menu</span>
             <button
-              className="p-1"
+              className="p-1 rounded-md hover:bg-slate-100"
               onClick={onClose}
               aria-label="Tutup menu"
               type="button"
             >
               <svg width="22" height="22" fill="none">
-                <path d="M6 6l10 10M16 6L6 16" stroke="black" strokeWidth="2"/>
+                <path d="M6 6l10 10M16 6L6 16" stroke="#0f172a" strokeWidth="2" />
               </svg>
             </button>
           </div>
           {/* Navigasi utama */}
-          <nav className="flex gap-2 font-medium text-base flex-wrap">
-            <Link href="/" className="py-1.5 px-3 rounded hover:bg-neutral-100" onClick={onClose}>Home</Link>
-            <Link href="/about-content" className="py-1.5 px-3 rounded hover:bg-neutral-100" onClick={onClose}>Tentang Kami</Link>
-            <Link href="/rules-content" className="py-1.5 px-3 rounded hover:bg-neutral-100" onClick={onClose}>Aturan</Link>
-            <Link href="/contact-support" className="py-1.5 px-3 rounded hover:bg-neutral-100" onClick={onClose}>Contact Support</Link>
-            <Link href="/pengajuan-badge" className="py-1.5 px-3 rounded hover:bg-neutral-100" onClick={onClose}>Pengajuan Badge</Link>
+          <nav className="flex gap-2 font-medium text-sm flex-wrap">
+            <Link href="/" className="py-1.5 px-3 rounded-lg hover:bg-slate-100" onClick={onClose}>Home</Link>
+            <Link href="/about-content" className="py-1.5 px-3 rounded-lg hover:bg-slate-100" onClick={onClose}>Tentang Kami</Link>
+            <Link href="/rules-content" className="py-1.5 px-3 rounded-lg hover:bg-slate-100" onClick={onClose}>Aturan</Link>
+            <Link href="/contact-support" className="py-1.5 px-3 rounded-lg hover:bg-slate-100" onClick={onClose}>Contact Support</Link>
+            <Link href="/pengajuan-badge" className="py-1.5 px-3 rounded-lg hover:bg-slate-100" onClick={onClose}>Pengajuan Badge</Link>
           </nav>
           {/* AI Search */}
           <div className="pt-2">
@@ -94,16 +95,16 @@ export default function Sidebar({ open, onClose }) {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 px-6 pb-8 pt-4 overflow-y-auto" style={{ overscrollBehavior: "contain" }}>
+        <div className="flex-1 px-6 pb-8 pt-4 overflow-y-auto space-y-6" style={{ overscrollBehavior: "contain" }}>
           {/* Topik diskusi populer */}
-          <div className="mb-7">
-            <div className="font-semibold text-sm text-neutral-500 mb-2">Topik Diskusi Populer</div>
+          <div>
+            <div className="font-semibold text-xs uppercase tracking-wide text-slate-500 mb-2">Topik Diskusi Populer</div>
             <nav className="flex flex-col gap-2">
               {popularTopics.map(topic => (
                 <Link
                   key={topic.label}
                   href={topic.href}
-                  className="block py-2 px-4 rounded-lg font-medium text-neutral-700 hover:bg-blue-50 hover:text-blue-700 transition"
+                  className="block py-2 px-4 rounded-lg font-medium text-slate-700 hover:bg-slate-100 transition"
                   onClick={onClose}
                 >
                   {topic.label}
@@ -114,18 +115,18 @@ export default function Sidebar({ open, onClose }) {
 
           {/* Kategori threads */}
           <div>
-            <div className="font-semibold text-sm text-neutral-500 mb-2">Kategori Threads</div>
-            <nav className="flex flex-col gap-1">
+            <div className="font-semibold text-xs uppercase tracking-wide text-slate-500 mb-2">Kategori Threads</div>
+            <nav className="flex flex-col gap-1.5">
               {loadingCategories ? (
-                <div className="py-2 px-4 text-neutral-400 text-sm">Memuat kategori…</div>
+                <div className="py-2 px-4 text-slate-400 text-sm">Memuat kategori…</div>
               ) : filteredCategories.length === 0 ? (
-                <div className="py-2 px-4 text-neutral-400 text-sm">Tidak ditemukan…</div>
+                <div className="py-2 px-4 text-slate-400 text-sm">Tidak ditemukan…</div>
               ) : (
                 filteredCategories.map(cat => (
                   <Link
                     key={cat.slug}
                     href={`/category/${cat.slug}`}
-                    className="block py-2 px-4 rounded-lg font-medium text-neutral-700 hover:bg-blue-50 hover:text-blue-700 transition"
+                    className="block py-2 px-4 rounded-lg font-medium text-slate-700 hover:bg-slate-100 transition"
                     onClick={onClose}
                   >
                     {cat.name}
@@ -140,7 +141,7 @@ export default function Sidebar({ open, onClose }) {
       {/* Overlay untuk mobile */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/30 md:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/30 md:hidden"
           onClick={onClose}
           aria-label="Sidebar Overlay"
         />

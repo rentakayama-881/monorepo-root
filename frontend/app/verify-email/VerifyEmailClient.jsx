@@ -53,9 +53,9 @@ export default function VerifyEmailClient() {
   };
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-neutral-50 px-4 py-12">
-      <div className="w-full max-w-lg space-y-4 bg-white border border-neutral-200 rounded-lg shadow-sm p-6">
-        <h1 className="text-xl font-semibold text-neutral-900">Verifikasi Email</h1>
+    <div className="w-full max-w-lg mx-auto space-y-4">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 space-y-3">
+        <h1 className="text-lg font-semibold text-slate-900">Verifikasi Email</h1>
 
         <div className={`rounded-md border px-4 py-3 text-sm ${styles[status] || styles.pending}`}>
           {message}
