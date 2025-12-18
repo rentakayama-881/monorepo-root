@@ -17,14 +17,19 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="id">
-      <body className="min-h-dvh bg-neutral-50 text-neutral-900">
+      {/* Tambah 'antialiased' biar font lebih tajam ala Vercel */}
+      <body className="min-h-dvh bg-neutral-50 text-neutral-900 antialiased">
         <Header />
-        <main className="pt-[4.25rem] min-h-screen px-4 pb-12 sm:px-6">
-          <div className="mx-auto max-w-5xl bg-white rounded-lg border border-neutral-200 shadow-sm px-4 sm:px-8 py-8 sm:py-10">
+        
+        {/* PERUBAHAN DISINI: 
+            1. Saya hapus <div> pembungkus yang punya border/bg-white.
+            2. Main saya biarkan polos, cuma ngatur jarak dari Header (pt).
+        */}
+        <main className="pt-[4.5rem] min-h-screen">
             {children}
-          </div>
         </main>
       </body>
     </html>
   );
 }
+
