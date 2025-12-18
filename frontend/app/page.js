@@ -45,18 +45,17 @@ export default async function Home() {
     : "/threads";
 
   return (
-    // WRAPPER UTAMA:
-    // Disini kita set max-w-5xl supaya konten tetap rapi di tengah.
-    // Tapi TIDAK ADA border/bg-white disini. Jadi backgroundnya nyatu sama layout (abu-abu).
     <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       
       {/* --- HERO SECTION --- */}
       <div className="mb-14 flex flex-col items-start gap-10 md:flex-row md:items-center">
         <div className="flex-1">
-          <h1 className="mb-6 text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl">
+          {/* Judul: Tambah dark:text-white */}
+          <h1 className="mb-6 text-4xl font-bold tracking-tight text-neutral-900 dark:text-white sm:text-5xl">
             Platform komunitas dan utilitas digital yang rapi
           </h1>
-          <p className="mb-8 max-w-2xl text-lg leading-relaxed text-neutral-600">
+          {/* Deskripsi: Tambah dark:text-neutral-400 */}
+          <p className="mb-8 max-w-2xl text-lg leading-relaxed text-neutral-600 dark:text-neutral-400">
             Temukan thread, kategori, dan fitur komunitas yang dirancang ringkas. Semua tampilan kini lebih tajam dan profesional.
           </p>
           <div className="flex flex-wrap gap-4">
@@ -67,7 +66,6 @@ export default async function Home() {
         
         {/* Gambar Vector */}
         <div className="hidden flex-1 items-center justify-end md:flex">
-          {/* Hapus background kotak di gambar biar lebih clean */}
           <div className="p-4"> 
             <Image 
               src="/images/vectorised-1758374067909.svg" 
@@ -75,6 +73,7 @@ export default async function Home() {
               width={280} 
               height={280} 
               priority
+              className="dark:opacity-90" // Biar ga terlalu silau di mode gelap
             />
           </div>
         </div>
@@ -83,7 +82,7 @@ export default async function Home() {
       {/* --- KATEGORI GRID --- */}
       <div className="mb-16">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-neutral-900">Kategori</h2>
+          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Kategori</h2>
           <Button href={primaryCategoryHref} variant="outline" className="text-sm">Lihat semua →</Button>
         </div>
         
@@ -91,9 +90,13 @@ export default async function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {categories.map(cat => (
               <Link key={cat.slug} href={`/category/${cat.slug}`} className="block h-full">
-                {/* Card Kategori: Putih di atas background abu-abu layout. Kontras & Cakep! */}
-                <Card className="flex h-full items-center justify-center p-6 text-center hover:bg-neutral-50 transition-all">
-                  <span className="font-semibold text-base text-neutral-900">
+                {/* Card hover effect:
+                   - Light mode: hover jadi agak abu (neutral-50)
+                   - Dark mode: hover jadi agak terang dikit (neutral-900)
+                */}
+                <Card className="flex h-full items-center justify-center p-6 text-center hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all">
+                  {/* PERBAIKAN UTAMA: dark:text-white biar teks nongol di kotak hitam */}
+                  <span className="font-semibold text-base text-neutral-900 dark:text-white">
                     {cat.name}
                   </span>
                 </Card>
@@ -101,7 +104,7 @@ export default async function Home() {
             ))}
           </div>
         ) : (
-          <div className="py-10 text-center text-neutral-500 rounded-lg border border-dashed border-neutral-300">
+          <div className="py-10 text-center text-neutral-500 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-800">
             Kategori belum tersedia.
           </div>
         )}
@@ -110,7 +113,7 @@ export default async function Home() {
       {/* --- THREAD TERBARU --- */}
       <div className="mb-12">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-neutral-900">Thread Terbaru</h2>
+          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Thread Terbaru</h2>
           <Button href="/threads" variant="outline" className="text-sm">Lihat semua →</Button>
         </div>
         
@@ -118,18 +121,20 @@ export default async function Home() {
           {threads.length > 0 ? (
             threads.map(th => (
               <Link key={th.id} href={`/thread/${th.id}`} className="block h-full">
-                <Card className="flex h-full flex-col justify-between p-5 hover:border-neutral-300 transition-colors">
+                <Card className="flex h-full flex-col justify-between p-5 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
                   <div>
-                    <h3 className="mb-2 text-lg font-semibold leading-tight text-neutral-900">
+                    {/* Judul Thread: Tambah dark:text-white */}
+                    <h3 className="mb-2 text-lg font-semibold leading-tight text-neutral-900 dark:text-white">
                         {th.title}
                     </h3>
-                    <p className="mb-4 text-sm leading-relaxed text-neutral-600 line-clamp-2">
+                    {/* Summary: Tambah dark:text-neutral-400 */}
+                    <p className="mb-4 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 line-clamp-2">
                         {th.summary}
                     </p>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-xs text-neutral-500">
-                    <span className="font-medium text-neutral-900">
+                  <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-500">
+                    <span className="font-medium text-neutral-900 dark:text-neutral-300">
                         {th.username || "Anonim"}
                     </span>
                     <span>•</span>
@@ -137,7 +142,8 @@ export default async function Home() {
                     {th.category && (
                       <>
                         <span>•</span>
-                        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-600 border border-neutral-200">
+                        {/* Badge Kategori: Sesuaikan background dan teks untuk dark mode */}
+                        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-600 border border-neutral-200 dark:bg-neutral-900 dark:text-neutral-300 dark:border-neutral-800">
                           {th.category.name || th.category.slug}
                         </span>
                       </>
@@ -147,7 +153,7 @@ export default async function Home() {
               </Link>
             ))
           ) : (
-             <div className="py-10 text-center text-neutral-500 rounded-lg border border-dashed border-neutral-300">
+             <div className="py-10 text-center text-neutral-500 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-800">
                Belum ada thread terbaru.
              </div>
           )}
