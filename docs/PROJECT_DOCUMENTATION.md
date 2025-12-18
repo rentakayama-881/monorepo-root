@@ -96,6 +96,11 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `frontend/components/ui/Spinner.jsx` — indikator loading.
 - `frontend/public/*` — aset statis (ikon, ilustrasi, logo, svg bawaan Next/Vercel).
 
+#### Catatan UI (Gaya GitHub, fokus kejernihan)
+- Aplikasi kini mengekspor metadata `viewport` eksplisit di `app/layout.js` untuk mencegah skala 980px bawaan browser mobile yang menyebabkan tampilan tampak memudar/blur di beberapa perangkat.
+- `globals.css` diperketat: tipografi 15px, warna netral seperti GitHub, tombol/input/card seragam, fokus state terlihat, dan latar belakang abu terang agar konten tampak terangkat tanpa blur.
+- Header, sidebar, serta halaman auth dipadatkan sehingga jarak dan ukuran font konsisten di seluruh alur (home, login/register, verifikasi email).
+
 ### Smart Contracts (Solidity)
 - `contracts/Escrow.sol` — kontrak escrow USDT dengan status lifecycle, fee dinamis, integrasi staking & adapter arbitrase.
 - `contracts/EscrowFactory.sol` — factory membuat instance Escrow & menyimpan mapping orderId → alamat escrow.
