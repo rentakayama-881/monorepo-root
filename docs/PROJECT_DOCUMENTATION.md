@@ -1,6 +1,6 @@
 # Dokumentasi Monorepo
 
-Dokumen ini merangkum struktur, arsitektur saat ini, visi jangka panjang (North Star), serta daftar tugas lanjutan untuk monorepo ini. Fokusnya mencakup tiga pilar utama: backend Go, frontend Next.js, dan smart contract Solidity.
+Dokumen ini merangkum struktur dan arsitektur saat ini serta daftar tugas lanjutan untuk monorepo ini. Fokusnya mencakup tiga pilar utama: backend Go, frontend Next.js, dan smart contract Solidity. Visi jangka panjang diurai terpisah pada `docs/NORTH_STAR.md` sebagai sumber kebenaran tunggal.
 
 ## Arsitektur Saat Ini
 - **Lapisan backend**: REST API berbasis Gin dengan middleware JWT, autentikasi email+password (bcrypt), serta modul RAG yang memakai Cohere dan PostgreSQL/pgvector. Worker on-chain (`backend/worker/event_worker.go`) memakai `RPC_URL` + tabel `chain_cursors` untuk memproses event `EscrowDeployed` (factory) dan `Funded/Delivered/DisputeOpened/Resolved/Refunded/Released` (escrow) lalu memperbarui status order (created → deployed → funded/delivered/disputed → resolved/refunded/released). Fitur saldo/refill/transfer kustodian dihapus.
@@ -27,7 +27,6 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `backend/config/config.go` — memuat konfigurasi JWT, chain_id, alamat factory, private key signer backend, serta `RPC_URL` untuk worker event on-chain.
 - `backend/database/db.go` — koneksi PostgreSQL (DATABASE_URL/dsn), automigrate model, dan seeding kategori thread.
 - (dihapus) `backend/database/deposit.go` — tidak ada lagi tabel/logic alamat deposit.
-- `backend/dto/github.go` — struct respons data GitHub (email/id/avatar) untuk proses OAuth.
 - `backend/dto/create_username.go` — payload pembuatan username baru.
 - `backend/dto/create_thread.go` — payload membuat thread (title, category_id, content json, dsb.).
 - `backend/dto/update_thread.go` — payload memperbarui thread (title/summary/content/meta).
@@ -38,13 +37,13 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - (dihapus) `backend/handlers/balance.go` — info refill/alat deposit kustodian dihapus.
 - `backend/handlers/orders.go` — endpoint order non-kustodian: generate orderId+signature backend (`POST /api/orders`), lampirkan escrow+tx hash (`POST /api/orders/:orderId/attach`), dan baca status.
 - `backend/handlers/marketplace.go` — placeholder dispute/rate Chainlink lama.
-- `backend/handlers/oauth.go` — login & callback OAuth GitHub.
+- `backend/handlers/auth.go` — register/login/password bcrypt + verifikasi email (register, login, request/confirm token), tanpa OAuth.
 - `backend/handlers/rag.go` — endpoint RAG: indeks teks panjang, indeks chunk, ask/answer QA, indeks thread by ID, debug chunk.
 - `backend/handlers/threads.go` — handler kategori thread, thread per kategori, detail thread, membuat & memperbarui thread.
 - (dihapus) `backend/handlers/transfer.go` — transfer saldo kustodian dihapus.
 - `backend/handlers/user.go` — handler info user terautentikasi dan profil publik berdasar username.
 - `backend/handlers/user_threads.go` — handler daftar thread per user (publik & milik sendiri).
-- `backend/handlers/username.go` — handler pembuatan username setelah login OAuth.
+- `backend/handlers/username.go` — handler pembuatan username satu kali setelah login.
 - `backend/middleware/auth.go` — middleware JWT wajib untuk route yang membutuhkan autentikasi.
 - `backend/middleware/auth_optional.go` — middleware JWT opsional (meneruskan context jika token ada).
 - `backend/middleware/jwt.go` — helper parsing & validasi JWT token dari header Authorization.
@@ -73,14 +72,16 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `frontend/postcss.config.mjs` — konfigurasi PostCSS/Tailwind import.
 - `frontend/app/layout.js` — layout root, metadata situs, injeksi Header global & kontainer konten.
 - `frontend/app/globals.css` — panduan desain/global style (variabel tema, utility class, komponen dasar) plus preset Tailwind v4 (`@plugin @tailwindcss/container-queries` & `@tailwindcss/typography`), outline-ring fokus aksesibel, serta penyesuaian preferensi warna gelap.
-- `frontend/app/page.js` — landing page hero, daftar kategori, placeholder thread terbaru, dan link aturan.
+- `frontend/app/page.js` — landing page hero dengan fetch kategori + thread terbaru langsung dari API (revalidate 60s) serta link aturan.
 - `frontend/app/orders/new/page.jsx` — alur MVP escrow: hubungkan wallet, minta backend membuat order + signature, kirim transaksi deployEscrow langsung via `window.ethereum`, POST attach ke backend, lalu redirect ke detail order.
 - `frontend/app/orders/[orderId]/page.jsx` — halaman detail status escrow (order_id, tx_hash, escrow_address, buyer, seller, amount, chain_id) dengan fetch backend.
 - `frontend/app/login/page.jsx` — halaman login email/password memakai helper `setToken` + redirect, dibungkus Suspense untuk penggunaan `useSearchParams`.
-- `frontend/app/set-username/page.jsx` — form set username awal pasca-OAuth.
+- `frontend/app/register/page.jsx` — form register email/password + opsi username awal; memunculkan token verifikasi dari respons dev.
+- `frontend/app/verify-email/page.jsx` — form input token verifikasi + shortcut dari query string untuk menyelesaikan verifikasi email.
+- `frontend/app/set-username/page.jsx` — form set username awal untuk akun yang belum memiliki username (legacy pasca-OAuth, tetap tersedia bila akun lama belum terisi).
 - `frontend/components/ui/GridTileImage.jsx` / `frontend/components/ui/Label.jsx` — komponen kartu gambar dengan overlay label harga/keterangan (posisi bawah/center) dan efek hover interaktif.
 - `frontend/app/account/page.jsx` — pengelolaan profil/username/avatar & sosial; fetch/update via API.
-- `frontend/app/threads/page.jsx` — daftar thread/kategori (placeholder data, siap integrasi API).
+- `frontend/app/threads/page.jsx` — halaman client-side untuk membaca & mengedit thread milik pengguna yang login (memakai `/api/threads/me` dan detail `/api/threads/:id`).
 - `frontend/app/ai-search/page.jsx` — form tanya-jawab AI yang memanggil endpoint RAG backend dan menampilkan sumber.
 - `frontend/app/contact-support/page.jsx` — form laporan dukungan sederhana (tanpa alur saldo kustodian).
 - `frontend/app/pengajuan-badge/page.jsx` — form pengajuan badge dengan field upload/link portofolio.
@@ -110,15 +111,8 @@ Rangkuman per file di seluruh repo (kecuali dependensi vendored/node_modules).
 - `contracts/ArbitrationAdapter.sol` — adapter untuk eksekusi resolusi arbitrase ke kontrak Escrow.
 - `contracts/interfaces/AggregatorV3Interface.sol` — interface Chainlink aggregator (digunakan pada FeeLogic/Adapter).
 
-## North Star Doc
-- **Misi Produk**: Menjadi platform komunitas terintegrasi yang menggabungkan forum, marketplace escrow, dan utilitas AI/RAG untuk konten komunitas dengan pengalaman login sederhana via email/password.
-- **Sasaran 6–12 bulan**:
-  - Transaksi marketplace on-chain → off-chain status sinkron otomatis; tidak ada tindakan manual admin untuk release/refund.
-  - Pencarian & rekomendasi AI (RAG) menyediakan jawaban dengan sumber akurat <2 detik median latency.
-  - Profil pengguna kaya (avatar, sosial, badge) yang konsisten antara web & data on-chain (saldo/stake) dengan downtime <0.5%.
-- **Prinsip Desain**: keamanan token/JWT, keandalan worker event-driven, DX front-backend konsisten (schema dto), dan auditabilitas on-chain/off-chain.
-- **Key Metrics**: success rate login email/password, rata-rata waktu respon RAG, conversion rate escrow selesai tanpa sengketa, error rate worker sinkronisasi, dan waktu deploy ke produksi.
-- **Peta Evolusi**: mulai dari skeleton order/dispute → tambahkan listener on-chain + notifikasi; AI search berbasis konten thread aktual; front-end mengonsumsi API nyata; penguatan integrasi staking/fee di UI.
+## North Star
+Detail visi dan target jangka menengah dipusatkan pada `docs/NORTH_STAR.md` agar tidak duplikasi dengan dokumen ini.
 
 ## To-Do / Next Steps
 - **Backend**
