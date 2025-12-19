@@ -1,12 +1,72 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @plugin "@tailwindcss/container-queries";
 @plugin "@tailwindcss/typography";
 
+/* =========================
+   Design Tokens (LIGHT)
+   (Taruh di luar @layer base supaya konsisten di semua device)
+   ========================= */
+:root {
+  /* Ikuti mode device */
+  color-scheme: light dark;
+
+  /* Typography */
+  font-family: "Inter", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+
+  /* Design tokens */
+  --bg: 245 245 246;
+  --fg: 15 23 42;
+
+  --muted: 71 85 105;
+  --muted-2: 100 116 139;
+
+  --surface: 255 255 255;
+  --surface-2: 250 250 250;
+
+  --border: 226 232 240;
+  --ring: 148 163 184;
+
+  --brand: 37 99 235; /* blue-600 */
+  --brand-2: 29 78 216; /* blue-700 */
+
+  --skeleton: 226 232 240;
+}
+
+/* =========================
+   Design Tokens (DARK)
+   ========================= */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: 10 10 10;
+    --fg: 245 245 245;
+
+    --muted: 163 163 163;
+    --muted-2: 140 140 140;
+
+    --surface: 0 0 0;
+    --surface-2: 23 23 23;
+
+    --border: 38 38 38;
+    --ring: 82 82 82;
+
+    --brand: 96 165 250; /* blue-400 */
+    --brand-2: 147 197 253; /* blue-300 */
+
+    --skeleton: 38 38 38;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+}
+
 @layer base {
   *,
-  ::after,
   ::before,
+  ::after,
   ::backdrop,
   ::file-selector-button {
     border-color: rgb(var(--border) / 1);
@@ -14,62 +74,6 @@
 
   * {
     box-sizing: border-box;
-  }
-
-  :root {
-    /* Ikuti mode device */
-    color-scheme: light dark;
-
-    /* Typography */
-    font-family: 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-
-    /* Design tokens (LIGHT) */
-    --bg: 245 245 246;
-    --fg: 15 23 42;
-
-    --muted: 71 85 105;
-    --muted-2: 100 116 139;
-
-    --surface: 255 255 255;
-    --surface-2: 250 250 250;
-
-    --border: 226 232 240;
-
-    --ring: 148 163 184;
-
-    --brand: 37 99 235; /* blue-600 */
-    --brand-2: 29 78 216; /* blue-700 */
-
-    --skeleton: 226 232 240;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      /* Design tokens (DARK) */
-      --bg: 10 10 10;
-      --fg: 245 245 245;
-
-      --muted: 163 163 163;
-      --muted-2: 140 140 140;
-
-      --surface: 0 0 0;
-      --surface-2: 23 23 23;
-
-      --border: 38 38 38;
-
-      --ring: 82 82 82;
-
-      --brand: 96 165 250; /* blue-400 */
-      --brand-2: 147 197 253; /* blue-300 */
-
-      --skeleton: 38 38 38;
-    }
-
-    html {
-      color-scheme: dark;
-    }
   }
 
   html,
@@ -111,7 +115,7 @@ button:focus-visible {
 }
 
 @supports (font: -apple-system-body) and (-webkit-appearance: none) {
-  img[loading='lazy'] {
+  img[loading="lazy"] {
     clip-path: inset(0.6px);
   }
 }
