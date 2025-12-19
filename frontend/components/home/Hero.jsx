@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Button from "../ui/Button"; // Path relative naik 1 level ke ui
+import Button from "../ui/Button"; 
 
 export default function Hero() {
   return (
@@ -18,13 +18,15 @@ export default function Hero() {
       </div>
       
       <div className="hidden flex-1 items-center justify-end md:flex">
-        <div className="p-4"> 
+        {/* Container gambar saya buat transparan agar tidak ada kotak aneh */}
+        <div className="relative p-4"> 
           <Image 
             src="/images/vectorised-1758374067909.svg" 
             alt="Community Vector" 
             width={280} 
             height={280} 
             priority
+            // Opacity diturunkan sedikit di dark mode biar tidak terlalu silau kontrasnya
             className="dark:opacity-90"
           />
         </div>
@@ -32,3 +34,4 @@ export default function Hero() {
     </div>
   );
 }
+

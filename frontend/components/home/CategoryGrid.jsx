@@ -1,13 +1,12 @@
 import Link from "next/link";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
-import { fetchCategories } from "../../lib/categories"; // Path relative naik 2 level
+import { fetchCategories } from "../../lib/categories"; 
 
 export default async function CategoryGrid() {
-  // Teknik Vercel: Fetch data langsung di sini
+  // Logic fetch data dipindah ke sini (Server Component)
   const categories = await fetchCategories({ next: { revalidate: 60 } });
   
-  // Ambil kategori pertama buat link (opsional logic)
   const primaryCategory = categories[0];
   const primaryCategoryHref = primaryCategory ? `/category/${primaryCategory.slug}` : "/threads";
 
@@ -22,9 +21,13 @@ export default async function CategoryGrid() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {categories.map(cat => (
             <Link key={cat.slug} href={`/category/${cat.slug}`} className="block h-full">
-              <Card className="flex h-full items-center justify-center p-6 text-center hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all">
-                {/* dark:text-white sudah dipasang agar aman di mode gelap */}
-                <span className="font-semibold text-base text-neutral-900 dark:text-white">
+              {/* Card Style:
+                  - Light: Putih, hover abu sangat muda
+                  - Dark: Hitam, hover abu sangat gelap
+              */}
+              <Card className="flex h-full items-center justify-center p-6 text-center transition-all hover:bg-neutral-50 dark:hover:bg-neutral-900">
+                {/* FIX: Tambahkan dark:text-neutral-100 supaya teks jadi putih di mode gelap */}
+                <span className="font-semibold text-base text-neutral-900 dark:text-neutral-100">
                   {cat.name}
                 </span>
               </Card>

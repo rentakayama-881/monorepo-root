@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
-import { getApiBase } from "../../lib/api"; // Path relative naik 2 level
+import { getApiBase } from "../../lib/api"; 
 
 async function getLatestThreads() {
   const API = getApiBase();
@@ -39,11 +39,13 @@ export default async function LatestThreads() {
         {threads.length > 0 ? (
           threads.map(th => (
             <Link key={th.id} href={`/thread/${th.id}`} className="block h-full">
-              <Card className="flex h-full flex-col justify-between p-5 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
+              <Card className="flex h-full flex-col justify-between p-5 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700">
                 <div>
-                  <h3 className="mb-2 text-lg font-semibold leading-tight text-neutral-900 dark:text-white">
+                  {/* Judul: Hitam di Light, Putih di Dark */}
+                  <h3 className="mb-2 text-lg font-semibold leading-tight text-neutral-900 dark:text-neutral-100">
                       {th.title}
                   </h3>
+                  {/* Summary: Abu gelap di Light, Abu terang di Dark */}
                   <p className="mb-4 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 line-clamp-2">
                       {th.summary}
                   </p>
@@ -58,7 +60,8 @@ export default async function LatestThreads() {
                   {th.category && (
                     <>
                       <span>•</span>
-                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-600 border border-neutral-200 dark:bg-neutral-900 dark:text-neutral-300 dark:border-neutral-800">
+                      {/* Badge Kategori: Warna background dan border disesuaikan untuk dark mode */}
+                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-600 border border-neutral-200 dark:bg-neutral-900 dark:text-neutral-400 dark:border-neutral-700">
                         {th.category.name || th.category.slug}
                       </span>
                     </>
@@ -76,3 +79,4 @@ export default async function LatestThreads() {
     </div>
   );
 }
+
