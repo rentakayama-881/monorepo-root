@@ -17,21 +17,13 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id">
-      {/* Tambah 'antialiased' biar font lebih tajam ala Vercel */}
-      <body className="min-h-dvh bg-neutral-50 text-neutral-900 antialiased">
+    <html lang="id" suppressHydrationWarning>
+      <body className="min-h-dvh antialiased bg-neutral-50 text-black selection:bg-teal-300 dark:bg-neutral-900 dark:text-white dark:selection:bg-pink-500 dark:selection:text-white">
         <Header />
         <ApiStatusBanner />
-        
-        {/* PERUBAHAN DISINI: 
-            1. Saya hapus <div> pembungkus yang punya border/bg-white.
-            2. Main saya biarkan polos, cuma ngatur jarak dari Header (pt).
-        */}
-        <main className="pt-[4.5rem] min-h-screen">
-            {children}
-        </main>
+
+        <main className="pt-[4.5rem] min-h-dvh">{children}</main>
       </body>
     </html>
   );
 }
-
