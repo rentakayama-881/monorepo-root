@@ -4,14 +4,14 @@ export default function Card({ className, children, ...props }) {
   return (
     <div
       className={clsx(
-        // Style Dasar
+        // Base Layout
         'group relative overflow-hidden rounded-lg border',
-        // LIGHT MODE: Background Putih, Border Abu
-        'bg-white border-neutral-200 text-neutral-900',
-        // DARK MODE: Background Hitam, Border Abu Gelap, DAN TEKS PUTIH (Solusi Masalahmu)
-        'dark:bg-black dark:border-neutral-800 dark:text-neutral-100',
-        // Hover Effect
-        'hover:border-blue-600 dark:hover:border-blue-600 transition-colors duration-300',
+        // LIGHT MODE: Background Putih, Teks Slate Gelap (Mirip Codex), Border Halus
+        'bg-white text-slate-900 border-neutral-200',
+        // DARK MODE: Background Hitam, Teks Putih, Border Abu Gelap
+        'dark:bg-black dark:text-white dark:border-neutral-800',
+        // Hover Effects (Vercel Style)
+        'transition-all duration-300 hover:border-blue-600 dark:hover:border-blue-600',
         className
       )}
       {...props}
@@ -20,4 +20,3 @@ export default function Card({ className, children, ...props }) {
     </div>
   );
 }
-
