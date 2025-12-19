@@ -5,7 +5,7 @@ export default function Hero() {
   return (
     <div className="mb-12 flex flex-col md:flex-row items-center gap-8">
       <div className="flex-1">
-        <h1 className="text-3xl font-semibold text-slate-900 dark:text-white mb-3 tracking-tight">
+        <h1 className="text-3xl font-semibold text-slate-800 dark:text-white mb-3 tracking-tight">
           Platform komunitas dan utilitas digital yang rapi
         </h1>
         <p className="text-base text-slate-600 dark:text-neutral-400 mb-6 max-w-2xl leading-relaxed">
