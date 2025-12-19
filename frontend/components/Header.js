@@ -3,23 +3,20 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import ProfileSidebar from "./ProfileSidebar";
 import { fetchCategories } from "../lib/categories";
 import { AUTH_CHANGED_EVENT, getToken, TOKEN_KEY } from "@/lib/auth";
 
 export default function Header() {
-  const router = useRouter();
-
   const [isAuthed, setIsAuthed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
-  const categoriesWrapRef = useRef<HTMLDivElement | null>(null);
+  const categoriesWrapRef = useRef(null);
 
   useEffect(() => {
     const sync = () => {
@@ -32,16 +29,15 @@ export default function Header() {
 
     sync();
 
-    const onStorage = (e: StorageEvent) => {
-      // kalau token berubah dari tab lain
-      if (e.key === TOKEN_KEY) sync();
+    const onStorage = (e) => {
+      if (e && e.key === TOKEN_KEY) sync();
     };
 
-    window.addEventListener(AUTH_CHANGED_EVENT as any, sync);
+    window.addEventListener(AUTH_CHANGED_EVENT, sync);
     window.addEventListener("storage", onStorage);
 
     return () => {
-      window.removeEventListener(AUTH_CHANGED_EVENT as any, sync);
+      window.removeEventListener(AUTH_CHANGED_EVENT, sync);
       window.removeEventListener("storage", onStorage);
     };
   }, []);
@@ -66,17 +62,16 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+    const handleEscape = (e) => {
+      if (e && e.key === "Escape") {
         setSidebarOpen(false);
         setProfileOpen(false);
         setCategoriesOpen(false);
       }
     };
 
-    const handleClickOutside = (e: MouseEvent) => {
-      // klik di luar dropdown kategori => tutup
-      if (categoriesWrapRef.current && !categoriesWrapRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (e) => {
+      if (categoriesWrapRef.current && !categoriesWrapRef.current.contains(e.target)) {
         setCategoriesOpen(false);
       }
     };
@@ -92,24 +87,14 @@ export default function Header() {
 
   const navItem =
     "px-3 py-1.5 rounded-md text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900 hover:bg-neutral-100";
-  const buttonNeutral =
-    "inline-flex items-center justify-center rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900";
+
   const iconButton =
     "inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900";
-
-  const logout = () => {
-    try {
-      localStorage.removeItem(TOKEN_KEY);
-      window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
-    } catch (_) {}
-    setProfileOpen(false);
-    router.push("/");
-  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="mx-auto flex h-12 max-w-5xl items-center gap-4 px-4 sm:px-6">
-        {/* Mobile menu button (mirip referensi: icon button, hanya muncul di md- ) */}
+        {/* Mobile menu */}
         <button
           className={`${iconButton} -ml-2 md:hidden`}
           onClick={() => setSidebarOpen(true)}
@@ -122,7 +107,7 @@ export default function Header() {
           <span className="mt-1 block h-0.5 w-5 rounded bg-neutral-900" />
         </button>
 
-        {/* Logo (layout & ukuran mengikuti header referensi: compact) */}
+        {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <Image
             src="/images/vectorised-1758374067909.svg"
@@ -135,7 +120,7 @@ export default function Header() {
           <span className="font-semibold leading-none text-neutral-900">Ballerina</span>
         </Link>
 
-        {/* Desktop nav (mirip referensi: pill hover) */}
+        {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1 text-sm">
           <Link href="/" className={navItem}>
             Home
@@ -144,7 +129,7 @@ export default function Header() {
             Threads
           </Link>
 
-          {/* Categories dropdown (mirip referensi: dropdown menu) */}
+          {/* Categories dropdown */}
           <div
             ref={categoriesWrapRef}
             className="relative"
@@ -195,14 +180,12 @@ export default function Header() {
           </Link>
         </nav>
 
-        {/* Spacer (mirip referensi) */}
         <div className="flex-1" />
 
-        {/* Right side actions */}
+        {/* Right actions */}
         <div className="flex items-center gap-2">
           {isAuthed ? (
             <>
-              {/* Avatar button (mirip referensi: icon-ish button) */}
               <button
                 className="relative inline-flex items-center gap-2 rounded-md px-2 py-1 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
                 onClick={() => setProfileOpen((v) => !v)}
@@ -213,23 +196,19 @@ export default function Header() {
                 <span className="hidden sm:inline text-sm font-medium text-neutral-900">Akun</span>
               </button>
 
-              {/* Tetap pakai komponen kamu sekarang */}
               {profileOpen && <ProfileSidebar onClose={() => setProfileOpen(false)} />}
-
-              {/* Logout cepat (opsional tapi sesuai “aksi kanan” ala referensi) */}
-              <button className={buttonNeutral} onClick={logout} type="button">
-                Keluar
-              </button>
             </>
           ) : (
-            <Link href="/login" className={buttonNeutral}>
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+            >
               Masuk
             </Link>
           )}
         </div>
       </div>
 
-      {/* Mobile sidebar (tetap pakai komponen kamu) */}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
     </header>
   );
