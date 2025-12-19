@@ -1,35 +1,55 @@
-import Image from "next/image";
-import Button from "../ui/Button";
+import Image from 'next/image';
+import Button from '../ui/Button';
 
 export default function Hero() {
   return (
-    <div className="mb-12 flex flex-col md:flex-row items-center gap-8">
+    <div className="flex flex-col items-start gap-8 md:flex-row md:items-center">
       <div className="flex-1">
-        <h1 className="text-3xl font-semibold text-slate-800 dark:text-white mb-3 tracking-tight">
+        <p className="mb-3 inline-flex items-center rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1 text-xs font-semibold tracking-wide text-[rgb(var(--muted))]">
+          Komunitas • Thread • Utilitas
+        </p>
+
+        <h1 className="text-balance text-3xl font-semibold tracking-tight text-[rgb(var(--fg))] sm:text-4xl">
           Platform komunitas dan utilitas digital yang rapi
         </h1>
-        <p className="text-base text-slate-600 dark:text-neutral-400 mb-6 max-w-2xl leading-relaxed">
-          Temukan thread, kategori, dan fitur komunitas yang dirancang ringkas. Semua tampilan kini lebih tajam dan profesional.
+
+        <p className="mt-3 max-w-2xl text-pretty text-base leading-relaxed text-[rgb(var(--muted))]">
+          Temukan thread, kategori, dan fitur komunitas yang dirancang ringkas. Tampilan lebih tajam,
+          konsisten, dan otomatis mengikuti mode gelap/cerah device kamu.
         </p>
-        <div className="flex gap-3 flex-wrap">
-          <Button href="/threads" variant="primary">Lihat Semua Thread</Button>
-          <Button href="/category/mencari-pekerjaan" variant="secondary">Kategori Utama</Button>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button href="/threads" variant="primary">
+            Lihat Semua Thread
+          </Button>
+          <Button href="/category/mencari-pekerjaan" variant="secondary">
+            Kategori Utama
+          </Button>
         </div>
       </div>
-      
-      <div className="flex-1 hidden md:flex justify-end items-center pr-2">
-        <div className="p-4 bg-slate-50 border border-neutral-200 dark:bg-neutral-900 dark:border-neutral-800 rounded-xl shadow-sm">
-          <Image 
-            src="/images/vectorised-1758374067909.svg" 
-            alt="Community" 
-            width={200} 
-            height={200} 
-            priority
-            className="dark:opacity-80"
-          />
+
+      <div className="flex-1 md:flex md:justify-end">
+        <div className="hidden w-full max-w-sm md:block">
+          <div
+            className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-sm"
+            style={{
+              background:
+                'linear-gradient(180deg, rgb(var(--surface) / 1) 0%, rgb(var(--surface-2) / 1) 100%)'
+            }}
+          >
+            <div className="flex items-center justify-center">
+              <Image
+                src="/images/vectorised-1758374067909.svg"
+                alt="Community"
+                width={220}
+                height={220}
+                priority
+                className="opacity-95"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
