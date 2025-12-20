@@ -183,7 +183,7 @@ export default function Header() {
         <div className="flex-1" />
 
         {/* Right actions */}
-        <div className="flex items-center gap-2">
+        <div className="relative flex items-center gap-2">
           {isAuthed ? (
             <>
               <button

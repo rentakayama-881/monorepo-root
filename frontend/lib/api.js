@@ -30,7 +30,9 @@ export async function fetchJson(path, options = {}) {
 
     if (!res.ok) {
       const message = data?.error || res.statusText || `Request failed with status ${res.status}`;
-      throw new Error(message);
+      const error = new Error(message);
+      error.status = res.status;
+      throw error;
     }
 
     return data ?? (await res.json());

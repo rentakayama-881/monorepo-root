@@ -1,31 +1,61 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getApiBase } from "../lib/api";
+import { clearToken, getToken } from "@/lib/auth";
+import { fetchJson } from "../lib/api";
 
 export default function ProfileSidebar({ onClose }) {
   const [user, setUser] = useState({ username: "" });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const t = localStorage.getItem("token");
-      if (!t) return;
-      fetch(`${getApiBase()}/api/user/me`, { headers: { Authorization: `Bearer ${t}` } })
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .then(data => setUser({ username: data.username || data.name || "" }))
-        .catch(() => {});
-    } catch (_) {}
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadUser() {
+      setLoading(true);
+      try {
+        const token = getToken();
+        if (!token) return;
+
+        const data = await fetchJson("/api/user/me", {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+
+        if (!cancelled) {
+          setUser({ username: data.username || data.name || "" });
+        }
+      } catch (err) {
+        if (err?.status === 401 || err?.status === 403) {
+          clearToken();
+        }
+        if (!cancelled) {
+          setUser({ username: "" });
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadUser();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
 
-  if (!user.username) return null;
+  if (!user.username || loading) return null;
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    clearToken();
     window.location.href = "/login";
   };
 
   return (
-    <div className="absolute right-0 top-12 z-50 w-72 rounded-md border border-neutral-200 bg-white p-4 shadow-md">
+    <div className="absolute right-0 top-12 z-50 w-full max-w-xs rounded-md border border-neutral-200 bg-white p-4 shadow-md sm:w-72 max-h-[calc(100vh-64px)] overflow-y-auto">
       <div className="flex items-center justify-between">
         <div className="text-base font-semibold text-neutral-900">{user.username}</div>
         <button
