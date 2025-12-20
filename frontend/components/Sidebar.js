@@ -34,19 +34,25 @@ export default function Sidebar({ open, onClose }) {
     ? categories.filter(cat => cat.name.toLowerCase().includes(search.toLowerCase()))
     : categories;
 
+  const sectionHeading =
+    "text-[11px] font-semibold uppercase tracking-[0.15em] text-neutral-500";
+
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-80 max-h-screen bg-white border-r border-neutral-200 shadow-xl transition-transform duration-200 md:hidden flex flex-col ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 flex max-h-screen w-80 flex-col border-r border-neutral-200 bg-white shadow-xl transition-transform duration-200 md:hidden ${open ? "translate-x-0" : "-translate-x-full"}`}
         aria-label="Sidebar"
         aria-hidden={!open}
       >
         {/* Sticky header */}
-        <div className="sticky top-0 z-10 flex flex-col gap-3 border-b border-neutral-100 bg-white px-6 pt-4 pb-4 shadow-sm">
+        <div className="sticky top-0 z-10 space-y-3 border-b border-neutral-100 bg-white px-6 pb-4 pt-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-base font-semibold tracking-tight text-neutral-900">Menu</span>
+            <div className="flex flex-col">
+              <span className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-500">Navigasi</span>
+              <span className="text-base font-semibold leading-tight text-neutral-900">Jelajahi Ballerina</span>
+            </div>
             <button
-              className="rounded-md p-1 text-neutral-800 hover:bg-neutral-100"
+              className="rounded-md p-1 text-neutral-800 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
               onClick={onClose}
               aria-label="Tutup menu"
               type="button"
@@ -56,77 +62,97 @@ export default function Sidebar({ open, onClose }) {
               </svg>
             </button>
           </div>
+
           {/* Navigasi utama */}
-          <nav className="flex flex-wrap gap-2 text-sm font-medium text-neutral-800">
-            <Link href="/" className="rounded-md px-3 py-1.5 hover:bg-neutral-100" onClick={onClose}>Home</Link>
-            <Link href="/about-content" className="rounded-md px-3 py-1.5 hover:bg-neutral-100" onClick={onClose}>Tentang Kami</Link>
-            <Link href="/rules-content" className="rounded-md px-3 py-1.5 hover:bg-neutral-100" onClick={onClose}>Aturan</Link>
-            <Link href="/contact-support" className="rounded-md px-3 py-1.5 hover:bg-neutral-100" onClick={onClose}>Contact Support</Link>
-            <Link href="/pengajuan-badge" className="rounded-md px-3 py-1.5 hover:bg-neutral-100" onClick={onClose}>Pengajuan Badge</Link>
+          <nav className="grid grid-cols-2 gap-2 text-sm font-medium text-neutral-800">
+            <Link href="/" className="rounded-lg border border-neutral-200 px-3 py-2 hover:border-neutral-300 hover:bg-neutral-50" onClick={onClose}>Home</Link>
+            <Link href="/about-content" className="rounded-lg border border-neutral-200 px-3 py-2 hover:border-neutral-300 hover:bg-neutral-50" onClick={onClose}>Tentang Kami</Link>
+            <Link href="/rules-content" className="rounded-lg border border-neutral-200 px-3 py-2 hover:border-neutral-300 hover:bg-neutral-50" onClick={onClose}>Aturan</Link>
+            <Link href="/contact-support" className="rounded-lg border border-neutral-200 px-3 py-2 hover:border-neutral-300 hover:bg-neutral-50" onClick={onClose}>Contact Support</Link>
+            <Link href="/pengajuan-badge" className="rounded-lg border border-neutral-200 px-3 py-2 hover:border-neutral-300 hover:bg-neutral-50" onClick={onClose}>Pengajuan Badge</Link>
+            <Link href="/threads" className="rounded-lg border border-neutral-200 px-3 py-2 hover:border-neutral-300 hover:bg-neutral-50" onClick={onClose}>Threads</Link>
           </nav>
+
           {/* AI Search */}
-          <div className="pt-2">
-            <Link
-              href="/ai-search"
-              className="block w-full rounded-md border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-100"
-              onClick={onClose}
-              aria-label="AI Search"
-            >
-              <span className="inline-flex items-center gap-2">AI Search</span>
-            </Link>
-          </div>
+          <Link
+            href="/ai-search"
+            className="flex items-center justify-between rounded-lg border border-neutral-900 bg-neutral-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            onClick={onClose}
+            aria-label="AI Search"
+          >
+            <span className="inline-flex items-center gap-2">AI Search</span>
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 5l7 7-7 7" />
+            </svg>
+          </Link>
+
           {/* Search kategori */}
-          <input
-            type="text"
-            className="mt-3 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-800"
-            placeholder="Cari kategori thread…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            aria-label="Cari kategori thread"
-          />
+          <div className="relative">
+            <svg className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-neutral-400" viewBox="0 0 20 20" fill="none">
+              <path d="m15.5 15.5-3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="9" cy="9" r="4.75" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+            <input
+              type="text"
+              className="w-full rounded-lg border border-neutral-200 bg-white px-10 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+              placeholder="Cari kategori thread…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Cari kategori thread"
+            />
+          </div>
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 space-y-6 overflow-y-auto px-6 pb-8 pt-4" style={{ overscrollBehavior: "contain" }}>
+        <div className="flex-1 space-y-7 overflow-y-auto px-6 pb-8 pt-5" style={{ overscrollBehavior: "contain" }}>
           {/* Topik diskusi populer */}
-          <div>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Topik Diskusi Populer</div>
-            <nav className="flex flex-col gap-2">
-              {popularTopics.map(topic => (
+          <section className="rounded-lg border border-neutral-100 bg-neutral-50/70 p-4">
+            <div className={`${sectionHeading} mb-3`}>Topik Diskusi Populer</div>
+            <nav className="flex flex-col gap-1.5">
+              {popularTopics.map((topic) => (
                 <Link
                   key={topic.label}
                   href={topic.href}
-                  className="block rounded-md px-4 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-100"
+                  className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-neutral-800 transition hover:bg-white hover:shadow-sm"
                   onClick={onClose}
                 >
-                  {topic.label}
+                  <span>{topic.label}</span>
+                  <svg className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
                 </Link>
               ))}
             </nav>
-          </div>
+          </section>
 
           {/* Kategori threads */}
-          <div>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Kategori Threads</div>
-            <nav className="flex flex-col gap-1.5 text-sm">
+          <section className="rounded-lg border border-neutral-100 bg-white p-4 shadow-sm">
+            <div className={`${sectionHeading} mb-3`}>Kategori Threads</div>
+            <nav className="flex flex-col divide-y divide-neutral-100 text-sm">
               {loadingCategories ? (
-                <div className="px-4 py-2 text-neutral-500">Memuat kategori…</div>
+                <div className="flex items-center gap-2 px-1 py-2 text-neutral-500">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-neutral-400" />
+                  Memuat kategori…
+                </div>
               ) : filteredCategories.length === 0 ? (
-                <div className="px-4 py-2 text-neutral-500">Tidak ditemukan…</div>
+                <div className="px-1 py-2 text-neutral-500">Tidak ditemukan…</div>
               ) : (
-                filteredCategories.map(cat => (
+                filteredCategories.map((cat) => (
                   <Link
                     key={cat.slug}
                     href={`/category/${cat.slug}`}
-                    className="block rounded-md px-4 py-2 font-medium text-neutral-800 hover:bg-neutral-100"
+                    className="flex items-center justify-between px-1 py-3 font-medium text-neutral-800 transition hover:text-neutral-900 hover:underline"
                     onClick={onClose}
                   >
-                    {cat.name}
+                    <span>{cat.name}</span>
+                    <svg className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
                   </Link>
                 ))
               )}
             </nav>
-          </div>
+          </section>
         </div>
       </aside>
 
