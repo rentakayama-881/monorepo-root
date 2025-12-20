@@ -1,26 +1,42 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getApiBase } from "../lib/api";
+import { clearToken, getToken } from "@/lib/auth";
+import { fetchJson } from "../lib/api";
 
 export default function ProfileSidebar({ onClose }) {
   const [user, setUser] = useState({ username: "" });
 
   useEffect(() => {
-    try {
-      const t = localStorage.getItem("token");
-      if (!t) return;
-      fetch(`${getApiBase()}/api/user/me`, { headers: { Authorization: `Bearer ${t}` } })
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .then(data => setUser({ username: data.username || data.name || "" }))
-        .catch(() => {});
-    } catch (_) {}
+    let cancelled = false;
+
+    async function loadUser() {
+      try {
+        const token = getToken();
+        if (!token) return;
+
+        const data = await fetchJson("/api/user/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!cancelled) {
+          setUser({ username: data.username || data.name || "" });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setUser({ username: "" });
+        }
+      }
+    }
+
+    loadUser();
+    return () => { cancelled = true; };
   }, []);
 
   if (!user.username) return null;
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    clearToken();
     window.location.href = "/login";
   };
 

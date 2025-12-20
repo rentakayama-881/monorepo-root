@@ -20,10 +20,20 @@ export default function Sidebar({ open, onClose }) {
     let cancelled = false;
     async function loadCategories() {
       setLoadingCategories(true);
-      const fetched = await fetchCategories();
-      if (!cancelled) {
-        setCategories(fetched);
-        setLoadingCategories(false);
+      try {
+        const fetched = await fetchCategories();
+        if (!cancelled) {
+          setCategories(Array.isArray(fetched) ? fetched : []);
+        }
+      } catch (err) {
+        console.error("Gagal memuat kategori", err);
+        if (!cancelled) {
+          setCategories([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingCategories(false);
+        }
       }
     }
     loadCategories();
