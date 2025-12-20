@@ -185,7 +185,7 @@ export default function Header() {
         {/* Right actions */}
         <div className="flex items-center gap-2">
           {isAuthed ? (
-            <>
+            <div className="relative">
               <button
                 className="relative inline-flex items-center gap-2 rounded-md px-2 py-1 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
                 onClick={() => setProfileOpen((v) => !v)}
@@ -197,7 +197,7 @@ export default function Header() {
               </button>
 
               {profileOpen && <ProfileSidebar onClose={() => setProfileOpen(false)} />}
-            </>
+            </div>
           ) : (
             <Link
               href="/login"
