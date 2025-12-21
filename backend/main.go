@@ -120,6 +120,7 @@ func main() {
 		{
 			orders.POST("", middleware.AuthOptionalMiddleware(), handlers.CreateOrderHandler)
 			orders.POST("/:orderId/attach", handlers.AttachEscrowHandler)
+			orders.GET("", middleware.AuthMiddleware(), handlers.ListOrdersHandler)
 			orders.GET("/:orderId", handlers.GetOrderStatusHandler)
 		}
 
