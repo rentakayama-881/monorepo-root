@@ -53,7 +53,7 @@ function LoginForm() {
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center space-y-1">
-        <h1 className="text-xl font-semibold text-slate-900">Masuk ke Ballerina</h1>
+        <h1 className="text-xl font-semibold text-slate-900">Masuk ke Alephdraad</h1>
         <p className="text-sm text-slate-600">Gunakan email dan password Anda untuk melanjutkan.</p>
       </div>
 
@@ -72,7 +72,7 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={inputClass}
-              placeholder="you@example.com"
+              placeholder="you@mail.com"
             />
           </div>
           <div className="space-y-2">
