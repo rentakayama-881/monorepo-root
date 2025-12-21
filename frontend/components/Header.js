@@ -7,9 +7,12 @@ import Sidebar from "./Sidebar";
 import ProfileSidebar from "./ProfileSidebar";
 import { fetchCategories } from "../lib/categories";
 import { AUTH_CHANGED_EVENT, getToken, TOKEN_KEY } from "@/lib/auth";
+import { resolveAvatarSrc } from "@/lib/avatar";
+import { getApiBase } from "@/lib/api";
 
 export default function Header() {
   const [isAuthed, setIsAuthed] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState("/avatar-default.png");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
@@ -21,7 +24,11 @@ export default function Header() {
   useEffect(() => {
     const sync = () => {
       try {
-        setIsAuthed(!!getToken());
+        const token = getToken();
+        setIsAuthed(!!token);
+        if (!token) {
+          setAvatarUrl("/avatar-default.png");
+        }
       } catch (_) {
         setIsAuthed(false);
       }
@@ -41,6 +48,37 @@ export default function Header() {
       window.removeEventListener("storage", onStorage);
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProfile() {
+      const token = getToken();
+      if (!token) {
+        setAvatarUrl("/avatar-default.png");
+        return;
+      }
+      try {
+        const res = await fetch(`${getApiBase()}/api/user/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          setAvatarUrl("/avatar-default.png");
+          return;
+        }
+        const data = await res.json();
+        if (!cancelled) setAvatarUrl(resolveAvatarSrc(data.avatar_url));
+      } catch {
+        if (!cancelled) setAvatarUrl("/avatar-default.png");
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthed]);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,12 +225,18 @@ export default function Header() {
           {isAuthed ? (
             <div className="relative">
               <button
-                className="relative inline-flex items-center gap-2 rounded-md px-2 py-1 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+                className="inline-flex items-center gap-2 rounded-md px-2 py-1 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
                 onClick={() => setProfileOpen((v) => !v)}
                 aria-label="Akun"
                 type="button"
               >
-                <Image src="/avatar-default.png" alt="Akun" width={24} height={24} className="rounded-full" />
+                <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50">
+                  <img
+                    src={avatarUrl}
+                    alt="Akun"
+                    className="h-full w-full object-cover"
+                  />
+                </span>
                 <span className="hidden sm:inline text-sm font-medium text-neutral-900">Akun</span>
               </button>
 

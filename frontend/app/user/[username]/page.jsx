@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
+import { resolveAvatarSrc } from "@/lib/avatar";
 
 export default function UserProfilePage() {
   const { username } = useParams();
@@ -34,7 +35,7 @@ export default function UserProfilePage() {
       {/* Card utama user */}
       <div className="border rounded-xl bg-white shadow p-8 mb-8 flex flex-col md:flex-row md:items-center gap-6">
         <img
-          src={profile.avatar_url || "/avatar-default.png"}
+          src={resolveAvatarSrc(profile.avatar_url)}
           alt="Avatar"
           width={88}
           height={88}

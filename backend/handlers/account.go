@@ -54,6 +54,7 @@ func GetMyAccountHandler(c *gin.Context) {
 		"company":         user.Company,
 		"telegram":        user.Telegram,
 		"social_accounts": socials,
+		"avatar_url":      user.AvatarURL,
 	})
 }
 
@@ -206,17 +207,7 @@ func UploadAvatarHandler(c *gin.Context) {
 		return
 	}
 
-	// Bangun absolute URL (aware proxy/tunnel)
-	scheme := c.GetHeader("X-Forwarded-Proto")
-	if scheme == "" {
-		if c.Request.TLS != nil {
-			scheme = "https"
-		} else {
-			scheme = "http"
-		}
-	}
-	host := c.Request.Host
-	avatarURL := fmt.Sprintf("%s://%s/static/%s", scheme, host, filename)
+	avatarURL := fmt.Sprintf("/static/%s", filename)
 
 	// Update user
 	user.AvatarURL = avatarURL
