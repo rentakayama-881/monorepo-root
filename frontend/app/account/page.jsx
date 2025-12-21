@@ -5,6 +5,7 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Alert from "../../components/ui/Alert";
 import { getApiBase } from "@/lib/api";
+import { resolveAvatarSrc } from "@/lib/avatar";
 
 export default function AccountPage() {
   const API = `${getApiBase()}/api`;
@@ -152,7 +153,7 @@ export default function AccountPage() {
             <div className="mt-3 flex items-start gap-4">
               <div className="shrink-0">
                 <img
-                  src={avatarPreview || avatarUrl || "/avatar-default.png"}
+                  src={avatarPreview || resolveAvatarSrc(avatarUrl)}
                   alt="Avatar"
                   className="h-16 w-16 rounded-full border border-neutral-200 bg-neutral-50 object-cover"
                 />
