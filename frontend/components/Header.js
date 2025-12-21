@@ -117,7 +117,7 @@ export default function Header() {
             priority
             className="h-5 w-5"
           />
-          <span className="font-semibold leading-none text-neutral-900">Ballerina</span>
+          <span className="font-semibold leading-none text-neutral-900">Alephisme</span>
         </Link>
 
         {/* Desktop nav */}
