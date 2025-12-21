@@ -10,9 +10,9 @@ export default function ContactSupportPage() {
         Butuh bantuan? Tim support Legitimatex siap membantu Anda menyelesaikan kendala seputar akun, transaksi, maupun aktivitas komunitas.
       </p>
       <ul>
-        <li>Email: <a href="mailto:support@legitimatex.com">support@legitimatex.com</a></li>
-        <li>Telegram: <a href="https://t.me/legitimatex_support" target="_blank" rel="noreferrer">@legitimatex_support</a></li>
-        <li>Jam Operasional: Senin - Jumat, 09.00 - 18.00 WIB</li>
+        <li>Email: <a href="mailto:support@legitimatex.com">support@alephisme.cc</a></li>
+        <li>Telegram: <a href="https://t.me/alephisme_support" target="_blank" rel="noreferrer">@legitimatex_support</a></li>
+        <li>Jam Operasional: Senin - Jumat, 18.00 - 24.00 WIB</li>
       </ul>
       <p>
         Kirimkan detail permasalahan Anda secara lengkap agar kami dapat memberikan solusi yang tepat dan cepat.

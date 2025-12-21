@@ -5,7 +5,7 @@ import LatestThreads from '../components/home/LatestThreads';
 import Skeleton from '../components/ui/Skeleton';
 
 export const metadata = {
-  title: 'Ballerina - Home',
+  title: 'Alephisme - Home',
   description: 'Komunitas digital dan Utilitas Tingkat Tinggi'
 };
 
