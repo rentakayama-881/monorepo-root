@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { sendTransaction, waitForTransactionReceipt } from '@wagmi/core';
+import { useAccount } from 'wagmi';
+import WalletConnectButton from '../../../components/WalletConnectButton';
+import { ensureChain, polygonAmoy, wagmiConfig } from '../../../lib/wallet';
 import { fetchJson } from '../../../lib/api';
 
 const DEPLOY_SELECTOR = '0xd8075080';
 const ESCROW_DEPLOYED_TOPIC = '0xe993d834de25b762f3fd5499ffa250d00bd10953e20eee7cd06e9dbb0280b3a1';
 const SIGNATURE_OFFSET = (32n * 5n).toString(16);
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function normalizeHex(value) {
   if (!value) return '';
@@ -63,20 +65,7 @@ function parseEscrowFromReceipt(receipt, orderId) {
   return null;
 }
 
-async function waitForReceipt(txHash) {
-  for (let i = 0; i < 60; i += 1) {
-    const receipt = await window.ethereum.request({
-      method: 'eth_getTransactionReceipt',
-      params: [txHash],
-    });
-    if (receipt) return receipt;
-    await sleep(2000);
-  }
-  throw new Error('Timeout menunggu transaksi konfirmasi');
-}
-
 export default function NewOrderPage() {
-  const [buyerAddress, setBuyerAddress] = useState('');
   const [sellerWallet, setSellerWallet] = useState('');
   const [amount, setAmount] = useState('');
   const [orderId, setOrderId] = useState('');
@@ -87,6 +76,7 @@ export default function NewOrderPage() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { address: buyerAddress, isConnected } = useAccount();
   const router = useRouter();
 
   const factoryAddress = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
@@ -95,16 +85,6 @@ export default function NewOrderPage() {
     'w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900';
   const primaryButton =
     'inline-flex items-center justify-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60';
-
-  const connectWallet = async () => {
-    setError('');
-    if (!window.ethereum) {
-      setError('Metamask tidak terdeteksi di browser.');
-      return;
-    }
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    setBuyerAddress(accounts[0]);
-  };
 
   const parseAmountMinor = () => {
     const parsed = parseFloat(amount);
@@ -126,7 +106,7 @@ export default function NewOrderPage() {
       setIsSubmitting(false);
       return;
     }
-    if (!buyerAddress) {
+    if (!isConnected || !buyerAddress) {
       setError('Hubungkan wallet terlebih dahulu.');
       setIsSubmitting(false);
       return;
@@ -156,14 +136,12 @@ export default function NewOrderPage() {
   };
 
   const deployEscrow = async (orderMeta, minor) => {
-    if (!window.ethereum) {
-      throw new Error('Metamask tidak tersedia');
-    }
-
     const targetFactory = factoryAddress || orderMeta.factory;
     if (!targetFactory) {
       throw new Error('Alamat factory belum dikonfigurasi');
     }
+
+    await ensureChain(polygonAmoy.id);
 
     const data = encodeDeployEscrow(
       normalizeHex(orderMeta.order_id),
@@ -173,20 +151,16 @@ export default function NewOrderPage() {
       normalizeHex(orderMeta.signature),
     );
 
-    const tx = await window.ethereum.request({
-      method: 'eth_sendTransaction',
-      params: [
-        {
-          from: buyerAddress,
-          to: normalizeHex(targetFactory),
-          data,
-        },
-      ],
+    const tx = await sendTransaction(wagmiConfig, {
+      account: buyerAddress,
+      chainId: polygonAmoy.id,
+      to: normalizeHex(targetFactory),
+      data,
     });
 
     setTxHash(tx);
     setStatus('Menunggu konfirmasi blok...');
-    const receipt = await waitForReceipt(tx);
+    const receipt = await waitForTransactionReceipt(wagmiConfig, { hash: tx });
     const parsed = parseEscrowFromReceipt(receipt, orderMeta.order_id);
     if (!parsed?.escrow) {
       throw new Error('Tidak menemukan event EscrowDeployed');
@@ -212,15 +186,9 @@ export default function NewOrderPage() {
         lalu backend disinkronkan dengan alamat escrow dan tx hash.
       </p>
 
-      <div className="mb-4 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={connectWallet}
-          className={primaryButton}
-        >
-          {buyerAddress ? 'Wallet Terhubung' : 'Hubungkan Wallet'}
-        </button>
-        {buyerAddress && <span className="text-sm text-neutral-700">{buyerAddress}</span>}
+      <div className="mb-4 flex items-center gap-3">
+        <WalletConnectButton />
+        {buyerAddress && <span className="text-sm text-neutral-700">Terhubung: {buyerAddress}</span>}
       </div>
 
       <form onSubmit={handleCreate} className="space-y-4">

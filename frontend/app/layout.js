@@ -1,6 +1,7 @@
 import "./globals.css";
 import Header from "../components/Header";
 import ApiStatusBanner from "../components/ApiStatusBanner";
+import Providers from "./providers";
 
 export const metadata = {
   title: "Ballerina",
@@ -19,10 +20,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning>
       <body className="min-h-dvh antialiased bg-neutral-50 text-black selection:bg-teal-300 dark:bg-neutral-900 dark:text-white dark:selection:bg-pink-500 dark:selection:text-white">
-        <Header />
-        <ApiStatusBanner />
+        <Providers>
+          <Header />
+          <ApiStatusBanner />
 
-        <main className="flex-1">{children}</main>
+          <main className="flex-1">{children}</main>
+        </Providers>
       </body>
     </html>
   );
