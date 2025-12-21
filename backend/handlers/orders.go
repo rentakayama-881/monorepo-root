@@ -176,6 +176,47 @@ func GetOrderStatusHandler(c *gin.Context) {
 	})
 }
 
+// GET /api/orders
+func ListOrdersHandler(c *gin.Context) {
+	userVal, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	user, ok := userVal.(*models.User)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var orders []models.Order
+	if err := database.DB.Where("buyer_user_id = ?", user.ID).Order("created_at DESC").Find(&orders).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal memuat order"})
+		return
+	}
+
+	resp := make([]gin.H, 0, len(orders))
+	for _, order := range orders {
+		resp = append(resp, gin.H{
+			"order_id":                order.OrderIDHex,
+			"status":                  order.Status,
+			"escrow_address":          order.EscrowAddress,
+			"tx_hash":                 order.TxHash,
+			"buyer_wallet":            order.BuyerWallet,
+			"seller_wallet":           order.SellerWallet,
+			"amount_usdt":             order.AmountUSDT,
+			"chain_id":                order.ChainID,
+			"created_at":              order.CreatedAt,
+			"updated_at":              order.UpdatedAt,
+			"funding_deadline_hours":  24,
+			"delivery_deadline_hours": 72,
+			"review_window_hours":     48,
+		})
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
 func signOrder(orderIDBytes []byte, buyerAddr, sellerAddr common.Address, amount uint64) ([]byte, error) {
 	orderID := [32]byte{}
 	copy(orderID[:], orderIDBytes)

@@ -129,6 +129,24 @@ export default function ProfileSidebar({ onClose }) {
               </svg>
             </Link>
             <Link
+              href="/orders/new"
+              className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm"
+            >
+              New Order
+              <svg className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+            <Link
+              href="/orders"
+              className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm"
+            >
+              Order History
+              <svg className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+            <Link
               href="/threads"
               className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm"
             >
