@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { sendTransaction, waitForTransactionReceipt } from '@wagmi/core';
 import { useAccount } from 'wagmi';
 import WalletConnectButton from '../../../components/WalletConnectButton';
-import { ensureChain, polygonAmoy, wagmiConfig } from '../../../lib/wallet';
+import { ensureChain, getWagmiConfig, polygonAmoy } from '../../../lib/wallet';
 import { fetchJson } from '../../../lib/api';
 
 const DEPLOY_SELECTOR = '0xd8075080';
@@ -151,7 +151,8 @@ export default function NewOrderPage() {
       normalizeHex(orderMeta.signature),
     );
 
-    const tx = await sendTransaction(wagmiConfig, {
+    const config = await getWagmiConfig();
+    const tx = await sendTransaction(config, {
       account: buyerAddress,
       chainId: polygonAmoy.id,
       to: normalizeHex(targetFactory),
@@ -160,7 +161,7 @@ export default function NewOrderPage() {
 
     setTxHash(tx);
     setStatus('Menunggu konfirmasi blok...');
-    const receipt = await waitForTransactionReceipt(wagmiConfig, { hash: tx });
+    const receipt = await waitForTransactionReceipt(config, { hash: tx });
     const parsed = parseEscrowFromReceipt(receipt, orderMeta.order_id);
     if (!parsed?.escrow) {
       throw new Error('Tidak menemukan event EscrowDeployed');
