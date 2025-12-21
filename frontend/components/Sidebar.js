@@ -49,7 +49,7 @@ export default function Sidebar({ open, onClose }) {
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-500">Navigasi</span>
-              <span className="text-base font-semibold leading-tight text-neutral-900">Alephisme</span>
+              <span className="text-base font-semibold leading-tight text-neutral-900">Alephdraad</span>
             </div>
             <button
               className="rounded-md p-1 text-neutral-800 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
