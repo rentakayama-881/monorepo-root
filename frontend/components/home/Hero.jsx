@@ -10,12 +10,11 @@ export default function Hero() {
         </p>
 
         <h1 className="text-balance text-3xl font-semibold tracking-tight text-[rgb(var(--fg))] sm:text-4xl">
-          Platform komunitas dan utilitas digital yang rapi
+          Platform komunitas dan utilitas digital tingkat tinggi 
         </h1>
 
         <p className="mt-3 max-w-2xl text-pretty text-base leading-relaxed text-[rgb(var(--muted))]">
-          Temukan thread, kategori, dan fitur komunitas yang dirancang ringkas. Tampilan lebih tajam,
-          konsisten, dan otomatis mengikuti mode gelap/cerah device kamu.
+          Temukan thread, kategori, dan fitur komunitas yang dirancang ringkas.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
