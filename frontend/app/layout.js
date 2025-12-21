@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
         <Header />
         <ApiStatusBanner />
 
-        <main className="pt-[2.3rem] min-h-dvh">{children}</main>
+        <main className="flex-1">{children}</main>
       </body>
     </html>
   );
