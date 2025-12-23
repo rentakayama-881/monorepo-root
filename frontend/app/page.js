@@ -5,7 +5,7 @@ import LatestThreads from '../components/home/LatestThreads';
 import Skeleton from '../components/ui/Skeleton';
 
 export const metadata = {
-  title: 'Alephisme - Home',
+  title: 'Alephdraad - Home',
   description: 'Komunitas digital dan Utilitas Tingkat Tinggi'
 };
 
