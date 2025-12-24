@@ -66,7 +66,7 @@ export default function RegisterPage() {
     <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center space-y-1">
         <h1 className="text-xl font-semibold text-slate-900">Buat akun</h1>
-        <p className="text-sm text-slate-600">Daftar dengan email, pilih username (opsional), dan mulai eksplorasi.</p>
+        <p className="text-sm text-slate-600">Daftar dengan email, pilih username, dan mulai eksplorasi.</p>
       </div>
 
       <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
@@ -95,9 +95,10 @@ export default function RegisterPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">Username (opsional)</label>
+            <label className="text-sm font-medium text-slate-800">Username</label>
             <input
               type="text"
+              required
               value={form.username}
               onChange={(e) => update("username", e.target.value)}
               className={inputClass}

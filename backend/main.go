@@ -100,6 +100,7 @@ func main() {
 	worker.StartEventWorker(context.Background())
 
 	router := gin.Default()
+	router.Use(middleware.SecurityHeadersMiddleware())
 	router.Use(cors.New(buildCORSConfig()))
 	// Serve file statis: /static/...
 	router.Static("/static", "./public")
