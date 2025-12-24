@@ -15,6 +15,8 @@ import (
 	"backend-gin/dto"
 	"backend-gin/middleware"
 	"backend-gin/models"
+	"backend-gin/utils"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -249,7 +251,7 @@ func ConfirmVerification(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Email berhasil diverifikasi"})
 }
 
-func createAndLogVerificationToken(user *models.User, c *gin.Context) (string, string, error) {
+func createAndLogVerificationToken(user *models.User, _ *gin.Context) (string, string, error) {
 	raw, err := randomToken()
 	if err != nil {
 		return "", "", err
@@ -271,7 +273,12 @@ func createAndLogVerificationToken(user *models.User, c *gin.Context) (string, s
 		frontend = "http://localhost:3000"
 	}
 	link := frontend + "/verify-email?token=" + raw
-	log.Printf("Email verification for %s: %s", user.Email, link)
+
+	// Send verification email via Resend
+	if err := utils.SendVerificationEmail(user.Email, raw); err != nil {
+		log.Printf("Warning: Failed to send verification email to %s: %v", user.Email, err)
+		// Continue anyway - don't block registration if email fails
+	}
 
 	return raw, link, nil
 }

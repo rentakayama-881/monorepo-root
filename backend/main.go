@@ -14,6 +14,7 @@ import (
 	"backend-gin/handlers"
 	"backend-gin/middleware"
 	"backend-gin/worker"
+
 	"github.com/joho/godotenv"
 )
 
@@ -109,6 +110,7 @@ func main() {
 			threads.GET("/categories", handlers.GetCategoriesHandler)
 			threads.GET("/category/:slug", handlers.GetThreadsByCategoryHandler)
 			threads.GET("/latest", handlers.GetLatestThreadsHandler)
+			threads.GET("/:id/public", handlers.GetPublicThreadDetailHandler)
 			threads.GET("/:id", middleware.AuthMiddleware(), handlers.GetThreadDetailHandler)
 			threads.POST("", middleware.AuthMiddleware(), handlers.CreateThreadHandler)
 			threads.GET("/me", middleware.AuthMiddleware(), handlers.GetMyThreadsHandler)
@@ -126,8 +128,8 @@ func main() {
 
 		disputes := api.Group("/disputes")
 		{
-			disputes.GET(":id", middleware.AuthMiddleware(), handlers.GetDisputeHandler)
-			disputes.POST(":id", middleware.AuthMiddleware(), handlers.PostDisputeActionHandler)
+			disputes.GET("/escrow/:escrowAddress", middleware.AuthMiddleware(), handlers.GetDisputeByEscrowID)
+			disputes.POST("/escrow/:escrowAddress/arbitrate", middleware.AuthMiddleware(), handlers.SubmitArbitrationVote)
 		}
 
 		api.GET("/chainlink/rate", handlers.GetChainlinkRateHandler)

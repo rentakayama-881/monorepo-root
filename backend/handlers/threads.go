@@ -9,6 +9,7 @@ import (
 	"backend-gin/database"
 	"backend-gin/dto"
 	"backend-gin/models"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
 )
@@ -88,6 +89,40 @@ func GetThreadDetailHandler(c *gin.Context) {
 		"content_type": thr.ContentType,
 		"content":      content,
 		"meta":         meta, // seluruh meta dikirim (image, telegram, etc)
+		"created_at":   thr.CreatedAt.Unix(),
+		"user": gin.H{
+			"username":   uname,
+			"avatar_url": thr.User.AvatarURL,
+			"id":         thr.UserID,
+		},
+		"category": gin.H{"slug": thr.Category.Slug, "name": thr.Category.Name},
+	})
+}
+
+// GET /api/threads/:id/public - Public endpoint without auth requirement
+func GetPublicThreadDetailHandler(c *gin.Context) {
+	id := c.Param("id")
+	thr := models.Thread{}
+	if err := database.DB.Preload("User").Preload("Category").First(&thr, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "thread tidak ditemukan"})
+		return
+	}
+	uname := ""
+	if thr.User.Username != nil {
+		uname = *thr.User.Username
+	}
+	var content interface{}
+	_ = json.Unmarshal(thr.ContentJSON, &content)
+	var meta interface{}
+	_ = json.Unmarshal(thr.Meta, &meta)
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":           thr.ID,
+		"title":        thr.Title,
+		"summary":      thr.Summary,
+		"content_type": thr.ContentType,
+		"content":      content,
+		"meta":         meta,
 		"created_at":   thr.CreatedAt.Unix(),
 		"user": gin.H{
 			"username":   uname,

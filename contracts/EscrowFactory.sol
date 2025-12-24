@@ -53,11 +53,13 @@ contract EscrowFactory {
         address buyer,
         address seller,
         uint256 amountUSDT,
+        uint256 expiresAt,
         bytes calldata signature
     ) external returns (address) {
         require(backendSigner != address(0), "backend signer not set");
         require(escrowOf[orderId] == address(0), "exists");
-        require(_verifySignature(orderId, buyer, seller, amountUSDT, signature), "invalid signature");
+        require(block.timestamp <= expiresAt, "signature expired");
+        require(_verifySignature(orderId, buyer, seller, amountUSDT, expiresAt, signature), "invalid signature");
 
         Escrow e = new Escrow(usdt, feeLogic, staking, arbitrationAdapter, buyer, seller, amountUSDT, orderId);
         escrowOf[orderId] = address(e);
@@ -71,9 +73,10 @@ contract EscrowFactory {
         address buyer,
         address seller,
         uint256 amountUSDT,
+        uint256 expiresAt,
         bytes calldata signature
     ) internal view returns (bool) {
-        bytes32 digest = keccak256(abi.encode(orderId, buyer, seller, amountUSDT, block.chainid, address(this)));
+        bytes32 digest = keccak256(abi.encode(orderId, buyer, seller, amountUSDT, block.chainid, address(this), expiresAt));
         bytes32 ethSigned = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", digest));
         (bytes32 r, bytes32 s, uint8 v) = _splitSignature(signature);
         if (v < 27) {

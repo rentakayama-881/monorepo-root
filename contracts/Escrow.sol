@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {IERC20} from "./interfaces/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface IFeeLogic {
     function quoteFeeBps(address seller, uint256 orderAmountUSDT) external view returns (uint16);
@@ -13,7 +14,7 @@ interface IStaking {
     function stake(address) external view returns (uint256);
 }
 
-contract Escrow {
+contract Escrow is ReentrancyGuard {
     enum Status { Pending, Funded, Delivered, Disputed, Resolved, Refunded, Cancelled }
 
     IERC20 public immutable usdt;
@@ -82,10 +83,11 @@ contract Escrow {
     }
 
     // resolve called by arbitration adapter or directly by arbitrator via adapter gating
-    function resolveAndExecute(bool releaseToSeller, uint256 feeOverrideBps, bytes calldata decision) external {
+    function resolveAndExecute(bool releaseToSeller, uint256 feeOverrideBps, bytes calldata decision) external nonReentrant {
         require(msg.sender == arbitrationAdapter, "only arbAdapter");
         require(status == Status.Disputed || status == Status.Delivered || status == Status.Funded, "bad state");
         status = Status.Resolved;
+        emit Resolved(decision);
 
         if (releaseToSeller) {
             uint16 feeBps = feeOverrideBps > 0 ? uint16(feeOverrideBps) : feeLogic.quoteFeeBps(seller, amountUSDT);
@@ -99,6 +101,5 @@ contract Escrow {
             usdt.transfer(buyer, amountUSDT);
             emit Refunded(amountUSDT);
         }
-        emit Resolved(decision);
     }
 }

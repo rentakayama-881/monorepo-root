@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"time"
 
 	"backend-gin/config"
 	"backend-gin/database"
@@ -85,14 +86,18 @@ func CreateOrderHandler(c *gin.Context) {
 		return
 	}
 
+	// Generate expiration timestamp (24 hours from now)
+	expirationTimestamp := time.Now().Add(24 * time.Hour).Unix()
+
 	c.JSON(http.StatusOK, gin.H{
-		"order_id":  orderIDHex,
-		"signature": "0x" + hex.EncodeToString(signature),
-		"chain_id":  order.ChainID,
-		"factory":   config.EscrowFactoryAddress.Hex(),
-		"buyer":     order.BuyerWallet,
-		"seller":    order.SellerWallet,
-		"amount":    order.AmountUSDT,
+		"order_id":   orderIDHex,
+		"signature":  "0x" + hex.EncodeToString(signature),
+		"chain_id":   order.ChainID,
+		"factory":    config.EscrowFactoryAddress.Hex(),
+		"buyer":      order.BuyerWallet,
+		"seller":     order.SellerWallet,
+		"amount":     order.AmountUSDT,
+		"expires_at": expirationTimestamp,
 	})
 }
 
@@ -221,6 +226,9 @@ func signOrder(orderIDBytes []byte, buyerAddr, sellerAddr common.Address, amount
 	orderID := [32]byte{}
 	copy(orderID[:], orderIDBytes)
 
+	// Add expiration timestamp (24 hours from now) to signature
+	expirationTimestamp := time.Now().Add(24 * time.Hour).Unix()
+
 	arguments := abi.Arguments{
 		{Type: mustNewType("bytes32")},
 		{Type: mustNewType("address")},
@@ -228,9 +236,10 @@ func signOrder(orderIDBytes []byte, buyerAddr, sellerAddr common.Address, amount
 		{Type: mustNewType("uint256")},
 		{Type: mustNewType("uint256")},
 		{Type: mustNewType("address")},
+		{Type: mustNewType("uint256")}, // expiration timestamp
 	}
 
-	packed, err := arguments.Pack(orderID, buyerAddr, sellerAddr, new(big.Int).SetUint64(amount), config.ChainID, config.EscrowFactoryAddress)
+	packed, err := arguments.Pack(orderID, buyerAddr, sellerAddr, new(big.Int).SetUint64(amount), config.ChainID, config.EscrowFactoryAddress, new(big.Int).SetInt64(expirationTimestamp))
 	if err != nil {
 		return nil, err
 	}

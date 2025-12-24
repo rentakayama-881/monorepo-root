@@ -43,7 +43,17 @@ export default function OrderDetailPage() {
     };
 
     fetchOrder();
-  }, [incomingId]);
+
+    // Auto-refresh every 10 seconds for pending/active orders
+    const intervalId = setInterval(() => {
+      if (incomingId && !error) {
+        fetchOrder();
+      }
+    }, 10000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
+  }, [incomingId, error]);
 
   return (
     <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow">
@@ -56,36 +66,41 @@ export default function OrderDetailPage() {
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {order && !error && (
-        <div className="divide-y divide-gray-200 text-sm">
-          <div className="py-3 flex justify-between">
-            <span className="text-gray-600">Status</span>
-            <span className="font-semibold text-gray-800">{order.status}</span>
+        <>
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+            <span className="font-medium">🔄 Auto-refresh aktif</span> - Status order akan diperbarui otomatis setiap 10 detik
           </div>
-          <div className="py-3 flex justify-between">
-            <span className="text-gray-600">Tx Hash</span>
-            <span className="font-mono text-gray-800 break-all">{order.tx_hash || '-'}</span>
+          <div className="divide-y divide-gray-200 text-sm">
+            <div className="py-3 flex justify-between">
+              <span className="text-gray-600">Status</span>
+              <span className="font-semibold text-gray-800">{order.status}</span>
+            </div>
+            <div className="py-3 flex justify-between">
+              <span className="text-gray-600">Tx Hash</span>
+              <span className="font-mono text-gray-800 break-all">{order.tx_hash || '-'}</span>
+            </div>
+            <div className="py-3 flex justify-between">
+              <span className="text-gray-600">Escrow Address</span>
+              <span className="font-mono text-gray-800 break-all">{order.escrow_address || '-'}</span>
+            </div>
+            <div className="py-3 flex justify-between">
+              <span className="text-gray-600">Buyer</span>
+              <span className="font-mono text-gray-800 break-all">{order.buyer_wallet}</span>
+            </div>
+            <div className="py-3 flex justify-between">
+              <span className="text-gray-600">Seller</span>
+              <span className="font-mono text-gray-800 break-all">{order.seller_wallet}</span>
+            </div>
+            <div className="py-3 flex justify-between">
+              <span className="text-gray-600">Amount (USDT)</span>
+              <span className="font-semibold text-gray-800">{formatAmount(order.amount_usdt)}</span>
+            </div>
+            <div className="py-3 flex justify-between">
+              <span className="text-gray-600">Chain ID</span>
+              <span className="font-mono text-gray-800">{order.chain_id}</span>
+            </div>
           </div>
-          <div className="py-3 flex justify-between">
-            <span className="text-gray-600">Escrow Address</span>
-            <span className="font-mono text-gray-800 break-all">{order.escrow_address || '-'}</span>
-          </div>
-          <div className="py-3 flex justify-between">
-            <span className="text-gray-600">Buyer</span>
-            <span className="font-mono text-gray-800 break-all">{order.buyer_wallet}</span>
-          </div>
-          <div className="py-3 flex justify-between">
-            <span className="text-gray-600">Seller</span>
-            <span className="font-mono text-gray-800 break-all">{order.seller_wallet}</span>
-          </div>
-          <div className="py-3 flex justify-between">
-            <span className="text-gray-600">Amount (USDT)</span>
-            <span className="font-semibold text-gray-800">{formatAmount(order.amount_usdt)}</span>
-          </div>
-          <div className="py-3 flex justify-between">
-            <span className="text-gray-600">Chain ID</span>
-            <span className="font-mono text-gray-800">{order.chain_id}</span>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -8,6 +8,7 @@ require (
 	github.com/gin-gonic/gin v1.10.1
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/joho/godotenv v1.5.1
+	github.com/resend/resend-go/v2 v2.28.0
 	golang.org/x/crypto v0.39.0
 	gorm.io/datatypes v1.2.6
 	gorm.io/driver/postgres v1.6.0
