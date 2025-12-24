@@ -134,15 +134,25 @@ export default function Header() {
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4 sm:px-6">
         {/* Mobile menu */}
         <button
-          className={`${iconButton} -ml-2 md:hidden`}
+          className="flex items-center justify-center -ml-2 md:hidden p-2 rounded-md hover:bg-neutral-100 transition-colors"
           onClick={() => setSidebarOpen(true)}
           aria-label="Toggle menu"
           type="button"
         >
-          <span className="sr-only">Toggle menu</span>
-          <span className="block h-0.5 w-5 rounded bg-neutral-900" />
-          <span className="mt-1 block h-0.5 w-5 rounded bg-neutral-900" />
-          <span className="mt-1 block h-0.5 w-5 rounded bg-neutral-900" />
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            className="text-neutral-900"
+          >
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
         </button>
 
         {/* Logo */}
