@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	apperrors "backend-gin/errors"
+	"backend-gin/utils"
 )
 
 // CreateThreadInput represents thread creation input
@@ -53,14 +54,22 @@ func (c *CreateThreadInput) Validate() error {
 	if len(title) > 200 {
 		return apperrors.ErrInvalidInput.WithDetails("title maksimal 200 karakter")
 	}
-	c.Title = title
+	// Check for XSS patterns
+	if !utils.ValidateNoXSS(title) {
+		return apperrors.ErrInvalidInput.WithDetails("title mengandung karakter atau pola yang tidak diizinkan")
+	}
+	c.Title = utils.SanitizeText(title)
 
 	// Validate summary
 	summary := strings.TrimSpace(c.Summary)
 	if len(summary) > 500 {
 		return apperrors.ErrInvalidInput.WithDetails("summary maksimal 500 karakter")
 	}
-	c.Summary = summary
+	// Check for XSS patterns in summary
+	if summary != "" && !utils.ValidateNoXSS(summary) {
+		return apperrors.ErrInvalidInput.WithDetails("summary mengandung karakter atau pola yang tidak diizinkan")
+	}
+	c.Summary = utils.SanitizeText(summary)
 
 	// Validate content type
 	contentType := strings.ToLower(strings.TrimSpace(c.ContentType))
@@ -111,7 +120,12 @@ func (u *UpdateThreadInput) Validate() error {
 		if len(title) > 200 {
 			return apperrors.ErrInvalidInput.WithDetails("title maksimal 200 karakter")
 		}
-		*u.Title = title
+		// Check for XSS patterns
+		if !utils.ValidateNoXSS(title) {
+			return apperrors.ErrInvalidInput.WithDetails("title mengandung karakter atau pola yang tidak diizinkan")
+		}
+		sanitized := utils.SanitizeText(title)
+		*u.Title = sanitized
 	}
 
 	// Validate summary if provided
@@ -120,7 +134,12 @@ func (u *UpdateThreadInput) Validate() error {
 		if len(summary) > 500 {
 			return apperrors.ErrInvalidInput.WithDetails("summary maksimal 500 karakter")
 		}
-		*u.Summary = summary
+		// Check for XSS patterns
+		if summary != "" && !utils.ValidateNoXSS(summary) {
+			return apperrors.ErrInvalidInput.WithDetails("summary mengandung karakter atau pola yang tidak diizinkan")
+		}
+		sanitized := utils.SanitizeText(summary)
+		*u.Summary = sanitized
 	}
 
 	// Validate content type if provided

@@ -42,7 +42,7 @@ var (
 	ErrInvalidCredentials    = NewAppError("AUTH001", "Kredensial tidak valid", http.StatusUnauthorized)
 	ErrEmailNotVerified      = NewAppError("AUTH002", "Email belum terverifikasi", http.StatusForbidden)
 	ErrEmailAlreadyExists    = NewAppError("AUTH003", "Email sudah terdaftar", http.StatusBadRequest)
-	ErrUsernameAlreadyExists = NewAppError("AUTH004", "Username sudah digunakan", http.StatusConflict)
+	ErrUsernameAlreadyExists = NewAppError("AUTH004", "Username sudah digunakan oleh pengguna lain", http.StatusConflict)
 	ErrInvalidToken          = NewAppError("AUTH005", "Token tidak valid atau sudah kedaluwarsa", http.StatusBadRequest)
 	ErrTokenExpired          = NewAppError("AUTH006", "Token sudah kedaluwarsa", http.StatusBadRequest)
 	ErrWeakPassword          = NewAppError("AUTH007", "Password terlalu lemah", http.StatusBadRequest)

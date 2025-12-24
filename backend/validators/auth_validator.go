@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	apperrors "backend-gin/errors"
+	"backend-gin/utils"
 )
 
 var emailRegex = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
@@ -15,6 +16,11 @@ func ValidateEmail(email string) error {
 	if email == "" {
 		return apperrors.ErrMissingField.WithDetails("email")
 	}
+	// Check for XSS patterns
+	if !utils.ValidateNoXSS(email) {
+		return apperrors.ErrInvalidEmail.WithDetails("Email mengandung karakter yang tidak diizinkan")
+	}
+	email = utils.SanitizeEmail(email)
 	if !emailRegex.MatchString(email) {
 		return apperrors.ErrInvalidEmail
 	}
@@ -39,6 +45,11 @@ func ValidateUsername(username string) error {
 	if username == "" {
 		return nil // username is optional
 	}
+	// Check for XSS patterns
+	if !utils.ValidateNoXSS(username) {
+		return apperrors.ErrInvalidUserInput.WithDetails("Username mengandung karakter yang tidak diizinkan")
+	}
+	username = utils.SanitizeUsername(username)
 	if len(username) > 64 {
 		return apperrors.ErrInvalidUserInput.WithDetails("Username maksimal 64 karakter")
 	}
