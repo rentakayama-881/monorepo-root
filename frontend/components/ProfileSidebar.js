@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { getApiBase } from "../lib/api";
 import { clearToken, getToken } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar";
+import { maskEmail } from "@/lib/email";
 
 export default function ProfileSidebar({ onClose }) {
-  const [user, setUser] = useState({ username: "", avatar_url: "" });
+  const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
   const [status, setStatus] = useState("loading");
   const panelRef = useRef(null);
 
@@ -94,7 +95,10 @@ export default function ProfileSidebar({ onClose }) {
             </div>
             <div className="min-w-0">
               <div className="truncate text-base font-semibold text-neutral-900">{user.username}</div>
-              <div className="text-xs text-neutral-500">Kelola aktivitas & profil Anda</div>
+              {user.email && (
+                <div className="text-xs text-neutral-500">{maskEmail(user.email)}</div>
+              )}
+              <div className="text-xs text-neutral-400">Kelola aktivitas & profil Anda</div>
             </div>
           </div>
         ) : (

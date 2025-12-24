@@ -131,7 +131,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div className="mx-auto flex h-12 max-w-5xl items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4 sm:px-6">
         {/* Mobile menu */}
         <button
           className={`${iconButton} -ml-2 md:hidden`}
@@ -176,6 +176,7 @@ export default function Header() {
           >
             <button
               className={`${navItem} inline-flex items-center gap-1`}
+              onClick={() => setCategoriesOpen(!categoriesOpen)}
               aria-haspopup="true"
               aria-expanded={categoriesOpen}
               type="button"
@@ -215,6 +216,12 @@ export default function Header() {
           </Link>
           <Link href="/rules-content" className={navItem}>
             Aturan
+          </Link>
+          <Link href="/contact-support" className={navItem}>
+            Contact Support
+          </Link>
+          <Link href="/pengajuan-badge" className={navItem}>
+            Pengajuan Badge
           </Link>
         </nav>
 

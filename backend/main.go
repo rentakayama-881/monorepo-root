@@ -12,10 +12,13 @@ import (
 	"backend-gin/config"
 	"backend-gin/database"
 	"backend-gin/handlers"
+	"backend-gin/logger"
 	"backend-gin/middleware"
+	"backend-gin/services"
 	"backend-gin/worker"
 
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
 func buildCORSConfig() cors.Config {
@@ -68,9 +71,34 @@ func main() {
 		log.Println("Tidak dapat memuat file .env, pastikan file .env ada di root folder!")
 	}
 
+	// Initialize logger
+	logger.InitLogger()
+	defer logger.Log.Sync()
+
+	logger.Info("Starting Ballerina Backend Server")
+
+	// Initialize database
 	database.InitDB()
 	config.InitConfig()
+
+	// Initialize services
+	authService := services.NewAuthService(database.DB)
+	orderService := services.NewOrderService(database.DB)
+	threadService := services.NewThreadService(database.DB)
+
+	// Initialize handlers
+	authHandler := handlers.NewAuthHandler(authService)
+	orderHandler := handlers.NewOrderHandler(orderService)
+	threadHandler := handlers.NewThreadHandler(threadService)
+
+	// Verify all handlers are properly initialized
+	if authHandler == nil || orderHandler == nil || threadHandler == nil {
+		logger.Fatal("Failed to initialize handlers")
+	}
+
+	// Start event worker
 	worker.StartEventWorker(context.Background())
+
 	router := gin.Default()
 	router.Use(cors.New(buildCORSConfig()))
 	// Serve file statis: /static/...
@@ -82,10 +110,10 @@ func main() {
 
 		auth := api.Group("/auth")
 		{
-			auth.POST("/register", handlers.RegisterHandler)
-			auth.POST("/login", handlers.LoginHandler)
-			auth.POST("/verify/request", handlers.RequestVerification)
-			auth.POST("/verify/confirm", handlers.ConfirmVerification)
+			auth.POST("/register", authHandler.Register)
+			auth.POST("/login", authHandler.Login)
+			auth.POST("/verify/request", authHandler.RequestVerification)
+			auth.POST("/verify/confirm", authHandler.ConfirmVerification)
 			auth.POST("/username", middleware.AuthMiddleware(), handlers.CreateUsernameHandler)
 		}
 
@@ -117,13 +145,13 @@ func main() {
 			threads.PUT("/:id", middleware.AuthMiddleware(), handlers.UpdateThreadHandler)
 		}
 
-		// Marketplace endpoints (sprint skeleton)
+		// Marketplace endpoints
 		orders := api.Group("/orders")
 		{
-			orders.POST("", middleware.AuthOptionalMiddleware(), handlers.CreateOrderHandler)
-			orders.POST("/:orderId/attach", handlers.AttachEscrowHandler)
-			orders.GET("", middleware.AuthMiddleware(), handlers.ListOrdersHandler)
-			orders.GET("/:orderId", handlers.GetOrderStatusHandler)
+			orders.POST("", middleware.AuthOptionalMiddleware(), orderHandler.CreateOrder)
+			orders.POST("/:orderId/attach", orderHandler.AttachEscrow)
+			orders.GET("", middleware.AuthMiddleware(), orderHandler.ListOrders)
+			orders.GET("/:orderId", orderHandler.GetOrderStatus)
 		}
 
 		disputes := api.Group("/disputes")
@@ -157,7 +185,7 @@ func main() {
 		port = "8080"
 	}
 
-	log.Println("Server backend berjalan di port " + port)
+	logger.Info("Server backend berjalan di port "+port, zap.String("port", port))
 
 	// Jalankan server dengan port dinamis
 	// Tambahkan "0.0.0.0" agar bisa diakses dari luar container Render

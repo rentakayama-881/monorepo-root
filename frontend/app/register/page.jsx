@@ -27,11 +27,19 @@ export default function RegisterPage() {
     setError("");
     setInfo("");
     setLoading(true);
+    
+    // Validate username is required
+    if (!form.username || form.username.trim() === "") {
+      setError("Username wajib diisi");
+      setLoading(false);
+      return;
+    }
+    
     try {
       const payload = {
         email: form.email,
         password: form.password,
-        username: form.username || undefined,
+        username: form.username,
         full_name: form.full_name || undefined,
       };
       const data = await fetchJson(`/api/auth/register`, {

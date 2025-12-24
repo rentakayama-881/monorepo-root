@@ -6,6 +6,7 @@ import Input from "../../components/ui/Input";
 import Alert from "../../components/ui/Alert";
 import { getApiBase } from "@/lib/api";
 import { resolveAvatarSrc } from "@/lib/avatar";
+import { maskEmail } from "@/lib/email";
 
 export default function AccountPage() {
   const API = `${getApiBase()}/api`;
@@ -186,6 +187,43 @@ export default function AccountPage() {
                   )}
                 </div>
                 <div className="text-xs text-neutral-500">Gunakan gambar rasio 1:1 untuk hasil terbaik. Max ~2MB (sesuaikan backend).</div>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+            <h3 className="font-medium">Email</h3>
+            <div className="mt-3 space-y-3">
+              {me?.email && (
+                <div className="flex items-center justify-between rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-neutral-700">{maskEmail(me.email)}</span>
+                    {me.is_verified && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Terverifikasi
+                      </span>
+                    )}
+                  </div>
+                  {!me.is_verified && (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        // TODO: Implement verify email request
+                        alert("Fitur verifikasi email akan segera hadir");
+                      }}
+                    >
+                      Verify Email
+                    </Button>
+                  )}
+                </div>
+              )}
+              <div className="text-xs text-neutral-500">
+                Email Anda digunakan untuk login dan notifikasi penting.
               </div>
             </div>
           </section>

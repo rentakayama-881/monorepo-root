@@ -41,7 +41,13 @@ function LoginForm() {
       });
 
       setToken(data.token);
-      router.replace("/");
+      
+      // Check if user has username, redirect to set-username if not
+      if (!data.user?.username || data.user.username === "") {
+        router.replace("/set-username");
+      } else {
+        router.replace("/");
+      }
 
     } catch (e) {
       setError(e.message || "Terjadi kesalahan");
