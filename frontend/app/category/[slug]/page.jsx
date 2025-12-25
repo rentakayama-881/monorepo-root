@@ -62,36 +62,28 @@ export default function CategoryThreadsPage() {
             <Link
               key={thread.id}
               href={`/thread/${thread.id}`}
-              className={`flex items-start gap-4 p-4 transition-colors hover:bg-[rgb(var(--surface-2))] ${idx !== threads.length - 1 ? "border-b border-[rgb(var(--border))]" : ""}`}
+              className={`block p-4 transition-colors hover:bg-[rgb(var(--surface-2))] ${idx !== threads.length - 1 ? "border-b border-[rgb(var(--border))]" : ""}`}
             >
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--brand))] bg-opacity-10">
-                <svg className="h-4 w-4 text-[rgb(var(--brand))]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
+              <h2 className="text-base font-semibold text-[rgb(var(--fg))] hover:text-[rgb(var(--brand))]">
+                {thread.title}
+              </h2>
 
-              <div className="min-w-0 flex-1">
-                <h2 className="text-base font-semibold text-[rgb(var(--fg))] hover:text-[rgb(var(--brand))]">
-                  {thread.title}
-                </h2>
+              {thread.summary && (
+                <p className="mt-1 line-clamp-2 text-sm text-[rgb(var(--muted))]">
+                  {thread.summary}
+                </p>
+              )}
 
-                {thread.summary && (
-                  <p className="mt-1 line-clamp-2 text-sm text-[rgb(var(--muted))]">
-                    {thread.summary}
-                  </p>
-                )}
-
-                <div className="mt-2 flex items-center gap-2 text-xs text-[rgb(var(--muted))]">
-                  <span>@{thread.username}</span>
-                  <span>•</span>
-                  <span>
-                    {new Date(thread.created_at * 1000).toLocaleDateString("en-US", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
+              <div className="mt-2 flex items-center gap-2 text-xs text-[rgb(var(--muted))]">
+                <span>@{thread.username}</span>
+                <span>•</span>
+                <span>
+                  {new Date(thread.created_at * 1000).toLocaleDateString("en-US", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
               </div>
             </Link>
           ))}
