@@ -66,7 +66,7 @@ function LoginForm() {
       <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
         {registeredNotice && (
           <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-            Registrasi berhasil. Verifikasi email Anda lalu masuk.
+            Registrasi berhasil. Silahkan periksa kotak masuk email, link verifikasi mungkin akan masuk lebih lama, tunggu 5-10 menit.
           </div>
         )}
         <form className="space-y-4" onSubmit={onSubmit}>
