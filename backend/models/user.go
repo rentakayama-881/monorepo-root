@@ -18,4 +18,5 @@ type User struct {
 	Company        string
 	Telegram       string
 	SocialAccounts datatypes.JSON `gorm:"type:jsonb"`
+	PrimaryBadgeID *uint          `gorm:"default:null"`
 }

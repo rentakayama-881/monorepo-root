@@ -11,6 +11,8 @@ import (
 
 	"backend-gin/database"
 	"backend-gin/models"
+	"backend-gin/utils"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
 )
@@ -185,6 +187,35 @@ func UploadAvatarHandler(c *gin.Context) {
 		return
 	}
 
+	// Content type mapping
+	contentTypes := map[string]string{
+		".jpg":  "image/jpeg",
+		".jpeg": "image/jpeg",
+		".png":  "image/png",
+		".webp": "image/webp",
+	}
+
+	// Try Supabase Storage first
+	supabase := utils.NewSupabaseStorage()
+	if supabase.IsConfigured() {
+		filename := fmt.Sprintf("u%d_%d%s", user.ID, time.Now().Unix(), ext)
+		avatarURL, err := supabase.UploadFile(file, filename, contentTypes[ext])
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal mengupload ke storage: " + err.Error()})
+			return
+		}
+
+		user.AvatarURL = avatarURL
+		if err := database.DB.Save(user).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan avatar ke profil"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"avatar_url": avatarURL})
+		return
+	}
+
+	// Fallback to local storage if Supabase not configured
 	// Pastikan folder ada
 	if err := os.MkdirAll("public/avatars", 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membuat folder penyimpanan"})
