@@ -34,23 +34,23 @@
     -moz-osx-font-smoothing: grayscale;
     -webkit-text-size-adjust: 100%;
 
-    /* Tokens (LIGHT) */
-    --bg: 245, 245, 246;
-    --fg: 15, 23, 42;
+    /* Tokens (LIGHT) - GitHub Primer accurate */
+    --bg: 246, 248, 250;
+    --fg: 36, 41, 47;
 
-    --muted: 71, 85, 105;
-    --muted-2: 100, 116, 139;
+    --muted: 87, 96, 106;
+    --muted-2: 110, 118, 129;
 
     --surface: 255, 255, 255;
-    --surface-2: 250, 250, 250;
+    --surface-2: 248, 250, 252;
 
-    --border: 226, 232, 240;
+    --border: 208, 215, 222;
     --ring: 148, 163, 184;
 
-    --brand: 37, 99, 235;
-    --brand-2: 29, 78, 216;
+    --brand: 31, 111, 235;
+    --brand-2: 9, 105, 218;
 
-    --skeleton: 226, 232, 240;
+    --skeleton: 208, 215, 222;
   }
 
   /* Default scheme LIGHT (ikuti Vercel pattern) */
@@ -60,23 +60,23 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      /* Tokens (DARK) */
-      --bg: 10, 10, 10;
-      --fg: 245, 245, 245;
+      /* Tokens (DARK) - GitHub Primer accurate */
+      --bg: 13, 17, 23;
+      --fg: 201, 209, 217;
 
-      --muted: 163, 163, 163;
-      --muted-2: 140, 140, 140;
+      --muted: 139, 148, 158;
+      --muted-2: 110, 118, 129;
 
-      --surface: 0, 0, 0;
-      --surface-2: 23, 23, 23;
+      --surface: 22, 27, 34;
+      --surface-2: 28, 33, 40;
 
-      --border: 38, 38, 38;
-      --ring: 82, 82, 82;
+      --border: 48, 54, 61;
+      --ring: 68, 76, 86;
 
-      --brand: 96, 165, 250;
-      --brand-2: 147, 197, 253;
+      --brand: 88, 166, 255;
+      --brand-2: 121, 192, 255;
 
-      --skeleton: 38, 38, 38;
+      --skeleton: 48, 54, 61;
     }
 
     /* Vercel style: set scheme dark di html */

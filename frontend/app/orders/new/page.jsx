@@ -92,9 +92,9 @@ export default function NewOrderPage() {
   const factoryAddress = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
 
   const inputClass =
-    'w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900';
+    'w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]';
   const primaryButton =
-    'inline-flex items-center justify-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60';
+    'inline-flex items-center justify-center rounded-md bg-[rgb(var(--brand))] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60';
 
   const connectWallet = async () => {
     setError('');
@@ -205,9 +205,9 @@ export default function NewOrderPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-      <h1 className="mb-4 text-2xl font-semibold text-neutral-900">Buat Order Escrow</h1>
-      <p className="mb-6 text-sm text-neutral-700">
+    <div className="mx-auto max-w-2xl rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
+      <h1 className="mb-4 text-2xl font-semibold text-[rgb(var(--fg))]">Buat Order Escrow</h1>
+      <p className="mb-6 text-sm text-[rgb(var(--muted))]">
         Langkah cepat MVP: backend menandatangani payload order, wallet Anda mendeploy Escrow lewat factory,
         lalu backend disinkronkan dengan alamat escrow dan tx hash.
       </p>
@@ -220,7 +220,7 @@ export default function NewOrderPage() {
         >
           {buyerAddress ? 'Wallet Terhubung' : 'Hubungkan Wallet'}
         </button>
-        {buyerAddress && <span className="text-sm text-neutral-700">{buyerAddress}</span>}
+        {buyerAddress && <span className="text-sm text-[rgb(var(--muted))]">{buyerAddress}</span>}
       </div>
 
       <form onSubmit={handleCreate} className="space-y-4">
@@ -256,7 +256,7 @@ export default function NewOrderPage() {
         </button>
       </form>
 
-      {status && <p className="mt-4 text-sm text-neutral-800">{status}</p>}
+      {status && <p className="mt-4 text-sm text-[rgb(var(--fg))]">{status}</p>}
       {error && <p className="mt-2 text-red-600 text-sm">{error}</p>}
 
       {(orderId || escrowAddress) && (

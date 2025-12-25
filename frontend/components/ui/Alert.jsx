@@ -12,8 +12,8 @@ export default function Alert({ type = "info", message = "", children, className
   const typeClass = {
     error: "border-red-200 bg-red-50 text-red-700",
     success: "border-green-200 bg-green-50 text-green-700",
-    info: "border-neutral-200 bg-neutral-50 text-neutral-800",
-  }[type] || "border-neutral-200 bg-neutral-50 text-neutral-800";
+    info: "border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]",
+  }[type] || "border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]";
   return (
     <div className={`${base} ${typeClass} ${className}`} role="alert" tabIndex={-1}>
       {message}

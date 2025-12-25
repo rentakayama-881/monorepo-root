@@ -25,53 +25,62 @@ export default async function LatestThreads() {
   const threads = await getLatestThreads();
 
   return (
-    <div className="mb-12">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Thread Terbaru</h2>
-        <Link href="/threads" className="text-sm font-medium text-blue-700 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+    <section className="mb-12">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-[rgb(var(--fg))]">Thread Terbaru</h2>
+        <Link href="/threads" className="text-sm font-medium text-[rgb(var(--brand))] hover:underline">
           Lihat semua →
         </Link>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {threads.length > 0 ? (
-          threads.map(th => (
-            <Link key={th.id} href={`/thread/${th.id}`} className="block h-full">
-              <Card className="flex h-full flex-col justify-between p-5">
-                <div>
-                  <h3 className="mb-2 text-lg font-semibold leading-tight text-slate-900 dark:text-neutral-100">
-                      {th.title}
-                  </h3>
-                  <p className="mb-4 text-sm leading-relaxed text-slate-600 dark:text-neutral-400 line-clamp-2">
-                      {th.summary}
+      {threads.length > 0 ? (
+        <div className="overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
+          {threads.map((th, idx) => (
+            <Link
+              key={th.id}
+              href={`/thread/${th.id}`}
+              className={`flex items-start gap-4 p-4 transition-colors hover:bg-[rgb(var(--surface-2))] ${idx !== threads.length - 1 ? "border-b border-[rgb(var(--border))]" : ""}`}
+            >
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--brand))] bg-opacity-10">
+                <svg className="h-4 w-4 text-[rgb(var(--brand))]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-semibold text-[rgb(var(--fg))]">
+                  {th.title}
+                </h3>
+                {th.summary && (
+                  <p className="mt-1 line-clamp-2 text-sm text-[rgb(var(--muted))]">
+                    {th.summary}
                   </p>
-                </div>
-                
-                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-neutral-500">
-                  <span className="font-medium text-slate-900 dark:text-neutral-300">
-                      {th.username || "Anonim"}
+                )}
+                <div className="mt-2 flex items-center gap-2 text-xs text-[rgb(var(--muted))]">
+                  <span className="font-medium text-[rgb(var(--fg))]">
+                    {th.username || "Anonim"}
                   </span>
                   <span>•</span>
                   <span>{formatDate(th.created_at)}</span>
                   {th.category && (
                     <>
                       <span>•</span>
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 border border-slate-200 dark:bg-neutral-900 dark:text-neutral-400 dark:border-neutral-700">
+                      <span className="rounded-full bg-[rgb(var(--surface-2))] px-2 py-0.5 text-xs font-medium">
                         {th.category.name || th.category.slug}
                       </span>
                     </>
                   )}
                 </div>
-              </Card>
+              </div>
             </Link>
-          ))
-        ) : (
-           <div className="py-8 text-center text-slate-500 dark:text-neutral-500 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-lg">
-             Belum ada thread terbaru.
-           </div>
-        )}
-      </div>
-    </div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-[rgb(var(--border))] bg-[rgb(var(--surface))] py-8 text-center text-sm text-[rgb(var(--muted))]">
+          Belum ada thread terbaru.
+        </div>
+      )}
+    </section>
   );
 }
 

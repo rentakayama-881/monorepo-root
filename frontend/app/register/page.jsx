@@ -14,9 +14,9 @@ export default function RegisterPage() {
   const [info, setInfo] = useState("");
 
   const inputClass =
-    "w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-800";
+    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
   const primaryButton =
-    "w-full inline-flex justify-center items-center rounded-md bg-neutral-900 px-3 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900";
+    "w-full inline-flex justify-center items-center rounded-md bg-[rgb(var(--brand))] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]";
 
   function update(key, value) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -65,14 +65,14 @@ export default function RegisterPage() {
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center space-y-1">
-        <h1 className="text-xl font-semibold text-slate-900">Buat akun</h1>
-        <p className="text-sm text-slate-600">Daftar dengan email, pilih username, dan mulai eksplorasi.</p>
+        <h1 className="text-xl font-semibold text-[rgb(var(--fg))]">Buat akun</h1>
+        <p className="text-sm text-[rgb(var(--muted))]">Daftar dengan email, pilih username, dan mulai eksplorasi.</p>
       </div>
 
-      <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">Email</label>
+            <label className="text-sm font-medium text-[rgb(var(--fg))]">Email</label>
             <input
               type="email"
               required
@@ -83,7 +83,7 @@ export default function RegisterPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">Password</label>
+            <label className="text-sm font-medium text-[rgb(var(--fg))]">Password</label>
             <input
               type="password"
               required
@@ -95,7 +95,7 @@ export default function RegisterPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">Username</label>
+            <label className="text-sm font-medium text-[rgb(var(--fg))]">Username</label>
             <input
               type="text"
               required
@@ -106,7 +106,7 @@ export default function RegisterPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">Nama lengkap (opsional)</label>
+            <label className="text-sm font-medium text-[rgb(var(--fg))]">Nama lengkap (opsional)</label>
             <input
               type="text"
               value={form.full_name}
@@ -127,8 +127,8 @@ export default function RegisterPage() {
         </form>
       </div>
 
-      <div className="text-center text-sm text-neutral-700">
-        Sudah punya akun? <Link href="/login" className="font-medium text-neutral-900 underline">Masuk</Link>
+      <div className="text-center text-sm text-[rgb(var(--muted))]">
+        Sudah punya akun? <Link href="/login" className="font-medium text-[rgb(var(--fg))] underline">Masuk</Link>
       </div>
     </div>
   );

@@ -19,7 +19,7 @@ export default function CreateThreadPage() {
   const API = getApiBase();
 
   const inputClass =
-    "w-full rounded-md border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900";
+    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -65,15 +65,15 @@ export default function CreateThreadPage() {
   return (
     <section className="mx-auto w-full max-w-2xl px-4 py-10">
       <div className="mb-6">
-        <h2 className="mb-2 text-2xl font-semibold text-neutral-900">Buat Thread Baru</h2>
-        <div className="text-base text-neutral-600">
+        <h2 className="mb-2 text-2xl font-semibold text-[rgb(var(--fg))]">Buat Thread Baru</h2>
+        <div className="text-base text-[rgb(var(--muted))]">
           Kategori: <span className="font-medium capitalize">{params.slug.replace(/-/g, " ")}</span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm" autoComplete="off">
+      <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6" autoComplete="off">
         <div>
-          <label className="mb-2 block text-sm font-semibold text-neutral-900">Judul Thread <span className="text-red-500">*</span></label>
+          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Judul Thread <span className="text-red-500">*</span></label>
           <input
             required
             className={inputClass}
@@ -85,7 +85,7 @@ export default function CreateThreadPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-neutral-900">Ringkasan (optional)</label>
+          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Ringkasan (optional)</label>
           <textarea
             className={`${inputClass} min-h-[90px]`}
             rows={3}
@@ -97,7 +97,7 @@ export default function CreateThreadPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-neutral-900">Konten Thread <span className="text-red-500">*</span></label>
+          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Konten Thread <span className="text-red-500">*</span></label>
           <textarea
             required
             className={`${inputClass} min-h-[140px] font-mono`}
@@ -109,7 +109,7 @@ export default function CreateThreadPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-neutral-900">Gambar (optional)</label>
+          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Gambar (optional)</label>
           <input
             type="url"
             className={inputClass}
@@ -120,7 +120,7 @@ export default function CreateThreadPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-neutral-900">Contact Telegram <span className="text-red-500">*</span></label>
+          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Contact Telegram <span className="text-red-500">*</span></label>
           <input
             required
             className={inputClass}
@@ -134,7 +134,7 @@ export default function CreateThreadPage() {
         {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         {success && <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{success}</div>}
 
-        <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60">
+        <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center rounded-md bg-[rgb(var(--brand))] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60">
           {loading ? "Membuat..." : "Buat Thread"}
         </button>
       </form>

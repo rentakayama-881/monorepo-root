@@ -14,7 +14,7 @@ export default function Label({ title, amount, currencyCode, position = "bottom"
       )}
     >
       <div className="w-full max-w-xs rounded-xl bg-black/70 px-3 py-2 text-white backdrop-blur">
-        <p className="text-xs font-medium uppercase tracking-wide text-neutral-200">
+        <p className="text-xs font-medium uppercase tracking-wide text-white/80">
           {title}
         </p>
         <p className="text-lg font-semibold leading-tight">

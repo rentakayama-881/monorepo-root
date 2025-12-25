@@ -26,7 +26,7 @@ export default function InnerSyncTokenPage() {
   }, [token, router]);
 
   return (
-    <div className="min-h-dvh flex items-center justify-center p-6 text-sm text-neutral-700">
+    <div className="min-h-dvh flex items-center justify-center p-6 text-sm text-[rgb(var(--muted))]">
       Menyimpan token ke browser...
     </div>
   );
