@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 
 export const metadata = {
-  title: "Ballerina",
+  title: "Alephdraad",
   description: "Community and utilities platform",
   other: { heleket: "a08412d3" },
 };
