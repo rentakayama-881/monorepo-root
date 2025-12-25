@@ -53,17 +53,20 @@ func (s *AuthService) Register(input validators.RegisterInput) (*RegisterRespons
 	var existing models.User
 	if err := s.db.Where("email = ?", email).First(&existing).Error; err == nil {
 		return nil, apperrors.ErrEmailAlreadyExists
+	} else if err != gorm.ErrRecordNotFound {
+		logger.Error("Failed to check email existence", zap.Error(err))
+		return nil, apperrors.ErrDatabase.WithDetails("Gagal memeriksa email")
 	}
 
-	// Check if username already exists
-	if input.Username != nil {
+	// Check if username already exists (if provided)
+	if input.Username != nil && *input.Username != "" {
 		username := strings.TrimSpace(*input.Username)
-		if username != "" {
-			var count int64
-			s.db.Model(&models.User{}).Where("name = ?", username).Count(&count)
-			if count > 0 {
-				return nil, apperrors.ErrUsernameAlreadyExists
-			}
+		var existingUser models.User
+		if err := s.db.Where("name = ?", username).First(&existingUser).Error; err == nil {
+			return nil, apperrors.ErrUsernameAlreadyExists
+		} else if err != gorm.ErrRecordNotFound {
+			logger.Error("Failed to check username existence", zap.Error(err))
+			return nil, apperrors.ErrDatabase.WithDetails("Gagal memeriksa username")
 		}
 	}
 
@@ -88,9 +91,42 @@ func (s *AuthService) Register(input validators.RegisterInput) (*RegisterRespons
 		user.FullName = input.FullName
 	}
 
-	if err := s.db.Create(&user).Error; err != nil {
-		logger.Error("Failed to create user", zap.Error(err), zap.String("email", email))
-		return nil, apperrors.ErrDatabase.WithDetails("Gagal mendaftarkan pengguna")
+	// Use transaction to ensure atomicity
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		// Double check email doesn't exist (race condition protection)
+		var checkUser models.User
+		if err := tx.Where("email = ?", email).First(&checkUser).Error; err == nil {
+			return apperrors.ErrEmailAlreadyExists
+		}
+
+		// Double check username doesn't exist (if provided)
+		if input.Username != nil && *input.Username != "" {
+			username := strings.TrimSpace(*input.Username)
+			if err := tx.Where("name = ?", username).First(&checkUser).Error; err == nil {
+				return apperrors.ErrUsernameAlreadyExists
+			}
+		}
+
+		// Create user
+		if err := tx.Create(&user).Error; err != nil {
+			logger.Error("Failed to create user", zap.Error(err), zap.String("email", email))
+
+			// Check if it's a unique constraint violation
+			if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
+				if strings.Contains(err.Error(), "email") {
+					return apperrors.ErrEmailAlreadyExists
+				}
+				if strings.Contains(err.Error(), "name") || strings.Contains(err.Error(), "username") {
+					return apperrors.ErrUsernameAlreadyExists
+				}
+			}
+			return apperrors.ErrDatabase.WithDetails("Gagal mendaftarkan pengguna")
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	// Create verification token
@@ -139,8 +175,12 @@ func (s *AuthService) Login(input validators.LoginInput) (*LoginResponse, error)
 	// Find user
 	var user models.User
 	if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
-		logger.Debug("Login attempt for non-existent user", zap.String("email", email))
-		return nil, apperrors.ErrInvalidCredentials
+		if err == gorm.ErrRecordNotFound {
+			logger.Debug("Login attempt for non-existent user", zap.String("email", email))
+			return nil, apperrors.ErrInvalidCredentials
+		}
+		logger.Error("Failed to query user", zap.Error(err))
+		return nil, apperrors.ErrDatabase.WithDetails("Gagal memeriksa kredensial")
 	}
 
 	// Check password

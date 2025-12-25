@@ -29,19 +29,34 @@ export async function fetchJson(path, options = {}) {
     }
 
     if (!res.ok) {
-      const message = data?.error || res.statusText || `Request failed with status ${res.status}`;
-      throw new Error(message);
+      // Prioritaskan pesan error dari backend
+      const message = data?.error || data?.message || res.statusText || `Request gagal dengan status ${res.status}`;
+      const error = new Error(message);
+      error.status = res.status;
+      error.code = data?.code;
+      throw error;
     }
 
     return data ?? (await res.json());
   } catch (err) {
+    // Jangan override error message yang sudah ada dari backend
+    if (err.message && err.status) {
+      throw err;
+    }
+    
     if (controller.signal.aborted) {
-      throw new Error("Request timed out");
+      throw new Error("Request timeout. Silakan coba lagi.");
     }
     if (err?.name === "AbortError") {
-      throw new Error("Request was aborted");
+      throw new Error("Request dibatalkan.");
     }
-    throw new Error("Network error: backend unreachable");
+    
+    // Hanya throw network error jika memang network issue
+    if (err?.name === "TypeError" || err?.message?.includes("fetch")) {
+      throw new Error("Tidak dapat terhubung ke server. Periksa koneksi internet Anda.");
+    }
+    
+    throw err;
   } finally {
     clearTimeout(timeoutId);
   }

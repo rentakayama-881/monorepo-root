@@ -39,13 +39,13 @@ func (e *AppError) WithDetails(details string) *AppError {
 // Common error definitions
 var (
 	// Auth errors
-	ErrInvalidCredentials    = NewAppError("AUTH001", "Kredensial tidak valid", http.StatusUnauthorized)
-	ErrEmailNotVerified      = NewAppError("AUTH002", "Email belum terverifikasi", http.StatusForbidden)
-	ErrEmailAlreadyExists    = NewAppError("AUTH003", "Email sudah terdaftar", http.StatusBadRequest)
-	ErrUsernameAlreadyExists = NewAppError("AUTH004", "Username sudah digunakan oleh pengguna lain", http.StatusConflict)
+	ErrInvalidCredentials    = NewAppError("AUTH001", "Email atau password yang Anda masukkan salah", http.StatusUnauthorized)
+	ErrEmailNotVerified      = NewAppError("AUTH002", "Email belum terverifikasi. Silakan cek inbox email Anda.", http.StatusForbidden)
+	ErrEmailAlreadyExists    = NewAppError("AUTH003", "Email ini sudah terdaftar. Silakan gunakan email lain atau login.", http.StatusBadRequest)
+	ErrUsernameAlreadyExists = NewAppError("AUTH004", "Username sudah digunakan. Silakan pilih username lain.", http.StatusConflict)
 	ErrInvalidToken          = NewAppError("AUTH005", "Token tidak valid atau sudah kedaluwarsa", http.StatusBadRequest)
 	ErrTokenExpired          = NewAppError("AUTH006", "Token sudah kedaluwarsa", http.StatusBadRequest)
-	ErrWeakPassword          = NewAppError("AUTH007", "Password terlalu lemah", http.StatusBadRequest)
+	ErrWeakPassword          = NewAppError("AUTH007", "Password terlalu lemah. Gunakan minimal 8 karakter.", http.StatusBadRequest)
 	ErrInvalidEmail          = NewAppError("AUTH008", "Format email tidak valid", http.StatusBadRequest)
 
 	// User errors
