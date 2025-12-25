@@ -168,12 +168,43 @@ func main() {
 			badges.GET("/:id", handlers.GetBadgeDetailHandler)
 		}
 
+		// User badges (public)
+		api.GET("/user/:username/badges", handlers.GetUserBadgesPublic)
+
+		// Account badge settings (authenticated)
+		account.GET("/badges", middleware.AuthMiddleware(), handlers.GetMyBadges)
+		account.PUT("/primary-badge", middleware.AuthMiddleware(), handlers.SetPrimaryBadge)
+
 		router.POST("/api/rag/index-chunk", handlers.IndexChunkHandler)
 		router.GET("/api/rag/ask", handlers.AskHandler)
 		router.GET("/api/rag/answer", handlers.AnswerHandler)
 		router.POST("/api/rag/index-long", handlers.IndexLongHandler)
 		router.POST("/api/rag/index-thread/:id", handlers.IndexThreadByIDHandler)
 		router.GET("/api/rag/debug-chunks/:thread_id", handlers.DebugChunksHandler)
+	}
+
+	// Admin routes (separate auth)
+	admin := router.Group("/admin")
+	{
+		admin.POST("/auth/login", handlers.AdminLogin)
+
+		// Protected admin routes
+		adminProtected := admin.Group("")
+		adminProtected.Use(middleware.AdminAuthMiddleware())
+		{
+			// Badge management
+			adminProtected.POST("/badges", handlers.CreateBadge)
+			adminProtected.GET("/badges", handlers.ListBadges)
+			adminProtected.GET("/badges/:id", handlers.GetBadge)
+			adminProtected.PUT("/badges/:id", handlers.UpdateBadge)
+			adminProtected.DELETE("/badges/:id", handlers.DeleteBadge)
+
+			// User management
+			adminProtected.GET("/users", handlers.AdminListUsers)
+			adminProtected.GET("/users/:userId", handlers.AdminGetUser)
+			adminProtected.POST("/users/:userId/badges", handlers.AssignBadgeToUser)
+			adminProtected.DELETE("/users/:userId/badges/:badgeId", handlers.RevokeBadgeFromUser)
+		}
 	}
 
 	// --- BAGIAN INI YANG DIUBAH ---

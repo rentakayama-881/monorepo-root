@@ -64,6 +64,10 @@ func migrateAndSeed() {
 		&models.Promotion{},
 		&models.VolumeLedger{},
 		&models.ChainCursor{},
+		// admin & badge tables
+		&models.Admin{},
+		&models.Badge{},
+		&models.UserBadge{},
 	); err != nil {
 		panic("AutoMigrate gagal: " + err.Error())
 	}

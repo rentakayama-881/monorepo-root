@@ -61,6 +61,20 @@ Daftar lengkap environment variables yang digunakan dalam project.
 | `FRONTEND_BASE_URL` | Frontend URL untuk CORS dan email links | `https://monorepo-root-dun.vercel.app` |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated list of allowed origins | Uses `FRONTEND_BASE_URL` |
 
+### Admin
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `ADMIN_JWT_SECRET` | Secret key untuk admin JWT (harus berbeda dari JWT_SECRET) | `your-admin-secret-key-min-32-chars` |
+
+### Object Storage (Supabase)
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `SUPABASE_URL` | Supabase project URL | `https://xxx.supabase.co` |
+| `SUPABASE_SERVICE_KEY` | Supabase service role key | `eyJhbGci...` |
+| `SUPABASE_BUCKET` | Bucket name untuk avatar storage | `avatars` |
+
 ### Optional
 
 | Variable | Description | Default |
