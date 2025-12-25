@@ -66,7 +66,7 @@ function LoginForm() {
       <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
         {registeredNotice && (
           <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-            Registrasi berhasil. Silahkan periksa kotak masuk email, link verifikasi mungkin akan masuk lebih lama, tunggu 5-10 menit.
+            Registrasi berhasil. Silahkan periksa kotak masuk Email, Email verifikasi mungkin akan masuk lebih lama, tunggu sekitar 5-10 menit.
           </div>
         )}
         <form className="space-y-4" onSubmit={onSubmit}>
