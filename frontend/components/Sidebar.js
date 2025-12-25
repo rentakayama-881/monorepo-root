@@ -69,7 +69,6 @@ export default function Sidebar({ open, onClose }) {
             <Link href="/about-content" className="rounded-md border border-[rgb(var(--border))] px-3 py-2 hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]" onClick={onClose}>Tentang Kami</Link>
             <Link href="/rules-content" className="rounded-md border border-[rgb(var(--border))] px-3 py-2 hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]" onClick={onClose}>Aturan</Link>
             <Link href="/contact-support" className="rounded-md border border-[rgb(var(--border))] px-3 py-2 hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]" onClick={onClose}>Contact Support</Link>
-            <Link href="/pengajuan-badge" className="col-span-2 rounded-md border border-[rgb(var(--border))] px-3 py-2 text-center hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]" onClick={onClose}>Pengajuan Badge</Link>
           </nav>
 
           {/* AI Search */}
