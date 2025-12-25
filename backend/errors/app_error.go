@@ -41,7 +41,7 @@ var (
 	// Auth errors
 	ErrInvalidCredentials    = NewAppError("AUTH001", "Email atau password yang Anda masukkan salah", http.StatusUnauthorized)
 	ErrEmailNotVerified      = NewAppError("AUTH002", "Email belum terverifikasi. Silakan cek inbox email Anda.", http.StatusForbidden)
-	ErrEmailAlreadyExists    = NewAppError("AUTH003", "Email ini sudah terdaftar. Silakan gunakan email lain atau login.", http.StatusBadRequest)
+	ErrEmailAlreadyExists    = NewAppError("AUTH003", "Email ini sudah terdaftar dan terverifikasi. Silakan login.", http.StatusBadRequest)
 	ErrUsernameAlreadyExists = NewAppError("AUTH004", "Username sudah digunakan. Silakan pilih username lain.", http.StatusConflict)
 	ErrInvalidToken          = NewAppError("AUTH005", "Token tidak valid atau sudah kedaluwarsa", http.StatusBadRequest)
 	ErrTokenExpired          = NewAppError("AUTH006", "Token sudah kedaluwarsa", http.StatusBadRequest)

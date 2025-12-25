@@ -52,7 +52,21 @@ func (s *AuthService) Register(input validators.RegisterInput) (*RegisterRespons
 	// Check if email already exists
 	var existing models.User
 	if err := s.db.Where("email = ?", email).First(&existing).Error; err == nil {
-		return nil, apperrors.ErrEmailAlreadyExists
+		// Email exists - check if verified
+		if existing.EmailVerified {
+			// Sudah verified, tidak boleh register lagi
+			return nil, apperrors.ErrEmailAlreadyExists
+		} else {
+			// Belum verified - hapus user lama dan izinkan register ulang
+			logger.Info("Deleting unverified user for re-registration",
+				zap.Uint("user_id", existing.ID),
+				zap.String("email", email))
+
+			if err := s.deleteUnverifiedUser(&existing); err != nil {
+				logger.Warn("Failed to delete unverified user", zap.Error(err), zap.String("email", email))
+				// Continue anyway, transaction will handle conflicts
+			}
+		}
 	} else if err != gorm.ErrRecordNotFound {
 		logger.Error("Failed to check email existence", zap.Error(err))
 		return nil, apperrors.ErrDatabase.WithDetails("Gagal memeriksa email")
@@ -93,9 +107,9 @@ func (s *AuthService) Register(input validators.RegisterInput) (*RegisterRespons
 
 	// Use transaction to ensure atomicity
 	err = s.db.Transaction(func(tx *gorm.DB) error {
-		// Double check email doesn't exist (race condition protection)
+		// Double check email doesn't exist with verified status (race condition protection)
 		var checkUser models.User
-		if err := tx.Where("email = ?", email).First(&checkUser).Error; err == nil {
+		if err := tx.Where("email = ? AND email_verified = ?", email, true).First(&checkUser).Error; err == nil {
 			return apperrors.ErrEmailAlreadyExists
 		}
 
@@ -323,6 +337,24 @@ func (s *AuthService) createVerificationToken(user *models.User) (string, string
 	link := frontend + "/verify-email?token=" + raw
 
 	return raw, link, nil
+}
+
+// deleteUnverifiedUser deletes an unverified user and their tokens
+func (s *AuthService) deleteUnverifiedUser(user *models.User) error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		// Delete all verification tokens for this user
+		if err := tx.Where("user_id = ?", user.ID).Delete(&models.EmailVerificationToken{}).Error; err != nil {
+			return err
+		}
+		// Delete the user (hard delete to allow re-registration with same email)
+		if err := tx.Unscoped().Delete(user).Error; err != nil {
+			return err
+		}
+		logger.Info("Deleted unverified user and tokens",
+			zap.Uint("user_id", user.ID),
+			zap.String("email", user.Email))
+		return nil
+	})
 }
 
 func randomToken() (string, error) {
