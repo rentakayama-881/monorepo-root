@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import { resolveAvatarSrc } from "@/lib/avatar";
+import { Badge, BadgeChip } from "@/components/ui/Badge";
 
 export default function UserProfilePage() {
   const { username } = useParams();
@@ -22,7 +23,7 @@ export default function UserProfilePage() {
     ])
       .then(([user, badgeData]) => {
         setProfile(user);
-        setBadges(badgeData.badges || []);
+        setBadges(user.badges || badgeData.badges || []);
       })
       .finally(() => setLoading(false));
   }, [API, username]);
@@ -42,8 +43,13 @@ export default function UserProfilePage() {
           className="rounded-full border object-cover bg-[rgb(var(--surface-2))]"
         />
         <div>
-          <div className="text-2xl font-bold text-[rgb(var(--fg))]">{profile.full_name || "(No Name)"}</div>
-          <div className="text-base text-[rgb(var(--muted))] font-mono">@{profile.username}</div>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold text-[rgb(var(--fg))]">{profile.full_name || "(No Name)"}</span>
+            {profile.primary_badge && <Badge badge={profile.primary_badge} size="lg" />}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-base text-[rgb(var(--muted))] font-mono">@{profile.username}</span>
+          </div>
           {profile.bio && <p className="mt-3 text-[rgb(var(--fg))] text-base">{profile.bio}</p>}
         </div>
       </div>
@@ -93,13 +99,10 @@ export default function UserProfilePage() {
       {/* Badges */}
       {badges.length > 0 && (
         <div className="mb-8 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
-          <div className="mb-2 text-sm font-medium text-[rgb(var(--muted))]">Badges</div>
-          <div className="flex flex-wrap gap-3">
+          <div className="mb-3 text-sm font-medium text-[rgb(var(--muted))]">Badges</div>
+          <div className="flex flex-wrap gap-2">
             {badges.map(b => (
-              <div key={b.id} className="rounded border border-emerald-100 bg-emerald-50 px-4 py-2 text-emerald-700 font-medium">
-                <div>{b.platform}</div>
-                <div className="text-xs text-emerald-800">{b.description}</div>
-              </div>
+              <BadgeChip key={b.id} badge={b} />
             ))}
           </div>
         </div>

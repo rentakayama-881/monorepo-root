@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
+import { Badge } from "@/components/ui/Badge";
 
 export default function ThreadDetailPage() {
   const params = useParams();
@@ -107,6 +108,7 @@ export default function ThreadDetailPage() {
                   <Link href={`/user/${encodeURIComponent(data.user.username)}`} className="font-medium text-[rgb(var(--fg))] hover:underline">
                     {data.user.username}
                   </Link>
+                  {data.user.primary_badge && <Badge badge={data.user.primary_badge} size="sm" />}
                 </span>
               )}
             </div>

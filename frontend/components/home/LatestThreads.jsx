@@ -21,6 +21,23 @@ function formatDate(timestamp) {
   });
 }
 
+function BadgeIcon({ badge }) {
+  if (!badge) return null;
+  return (
+    <span 
+      className="inline-flex items-center" 
+      title={badge.name}
+      style={{ color: badge.color || "#6366f1" }}
+    >
+      {badge.icon_url ? (
+        <img src={badge.icon_url} alt={badge.name} className="h-4 w-4 object-contain" />
+      ) : (
+        <span className="text-xs">🏆</span>
+      )}
+    </span>
+  );
+}
+
 export default async function LatestThreads() {
   const threads = await getLatestThreads();
 
@@ -50,8 +67,9 @@ export default async function LatestThreads() {
                 </p>
               )}
               <div className="mt-2 flex items-center gap-2 text-xs text-[rgb(var(--muted))]">
-                <span className="font-medium text-[rgb(var(--fg))]">
+                <span className="inline-flex items-center gap-1 font-medium text-[rgb(var(--fg))]">
                   {th.username || "Anonim"}
+                  <BadgeIcon badge={th.primary_badge} />
                 </span>
                 <span>•</span>
                 <span>{formatDate(th.created_at)}</span>

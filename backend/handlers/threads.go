@@ -82,6 +82,21 @@ func GetThreadDetailHandler(c *gin.Context) {
 	var meta interface{}
 	_ = json.Unmarshal(thr.Meta, &meta)
 
+	// Get user's primary badge
+	var primaryBadge interface{}
+	if thr.User.PrimaryBadgeID != nil && *thr.User.PrimaryBadgeID > 0 {
+		var badge models.Badge
+		if err := database.DB.First(&badge, *thr.User.PrimaryBadgeID).Error; err == nil {
+			primaryBadge = gin.H{
+				"id":       badge.ID,
+				"name":     badge.Name,
+				"slug":     badge.Slug,
+				"icon_url": badge.IconURL,
+				"color":    badge.Color,
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"id":           thr.ID,
 		"title":        thr.Title,
@@ -91,9 +106,10 @@ func GetThreadDetailHandler(c *gin.Context) {
 		"meta":         meta, // seluruh meta dikirim (image, telegram, etc)
 		"created_at":   thr.CreatedAt.Unix(),
 		"user": gin.H{
-			"username":   uname,
-			"avatar_url": thr.User.AvatarURL,
-			"id":         thr.UserID,
+			"username":      uname,
+			"avatar_url":    thr.User.AvatarURL,
+			"id":            thr.UserID,
+			"primary_badge": primaryBadge,
 		},
 		"category": gin.H{"slug": thr.Category.Slug, "name": thr.Category.Name},
 	})
@@ -116,6 +132,21 @@ func GetPublicThreadDetailHandler(c *gin.Context) {
 	var meta interface{}
 	_ = json.Unmarshal(thr.Meta, &meta)
 
+	// Get user's primary badge
+	var primaryBadge interface{}
+	if thr.User.PrimaryBadgeID != nil && *thr.User.PrimaryBadgeID > 0 {
+		var badge models.Badge
+		if err := database.DB.First(&badge, *thr.User.PrimaryBadgeID).Error; err == nil {
+			primaryBadge = gin.H{
+				"id":       badge.ID,
+				"name":     badge.Name,
+				"slug":     badge.Slug,
+				"icon_url": badge.IconURL,
+				"color":    badge.Color,
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"id":           thr.ID,
 		"title":        thr.Title,
@@ -125,9 +156,10 @@ func GetPublicThreadDetailHandler(c *gin.Context) {
 		"meta":         meta,
 		"created_at":   thr.CreatedAt.Unix(),
 		"user": gin.H{
-			"username":   uname,
-			"avatar_url": thr.User.AvatarURL,
-			"id":         thr.UserID,
+			"username":      uname,
+			"avatar_url":    thr.User.AvatarURL,
+			"id":            thr.UserID,
+			"primary_badge": primaryBadge,
 		},
 		"category": gin.H{"slug": thr.Category.Slug, "name": thr.Category.Name},
 	})
@@ -167,13 +199,30 @@ func GetLatestThreadsHandler(c *gin.Context) {
 		if t.User.Username != nil {
 			uname = *t.User.Username
 		}
+
+		// Get user's primary badge if set
+		var primaryBadge interface{}
+		if t.User.PrimaryBadgeID != nil && *t.User.PrimaryBadgeID > 0 {
+			var badge models.Badge
+			if err := database.DB.First(&badge, *t.User.PrimaryBadgeID).Error; err == nil {
+				primaryBadge = gin.H{
+					"id":       badge.ID,
+					"name":     badge.Name,
+					"slug":     badge.Slug,
+					"icon_url": badge.IconURL,
+					"color":    badge.Color,
+				}
+			}
+		}
+
 		out = append(out, gin.H{
-			"id":         t.ID,
-			"title":      t.Title,
-			"summary":    t.Summary,
-			"category":   gin.H{"slug": t.Category.Slug, "name": t.Category.Name},
-			"created_at": t.CreatedAt.Unix(),
-			"username":   uname,
+			"id":            t.ID,
+			"title":         t.Title,
+			"summary":       t.Summary,
+			"category":      gin.H{"slug": t.Category.Slug, "name": t.Category.Name},
+			"created_at":    t.CreatedAt.Unix(),
+			"username":      uname,
+			"primary_badge": primaryBadge,
 		})
 	}
 

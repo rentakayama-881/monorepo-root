@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Alert from "../../components/ui/Alert";
+import Select from "../../components/ui/Select";
+import { BadgeChip } from "../../components/ui/Badge";
 import { getApiBase } from "@/lib/api";
 import { resolveAvatarSrc } from "@/lib/avatar";
 import { maskEmail } from "@/lib/email";
@@ -24,6 +26,9 @@ export default function AccountPage() {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("");
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [badges, setBadges] = useState([]);
+  const [primaryBadgeId, setPrimaryBadgeId] = useState(null);
+  const [savingBadge, setSavingBadge] = useState(false);
 
   useEffect(() => {
     if (!authed) { setLoading(false); return; }
@@ -51,6 +56,38 @@ export default function AccountPage() {
       .finally(() => !cancelled && setLoading(false));
     return () => { cancelled = true; };
   }, [API, authed]);
+
+  // Fetch user badges
+  useEffect(() => {
+    if (!authed) return;
+    const t = localStorage.getItem("token");
+    fetch(`${API}/account/badges`, { headers: { Authorization: `Bearer ${t}` }})
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        setBadges(data.badges || []);
+        setPrimaryBadgeId(data.primary_badge_id || null);
+      })
+      .catch(() => {});
+  }, [API, authed]);
+
+  async function savePrimaryBadge(badgeId) {
+    setError(""); setOk(""); setSavingBadge(true);
+    try {
+      const t = localStorage.getItem("token");
+      const r = await fetch(`${API}/account/primary-badge`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        body: JSON.stringify({ badge_id: badgeId ? Number(badgeId) : null }),
+      });
+      if (!r.ok) throw new Error("Gagal menyimpan primary badge");
+      setPrimaryBadgeId(badgeId ? Number(badgeId) : null);
+      setOk("Primary badge diperbarui.");
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setSavingBadge(false);
+    }
+  }
 
   function updateSocial(i, key, val) {
     setSocials(prev => {
@@ -194,6 +231,44 @@ export default function AccountPage() {
                 </div>
                 <div className="text-xs text-[rgb(var(--muted))]">Gunakan gambar rasio 1:1 untuk hasil terbaik. Max ~2MB (sesuaikan backend).</div>
               </div>
+            </div>
+          </section>
+
+          {/* Badges Section */}
+          <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
+            <h3 className="text-sm font-medium text-[rgb(var(--fg))]">Badges</h3>
+            <div className="mt-3 space-y-3">
+              {badges.length === 0 ? (
+                <p className="text-sm text-[rgb(var(--muted))]">Belum ada badge. Badges diberikan oleh admin sebagai apresiasi.</p>
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    {badges.map((badge) => (
+                      <BadgeChip key={badge.id} badge={badge} />
+                    ))}
+                  </div>
+                  <div className="mt-4">
+                    <label className="text-sm font-medium text-[rgb(var(--fg))]">Primary Badge (tampil di username)</label>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Select
+                        value={primaryBadgeId || ""}
+                        onChange={(e) => savePrimaryBadge(e.target.value)}
+                        disabled={savingBadge}
+                        className="flex-1"
+                      >
+                        <option value="">Tidak ada badge ditampilkan</option>
+                        {badges.map((badge) => (
+                          <option key={badge.id} value={badge.id}>{badge.name}</option>
+                        ))}
+                      </Select>
+                      {savingBadge && (
+                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[rgb(var(--border))] border-t-[rgb(var(--fg))]" />
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-[rgb(var(--muted))]">Badge yang dipilih akan muncul di samping username Anda.</p>
+                  </div>
+                </>
+              )}
             </div>
           </section>
 

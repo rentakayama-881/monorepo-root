@@ -144,6 +144,36 @@ func BuildPublicProfile(u *models.User) gin.H {
 	if u.Username != nil {
 		name = *u.Username
 	}
+
+	// Get primary badge if set
+	var primaryBadge interface{}
+	if u.PrimaryBadgeID != nil && *u.PrimaryBadgeID > 0 {
+		var badge models.Badge
+		if err := database.DB.First(&badge, *u.PrimaryBadgeID).Error; err == nil {
+			primaryBadge = gin.H{
+				"id":       badge.ID,
+				"name":     badge.Name,
+				"slug":     badge.Slug,
+				"icon_url": badge.IconURL,
+				"color":    badge.Color,
+			}
+		}
+	}
+
+	// Get active badges
+	var userBadges []models.UserBadge
+	database.DB.Preload("Badge").Where("user_id = ? AND revoked_at IS NULL", u.ID).Find(&userBadges)
+	var badges []gin.H
+	for _, ub := range userBadges {
+		badges = append(badges, gin.H{
+			"id":       ub.Badge.ID,
+			"name":     ub.Badge.Name,
+			"slug":     ub.Badge.Slug,
+			"icon_url": ub.Badge.IconURL,
+			"color":    ub.Badge.Color,
+		})
+	}
+
 	return gin.H{
 		"username":        name,
 		"full_name":       u.FullName,
@@ -154,6 +184,8 @@ func BuildPublicProfile(u *models.User) gin.H {
 		"social_accounts": socials,
 		"avatar_url":      u.AvatarURL,
 		"id":              u.ID,
+		"primary_badge":   primaryBadge,
+		"badges":          badges,
 	}
 }
 

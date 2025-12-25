@@ -168,9 +168,6 @@ func main() {
 			badges.GET("/:id", handlers.GetBadgeDetailHandler)
 		}
 
-		// User badges (public)
-		api.GET("/user/:username/badges", handlers.GetUserBadgesPublic)
-
 		// Account badge settings (authenticated)
 		account.GET("/badges", middleware.AuthMiddleware(), handlers.GetMyBadges)
 		account.PUT("/primary-badge", middleware.AuthMiddleware(), handlers.SetPrimaryBadge)
