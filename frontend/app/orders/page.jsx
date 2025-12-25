@@ -57,59 +57,59 @@ export default function OrdersPage() {
   }, [isAuthed, token]);
 
   return (
-    <div className="mx-auto max-w-5xl rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <div className="mx-auto max-w-5xl rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Order History</h1>
-          <p className="text-sm text-neutral-600">Riwayat escrow yang Anda buat.</p>
+          <h1 className="text-2xl font-semibold text-[rgb(var(--fg))]">Order History</h1>
+          <p className="text-sm text-[rgb(var(--muted))]">Riwayat escrow yang Anda buat.</p>
         </div>
         <Link
           href="/orders/new"
-          className="inline-flex items-center gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-900 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm"
+          className="inline-flex items-center gap-2 rounded-md border border-[rgb(var(--border))] px-3 py-2 text-sm font-semibold text-[rgb(var(--fg))] transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
         >
           New Order
-          <svg className="h-4 w-4 text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
           </svg>
         </Link>
       </div>
 
-      {loading && <p className="mt-4 text-sm text-neutral-700">Memuat riwayat order...</p>}
+      {loading && <p className="mt-4 text-sm text-[rgb(var(--muted))]">Memuat riwayat order...</p>}
       {!loading && error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
       {!loading && !error && (
         <div className="mt-6 overflow-x-auto">
           {orders.length === 0 ? (
-            <p className="text-sm text-neutral-700">Belum ada order.</p>
+            <p className="text-sm text-[rgb(var(--muted))]">Belum ada order.</p>
           ) : (
-            <table className="min-w-full divide-y divide-neutral-200 text-sm text-neutral-800">
-              <thead className="bg-neutral-50">
+            <table className="min-w-full divide-y divide-[rgb(var(--border))] text-sm text-[rgb(var(--fg))]">
+              <thead className="bg-[rgb(var(--surface-2))]">
                 <tr>
-                  <th className="px-3 py-2 text-left font-semibold text-neutral-700">Order ID</th>
-                  <th className="px-3 py-2 text-left font-semibold text-neutral-700">Status</th>
-                  <th className="px-3 py-2 text-left font-semibold text-neutral-700">Amount (USDT)</th>
-                  <th className="px-3 py-2 text-left font-semibold text-neutral-700">Buyer</th>
-                  <th className="px-3 py-2 text-left font-semibold text-neutral-700">Seller</th>
-                  <th className="px-3 py-2 text-left font-semibold text-neutral-700">Chain</th>
-                  <th className="px-3 py-2 text-left font-semibold text-neutral-700">Escrow</th>
-                  <th className="px-3 py-2 text-left font-semibold text-neutral-700">Updated</th>
+                  <th className="px-3 py-2 text-left font-semibold text-[rgb(var(--muted))]">Order ID</th>
+                  <th className="px-3 py-2 text-left font-semibold text-[rgb(var(--muted))]">Status</th>
+                  <th className="px-3 py-2 text-left font-semibold text-[rgb(var(--muted))]">Amount (USDT)</th>
+                  <th className="px-3 py-2 text-left font-semibold text-[rgb(var(--muted))]">Buyer</th>
+                  <th className="px-3 py-2 text-left font-semibold text-[rgb(var(--muted))]">Seller</th>
+                  <th className="px-3 py-2 text-left font-semibold text-[rgb(var(--muted))]">Chain</th>
+                  <th className="px-3 py-2 text-left font-semibold text-[rgb(var(--muted))]">Escrow</th>
+                  <th className="px-3 py-2 text-left font-semibold text-[rgb(var(--muted))]">Updated</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-200">
+              <tbody className="divide-y divide-[rgb(var(--border))]">
                 {orders.map((order) => (
-                  <tr key={order.order_id} className="hover:bg-neutral-50">
-                    <td className="px-3 py-2 font-mono text-xs text-neutral-700">
-                      <Link href={`/orders/${order.order_id}`} className="underline decoration-neutral-400 hover:text-neutral-900">
+                  <tr key={order.order_id} className="hover:bg-[rgb(var(--surface-2))]">
+                    <td className="px-3 py-2 font-mono text-xs text-[rgb(var(--muted))]">
+                      <Link href={`/orders/${order.order_id}`} className="underline decoration-[rgb(var(--border))] hover:text-[rgb(var(--fg))]">
                         {order.order_id}
                       </Link>
                     </td>
-                    <td className="px-3 py-2 capitalize text-neutral-800">{order.status}</td>
-                    <td className="px-3 py-2 font-semibold text-neutral-900">{formatAmount(order.amount_usdt)}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-neutral-700">{order.buyer_wallet}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-neutral-700">{order.seller_wallet}</td>
-                    <td className="px-3 py-2 text-neutral-800">{order.chain_id}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-neutral-700">{order.escrow_address || '-'}</td>
-                    <td className="px-3 py-2 text-neutral-700">{formatDate(order.updated_at || order.created_at)}</td>
+                    <td className="px-3 py-2 capitalize text-[rgb(var(--fg))]">{order.status}</td>
+                    <td className="px-3 py-2 font-semibold text-[rgb(var(--fg))]">{formatAmount(order.amount_usdt)}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-[rgb(var(--muted))]">{order.buyer_wallet}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-[rgb(var(--muted))]">{order.seller_wallet}</td>
+                    <td className="px-3 py-2 text-[rgb(var(--fg))]">{order.chain_id}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-[rgb(var(--muted))]">{order.escrow_address || '-'}</td>
+                    <td className="px-3 py-2 text-[rgb(var(--muted))]">{formatDate(order.updated_at || order.created_at)}</td>
                   </tr>
                 ))}
               </tbody>

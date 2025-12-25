@@ -16,11 +16,11 @@ export default function Input({
   ...rest
 }) {
   const inputStyles =
-    "w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900";
+    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
   return (
     <div className="mb-3">
       {label && (
-        <label className="mb-1 block text-sm font-medium text-neutral-900">{label}</label>
+        <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">{label}</label>
       )}
       <input
         type={type}

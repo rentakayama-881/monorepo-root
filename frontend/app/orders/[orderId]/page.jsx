@@ -56,48 +56,48 @@ export default function OrderDetailPage() {
   }, [incomingId, error]);
 
   return (
-    <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow">
+    <div className="max-w-3xl mx-auto bg-[rgb(var(--surface))] p-6 rounded-lg border border-[rgb(var(--border))]">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">Detail Order</h1>
-        {incomingId && <span className="text-xs text-gray-500">{incomingId}</span>}
+        <h1 className="text-2xl font-semibold text-[rgb(var(--fg))]">Detail Order</h1>
+        {incomingId && <span className="text-xs text-[rgb(var(--muted))]">{incomingId}</span>}
       </div>
 
-      {loading && <p className="text-sm text-gray-600">Memuat data order...</p>}
+      {loading && <p className="text-sm text-[rgb(var(--muted))]">Memuat data order...</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {order && !error && (
         <>
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+          <div className="mb-4 p-3 bg-[rgb(var(--brand))]/10 border border-[rgb(var(--brand))]/30 rounded-md text-sm text-[rgb(var(--brand))]">
             <span className="font-medium">🔄 Auto-refresh aktif</span> - Status order akan diperbarui otomatis setiap 10 detik
           </div>
-          <div className="divide-y divide-gray-200 text-sm">
+          <div className="divide-y divide-[rgb(var(--border))] text-sm">
             <div className="py-3 flex justify-between">
-              <span className="text-gray-600">Status</span>
-              <span className="font-semibold text-gray-800">{order.status}</span>
+              <span className="text-[rgb(var(--muted))]">Status</span>
+              <span className="font-semibold text-[rgb(var(--fg))]">{order.status}</span>
             </div>
             <div className="py-3 flex justify-between">
-              <span className="text-gray-600">Tx Hash</span>
-              <span className="font-mono text-gray-800 break-all">{order.tx_hash || '-'}</span>
+              <span className="text-[rgb(var(--muted))]">Tx Hash</span>
+              <span className="font-mono text-[rgb(var(--fg))] break-all">{order.tx_hash || '-'}</span>
             </div>
             <div className="py-3 flex justify-between">
-              <span className="text-gray-600">Escrow Address</span>
-              <span className="font-mono text-gray-800 break-all">{order.escrow_address || '-'}</span>
+              <span className="text-[rgb(var(--muted))]">Escrow Address</span>
+              <span className="font-mono text-[rgb(var(--fg))] break-all">{order.escrow_address || '-'}</span>
             </div>
             <div className="py-3 flex justify-between">
-              <span className="text-gray-600">Buyer</span>
-              <span className="font-mono text-gray-800 break-all">{order.buyer_wallet}</span>
+              <span className="text-[rgb(var(--muted))]">Buyer</span>
+              <span className="font-mono text-[rgb(var(--fg))] break-all">{order.buyer_wallet}</span>
             </div>
             <div className="py-3 flex justify-between">
-              <span className="text-gray-600">Seller</span>
-              <span className="font-mono text-gray-800 break-all">{order.seller_wallet}</span>
+              <span className="text-[rgb(var(--muted))]">Seller</span>
+              <span className="font-mono text-[rgb(var(--fg))] break-all">{order.seller_wallet}</span>
             </div>
             <div className="py-3 flex justify-between">
-              <span className="text-gray-600">Amount (USDT)</span>
-              <span className="font-semibold text-gray-800">{formatAmount(order.amount_usdt)}</span>
+              <span className="text-[rgb(var(--muted))]">Amount (USDT)</span>
+              <span className="font-semibold text-[rgb(var(--fg))]">{formatAmount(order.amount_usdt)}</span>
             </div>
             <div className="py-3 flex justify-between">
-              <span className="text-gray-600">Chain ID</span>
-              <span className="font-mono text-gray-800">{order.chain_id}</span>
+              <span className="text-[rgb(var(--muted))]">Chain ID</span>
+              <span className="font-mono text-[rgb(var(--fg))]">{order.chain_id}</span>
             </div>
           </div>
         </>

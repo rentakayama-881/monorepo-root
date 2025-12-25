@@ -16,8 +16,8 @@ export default function MyThreadsPage() {
   const [threads, setThreads] = useState([]);
 
   // editor state
-  const [editingId, setEditingId] = useState(null);
-  const [originalType, setOriginalType] = useState("text"); // disimpan diam-diam
+  const [editingThread, setEditingThread] = useState(null);
+  const [originalType, setOriginalType] = useState("text");
   const [form, setForm] = useState({
     title: "",
     summary: "",
@@ -53,8 +53,7 @@ export default function MyThreadsPage() {
   }, [API, authed, reloadMyThreads]);
 
   function startEdit(th) {
-    setOk(""); setError(""); setEditingId(th.id);
-    // Prefill dari detail agar persis sama dengan data aslinya
+    setOk(""); setError(""); setEditingThread(th);
     (async () => {
       try {
         const t = localStorage.getItem("token");
@@ -62,11 +61,9 @@ export default function MyThreadsPage() {
         if (!res.ok) throw new Error("Gagal memuat detail thread");
         const full = await res.json();
 
-        // simpan tipe asli (disembunyikan di UI)
         const ctype = (full.content_type || "text").toLowerCase();
         setOriginalType(ctype);
 
-        // isi konten sebagai teks untuk diedit (kalau json → stringify cantik)
         const contentText =
           ctype === "text"
             ? (typeof full.content === "string" ? full.content : (full.content ? JSON.stringify(full.content, null, 2) : ""))
@@ -81,12 +78,13 @@ export default function MyThreadsPage() {
         });
       } catch (e) {
         setError(String(e.message || e));
+        setEditingThread(null);
       }
     })();
   }
 
   function cancelEdit() {
-    setEditingId(null);
+    setEditingThread(null);
     setOriginalType("text");
     setForm({ title: "", summary: "", content: "", image: "", telegram: "" });
   }
@@ -96,10 +94,6 @@ export default function MyThreadsPage() {
     try {
       const t = localStorage.getItem("token");
 
-      // bentuk body sesuai form create (tanpa field "tipe konten")
-      // tapi saat kirim content, sesuaikan dengan tipe asli:
-      // - jika thread aslinya text → kirim string apa adanya
-      // - jika thread aslinya json → coba parse ke object (kalau gagal, kirim stringnya)
       let contentToSend;
       if (originalType === "text") {
         contentToSend = form.content;
@@ -111,7 +105,6 @@ export default function MyThreadsPage() {
       const body = {
         title: form.title,
         summary: form.summary,
-        // tidak mengirim content_type → tipe tidak berubah
         content: contentToSend,
         meta: {
           image: form.image || undefined,
@@ -129,7 +122,7 @@ export default function MyThreadsPage() {
 
       await reloadMyThreads();
       setOk("Thread berhasil diperbarui.");
-      setEditingId(null);
+      setEditingThread(null);
     } catch (e) {
       setError(String(e.message || e));
     } finally {
@@ -137,147 +130,253 @@ export default function MyThreadsPage() {
     }
   }
 
-  if (!authed) return <div className="text-sm text-red-600">{error || "Anda harus login untuk melihat threads Anda."}</div>;
+  // Close modal on escape
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === "Escape") cancelEdit(); };
+    if (editingThread) window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [editingThread]);
 
-  const inputClass =
-    "w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-800";
-  const mutedText = "text-sm text-neutral-600";
-  const buttonPrimary =
-    "inline-flex items-center justify-center rounded-md bg-neutral-900 px-3 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60";
-  const buttonGhost = "inline-flex items-center justify-center rounded-md bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-900";
+  if (!authed) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {error || "Anda harus login untuk melihat threads Anda."}
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 px-3 py-6">
-      <h1 className="text-2xl font-semibold text-neutral-900">Threads Saya</h1>
+    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-[rgb(var(--fg))]">My Threads</h1>
+        <span className="rounded-full bg-[rgb(var(--surface-2))] px-2.5 py-0.5 text-xs font-medium text-[rgb(var(--muted))]">
+          {threads.length} threads
+        </span>
+      </div>
+
+      {/* Status messages */}
+      {ok && (
+        <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          {ok}
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       {loading ? (
-        <div className="text-sm">Loading...</div>
-      ) : error ? (
-        <div className="text-sm text-red-600">{error}</div>
-      ) : (
         <div className="space-y-3">
-          {threads.length === 0 ? (
-            <div className={mutedText}>Anda belum memiliki thread.</div>
-          ) : (
-            threads.map((th) => {
-              const catSlug = typeof th.category === "string" ? th.category : th.category?.slug;
-              const catName = typeof th.category === "object" ? th.category?.name || th.category?.slug : th.category;
-              return (
-                <div key={th.id} className="rounded-lg border border-neutral-200 bg-white p-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="text-lg font-semibold text-neutral-900">{th.title || "(Tanpa Judul)"}</div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-600">
-                        <span>{formatDate(th.created_at)}</span>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 animate-pulse rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]" />
+          ))}
+        </div>
+      ) : threads.length === 0 ? (
+        <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-8 text-center">
+          <p className="text-sm text-[rgb(var(--muted))]">Anda belum memiliki thread.</p>
+          <Link
+            href="/"
+            className="mt-4 inline-flex items-center gap-2 rounded-md bg-[rgb(var(--brand))] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+          >
+            Buat Thread Pertama
+          </Link>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
+          {threads.map((th, idx) => {
+            const catSlug = typeof th.category === "string" ? th.category : th.category?.slug;
+            const catName = typeof th.category === "object" ? th.category?.name || th.category?.slug : th.category;
+            const isLast = idx === threads.length - 1;
+
+            return (
+              <div
+                key={th.id}
+                className={`flex items-start gap-4 p-4 transition-colors hover:bg-[rgb(var(--surface-2))] ${!isLast ? "border-b border-[rgb(var(--border))]" : ""}`}
+              >
+                {/* Icon */}
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--brand))] bg-opacity-10">
+                  <svg className="h-4 w-4 text-[rgb(var(--brand))]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+
+                {/* Content */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <Link
+                        href={`/thread/${encodeURIComponent(th.id)}`}
+                        className="text-base font-semibold text-[rgb(var(--fg))] hover:text-[rgb(var(--brand))] hover:underline"
+                      >
+                        {th.title || "(Tanpa Judul)"}
+                      </Link>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[rgb(var(--muted))]">
+                        <span>#{th.id}</span>
+                        <span>•</span>
+                        <span>{formatRelativeDate(th.created_at)}</span>
                         {catSlug && (
                           <>
                             <span>•</span>
-                            <Link href={`/category/${encodeURIComponent(catSlug)}`} className="font-medium text-neutral-900 underline">
+                            <Link
+                              href={`/category/${encodeURIComponent(catSlug)}`}
+                              className="rounded-full bg-[rgb(var(--surface-2))] px-2 py-0.5 font-medium text-[rgb(var(--fg))] hover:bg-[rgb(var(--border))]"
+                            >
                               {catName}
                             </Link>
                           </>
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Link href={`/thread/${encodeURIComponent(th.id)}`} className="inline-flex items-center rounded-md bg-neutral-100 px-3 py-1.5 text-sm font-medium text-neutral-900 hover:bg-neutral-200">
-                        Lihat
+
+                    {/* Actions */}
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Link
+                        href={`/thread/${encodeURIComponent(th.id)}`}
+                        className="rounded-md p-2 text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--fg))]"
+                        title="Lihat"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
                       </Link>
-                      <button onClick={() => startEdit(th)} className="inline-flex items-center rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-neutral-800">
-                        Edit
+                      <button
+                        onClick={() => startEdit(th)}
+                        className="rounded-md p-2 text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--fg))]"
+                        title="Edit"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
                       </button>
                     </div>
                   </div>
 
-                  {editingId === th.id && (
-                    <div className="mt-4 space-y-4 border-t border-neutral-200 pt-4">
-                      {/* Judul Thread */}
-                      <div>
-                        <label className="text-sm font-medium text-neutral-900">Judul Thread *</label>
-                        <div className="mb-1 text-xs text-neutral-600">Masukkan judul yang jelas</div>
-                        <input
-                          className={inputClass}
-                          value={form.title}
-                          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                        />
-                      </div>
-
-                      {/* Ringkasan */}
-                      <div>
-                        <label className="text-sm font-medium text-neutral-900">Ringkasan (optional)</label>
-                        <div className="mb-1 text-xs text-neutral-600">Deskripsi singkat / highlight utama thread</div>
-                        <textarea
-                          rows={3}
-                          className={`${inputClass} min-h-[120px]`}
-                          value={form.summary}
-                          onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
-                        />
-                      </div>
-
-                      {/* Konten Thread */}
-                      <div>
-                        <label className="text-sm font-medium text-neutral-900">Konten Thread *</label>
-                        <div className="mb-1 text-xs text-neutral-600">Tuliskan isi thread secara lengkap di sini...</div>
-                        <textarea
-                          rows={8}
-                          className={`${inputClass} font-mono text-sm`}
-                          value={form.content}
-                          onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-                        />
-                      </div>
-
-                      {/* Gambar & Telegram */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-sm font-medium text-neutral-900">Gambar (optional)</label>
-                          <div className="mb-1 text-xs text-neutral-600">URL gambar (opsional)</div>
-                          <input
-                            className={inputClass}
-                            placeholder="https://..."
-                            value={form.image}
-                            onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-neutral-900">Contact Telegram *</label>
-                          <div className="mb-1 text-xs text-neutral-600">@username</div>
-                          <input
-                            className={inputClass}
-                            placeholder="username"
-                            value={form.telegram}
-                            onChange={(e) => setForm((f) => ({ ...f, telegram: e.target.value }))}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 pt-1">
-                        <button
-                          onClick={() => saveEdit(th.id)}
-                          disabled={saving}
-                          className={`${buttonPrimary} disabled:opacity-50`}
-                        >
-                          {saving ? "Menyimpan..." : "Simpan"}
-                        </button>
-                        <button onClick={cancelEdit} className={buttonGhost}>
-                          Batal
-                        </button>
-                      </div>
-                    </div>
+                  {/* Summary preview */}
+                  {th.summary && (
+                    <p className="mt-2 line-clamp-2 text-sm text-[rgb(var(--muted))]">
+                      {th.summary}
+                    </p>
                   )}
                 </div>
-              );
-            })
-          )}
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {ok && <div className="text-sm text-green-700">{ok}</div>}
-    </div>
+      {/* Edit Modal */}
+      {editingThread && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-xl">
+            {/* Modal Header */}
+            <div className="sticky top-0 flex items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-6 py-4">
+              <h2 className="text-lg font-semibold text-[rgb(var(--fg))]">Edit Thread</h2>
+              <button
+                onClick={cancelEdit}
+                className="rounded-md p-2 text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--fg))]"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="space-y-4 p-6">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">Judul Thread *</label>
+                <input
+                  className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                  value={form.title}
+                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">Ringkasan</label>
+                <textarea
+                  rows={3}
+                  className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                  value={form.summary}
+                  onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">Konten Thread *</label>
+                <textarea
+                  rows={8}
+                  className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 font-mono text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                  value={form.content}
+                  onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">Gambar URL</label>
+                  <input
+                    className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                    placeholder="https://..."
+                    value={form.image}
+                    onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">Telegram *</label>
+                  <input
+                    className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                    placeholder="username"
+                    value={form.telegram}
+                    onChange={(e) => setForm((f) => ({ ...f, telegram: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 border-t border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-6 py-4">
+              <button
+                onClick={cancelEdit}
+                className="rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2 text-sm font-medium text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))]"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => saveEdit(editingThread.id)}
+                disabled={saving}
+                className="rounded-md bg-[rgb(var(--brand))] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+              >
+                {saving ? "Menyimpan..." : "Simpan Perubahan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
   );
 }
 
-function formatDate(ts) {
+function formatRelativeDate(ts) {
   if (!ts) return "";
-  try { return new Date(ts * 1000).toLocaleString(); }
-  catch { return ""; }
+  try {
+    const date = new Date(ts * 1000);
+    const now = new Date();
+    const diff = now - date;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) return "Today";
+    if (days === 1) return "Yesterday";
+    if (days < 7) return `${days} days ago`;
+    if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+    if (days < 365) return `${Math.floor(days / 30)} months ago`;
+    return `${Math.floor(days / 365)} years ago`;
+  } catch {
+    return "";
+  }
 }

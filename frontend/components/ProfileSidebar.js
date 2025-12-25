@@ -81,12 +81,12 @@ export default function ProfileSidebar({ onClose }) {
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-11 z-50 w-80 origin-top-right rounded-xl border border-neutral-200 bg-white p-4 shadow-lg ring-1 ring-black/5"
+      className="absolute right-0 top-11 z-50 w-80 origin-top-right rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-lg"
     >
       <div className="flex items-center justify-between gap-3">
         {hasUser ? (
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50 text-sm font-semibold uppercase text-neutral-700">
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] text-sm font-semibold uppercase text-[rgb(var(--fg))]">
               {user.avatar_url ? (
                 <img src={avatarSrc} alt="Avatar" className="h-full w-full object-cover" />
               ) : (
@@ -94,24 +94,24 @@ export default function ProfileSidebar({ onClose }) {
               )}
             </div>
             <div className="min-w-0">
-              <div className="truncate text-base font-semibold text-neutral-900">{user.username}</div>
+              <div className="truncate text-base font-semibold text-[rgb(var(--fg))]">{user.username}</div>
               {user.email && (
-                <div className="text-xs text-neutral-500">{maskEmail(user.email)}</div>
+                <div className="text-xs text-[rgb(var(--muted))]">{maskEmail(user.email)}</div>
               )}
-              <div className="text-xs text-neutral-400">Kelola aktivitas & profil Anda</div>
+              <div className="text-xs text-[rgb(var(--muted))]">Kelola aktivitas & profil Anda</div>
             </div>
           </div>
         ) : (
           <div className="min-w-0">
-            <div className="text-base font-semibold text-neutral-900">
+            <div className="text-base font-semibold text-[rgb(var(--fg))]">
               {status === "error" ? "Session expired" : "Not signed in"}
             </div>
-            <div className="text-xs text-neutral-500">Silakan login kembali untuk mengakses profil.</div>
+            <div className="text-xs text-[rgb(var(--muted))]">Silakan login kembali untuk mengakses profil.</div>
           </div>
         )}
         <button
           onClick={onClose}
-          className="rounded-md p-1 text-neutral-600 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+          className="rounded-md p-1 text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--fg))]"
           type="button"
         >
           <span className="sr-only">Tutup menu profil</span>
@@ -122,47 +122,47 @@ export default function ProfileSidebar({ onClose }) {
       </div>
       {hasUser ? (
         <>
-          <nav className="mt-4 flex flex-col gap-2 text-sm text-neutral-800">
+          <nav className="mt-4 flex flex-col gap-2 text-sm text-[rgb(var(--fg))]">
             <Link
               href="/account"
-              className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm"
+              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
             >
               Account
-              <svg className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/orders/new"
-              className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm"
+              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
             >
               New Order
-              <svg className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/orders"
-              className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm"
+              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
             >
               Order History
-              <svg className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/threads"
-              className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm"
+              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 text-[rgb(var(--fg))] transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
             >
-              Threads
-              <svg className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              My Threads
+              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
           </nav>
           <button
             onClick={handleLogout}
-            className="mt-3 w-full rounded-lg border border-neutral-200 px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50/60"
+            className="mt-3 w-full rounded-md border border-[rgb(var(--border))] px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/20"
             type="button"
           >
             Keluar
@@ -172,7 +172,7 @@ export default function ProfileSidebar({ onClose }) {
         <div className="mt-4 flex flex-col gap-2">
           <Link
             href="/login"
-            className="inline-flex items-center justify-center rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm"
+            className="inline-flex items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm font-semibold text-[rgb(var(--fg))] transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
             onClick={onClose}
           >
             Go to login
@@ -184,7 +184,7 @@ export default function ProfileSidebar({ onClose }) {
               setStatus("unauthenticated");
               onClose?.();
             }}
-            className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-700 transition hover:-translate-y-0.5 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm"
+            className="w-full rounded-md border border-[rgb(var(--border))] px-3 py-2 text-sm font-medium text-[rgb(var(--muted))] transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
             type="button"
           >
             Clear token

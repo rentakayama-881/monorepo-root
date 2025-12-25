@@ -17,12 +17,12 @@ export default function BadgeDetailPage({ params }) {
     return () => { cancelled = true; };
   }, [API, id]);
 
-  if (!badge) return <div className="text-sm">Loading...</div>;
+  if (!badge) return <div className="text-sm text-[rgb(var(--muted))]">Loading...</div>;
 
   return (
     <div className="max-w-2xl">
-      <h2 className="text-xl font-semibold">Badge Detail</h2>
-      <div className="mt-3 border rounded bg-white p-4 text-sm space-y-1">
+      <h2 className="text-xl font-semibold text-[rgb(var(--fg))]">Badge Detail</h2>
+      <div className="mt-3 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--surface))] p-4 text-sm space-y-1 text-[rgb(var(--fg))]">
         <div><b>Platform:</b> {badge.platform}</div>
         <div><b>Description:</b> {badge.description}</div>
         <div><b>Issued At:</b> {formatDate(badge.created_at)}</div>

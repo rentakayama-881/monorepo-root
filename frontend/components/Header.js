@@ -124,17 +124,17 @@ export default function Header() {
   }, []);
 
   const navItem =
-    "px-3 py-1.5 rounded-md text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900 hover:bg-neutral-100";
+    "px-3 py-1.5 rounded-md text-sm font-medium text-[rgb(var(--muted))] transition-colors hover:text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))]";
 
   const iconButton =
-    "inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900";
+    "inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-50 w-full border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))]/95 backdrop-blur supports-[backdrop-filter]:bg-[rgb(var(--surface))]/60">
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4 sm:px-6">
         {/* Mobile menu */}
         <button
-          className="flex items-center justify-center -ml-2 md:hidden p-2 rounded-md hover:bg-neutral-100 transition-colors"
+          className="flex items-center justify-center -ml-2 md:hidden p-2 rounded-md hover:bg-[rgb(var(--surface-2))] transition-colors"
           onClick={() => setSidebarOpen(true)}
           aria-label="Toggle menu"
           type="button"
@@ -147,7 +147,7 @@ export default function Header() {
             stroke="currentColor"
             strokeWidth="1.5"
             strokeLinecap="round"
-            className="text-neutral-900"
+            className="text-[rgb(var(--fg))]"
           >
             <line x1="3" y1="6" x2="21" y2="6" />
             <line x1="3" y1="12" x2="21" y2="12" />
@@ -165,16 +165,13 @@ export default function Header() {
             priority
             className="h-5 w-5"
           />
-          <span className="font-semibold leading-none text-neutral-900">Alephdraad</span>
+          <span className="font-semibold leading-none text-[rgb(var(--fg))]">Alephdraad</span>
         </Link>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1 text-sm">
           <Link href="/" className={navItem}>
             Home
-          </Link>
-          <Link href="/threads" className={navItem}>
-            Threads
           </Link>
 
           {/* Categories dropdown */}
@@ -198,18 +195,18 @@ export default function Header() {
             </button>
 
             {categoriesOpen && (
-              <div className="absolute left-0 top-full z-40 mt-2 w-56 overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg">
+              <div className="absolute left-0 top-full z-40 mt-2 w-56 overflow-hidden rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-lg">
                 <div className="max-h-80 overflow-y-auto py-1">
                   {loadingCategories ? (
-                    <div className="px-3 py-2 text-sm text-neutral-500">Memuat kategori…</div>
+                    <div className="px-3 py-2 text-sm text-[rgb(var(--muted))]">Memuat kategori…</div>
                   ) : categories.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-neutral-500">Kategori belum tersedia</div>
+                    <div className="px-3 py-2 text-sm text-[rgb(var(--muted))]">Kategori belum tersedia</div>
                   ) : (
                     categories.map((cat) => (
                       <Link
                         key={cat.slug}
                         href={`/category/${cat.slug}`}
-                        className="block px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-100"
+                        className="block px-3 py-2 text-sm text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))]"
                         onClick={() => setCategoriesOpen(false)}
                       >
                         {cat.name}
@@ -242,19 +239,19 @@ export default function Header() {
           {isAuthed ? (
             <div className="relative">
               <button
-                className="inline-flex items-center gap-2 rounded-md px-2 py-1 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+                className="inline-flex items-center gap-2 rounded-md px-2 py-1 hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]"
                 onClick={() => setProfileOpen((v) => !v)}
                 aria-label="Akun"
                 type="button"
               >
-                <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50">
+                <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]">
                   <img
                     src={avatarUrl}
                     alt="Akun"
                     className="h-full w-full object-cover"
                   />
                 </span>
-                <span className="hidden sm:inline text-sm font-medium text-neutral-900">Akun</span>
+                <span className="hidden sm:inline text-sm font-medium text-[rgb(var(--fg))]">Akun</span>
               </button>
 
               {profileOpen && <ProfileSidebar onClose={() => setProfileOpen(false)} />}
@@ -262,7 +259,7 @@ export default function Header() {
           ) : (
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+              className="inline-flex items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm font-medium text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]"
             >
               Masuk
             </Link>
