@@ -8,6 +8,7 @@ import { maskEmail } from "@/lib/email";
 
 export default function ProfileSidebar({ onClose }) {
   const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
+  const [wallet, setWallet] = useState({ balance: 0, pin_set: false });
   const [status, setStatus] = useState("loading");
   const panelRef = useRef(null);
 
@@ -22,6 +23,7 @@ export default function ProfileSidebar({ onClose }) {
       }
       setStatus("loading");
       try {
+        // Load user data
         const res = await fetch(`${getApiBase()}/api/user/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -40,6 +42,25 @@ export default function ProfileSidebar({ onClose }) {
           username: data.username || data.name || "",
           avatar_url: data.avatar_url || "",
         });
+        
+        // Load wallet balance
+        try {
+          const walletRes = await fetch(`${getApiBase()}/api/wallet/balance`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (walletRes.ok) {
+            const walletData = await walletRes.json();
+            if (!cancelled) {
+              setWallet({
+                balance: walletData.balance || 0,
+                pin_set: walletData.pin_set || false,
+              });
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load wallet:", e);
+        }
+        
         setStatus("ready");
       } catch (err) {
         if (!cancelled) setStatus("error");
@@ -122,30 +143,96 @@ export default function ProfileSidebar({ onClose }) {
       </div>
       {hasUser ? (
         <>
+          {/* Wallet Balance Card */}
+          <div className="mt-4 rounded-lg border border-[rgb(var(--border))] bg-gradient-to-r from-emerald-500/10 to-blue-500/10 p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-[rgb(var(--muted))]">Saldo</div>
+                <div className="text-lg font-bold text-[rgb(var(--fg))]">
+                  Rp {wallet.balance.toLocaleString("id-ID")}
+                </div>
+              </div>
+              <Link
+                href="/account/wallet/deposit"
+                className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
+              >
+                + Deposit
+              </Link>
+            </div>
+          </div>
+
           <nav className="mt-4 flex flex-col gap-2 text-sm text-[rgb(var(--fg))]">
+            {/* Wallet Section */}
+            <div className="text-xs font-semibold uppercase text-[rgb(var(--muted))] px-1">Wallet</div>
+            <Link
+              href="/account/wallet/send"
+              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
+            >
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                Kirim Uang
+              </span>
+              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+            <Link
+              href="/account/wallet/transactions"
+              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
+            >
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Transaksi Saya
+              </span>
+              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+            <Link
+              href="/account/wallet/disputes"
+              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
+            >
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Dispute Center
+              </span>
+              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+            <Link
+              href="/account/wallet/withdraw"
+              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
+            >
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Tarik Dana
+              </span>
+              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+
+            {/* Account Section */}
+            <div className="text-xs font-semibold uppercase text-[rgb(var(--muted))] px-1 mt-2">Akun</div>
             <Link
               href="/account"
               className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
             >
-              Account
-              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-            <Link
-              href="/orders/new"
-              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
-            >
-              New Order
-              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-            <Link
-              href="/orders"
-              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
-            >
-              Order History
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Account
+              </span>
               <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
@@ -154,7 +241,12 @@ export default function ProfileSidebar({ onClose }) {
               href="/threads"
               className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 text-[rgb(var(--fg))] transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
             >
-              My Threads
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+                My Threads
+              </span>
               <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>

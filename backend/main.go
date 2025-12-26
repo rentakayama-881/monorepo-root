@@ -102,16 +102,18 @@ func main() {
 
 	// Initialize services
 	authService := services.NewAuthService(database.DB)
-	orderService := services.NewOrderService(database.DB)
 	threadService := services.NewThreadService(database.DB)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
-	orderHandler := handlers.NewOrderHandler(orderService)
 	threadHandler := handlers.NewThreadHandler(threadService)
+	walletHandler := handlers.NewWalletHandler()
+	transferHandler := handlers.NewTransferHandler()
+	disputeHandler := handlers.NewDisputeHandler()
+	withdrawalHandler := handlers.NewWithdrawalHandler()
 
 	// Verify all handlers are properly initialized
-	if authHandler == nil || orderHandler == nil || threadHandler == nil {
+	if authHandler == nil || threadHandler == nil {
 		logger.Fatal("Failed to initialize handlers")
 	}
 
@@ -168,22 +170,71 @@ func main() {
 			threads.PUT("/:id", middleware.AuthMiddleware(), handlers.UpdateThreadHandler)
 		}
 
-		// Marketplace endpoints
-		orders := api.Group("/orders")
+		// Wallet endpoints
+		wallet := api.Group("/wallet")
+		wallet.Use(middleware.AuthMiddleware())
 		{
-			orders.POST("", middleware.AuthOptionalMiddleware(), orderHandler.CreateOrder)
-			orders.POST("/:orderId/attach", orderHandler.AttachEscrow)
-			orders.GET("", middleware.AuthMiddleware(), orderHandler.ListOrders)
-			orders.GET("/:orderId", orderHandler.GetOrderStatus)
+			wallet.GET("/balance", walletHandler.GetBalance)
+			wallet.POST("/pin/set", walletHandler.SetPIN)
+			wallet.POST("/pin/change", walletHandler.ChangePIN)
+			wallet.POST("/pin/verify", walletHandler.VerifyPIN)
+			wallet.POST("/deposit", walletHandler.CreateDeposit)
+			wallet.GET("/deposits", walletHandler.GetDeposits)
+			wallet.GET("/transactions", walletHandler.GetTransactionHistory)
 		}
 
+		// Transfer endpoints
+		transfers := api.Group("/transfers")
+		transfers.Use(middleware.AuthMiddleware())
+		{
+			transfers.POST("", transferHandler.CreateTransfer)
+			transfers.GET("", transferHandler.GetMyTransfers)
+			transfers.GET("/pending/sent", transferHandler.GetPendingSentTransfers)
+			transfers.GET("/pending/received", transferHandler.GetPendingReceivedTransfers)
+			transfers.GET("/search-user", transferHandler.SearchUser)
+			transfers.GET("/:id", transferHandler.GetTransferByID)
+			transfers.GET("/code/:code", transferHandler.GetTransferByCode)
+			transfers.POST("/:id/release", transferHandler.ReleaseTransfer)
+			transfers.POST("/:id/cancel", transferHandler.CancelTransfer)
+		}
+
+		// Dispute endpoints
 		disputes := api.Group("/disputes")
+		disputes.Use(middleware.AuthMiddleware())
 		{
-			disputes.GET("/escrow/:escrowAddress", middleware.AuthMiddleware(), handlers.GetDisputeByEscrowID)
-			disputes.POST("/escrow/:escrowAddress/arbitrate", middleware.AuthMiddleware(), handlers.SubmitArbitrationVote)
+			disputes.POST("", disputeHandler.CreateDispute)
+			disputes.GET("", disputeHandler.GetMyDisputes)
+			disputes.GET("/:id", disputeHandler.GetDisputeByID)
+			disputes.POST("/:id/evidence", disputeHandler.AddEvidence)
+			disputes.GET("/:id/messages", disputeHandler.GetMessages)
+			disputes.POST("/:id/messages", disputeHandler.AddMessage)
+			disputes.POST("/:id/release", disputeHandler.MutualRelease)
+			disputes.POST("/:id/refund", disputeHandler.MutualRefund)
+			disputes.POST("/:id/escalate", disputeHandler.EscalateToAdmin)
 		}
 
-		api.GET("/chainlink/rate", handlers.GetChainlinkRateHandler)
+		// Withdrawal endpoints
+		withdrawals := api.Group("/withdrawals")
+		withdrawals.Use(middleware.AuthMiddleware())
+		{
+			withdrawals.POST("", withdrawalHandler.CreateWithdrawal)
+			withdrawals.GET("", withdrawalHandler.GetMyWithdrawals)
+			withdrawals.GET("/banks", withdrawalHandler.GetAvailableBanks)
+		}
+
+		// Xendit webhook callbacks (no auth - verified by callback token)
+		webhooks := api.Group("/webhooks")
+		{
+			webhooks.POST("/xendit/invoice", walletHandler.XenditInvoiceCallback)
+			webhooks.POST("/xendit/disbursement", withdrawalHandler.XenditDisbursementCallback)
+		}
+
+		// Demo/testing endpoints (only in development)
+		demo := api.Group("/demo")
+		{
+			demo.POST("/deposit/:external_id/simulate", walletHandler.SimulateDeposit)
+			demo.POST("/withdrawal/:code/simulate", withdrawalHandler.SimulateWithdrawal)
+		}
 
 		badges := api.Group("/badges")
 		{
@@ -223,6 +274,11 @@ func main() {
 			adminProtected.GET("/users/:userId", handlers.AdminGetUser)
 			adminProtected.POST("/users/:userId/badges", handlers.AssignBadgeToUser)
 			adminProtected.DELETE("/users/:userId/badges/:badgeId", handlers.RevokeBadgeFromUser)
+
+			// Dispute management
+			adminProtected.GET("/disputes", disputeHandler.AdminGetAllDisputes)
+			adminProtected.POST("/disputes/:id/resolve", disputeHandler.AdminResolveDispute)
+			adminProtected.POST("/disputes/:id/messages", disputeHandler.AdminAddMessage)
 		}
 	}
 

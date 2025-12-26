@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"backend-gin/config"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,11 +16,8 @@ func HealthHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"ok":             true,
-		"time":           time.Now().UTC().Format(time.RFC3339),
-		"chain_id":       config.ChainID.Int64(),
-		"escrow_factory": config.EscrowFactoryAddress.Hex(),
-		"backend_signer": config.BackendSignerAddress.Hex(),
-		"version":        version,
+		"ok":      true,
+		"time":    time.Now().UTC().Format(time.RFC3339),
+		"version": version,
 	})
 }
