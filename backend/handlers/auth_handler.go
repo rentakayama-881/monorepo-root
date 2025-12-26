@@ -171,3 +171,51 @@ func (h *AuthHandler) ConfirmVerification(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Email berhasil diverifikasi"})
 }
+
+// ForgotPassword handles password reset request
+// POST /api/auth/forgot-password
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	if !h.verifyLimiter.Allow(c.ClientIP()) {
+		handleError(c, apperrors.ErrTooManyRequests)
+		return
+	}
+
+	var req dto.ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Debug("Invalid forgot password request", zap.Error(err))
+		handleError(c, apperrors.ErrInvalidInput.WithDetails("Email wajib diisi"))
+		return
+	}
+
+	response, err := h.authService.ForgotPassword(req.Email)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":   response.Message,
+		"dev_token": response.DevToken,
+		"dev_link":  response.DevLink,
+	})
+}
+
+// ResetPassword handles password reset with token
+// POST /api/auth/reset-password
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
+	var req dto.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Debug("Invalid reset password request", zap.Error(err))
+		handleError(c, apperrors.ErrInvalidInput.WithDetails("Token dan password baru wajib diisi"))
+		return
+	}
+
+	if err := h.authService.ResetPassword(req.Token, req.NewPassword); err != nil {
+		handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Password berhasil direset. Silakan login dengan password baru.",
+	})
+}

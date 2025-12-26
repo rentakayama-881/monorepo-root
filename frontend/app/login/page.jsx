@@ -92,6 +92,11 @@ function LoginForm() {
               placeholder="••••••••"
             />
           </div>
+          <div className="text-right">
+            <Link href="/forgot-password" className="text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline">
+              Lupa password?
+            </Link>
+          </div>
           {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</div>}
           <button type="submit" disabled={loading} className={primaryButton}>
             {loading ? "Memproses..." : "Masuk"}

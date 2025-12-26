@@ -141,3 +141,112 @@ func buildVerificationEmailHTML(verificationLink string) string {
 </html>
 `, verificationLink, verificationLink, verificationLink)
 }
+
+// SendPasswordResetEmail sends password reset email
+func SendPasswordResetEmail(recipientEmail, resetToken string) error {
+	apiKey := os.Getenv("RESEND_API_KEY")
+	fromEmail := os.Getenv("RESEND_FROM_EMAIL")
+
+	frontend := os.Getenv("FRONTEND_BASE_URL")
+	if frontend == "" {
+		frontend = "http://localhost:3000"
+	}
+	resetLink := frontend + "/reset-password?token=" + resetToken
+
+	// Fallback to dev mode if no API key configured
+	if apiKey == "" {
+		log.Printf("[DEV MODE] Password reset for %s: %s", recipientEmail, resetLink)
+		return nil
+	}
+
+	if fromEmail == "" {
+		fromEmail = "onboarding@resend.dev"
+	}
+
+	htmlBody := buildPasswordResetEmailHTML(resetLink)
+
+	client := resend.NewClient(apiKey)
+	params := &resend.SendEmailRequest{
+		From:    fromEmail,
+		To:      []string{recipientEmail},
+		Subject: "Reset Password - Alephdraad",
+		Html:    htmlBody,
+	}
+
+	sent, err := client.Emails.Send(params)
+	if err != nil {
+		log.Printf("Failed to send password reset email to %s: %v", recipientEmail, err)
+		return fmt.Errorf("gagal mengirim email reset password")
+	}
+
+	log.Printf("Password reset email sent to %s (ID: %s)", recipientEmail, sent.Id)
+	return nil
+}
+
+// buildPasswordResetEmailHTML creates HTML template for password reset email
+func buildPasswordResetEmailHTML(resetLink string) string {
+	return fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" style="width: 100%%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                <table role="presentation" style="width: 600px; max-width: 100%%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <tr>
+                        <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #111827;">
+                                Reset Password
+                            </h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
+                                Kami menerima permintaan untuk mereset password akun Anda. Klik tombol di bawah untuk membuat password baru:
+                            </p>
+                            <table role="presentation" style="margin: 30px 0; width: 100%%;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="%s" style="display: inline-block; padding: 14px 32px; background-color: #dc2626; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 16px;">
+                                            Reset Password
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin: 20px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280;">
+                                Link ini akan kedaluwarsa dalam <strong>1 jam</strong>.
+                            </p>
+                            <p style="margin: 20px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280;">
+                                Jika Anda tidak meminta reset password, abaikan email ini. Password Anda tidak akan berubah.
+                            </p>
+                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                                <p style="margin: 0 0 10px; font-size: 13px; color: #6b7280;">
+                                    Jika tombol tidak bekerja, salin dan tempel link berikut ke browser:
+                                </p>
+                                <p style="margin: 0; font-size: 12px; color: #dc2626; word-break: break-all;">
+                                    <a href="%s" style="color: #dc2626;">%s</a>
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 30px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280; text-align: center;">
+                                © 2025 Alephdraad Platform. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+`, resetLink, resetLink, resetLink)
+}

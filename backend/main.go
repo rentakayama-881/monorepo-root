@@ -115,6 +115,8 @@ func main() {
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/verify/request", authHandler.RequestVerification)
 			auth.POST("/verify/confirm", authHandler.ConfirmVerification)
+			auth.POST("/forgot-password", authHandler.ForgotPassword)
+			auth.POST("/reset-password", authHandler.ResetPassword)
 			auth.POST("/username", middleware.AuthMiddleware(), handlers.CreateUsernameHandler)
 		}
 
