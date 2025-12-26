@@ -7,6 +7,8 @@ import (
 	"backend-gin/database"
 	"backend-gin/dto"
 	"backend-gin/models"
+	"backend-gin/validators"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,13 +27,11 @@ func CreateUsernameHandler(c *gin.Context) {
 		return
 	}
 
-	username := strings.TrimSpace(req.Username)
-	if username == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Username wajib diisi"})
-		return
-	}
-	if len(username) > 64 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Username terlalu panjang (maks 64 karakter)"})
+	username := strings.TrimSpace(strings.ToLower(req.Username))
+
+	// Validate username dengan aturan baru
+	if err := validators.ValidateUsernameStrict(username); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

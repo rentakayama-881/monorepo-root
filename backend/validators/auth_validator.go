@@ -9,6 +9,7 @@ import (
 )
 
 var emailRegex = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+var usernameRegex = regexp.MustCompile(`^[a-z0-9_]{7,30}$`)
 
 // ValidateEmail checks if email is valid
 func ValidateEmail(email string) error {
@@ -39,22 +40,42 @@ func ValidatePassword(password string) error {
 	return nil
 }
 
-// ValidateUsername checks if username is valid
+// ValidateUsername checks if username is valid (Instagram-style)
+// Rules: lowercase letters, numbers, underscore only. Min 7, max 30 chars.
 func ValidateUsername(username string) error {
 	username = strings.TrimSpace(username)
 	if username == "" {
-		return nil // username is optional
+		return nil // username is optional during registration
 	}
 	// Check for XSS patterns
 	if !utils.ValidateNoXSS(username) {
 		return apperrors.ErrInvalidUserInput.WithDetails("Username mengandung karakter yang tidak diizinkan")
 	}
 	username = utils.SanitizeUsername(username)
-	if len(username) > 64 {
-		return apperrors.ErrInvalidUserInput.WithDetails("Username maksimal 64 karakter")
+	
+	// Check length
+	if len(username) < 7 {
+		return apperrors.ErrInvalidUserInput.WithDetails("Username minimal 7 karakter")
 	}
-	// Could add more rules: alphanumeric only, no spaces, etc.
+	if len(username) > 30 {
+		return apperrors.ErrInvalidUserInput.WithDetails("Username maksimal 30 karakter")
+	}
+	
+	// Check format: lowercase letters, numbers, underscore only
+	if !usernameRegex.MatchString(username) {
+		return apperrors.ErrInvalidUserInput.WithDetails("Username hanya boleh huruf kecil, angka, dan underscore")
+	}
+	
 	return nil
+}
+
+// ValidateUsernameStrict is like ValidateUsername but username is required
+func ValidateUsernameStrict(username string) error {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return apperrors.ErrMissingField.WithDetails("username")
+	}
+	return ValidateUsername(username)
 }
 
 // RegisterInput represents registration input
