@@ -287,15 +287,13 @@ export default function AccountPage() {
                 <div className="flex items-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-3 py-2">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-[rgb(var(--fg))]">{maskEmail(me.email)}</span>
-                    {me.is_verified ? (
+                    {me.is_verified && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
                         <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                         Terverifikasi
                       </span>
-                    ) : (
-                      <span className="text-xs text-[rgb(var(--muted))]">Belum terverifikasi</span>
                     )}
                   </div>
                 </div>
