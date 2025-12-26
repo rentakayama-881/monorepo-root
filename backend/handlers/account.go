@@ -14,6 +14,7 @@ import (
 	"backend-gin/utils"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/datatypes"
 )
 
@@ -280,4 +281,74 @@ func UploadAvatarHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"avatar_url": avatarURL})
+}
+
+// DeleteAccountRequest for account deletion
+type DeleteAccountRequest struct {
+	Password     string `json:"password" binding:"required"`
+	Confirmation string `json:"confirmation" binding:"required"`
+}
+
+// DELETE /api/account - Delete user account permanently
+func DeleteAccountHandler(c *gin.Context) {
+	userIfc, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	user := userIfc.(*models.User)
+
+	var req DeleteAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password dan konfirmasi diperlukan"})
+		return
+	}
+
+	// Validate confirmation text
+	if req.Confirmation != "DELETE" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ketik DELETE untuk mengkonfirmasi penghapusan akun"})
+		return
+	}
+
+	// Validate password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Password salah"})
+		return
+	}
+
+	// Start transaction - delete all user data
+	tx := database.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses penghapusan"})
+		return
+	}
+
+	// Delete all user's threads
+	if err := tx.Where("author_id = ?", user.ID).Delete(&models.Thread{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus thread"})
+		return
+	}
+
+	// Delete user credentials
+	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Credential{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus kredensial"})
+		return
+	}
+
+	// Delete user
+	if err := tx.Delete(user).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus akun"})
+		return
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyelesaikan penghapusan"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Akun berhasil dihapus"})
 }
