@@ -5,8 +5,12 @@ import LatestThreads from '../components/home/LatestThreads';
 import Skeleton from '../components/ui/Skeleton';
 
 export const metadata = {
-  title: 'Alephdraad - Home',
-  description: 'Komunitas digital dan Utilitas Tingkat Tinggi'
+  title: 'Beranda',
+  description: 'AlephDraad - Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.',
+  openGraph: {
+    title: 'AlephDraad - Komunitas & Escrow Terpercaya',
+    description: 'Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.',
+  },
 };
 
 export default function Home() {

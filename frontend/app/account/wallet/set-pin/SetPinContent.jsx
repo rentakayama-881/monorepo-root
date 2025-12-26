@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import logger from "@/lib/logger";
 
 export default function SetPinContent() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function SetPinContent() {
           setHasPin(data.has_pin);
         }
       } catch (e) {
-        console.error("Failed to check wallet:", e);
+        logger.error("Failed to check wallet:", e);
       }
       setLoading(false);
     }

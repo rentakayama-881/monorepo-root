@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import logger from "@/lib/logger";
 
 export default function DepositPage() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function DepositPage() {
           setWallet(data);
         }
       } catch (e) {
-        console.error("Failed to load wallet:", e);
+        logger.error("Failed to load wallet:", e);
       }
     }
     loadWallet();

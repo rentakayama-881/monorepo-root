@@ -6,6 +6,7 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Card from "@/components/ui/Card";
 import Select from "@/components/ui/Select";
+import logger from "@/lib/logger";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
@@ -43,7 +44,7 @@ export default function AdminUsersPage() {
         setHasMore((data.users || []).length === 20);
       }
     } catch (err) {
-      console.error("Failed to fetch users:", err);
+      logger.error("Failed to fetch users:", err);
     } finally {
       setLoading(false);
     }
@@ -60,7 +61,7 @@ export default function AdminUsersPage() {
         setBadges(data.badges || []);
       }
     } catch (err) {
-      console.error("Failed to fetch badges:", err);
+      logger.error("Failed to fetch badges:", err);
     }
   };
 

@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import logger from "@/lib/logger";
 
 export default function DisputeDetailPage() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function DisputeDetailPage() {
           setCurrentUser(userData);
         }
       } catch (e) {
-        console.error("Failed to load user:", e);
+        logger.error("Failed to load user:", e);
       }
 
       try {
@@ -101,7 +102,7 @@ export default function DisputeDetailPage() {
         await refreshDispute();
       }
     } catch (e) {
-      console.error("Failed to send message:", e);
+      logger.error("Failed to send message:", e);
     }
     setSendingMessage(false);
   };
@@ -133,7 +134,7 @@ export default function DisputeDetailPage() {
         await refreshDispute();
       }
     } catch (e) {
-      console.error("Failed to add evidence:", e);
+      logger.error("Failed to add evidence:", e);
     }
     setProcessing(false);
   };
@@ -184,7 +185,7 @@ export default function DisputeDetailPage() {
         await refreshDispute();
       }
     } catch (e) {
-      console.error("Failed to escalate:", e);
+      logger.error("Failed to escalate:", e);
     }
     setProcessing(false);
   };

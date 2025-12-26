@@ -2,9 +2,16 @@
 
 import { useEffect } from "react";
 
+// Note: Cannot use logger here as this is a root error boundary
+// and may not have access to all modules
+const isDev = process.env.NODE_ENV === "development";
+
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
-    console.error("Global application error:", error);
+    if (isDev) {
+      console.error("Global application error:", error);
+    }
+    // TODO: Send to error tracking service in production
   }, [error]);
 
   return (

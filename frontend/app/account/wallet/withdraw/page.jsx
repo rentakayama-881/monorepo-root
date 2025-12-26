@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import logger from "@/lib/logger";
 
 const BANKS = [
   { code: "bca", name: "Bank Central Asia (BCA)" },
@@ -51,7 +52,7 @@ export default function WithdrawPage() {
           }
         }
       } catch (e) {
-        console.error("Failed to load wallet:", e);
+        logger.error("Failed to load wallet:", e);
       }
       setLoading(false);
     }

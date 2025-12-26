@@ -6,6 +6,7 @@ import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import Modal from "@/components/ui/Modal";
 import Card from "@/components/ui/Card";
+import logger from "@/lib/logger";
 
 export default function AdminBadgesPage() {
   const [badges, setBadges] = useState([]);
@@ -35,7 +36,7 @@ export default function AdminBadgesPage() {
         setBadges(data.badges || []);
       }
     } catch (err) {
-      console.error("Failed to fetch badges:", err);
+      logger.error("Failed to fetch badges:", err);
     } finally {
       setLoading(false);
     }

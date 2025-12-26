@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import logger from "@/lib/logger";
 
 export default function SendMoneyPage() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function SendMoneyPage() {
           }
         }
       } catch (e) {
-        console.error("Failed to load wallet:", e);
+        logger.error("Failed to load wallet:", e);
       }
     }
     loadWallet();
@@ -65,7 +66,7 @@ export default function SendMoneyPage() {
             setSearchResults(data.users || []);
           }
         } catch (e) {
-          console.error("Search failed:", e);
+          logger.error("Search failed:", e);
         } finally {
           setSearching(false);
         }

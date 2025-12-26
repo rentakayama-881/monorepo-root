@@ -6,6 +6,7 @@ import (
 
 	"backend-gin/database"
 	"backend-gin/models"
+
 	"github.com/gin-gonic/gin"
 	// ... import jwt lib yang dipakai
 )
@@ -36,6 +37,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// Set user ke context agar bisa diakses di handler: c.Get("user")
 		c.Set("user", &user)
+		c.Set("user_id", user.ID) // Set user_id for handlers that use c.GetUint("user_id")
 		c.Next()
 	}
 }
