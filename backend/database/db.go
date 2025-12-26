@@ -59,12 +59,15 @@ func migrateAndSeed() {
 		&models.Thread{},
 		&models.EmailVerificationToken{},
 		&models.PasswordResetToken{},
-		// marketplace tables
-		&models.Order{},
+		// wallet & payment tables
+		&models.UserWallet{},
+		&models.Deposit{},
+		&models.Transfer{},
 		&models.Dispute{},
-		&models.Promotion{},
-		&models.VolumeLedger{},
-		&models.ChainCursor{},
+		&models.DisputeEvidence{},
+		&models.DisputeMessage{},
+		&models.Withdrawal{},
+		&models.WalletTransaction{},
 		// admin & badge tables
 		&models.Admin{},
 		&models.Badge{},
