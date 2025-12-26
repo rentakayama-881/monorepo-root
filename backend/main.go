@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -20,6 +22,23 @@ import (
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
+
+// Delete account rate limiter: 3 attempts per hour
+var deleteAccountLimiter = middleware.NewRateLimiter(3, time.Hour)
+
+// DeleteAccountRateLimit is a middleware that rate limits delete account requests
+func DeleteAccountRateLimit() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
+		if !deleteAccountLimiter.Allow(ip) {
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+				"error": "Terlalu banyak percobaan. Silakan coba lagi dalam 1 jam.",
+			})
+			return
+		}
+		c.Next()
+	}
+}
 
 func buildCORSConfig() cors.Config {
 	corsConfig := cors.DefaultConfig()
@@ -126,6 +145,7 @@ func main() {
 			account.PUT("", middleware.AuthMiddleware(), handlers.UpdateMyAccountHandler)
 			account.POST("/change-username", middleware.AuthMiddleware(), handlers.ChangeUsernamePaidHandler)
 			account.PUT("/avatar", middleware.AuthMiddleware(), handlers.UploadAvatarHandler)
+			account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), handlers.DeleteAccountHandler)
 		}
 
 		user := api.Group("/user")

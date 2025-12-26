@@ -89,9 +89,9 @@ func TestValidateUsername_Valid(t *testing.T) {
 		"", // empty is valid (optional)
 		"johndoe",
 		"user_123",
-		"test-user",
-		"a",
-		"verylongusernamebutunder64characters",
+		"usertest",
+		"testing1",
+		"username_max_thirty_chars12345",
 	}
 
 	for _, username := range tests {
@@ -103,8 +103,8 @@ func TestValidateUsername_Valid(t *testing.T) {
 }
 
 func TestValidateUsername_Invalid(t *testing.T) {
-	// Username longer than 64 characters
-	longUsername := "this_is_a_very_long_username_that_exceeds_the_maximum_allowed_length_of_64_characters"
+	// Username longer than 30 characters
+	longUsername := "this_is_a_very_long_username_that_exceeds_the_maximum_allowed"
 
 	err := ValidateUsername(longUsername)
 	assert.Error(t, err)
