@@ -24,20 +24,28 @@ export default function CategoryThreadsPage() {
       .finally(() => setLoading(false));
   }, [API, params.slug]);
 
-  const title = category?.name || String(params.slug || "").replace(/-/g, " ");
-  const description = category?.description || "Diskusi dan thread terbaru di kategori ini.";
-
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header */}
+      {/* Header - with skeleton loading */}
       <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[rgb(var(--fg))]">
-            {title}
-          </h1>
-          <p className="mt-1 text-sm text-[rgb(var(--muted))]">
-            {description}
-          </p>
+        <div className="flex-1">
+          {loading ? (
+            <>
+              {/* Skeleton for title */}
+              <div className="h-7 w-48 animate-pulse rounded bg-[rgb(var(--border))]" />
+              {/* Skeleton for description */}
+              <div className="mt-2 h-4 w-72 animate-pulse rounded bg-[rgb(var(--border))]" />
+            </>
+          ) : (
+            <>
+              <h1 className="text-xl font-semibold text-[rgb(var(--fg))]">
+                {category?.name || String(params.slug || "").replace(/-/g, " ")}
+              </h1>
+              <p className="mt-1 text-sm text-[rgb(var(--muted))]">
+                {category?.description || "Diskusi dan thread terbaru di kategori ini."}
+              </p>
+            </>
+          )}
         </div>
 
         <Link
