@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import logger from "@/lib/logger";
 
 export default function DisputesPage() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function DisputesPage() {
           setDisputes(data.disputes || []);
         }
       } catch (e) {
-        console.error("Failed to load disputes:", e);
+        logger.error("Failed to load disputes:", e);
       }
       setLoading(false);
     }

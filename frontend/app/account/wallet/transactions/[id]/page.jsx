@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import logger from "@/lib/logger";
 
 export default function TransactionDetailPage() {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function TransactionDetailPage() {
           setCurrentUser(userData);
         }
       } catch (e) {
-        console.error("Failed to load user:", e);
+        logger.error("Failed to load user:", e);
       }
 
       try {

@@ -4,5 +4,27 @@
 **/build/
 .env
 .env.*
-go.mod 
-go.sum 
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+coverage/
+
+# Build outputs
+*.exe
+*.dll
+*.so
+*.dylib 

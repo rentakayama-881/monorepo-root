@@ -229,11 +229,13 @@ func main() {
 			webhooks.POST("/xendit/disbursement", withdrawalHandler.XenditDisbursementCallback)
 		}
 
-		// Demo/testing endpoints (only in development)
-		demo := api.Group("/demo")
-		{
-			demo.POST("/deposit/:external_id/simulate", walletHandler.SimulateDeposit)
-			demo.POST("/withdrawal/:code/simulate", withdrawalHandler.SimulateWithdrawal)
+		// Demo/testing endpoints (only in development - protected by env var)
+		if os.Getenv("ENABLE_DEMO_ENDPOINTS") == "true" {
+			demo := api.Group("/demo")
+			{
+				demo.POST("/deposit/:external_id/simulate", walletHandler.SimulateDeposit)
+				demo.POST("/withdrawal/:code/simulate", withdrawalHandler.SimulateWithdrawal)
+			}
 		}
 
 		badges := api.Group("/badges")

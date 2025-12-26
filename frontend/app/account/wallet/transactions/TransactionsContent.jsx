@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import logger from "@/lib/logger";
 
 export default function TransactionsContent() {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function TransactionsContent() {
           setTransfers(data.transfers || []);
         }
       } catch (e) {
-        console.error("Failed to load data:", e);
+        logger.error("Failed to load data:", e);
       }
       setLoading(false);
     }

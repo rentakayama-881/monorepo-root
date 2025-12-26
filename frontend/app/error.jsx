@@ -2,11 +2,12 @@
 
 import { useEffect } from "react";
 import Button from "@/components/ui/Button";
+import logger from "@/lib/logger";
 
 export default function Error({ error, reset }) {
   useEffect(() => {
-    // Log error to console (could send to error tracking service)
-    console.error("Application error:", error);
+    // Log error using production-safe logger
+    logger.error("Application error:", error);
   }, [error]);
 
   return (

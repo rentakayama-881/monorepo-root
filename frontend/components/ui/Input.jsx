@@ -1,35 +1,77 @@
-import React from "react";
+import React, { useId } from "react";
 import PropTypes from "prop-types";
+import clsx from "clsx";
 
 /**
- * Input generik:
- * - type: "text" | "email" | "password" | "number" | "file" | etc.
- * - label: string (optional, tampil di atas input)
- * - error: string (optional, tampil di bawah input)
- * - ...rest: props lain (value, onChange, placeholder, aria-label, dsb)
+ * Accessible input component with label and error handling
+ * @param {Object} props
+ * @param {"text"|"email"|"password"|"number"|"file"|"tel"|"url"|"search"} props.type - Input type
+ * @param {string} props.label - Label text (displays above input)
+ * @param {string} props.error - Error message (displays below input)
+ * @param {string} props.hint - Hint text (displays below input, before error)
+ * @param {boolean} props.required - Whether field is required
+ * @param {string} props.className - Additional CSS classes
  */
 export default function Input({
   type = "text",
   label = "",
   error = "",
+  hint = "",
+  required = false,
   className = "",
+  id: propId,
   ...rest
 }) {
-  const inputStyles =
-    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
+  // Generate unique ID for accessibility
+  const generatedId = useId();
+  const inputId = propId || generatedId;
+  const errorId = `${inputId}-error`;
+  const hintId = `${inputId}-hint`;
+
+  const inputStyles = clsx(
+    "w-full rounded-md border bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))]",
+    "placeholder:text-[rgb(var(--muted))]",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]",
+    "disabled:opacity-50 disabled:cursor-not-allowed",
+    error ? "border-red-500" : "border-[rgb(var(--border))]",
+    className
+  );
+
+  // Build aria-describedby from hint and error
+  const describedBy = [
+    hint && hintId,
+    error && errorId,
+  ].filter(Boolean).join(" ") || undefined;
+
   return (
     <div className="mb-3">
       {label && (
-        <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">{label}</label>
+        <label 
+          htmlFor={inputId}
+          className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]"
+        >
+          {label}
+          {required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
+        </label>
       )}
       <input
+        id={inputId}
         type={type}
-        className={`${inputStyles} ${error ? "border-red-500" : ""} ${className}`}
-        aria-invalid={!!error}
+        className={inputStyles}
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={describedBy}
+        aria-required={required || undefined}
         {...rest}
       />
+      {hint && !error && (
+        <p id={hintId} className="mt-1 text-xs text-[rgb(var(--muted))]">
+          {hint}
+        </p>
+      )}
       {error && (
-        <div className="mt-1 text-xs text-red-600">{error}</div>
+        <p id={errorId} className="mt-1 text-xs text-red-600" role="alert">
+          {error}
+        </p>
       )}
     </div>
   );
@@ -39,5 +81,8 @@ Input.propTypes = {
   type: PropTypes.string,
   label: PropTypes.string,
   error: PropTypes.string,
+  hint: PropTypes.string,
+  required: PropTypes.bool,
   className: PropTypes.string,
+  id: PropTypes.string,
 };

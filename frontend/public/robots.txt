@@ -1,0 +1,13 @@
+# Robots.txt for AlephDraad
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+Allow: /
+
+# Disallow private/admin areas
+Disallow: /admin/
+Disallow: /account/
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://alephdraad.fun/sitemap.xml

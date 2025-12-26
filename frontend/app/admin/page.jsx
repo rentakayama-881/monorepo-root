@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
+import logger from "@/lib/logger";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
@@ -38,7 +39,7 @@ export default function AdminDashboardPage() {
           setStats((prev) => ({ ...prev, totalUsers: data.total || 0 }));
         }
       } catch (err) {
-        console.error("Failed to fetch stats:", err);
+        logger.error("Failed to fetch stats:", err);
       }
     };
 
