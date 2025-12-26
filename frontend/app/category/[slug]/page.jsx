@@ -8,6 +8,7 @@ import { getApiBase } from "@/lib/api";
 export default function CategoryThreadsPage() {
   const params = useParams();
   const [threads, setThreads] = useState([]);
+  const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const API = getApiBase();
@@ -16,22 +17,26 @@ export default function CategoryThreadsPage() {
     setLoading(true);
     fetch(`${API}/api/threads/category/${params.slug}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((data) => setThreads(data.threads || []))
+      .then((data) => {
+        setThreads(data.threads || []);
+        setCategory(data.category || null);
+      })
       .finally(() => setLoading(false));
   }, [API, params.slug]);
 
-  const title = String(params.slug || "").replace(/-/g, " ");
+  const title = category?.name || String(params.slug || "").replace(/-/g, " ");
+  const description = category?.description || "Diskusi dan thread terbaru di kategori ini.";
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-xl font-semibold capitalize text-[rgb(var(--fg))]">
+          <h1 className="text-xl font-semibold text-[rgb(var(--fg))]">
             {title}
           </h1>
           <p className="mt-1 text-sm text-[rgb(var(--muted))]">
-            Diskusi dan thread terbaru di kategori ini.
+            {description}
           </p>
         </div>
 

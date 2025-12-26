@@ -41,15 +41,15 @@ func (h *ThreadHandler) GetCategories(c *gin.Context) {
 func (h *ThreadHandler) GetThreadsByCategory(c *gin.Context) {
 	slug := c.Param("slug")
 
-	threads, err := h.threadService.ListThreadsByCategory(c.Request.Context(), slug, 100)
+	result, err := h.threadService.ListThreadsByCategory(c.Request.Context(), slug, 100)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"category": slug,
-		"threads":  threads,
+		"category": result.Category,
+		"threads":  result.Threads,
 	})
 }
 

@@ -230,8 +230,14 @@ func (s *ThreadService) GetThreadByID(ctx context.Context, threadID uint) (*Thre
 	return s.mapThreadToDetailResponse(&thread), nil
 }
 
-// ListThreadsByCategory lists threads for a specific category
-func (s *ThreadService) ListThreadsByCategory(ctx context.Context, categorySlug string, limit int) ([]ThreadListItem, error) {
+// CategoryWithThreadsResponse represents a category with its threads
+type CategoryWithThreadsResponse struct {
+	Category CategoryResponse `json:"category"`
+	Threads  []ThreadListItem `json:"threads"`
+}
+
+// ListThreadsByCategory lists threads for a specific category and returns category info
+func (s *ThreadService) ListThreadsByCategory(ctx context.Context, categorySlug string, limit int) (*CategoryWithThreadsResponse, error) {
 	// Validate category
 	input := validators.CategorySlugInput{Slug: categorySlug}
 	if err := input.Validate(); err != nil {
@@ -267,7 +273,14 @@ func (s *ThreadService) ListThreadsByCategory(ctx context.Context, categorySlug 
 		return nil, apperrors.ErrDatabase.WithDetails("gagal membaca threads")
 	}
 
-	return s.mapThreadsToListItems(threads), nil
+	return &CategoryWithThreadsResponse{
+		Category: CategoryResponse{
+			Slug:        category.Slug,
+			Name:        category.Name,
+			Description: category.Description,
+		},
+		Threads: s.mapThreadsToListItems(threads),
+	}, nil
 }
 
 // ListLatestThreads lists latest threads with optional category filter

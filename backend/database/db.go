@@ -77,32 +77,32 @@ func migrateAndSeed() {
 	var count int64
 	DB.Model(&models.Category{}).Count(&count)
 	if count == 0 {
-		seedCategories := []struct{ Slug, Name string }{
-			{"mencari-pekerjaan", "Mencari Pekerjaan"},
-			{"cryptocurrency", "Cryptocurrency"},
-			{"software", "Software"},
-			{"kerja-lepas", "Kerja Lepas"},
-			{"iklan", "Iklan"},
-			{"akuntansi", "Akuntansi"},
-			{"dropshiper", "Dropshiper"},
-			{"jasa-tugas-kantor", "Jasa Tugas Kantor"},
-			{"akun-digital", "Akun Digital"},
-			{"hp-komputer", "HP & Komputer"},
-			{"drama-korea", "Drama Korea"},
-			{"jasa-tugas-belajar", "Jasa Tugas Belajar"},
-			{"kolaborator-phd", "Kolaborator Ph.D"},
-			{"marketing-offline", "Marketing Offline"},
-			{"investor", "Investor"},
-			{"anti-penipuan", "Anti Penipuan"},
-			{"dokter-buka-praktek", "Dokter Buka Praktek"},
-			{"bantuan-darurat", "Bantuan Darurat"},
-			{"cari-relasi", "Cari Relasi"},
-			{"ai-digest", "AI Digest"},
-			{"masa-depan-ku", "Masa Depan-Ku"},
-			{"report-massal", "Report Massal"},
+		seedCategories := []struct{ Slug, Name, Description string }{
+			{"mencari-pekerjaan", "Mencari Pekerjaan", "Lowongan kerja, tips karir, dan peluang pekerjaan"},
+			{"cryptocurrency", "Cryptocurrency", "Bitcoin, altcoin, DeFi, NFT, dan teknologi blockchain"},
+			{"software", "Software", "Aplikasi, tools, development, dan solusi software"},
+			{"kerja-lepas", "Kerja Lepas", "Freelance, project-based, dan pekerjaan remote"},
+			{"iklan", "Iklan", "Promosi produk, jasa, dan layanan bisnis"},
+			{"akuntansi", "Akuntansi", "Pembukuan, laporan keuangan, dan jasa akuntan"},
+			{"dropshiper", "Dropshiper", "Supplier, reseller, dan bisnis dropship"},
+			{"jasa-tugas-kantor", "Jasa Tugas Kantor", "Jasa administrasi, data entry, dan pekerjaan kantor"},
+			{"akun-digital", "Akun Digital", "Jual beli akun premium, subscription, dan lisensi digital"},
+			{"hp-komputer", "HP & Komputer", "Gadget, komputer, laptop, dan aksesoris teknologi"},
+			{"drama-korea", "Drama Korea", "Rekomendasi drama Korea, review, dan diskusi K-Drama"},
+			{"jasa-tugas-belajar", "Jasa Tugas Belajar", "Jasa pengerjaan tugas sekolah, kuliah, dan akademik"},
+			{"kolaborator-phd", "Kolaborator Ph.D", "Kolaborasi riset, thesis, dan proyek akademik Ph.D"},
+			{"exploit-dev", "Exploit & Vulnerabilities", "Celah keamanan, CVE analysis, bug bounty, vulnerability research"},
+			{"investor", "Investor", "Investor angel, venture capital, dan pendanaan bisnis"},
+			{"anti-penipuan", "Anti Penipuan", "Laporan penipuan, blacklist, dan warning scammer"},
+			{"cyber-security", "Cyber Security", "Keamanan siber, penetration testing, ethical hacking, defense strategies"},
+			{"bantuan-darurat", "Bantuan Darurat", "Pertolongan darurat, donasi, dan bantuan mendesak"},
+			{"cari-relasi", "Cari Relasi", "Networking, mencari partner bisnis, dan koneksi profesional"},
+			{"ai-digest", "AI Digest", "Berita AI, machine learning, dan teknologi kecerdasan buatan"},
+			{"malware-analysis", "Malware Analysis", "Reverse engineering, malware research, threat intelligence"},
+			{"report-massal", "Report Massal", "Koordinasi laporan massal terhadap akun/konten berbahaya"},
 		}
 		for _, c := range seedCategories {
-			DB.Create(&models.Category{Slug: c.Slug, Name: c.Name})
+			DB.Create(&models.Category{Slug: c.Slug, Name: c.Name, Description: c.Description})
 		}
 	}
 }
