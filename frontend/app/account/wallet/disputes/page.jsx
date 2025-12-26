@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import Header from "@/components/Header";
 
 export default function DisputesPage() {
   const router = useRouter();
@@ -77,9 +76,7 @@ export default function DisputesPage() {
   const displayDisputes = activeTab === "active" ? activeDisputes : resolvedDisputes;
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+    <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
         <div className="mx-auto max-w-2xl px-4 py-8">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">Dispute Center</h1>
@@ -190,6 +187,5 @@ export default function DisputesPage() {
           )}
         </div>
       </main>
-    </>
   );
 }

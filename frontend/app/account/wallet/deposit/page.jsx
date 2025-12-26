@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import Header from "@/components/Header";
 
 export default function DepositPage() {
   const router = useRouter();
@@ -89,9 +88,7 @@ export default function DepositPage() {
   };
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+    <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
         <div className="mx-auto max-w-lg px-4 py-8">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">Deposit</h1>
@@ -194,6 +191,5 @@ export default function DepositPage() {
           </div>
         </div>
       </main>
-    </>
   );
 }

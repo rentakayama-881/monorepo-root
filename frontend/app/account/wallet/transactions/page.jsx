@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import Header from "@/components/Header";
 import TransactionsContent from "./TransactionsContent";
 
 function TransactionsSkeleton() {
@@ -29,11 +28,8 @@ function TransactionsSkeleton() {
 
 export default function TransactionsPage() {
   return (
-    <>
-      <Header />
-      <Suspense fallback={<TransactionsSkeleton />}>
-        <TransactionsContent />
-      </Suspense>
-    </>
+    <Suspense fallback={<TransactionsSkeleton />}>
+      <TransactionsContent />
+    </Suspense>
   );
 }

@@ -4,7 +4,6 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import Header from "@/components/Header";
 
 export default function TransactionDetailPage() {
   const router = useRouter();
@@ -156,30 +155,24 @@ export default function TransactionDetailPage() {
 
   if (loading) {
     return (
-      <>
-        <Header />
-        <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
-          <div className="mx-auto max-w-2xl px-4 py-8 text-center text-[rgb(var(--muted))]">
-            Memuat...
-          </div>
-        </main>
-      </>
+      <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+        <div className="mx-auto max-w-2xl px-4 py-8 text-center text-[rgb(var(--muted))]">
+          Memuat...
+        </div>
+      </main>
     );
   }
 
   if (!transfer) {
     return (
-      <>
-        <Header />
-        <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
-          <div className="mx-auto max-w-2xl px-4 py-8 text-center">
-            <div className="text-red-500 mb-4">{error || "Transfer tidak ditemukan"}</div>
-            <Link href="/account/wallet/transactions" className="text-emerald-600 hover:underline">
-              ← Kembali
-            </Link>
-          </div>
-        </main>
-      </>
+      <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+        <div className="mx-auto max-w-2xl px-4 py-8 text-center">
+          <div className="text-red-500 mb-4">{error || "Transfer tidak ditemukan"}</div>
+          <Link href="/account/wallet/transactions" className="text-emerald-600 hover:underline">
+            ← Kembali
+          </Link>
+        </div>
+      </main>
     );
   }
 
@@ -187,9 +180,7 @@ export default function TransactionDetailPage() {
   const isReceiver = currentUser?.id === transfer.receiver_id;
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+    <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
         <div className="mx-auto max-w-2xl px-4 py-8">
           <Link
             href="/account/wallet/transactions"
@@ -365,6 +356,5 @@ export default function TransactionDetailPage() {
           </div>
         )}
       </main>
-    </>
   );
 }

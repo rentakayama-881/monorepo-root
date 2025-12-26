@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import Header from "@/components/Header";
 import SetPinContent from "./SetPinContent";
 
 function SetPinSkeleton() {
@@ -19,11 +18,8 @@ function SetPinSkeleton() {
 
 export default function SetPinPage() {
   return (
-    <>
-      <Header />
-      <Suspense fallback={<SetPinSkeleton />}>
-        <SetPinContent />
-      </Suspense>
-    </>
+    <Suspense fallback={<SetPinSkeleton />}>
+      <SetPinContent />
+    </Suspense>
   );
 }

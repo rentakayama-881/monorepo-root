@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import Header from "@/components/Header";
 
 const BANKS = [
   { code: "bca", name: "Bank Central Asia (BCA)" },
@@ -116,21 +115,16 @@ export default function WithdrawPage() {
 
   if (loading) {
     return (
-      <>
-        <Header />
-        <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
-          <div className="mx-auto max-w-md px-4 py-8 text-center text-[rgb(var(--muted))]">
-            Memuat...
-          </div>
-        </main>
-      </>
+      <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+        <div className="mx-auto max-w-md px-4 py-8 text-center text-[rgb(var(--muted))]">
+          Memuat...
+        </div>
+      </main>
     );
   }
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+    <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
         <div className="mx-auto max-w-md px-4 py-8">
           <Link
             href="/account/wallet/transactions"
@@ -408,6 +402,5 @@ export default function WithdrawPage() {
           )}
         </div>
       </main>
-    </>
   );
 }

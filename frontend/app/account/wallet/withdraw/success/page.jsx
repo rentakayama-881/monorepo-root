@@ -1,12 +1,9 @@
 "use client";
 import Link from "next/link";
-import Header from "@/components/Header";
 
 export default function WithdrawSuccessPage() {
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+    <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
         <div className="mx-auto max-w-md px-4 py-16 text-center">
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
             <svg
@@ -56,6 +53,5 @@ export default function WithdrawSuccessPage() {
           </div>
         </div>
       </main>
-    </>
   );
 }
