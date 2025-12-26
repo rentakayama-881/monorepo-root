@@ -227,9 +227,6 @@ export default function Header() {
           <Link href="/contact-support" className={navItem}>
             Contact Support
           </Link>
-          <Link href="/pengajuan-badge" className={navItem}>
-            Pengajuan Badge
-          </Link>
         </nav>
 
         <div className="flex-1" />
