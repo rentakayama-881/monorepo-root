@@ -61,7 +61,7 @@ func (h *TransferHandler) CreateTransfer(c *gin.Context) {
 
 	// Find receiver by username
 	var receiver models.User
-	if err := database.DB.Where("username = ?", req.ReceiverUsername).First(&receiver).Error; err != nil {
+	if err := database.DB.Where("name = ?", req.ReceiverUsername).First(&receiver).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Receiver not found"})
 		return
 	}
@@ -235,18 +235,20 @@ func (h *TransferHandler) SearchUser(c *gin.Context) {
 	}
 
 	var users []models.User
-	database.DB.Where("username ILIKE ? AND id != ?", "%"+req.Username+"%", currentUserID).
+	database.DB.Where("name ILIKE ? AND id != ? AND name IS NOT NULL", "%"+req.Username+"%", currentUserID).
 		Limit(10).
 		Find(&users)
 
 	// Return only safe user info
 	results := make([]gin.H, 0)
 	for _, u := range users {
-		results = append(results, gin.H{
-			"id":         u.ID,
-			"username":   u.Username,
-			"avatar_url": u.AvatarURL,
-		})
+		if u.Username != nil {
+			results = append(results, gin.H{
+				"id":         u.ID,
+				"username":   *u.Username,
+				"avatar_url": u.AvatarURL,
+			})
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"users": results})

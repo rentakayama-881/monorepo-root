@@ -8,8 +8,9 @@ export default function SendMoneyPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
-  const [wallet, setWallet] = useState({ balance: 0, pin_set: false });
+  const [wallet, setWallet] = useState({ balance: 0, has_pin: false });
 
   // Form data
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,7 +38,7 @@ export default function SendMoneyPage() {
           setWallet(data);
           
           // If PIN not set, redirect to set PIN page
-          if (!data.pin_set) {
+          if (!data.has_pin) {
             router.push("/account/wallet/set-pin?redirect=/account/wallet/send");
           }
         }
@@ -52,6 +53,7 @@ export default function SendMoneyPage() {
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (searchQuery.length >= 3) {
+        setSearching(true);
         const token = getToken();
         try {
           const res = await fetch(
@@ -64,6 +66,8 @@ export default function SendMoneyPage() {
           }
         } catch (e) {
           console.error("Search failed:", e);
+        } finally {
+          setSearching(false);
         }
       } else {
         setSearchResults([]);
@@ -198,7 +202,27 @@ export default function SendMoneyPage() {
               </div>
 
               {/* Search Results */}
-              {searchResults.length > 0 && (
+              {searching && (
+                <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 text-center text-[rgb(var(--muted))]">
+                  <svg className="animate-spin h-5 w-5 mx-auto mb-2 text-emerald-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Mencari...
+                </div>
+              )}
+
+              {!searching && searchQuery.length >= 3 && searchResults.length === 0 && (
+                <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 text-center text-[rgb(var(--muted))]">
+                  <svg className="h-8 w-8 mx-auto mb-2 text-[rgb(var(--muted))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p>User tidak ditemukan</p>
+                  <p className="text-xs mt-1">Username minimal 7 karakter</p>
+                </div>
+              )}
+
+              {!searching && searchResults.length > 0 && (
                 <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] divide-y divide-[rgb(var(--border))]">
                   {searchResults.map((user) => (
                     <button
