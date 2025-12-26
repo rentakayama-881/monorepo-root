@@ -418,7 +418,10 @@ func AdminListUsers(c *gin.Context) {
 
 	if search != "" {
 		searchPattern := "%" + strings.ToLower(search) + "%"
-		query = query.Where("LOWER(email) LIKE ? OR LOWER(name) LIKE ?", searchPattern, searchPattern)
+		query = query.Where(
+			"LOWER(email) LIKE ? OR LOWER(COALESCE(name, '')) LIKE ? OR LOWER(COALESCE(full_name, '')) LIKE ?",
+			searchPattern, searchPattern, searchPattern,
+		)
 	}
 
 	query.Count(&total)

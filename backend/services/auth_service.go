@@ -369,3 +369,130 @@ func hashToken(token string) string {
 	h := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(h[:])
 }
+
+// ForgotPasswordResponse represents forgot password response
+type ForgotPasswordResponse struct {
+	Message  string
+	DevToken string // For development only
+	DevLink  string // For development only
+}
+
+// ForgotPassword sends password reset email
+func (s *AuthService) ForgotPassword(email string) (*ForgotPasswordResponse, error) {
+	email = strings.TrimSpace(strings.ToLower(email))
+
+	if err := validators.ValidateEmail(email); err != nil {
+		return nil, err
+	}
+
+	// Find user - but don't reveal if email exists
+	var user models.User
+	if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
+		// Don't reveal if email exists or not - still return success
+		logger.Debug("Password reset requested for non-existent email", zap.String("email", email))
+		return &ForgotPasswordResponse{
+			Message: "Jika email terdaftar, tautan reset password telah dikirim.",
+		}, nil
+	}
+
+	// Create reset token
+	raw, err := randomToken()
+	if err != nil {
+		logger.Error("Failed to generate reset token", zap.Error(err))
+		return nil, apperrors.ErrInternalServer.WithDetails("Gagal membuat token")
+	}
+
+	hash := hashToken(raw)
+	expires := time.Now().Add(1 * time.Hour) // 1 hour expiry
+
+	resetToken := models.PasswordResetToken{
+		UserID:    user.ID,
+		TokenHash: hash,
+		ExpiresAt: expires,
+	}
+
+	if err := s.db.Create(&resetToken).Error; err != nil {
+		logger.Error("Failed to create reset token", zap.Error(err))
+		return nil, apperrors.ErrDatabase.WithDetails("Gagal menyimpan token")
+	}
+
+	// Build reset link
+	frontend := strings.TrimSuffix(utils.GetEnv("FRONTEND_BASE_URL", "http://localhost:3000"), "/")
+	link := frontend + "/reset-password?token=" + raw
+
+	// Send email
+	if err := utils.SendPasswordResetEmail(user.Email, raw); err != nil {
+		logger.Warn("Failed to send password reset email", zap.Error(err), zap.String("email", email))
+		// Don't fail - still return success to avoid email enumeration
+	}
+
+	logger.Info("Password reset requested", zap.String("email", email))
+
+	return &ForgotPasswordResponse{
+		Message:  "Jika email terdaftar, tautan reset password telah dikirim.",
+		DevToken: raw,  // Remove in production
+		DevLink:  link, // Remove in production
+	}, nil
+}
+
+// ResetPassword resets password with token
+func (s *AuthService) ResetPassword(token, newPassword string) error {
+	// Validate password
+	if err := validators.ValidatePassword(newPassword); err != nil {
+		return err
+	}
+
+	// Find token
+	hash := hashToken(token)
+	var record models.PasswordResetToken
+	if err := s.db.Where("token_hash = ?", hash).First(&record).Error; err != nil {
+		logger.Debug("Invalid password reset token")
+		return apperrors.ErrInvalidToken
+	}
+
+	// Check if already used
+	if record.UsedAt != nil {
+		return apperrors.ErrInvalidToken.WithDetails("Token sudah digunakan")
+	}
+
+	// Check expiration
+	if time.Now().After(record.ExpiresAt) {
+		return apperrors.ErrTokenExpired.WithDetails("Token reset password sudah kedaluwarsa. Silakan minta ulang.")
+	}
+
+	// Find user
+	var user models.User
+	if err := s.db.First(&user, record.UserID).Error; err != nil {
+		logger.Error("User not found for reset token", zap.Uint("user_id", record.UserID))
+		return apperrors.ErrUserNotFound
+	}
+
+	// Hash new password
+	hashPass, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		logger.Error("Failed to hash new password", zap.Error(err))
+		return apperrors.ErrInternalServer.WithDetails("Gagal memproses password")
+	}
+
+	// Update password and mark token as used
+	now := time.Now()
+	record.UsedAt = &now
+	user.PasswordHash = string(hashPass)
+
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(&record).Error; err != nil {
+			return err
+		}
+		if err := tx.Save(&user).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		logger.Error("Failed to reset password", zap.Error(err), zap.Uint("user_id", user.ID))
+		return apperrors.ErrDatabase.WithDetails("Gagal menyimpan password baru")
+	}
+
+	logger.Info("Password reset successfully", zap.Uint("user_id", user.ID), zap.String("email", user.Email))
+
+	return nil
+}
