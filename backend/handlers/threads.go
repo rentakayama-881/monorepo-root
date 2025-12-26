@@ -63,7 +63,14 @@ func GetThreadsByCategoryHandler(c *gin.Context) {
 			CreatedAt: t.CreatedAt.Unix(),
 		})
 	}
-	c.JSON(http.StatusOK, gin.H{"category": cat.Slug, "threads": items})
+	c.JSON(http.StatusOK, gin.H{
+		"category": gin.H{
+			"slug":        cat.Slug,
+			"name":        cat.Name,
+			"description": cat.Description,
+		},
+		"threads": items,
+	})
 }
 
 func GetThreadDetailHandler(c *gin.Context) {
