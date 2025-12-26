@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
-import { getToken, getUser } from "@/lib/auth";
+import { getToken } from "@/lib/auth";
 import Header from "@/components/Header";
 
 export default function DisputeDetailPage() {
@@ -35,8 +35,18 @@ export default function DisputeDetailPage() {
         return;
       }
 
-      const user = await getUser();
-      setCurrentUser(user);
+      // Fetch current user from API
+      try {
+        const userRes = await fetch(`${getApiBase()}/api/user/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setCurrentUser(userData);
+        }
+      } catch (e) {
+        console.error("Failed to load user:", e);
+      }
 
       try {
         const res = await fetch(`${getApiBase()}/api/disputes/${disputeId}`, {
