@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
       <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
         {status === "success" ? (
           <div className="space-y-4">
-            <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+            <div className="rounded-md border border-[rgb(var(--success-border))] bg-[rgb(var(--success-bg))] px-4 py-3 text-sm text-[rgb(var(--success))]">
               {message}
             </div>
             <p className="text-sm text-[rgb(var(--muted))]">
@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             {status === "error" && (
-              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div className="rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-3 py-2 text-sm text-[rgb(var(--error))]">
                 {message}
               </div>
             )}

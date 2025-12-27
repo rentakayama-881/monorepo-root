@@ -184,7 +184,7 @@ export default function AccountPage() {
 
   if (!authed) return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div className="rounded-lg border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] p-4 text-sm text-[rgb(var(--error))]">
         Anda harus login untuk mengelola akun.
       </div>
     </main>
@@ -288,7 +288,7 @@ export default function AccountPage() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-[rgb(var(--fg))]">{maskEmail(me.email)}</span>
                     {me.is_verified && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(var(--success-bg))] px-2 py-0.5 text-xs font-medium text-[rgb(var(--success))]">
                         <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
@@ -406,14 +406,14 @@ export default function AccountPage() {
           </section>
 
           {/* Zona Berbahaya - Delete Account */}
-          <section className="rounded-lg border-2 border-red-500/50 bg-red-50/50 dark:bg-red-950/20 p-4">
-            <h3 className="text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-2">
+          <section className="rounded-lg border-2 border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] p-4">
+            <h3 className="text-sm font-medium text-[rgb(var(--error))] flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
               </svg>
               Zona Berbahaya
             </h3>
-            <p className="mt-2 text-xs text-red-600/80 dark:text-red-400/80">
+            <p className="mt-2 text-xs text-[rgb(var(--error))]/80">
               Menghapus akun akan menghapus semua data Anda secara permanen termasuk semua thread yang pernah dibuat. 
               Aksi ini tidak dapat dibatalkan.
             </p>
@@ -427,7 +427,7 @@ export default function AccountPage() {
                 onChange={e => setDeletePassword(e.target.value)}
               />
               <div>
-                <label className="block text-xs font-medium text-red-600 dark:text-red-400 mb-1">
+                <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
                   Ketik <span className="font-mono font-bold">DELETE</span> untuk konfirmasi
                 </label>
                 <Input
@@ -442,7 +442,7 @@ export default function AccountPage() {
               
               <Button
                 variant="danger"
-                className="w-full bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                className="w-full disabled:opacity-50"
                 disabled={deleteLoading || deleteConfirmation !== "DELETE" || !deletePassword}
                 loading={deleteLoading}
                 onClick={async () => {

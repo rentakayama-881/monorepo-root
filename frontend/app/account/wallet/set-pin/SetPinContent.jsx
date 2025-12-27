@@ -159,7 +159,7 @@ export default function SetPinContent() {
         </div>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/30 p-3 text-sm text-red-500">
+          <div className="mb-4 rounded-lg bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] p-3 text-sm text-[rgb(var(--error))]">
             {error}
           </div>
         )}
@@ -259,7 +259,7 @@ export default function SetPinContent() {
                 autoFocus
               />
               {confirmPin.length === 6 && confirmPin !== pin && (
-                <p className="mt-2 text-sm text-red-500 text-center">PIN tidak cocok</p>
+                <p className="mt-2 text-sm text-[rgb(var(--error))] text-center">PIN tidak cocok</p>
               )}
               <div className="mt-6 flex gap-3">
                 <button

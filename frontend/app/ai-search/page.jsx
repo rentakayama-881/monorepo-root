@@ -64,7 +64,7 @@ export default function AISearchPage() {
       </form>
 
       {error && (
-        <div className="mb-4 text-sm text-red-600 border border-red-200 rounded-md p-3">
+        <div className="mb-4 text-sm text-[rgb(var(--error))] border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] rounded-md p-3">
           {error}
         </div>
       )}

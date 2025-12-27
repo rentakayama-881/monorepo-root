@@ -27,11 +27,11 @@ export default function Textarea({
       )}
       <textarea
         rows={rows}
-        className={`${textareaStyles} ${error ? "border-red-500" : ""} ${className}`}
+        className={`${textareaStyles} ${error ? "border-[rgb(var(--error))]" : ""} ${className}`}
         aria-invalid={!!error}
         {...rest}
       />
-      {error && <div className="mt-1 text-xs text-red-600">{error}</div>}
+      {error && <div className="mt-1 text-xs text-[rgb(var(--error))]">{error}</div>}
     </div>
   );
 }

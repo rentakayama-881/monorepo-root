@@ -33,7 +33,7 @@ export default function Input({
     "placeholder:text-[rgb(var(--muted))]",
     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]",
     "disabled:opacity-50 disabled:cursor-not-allowed",
-    error ? "border-red-500" : "border-[rgb(var(--border))]",
+    error ? "border-[rgb(var(--error))]" : "border-[rgb(var(--border))]",
     className
   );
 
@@ -51,7 +51,7 @@ export default function Input({
           className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]"
         >
           {label}
-          {required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
+          {required && <span className="text-[rgb(var(--error))] ml-1" aria-hidden="true">*</span>}
         </label>
       )}
       <input
@@ -69,7 +69,7 @@ export default function Input({
         </p>
       )}
       {error && (
-        <p id={errorId} className="mt-1 text-xs text-red-600" role="alert">
+        <p id={errorId} className="mt-1 text-xs text-[rgb(var(--error))]" role="alert">
           {error}
         </p>
       )}

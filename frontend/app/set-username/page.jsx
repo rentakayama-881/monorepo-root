@@ -111,7 +111,7 @@ export default function SetUsernamePage() {
               className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] pl-8 pr-10 py-2 text-[rgb(var(--fg))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--brand))]"
             />
             {validation.show && (
-              <span className={`absolute right-3 top-1/2 -translate-y-1/2 ${validation.valid ? "text-green-500" : "text-red-500"}`}>
+              <span className={`absolute right-3 top-1/2 -translate-y-1/2 ${validation.valid ? "text-[rgb(var(--success))]" : "text-[rgb(var(--error))]"}`}>
                 {validation.valid ? (
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -127,7 +127,7 @@ export default function SetUsernamePage() {
           
           {/* Hint / Validation Message */}
           <div className="mt-1.5 flex items-center justify-between">
-            <p className={`text-xs ${validation.show ? (validation.valid ? "text-green-600" : "text-red-500") : "text-[rgb(var(--muted))]"}`}>
+            <p className={`text-xs ${validation.show ? (validation.valid ? "text-[rgb(var(--success))]" : "text-[rgb(var(--error))]") : "text-[rgb(var(--muted))]"}`}>
               {validation.show ? validation.message : "Huruf kecil, angka, underscore. Min 7 karakter."}
             </p>
             <span className="text-xs text-[rgb(var(--muted))]">
@@ -145,8 +145,8 @@ export default function SetUsernamePage() {
         </button>
       </form>
 
-      {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
-      {success && <div className="mt-3 text-sm text-green-600">{success}</div>}
+      {error && <div className="mt-3 text-sm text-[rgb(var(--error))]">{error}</div>}
+      {success && <div className="mt-3 text-sm text-[rgb(var(--success))]">{success}</div>}
     </div>
   );
 }

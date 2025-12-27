@@ -115,8 +115,8 @@ export default function RegisterPage() {
               placeholder="Nama panggilan atau lengkap"
             />
           </div>
-          {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</div>}
-          {info && <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">{info}</div>}
+          {error && <div className="text-sm text-[rgb(var(--error))] bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] rounded-md px-3 py-2">{error}</div>}
+          {info && <div className="text-sm text-[rgb(var(--success))] bg-[rgb(var(--success-bg))] border border-[rgb(var(--success-border))] rounded-md px-3 py-2">{info}</div>}
           <button
             type="submit"
             disabled={loading}

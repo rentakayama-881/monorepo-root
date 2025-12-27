@@ -73,10 +73,10 @@ function ToastContainer({ toasts, onRemove }) {
 
 function Toast({ title, description, type, onClose }) {
   const typeStyles = {
-    success: "bg-green-50 border-green-200 text-green-800",
-    error: "bg-red-50 border-red-200 text-red-800",
-    warning: "bg-amber-50 border-amber-200 text-amber-800",
-    info: "bg-blue-50 border-blue-200 text-blue-800",
+    success: "bg-[rgb(var(--success-bg))] border-[rgb(var(--success-border))] text-[rgb(var(--success))]",
+    error: "bg-[rgb(var(--error-bg))] border-[rgb(var(--error-border))] text-[rgb(var(--error))]",
+    warning: "bg-[rgb(var(--warning-bg))] border-[rgb(var(--warning-border))] text-[rgb(var(--warning))]",
+    info: "bg-[rgb(var(--surface-2))] border-[rgb(var(--border))] text-[rgb(var(--fg))]",
   };
 
   const iconPaths = {
