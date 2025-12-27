@@ -104,7 +104,7 @@ export default function AdminUsersPage() {
     const token = localStorage.getItem("admin_token");
     try {
       const res = await fetch(
-        `${getApiBase()}/admin/users/${selectedUser.ID}/badges`,
+        `${getApiBase()}/admin/users/${selectedUser.id}/badges`,
         {
           method: "POST",
           headers: {
@@ -141,7 +141,7 @@ export default function AdminUsersPage() {
     const token = localStorage.getItem("admin_token");
     try {
       const res = await fetch(
-        `${getApiBase()}/admin/users/${user.ID}/badges/${userBadge.ID}`,
+        `${getApiBase()}/admin/users/${user.id}/badges/${userBadge.id}`,
         {
           method: "DELETE",
           headers: {
@@ -266,7 +266,7 @@ export default function AdminUsersPage() {
                         <div className="mt-2 flex flex-wrap gap-1">
                           {activeBadges.map((ub) => (
                             <span
-                              key={ub.ID}
+                              key={ub.id}
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))]"
                             >
                               {ub.badge.icon_url && (
