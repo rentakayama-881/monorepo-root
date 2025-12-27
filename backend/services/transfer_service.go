@@ -178,11 +178,17 @@ func (s *TransferService) ReleaseTransfer(transferID uint, releasedByUserID uint
 		return nil, errors.New("only sender can release the transfer")
 	}
 
-	if transfer.Status != models.TransferStatusHeld {
-		return nil, errors.New("transfer is not in held status")
-	}
-
 	err = database.DB.Transaction(func(tx *gorm.DB) error {
+		// Re-fetch with lock to prevent race conditions
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&transfer, transferID).Error; err != nil {
+			return err
+		}
+
+		// Check status inside transaction (idempotency)
+		if transfer.Status != models.TransferStatusHeld {
+			return errors.New("transfer is not in held status")
+		}
+
 		// Credit receiver's wallet
 		if err := s.creditWithTx(tx, transfer.ReceiverID, transfer.Amount); err != nil {
 			return err
@@ -231,11 +237,17 @@ func (s *TransferService) CancelTransfer(transferID uint, cancelledByUserID uint
 		return nil, errors.New("only receiver can cancel the transfer")
 	}
 
-	if transfer.Status != models.TransferStatusHeld {
-		return nil, errors.New("transfer is not in held status")
-	}
-
 	err = database.DB.Transaction(func(tx *gorm.DB) error {
+		// Re-fetch with lock to prevent race conditions
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&transfer, transferID).Error; err != nil {
+			return err
+		}
+
+		// Check status inside transaction (idempotency)
+		if transfer.Status != models.TransferStatusHeld {
+			return errors.New("transfer is not in held status")
+		}
+
 		// Refund to sender's wallet
 		if err := s.creditWithTx(tx, transfer.SenderID, transfer.Amount); err != nil {
 			return err

@@ -1,2 +1,11 @@
 .env
 
+# Build outputs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+backend
+backend-gin
+app

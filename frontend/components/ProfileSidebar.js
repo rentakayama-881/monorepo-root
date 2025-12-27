@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { getApiBase } from "../lib/api";
 import { clearToken, getToken } from "@/lib/auth";
@@ -109,7 +110,7 @@ export default function ProfileSidebar({ onClose }) {
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] text-sm font-semibold uppercase text-[rgb(var(--fg))]">
               {user.avatar_url ? (
-                <img src={avatarSrc} alt="Avatar" className="h-full w-full object-cover" />
+                <Image src={avatarSrc} alt="Avatar" width={40} height={40} className="h-full w-full object-cover" unoptimized />
               ) : (
                 user.username.slice(0, 2)
               )}

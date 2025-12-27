@@ -2,17 +2,24 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"backend-gin/database"
+	"backend-gin/middleware"
 	"backend-gin/models"
 	"backend-gin/services"
 	"backend-gin/utils"
 
 	"github.com/gin-gonic/gin"
 )
+
+// pinVerifyLimiter limits PIN verification attempts to prevent brute-force attacks
+// 5 attempts per 15 minutes per user
+var pinVerifyLimiter = middleware.NewRateLimiter(5, 15*time.Minute)
 
 // WalletHandler handles wallet-related endpoints
 type WalletHandler struct {
@@ -122,6 +129,12 @@ type VerifyPINRequest struct {
 // VerifyPIN verifies the user's transaction PIN
 func (h *WalletHandler) VerifyPIN(c *gin.Context) {
 	userID := c.GetUint("user_id")
+
+	// Rate limit PIN verification to prevent brute-force attacks
+	if !pinVerifyLimiter.Allow(fmt.Sprintf("pin:%d", userID)) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many PIN verification attempts. Please try again later."})
+		return
+	}
 
 	var req VerifyPINRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

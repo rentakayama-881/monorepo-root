@@ -90,6 +90,11 @@ func main() {
 		log.Println("Tidak dapat memuat file .env, pastikan file .env ada di root folder!")
 	}
 
+	// Validate required environment variables
+	if os.Getenv("ADMIN_JWT_SECRET") == "" {
+		log.Fatal("FATAL: ADMIN_JWT_SECRET environment variable is required")
+	}
+
 	// Initialize logger
 	logger.InitLogger()
 	defer logger.Log.Sync()

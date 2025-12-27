@@ -7,6 +7,9 @@ import (
 // SecurityHeadersMiddleware adds security headers to protect against XSS and other attacks
 func SecurityHeadersMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Strict-Transport-Security - Enforce HTTPS
+		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+
 		// Content Security Policy - Protect against XSS
 		// Allows same origin, specific trusted CDNs, and inline styles/scripts with nonce
 		c.Header("Content-Security-Policy",

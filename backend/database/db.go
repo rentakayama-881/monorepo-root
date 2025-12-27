@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"backend-gin/models"
 
@@ -19,6 +20,20 @@ func getenv(key, def string) string {
 	return def
 }
 
+// configureConnectionPool sets up connection pool settings for production
+func configureConnectionPool(db *gorm.DB) error {
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	// Set reasonable defaults for connection pooling
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
+	return nil
+}
+
 func InitDB() {
 	// Prefer DATABASE_URL if provided (e.g. from Render/Heroku/Rails env)
 	if url := os.Getenv("DATABASE_URL"); url != "" {
@@ -27,6 +42,9 @@ func InitDB() {
 			panic("Gagal terhubung ke PostgreSQL: " + err.Error())
 		}
 		DB = db
+		if err := configureConnectionPool(DB); err != nil {
+			panic("Gagal konfigurasi connection pool: " + err.Error())
+		}
 		migrateAndSeed()
 		return
 	}
@@ -47,6 +65,9 @@ func InitDB() {
 		panic("Gagal terhubung ke PostgreSQL: " + err.Error())
 	}
 	DB = db
+	if err := configureConnectionPool(DB); err != nil {
+		panic("Gagal konfigurasi connection pool: " + err.Error())
+	}
 	migrateAndSeed()
 }
 
