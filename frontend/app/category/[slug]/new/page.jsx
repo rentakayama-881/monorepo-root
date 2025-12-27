@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
+import MarkdownEditor from "@/components/ui/MarkdownEditor";
+import MarkdownPreview from "@/components/ui/MarkdownPreview";
 
 export default function CreateThreadPage() {
   const router = useRouter();
@@ -10,7 +12,6 @@ export default function CreateThreadPage() {
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
-  const [image, setImage] = useState("");
   const [telegram, setTelegram] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -45,7 +46,6 @@ export default function CreateThreadPage() {
           content,
           meta: {
             telegram,
-            ...(image && { image }),
           },
         }),
       });
@@ -98,24 +98,26 @@ export default function CreateThreadPage() {
 
         <div>
           <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Konten Thread <span className="text-red-500">*</span></label>
-          <textarea
-            required
-            className={`${inputClass} min-h-[140px] font-mono`}
-            rows={6}
+          <MarkdownEditor
             value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Tuliskan isi thread secara lengkap di sini..."
-          />
-        </div>
+            onChange={setContent}
+            placeholder="Tuliskan isi thread dengan Markdown...
 
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Gambar (optional)</label>
-          <input
-            type="url"
-            className={inputClass}
-            value={image}
-            onChange={(e) => setImage(e.target.value)}
-            placeholder="URL gambar (opsional)"
+Contoh format:
+## Heading
+**Bold** dan _italic_
+- List item
+`inline code`
+
+```
+code block
+```
+
+[Link](https://example.com)
+![Gambar](https://example.com/image.jpg)"
+            minHeight="200px"
+            disabled={loading}
+            preview={MarkdownPreview}
           />
         </div>
 

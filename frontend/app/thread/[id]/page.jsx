@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
+import MarkdownPreview from "@/components/ui/MarkdownPreview";
 
 export default function ThreadDetailPage() {
   const params = useParams();
@@ -137,11 +138,13 @@ export default function ThreadDetailPage() {
             {/* Main content */}
             <div className="prose prose-neutral max-w-none">
               {data.content_type === "text" ? (
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-[rgb(var(--fg))]">
-                  {typeof data.content === "string"
-                    ? data.content
-                    : (data.content && JSON.stringify(data.content, null, 2)) || "Tidak ada konten."}
-                </div>
+                <MarkdownPreview
+                  content={
+                    typeof data.content === "string"
+                      ? data.content
+                      : (data.content && JSON.stringify(data.content, null, 2)) || "Tidak ada konten."
+                  }
+                />
               ) : (
                 <ContentTable content={data.content} />
               )}
