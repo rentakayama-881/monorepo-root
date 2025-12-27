@@ -8,11 +8,11 @@ import rehypeHighlight from "rehype-highlight";
 /**
  * GitHub-style Markdown Preview
  * 
- * Supports:
+ * Features:
  * - GitHub Flavored Markdown (GFM)
- * - Fenced code blocks with language detection
+ * - Fenced code blocks with syntax highlighting
  * - Tables, task lists, strikethrough
- * - Proper inline/block code handling
+ * - Theme-aware (respects dark/light mode via CSS variables)
  */
 export default function MarkdownPreview({ content, className = "" }) {
   const [mounted, setMounted] = useState(false);
@@ -29,23 +29,24 @@ export default function MarkdownPreview({ content, className = "" }) {
     );
   }
 
-  // SSR fallback
+  // SSR fallback - prevents hydration mismatch
   if (!mounted) {
     return (
-      <div className="animate-pulse space-y-2">
-        <div className="h-4 bg-[rgb(var(--surface-2))] rounded w-3/4"></div>
-        <div className="h-4 bg-[rgb(var(--surface-2))] rounded w-1/2"></div>
+      <div className="animate-pulse space-y-3">
+        <div className="h-4 bg-[rgb(var(--skeleton))] rounded w-3/4"></div>
+        <div className="h-4 bg-[rgb(var(--skeleton))] rounded w-1/2"></div>
+        <div className="h-4 bg-[rgb(var(--skeleton))] rounded w-5/6"></div>
       </div>
     );
   }
 
   return (
-    <div className={`markdown-body ${className}`}>
+    <div className={`markdown-body text-[rgb(var(--fg))] ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight]}
         components={{
-          // Headings with GitHub-style border
+          // === HEADINGS ===
           h1: ({ children }) => (
             <h1 className="text-2xl font-semibold pb-2 mb-4 border-b border-[rgb(var(--border))] text-[rgb(var(--fg))]">
               {children}
@@ -66,28 +67,34 @@ export default function MarkdownPreview({ content, className = "" }) {
               {children}
             </h4>
           ),
+          h5: ({ children }) => (
+            <h5 className="text-sm font-semibold mb-2 mt-3 text-[rgb(var(--fg))]">
+              {children}
+            </h5>
+          ),
+          h6: ({ children }) => (
+            <h6 className="text-sm font-semibold mb-2 mt-3 text-[rgb(var(--muted))]">
+              {children}
+            </h6>
+          ),
           
-          // Pre and Code - properly handle fenced code blocks
+          // === CODE BLOCKS ===
+          // Pre wrapper - styled via globals.css .markdown-body pre
           pre: ({ children }) => (
-            <pre className="my-4 p-4 rounded-md bg-[#161b22] overflow-x-auto text-sm leading-relaxed">
+            <pre className="my-4 p-4 rounded-md bg-[rgb(var(--surface-2))] border border-[rgb(var(--border))] overflow-x-auto text-sm leading-relaxed">
               {children}
             </pre>
           ),
           
+          // Code - handles both inline and block
           code: ({ node, inline, className, children, ...props }) => {
-            // Detect if inside <pre> (fenced code block)
-            const isCodeBlock = node?.position && !inline && className;
-            const match = /language-(\w+)/.exec(className || "");
-            const lang = match ? match[1] : "";
+            const hasLang = /language-(\w+)/.exec(className || "");
             
-            // If there's no className and not explicitly inline, check parent
-            // Fenced code blocks will have className like "language-xxx"
+            // Block code (inside pre, has language class from highlight)
             if (!inline && className) {
-              // Fenced code block
               return (
                 <code 
-                  className="block font-mono text-[#e6edf3] whitespace-pre"
-                  data-language={lang}
+                  className={`block font-mono text-[rgb(var(--fg))] whitespace-pre ${className}`}
                   {...props}
                 >
                   {children}
@@ -98,7 +105,7 @@ export default function MarkdownPreview({ content, className = "" }) {
             // Inline code
             return (
               <code 
-                className="px-1.5 py-0.5 mx-0.5 rounded-md bg-[rgba(var(--fg),0.08)] text-[rgb(var(--fg))] text-[0.875em] font-mono break-words"
+                className="px-1.5 py-0.5 rounded-md bg-[rgba(var(--fg),0.06)] text-[rgb(var(--fg))] text-[0.875em] font-mono"
                 {...props}
               >
                 {children}
@@ -106,14 +113,26 @@ export default function MarkdownPreview({ content, className = "" }) {
             );
           },
           
-          // Paragraphs
+          // === TEXT ELEMENTS ===
           p: ({ children }) => (
             <p className="my-3 leading-7 text-[rgb(var(--fg))]">
               {children}
             </p>
           ),
           
-          // Links
+          strong: ({ children }) => (
+            <strong className="font-semibold text-[rgb(var(--fg))]">{children}</strong>
+          ),
+          
+          em: ({ children }) => (
+            <em className="italic">{children}</em>
+          ),
+          
+          del: ({ children }) => (
+            <del className="line-through text-[rgb(var(--muted))]">{children}</del>
+          ),
+          
+          // === LINKS ===
           a: ({ href, children }) => (
             <a 
               href={href} 
@@ -125,27 +144,29 @@ export default function MarkdownPreview({ content, className = "" }) {
             </a>
           ),
           
-          // Blockquotes - GitHub style with border
+          // === BLOCKQUOTES ===
           blockquote: ({ children }) => (
             <blockquote className="my-4 pl-4 border-l-4 border-[rgb(var(--border))] text-[rgb(var(--muted))]">
               {children}
             </blockquote>
           ),
           
-          // Lists
+          // === LISTS ===
           ul: ({ children, className }) => {
             const isTaskList = className?.includes("contains-task-list");
             return (
-              <ul className={`my-3 ${isTaskList ? "list-none pl-0" : "list-disc pl-6"} space-y-1`}>
+              <ul className={`my-3 ${isTaskList ? "list-none pl-0 space-y-2" : "list-disc pl-6 space-y-1"}`}>
                 {children}
               </ul>
             );
           },
+          
           ol: ({ children }) => (
             <ol className="my-3 list-decimal pl-6 space-y-1">
               {children}
             </ol>
           ),
+          
           li: ({ children, className }) => {
             const isTaskItem = className?.includes("task-list-item");
             return (
@@ -155,14 +176,14 @@ export default function MarkdownPreview({ content, className = "" }) {
             );
           },
           
-          // Checkboxes for task lists
+          // Task list checkbox
           input: ({ type, checked }) => {
             if (type === "checkbox") {
               return (
                 <input 
                   type="checkbox" 
                   checked={checked} 
-                  className="mt-1.5 h-4 w-4 rounded border-[rgb(var(--border))] accent-[rgb(var(--brand))] pointer-events-none"
+                  className="mt-1 h-4 w-4 rounded border-[rgb(var(--border))] accent-[rgb(var(--brand))] pointer-events-none"
                   readOnly
                 />
               );
@@ -170,56 +191,58 @@ export default function MarkdownPreview({ content, className = "" }) {
             return null;
           },
           
-          // Tables - GitHub style
+          // === TABLES ===
           table: ({ children }) => (
-            <div className="my-4 overflow-x-auto">
-              <table className="min-w-full border-collapse border border-[rgb(var(--border))]">
+            <div className="my-4 overflow-x-auto rounded-md border border-[rgb(var(--border))]">
+              <table className="min-w-full border-collapse">
                 {children}
               </table>
             </div>
           ),
+          
           thead: ({ children }) => (
             <thead className="bg-[rgb(var(--surface-2))]">
               {children}
             </thead>
           ),
+          
+          tbody: ({ children }) => (
+            <tbody className="divide-y divide-[rgb(var(--border))]">
+              {children}
+            </tbody>
+          ),
+          
+          tr: ({ children }) => (
+            <tr className="hover:bg-[rgba(var(--fg),0.02)]">
+              {children}
+            </tr>
+          ),
+          
           th: ({ children }) => (
-            <th className="px-4 py-2 border border-[rgb(var(--border))] text-left font-semibold text-[rgb(var(--fg))]">
+            <th className="px-4 py-2 text-left font-semibold text-[rgb(var(--fg))] border-b border-[rgb(var(--border))]">
               {children}
             </th>
           ),
+          
           td: ({ children }) => (
-            <td className="px-4 py-2 border border-[rgb(var(--border))] text-[rgb(var(--fg))]">
+            <td className="px-4 py-2 text-[rgb(var(--fg))]">
               {children}
             </td>
           ),
           
-          // Images
+          // === MEDIA ===
           img: ({ src, alt }) => (
             <img 
               src={src} 
               alt={alt || ""} 
-              className="max-w-full h-auto rounded-md my-4"
+              className="max-w-full h-auto rounded-md my-4 border border-[rgb(var(--border))]"
               loading="lazy"
             />
           ),
           
-          // Horizontal rule
+          // === DIVIDERS ===
           hr: () => (
             <hr className="my-6 border-t border-[rgb(var(--border))]" />
-          ),
-          
-          // Strong/Em
-          strong: ({ children }) => (
-            <strong className="font-semibold text-[rgb(var(--fg))]">{children}</strong>
-          ),
-          em: ({ children }) => (
-            <em className="italic">{children}</em>
-          ),
-          
-          // Strikethrough (GFM)
-          del: ({ children }) => (
-            <del className="line-through text-[rgb(var(--muted))]">{children}</del>
           ),
         }}
       >
