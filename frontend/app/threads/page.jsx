@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
+import MarkdownEditor from "@/components/ui/MarkdownEditor";
+import MarkdownPreview from "@/components/ui/MarkdownPreview";
 
 export default function MyThreadsPage() {
   const API = `${getApiBase()}/api`;
@@ -22,7 +24,6 @@ export default function MyThreadsPage() {
     title: "",
     summary: "",
     content: "",
-    image: "",
     telegram: "",
   });
   const [saving, setSaving] = useState(false);
@@ -73,7 +74,6 @@ export default function MyThreadsPage() {
           title: full.title || "",
           summary: full.summary || "",
           content: contentText,
-          image: (full.meta && (full.meta.image || full.meta.image_url)) || "",
           telegram: ((full.meta && full.meta.telegram) || "").replace(/^@/, ""),
         });
       } catch (e) {
@@ -86,7 +86,7 @@ export default function MyThreadsPage() {
   function cancelEdit() {
     setEditingThread(null);
     setOriginalType("text");
-    setForm({ title: "", summary: "", content: "", image: "", telegram: "" });
+    setForm({ title: "", summary: "", content: "", telegram: "" });
   }
 
   async function saveEdit(id) {
@@ -107,7 +107,6 @@ export default function MyThreadsPage() {
         summary: form.summary,
         content: contentToSend,
         meta: {
-          image: form.image || undefined,
           telegram: form.telegram ? `@${form.telegram.replace(/^@/, "")}` : undefined,
         },
       };
@@ -309,33 +308,24 @@ export default function MyThreadsPage() {
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">Konten Thread *</label>
-                <textarea
-                  rows={8}
-                  className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 font-mono text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                <MarkdownEditor
                   value={form.content}
-                  onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
+                  onChange={(val) => setForm((f) => ({ ...f, content: val }))}
+                  placeholder="Tuliskan isi thread dengan Markdown..."
+                  minHeight="200px"
+                  disabled={saving}
+                  preview={MarkdownPreview}
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">Gambar URL</label>
-                  <input
-                    className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
-                    placeholder="https://..."
-                    value={form.image}
-                    onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">Telegram *</label>
-                  <input
-                    className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
-                    placeholder="username"
-                    value={form.telegram}
-                    onChange={(e) => setForm((f) => ({ ...f, telegram: e.target.value }))}
-                  />
-                </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">Telegram *</label>
+                <input
+                  className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                  placeholder="username"
+                  value={form.telegram}
+                  onChange={(e) => setForm((f) => ({ ...f, telegram: e.target.value }))}
+                />
               </div>
             </div>
 
