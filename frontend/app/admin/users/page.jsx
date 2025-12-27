@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
@@ -10,9 +11,11 @@ import logger from "@/lib/logger";
 import { getApiBase } from "@/lib/api";
 
 export default function AdminUsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState([]);
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -32,6 +35,14 @@ export default function AdminUsersPage() {
       const res = await fetch(`${getApiBase()}/admin/users?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (res.status === 401 || res.status === 403) {
+        setAuthError("Sesi admin berakhir. Silakan login kembali.");
+        localStorage.removeItem("admin_token");
+        localStorage.removeItem("admin_info");
+        setTimeout(() => router.push("/admin/login"), 1500);
+        return;
+      }
 
       if (res.ok) {
         const data = await res.json();
@@ -174,6 +185,17 @@ export default function AdminUsersPage() {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--brand))]"></div>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-4">
+        <div className="rounded-md border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
+          {authError}
+        </div>
+        <p className="text-[rgb(var(--muted))]">Mengalihkan ke halaman login...</p>
       </div>
     );
   }

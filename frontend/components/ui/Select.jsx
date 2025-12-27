@@ -7,7 +7,12 @@ import PropTypes from "prop-types";
  * - error: string (optional, tampil di bawah select)
  * - options: array of { value, label } atau array of strings
  * - placeholder: string (optional, option pertama yang disabled)
+ * - children: ReactNode (optional, untuk custom options)
  * - ...rest: props lain (value, onChange, dsb)
+ * 
+ * Supports both patterns:
+ * 1. <Select options={[{value, label}]} />
+ * 2. <Select><option>...</option></Select>
  */
 export default function Select({
   label = "",
@@ -15,6 +20,7 @@ export default function Select({
   options = [],
   placeholder = "",
   className = "",
+  children,
   ...rest
 }) {
   const selectStyles =
@@ -24,6 +30,10 @@ export default function Select({
   const normalizedOptions = options.map((opt) =>
     typeof opt === "string" ? { value: opt, label: opt } : opt
   );
+
+  // Use children if provided and no options, otherwise use options prop
+  const hasChildren = React.Children.count(children) > 0;
+  const useChildren = hasChildren && normalizedOptions.length === 0;
 
   return (
     <div className="mb-3">
@@ -38,16 +48,22 @@ export default function Select({
           aria-invalid={!!error}
           {...rest}
         >
-          {placeholder && (
-            <option value="" disabled>
-              {placeholder}
-            </option>
+          {useChildren ? (
+            children
+          ) : (
+            <>
+              {placeholder && (
+                <option value="" disabled>
+                  {placeholder}
+                </option>
+              )}
+              {normalizedOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </>
           )}
-          {normalizedOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
         </select>
         {/* Custom dropdown arrow */}
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -85,4 +101,5 @@ Select.propTypes = {
   ),
   placeholder: PropTypes.string,
   className: PropTypes.string,
+  children: PropTypes.node,
 };
