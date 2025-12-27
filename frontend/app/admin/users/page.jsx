@@ -7,6 +7,7 @@ import Modal from "@/components/ui/Modal";
 import Card from "@/components/ui/Card";
 import Select from "@/components/ui/Select";
 import logger from "@/lib/logger";
+import { getApiBase } from "@/lib/api";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
@@ -22,15 +23,13 @@ export default function AdminUsersPage() {
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState("");
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
   const fetchUsers = async (searchQuery = "", pageNum = 1) => {
     const token = localStorage.getItem("admin_token");
     try {
       const params = new URLSearchParams({ limit: "20", page: String(pageNum) });
       if (searchQuery) params.set("search", searchQuery);
 
-      const res = await fetch(`${API_URL}/admin/users?${params}`, {
+      const res = await fetch(`${getApiBase()}/admin/users?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -53,7 +52,7 @@ export default function AdminUsersPage() {
   const fetchBadges = async () => {
     const token = localStorage.getItem("admin_token");
     try {
-      const res = await fetch(`${API_URL}/admin/badges`, {
+      const res = await fetch(`${getApiBase()}/admin/badges`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -103,7 +102,7 @@ export default function AdminUsersPage() {
     const token = localStorage.getItem("admin_token");
     try {
       const res = await fetch(
-        `${API_URL}/admin/users/${selectedUser.ID}/badges`,
+        `${getApiBase()}/admin/users/${selectedUser.ID}/badges`,
         {
           method: "POST",
           headers: {

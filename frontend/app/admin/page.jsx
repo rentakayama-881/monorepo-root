@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import logger from "@/lib/logger";
+import { getApiBase } from "@/lib/api";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
@@ -15,11 +16,10 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const fetchStats = async () => {
       const token = localStorage.getItem("admin_token");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
       try {
         // Fetch badges count
-        const badgesRes = await fetch(`${API_URL}/admin/badges`, {
+        const badgesRes = await fetch(`${getApiBase()}/admin/badges`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (badgesRes.ok) {
@@ -31,7 +31,7 @@ export default function AdminDashboardPage() {
         }
 
         // Fetch users count
-        const usersRes = await fetch(`${API_URL}/admin/users?limit=1`, {
+        const usersRes = await fetch(`${getApiBase()}/admin/users?limit=1`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (usersRes.ok) {

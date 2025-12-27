@@ -7,6 +7,7 @@ import Textarea from "@/components/ui/Textarea";
 import Modal from "@/components/ui/Modal";
 import Card from "@/components/ui/Card";
 import logger from "@/lib/logger";
+import { getApiBase } from "@/lib/api";
 
 export default function AdminBadgesPage() {
   const [badges, setBadges] = useState([]);
@@ -22,13 +23,13 @@ export default function AdminBadgesPage() {
   });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+  const [iconValid, setIconValid] = useState(true);
+  const [iconLoading, setIconLoading] = useState(false);
 
   const fetchBadges = async () => {
     const token = localStorage.getItem("admin_token");
     try {
-      const res = await fetch(`${API_URL}/admin/badges`, {
+      const res = await fetch(`${getApiBase()}/admin/badges`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -46,6 +47,31 @@ export default function AdminBadgesPage() {
     fetchBadges();
   }, []);
 
+  // Validate icon URL by loading the image
+  const validateIconUrl = (url) => {
+    if (!url) {
+      setIconValid(true);
+      return;
+    }
+    setIconLoading(true);
+    const img = new Image();
+    img.onload = () => {
+      setIconValid(true);
+      setIconLoading(false);
+    };
+    img.onerror = () => {
+      setIconValid(false);
+      setIconLoading(false);
+    };
+    img.src = url;
+  };
+
+  const handleIconUrlChange = (url) => {
+    setFormData({ ...formData, icon_url: url });
+    clearTimeout(window.iconValidateTimeout);
+    window.iconValidateTimeout = setTimeout(() => validateIconUrl(url), 500);
+  };
+
   const openCreateModal = () => {
     setEditingBadge(null);
     setFormData({
@@ -56,6 +82,7 @@ export default function AdminBadgesPage() {
       color: "#6366f1",
     });
     setError("");
+    setIconValid(true);
     setShowModal(true);
   };
 
@@ -69,12 +96,20 @@ export default function AdminBadgesPage() {
       color: badge.color || "#6366f1",
     });
     setError("");
+    setIconValid(true);
     setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    // Validate icon URL before submit
+    if (!iconValid) {
+      setError("URL gambar tidak valid. Pastikan URL mengarah ke file gambar (.png/.jpg/.webp)");
+      return;
+    }
+
     setSaving(true);
 
     const token = localStorage.getItem("admin_token");
@@ -82,7 +117,7 @@ export default function AdminBadgesPage() {
 
     try {
       const res = await fetch(
-        `${API_URL}/admin/badges${isEdit ? `/${editingBadge.ID}` : ""}`,
+        `${getApiBase()}/admin/badges${isEdit ? `/${editingBadge.ID}` : ""}`,
         {
           method: isEdit ? "PUT" : "POST",
           headers: {
@@ -93,10 +128,20 @@ export default function AdminBadgesPage() {
         }
       );
 
-      const data = await res.json();
+      // Handle empty response safely
+      const text = await res.text();
+      let data = {};
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch (parseErr) {
+          logger.error("Failed to parse response:", text);
+          throw new Error("Response tidak valid dari server");
+        }
+      }
 
       if (!res.ok) {
-        throw new Error(data.error?.message || "Gagal menyimpan badge");
+        throw new Error(data.error?.message || data.error || "Gagal menyimpan badge");
       }
 
       setShowModal(false);
@@ -113,20 +158,24 @@ export default function AdminBadgesPage() {
 
     const token = localStorage.getItem("admin_token");
     try {
-      const res = await fetch(`${API_URL}/admin/badges/${badge.ID}`, {
+      const res = await fetch(`${getApiBase()}/admin/badges/${badge.ID}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        alert(data.error?.message || "Gagal menghapus badge");
+        const text = await res.text();
+        let data = {};
+        if (text) {
+          try { data = JSON.parse(text); } catch {}
+        }
+        alert(data.error?.message || data.error || "Gagal menghapus badge");
         return;
       }
 
       fetchBadges();
     } catch (err) {
-      alert("Gagal menghapus badge");
+      alert("Gagal menghapus badge: " + err.message);
     }
   };
 
@@ -257,15 +306,23 @@ export default function AdminBadgesPage() {
             rows={3}
           />
 
-          <Input
-            label="Icon URL"
-            placeholder="https://example.com/badge.png"
-            value={formData.icon_url}
-            onChange={(e) =>
-              setFormData({ ...formData, icon_url: e.target.value })
-            }
-            required
-          />
+          <div>
+            <Input
+              label="Icon URL"
+              placeholder="https://i.ibb.co/xxxxx/badge.png"
+              value={formData.icon_url}
+              onChange={(e) => handleIconUrlChange(e.target.value)}
+              required
+            />
+            <p className="mt-1 text-xs text-[rgb(var(--muted))]">
+              Upload gambar ke <a href="https://imgbb.com" target="_blank" rel="noopener noreferrer" className="text-[rgb(var(--brand))] underline">imgbb.com</a>, lalu copy "Direct link"
+            </p>
+            {formData.icon_url && !iconValid && !iconLoading && (
+              <p className="mt-1 text-xs text-red-600">
+                ⚠️ Gambar tidak dapat dimuat. Pastikan URL valid dan dapat diakses.
+              </p>
+            )}
+          </div>
 
           <div className="mb-3">
             <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">
@@ -291,20 +348,33 @@ export default function AdminBadgesPage() {
           </div>
 
           {/* Preview */}
-          {formData.icon_url && (
-            <div className="rounded-md bg-[rgb(var(--surface-2))] p-4">
-              <p className="text-xs text-[rgb(var(--muted))] mb-2">Preview:</p>
-              <div className="flex items-center gap-2">
+          <div className="rounded-md bg-[rgb(var(--surface-2))] p-4">
+            <p className="text-xs text-[rgb(var(--muted))] mb-2">Preview:</p>
+            <div className="flex items-center gap-2">
+              {iconLoading ? (
+                <div className="w-8 h-8 animate-pulse bg-[rgb(var(--border))] rounded"></div>
+              ) : formData.icon_url && iconValid ? (
                 <img
                   src={formData.icon_url}
                   alt="Preview"
-                  className="w-6 h-6 object-contain"
-                  onError={(e) => (e.target.style.display = "none")}
+                  className="w-8 h-8 object-contain"
                 />
-                <span className="font-medium">{formData.name || "Badge"}</span>
-              </div>
+              ) : (
+                <div className="w-8 h-8 rounded bg-[rgb(var(--border))] flex items-center justify-center text-xs text-[rgb(var(--muted))]">
+                  ?
+                </div>
+              )}
+              <span 
+                className="font-medium px-2 py-1 rounded"
+                style={{ 
+                  backgroundColor: formData.color + "20",
+                  color: formData.color 
+                }}
+              >
+                {formData.name || "Badge Name"}
+              </span>
             </div>
-          )}
+          </div>
 
           <div className="flex justify-end gap-3 pt-4">
             <Button
@@ -314,7 +384,7 @@ export default function AdminBadgesPage() {
             >
               Batal
             </Button>
-            <Button type="submit" variant="primary" disabled={saving}>
+            <Button type="submit" variant="primary" disabled={saving || (formData.icon_url && !iconValid)}>
               {saving ? "Menyimpan..." : editingBadge ? "Update" : "Buat"}
             </Button>
           </div>
