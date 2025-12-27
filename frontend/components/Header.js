@@ -242,10 +242,13 @@ export default function Header() {
                 type="button"
               >
                 <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]">
-                  <img
+                  <Image
                     src={avatarUrl}
                     alt="Akun"
+                    width={32}
+                    height={32}
                     className="h-full w-full object-cover"
+                    unoptimized
                   />
                 </span>
                 <span className="hidden sm:inline text-sm font-medium text-[rgb(var(--fg))]">Akun</span>

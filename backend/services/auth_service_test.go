@@ -4,17 +4,24 @@ import (
 	"testing"
 
 	apperrors "backend-gin/errors"
+	"backend-gin/logger"
 	"backend-gin/models"
 	"backend-gin/validators"
 
+	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 // setupTestDB creates an in-memory SQLite database for testing
+// Uses pure Go sqlite driver (no CGO required)
 func setupTestDB(t *testing.T) *gorm.DB {
+	// Initialize logger for tests (idempotent)
+	if logger.Log == nil {
+		logger.InitLogger()
+	}
+
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
 

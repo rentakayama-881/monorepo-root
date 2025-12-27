@@ -10,10 +10,12 @@ import (
 )
 
 // getAdminJWTKey returns the admin JWT secret from environment
+// ADMIN_JWT_SECRET must be set - validated at startup in main.go
 func getAdminJWTKey() []byte {
 	secret := os.Getenv("ADMIN_JWT_SECRET")
 	if secret == "" {
-		secret = "admin-secret-change-me"
+		// This should never happen - startup validation should catch this
+		panic("CRITICAL: ADMIN_JWT_SECRET environment variable is not set")
 	}
 	return []byte(secret)
 }
