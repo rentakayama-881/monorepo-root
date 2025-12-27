@@ -51,7 +51,7 @@ var (
 	// User errors
 	ErrUserNotFound     = NewAppError("USER001", "Pengguna tidak ditemukan", http.StatusNotFound)
 	ErrUnauthorized     = NewAppError("USER002", "Tidak memiliki akses", http.StatusUnauthorized)
-	ErrInvalidUserInput = NewAppError("USER003", "Input pengguna tidak valid", http.StatusBadRequest)
+	ErrInvalidUserInput = NewAppError("USER003", "Usermame minimal 7 karakter", http.StatusBadRequest)
 
 	// Thread errors
 	ErrThreadNotFound    = NewAppError("THREAD001", "Thread tidak ditemukan", http.StatusNotFound)
