@@ -9,20 +9,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var adminJWTKey []byte
-
-func init() {
+// getAdminJWTKey returns the admin JWT secret from environment
+func getAdminJWTKey() []byte {
 	secret := os.Getenv("ADMIN_JWT_SECRET")
 	if secret == "" {
-		// Will be set later when config loads
 		secret = "admin-secret-change-me"
 	}
-	adminJWTKey = []byte(secret)
-}
-
-// SetAdminJWTKey sets the admin JWT secret (called from config)
-func SetAdminJWTKey(key string) {
-	adminJWTKey = []byte(key)
+	return []byte(secret)
 }
 
 // AdminAuthMiddleware validates admin JWT tokens
@@ -54,7 +47,7 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
-			return adminJWTKey, nil
+			return getAdminJWTKey(), nil
 		})
 
 		if err != nil || !token.Valid {
