@@ -429,24 +429,31 @@ func AdminListUsers(c *gin.Context) {
 
 	// Prepare response with user badges
 	type UserWithBadges struct {
-		ID             uint           `json:"id"`
-		Email          string         `json:"email"`
-		Username       *string        `json:"username"`
-		AvatarURL      string         `json:"avatar_url"`
-		CreatedAt      time.Time      `json:"created_at"`
-		PrimaryBadgeID *uint          `json:"primary_badge_id"`
-		Badges         []models.Badge `json:"badges"`
+		ID           uint           `json:"id"`
+		Email        string         `json:"email"`
+		Username     *string        `json:"username"`
+		AvatarURL    string         `json:"avatar_url"`
+		CreatedAt    time.Time      `json:"created_at"`
+		PrimaryBadge *models.Badge  `json:"primary_badge"`
+		Badges       []models.Badge `json:"badges"`
 	}
 
 	var result []UserWithBadges
 	for _, u := range users {
 		uwb := UserWithBadges{
-			ID:             u.ID,
-			Email:          u.Email,
-			Username:       u.Username,
-			AvatarURL:      u.AvatarURL,
-			CreatedAt:      u.CreatedAt,
-			PrimaryBadgeID: u.PrimaryBadgeID,
+			ID:        u.ID,
+			Email:     u.Email,
+			Username:  u.Username,
+			AvatarURL: u.AvatarURL,
+			CreatedAt: u.CreatedAt,
+		}
+
+		// Get primary badge if set
+		if u.PrimaryBadgeID != nil && *u.PrimaryBadgeID > 0 {
+			var badge models.Badge
+			if database.DB.First(&badge, *u.PrimaryBadgeID).Error == nil {
+				uwb.PrimaryBadge = &badge
+			}
 		}
 
 		// Get user's active badges

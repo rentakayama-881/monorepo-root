@@ -145,14 +145,14 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleRevoke = async (user, userBadge) => {
-    const reason = prompt(`Alasan pencabutan badge "${userBadge.badge.name}"?`);
+  const handleRevoke = async (user, badge) => {
+    const reason = prompt(`Alasan pencabutan badge "${badge.name}"?`);
     if (reason === null) return;
 
     const token = localStorage.getItem("admin_token");
     try {
       const res = await fetch(
-        `${getApiBase()}/admin/users/${user.id}/badges/${userBadge.id}`,
+        `${getApiBase()}/admin/users/${user.id}/badges/${badge.ID || badge.id}`,
         {
           method: "DELETE",
           headers: {
@@ -176,9 +176,9 @@ export default function AdminUsersPage() {
     }
   };
 
-  const getActiveBadges = (user) => {
-    if (!user.badges) return [];
-    return user.badges.filter((ub) => !ub.revoked_at);
+  // Backend already returns only active (non-revoked) badges
+  const getUserBadges = (user) => {
+    return user.badges || [];
   };
 
   if (loading && users.length === 0) {
@@ -232,7 +232,7 @@ export default function AdminUsersPage() {
       ) : (
         <div className="space-y-4">
           {users.map((user) => {
-            const activeBadges = getActiveBadges(user);
+            const userBadges = getUserBadges(user);
             return (
               <Card key={user.id} className="p-4">
                 <div className="flex items-start justify-between gap-4">
@@ -284,24 +284,24 @@ export default function AdminUsersPage() {
                       </p>
 
                       {/* All badges */}
-                      {activeBadges.length > 0 && (
+                      {userBadges.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {activeBadges.map((ub) => (
+                          {userBadges.map((badge) => (
                             <span
-                              key={ub.id}
+                              key={badge.ID || badge.id}
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))]"
                             >
-                              {ub.badge.icon_url && (
+                              {badge.icon_url && (
                                 <img
-                                  src={ub.badge.icon_url}
+                                  src={badge.icon_url}
                                   alt=""
                                   className="w-3 h-3"
                                 />
                               )}
-                              {ub.badge.name}
+                              {badge.name}
                               <button
                                 type="button"
-                                onClick={() => handleRevoke(user, ub)}
+                                onClick={() => handleRevoke(user, badge)}
                                 className="ml-1 text-red-500 hover:text-red-700"
                                 title="Cabut badge"
                               >
