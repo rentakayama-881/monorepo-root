@@ -234,7 +234,7 @@ export default function AdminUsersPage() {
           {users.map((user) => {
             const activeBadges = getActiveBadges(user);
             return (
-              <Card key={user.ID} className="p-4">
+              <Card key={user.id} className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     {/* Avatar */}

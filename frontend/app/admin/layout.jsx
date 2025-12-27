@@ -9,23 +9,31 @@ export default function AdminLayout({ children }) {
   const pathname = usePathname();
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  // Wait for client-side mount before accessing localStorage
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
-    // Skip auth check for login page
+    // Skip if not mounted yet (SSR) or on login page
+    if (!mounted) return;
+    
     if (pathname === "/admin/login") {
       setLoading(false);
       return;
     }
 
-    const token = localStorage.getItem("admin_token");
-    const adminInfo = localStorage.getItem("admin_info");
-
-    if (!token || !adminInfo) {
-      router.push("/admin/login");
-      return;
-    }
-
     try {
+      const token = localStorage.getItem("admin_token");
+      const adminInfo = localStorage.getItem("admin_info");
+
+      if (!token || !adminInfo) {
+        router.push("/admin/login");
+        return;
+      }
+
       setAdmin(JSON.parse(adminInfo));
     } catch {
       router.push("/admin/login");
@@ -33,7 +41,7 @@ export default function AdminLayout({ children }) {
     }
 
     setLoading(false);
-  }, [pathname, router]);
+  }, [pathname, router, mounted]);
 
   const handleLogout = () => {
     localStorage.removeItem("admin_token");
@@ -46,7 +54,8 @@ export default function AdminLayout({ children }) {
     return children;
   }
 
-  if (loading) {
+  // Show loading until mounted and auth checked
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--brand))]"></div>
