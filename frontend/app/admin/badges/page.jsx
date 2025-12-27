@@ -253,7 +253,7 @@ export default function AdminBadgesPage() {
                   variant="secondary"
                   size="sm"
                   onClick={() => handleDelete(badge)}
-                  className="text-red-600 hover:bg-red-50"
+                  className="text-[rgb(var(--error))] hover:bg-[rgb(var(--error-bg))]"
                 >
                   Hapus
                 </Button>
@@ -271,7 +271,7 @@ export default function AdminBadgesPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-4 py-3 text-sm text-[rgb(var(--error))]">
               {error}
             </div>
           )}
@@ -318,7 +318,7 @@ export default function AdminBadgesPage() {
               Upload gambar ke <a href="https://imgbb.com" target="_blank" rel="noopener noreferrer" className="text-[rgb(var(--brand))] underline">imgbb.com</a>, lalu copy "Direct link"
             </p>
             {formData.icon_url && !iconValid && !iconLoading && (
-              <p className="mt-1 text-xs text-red-600">
+              <p className="mt-1 text-xs text-[rgb(var(--error))]">
                 ⚠️ Gambar tidak dapat dimuat. Pastikan URL valid dan dapat diakses.
               </p>
             )}

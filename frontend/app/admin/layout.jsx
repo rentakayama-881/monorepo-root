@@ -92,7 +92,7 @@ export default function AdminLayout({ children }) {
             </span>
             <button
               onClick={handleLogout}
-              className="text-sm text-red-600 hover:text-red-700"
+              className="text-sm text-[rgb(var(--error))] hover:opacity-80"
             >
               Logout
             </button>

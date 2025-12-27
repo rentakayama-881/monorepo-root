@@ -29,7 +29,7 @@ export default function UserProfilePage() {
   }, [API, username]);
 
   if (loading) return <div className="text-sm text-[rgb(var(--muted))]">Loading...</div>;
-  if (!profile || profile.error) return <div className="text-red-500">User tidak ditemukan</div>;
+  if (!profile || profile.error) return <div className="text-[rgb(var(--error))]">User tidak ditemukan</div>;
 
   const hasMeta = profile.pronouns || profile.company || profile.telegram;
   const hasSocials = Array.isArray(profile.social_accounts) && profile.social_accounts.length > 0;

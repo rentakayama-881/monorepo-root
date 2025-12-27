@@ -254,7 +254,7 @@ export default function ProfileSidebar({ onClose }) {
           </nav>
           <button
             onClick={handleLogout}
-            className="mt-3 w-full rounded-md border border-[rgb(var(--border))] px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/20"
+            className="mt-3 w-full rounded-md border border-[rgb(var(--border))] px-3 py-2 text-left text-sm font-semibold text-[rgb(var(--error))] transition hover:border-[rgb(var(--error-border))] hover:bg-[rgb(var(--error-bg))]"
             type="button"
           >
             Keluar

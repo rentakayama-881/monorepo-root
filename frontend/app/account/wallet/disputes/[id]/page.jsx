@@ -235,7 +235,7 @@ export default function DisputeDetailPage() {
     return (
       <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
         <div className="mx-auto max-w-3xl px-4 py-8 text-center">
-          <div className="text-red-500 mb-4">{error || "Dispute tidak ditemukan"}</div>
+          <div className="text-[rgb(var(--error))] mb-4">{error || "Dispute tidak ditemukan"}</div>
           <Link href="/account/wallet/disputes" className="text-emerald-600 hover:underline">
             ← Kembali
           </Link>
@@ -262,7 +262,7 @@ export default function DisputeDetailPage() {
           </Link>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/30 p-4 text-red-500">
+            <div className="mb-4 rounded-lg bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] p-4 text-[rgb(var(--error))]">
               {error}
             </div>
           )}

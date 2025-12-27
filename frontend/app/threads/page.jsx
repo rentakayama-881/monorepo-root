@@ -139,7 +139,7 @@ export default function MyThreadsPage() {
   if (!authed) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-lg border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] p-4 text-sm text-[rgb(var(--error))]">
           {error || "Anda harus login untuk melihat threads Anda."}
         </div>
       </main>
@@ -158,12 +158,12 @@ export default function MyThreadsPage() {
 
       {/* Status messages */}
       {ok && (
-        <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+        <div className="mb-4 rounded-md border border-[rgb(var(--success-border))] bg-[rgb(var(--success-bg))] px-4 py-3 text-sm text-[rgb(var(--success))]">
           {ok}
         </div>
       )}
       {error && (
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-4 py-3 text-sm text-[rgb(var(--error))]">
           {error}
         </div>
       )}

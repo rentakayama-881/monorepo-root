@@ -10,8 +10,9 @@ import PropTypes from "prop-types";
 export default function Alert({ type = "info", message = "", children, className = "" }) {
   const base = "rounded-md border px-3 py-2 text-sm";
   const typeClass = {
-    error: "border-red-200 bg-red-50 text-red-700",
-    success: "border-green-200 bg-green-50 text-green-700",
+    error: "border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] text-[rgb(var(--error))]",
+    success: "border-[rgb(var(--success-border))] bg-[rgb(var(--success-bg))] text-[rgb(var(--success))]",
+    warning: "border-[rgb(var(--warning-border))] bg-[rgb(var(--warning-bg))] text-[rgb(var(--warning))]",
     info: "border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]",
   }[type] || "border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]";
   return (

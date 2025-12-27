@@ -192,7 +192,7 @@ export default function AdminUsersPage() {
   if (authError) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <div className="rounded-md border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
+        <div className="rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-6 py-4 text-sm text-[rgb(var(--error))]">
           {authError}
         </div>
         <p className="text-[rgb(var(--muted))]">Mengalihkan ke halaman login...</p>
@@ -302,7 +302,7 @@ export default function AdminUsersPage() {
                               <button
                                 type="button"
                                 onClick={() => handleRevoke(user, badge)}
-                                className="ml-1 text-red-500 hover:text-red-700"
+                                className="ml-1 text-[rgb(var(--error))] hover:opacity-80"
                                 title="Cabut badge"
                               >
                                 ×
@@ -344,7 +344,7 @@ export default function AdminUsersPage() {
       >
         <form onSubmit={handleAssign} className="space-y-4">
           {assignError && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-4 py-3 text-sm text-[rgb(var(--error))]">
               {assignError}
             </div>
           )}

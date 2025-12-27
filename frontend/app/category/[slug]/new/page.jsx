@@ -73,7 +73,7 @@ export default function CreateThreadPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6" autoComplete="off">
         <div>
-          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Judul Thread <span className="text-red-500">*</span></label>
+          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Judul Thread <span className="text-[rgb(var(--error))]">*</span></label>
           <input
             required
             className={inputClass}
@@ -97,7 +97,7 @@ export default function CreateThreadPage() {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Konten Thread <span className="text-red-500">*</span></label>
+          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Konten Thread <span className="text-[rgb(var(--error))]">*</span></label>
           <MarkdownEditor
             value={content}
             onChange={setContent}
@@ -122,7 +122,7 @@ code block
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Contact Telegram <span className="text-red-500">*</span></label>
+          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Contact Telegram <span className="text-[rgb(var(--error))]">*</span></label>
           <input
             required
             className={inputClass}
@@ -133,8 +133,8 @@ code block
           />
         </div>
 
-        {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-        {success && <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{success}</div>}
+        {error && <div className="rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-3 py-2 text-sm text-[rgb(var(--error))]">{error}</div>}
+        {success && <div className="rounded-md border border-[rgb(var(--success-border))] bg-[rgb(var(--success-bg))] px-3 py-2 text-sm text-[rgb(var(--success))]">{success}</div>}
 
         <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center rounded-md bg-[rgb(var(--brand))] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60">
           {loading ? "Membuat..." : "Buat Thread"}

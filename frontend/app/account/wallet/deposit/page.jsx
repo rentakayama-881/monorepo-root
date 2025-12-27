@@ -144,7 +144,7 @@ export default function DepositPage() {
             </div>
 
             {error && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-3 text-sm text-red-500">
+              <div className="rounded-lg bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] p-3 text-sm text-[rgb(var(--error))]">
                 {error}
               </div>
             )}

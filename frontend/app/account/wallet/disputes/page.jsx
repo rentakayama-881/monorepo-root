@@ -174,10 +174,10 @@ export default function DisputesPage() {
                   {/* Deadline warning */}
                   {dispute.status === "open" && dispute.phase_deadline && (
                     <div className="mt-3 flex items-center gap-2 border-t border-[rgb(var(--border))] pt-3">
-                      <svg className="h-4 w-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4 text-[rgb(var(--warning))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-xs text-yellow-600">
+                      <span className="text-xs text-[rgb(var(--warning))]">
                         Batas waktu: {formatDate(dispute.phase_deadline)}
                       </span>
                     </div>

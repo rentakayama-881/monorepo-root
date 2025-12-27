@@ -51,6 +51,19 @@
     --brand-2: 9, 105, 218;
 
     --skeleton: 208, 215, 222;
+
+    /* Status colors */
+    --success: 22, 163, 74;
+    --success-bg: 240, 253, 244;
+    --success-border: 187, 247, 208;
+
+    --error: 220, 38, 38;
+    --error-bg: 254, 242, 242;
+    --error-border: 254, 202, 202;
+
+    --warning: 202, 138, 4;
+    --warning-bg: 254, 252, 232;
+    --warning-border: 254, 240, 138;
   }
 
   /* Default scheme LIGHT (ikuti Vercel pattern) */
@@ -77,6 +90,19 @@
       --brand-2: 121, 192, 255;
 
       --skeleton: 48, 54, 61;
+
+      /* Status colors (dark mode) */
+      --success: 74, 222, 128;
+      --success-bg: 20, 83, 45;
+      --success-border: 34, 197, 94;
+
+      --error: 248, 113, 113;
+      --error-bg: 127, 29, 29;
+      --error-border: 220, 38, 38;
+
+      --warning: 250, 204, 21;
+      --warning-bg: 113, 63, 18;
+      --warning-border: 202, 138, 4;
     }
 
     /* Vercel style: set scheme dark di html */

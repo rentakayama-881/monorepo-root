@@ -44,7 +44,7 @@ export default function Select({
       )}
       <div className="relative">
         <select
-          className={`${selectStyles} ${error ? "border-red-500" : ""} ${className}`}
+          className={`${selectStyles} ${error ? "border-[rgb(var(--error))]" : ""} ${className}`}
           aria-invalid={!!error}
           {...rest}
         >
@@ -82,7 +82,7 @@ export default function Select({
           </svg>
         </div>
       </div>
-      {error && <div className="mt-1 text-xs text-red-600">{error}</div>}
+      {error && <div className="mt-1 text-xs text-[rgb(var(--error))]">{error}</div>}
     </div>
   );
 }

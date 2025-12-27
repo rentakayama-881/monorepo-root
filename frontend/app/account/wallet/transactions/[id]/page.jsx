@@ -168,7 +168,7 @@ export default function TransactionDetailPage() {
     return (
       <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
         <div className="mx-auto max-w-2xl px-4 py-8 text-center">
-          <div className="text-red-500 mb-4">{error || "Transfer tidak ditemukan"}</div>
+          <div className="text-[rgb(var(--error))] mb-4">{error || "Transfer tidak ditemukan"}</div>
           <Link href="/account/wallet/transactions" className="text-emerald-600 hover:underline">
             ← Kembali
           </Link>
@@ -253,13 +253,13 @@ export default function TransactionDetailPage() {
 
             {/* Status Explanation */}
             {transfer.status === "held" && (
-              <div className="mx-6 mb-6 rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-4">
+              <div className="mx-6 mb-6 rounded-lg bg-[rgb(var(--warning-bg))] border border-[rgb(var(--warning-border))] p-4">
                 <div className="flex gap-3">
-                  <svg className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-5 w-5 text-[rgb(var(--warning))] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
-                    <div className="font-medium text-yellow-600 mb-1">Dana Ditahan</div>
+                    <div className="font-medium text-[rgb(var(--warning))] mb-1">Dana Ditahan</div>
                     <div className="text-sm text-[rgb(var(--muted))]">
                       {isSender
                         ? "Dana sedang ditahan. Anda dapat membatalkan untuk mengembalikan dana, atau menunggu penerima merilisnya."
@@ -291,7 +291,7 @@ export default function TransactionDetailPage() {
                 )}
                 <button
                   onClick={() => handleAction("dispute")}
-                  className="w-full rounded-lg border border-red-500/30 py-3 font-semibold text-red-600 transition hover:bg-red-500/10"
+                  className="w-full rounded-lg border border-[rgb(var(--error-border))] py-3 font-semibold text-[rgb(var(--error))] transition hover:bg-[rgb(var(--error-bg))]"
                 >
                   Ajukan Dispute
                 </button>
@@ -303,7 +303,7 @@ export default function TransactionDetailPage() {
               <div className="p-6 border-t border-[rgb(var(--border))]">
                 <Link
                   href={`/account/wallet/disputes/${transfer.dispute_id}`}
-                  className="block w-full rounded-lg bg-red-500/10 border border-red-500/30 py-3 text-center font-semibold text-red-600 transition hover:bg-red-500/20"
+                  className="block w-full rounded-lg bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] py-3 text-center font-semibold text-[rgb(var(--error))] transition hover:opacity-80"
                 >
                   Lihat Detail Dispute
                 </Link>
@@ -335,7 +335,7 @@ export default function TransactionDetailPage() {
                 className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-emerald-500"
               />
 
-              {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+              {error && <p className="mt-2 text-sm text-[rgb(var(--error))]">{error}</p>}
 
               <div className="mt-6 flex gap-3">
                 <button

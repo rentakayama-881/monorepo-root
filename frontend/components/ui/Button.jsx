@@ -36,7 +36,7 @@ export default function Button({
   const variants = {
     primary: "bg-[rgb(var(--brand))] text-white hover:opacity-90",
     secondary: "border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))] hover:border-[rgb(var(--muted))]",
-    danger: "bg-red-600 text-white hover:bg-red-700",
+    danger: "bg-[rgb(var(--error))] text-white hover:opacity-90",
     outline: "underline text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
   };
 

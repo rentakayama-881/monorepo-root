@@ -91,16 +91,16 @@ export default function VerifyEmailClient() {
   };
 
   const styles = {
-    pending: "bg-amber-50 border-amber-200 text-amber-800",
-    success: "bg-green-50 border-green-200 text-green-800",
-    error: "bg-red-50 border-red-200 text-red-700",
+    pending: "bg-[rgb(var(--warning-bg))] border-[rgb(var(--warning-border))] text-[rgb(var(--warning))]",
+    success: "bg-[rgb(var(--success-bg))] border-[rgb(var(--success-border))] text-[rgb(var(--success))]",
+    error: "bg-[rgb(var(--error-bg))] border-[rgb(var(--error-border))] text-[rgb(var(--error))]",
   };
 
   const resendStyles = {
     idle: "",
     loading: "",
-    success: "bg-green-50 border-green-200 text-green-800",
-    error: "bg-red-50 border-red-200 text-red-700",
+    success: "bg-[rgb(var(--success-bg))] border-[rgb(var(--success-border))] text-[rgb(var(--success))]",
+    error: "bg-[rgb(var(--error-bg))] border-[rgb(var(--error-border))] text-[rgb(var(--error))]",
   };
 
   return (

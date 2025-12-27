@@ -80,7 +80,7 @@ export default function ThreadDetailPage() {
           <div className="h-40 animate-pulse rounded-lg bg-[rgb(var(--border))]" />
         </div>
       ) : error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+        <div className="rounded-lg border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] p-4 text-sm text-[rgb(var(--error))]">{error}</div>
       ) : data ? (
         <article className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
           {/* Header */}
