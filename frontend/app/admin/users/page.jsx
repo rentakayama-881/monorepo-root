@@ -87,6 +87,8 @@ export default function AdminUsersPage() {
     setAssignData({ badge_id: "", reason: "" });
     setAssignError("");
     setShowAssignModal(true);
+    // Refetch badges to ensure we have the latest list
+    fetchBadges();
   };
 
   const handleAssign = async (e) => {
@@ -139,7 +141,7 @@ export default function AdminUsersPage() {
     const token = localStorage.getItem("admin_token");
     try {
       const res = await fetch(
-        `${API_URL}/admin/users/${user.ID}/badges/${userBadge.ID}`,
+        `${getApiBase()}/admin/users/${user.ID}/badges/${userBadge.ID}`,
         {
           method: "DELETE",
           headers: {
@@ -327,19 +329,17 @@ export default function AdminUsersPage() {
 
           <Select
             label="Pilih Badge"
+            placeholder="-- Pilih Badge --"
+            options={badges.map((badge) => ({
+              value: String(badge.ID),
+              label: badge.name,
+            }))}
             value={assignData.badge_id}
             onChange={(e) =>
               setAssignData({ ...assignData, badge_id: e.target.value })
             }
             required
-          >
-            <option value="">-- Pilih Badge --</option>
-            {badges.map((badge) => (
-              <option key={badge.ID} value={badge.ID}>
-                {badge.name}
-              </option>
-            ))}
-          </Select>
+          />
 
           <Input
             label="Alasan (opsional)"
