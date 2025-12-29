@@ -26,6 +26,9 @@ import (
 // Delete account rate limiter: 3 attempts per hour
 var deleteAccountLimiter = middleware.NewRateLimiter(3, time.Hour)
 
+// AI Explain rate limiter: 2 requests per minute per IP
+var aiExplainLimiter = middleware.NewRateLimiter(2, time.Minute)
+
 // DeleteAccountRateLimit is a middleware that rate limits delete account requests
 func DeleteAccountRateLimit() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -33,6 +36,20 @@ func DeleteAccountRateLimit() gin.HandlerFunc {
 		if !deleteAccountLimiter.Allow(ip) {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"error": "Terlalu banyak percobaan. Silakan coba lagi dalam 1 jam.",
+			})
+			return
+		}
+		c.Next()
+	}
+}
+
+// AIExplainRateLimit is a middleware that rate limits AI explain requests (2/min)
+func AIExplainRateLimit() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
+		if !aiExplainLimiter.Allow(ip) {
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+				"error": "Terlalu banyak permintaan AI. Silakan tunggu 1 menit sebelum mencoba lagi.",
 			})
 			return
 		}
@@ -258,6 +275,10 @@ func main() {
 		router.POST("/api/rag/index-long", handlers.IndexLongHandler)
 		router.POST("/api/rag/index-thread/:id", handlers.IndexThreadByIDHandler)
 		router.GET("/api/rag/debug-chunks/:thread_id", handlers.DebugChunksHandler)
+
+		// NEW: Two-step AI Search endpoints
+		router.GET("/api/rag/search-threads", handlers.SearchThreadsHandler)
+		router.GET("/api/rag/explain/:id", AIExplainRateLimit(), handlers.ExplainThreadHandler)
 	}
 
 	// Admin routes (separate auth)
