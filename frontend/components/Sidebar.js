@@ -3,14 +3,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fetchCategories } from "../lib/categories";
 
-const popularTopics = [
-  { label: "AI & Machine Learning", href: "/category/ai-digest" },
-  { label: "Karir & Riset", href: "/category/mencari-pekerjaan" },
-  { label: "Startup & Inovasi", href: "/category/investor" },
-  { label: "Kesehatan & Praktek Dokter", href: "/category/dokter-buka-praktek" },
-  { label: "Anti Penipuan", href: "/category/anti-penipuan" },
-];
-
 export default function Sidebar({ open, onClose }) {
   const [search, setSearch] = useState("");
   const [categories, setCategories] = useState([]);
@@ -47,10 +39,10 @@ export default function Sidebar({ open, onClose }) {
         {/* Sticky header */}
         <div className="sticky top-0 z-10 space-y-3 border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-6 pb-4 pt-5">
           <div className="flex items-center justify-between">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium uppercase tracking-[0.18em] text-[rgb(var(--muted))]">Navigasi</span>
-              <span className="text-base font-semibold leading-tight text-[rgb(var(--fg))]">Alephdraad</span>
-            </div>
+            <Link href="/" onClick={onClose} className="flex items-center gap-2">
+              <img src="/logo/logo-icon-only.svg" alt="Alephdraad" className="h-8 w-8 dark:hidden" />
+              <img src="/logo/logo-icon-only-dark.svg" alt="Alephdraad" className="hidden h-8 w-8 dark:block" />
+            </Link>
             <button
               className="rounded-md p-1 text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]"
               onClick={onClose}
@@ -63,12 +55,10 @@ export default function Sidebar({ open, onClose }) {
             </button>
           </div>
 
-          {/* Navigasi utama */}
-          <nav className="grid grid-cols-2 gap-2 text-sm font-medium text-[rgb(var(--fg))]">
-            <Link href="/" className="rounded-md border border-[rgb(var(--border))] px-3 py-2 hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]" onClick={onClose}>Home</Link>
-            <Link href="/about-content" className="rounded-md border border-[rgb(var(--border))] px-3 py-2 hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]" onClick={onClose}>Tentang Kami</Link>
-            <Link href="/rules-content" className="rounded-md border border-[rgb(var(--border))] px-3 py-2 hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]" onClick={onClose}>Aturan</Link>
-            <Link href="/contact-support" className="rounded-md border border-[rgb(var(--border))] px-3 py-2 hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]" onClick={onClose}>Contact Support</Link>
+          {/* Quick nav */}
+          <nav className="flex gap-2 text-sm font-medium text-[rgb(var(--fg))]">
+            <Link href="/" className="flex-1 rounded-md border border-[rgb(var(--border))] px-3 py-2 text-center hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]" onClick={onClose}>Home</Link>
+            <Link href="/threads" className="flex-1 rounded-md border border-[rgb(var(--border))] px-3 py-2 text-center hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]" onClick={onClose}>Threads</Link>
           </nav>
 
           {/* AI Search */}
@@ -78,7 +68,13 @@ export default function Sidebar({ open, onClose }) {
             onClick={onClose}
             aria-label="AI Search"
           >
-            <span className="inline-flex items-center gap-2">AI Search</span>
+            <span className="inline-flex items-center gap-2">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              AI Search
+            </span>
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 5l7 7-7 7" />
             </svg>
@@ -102,27 +98,7 @@ export default function Sidebar({ open, onClose }) {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 space-y-7 overflow-y-auto px-6 pb-8 pt-5" style={{ overscrollBehavior: "contain" }}>
-          {/* Topik diskusi populer */}
-          <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-4">
-            <div className={`${sectionHeading} mb-3`}>Topik Diskusi Populer</div>
-            <nav className="flex flex-col gap-1.5">
-              {popularTopics.map((topic) => (
-                <Link
-                  key={topic.label}
-                  href={topic.href}
-                  className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-[rgb(var(--fg))] transition hover:bg-[rgb(var(--surface))]"
-                  onClick={onClose}
-                >
-                  <span>{topic.label}</span>
-                  <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              ))}
-            </nav>
-          </section>
-
+        <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5" style={{ overscrollBehavior: "contain" }}>
           {/* Kategori threads */}
           <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
             <div className={`${sectionHeading} mb-3`}>Kategori Threads</div>
@@ -151,6 +127,29 @@ export default function Sidebar({ open, onClose }) {
               )}
             </nav>
           </section>
+        </div>
+
+        {/* Professional Footer */}
+        <div className="shrink-0 border-t border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-6 py-4">
+          {/* Footer Links */}
+          <nav className="mb-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
+            <Link href="/about-content" onClick={onClose} className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline">
+              Tentang
+            </Link>
+            <span className="text-[rgb(var(--border))]">•</span>
+            <Link href="/rules-content" onClick={onClose} className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline">
+              Aturan
+            </Link>
+            <span className="text-[rgb(var(--border))]">•</span>
+            <Link href="/contact-support" onClick={onClose} className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline">
+              Bantuan
+            </Link>
+          </nav>
+          
+          {/* Copyright */}
+          <p className="text-center text-[10px] text-[rgb(var(--muted))]">
+            © {new Date().getFullYear()} Alephdraad. All rights reserved.
+          </p>
         </div>
       </aside>
 
