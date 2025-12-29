@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 import { ToastProvider } from "../components/ui/Toast";
 
-const siteName = "AlephDraad";
+const siteName = "Alephdraad";
 const siteDescription = "Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://alephdraad.fun";
 
@@ -15,9 +15,9 @@ export const metadata = {
   },
   description: siteDescription,
   keywords: ["escrow", "transaksi aman", "komunitas", "forum", "Indonesia", "payment"],
-  authors: [{ name: "AlephDraad Team" }],
-  creator: "AlephDraad",
-  publisher: "AlephDraad",
+  authors: [{ name: "Alephdraad Team" }],
+  creator: "Alephdraad",
+  publisher: "Alephdraad",
   
   // Open Graph
   openGraph: {
@@ -58,11 +58,13 @@ export const metadata = {
     },
   },
   
-  // Icons
+  // Icons - Alephdraad
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
+    icon: [
+      { url: "/logo/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/logo/favicon.svg",
+    apple: "/logo/logo-icon-only.svg",
   },
   
   // Manifest

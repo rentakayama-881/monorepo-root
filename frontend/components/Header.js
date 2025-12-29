@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import Sidebar from "./Sidebar";
 import ProfileSidebar from "./ProfileSidebar";
+import { Logo } from "./ui/Logo";
 import { fetchCategories } from "../lib/categories";
 import { AUTH_CHANGED_EVENT, getToken, TOKEN_KEY } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar";
@@ -155,18 +156,8 @@ export default function Header() {
           </svg>
         </button>
 
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <Image
-            src="/images/vectorised-1758374067909.svg"
-            alt="Logo"
-            width={20}
-            height={20}
-            priority
-            className="h-5 w-5"
-          />
-          <span className="font-semibold leading-none text-[rgb(var(--fg))]">Alephdraad</span>
-        </Link>
+        {/* Logo - Alephdraad */}
+        <Logo variant="horizontal" size={36} />
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1 text-sm">

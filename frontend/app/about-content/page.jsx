@@ -1,8 +1,8 @@
 export const dynamic = "force-static";
 
 export const metadata = { 
-  title: "Tentang Kami - Alephdraad",
-  description: "Alephisme adalah ekosistem komunitas digital untuk forum, marketplace, dan edukasi"
+  title: "Tentang Kami",
+  description: "Alephdraad adalah ekosistem komunitas digital untuk forum, marketplace, dan edukasi"
 };
 
 export default function AboutContentPage() {

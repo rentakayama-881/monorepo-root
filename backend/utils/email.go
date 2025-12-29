@@ -126,7 +126,7 @@ func buildVerificationEmailHTML(verificationLink string) string {
                     <tr>
                         <td style="padding: 30px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
                             <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280; text-align: center;">
-                                © 2025 Alephdraad Platform. All rights reserved.
+                                © 2025 Alephdraad. All rights reserved.
                             </p>
                             <p style="margin: 10px 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
                                 Email ini dikirim secara otomatis. Mohon jangan membalas email ini.
@@ -239,7 +239,7 @@ func buildPasswordResetEmailHTML(resetLink string) string {
                     <tr>
                         <td style="padding: 30px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
                             <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280; text-align: center;">
-                                © 2025 Alephdraad Platform. All rights reserved.
+                                © 2025 Alephdraad. All rights reserved.
                             </p>
                         </td>
                     </tr>

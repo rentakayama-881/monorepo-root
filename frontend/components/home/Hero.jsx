@@ -6,7 +6,7 @@ export default function Hero() {
     <div className="flex flex-col items-start gap-8 md:flex-row md:items-center">
       <div className="flex-1">
         <p className="mb-3 inline-flex items-center rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1 text-xs font-semibold tracking-wide text-[rgb(var(--muted))]">
-          Komunitas • Thread • Utilitas
+          Komunitas • Thread • AI Service
         </p>
 
         <h1 className="text-balance text-3xl font-semibold tracking-tight text-[rgb(var(--fg))] sm:text-4xl">
@@ -37,13 +37,23 @@ export default function Hero() {
             }}
           >
             <div className="flex items-center justify-center">
+              {/* Light mode logo */}
               <Image
-                src="/images/vectorised-1758374067909.svg"
-                alt="Community"
+                src="/logo/logo-light.svg"
+                alt="Alephdraad"
                 width={220}
                 height={220}
                 priority
-                className="opacity-95"
+                className="opacity-95 dark:hidden"
+              />
+              {/* Dark mode logo */}
+              <Image
+                src="/logo/logo-dark.svg"
+                alt="Alephdraad"
+                width={220}
+                height={220}
+                priority
+                className="hidden opacity-95 dark:block"
               />
             </div>
           </div>
