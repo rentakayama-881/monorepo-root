@@ -1,6 +1,6 @@
 {
-  "name": "AlephDraad",
-  "short_name": "AlephDraad",
+  "name": "Alephdraad",
+  "short_name": "Alephdraad",
   "description": "Platform komunitas dan escrow terpercaya untuk transaksi aman",
   "start_url": "/",
   "display": "standalone",
@@ -9,15 +9,15 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/images/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
+      "src": "/logo/logo-icon-only.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/images/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/logo/logo-icon-only-dark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ],

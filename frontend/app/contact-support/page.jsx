@@ -1,8 +1,8 @@
 export const dynamic = "force-static";
 
 export const metadata = { 
-  title: "Contact Support - Alephdraad",
-  description: "Hubungi tim support Alephisme untuk bantuan akun, transaksi, dan aktivitas komunitas"
+  title: "Contact Support",
+  description: "Hubungi tim support Alephdraad untuk bantuan akun, transaksi, dan aktivitas komunitas"
 };
 
 export default function ContactSupportPage() {
@@ -22,7 +22,7 @@ export default function ContactSupportPage() {
       <div className="space-y-4">
         <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
           <p className="text-sm leading-relaxed text-[rgb(var(--fg))]">
-            Butuh bantuan? Tim support Alephisme siap membantu Anda menyelesaikan kendala seputar akun, transaksi, maupun aktivitas komunitas.
+            Butuh bantuan? Tim support Alephdraad siap membantu Anda menyelesaikan kendala seputar akun, transaksi, maupun aktivitas komunitas.
           </p>
         </div>
 

@@ -6,9 +6,9 @@ import Skeleton from '../components/ui/Skeleton';
 
 export const metadata = {
   title: 'Beranda',
-  description: 'AlephDraad - Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.',
+  description: 'Alephdraad - Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.',
   openGraph: {
-    title: 'AlephDraad - Komunitas & Escrow Terpercaya',
+    title: 'Alephdraad - Komunitas & Escrow Terpercaya',
     description: 'Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.',
   },
 };

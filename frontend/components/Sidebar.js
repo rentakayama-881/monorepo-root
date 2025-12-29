@@ -47,7 +47,7 @@ export default function Sidebar({ open, onClose }) {
         {/* Sticky header */}
         <div className="sticky top-0 z-10 space-y-3 border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-6 pb-4 pt-5">
           <div className="flex items-center justify-between">
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-1">
               <span className="text-xs font-medium uppercase tracking-[0.18em] text-[rgb(var(--muted))]">Navigasi</span>
               <span className="text-base font-semibold leading-tight text-[rgb(var(--fg))]">Alephdraad</span>
             </div>

@@ -1,6 +1,6 @@
-# Contributing to AlephDraad
+# Contributing to Alephdraad
 
-Thank you for your interest in contributing to AlephDraad! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to Alephdraad! This document provides guidelines and instructions for contributing.
 
 ## 📋 Table of Contents
 

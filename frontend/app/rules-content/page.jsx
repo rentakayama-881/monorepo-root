@@ -1,8 +1,8 @@
 export const dynamic = "force-static";
 
 export const metadata = { 
-  title: "Aturan Komunitas - Alephdraad",
-  description: "Pedoman dan aturan komunitas Alephisme untuk menciptakan lingkungan yang aman dan produktif"
+  title: "Aturan Komunitas",
+  description: "Pedoman dan aturan komunitas Alephdraad untuk menciptakan lingkungan yang aman dan produktif"
 };
 
 export default function RulesContentPage() {
