@@ -236,7 +236,7 @@ export default function DisputeDetailPage() {
       <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
         <div className="mx-auto max-w-3xl px-4 py-8 text-center">
           <div className="text-[rgb(var(--error))] mb-4">{error || "Dispute tidak ditemukan"}</div>
-          <Link href="/account/wallet/disputes" className="text-emerald-600 hover:underline">
+          <Link href="/account/wallet/disputes" className="text-[rgb(var(--brand))] hover:underline">
             ← Kembali
           </Link>
         </div>
@@ -308,7 +308,7 @@ export default function DisputeDetailPage() {
                             msg.is_admin
                               ? "bg-purple-500/10 border border-purple-500/30"
                               : msg.user_id === currentUser?.id
-                              ? "bg-emerald-600 text-white"
+                              ? "bg-[rgb(var(--brand))] text-white"
                               : "bg-[rgb(var(--bg))] border border-[rgb(var(--border))]"
                           }`}
                         >
@@ -335,12 +335,12 @@ export default function DisputeDetailPage() {
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder="Tulis pesan..."
-                        className="flex-1 rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-2 focus:outline-none focus:border-emerald-500"
+                        className="flex-1 rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-2 focus:outline-none focus:border-[rgb(var(--brand))]"
                       />
                       <button
                         type="submit"
                         disabled={sendingMessage || !message.trim()}
-                        className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                        className="rounded-lg bg-[rgb(var(--brand))] px-4 py-2 font-medium text-white transition hover:opacity-90 disabled:opacity-50"
                       >
                         Kirim
                       </button>
@@ -357,7 +357,7 @@ export default function DisputeDetailPage() {
                     {isOpen && dispute.phase === "evidence" && (
                       <button
                         onClick={() => setShowEvidenceForm(!showEvidenceForm)}
-                        className="text-sm text-emerald-600 hover:underline"
+                        className="text-sm text-[rgb(var(--brand))] hover:underline"
                       >
                         + Tambah Bukti
                       </button>
@@ -372,14 +372,14 @@ export default function DisputeDetailPage() {
                         onChange={(e) => setEvidenceDescription(e.target.value)}
                         placeholder="Jelaskan bukti Anda..."
                         rows={3}
-                        className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-2 focus:outline-none focus:border-emerald-500"
+                        className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-2 focus:outline-none focus:border-[rgb(var(--brand))]"
                       />
                       <input
                         type="url"
                         value={evidenceUrl}
                         onChange={(e) => setEvidenceUrl(e.target.value)}
                         placeholder="URL file bukti (opsional)"
-                        className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-2 focus:outline-none focus:border-emerald-500"
+                        className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-2 focus:outline-none focus:border-[rgb(var(--brand))]"
                       />
                       <div className="flex gap-2">
                         <button
@@ -392,7 +392,7 @@ export default function DisputeDetailPage() {
                         <button
                           type="submit"
                           disabled={processing || !evidenceDescription.trim()}
-                          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                          className="rounded-lg bg-[rgb(var(--brand))] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
                         >
                           Kirim Bukti
                         </button>
@@ -425,7 +425,7 @@ export default function DisputeDetailPage() {
                               href={ev.file_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="mt-2 inline-flex items-center gap-1 text-sm text-emerald-600 hover:underline"
+                              className="mt-2 inline-flex items-center gap-1 text-sm text-[rgb(var(--brand))] hover:underline"
                             >
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -477,7 +477,7 @@ export default function DisputeDetailPage() {
                     <button
                       onClick={() => handleMutualAction("release")}
                       disabled={processing}
-                      className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                      className="w-full rounded-lg bg-[rgb(var(--brand))] py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
                     >
                       {isSender ? "Setuju Rilis ke Penerima" : "Terima Dana"}
                     </button>

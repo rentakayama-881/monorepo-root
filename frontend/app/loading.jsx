@@ -9,7 +9,7 @@ export default function Loading() {
         {/* Spinner */}
         <div className="relative">
           <div className="h-12 w-12 rounded-full border-4 border-[rgb(var(--border))]"></div>
-          <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-t-emerald-600 animate-spin"></div>
+          <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-t-[rgb(var(--brand))] animate-spin"></div>
         </div>
         
         {/* Loading text */}

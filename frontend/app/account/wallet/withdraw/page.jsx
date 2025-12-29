@@ -157,7 +157,7 @@ export default function WithdrawPage() {
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition ${
                     step >= s
-                      ? "bg-emerald-600 text-white"
+                      ? "bg-[rgb(var(--brand))] text-white"
                       : "bg-[rgb(var(--surface))] text-[rgb(var(--muted))] border border-[rgb(var(--border))]"
                   }`}
                 >
@@ -166,7 +166,7 @@ export default function WithdrawPage() {
                 {s < 3 && (
                   <div
                     className={`h-0.5 w-8 transition ${
-                      step > s ? "bg-emerald-600" : "bg-[rgb(var(--border))]"
+                      step > s ? "bg-[rgb(var(--brand))]" : "bg-[rgb(var(--border))]"
                     }`}
                   />
                 )}
@@ -193,7 +193,7 @@ export default function WithdrawPage() {
                   <select
                     value={bankCode}
                     onChange={(e) => setBankCode(e.target.value)}
-                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 py-3 focus:outline-none focus:border-emerald-500"
+                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 py-3 focus:outline-none focus:border-[rgb(var(--brand))]"
                   >
                     <option value="">Pilih bank</option>
                     {BANKS.map((bank) => (
@@ -214,7 +214,7 @@ export default function WithdrawPage() {
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ""))}
                     placeholder="Masukkan nomor rekening"
-                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 focus:outline-none focus:border-emerald-500"
+                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 focus:outline-none focus:border-[rgb(var(--brand))]"
                   />
                 </div>
 
@@ -227,7 +227,7 @@ export default function WithdrawPage() {
                     value={accountName}
                     onChange={(e) => setAccountName(e.target.value.toUpperCase())}
                     placeholder="Masukkan nama sesuai rekening"
-                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 uppercase focus:outline-none focus:border-emerald-500"
+                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 uppercase focus:outline-none focus:border-[rgb(var(--brand))]"
                   />
                   <p className="mt-1 text-xs text-[rgb(var(--muted))]">
                     Pastikan nama sesuai dengan rekening bank
@@ -238,7 +238,7 @@ export default function WithdrawPage() {
               <button
                 onClick={() => setStep(2)}
                 disabled={!isStep1Valid}
-                className="mt-6 w-full rounded-lg bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                className="mt-6 w-full rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 Lanjutkan
               </button>
@@ -264,7 +264,7 @@ export default function WithdrawPage() {
                     value={amount}
                     onChange={handleAmountChange}
                     placeholder="0"
-                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent py-3 pl-12 pr-4 text-xl font-semibold focus:outline-none focus:border-emerald-500"
+                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent py-3 pl-12 pr-4 text-xl font-semibold focus:outline-none focus:border-[rgb(var(--brand))]"
                   />
                 </div>
                 <p className="mt-1 text-xs text-[rgb(var(--muted))]">
@@ -279,7 +279,7 @@ export default function WithdrawPage() {
                     key={val}
                     onClick={() => setAmount(val.toLocaleString("id-ID"))}
                     disabled={val + fee > wallet.balance}
-                    className="rounded-lg border border-[rgb(var(--border))] py-2 text-sm font-medium transition hover:border-emerald-500 hover:text-emerald-600 disabled:opacity-50"
+                    className="rounded-lg border border-[rgb(var(--border))] py-2 text-sm font-medium transition hover:border-[rgb(var(--brand))] hover:text-[rgb(var(--brand))] disabled:opacity-50"
                   >
                     {(val / 1000).toLocaleString("id-ID")}rb
                   </button>
@@ -320,7 +320,7 @@ export default function WithdrawPage() {
                 <button
                   onClick={() => setStep(3)}
                   disabled={!isStep2Valid}
-                  className="flex-1 rounded-lg bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
                   Lanjutkan
                 </button>
@@ -351,7 +351,7 @@ export default function WithdrawPage() {
                 </div>
                 <div className="border-t border-[rgb(var(--border))] pt-3 flex justify-between">
                   <span className="text-[rgb(var(--muted))]">Akan diterima</span>
-                  <span className="text-lg font-bold text-emerald-600">
+                  <span className="text-lg font-bold text-[rgb(var(--brand))]">
                     Rp {parsedAmount.toLocaleString("id-ID")}
                   </span>
                 </div>
@@ -368,7 +368,7 @@ export default function WithdrawPage() {
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                   placeholder="••••••"
-                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-emerald-500"
+                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-[rgb(var(--brand))]"
                 />
               </div>
 
@@ -394,7 +394,7 @@ export default function WithdrawPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={processing || pin.length !== 6}
-                  className="flex-1 rounded-lg bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
                   {processing ? "Memproses..." : "Tarik Dana"}
                 </button>

@@ -109,7 +109,7 @@ export default function DisputesPage() {
               onClick={() => setActiveTab("active")}
               className={`px-4 py-2 text-sm font-medium transition ${
                 activeTab === "active"
-                  ? "border-b-2 border-emerald-600 text-emerald-600"
+                  ? "border-b-2 border-[rgb(var(--brand))] text-[rgb(var(--brand))]"
                   : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
               }`}
             >
@@ -119,7 +119,7 @@ export default function DisputesPage() {
               onClick={() => setActiveTab("resolved")}
               className={`px-4 py-2 text-sm font-medium transition ${
                 activeTab === "resolved"
-                  ? "border-b-2 border-emerald-600 text-emerald-600"
+                  ? "border-b-2 border-[rgb(var(--brand))] text-[rgb(var(--brand))]"
                   : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
               }`}
             >
