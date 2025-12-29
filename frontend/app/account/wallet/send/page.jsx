@@ -161,7 +161,7 @@ export default function SendMoneyPage() {
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
                     step >= s
-                      ? "bg-emerald-600 text-white"
+                      ? "bg-[rgb(var(--brand))] text-white"
                       : "bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))]"
                   }`}
                 >
@@ -170,7 +170,7 @@ export default function SendMoneyPage() {
                 {s < 3 && (
                   <div
                     className={`h-1 w-16 ${
-                      step > s ? "bg-emerald-600" : "bg-[rgb(var(--surface-2))]"
+                      step > s ? "bg-[rgb(var(--brand))]" : "bg-[rgb(var(--surface-2))]"
                     }`}
                   />
                 )}
@@ -198,14 +198,14 @@ export default function SendMoneyPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Ketik username (min 3 karakter)"
-                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
                 />
               </div>
 
               {/* Search Results */}
               {searching && (
                 <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 text-center text-[rgb(var(--muted))]">
-                  <svg className="animate-spin h-5 w-5 mx-auto mb-2 text-emerald-600" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5 mx-auto mb-2 text-[rgb(var(--brand))]" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -231,7 +231,7 @@ export default function SendMoneyPage() {
                       onClick={() => handleSelectUser(user)}
                       className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-[rgb(var(--surface-2))]"
                     >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgb(var(--brand))] text-sm font-semibold text-white">
                         {user.username.slice(0, 2).toUpperCase()}
                       </div>
                       <div>
@@ -251,7 +251,7 @@ export default function SendMoneyPage() {
             <div className="space-y-4">
               {/* Selected User */}
               <div className="flex items-center gap-3 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgb(var(--brand))] text-sm font-semibold text-white">
                   {selectedUser?.username.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="flex-1">
@@ -266,7 +266,7 @@ export default function SendMoneyPage() {
                     setSearchQuery("");
                     setStep(1);
                   }}
-                  className="text-sm text-emerald-600 hover:underline"
+                  className="text-sm text-[rgb(var(--brand))] hover:underline"
                 >
                   Ubah
                 </button>
@@ -286,7 +286,7 @@ export default function SendMoneyPage() {
                     value={amount}
                     onChange={(e) => setAmount(formatCurrency(e.target.value))}
                     placeholder="0"
-                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-10 py-3 text-lg font-semibold text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-10 py-3 text-lg font-semibold text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
                   />
                 </div>
               </div>
@@ -305,8 +305,8 @@ export default function SendMoneyPage() {
                     onClick={() => setHoldDays(7)}
                     className={`rounded-lg border p-3 text-center transition ${
                       holdDays === 7
-                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-600"
-                        : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--fg))] hover:border-emerald-500"
+                        ? "border-[rgb(var(--brand))] bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]"
+                        : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--fg))] hover:border-[rgb(var(--brand))]"
                     }`}
                   >
                     <div className="text-lg font-bold">7 Hari</div>
@@ -317,8 +317,8 @@ export default function SendMoneyPage() {
                     onClick={() => setHoldDays(30)}
                     className={`rounded-lg border p-3 text-center transition ${
                       holdDays === 30
-                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-600"
-                        : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--fg))] hover:border-emerald-500"
+                        ? "border-[rgb(var(--brand))] bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]"
+                        : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--fg))] hover:border-[rgb(var(--brand))]"
                     }`}
                   >
                     <div className="text-lg font-bold">30 Hari</div>
@@ -337,7 +337,7 @@ export default function SendMoneyPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Contoh: Pembayaran untuk jasa desain logo"
                   rows={2}
-                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
                 />
               </div>
 
@@ -358,7 +358,7 @@ export default function SendMoneyPage() {
                 <button
                   type="button"
                   onClick={handleAmountNext}
-                  className="flex-1 rounded-lg bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700"
+                  className="flex-1 rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90"
                 >
                   Lanjutkan
                 </button>
@@ -410,7 +410,7 @@ export default function SendMoneyPage() {
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="••••••"
                   maxLength={6}
-                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 text-center text-2xl tracking-widest text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 text-center text-2xl tracking-widest text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
                 />
               </div>
 
@@ -431,7 +431,7 @@ export default function SendMoneyPage() {
                 <button
                   type="submit"
                   disabled={loading || pin.length !== 6}
-                  className="flex-1 rounded-lg bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {loading ? "Memproses..." : "Kirim Uang"}
                 </button>

@@ -135,9 +135,9 @@ export default function SetPinContent() {
         </Link>
 
         <div className="text-center mb-8">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgb(var(--brand))]/10">
             <svg
-              className="h-8 w-8 text-emerald-600"
+              className="h-8 w-8 text-[rgb(var(--brand))]]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -171,7 +171,7 @@ export default function SetPinContent() {
               <div
                 key={s}
                 className={`h-2 w-8 rounded-full transition ${
-                  step >= s ? "bg-emerald-600" : "bg-[rgb(var(--border))]"
+                  step >= s ? "bg-[rgb(var(--brand))]" : "bg-[rgb(var(--border))]]"
                 }`}
               />
             ))}
@@ -190,13 +190,13 @@ export default function SetPinContent() {
                 value={currentPin}
                 onChange={(e) => handlePinChange(e.target.value, setCurrentPin)}
                 placeholder="••••••"
-                className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-emerald-500"
+                className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-[rgb(var(--brand))]"
                 autoFocus
               />
               <button
                 onClick={() => setStep(2)}
                 disabled={currentPin.length !== 6}
-                className="mt-6 w-full rounded-lg bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                className="mt-6 w-full rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 Lanjutkan
               </button>
@@ -216,7 +216,7 @@ export default function SetPinContent() {
                 value={pin}
                 onChange={(e) => handlePinChange(e.target.value, setPin)}
                 placeholder="••••••"
-                className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-emerald-500"
+                className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-[rgb(var(--brand))]"
                 autoFocus
               />
               <p className="mt-2 text-xs text-[rgb(var(--muted))] text-center">
@@ -234,7 +234,7 @@ export default function SetPinContent() {
                 <button
                   onClick={() => setStep(hasPin ? 3 : 2)}
                   disabled={pin.length !== 6}
-                  className={`${hasPin ? "flex-1" : "w-full"} rounded-lg bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50`}
+                  className={`${hasPin ? "flex-1" : "w-full"} rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50`}
                 >
                   Lanjutkan
                 </button>
@@ -255,7 +255,7 @@ export default function SetPinContent() {
                 value={confirmPin}
                 onChange={(e) => handlePinChange(e.target.value, setConfirmPin)}
                 placeholder="••••••"
-                className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-emerald-500"
+                className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-[rgb(var(--brand))]"
                 autoFocus
               />
               {confirmPin.length === 6 && confirmPin !== pin && (
@@ -271,7 +271,7 @@ export default function SetPinContent() {
                 <button
                   onClick={handleSubmit}
                   disabled={processing || confirmPin.length !== 6 || confirmPin !== pin}
-                  className="flex-1 rounded-lg bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
                   {processing ? "Menyimpan..." : "Simpan PIN"}
                 </button>

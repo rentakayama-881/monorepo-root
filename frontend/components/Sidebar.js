@@ -128,29 +128,6 @@ export default function Sidebar({ open, onClose }) {
             </nav>
           </section>
         </div>
-
-        {/* Professional Footer */}
-        <div className="shrink-0 border-t border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-6 py-4">
-          {/* Footer Links */}
-          <nav className="mb-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
-            <Link href="/about-content" onClick={onClose} className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline">
-              Tentang
-            </Link>
-            <span className="text-[rgb(var(--border))]">•</span>
-            <Link href="/rules-content" onClick={onClose} className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline">
-              Aturan
-            </Link>
-            <span className="text-[rgb(var(--border))]">•</span>
-            <Link href="/contact-support" onClick={onClose} className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline">
-              Bantuan
-            </Link>
-          </nav>
-          
-          {/* Copyright */}
-          <p className="text-center text-[10px] text-[rgb(var(--muted))]">
-            © {new Date().getFullYear()} Alephdraad. All rights reserved.
-          </p>
-        </div>
       </aside>
 
       {/* Overlay untuk mobile */}

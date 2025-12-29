@@ -32,14 +32,14 @@ export default function Home() {
 
           <div className="h-px w-full bg-[rgb(var(--border))]" />
 
-          <Suspense fallback={<GridSkeleton />}>
-            <CategoryGrid />
+          <Suspense fallback={<ListSkeleton />}>
+            <LatestThreads />
           </Suspense>
 
           <div className="h-px w-full bg-[rgb(var(--border))]" />
 
-          <Suspense fallback={<ListSkeleton />}>
-            <LatestThreads />
+          <Suspense fallback={<GridSkeleton />}>
+            <CategoryGrid />
           </Suspense>
         </div>
       </section>

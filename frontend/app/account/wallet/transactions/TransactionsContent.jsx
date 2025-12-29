@@ -118,7 +118,7 @@ export default function TransactionsContent() {
           </div>
           <Link
             href="/account/wallet/send"
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+            className="rounded-lg bg-[rgb(var(--brand))] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
           >
             + Kirim Uang
           </Link>
@@ -144,7 +144,7 @@ export default function TransactionsContent() {
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2 text-sm font-medium transition ${
                 activeTab === tab.key
-                  ? "border-b-2 border-emerald-600 text-emerald-600"
+                  ? "border-b-2 border-[rgb(var(--brand))] text-[rgb(var(--brand))]"
                   : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
               }`}
             >
@@ -165,7 +165,7 @@ export default function TransactionsContent() {
             <div className="text-[rgb(var(--muted))] mb-4">Belum ada transaksi</div>
             <Link
               href="/account/wallet/send"
-              className="text-emerald-600 hover:underline"
+              className="text-[rgb(var(--brand))] hover:underline"
             >
               Mulai kirim uang
             </Link>
@@ -221,7 +221,7 @@ export default function TransactionsContent() {
                     <div className="text-xs text-[rgb(var(--muted))]">
                       Auto-release: {formatDate(transfer.hold_until)}
                     </div>
-                    <span className="text-xs text-emerald-600">
+                    <span className="text-xs text-[rgb(var(--brand))]">
                       Lihat detail →
                     </span>
                   </div>

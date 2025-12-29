@@ -121,7 +121,7 @@ export default function DepositPage() {
                   value={amount}
                   onChange={(e) => setAmount(formatCurrency(e.target.value))}
                   placeholder="0"
-                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-10 py-3 text-lg font-semibold text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-10 py-3 text-lg font-semibold text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
                 />
               </div>
               <p className="mt-1 text-xs text-[rgb(var(--muted))]">
@@ -136,7 +136,7 @@ export default function DepositPage() {
                   key={amt}
                   type="button"
                   onClick={() => setAmount(amt.toLocaleString("id-ID"))}
-                  className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm font-medium text-[rgb(var(--fg))] transition hover:border-emerald-500 hover:bg-emerald-500/10"
+                  className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm font-medium text-[rgb(var(--fg))] transition hover:border-[rgb(var(--brand))] hover:bg-[rgb(var(--brand))]/10"
                 >
                   {(amt / 1000).toLocaleString("id-ID")}rb
                 </button>
@@ -152,7 +152,7 @@ export default function DepositPage() {
             <button
               type="submit"
               disabled={loading || !amount}
-              className="w-full rounded-lg bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "Memproses..." : "Lanjutkan ke Pembayaran"}
             </button>

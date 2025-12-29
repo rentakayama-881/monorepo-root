@@ -40,7 +40,7 @@ export default function WithdrawSuccessPage() {
           <div className="space-y-3">
             <Link
               href="/account/wallet/transactions"
-              className="block w-full rounded-lg bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700"
+              className="block w-full rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90"
             >
               Lihat Transaksi
             </Link>

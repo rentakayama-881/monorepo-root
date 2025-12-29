@@ -1,5 +1,6 @@
 import "./globals.css";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 import { ToastProvider } from "../components/ui/Toast";
 
@@ -86,12 +87,14 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className="min-h-dvh antialiased bg-[rgb(var(--bg))] text-[rgb(var(--fg))] selection:bg-[rgb(var(--brand))]/30">
+      <body className="flex min-h-dvh flex-col antialiased bg-[rgb(var(--bg))] text-[rgb(var(--fg))] selection:bg-[rgb(var(--brand))]/30">
         <ToastProvider>
           <Header />
           <ApiStatusBanner />
 
           <main className="flex-1">{children}</main>
+          
+          <Footer />
         </ToastProvider>
       </body>
     </html>

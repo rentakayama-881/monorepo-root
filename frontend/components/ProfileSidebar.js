@@ -145,7 +145,7 @@ export default function ProfileSidebar({ onClose }) {
       {hasUser ? (
         <>
           {/* Wallet Balance Card */}
-          <div className="mt-4 rounded-lg border border-[rgb(var(--border))] bg-gradient-to-r from-emerald-500/10 to-blue-500/10 p-3">
+          <div className="mt-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-3">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-[rgb(var(--muted))]">Saldo</div>
@@ -155,7 +155,7 @@ export default function ProfileSidebar({ onClose }) {
               </div>
               <Link
                 href="/account/wallet/deposit"
-                className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                className="rounded-md bg-[rgb(var(--brand))] px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
               >
                 + Deposit
               </Link>

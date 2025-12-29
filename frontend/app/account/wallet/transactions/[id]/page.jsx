@@ -169,7 +169,7 @@ export default function TransactionDetailPage() {
       <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
         <div className="mx-auto max-w-2xl px-4 py-8 text-center">
           <div className="text-[rgb(var(--error))] mb-4">{error || "Transfer tidak ditemukan"}</div>
-          <Link href="/account/wallet/transactions" className="text-emerald-600 hover:underline">
+          <Link href="/account/wallet/transactions" className="text-[rgb(var(--brand))] hover:underline">
             ← Kembali
           </Link>
         </div>
@@ -244,7 +244,7 @@ export default function TransactionDetailPage() {
               {transfer.released_at && (
                 <div className="flex justify-between py-2 border-b border-[rgb(var(--border))]">
                   <span className="text-[rgb(var(--muted))]">Dirilis</span>
-                  <span className="font-medium text-emerald-600">
+                  <span className="font-medium text-[rgb(var(--brand))]">
                     {formatDate(transfer.released_at)}
                   </span>
                 </div>
@@ -276,7 +276,7 @@ export default function TransactionDetailPage() {
                 {isReceiver && (
                   <button
                     onClick={() => handleAction("release")}
-                    className="w-full rounded-lg bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700"
+                    className="w-full rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90"
                   >
                     Terima Dana
                   </button>
@@ -332,7 +332,7 @@ export default function TransactionDetailPage() {
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                 placeholder="••••••"
-                className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-emerald-500"
+                className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-[rgb(var(--brand))]"
               />
 
               {error && <p className="mt-2 text-sm text-[rgb(var(--error))]">{error}</p>}
@@ -348,7 +348,7 @@ export default function TransactionDetailPage() {
                 <button
                   onClick={confirmAction}
                   disabled={processing || pin.length !== 6}
-                  className="flex-1 rounded-lg bg-emerald-600 py-2 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-[rgb(var(--brand))] py-2 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
                   {processing ? "Memproses..." : "Konfirmasi"}
                 </button>
