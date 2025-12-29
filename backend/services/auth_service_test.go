@@ -72,7 +72,15 @@ func TestAuthService_Register_DuplicateEmail(t *testing.T) {
 	_, err := service.Register(input)
 	require.NoError(t, err)
 
-	// Try to register with same email
+	// Mark user as verified
+	var user models.User
+	err = db.Where("email = ?", "test@example.com").First(&user).Error
+	require.NoError(t, err)
+	user.EmailVerified = true
+	err = db.Save(&user).Error
+	require.NoError(t, err)
+
+	// Try to register with same verified email - should fail
 	_, err = service.Register(input)
 	assert.Error(t, err)
 	assert.Equal(t, apperrors.ErrEmailAlreadyExists, err)

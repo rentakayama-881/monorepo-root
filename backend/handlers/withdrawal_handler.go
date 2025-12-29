@@ -2,17 +2,24 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"backend-gin/database"
+	"backend-gin/middleware"
 	"backend-gin/models"
 	"backend-gin/services"
 	"backend-gin/utils"
 
 	"github.com/gin-gonic/gin"
 )
+
+// withdrawalPinLimiter limits PIN verification attempts for withdrawals
+// 5 attempts per 15 minutes per user
+var withdrawalPinLimiter = middleware.NewRateLimiter(5, 15*time.Minute)
 
 // WithdrawalHandler handles withdrawal-related endpoints
 type WithdrawalHandler struct {
@@ -44,6 +51,12 @@ func (h *WithdrawalHandler) CreateWithdrawal(c *gin.Context) {
 	var req CreateWithdrawalRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: minimum withdrawal is Rp 50,000"})
+		return
+	}
+
+	// Rate limit PIN verification to prevent brute-force
+	if !withdrawalPinLimiter.Allow(fmt.Sprintf("withdrawal-pin:%d", userID)) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many PIN attempts. Please try again later."})
 		return
 	}
 

@@ -1,15 +1,22 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"backend-gin/database"
+	"backend-gin/middleware"
 	"backend-gin/models"
 	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
 )
+
+// transferPinLimiter limits PIN verification attempts for transfers
+// 5 attempts per 15 minutes per user
+var transferPinLimiter = middleware.NewRateLimiter(5, 15*time.Minute)
 
 // TransferHandler handles transfer-related endpoints
 type TransferHandler struct {
@@ -56,6 +63,12 @@ func (h *TransferHandler) CreateTransfer(c *gin.Context) {
 			"code":     "PIN_NOT_SET",
 			"redirect": "/account/wallet/set-pin",
 		})
+		return
+	}
+
+	// Rate limit PIN verification to prevent brute-force
+	if !transferPinLimiter.Allow(fmt.Sprintf("transfer-pin:%d", senderID)) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many PIN attempts. Please try again later."})
 		return
 	}
 

@@ -9,6 +9,7 @@ import (
 
 	"backend-gin/database"
 	"backend-gin/logger"
+	"backend-gin/middleware"
 	"backend-gin/models"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,10 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// adminLoginLimiter limits admin login attempts to prevent brute-force attacks
+// 5 attempts per 15 minutes per IP
+var adminLoginLimiter = middleware.NewRateLimiter(5, 15*time.Minute)
 
 // ==================== Admin Auth ====================
 
@@ -25,6 +30,14 @@ type AdminLoginRequest struct {
 }
 
 func AdminLogin(c *gin.Context) {
+	// Rate limit admin login attempts
+	if !adminLoginLimiter.Allow(c.ClientIP()) {
+		c.JSON(http.StatusTooManyRequests, gin.H{
+			"error": gin.H{"code": "RATE001", "message": "Terlalu banyak percobaan. Coba lagi nanti."},
+		})
+		return
+	}
+
 	var req AdminLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -48,10 +61,14 @@ func AdminLogin(c *gin.Context) {
 		return
 	}
 
-	// Generate admin JWT
+	// Generate admin JWT - secret is REQUIRED
 	secret := os.Getenv("ADMIN_JWT_SECRET")
 	if secret == "" {
-		secret = "admin-secret-change-me"
+		logger.Error("ADMIN_JWT_SECRET not configured")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": gin.H{"code": "SRV001", "message": "Server configuration error"},
+		})
+		return
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
