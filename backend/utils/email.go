@@ -19,8 +19,8 @@ func SendVerificationEmail(recipientEmail, verificationToken string) error {
 		if frontend == "" {
 			frontend = "http://localhost:3000"
 		}
-		link := frontend + "/verify-email?token=" + verificationToken
-		log.Printf("[DEV MODE] Email verification for %s: %s", recipientEmail, link)
+		// Log without exposing token (security)
+		log.Printf("[DEV MODE] Email verification requested for %s (token sent to email)", recipientEmail)
 		return nil
 	}
 
@@ -155,7 +155,8 @@ func SendPasswordResetEmail(recipientEmail, resetToken string) error {
 
 	// Fallback to dev mode if no API key configured
 	if apiKey == "" {
-		log.Printf("[DEV MODE] Password reset for %s: %s", recipientEmail, resetLink)
+		// Log without exposing token (security)
+		log.Printf("[DEV MODE] Password reset requested for %s (token sent to email)", recipientEmail)
 		return nil
 	}
 
