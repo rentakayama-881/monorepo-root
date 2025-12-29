@@ -102,8 +102,7 @@ func RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	token, link, err := createAndLogVerificationToken(&user, c)
-	if err != nil {
+	if _, _, err := createAndLogVerificationToken(&user, c); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat token verifikasi"})
 		return
 	}
@@ -111,9 +110,7 @@ func RegisterHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Registrasi berhasil. Silakan verifikasi email Anda.",
 		"verification": gin.H{
-			"required":  true,
-			"dev_token": token,
-			"link":      link,
+			"required": true,
 		},
 	})
 }
@@ -192,13 +189,12 @@ func RequestVerification(c *gin.Context) {
 		return
 	}
 
-	token, link, err := createAndLogVerificationToken(&user, c)
-	if err != nil {
+	if _, _, err := createAndLogVerificationToken(&user, c); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat token verifikasi"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Jika email terdaftar, tautan verifikasi telah dikirim.", "link": link, "dev_token": token})
+	c.JSON(http.StatusOK, gin.H{"message": "Jika email terdaftar, tautan verifikasi telah dikirim."})
 }
 
 // POST /api/auth/verify/confirm

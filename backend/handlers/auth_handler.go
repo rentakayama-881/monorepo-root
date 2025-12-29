@@ -78,9 +78,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"message": response.Message,
 		"verification": gin.H{
-			"required":  response.RequiresVerification,
-			"dev_token": response.DevToken,
-			"link":      response.DevLink,
+			"required": response.RequiresVerification,
 		},
 	})
 }
@@ -136,7 +134,7 @@ func (h *AuthHandler) RequestVerification(c *gin.Context) {
 		return
 	}
 
-	token, link, err := h.authService.RequestVerification(req.Email)
+	_, _, err := h.authService.RequestVerification(req.Email)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -144,9 +142,7 @@ func (h *AuthHandler) RequestVerification(c *gin.Context) {
 
 	// Always return success message to avoid email enumeration
 	c.JSON(http.StatusOK, gin.H{
-		"message":   "Jika email terdaftar, tautan verifikasi telah dikirim.",
-		"link":      link,
-		"dev_token": token,
+		"message": "Jika email terdaftar, tautan verifikasi telah dikirim.",
 	})
 }
 
@@ -194,9 +190,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":   response.Message,
-		"dev_token": response.DevToken,
-		"dev_link":  response.DevLink,
+		"message": response.Message,
 	})
 }
 

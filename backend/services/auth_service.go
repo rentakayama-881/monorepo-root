@@ -32,8 +32,6 @@ func NewAuthService(db *gorm.DB) *AuthService {
 // RegisterResponse represents registration response
 type RegisterResponse struct {
 	Message              string
-	DevToken             string
-	DevLink              string
 	UserID               uint
 	RequiresVerification bool
 }
@@ -144,7 +142,7 @@ func (s *AuthService) Register(input validators.RegisterInput) (*RegisterRespons
 	}
 
 	// Create verification token
-	token, link, err := s.createVerificationToken(&user)
+	token, _, err := s.createVerificationToken(&user)
 	if err != nil {
 		logger.Error("Failed to create verification token", zap.Error(err), zap.Uint("user_id", user.ID))
 		return nil, apperrors.ErrInternalServer.WithDetails("Gagal membuat token verifikasi")
@@ -162,8 +160,6 @@ func (s *AuthService) Register(input validators.RegisterInput) (*RegisterRespons
 
 	return &RegisterResponse{
 		Message:              "Registrasi berhasil. Silakan verifikasi email Anda.",
-		DevToken:             token,
-		DevLink:              link,
 		UserID:               user.ID,
 		RequiresVerification: true,
 	}, nil
@@ -372,9 +368,7 @@ func hashToken(token string) string {
 
 // ForgotPasswordResponse represents forgot password response
 type ForgotPasswordResponse struct {
-	Message  string
-	DevToken string // For development only
-	DevLink  string // For development only
+	Message string
 }
 
 // ForgotPassword sends password reset email
@@ -416,10 +410,6 @@ func (s *AuthService) ForgotPassword(email string) (*ForgotPasswordResponse, err
 		return nil, apperrors.ErrDatabase.WithDetails("Gagal menyimpan token")
 	}
 
-	// Build reset link
-	frontend := strings.TrimSuffix(utils.GetEnv("FRONTEND_BASE_URL", "http://localhost:3000"), "/")
-	link := frontend + "/reset-password?token=" + raw
-
 	// Send email
 	if err := utils.SendPasswordResetEmail(user.Email, raw); err != nil {
 		logger.Warn("Failed to send password reset email", zap.Error(err), zap.String("email", email))
@@ -429,9 +419,7 @@ func (s *AuthService) ForgotPassword(email string) (*ForgotPasswordResponse, err
 	logger.Info("Password reset requested", zap.String("email", email))
 
 	return &ForgotPasswordResponse{
-		Message:  "Jika email terdaftar, tautan reset password telah dikirim.",
-		DevToken: raw,  // Remove in production
-		DevLink:  link, // Remove in production
+		Message: "Jika email terdaftar, tautan reset password telah dikirim.",
 	}, nil
 }
 
