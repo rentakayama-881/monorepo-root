@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
-        "encoding/json"
-        "strings"
-        "strconv"
-        "os"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 
 	"backend-gin/database"
@@ -67,73 +69,75 @@ func IndexLongHandler(c *gin.Context) {
 		"chunks":    indexed,
 	})
 }
+
 // ==== Handlers ====
 
 /*
 POST /api/rag/index-chunk
 Body:
-{
-  "thread_id": "t-001",
-  "content": "teks chunk yang mau diindex"
-}
+
+	{
+	  "thread_id": "t-001",
+	  "content": "teks chunk yang mau diindex"
+	}
 */
 func IndexChunkHandler(c *gin.Context) {
-    // 0) Bind dan validasi input
-    var req struct {
-        ThreadID string `json:"thread_id"` // masih string agar kompatibel dengan frontend
-        Content  string `json:"content"`
-    }
-    if err := c.ShouldBindJSON(&req); err != nil || req.ThreadID == "" || req.Content == "" {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "thread_id dan content wajib diisi"})
-        return
-    }
+	// 0) Bind dan validasi input
+	var req struct {
+		ThreadID string `json:"thread_id"` // masih string agar kompatibel dengan frontend
+		Content  string `json:"content"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.ThreadID == "" || req.Content == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "thread_id dan content wajib diisi"})
+		return
+	}
 
-    // 1) Parse thread_id ke BIGINT
-    tid, err := strconv.ParseInt(req.ThreadID, 10, 64)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "thread_id harus berupa angka (bigint)"})
-        return
-    }
+	// 1) Parse thread_id ke BIGINT
+	tid, err := strconv.ParseInt(req.ThreadID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "thread_id harus berupa angka (bigint)"})
+		return
+	}
 
-    // 2) Cohere embedding (mode dokumen)
-    vec, err := utils.EmbedForDocument(req.Content)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "embed gagal: " + err.Error()})
-        return
-    }
-    vecLit := utils.VectorLiteral(vec)
+	// 2) Cohere embedding (mode dokumen)
+	vec, err := utils.EmbedForDocument(req.Content)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "embed gagal: " + err.Error()})
+		return
+	}
+	vecLit := utils.VectorLiteral(vec)
 
-    // 3) Metadata model
-    model := os.Getenv("COHERE_MODEL")
-    if model == "" {
-        model = "embed-multilingual-v3.0"
-    }
+	// 3) Metadata model
+	model := os.Getenv("COHERE_MODEL")
+	if model == "" {
+		model = "embed-multilingual-v3.0"
+	}
 
-    // 4) Simpan ke Postgres
-    //    Tidak perlu menyebut kolom `id` karena sudah default UUID
-    sql := `
+	// 4) Simpan ke Postgres
+	//    Tidak perlu menyebut kolom `id` karena sudah default UUID
+	sql := `
         INSERT INTO public.thread_chunks
             (thread_id, content, embedding, model_name, embedding_dim)
         VALUES
             ($1, $2, $3::vector, $4, $5)
     `
-    if err := database.DB.Exec(sql,
-        tid,                // thread_id bigint
-        req.Content,        // konten chunk
-        vecLit,             // embedding vektor
-        model,              // nama model embedding
-        len(vec),           // dimensi embedding
-    ).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "insert gagal: " + err.Error()})
-        return
-    }
+	if err := database.DB.Exec(sql,
+		tid,         // thread_id bigint
+		req.Content, // konten chunk
+		vecLit,      // embedding vektor
+		model,       // nama model embedding
+		len(vec),    // dimensi embedding
+	).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "insert gagal: " + err.Error()})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "thread_id":     tid,
-        "contentLen":    len(req.Content),
-        "embedding_dim": len(vec),
-        "model_name":    model,
-    })
+	c.JSON(http.StatusOK, gin.H{
+		"thread_id":     tid,
+		"contentLen":    len(req.Content),
+		"embedding_dim": len(vec),
+		"model_name":    model,
+	})
 }
 
 /*
@@ -250,13 +254,13 @@ func AnswerHandler(c *gin.Context) {
 		contexts = append(contexts, h.Content)
 	}
 
-        prompt := "ATURAN MENJAWAB (WAJIB DIIKUTI):\n" +
-  "• Jawab HANYA dengan mengutip kalimat dari KONTEKS. Jangan menambah atau menafsirkan.\n" +
-  "• Jika pertanyaan umum/pendek, buat ringkasan poin dari kalimat yang DIKUTIP, tetap tanpa interpretasi.\n" +
-  "• Sertakan kutipan dengan tanda petik, pisahkan dengan bullet.\n" +
-  "• Jika KONTEKS tidak memuat jawabannya, tulis: 'Tidak tahu.'\n\n" +
-  "PERTANYAAN: " + q + "\n\n" +
-  "KONTEKS:\n" + strings.Join(contexts, "\n---\n")
+	prompt := "ATURAN MENJAWAB (WAJIB DIIKUTI):\n" +
+		"• Jawab HANYA dengan mengutip kalimat dari KONTEKS. Jangan menambah atau menafsirkan.\n" +
+		"• Jika pertanyaan umum/pendek, buat ringkasan poin dari kalimat yang DIKUTIP, tetap tanpa interpretasi.\n" +
+		"• Sertakan kutipan dengan tanda petik, pisahkan dengan bullet.\n" +
+		"• Jika KONTEKS tidak memuat jawabannya, tulis: 'Tidak tahu.'\n\n" +
+		"PERTANYAAN: " + q + "\n\n" +
+		"KONTEKS:\n" + strings.Join(contexts, "\n---\n")
 
 	// 5) Cohere Chat
 	answer, err := utils.CohereAnswer("", prompt, contexts)
@@ -274,93 +278,94 @@ func AnswerHandler(c *gin.Context) {
 }
 
 func IndexThreadByIDHandler(c *gin.Context) {
-    // 0) Ambil dan validasi path param :id → int64
-    idStr := c.Param("id")
-    if idStr == "" {
-        c.JSON(400, gin.H{"error": "id wajib diisi"})
-        return
-    }
-    tid, err := strconv.ParseInt(idStr, 10, 64)
-    if err != nil {
-        c.JSON(400, gin.H{"error": "id harus berupa angka (bigint)"})
-        return
-    }
+	// 0) Ambil dan validasi path param :id → int64
+	idStr := c.Param("id")
+	if idStr == "" {
+		c.JSON(400, gin.H{"error": "id wajib diisi"})
+		return
+	}
+	tid, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "id harus berupa angka (bigint)"})
+		return
+	}
 
-    // 1) Ambil kolom yang dibutuhkan dari threads
-    type row struct {
-        ID          int64           `json:"id"`
-        Title       string          `json:"title"`
-        Summary     *string         `json:"summary"`
-        ContentJSON json.RawMessage `json:"content_json"`
-    }
-    var r row
-    if err := database.DB.Raw(`
+	// 1) Ambil kolom yang dibutuhkan dari threads
+	type row struct {
+		ID          int64           `json:"id"`
+		Title       string          `json:"title"`
+		Summary     *string         `json:"summary"`
+		ContentJSON json.RawMessage `json:"content_json"`
+	}
+	var r row
+	if err := database.DB.Raw(`
         SELECT id, title, summary, content_json
         FROM public.threads
         WHERE id = ?
         LIMIT 1
     `, tid).Scan(&r).Error; err != nil {
-        c.JSON(500, gin.H{"error": "ambil thread gagal: " + err.Error()})
-        return
-    }
-    if r.ID == 0 {
-        c.JSON(404, gin.H{"error": "thread tidak ditemukan"})
-        return
-    }
+		c.JSON(500, gin.H{"error": "ambil thread gagal: " + err.Error()})
+		return
+	}
+	if r.ID == 0 {
+		c.JSON(404, gin.H{"error": "thread tidak ditemukan"})
+		return
+	}
 
-    // 2) Gabungkan title + summary + flatten(content_json) → teks penuh
-    sum := ""
-    if r.Summary != nil {
-        sum = *r.Summary
-    }
-    jsonText := utils.FlattenJSONText(r.ContentJSON)
-    full := strings.TrimSpace(strings.Join([]string{r.Title, sum, jsonText}, "\n\n"))
-    if full == "" {
-        c.JSON(400, gin.H{"error": "thread tidak punya konten teks yang bisa diindex"})
-        return
-    }
+	// 2) Gabungkan title + summary + flatten(content_json) → teks penuh
+	sum := ""
+	if r.Summary != nil {
+		sum = *r.Summary
+	}
+	jsonText := utils.FlattenJSONText(r.ContentJSON)
+	full := strings.TrimSpace(strings.Join([]string{r.Title, sum, jsonText}, "\n\n"))
+	if full == "" {
+		c.JSON(400, gin.H{"error": "thread tidak punya konten teks yang bisa diindex"})
+		return
+	}
 
-    // 3) Pecah jadi chunk ~800 char
-    chunks := utils.SplitToChunks(full, 800)
-    if len(chunks) == 0 {
-        c.JSON(400, gin.H{"error": "chunking gagal"})
-        return
-    }
+	// 3) Pecah jadi chunk ~800 char
+	chunks := utils.SplitToChunks(full, 800)
+	if len(chunks) == 0 {
+		c.JSON(400, gin.H{"error": "chunking gagal"})
+		return
+	}
 
-    // 4) Metadata embedding (untuk auditing & re-embed)
-    model := os.Getenv("COHERE_MODEL")
-    if model == "" {
-        model = "embed-multilingual-v3.0"
-    }
+	// 4) Metadata embedding (untuk auditing & re-embed)
+	model := os.Getenv("COHERE_MODEL")
+	if model == "" {
+		model = "embed-multilingual-v3.0"
+	}
 
-    // 5) Loop: embed & insert
-    //    Catatan: kolom `id` di thread_chunks sudah UUID default → kita sengaja TIDAK menyebutkan kolom `id` di INSERT.
-    indexed := 0
-    for idx, chunk := range chunks {
-        vec, err := utils.EmbedForDocument(chunk)
-        if err != nil {
-            c.JSON(500, gin.H{"error": "embed gagal: " + err.Error(), "indexed": indexed})
-            return
-        }
-        vecLit := utils.VectorLiteral(vec)
+	// 5) Loop: embed & insert
+	//    Catatan: kolom `id` di thread_chunks sudah UUID default → kita sengaja TIDAK menyebutkan kolom `id` di INSERT.
+	indexed := 0
+	for idx, chunk := range chunks {
+		vec, err := utils.EmbedForDocument(chunk)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "embed gagal: " + err.Error(), "indexed": indexed})
+			return
+		}
+		vecLit := utils.VectorLiteral(vec)
 
-        if err := database.DB.Exec(`
+		if err := database.DB.Exec(`
             INSERT INTO public.thread_chunks
                 (thread_id, content, embedding, chunk_index, model_name, embedding_dim)
             VALUES
                 ($1,        $2,      $3::vector, $4,         $5,         $6)
         `, r.ID, chunk, vecLit, idx, model, len(vec)).Error; err != nil {
-            c.JSON(500, gin.H{"error": "insert gagal: " + err.Error(), "indexed": indexed})
-            return
-        }
-        indexed++
-    }
+			c.JSON(500, gin.H{"error": "insert gagal: " + err.Error(), "indexed": indexed})
+			return
+		}
+		indexed++
+	}
 
-    c.JSON(200, gin.H{
-        "thread_id": r.ID,
-        "chunks":    indexed,
-    })
+	c.JSON(200, gin.H{
+		"thread_id": r.ID,
+		"chunks":    indexed,
+	})
 }
+
 // GET /api/rag/debug-chunks/:thread_id?limit=10
 // Menampilkan preview isi chunk untuk thread tertentu (buat inspeksi cepat).
 func DebugChunksHandler(c *gin.Context) {
@@ -389,5 +394,209 @@ func DebugChunksHandler(c *gin.Context) {
 		"thread_id": tid,
 		"count":     len(rows),
 		"previews":  rows,
+	})
+}
+
+// ==== NEW: Two-Step AI Search ====
+
+// ThreadSearchResult represents a thread in search results
+type ThreadSearchResult struct {
+	ID       int64   `json:"id"`
+	Title    string  `json:"title"`
+	Summary  *string `json:"summary"`
+	Category string  `json:"category"`
+	Score    float64 `json:"score"`
+}
+
+/*
+GET /api/rag/search-threads?q=...&cursor=0&limit=20
+Return: list of THREADS (not chunks) matching the query
+Supports pagination via cursor (offset) for infinite scroll
+*/
+func SearchThreadsHandler(c *gin.Context) {
+	q := c.Query("q")
+	if q == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "parameter q wajib diisi"})
+		return
+	}
+
+	// Pagination params
+	cursor, _ := strconv.Atoi(c.DefaultQuery("cursor", "0"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	if limit > 50 {
+		limit = 50 // max limit
+	}
+	if limit < 1 {
+		limit = 20
+	}
+
+	// 1) Embed query
+	vec, err := utils.EmbedForQuery(q)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "embed query gagal: " + err.Error()})
+		return
+	}
+	vecLit := utils.VectorLiteral(vec)
+
+	// 2) Search chunks + JOIN to threads, get DISTINCT threads with best score
+	var results []ThreadSearchResult
+	sql := `
+		WITH ranked_chunks AS (
+			SELECT 
+				tc.thread_id,
+				1 - (tc.embedding <=> $1::vector) as score,
+				ROW_NUMBER() OVER (PARTITION BY tc.thread_id ORDER BY tc.embedding <=> $1::vector) as rn
+			FROM public.thread_chunks tc
+			WHERE tc.thread_id IS NOT NULL
+		)
+		SELECT 
+			t.id,
+			t.title,
+			t.summary,
+			COALESCE(cat.name, '') as category,
+			rc.score
+		FROM ranked_chunks rc
+		JOIN public.threads t ON t.id = rc.thread_id
+		LEFT JOIN public.categories cat ON cat.id = t.category_id
+		WHERE rc.rn = 1 AND rc.score > 0.3
+		ORDER BY rc.score DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	if err := database.DB.Raw(sql, vecLit, limit+1, cursor).Scan(&results).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query gagal: " + err.Error()})
+		return
+	}
+
+	// Check if there are more results
+	hasMore := len(results) > limit
+	if hasMore {
+		results = results[:limit]
+	}
+
+	// Calculate next cursor
+	nextCursor := 0
+	if hasMore {
+		nextCursor = cursor + limit
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"query":       q,
+		"threads":     results,
+		"next_cursor": nextCursor,
+		"has_more":    hasMore,
+	})
+}
+
+/*
+GET /api/rag/explain/:id
+Return: AI explanation for a specific thread
+Rate limited: 2 requests per minute per IP (enforced in main.go)
+*/
+func ExplainThreadHandler(c *gin.Context) {
+	idStr := c.Param("id")
+	if idStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id wajib diisi"})
+		return
+	}
+
+	tid, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id harus berupa angka"})
+		return
+	}
+
+	// 1) Get thread details
+	type ThreadInfo struct {
+		ID       int64   `json:"id"`
+		Title    string  `json:"title"`
+		Summary  *string `json:"summary"`
+		Category string  `json:"category"`
+	}
+	var thread ThreadInfo
+	threadSQL := `
+		SELECT t.id, t.title, t.summary, COALESCE(cat.name, '') as category
+		FROM public.threads t
+		LEFT JOIN public.categories cat ON cat.id = t.category_id
+		WHERE t.id = $1
+		LIMIT 1
+	`
+	if err := database.DB.Raw(threadSQL, tid).Scan(&thread).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query thread gagal: " + err.Error()})
+		return
+	}
+	if thread.ID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "thread tidak ditemukan"})
+		return
+	}
+
+	// 2) Get all chunks for this thread
+	var chunks []string
+	chunkSQL := `
+		SELECT content
+		FROM public.thread_chunks
+		WHERE thread_id = $1
+		ORDER BY chunk_index ASC NULLS LAST, id ASC
+	`
+	if err := database.DB.Raw(chunkSQL, tid).Pluck("content", &chunks).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query chunks gagal: " + err.Error()})
+		return
+	}
+
+	if len(chunks) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "thread belum diindex, tidak ada konten yang bisa dijelaskan"})
+		return
+	}
+
+	// 3) Build prompt for AI explanation
+	summary := ""
+	if thread.Summary != nil {
+		summary = *thread.Summary
+	}
+
+	contentPreview := strings.Join(chunks, "\n---\n")
+	if len(contentPreview) > 8000 {
+		contentPreview = contentPreview[:8000] + "..."
+	}
+
+	prompt := fmt.Sprintf(`Kamu adalah asisten AI yang membantu menjelaskan thread/postingan dari forum.
+
+INSTRUKSI:
+1. Baca dan pahami konten thread berikut
+2. Buat penjelasan yang ringkas, informatif, dan mudah dipahami
+3. Sertakan poin-poin penting dari thread
+4. Jangan menambahkan informasi yang tidak ada di konten
+5. Gunakan bahasa Indonesia yang baik dan benar
+
+THREAD YANG HARUS DIJELASKAN:
+
+JUDUL: %s
+
+KATEGORI: %s
+
+RINGKASAN: %s
+
+KONTEN:
+%s
+
+---
+
+Berikan penjelasan thread di atas:`, thread.Title, thread.Category, summary, contentPreview)
+
+	// 4) Generate AI explanation using Cohere Chat
+	explanation, err := utils.CohereAnswer("", prompt, chunks)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "AI gagal generate explanation: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"thread": gin.H{
+			"id":       thread.ID,
+			"title":    thread.Title,
+			"summary":  thread.Summary,
+			"category": thread.Category,
+		},
+		"explanation": explanation,
 	})
 }
