@@ -14,10 +14,10 @@ export function Badge({
   if (!badge) return null;
 
   const sizeClasses = {
-    xs: "h-3 w-3",
-    sm: "h-4 w-4",
-    md: "h-5 w-5",
-    lg: "h-6 w-6",
+    xs: "h-6 w-6",
+    sm: "h-7 w-7",
+    md: "h-8 w-8",
+    lg: "h-9 w-9",
   };
 
   const containerSizes = {
