@@ -19,6 +19,7 @@ export function Badge({
     sm: "h-10 w-10",   // sebelumnya h-7 w-7 (28px -> 40px)
     md: "h-12 w-12",   // sebelumnya h-8 w-8 (32px -> 48px)
     lg: "h-14 w-14",   // sebelumnya h-9 w-9 (36px -> 56px)
+    xl: "h-16 w-16",   // tambahan ukuran ekstra besar (64px)
   };
 
   const containerSizes = {
@@ -33,7 +34,7 @@ export function Badge({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 ${containerClass} ${className}`}
+      className={`inline-flex items-center gap-1.5 ${containerClass} transition-transform hover:scale-105 ${className}`}
       style={{
         color: badge.color || "#6366f1",
       }}
@@ -63,18 +64,19 @@ export function BadgeChip({
 
   // Ukuran badge chip yang lebih besar
   const chipSizes = {
-    sm: { icon: "h-4 w-4", padding: "px-2 py-1", text: "text-xs" },
-    md: { icon: "h-5 w-5", padding: "px-3 py-1.5", text: "text-sm" },
-    lg: { icon: "h-6 w-6", padding: "px-4 py-2", text: "text-base" },
+    sm: { icon: "h-4 w-4", padding: "px-2.5 py-1", text: "text-xs", gap: "gap-1" },
+    md: { icon: "h-5 w-5", padding: "px-3 py-1.5", text: "text-sm", gap: "gap-1.5" },
+    lg: { icon: "h-6 w-6", padding: "px-4 py-2", text: "text-base", gap: "gap-2" },
   };
 
   const sizeConfig = chipSizes[size] || chipSizes.md;
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 ${sizeConfig.padding} rounded-full ${sizeConfig.text} ${className}`}
+      className={`inline-flex items-center ${sizeConfig.gap} ${sizeConfig.padding} rounded-full ${sizeConfig.text} shadow-sm border border-opacity-20 transition-all hover:shadow-md hover:scale-105 cursor-pointer ${className}`}
       style={{
-        backgroundColor: (badge. color || "#6366f1") + "20",
+        backgroundColor: (badge. color || "#6366f1") + "15",
+        borderColor: badge.color || "#6366f1",
         color:  badge.color || "#6366f1",
       }}
     >
