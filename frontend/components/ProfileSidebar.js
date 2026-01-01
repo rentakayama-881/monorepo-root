@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { getApiBase } from "../lib/api";
 import { clearToken, getToken } from "@/lib/auth";
-import { resolveAvatarSrc } from "@/lib/avatar";
+import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
 import { maskEmail } from "@/lib/email";
 
 export default function ProfileSidebar({ onClose }) {
@@ -99,6 +99,8 @@ export default function ProfileSidebar({ onClose }) {
 
   const hasUser = !!user.username;
   const avatarSrc = resolveAvatarSrc(user.avatar_url);
+  const initials = getInitials(user.username);
+  const avatarBgColor = getAvatarColor(user.username);
 
   return (
     <div
@@ -108,11 +110,11 @@ export default function ProfileSidebar({ onClose }) {
       <div className="flex items-center justify-between gap-3">
         {hasUser ? (
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] text-sm font-semibold uppercase text-[rgb(var(--fg))]">
-              {user.avatar_url ? (
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] text-sm font-semibold uppercase text-white" style={avatarSrc ? {} : { backgroundColor: avatarBgColor }}>
+              {avatarSrc ? (
                 <Image src={avatarSrc} alt="Avatar" width={40} height={40} className="h-full w-full object-cover" unoptimized />
               ) : (
-                user.username.slice(0, 2)
+                initials
               )}
             </div>
             <div className="min-w-0">

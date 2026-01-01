@@ -8,12 +8,13 @@ import ProfileSidebar from "./ProfileSidebar";
 import { Logo } from "./ui/Logo";
 import { fetchCategories } from "../lib/categories";
 import { AUTH_CHANGED_EVENT, getToken, TOKEN_KEY } from "@/lib/auth";
-import { resolveAvatarSrc } from "@/lib/avatar";
+import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
 import { getApiBase } from "@/lib/api";
 
 export default function Header() {
   const [isAuthed, setIsAuthed] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState("/avatar-default.png");
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [userName, setUserName] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
@@ -28,7 +29,8 @@ export default function Header() {
         const token = getToken();
         setIsAuthed(!!token);
         if (!token) {
-          setAvatarUrl("/avatar-default.png");
+          setAvatarUrl(null);
+          setUserName("");
         }
       } catch (_) {
         setIsAuthed(false);
@@ -56,7 +58,8 @@ export default function Header() {
     async function loadProfile() {
       const token = getToken();
       if (!token) {
-        setAvatarUrl("/avatar-default.png");
+        setAvatarUrl(null);
+        setUserName("");
         return;
       }
       try {
@@ -64,13 +67,16 @@ export default function Header() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
-          setAvatarUrl("/avatar-default.png");
+          setAvatarUrl(null);
           return;
         }
         const data = await res.json();
-        if (!cancelled) setAvatarUrl(resolveAvatarSrc(data.avatar_url));
+        if (!cancelled) {
+          setAvatarUrl(resolveAvatarSrc(data.avatar_url));
+          setUserName(data.username || data.full_name || data.email || "");
+        }
       } catch {
-        if (!cancelled) setAvatarUrl("/avatar-default.png");
+        if (!cancelled) setAvatarUrl(null);
       }
     }
 
@@ -232,15 +238,22 @@ export default function Header() {
                 aria-label="Akun"
                 type="button"
               >
-                <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]">
-                  <Image
-                    src={avatarUrl}
-                    alt="Akun"
-                    width={32}
-                    height={32}
-                    className="h-full w-full object-cover"
-                    unoptimized
-                  />
+                <span 
+                  className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] text-sm font-semibold text-white"
+                  style={avatarUrl ? {} : { backgroundColor: getAvatarColor(userName) }}
+                >
+                  {avatarUrl ? (
+                    <Image
+                      src={avatarUrl}
+                      alt="Akun"
+                      width={32}
+                      height={32}
+                      className="h-full w-full object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    getInitials(userName)
+                  )}
                 </span>
                 <span className="hidden sm:inline text-sm font-medium text-[rgb(var(--fg))]">Akun</span>
               </button>

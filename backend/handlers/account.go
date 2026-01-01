@@ -211,11 +211,11 @@ func UploadAvatarHandler(c *gin.Context) {
 		return
 	}
 
-	// Validasi ekstensi
+	// Validasi ekstensi - hanya JPG dan PNG
 	ext := strings.ToLower(filepath.Ext(header.Filename))
-	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true}
+	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true}
 	if !allowed[ext] {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "format gambar harus .jpg .jpeg .png atau .webp"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "format gambar harus JPG atau PNG"})
 		return
 	}
 
@@ -224,7 +224,6 @@ func UploadAvatarHandler(c *gin.Context) {
 		".jpg":  "image/jpeg",
 		".jpeg": "image/jpeg",
 		".png":  "image/png",
-		".webp": "image/webp",
 	}
 
 	// Upload to Supabase Storage
@@ -248,6 +247,30 @@ func UploadAvatarHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"avatar_url": avatarURL})
+}
+
+// DELETE /api/account/avatar
+func DeleteAvatarHandler(c *gin.Context) {
+	userIfc, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	user := userIfc.(*models.User)
+
+	if user.AvatarURL == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tidak ada foto profil"})
+		return
+	}
+
+	// Clear avatar URL in database
+	user.AvatarURL = ""
+	if err := database.DB.Save(user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menghapus foto profil"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "foto profil dihapus"})
 }
 
 // DeleteAccountRequest for account deletion

@@ -169,6 +169,7 @@ func main() {
 			account.PUT("", middleware.AuthMiddleware(), handlers.UpdateMyAccountHandler)
 			account.POST("/change-username", middleware.AuthMiddleware(), handlers.ChangeUsernamePaidHandler)
 			account.PUT("/avatar", middleware.AuthMiddleware(), handlers.UploadAvatarHandler)
+			account.DELETE("/avatar", middleware.AuthMiddleware(), handlers.DeleteAvatarHandler)
 			account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), handlers.DeleteAccountHandler)
 		}
 
