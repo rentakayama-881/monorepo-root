@@ -300,7 +300,7 @@ export default function AccountPage() {
             <h3 className="text-sm font-medium text-[rgb(var(--fg))]">Badges</h3>
             <div className="mt-3 space-y-3">
               {badges.length === 0 ? (
-                <p className="text-sm text-[rgb(var(--muted))]">Jika anda memiliki reputasi dan atau kontribusi dan atau Anda merupakan badan usaha dan atau organisasi dan atau kelompok bisnis dan atau usaha perorangan, dari semua yang tercantum, baik dalam lingkup internal maupun external platform, semua itu harus dapat di validasi,legitimasi, verifikasi</p>
+                <p className="text-sm text-[rgb(var(--muted))]">Badge hanya di dapatkan dari reputasi & kontribusi, baik internal maupun eksternal platform yang mempunyai legitimasi.</p>
               ) : (
                 <>
                   <div className="flex flex-wrap gap-2">
