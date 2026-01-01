@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type cohereEmbedRequest struct {
@@ -40,10 +41,12 @@ func cohereEmbed(text, inputType string) ([]float32, error) {
 		model = "embed-multilingual-v3.0" // cocok untuk Indonesia/English
 	}
 
-	endpoint := os.Getenv("COHERE_ENDPOINT")
-	if endpoint == "" {
-		endpoint = "https://api.cohere.ai/v1/embed"
+	// COHERE_ENDPOINT is base URL, we append /v1/embed
+	baseURL := os.Getenv("COHERE_ENDPOINT")
+	if baseURL == "" {
+		baseURL = "https://api.cohere.ai"
 	}
+	endpoint := strings.TrimSuffix(baseURL, "/") + "/v1/embed"
 
 	reqBody, _ := json.Marshal(cohereEmbedRequest{
 		Model:     model,
