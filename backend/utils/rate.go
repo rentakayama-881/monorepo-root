@@ -69,7 +69,7 @@ func GetTokenToIDRRate(coinGeckoID string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// 3) Cek status code
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -113,4 +113,3 @@ func getCacheTTL() time.Duration {
 	}
 	return time.Duration(ttlSec) * time.Second
 }
-

@@ -377,10 +377,10 @@ func (s *ThreadService) mapThreadToDetailResponse(thread *models.Thread) *Thread
 	}
 
 	var content interface{}
-	json.Unmarshal(thread.ContentJSON, &content)
+	_ = json.Unmarshal(thread.ContentJSON, &content)
 
 	var meta map[string]interface{}
-	json.Unmarshal(thread.Meta, &meta)
+	_ = json.Unmarshal(thread.Meta, &meta)
 	if meta == nil {
 		meta = make(map[string]interface{})
 	}

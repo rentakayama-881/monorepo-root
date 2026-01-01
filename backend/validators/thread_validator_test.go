@@ -415,7 +415,7 @@ func TestNormalizeMeta(t *testing.T) {
 
 				if tt.checkTg {
 					var metaMap map[string]interface{}
-					json.Unmarshal(result, &metaMap)
+					_ = json.Unmarshal(result, &metaMap)
 					assert.Equal(t, tt.expectedTg, metaMap["telegram"])
 				}
 			}

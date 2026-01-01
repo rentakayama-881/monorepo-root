@@ -15,10 +15,6 @@ func SendVerificationEmail(recipientEmail, verificationToken string) error {
 
 	// Fallback to dev mode if no API key configured
 	if apiKey == "" {
-		frontend := os.Getenv("FRONTEND_BASE_URL")
-		if frontend == "" {
-			frontend = "http://localhost:3000"
-		}
 		// Log without exposing token (security)
 		log.Printf("[DEV MODE] Email verification requested for %s (token sent to email)", recipientEmail)
 		return nil

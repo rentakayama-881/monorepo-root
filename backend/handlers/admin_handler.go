@@ -380,7 +380,7 @@ func RevokeBadgeFromUser(c *gin.Context) {
 	}
 
 	var req RevokeBadgeRequest
-	c.ShouldBindJSON(&req)
+	_ = c.ShouldBindJSON(&req) // Reason is optional, ignore bind errors
 
 	var userBadge models.UserBadge
 	if err := database.DB.Where("user_id = ? AND badge_id = ? AND revoked_at IS NULL", userID, badgeID).First(&userBadge).Error; err != nil {

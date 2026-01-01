@@ -62,7 +62,7 @@ func cohereEmbed(text, inputType string) ([]float32, error) {
 	if err != nil {
 		return nil, fmt.Errorf("http do: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		b, _ := io.ReadAll(res.Body)

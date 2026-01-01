@@ -117,7 +117,7 @@ func (c *XenditClient) CreateInvoice(req CreateInvoiceRequest) (*CreateInvoiceRe
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -153,7 +153,7 @@ func (c *XenditClient) GetInvoice(invoiceID string) (*CreateInvoiceResponse, err
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -221,7 +221,7 @@ func (c *XenditClient) CreateDisbursement(req DisbursementRequest) (*Disbursemen
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -257,7 +257,7 @@ func (c *XenditClient) GetDisbursement(disbursementID string) (*DisbursementResp
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -331,7 +331,7 @@ func (c *XenditClient) GetAvailableBanks() ([]Bank, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

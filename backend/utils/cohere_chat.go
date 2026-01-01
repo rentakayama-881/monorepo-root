@@ -69,7 +69,7 @@ func CohereAnswer(model, prompt string, contexts []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		b, _ := io.ReadAll(res.Body)

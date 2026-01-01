@@ -10,15 +10,15 @@ import (
 )
 
 type rerankRequest struct {
-	Model     string   `json:"model"`     // contoh: "rerank-english-v3.0" atau "rerank-multilingual-v3.0"
+	Model     string   `json:"model"` // contoh: "rerank-english-v3.0" atau "rerank-multilingual-v3.0"
 	Query     string   `json:"query"`
 	Documents []string `json:"documents"`
-	TopN      int      `json:"top_n"`     // ambil N teratas setelah rerank
+	TopN      int      `json:"top_n"` // ambil N teratas setelah rerank
 }
 
 type rerankResponse struct {
 	Results []struct {
-		Index int     `json:"index"` // index dokumen aslinya
+		Index          int     `json:"index"` // index dokumen aslinya
 		RelevanceScore float64 `json:"relevance_score"`
 	} `json:"results"`
 }
@@ -53,7 +53,7 @@ func CohereRerank(query string, docs []string, topN int) ([]int, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		b, _ := io.ReadAll(res.Body)

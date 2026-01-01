@@ -68,7 +68,7 @@ func buildCORSConfig() cors.Config {
 	}
 
 	allowedOriginsEnv := os.Getenv("CORS_ALLOWED_ORIGINS")
-	rawOrigins := []string{}
+	var rawOrigins []string
 	if allowedOriginsEnv != "" {
 		rawOrigins = strings.Split(allowedOriginsEnv, ",")
 	} else {
@@ -114,7 +114,7 @@ func main() {
 
 	// Initialize logger
 	logger.InitLogger()
-	defer logger.Log.Sync()
+	defer func() { _ = logger.Log.Sync() }()
 
 	logger.Info("Starting Ballerina Backend Server")
 
@@ -324,5 +324,7 @@ func main() {
 
 	// Jalankan server dengan port dinamis
 	// Tambahkan "0.0.0.0" agar bisa diakses dari luar container Render
-	router.Run("0.0.0.0:" + port)
+	if err := router.Run("0.0.0.0:" + port); err != nil {
+		log.Fatal("Failed to start server: ", err)
+	}
 }

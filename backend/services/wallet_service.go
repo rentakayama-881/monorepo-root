@@ -233,27 +233,27 @@ func (s *WalletService) GetTransactionHistory(userID uint, limit, offset int) ([
 // GenerateTransferCode generates a unique transfer code
 func GenerateTransferCode() string {
 	bytes := make([]byte, 4)
-	rand.Read(bytes)
+	_, _ = rand.Read(bytes)
 	return fmt.Sprintf("TRF-%s", hex.EncodeToString(bytes))
 }
 
 // GenerateDisputeCode generates a unique dispute code
 func GenerateDisputeCode() string {
 	bytes := make([]byte, 4)
-	rand.Read(bytes)
+	_, _ = rand.Read(bytes)
 	return fmt.Sprintf("DSP-%s", hex.EncodeToString(bytes))
 }
 
 // GenerateWithdrawalCode generates a unique withdrawal code
 func GenerateWithdrawalCode() string {
 	bytes := make([]byte, 4)
-	rand.Read(bytes)
+	_, _ = rand.Read(bytes)
 	return fmt.Sprintf("WDR-%s", hex.EncodeToString(bytes))
 }
 
 // GenerateDepositExternalID generates a unique external ID for deposits
 func GenerateDepositExternalID() string {
 	bytes := make([]byte, 8)
-	rand.Read(bytes)
+	_, _ = rand.Read(bytes)
 	return fmt.Sprintf("DEP-%d-%s", time.Now().Unix(), hex.EncodeToString(bytes))
 }

@@ -204,7 +204,7 @@ func UploadAvatarHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file tidak ditemukan"})
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Validasi ukuran (misal max 2MB)
 	if header.Size > 2*1024*1024 {
@@ -265,7 +265,7 @@ func UploadAvatarHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membuat file"})
 		return
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 	if _, err := out.ReadFrom(file); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan file"})
 		return

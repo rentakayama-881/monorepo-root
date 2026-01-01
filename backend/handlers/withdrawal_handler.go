@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -296,14 +297,17 @@ func (h *WithdrawalHandler) XenditDisbursementCallback(c *gin.Context) {
 
 		// Refund to user's wallet
 		totalRefund := withdrawal.Amount + withdrawal.Fee
-		h.walletService.Credit(
+		if err := h.walletService.Credit(
 			withdrawal.UserID,
 			totalRefund,
 			models.WalletTxTypeRefund,
 			"withdrawal",
 			withdrawal.ID,
 			"Withdrawal failed - refund",
-		)
+		); err != nil {
+			// Log error but continue processing callback
+			log.Printf("Failed to refund withdrawal %d: %v", withdrawal.ID, err)
+		}
 	}
 
 	callbackData, _ := json.Marshal(callback)

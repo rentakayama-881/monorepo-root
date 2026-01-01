@@ -42,7 +42,7 @@ func (s *SupabaseStorage) IsConfigured() bool {
 // Returns the public URL of the uploaded file
 func (s *SupabaseStorage) UploadFile(file multipart.File, filename string, contentType string) (string, error) {
 	if !s.IsConfigured() {
-		return "", fmt.Errorf("Supabase storage not configured")
+		return "", fmt.Errorf("supabase storage not configured")
 	}
 
 	// Read file content
@@ -74,7 +74,7 @@ func (s *SupabaseStorage) UploadFile(file multipart.File, filename string, conte
 	if err != nil {
 		return "", fmt.Errorf("failed to upload: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
@@ -99,7 +99,7 @@ func (s *SupabaseStorage) UploadFile(file multipart.File, filename string, conte
 // DeleteFile deletes a file from Supabase Storage
 func (s *SupabaseStorage) DeleteFile(filename string) error {
 	if !s.IsConfigured() {
-		return fmt.Errorf("Supabase storage not configured")
+		return fmt.Errorf("supabase storage not configured")
 	}
 
 	deleteURL := fmt.Sprintf("%s/storage/v1/object/%s", s.URL, s.Bucket)
@@ -122,7 +122,7 @@ func (s *SupabaseStorage) DeleteFile(filename string) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("delete failed with status %d", resp.StatusCode)
