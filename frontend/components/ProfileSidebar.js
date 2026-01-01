@@ -10,7 +10,7 @@ import { maskEmail } from "@/lib/email";
 export default function ProfileSidebar({ onClose }) {
   const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
   const [wallet, setWallet] = useState({ balance: 0, pin_set: false });
-  const [status, setStatus] = useState("loading");
+  const [isLoading, setIsLoading] = useState(true);
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -19,21 +19,22 @@ export default function ProfileSidebar({ onClose }) {
     async function loadUser() {
       const token = getToken();
       if (!token) {
-        setStatus("unauthenticated");
+        // No token = redirect to login
+        onClose?.();
+        window.location.href = "/login";
         return;
       }
-      setStatus("loading");
+      setIsLoading(true);
       try {
         // Load user data
         const res = await fetch(`${getApiBase()}/api/user/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.status === 401) {
+          // Session expired - clear and redirect
           clearToken();
-          if (!cancelled) {
-            setUser({ username: "", avatar_url: "" });
-            setStatus("unauthenticated");
-          }
+          onClose?.();
+          window.location.href = "/login";
           return;
         }
         if (!res.ok) throw new Error("failed");
@@ -62,9 +63,14 @@ export default function ProfileSidebar({ onClose }) {
           console.error("Failed to load wallet:", e);
         }
         
-        setStatus("ready");
+        setIsLoading(false);
       } catch (err) {
-        if (!cancelled) setStatus("error");
+        // Network error - redirect to login
+        if (!cancelled) {
+          clearToken();
+          onClose?.();
+          window.location.href = "/login";
+        }
       }
     }
 
@@ -72,7 +78,7 @@ export default function ProfileSidebar({ onClose }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [onClose]);
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -102,37 +108,42 @@ export default function ProfileSidebar({ onClose }) {
   const initials = getInitials(user.username);
   const avatarBgColor = getAvatarColor(user.username);
 
+  // Show loading spinner while fetching user data
+  if (isLoading || !hasUser) {
+    return (
+      <div
+        ref={panelRef}
+        className="absolute right-0 top-11 z-50 w-80 origin-top-right rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-lg"
+      >
+        <div className="flex items-center justify-center py-8">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[rgb(var(--muted))] border-t-[rgb(var(--brand))]" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={panelRef}
       className="absolute right-0 top-11 z-50 w-80 origin-top-right rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-lg"
     >
       <div className="flex items-center justify-between gap-3">
-        {hasUser ? (
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] text-sm font-semibold uppercase text-white" style={avatarSrc ? {} : { backgroundColor: avatarBgColor }}>
-              {avatarSrc ? (
-                <Image src={avatarSrc} alt="Avatar" width={40} height={40} className="h-full w-full object-cover" unoptimized />
-              ) : (
-                initials
-              )}
-            </div>
-            <div className="min-w-0">
-              <div className="truncate text-base font-semibold text-[rgb(var(--fg))]">{user.username}</div>
-              {user.email && (
-                <div className="text-xs text-[rgb(var(--muted))]">{maskEmail(user.email)}</div>
-              )}
-              <div className="text-xs text-[rgb(var(--muted))]">Kelola aktivitas & profil Anda</div>
-            </div>
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] text-sm font-semibold uppercase text-white" style={avatarSrc ? {} : { backgroundColor: avatarBgColor }}>
+            {avatarSrc ? (
+              <Image src={avatarSrc} alt="Avatar" width={40} height={40} className="h-full w-full object-cover" unoptimized />
+            ) : (
+              initials
+            )}
           </div>
-        ) : (
           <div className="min-w-0">
-            <div className="text-base font-semibold text-[rgb(var(--fg))]">
-              {status === "error" ? "Session expired" : "Not signed in"}
-            </div>
-            <div className="text-xs text-[rgb(var(--muted))]">Silakan login kembali untuk mengakses profil.</div>
+            <div className="truncate text-base font-semibold text-[rgb(var(--fg))]">{user.username}</div>
+            {user.email && (
+              <div className="text-xs text-[rgb(var(--muted))]">{maskEmail(user.email)}</div>
+            )}
+            <div className="text-xs text-[rgb(var(--muted))]">Kelola aktivitas & profil Anda</div>
           </div>
-        )}
+        </div>
         <button
           onClick={onClose}
           className="rounded-md p-1 text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--fg))]"
@@ -144,10 +155,9 @@ export default function ProfileSidebar({ onClose }) {
           </svg>
         </button>
       </div>
-      {hasUser ? (
-        <>
-          {/* Wallet Balance Card */}
-          <div className="mt-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-3">
+
+      {/* Wallet Balance Card */}
+      <div className="mt-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-3">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-[rgb(var(--muted))]">Saldo</div>
@@ -262,18 +272,6 @@ export default function ProfileSidebar({ onClose }) {
           >
             Keluar
           </button>
-        </>
-      ) : (
-        <div className="mt-4">
-          <Link
-            href="/login"
-            className="inline-flex w-full items-center justify-center rounded-md bg-[rgb(var(--brand))] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-            onClick={onClose}
-          >
-            Masuk
-          </Link>
-        </div>
-      )}
     </div>
   );
 }
