@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getApiBase } from "@/lib/api";
-import { resolveAvatarSrc } from "@/lib/avatar";
+import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
 import { Badge, BadgeChip } from "@/components/ui/Badge";
 
 export default function UserProfilePage() {
@@ -33,19 +34,33 @@ export default function UserProfilePage() {
 
   const hasMeta = profile.pronouns || profile.company || profile.telegram;
   const hasSocials = Array.isArray(profile.social_accounts) && profile.social_accounts.length > 0;
+  const avatarSrc = resolveAvatarSrc(profile.avatar_url);
+  const displayName = profile.full_name || profile.username || "";
+  const initials = getInitials(displayName);
+  const avatarBgColor = getAvatarColor(displayName);
 
   return (
     <section className="max-w-4xl mx-auto px-4 py-8">
       {/* GitHub-style compact profile header */}
       <div className="flex items-start gap-4 mb-6">
         {/* Avatar */}
-        <img
-          src={resolveAvatarSrc(profile.avatar_url)}
-          alt="Avatar"
-          width={80}
-          height={80}
-          className="w-20 h-20 rounded-full border border-[rgb(var(--border))] object-cover bg-[rgb(var(--surface-2))] flex-shrink-0"
-        />
+        <div 
+          className="w-20 h-20 rounded-full border border-[rgb(var(--border))] flex-shrink-0 flex items-center justify-center overflow-hidden text-2xl font-semibold text-white"
+          style={avatarSrc ? {} : { backgroundColor: avatarBgColor }}
+        >
+          {avatarSrc ? (
+            <Image
+              src={avatarSrc}
+              alt="Avatar"
+              width={80}
+              height={80}
+              className="w-full h-full object-cover"
+              unoptimized
+            />
+          ) : (
+            initials
+          )}
+        </div>
         
         {/* Info */}
         <div className="flex-1 min-w-0">
