@@ -9,3 +9,7 @@
 backend
 backend-gin
 app
+
+# User uploads (stored in Supabase)
+public/avatars/*
+!public/avatars/.gitkeep

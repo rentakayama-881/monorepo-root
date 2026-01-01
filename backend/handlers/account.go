@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -228,52 +227,20 @@ func UploadAvatarHandler(c *gin.Context) {
 		".webp": "image/webp",
 	}
 
-	// Try Supabase Storage first
+	// Upload to Supabase Storage
 	supabase := utils.NewSupabaseStorage()
-	if supabase.IsConfigured() {
-		filename := fmt.Sprintf("u%d_%d%s", user.ID, time.Now().Unix(), ext)
-		avatarURL, err := supabase.UploadFile(file, filename, contentTypes[ext])
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal mengupload ke storage: " + err.Error()})
-			return
-		}
-
-		user.AvatarURL = avatarURL
-		if err := database.DB.Save(user).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan avatar ke profil"})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"avatar_url": avatarURL})
+	if !supabase.IsConfigured() {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "storage tidak dikonfigurasi, hubungi admin"})
 		return
 	}
 
-	// Fallback to local storage if Supabase not configured
-	// Pastikan folder ada
-	if err := os.MkdirAll("public/avatars", 0755); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membuat folder penyimpanan"})
-		return
-	}
-
-	// Simpan file
-	filename := fmt.Sprintf("avatars/u%d_%d%s", user.ID, time.Now().Unix(), ext)
-	dst := filepath.Join("public", filename)
-
-	// Simpan dari stream
-	out, err := os.Create(dst)
+	filename := fmt.Sprintf("u%d_%d%s", user.ID, time.Now().Unix(), ext)
+	avatarURL, err := supabase.UploadFile(file, filename, contentTypes[ext])
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membuat file"})
-		return
-	}
-	defer func() { _ = out.Close() }()
-	if _, err := out.ReadFrom(file); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan file"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal mengupload ke storage: " + err.Error()})
 		return
 	}
 
-	avatarURL := fmt.Sprintf("/static/%s", filename)
-
-	// Update user
 	user.AvatarURL = avatarURL
 	if err := database.DB.Save(user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan avatar ke profil"})
