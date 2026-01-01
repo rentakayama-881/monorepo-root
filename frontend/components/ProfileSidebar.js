@@ -264,26 +264,14 @@ export default function ProfileSidebar({ onClose }) {
           </button>
         </>
       ) : (
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-4">
           <Link
             href="/login"
-            className="inline-flex items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm font-semibold text-[rgb(var(--fg))] transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
+            className="inline-flex w-full items-center justify-center rounded-md bg-[rgb(var(--brand))] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90"
             onClick={onClose}
           >
-            Go to login
+            Masuk
           </Link>
-          <button
-            onClick={() => {
-              clearToken();
-              setUser({ username: "", avatar_url: "" });
-              setStatus("unauthenticated");
-              onClose?.();
-            }}
-            className="w-full rounded-md border border-[rgb(var(--border))] px-3 py-2 text-sm font-medium text-[rgb(var(--muted))] transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
-            type="button"
-          >
-            Clear token
-          </button>
         </div>
       )}
     </div>
