@@ -62,6 +62,10 @@ func NewPasskeyService(db *gorm.DB, logger *zap.Logger, rpID, rpOrigin, rpName s
 				TimeoutUVD: time.Minute * 5,
 			},
 		},
+		// Disable Backup Eligible flag verification to fix inconsistency errors
+		// Some authenticators (Windows Hello, iCloud Keychain, Android) may report
+		// different BE flags between registration and login
+		BackupEligible: webauthn.BackupEligibleEnforceNone,
 	}
 
 	w, err := webauthn.New(wconfig)
