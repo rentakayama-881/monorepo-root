@@ -472,50 +472,68 @@ export default function AccountPage() {
   );
 }
 
-// Separate component for delete account to use sudo hook
+// Separate component for delete account
 function DeleteAccountSection({ API, router }) {
   const [deletePassword, setDeletePassword] = useState("");
+  const [totpCode, setTotpCode] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const { execute: executeSudo } = useSudoAction("Menghapus akun secara permanen");
+  const [totpEnabled, setTotpEnabled] = useState(null);
+  const [checkingTOTP, setCheckingTOTP] = useState(true);
+
+  // Check TOTP status on mount
+  useEffect(() => {
+    async function checkTOTPStatus() {
+      try {
+        const t = localStorage.getItem("token");
+        const res = await fetch(`${API}/auth/totp/status`, {
+          headers: { Authorization: `Bearer ${t}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setTotpEnabled(data.enabled);
+        }
+      } catch (err) {
+        console.error("Failed to check TOTP status:", err);
+      } finally {
+        setCheckingTOTP(false);
+      }
+    }
+    checkTOTPStatus();
+  }, [API]);
 
   async function handleDelete() {
-    if (deleteConfirmation !== "DELETE" || !deletePassword) return;
+    if (deleteConfirmation !== "DELETE" || !deletePassword || totpCode.length !== 6) return;
     
     setDeleteError("");
     setDeleteLoading(true);
     
     try {
-      // Request sudo mode first
-      await executeSudo(async (sudoToken) => {
-        const t = localStorage.getItem("token");
-        const res = await fetch(`${API}/account`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${t}`,
-            "X-Sudo-Token": sudoToken,
-          },
-          body: JSON.stringify({
-            password: deletePassword,
-            confirmation: deleteConfirmation,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || "Gagal menghapus akun");
-        }
-        // Clean logout
-        localStorage.removeItem("token");
-        localStorage.removeItem("sudo_token");
-        localStorage.removeItem("sudo_expires");
-        router.push("/");
+      const t = localStorage.getItem("token");
+      const res = await fetch(`${API}/account`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${t}`,
+        },
+        body: JSON.stringify({
+          password: deletePassword,
+          totp_code: totpCode,
+          confirmation: deleteConfirmation,
+        }),
       });
-    } catch (err) {
-      if (err.message !== "Verifikasi dibatalkan") {
-        setDeleteError(err.message);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal menghapus akun");
       }
+      // Clean logout
+      localStorage.removeItem("token");
+      localStorage.removeItem("sudo_token");
+      localStorage.removeItem("sudo_expires");
+      router.push("/");
+    } catch (err) {
+      setDeleteError(err.message);
     } finally {
       setDeleteLoading(false);
     }
@@ -534,50 +552,70 @@ function DeleteAccountSection({ API, router }) {
         Aksi ini tidak dapat dibatalkan.
       </p>
       
-      <div className="mt-4 space-y-3">
-        <div>
-          <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
-            Password
-          </label>
-          <Input
-            type="password"
-            placeholder="Masukkan password Anda"
-            value={deletePassword}
-            onChange={e => setDeletePassword(e.target.value)}
-          />
+      {checkingTOTP ? (
+        <div className="mt-4 flex items-center justify-center py-4">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[rgb(var(--error))]"></div>
         </div>
-        
-        <div>
-          <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
-            Ketik <span className="font-mono font-bold">DELETE</span> untuk konfirmasi
-          </label>
-          <Input
-            type="text"
-            placeholder="DELETE"
-            value={deleteConfirmation}
-            onChange={e => setDeleteConfirmation(e.target.value)}
-          />
+      ) : totpEnabled === false ? (
+        <div className="mt-4">
+          <Alert type="warning" message="Anda harus mengaktifkan 2FA (Two-Factor Authentication) terlebih dahulu sebelum dapat menghapus akun. Silakan aktifkan 2FA di bagian Keamanan di atas." />
         </div>
-        
-        {deleteError && <Alert type="error" message={deleteError} />}
-        
-        <Button
-          variant="danger"
-          className="w-full disabled:opacity-50"
-          disabled={deleteLoading || deleteConfirmation !== "DELETE" || !deletePassword}
-          loading={deleteLoading}
-          onClick={handleDelete}
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-          </svg>
-          Hapus Akun Permanen
-        </Button>
-        
-        <p className="text-xs text-[rgb(var(--muted))] text-center">
-          Akan diminta verifikasi 2FA sebelum menghapus
-        </p>
-      </div>
+      ) : (
+        <div className="mt-4 space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
+              Ketik <span className="font-mono font-bold">DELETE</span> untuk konfirmasi
+            </label>
+            <Input
+              type="text"
+              placeholder="DELETE"
+              value={deleteConfirmation}
+              onChange={e => setDeleteConfirmation(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
+              Password
+            </label>
+            <Input
+              type="password"
+              placeholder="Masukkan password Anda"
+              value={deletePassword}
+              onChange={e => setDeletePassword(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
+              Kode 2FA (TOTP)
+            </label>
+            <Input
+              type="text"
+              inputMode="numeric"
+              placeholder="000000"
+              maxLength={6}
+              value={totpCode}
+              onChange={e => setTotpCode(e.target.value.replace(/\D/g, ""))}
+            />
+          </div>
+          
+          {deleteError && <Alert type="error" message={deleteError} />}
+          
+          <Button
+            variant="danger"
+            className="w-full disabled:opacity-50"
+            disabled={deleteLoading || deleteConfirmation !== "DELETE" || !deletePassword || totpCode.length !== 6}
+            loading={deleteLoading}
+            onClick={handleDelete}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+            Hapus Akun Permanen
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

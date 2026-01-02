@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"backend-gin/database"
+	"backend-gin/logger"
 	"backend-gin/models"
+	"backend-gin/services"
 	"backend-gin/utils"
 
 	"github.com/gin-gonic/gin"
@@ -276,6 +278,7 @@ func DeleteAvatarHandler(c *gin.Context) {
 // DeleteAccountRequest for account deletion
 type DeleteAccountRequest struct {
 	Password     string `json:"password" binding:"required"`
+	TOTPCode     string `json:"totp_code" binding:"required"`
 	Confirmation string `json:"confirmation" binding:"required"`
 }
 
@@ -290,13 +293,25 @@ func DeleteAccountHandler(c *gin.Context) {
 
 	var req DeleteAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password dan konfirmasi diperlukan"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password, kode 2FA, dan konfirmasi diperlukan"})
 		return
 	}
 
 	// Validate confirmation text
 	if req.Confirmation != "DELETE" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ketik DELETE untuk mengkonfirmasi penghapusan akun"})
+		return
+	}
+
+	// Validate TOTP code
+	totpService := services.NewTOTPService(database.DB, logger.GetLogger())
+	status, _ := totpService.GetStatus(user.ID)
+	if !status.Enabled {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "2FA harus diaktifkan untuk menghapus akun"})
+		return
+	}
+	if !totpService.VerifyCode(user.ID, req.TOTPCode) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kode 2FA tidak valid"})
 		return
 	}
 

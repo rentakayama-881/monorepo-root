@@ -243,8 +243,8 @@ func main() {
 			account.POST("/change-username", middleware.AuthMiddleware(), handlers.ChangeUsernamePaidHandler)
 			account.PUT("/avatar", middleware.AuthMiddleware(), handlers.UploadAvatarHandler)
 			account.DELETE("/avatar", middleware.AuthMiddleware(), handlers.DeleteAvatarHandler)
-			// Delete account requires sudo mode
-			account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), middleware.RequireSudo(sudoService), handlers.DeleteAccountHandler)
+			// Delete account requires password + TOTP verification
+			account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), handlers.DeleteAccountHandler)
 		}
 
 		user := api.Group("/user")
