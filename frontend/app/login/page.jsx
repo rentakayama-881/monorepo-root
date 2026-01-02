@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchJson } from "@/lib/api";
-import { setToken } from "@/lib/auth";
+import { setTokens } from "@/lib/auth";
 
 export default function LoginPage() {
   return (
@@ -23,6 +23,7 @@ function LoginForm() {
   const [error, setError] = useState("");
 
   const registeredNotice = searchParams.get("registered") === "1";
+  const sessionExpired = searchParams.get("session") === "expired";
 
   const inputClass =
     "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
@@ -40,7 +41,8 @@ function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
 
-      setToken(data.token);
+      // Handle new token response format
+      setTokens(data.access_token, data.refresh_token, data.expires_in);
       
       // Check if user has username, redirect to set-username if not
       if (!data.user?.username || data.user.username === "") {
@@ -64,6 +66,11 @@ function LoginForm() {
       </div>
 
       <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
+        {sessionExpired && (
+          <div className="mb-4 rounded-md border border-[rgb(var(--warning-border))] bg-[rgb(var(--warning-bg))] px-3 py-2 text-sm text-[rgb(var(--warning))]">
+            Session Anda telah berakhir. Silakan login kembali.
+          </div>
+        )}
         {registeredNotice && (
           <div className="mb-4 rounded-md border border-[rgb(var(--success-border))] bg-[rgb(var(--success-bg))] px-3 py-2 text-sm text-[rgb(var(--success))]">
             Registrasi berhasil. Silahkan periksa kotak masuk Email, Email verifikasi mungkin akan masuk lebih lama, tunggu sekitar 5-10 menit.

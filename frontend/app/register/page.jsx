@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fetchJson } from "@/lib/api";
-import { setToken } from "@/lib/auth";
+import { setTokens } from "@/lib/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -47,11 +47,8 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (data.token) {
-        setToken(data.token);
-        router.replace("/");
-        return;
-      }
+      // Registration with email verification doesn't return tokens
+      // User must verify email first, then login
       setInfo("Registrasi berhasil. Cek email untuk verifikasi lalu lanjutkan login.");
       setForm({ email: "", password: "", username: "", full_name: "" });
       setTimeout(() => router.replace("/login?registered=1"), 600);
