@@ -83,6 +83,8 @@ func migrateAndSeed() {
 		// Session & security tables
 		&models.Session{},
 		&models.SessionLock{},
+		// TOTP / 2FA tables
+		&models.BackupCode{},
 		// wallet & payment tables
 		&models.UserWallet{},
 		&models.Deposit{},
@@ -98,6 +100,24 @@ func migrateAndSeed() {
 		&models.UserBadge{},
 	); err != nil {
 		panic("AutoMigrate gagal: " + err.Error())
+	}
+
+	// Migrate TOTPPendingToken separately (defined in services package)
+	if err := DB.Exec(`
+		CREATE TABLE IF NOT EXISTS totp_pending_tokens (
+			id SERIAL PRIMARY KEY,
+			created_at TIMESTAMP DEFAULT NOW(),
+			updated_at TIMESTAMP DEFAULT NOW(),
+			deleted_at TIMESTAMP,
+			user_id INT NOT NULL,
+			token_hash TEXT NOT NULL UNIQUE,
+			expires_at TIMESTAMP NOT NULL,
+			used_at TIMESTAMP
+		);
+		CREATE INDEX IF NOT EXISTS idx_totp_pending_tokens_user_id ON totp_pending_tokens(user_id);
+		CREATE INDEX IF NOT EXISTS idx_totp_pending_tokens_token_hash ON totp_pending_tokens(token_hash);
+	`).Error; err != nil {
+		panic("Failed to create totp_pending_tokens table: " + err.Error())
 	}
 
 	// Seed categories if empty

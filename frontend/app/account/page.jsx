@@ -10,6 +10,7 @@ import { BadgeChip } from "../../components/ui/Badge";
 import Avatar from "../../components/ui/Avatar";
 import { getApiBase } from "@/lib/api";
 import { maskEmail } from "@/lib/email";
+import TOTPSettings from "@/components/TOTPSettings";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -457,6 +458,9 @@ export default function AccountPage() {
               </Button>
             </div>
           </section>
+
+          {/* 2FA / TOTP Security Section */}
+          <TOTPSettings />
 
           {/* Zona Berbahaya - Delete Account */}
           <section className="rounded-lg border-2 border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] p-4">

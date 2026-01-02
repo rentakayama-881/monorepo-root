@@ -173,9 +173,12 @@ type LoginResponse struct {
 	Email        string
 	Username     string
 	FullName     *string
+	RequiresTOTP bool   // True if 2FA is required to complete login
+	TOTPPending  string // Temporary token for TOTP verification
 }
 
 // LoginWithSession authenticates a user and creates a session with token pair
+// If TOTP is enabled, returns RequiresTOTP=true and no tokens
 func (s *AuthService) LoginWithSession(input validators.LoginInput, ipAddress, userAgent string) (*LoginResponse, error) {
 	// Validate input
 	if err := input.Validate(); err != nil {
@@ -214,16 +217,38 @@ func (s *AuthService) LoginWithSession(input validators.LoginInput, ipAddress, u
 		return nil, apperrors.ErrEmailNotVerified
 	}
 
-	// Create session with token pair
+	username := ""
+	if user.Username != nil {
+		username = *user.Username
+	}
+
+	// Check if TOTP is enabled - if so, don't issue tokens yet
+	if user.IsTOTPEnabled() {
+		// Generate a temporary token for TOTP verification step
+		pendingToken, err := s.generateTOTPPendingToken(user.ID)
+		if err != nil {
+			logger.Error("Failed to generate TOTP pending token", zap.Error(err))
+			return nil, apperrors.ErrInternalServer
+		}
+
+		logger.Info("Login requires TOTP verification",
+			zap.Uint("user_id", user.ID),
+			zap.String("email", email))
+
+		return &LoginResponse{
+			RequiresTOTP: true,
+			TOTPPending:  pendingToken,
+			Email:        user.Email,
+			Username:     username,
+			FullName:     user.FullName,
+		}, nil
+	}
+
+	// Create session with token pair (no TOTP required)
 	sessionService := NewSessionService(s.db)
 	tokenPair, err := sessionService.CreateSession(&user, ipAddress, userAgent)
 	if err != nil {
 		return nil, err
-	}
-
-	username := ""
-	if user.Username != nil {
-		username = *user.Username
 	}
 
 	logger.Info("User logged in successfully",
@@ -238,6 +263,7 @@ func (s *AuthService) LoginWithSession(input validators.LoginInput, ipAddress, u
 		Email:        user.Email,
 		Username:     username,
 		FullName:     user.FullName,
+		RequiresTOTP: false,
 	}, nil
 }
 
@@ -559,4 +585,208 @@ func (s *AuthService) ResetPassword(token, newPassword string) error {
 	logger.Info("Password reset successfully", zap.Uint("user_id", user.ID), zap.String("email", user.Email))
 
 	return nil
+}
+
+// TOTP Pending Token functions
+// These are short-lived tokens used to verify TOTP after password authentication
+
+const (
+	totpPendingTokenLength = 32
+	totpPendingTokenExpiry = 5 * time.Minute
+)
+
+// TOTPPendingToken stores temporary token for TOTP verification
+type TOTPPendingToken struct {
+	gorm.Model
+	UserID    uint      `gorm:"not null;index"`
+	TokenHash string    `gorm:"not null;uniqueIndex"`
+	ExpiresAt time.Time `gorm:"not null"`
+	UsedAt    *time.Time
+}
+
+// generateTOTPPendingToken creates a short-lived token for TOTP verification
+func (s *AuthService) generateTOTPPendingToken(userID uint) (string, error) {
+	// Generate random token
+	tokenBytes := make([]byte, totpPendingTokenLength)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return "", err
+	}
+	token := hex.EncodeToString(tokenBytes)
+
+	// Hash for storage
+	hash := sha256.Sum256([]byte(token))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	// Clean up old pending tokens for this user
+	_ = s.db.Where("user_id = ?", userID).Delete(&TOTPPendingToken{})
+
+	// Save pending token
+	pending := TOTPPendingToken{
+		UserID:    userID,
+		TokenHash: tokenHash,
+		ExpiresAt: time.Now().Add(totpPendingTokenExpiry),
+	}
+	if err := s.db.Create(&pending).Error; err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+// validateTOTPPendingToken validates and consumes a TOTP pending token
+func (s *AuthService) validateTOTPPendingToken(token string) (*models.User, error) {
+	// Hash the token
+	hash := sha256.Sum256([]byte(token))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	// Find the pending token
+	var pending TOTPPendingToken
+	if err := s.db.Where("token_hash = ?", tokenHash).First(&pending).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, apperrors.ErrInvalidToken.WithDetails("Token tidak valid atau sudah expired")
+		}
+		return nil, apperrors.ErrDatabase
+	}
+
+	// Check if already used
+	if pending.UsedAt != nil {
+		return nil, apperrors.ErrInvalidToken.WithDetails("Token sudah digunakan")
+	}
+
+	// Check expiration
+	if time.Now().After(pending.ExpiresAt) {
+		return nil, apperrors.ErrTokenExpired.WithDetails("Token sudah expired. Silakan login ulang.")
+	}
+
+	// Mark as used
+	now := time.Now()
+	if err := s.db.Model(&pending).Update("used_at", now).Error; err != nil {
+		logger.Error("Failed to mark pending token as used", zap.Error(err))
+	}
+
+	// Get user
+	var user models.User
+	if err := s.db.First(&user, pending.UserID).Error; err != nil {
+		return nil, apperrors.ErrUserNotFound
+	}
+
+	return &user, nil
+}
+
+// CompleteTOTPLogin completes login after TOTP verification
+func (s *AuthService) CompleteTOTPLogin(pendingToken, totpCode string, ipAddress, userAgent string) (*LoginResponse, error) {
+	// Validate pending token and get user
+	user, err := s.validateTOTPPendingToken(pendingToken)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify TOTP is still enabled (in case it was disabled between steps)
+	if !user.IsTOTPEnabled() {
+		return nil, apperrors.NewAppError("TOTP_NOT_ENABLED", "2FA tidak lagi aktif. Silakan login ulang.", 400)
+	}
+
+	// Check if account is locked
+	var lock models.SessionLock
+	if err := s.db.Where("user_id = ?", user.ID).Order("created_at DESC").First(&lock).Error; err == nil {
+		if lock.IsLocked() {
+			return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04"))
+		}
+	}
+
+	// Initialize TOTP service and verify code
+	totpService := NewTOTPService(s.db, logger.GetLogger())
+	valid, err := totpService.Verify(user.ID, totpCode)
+	if err != nil {
+		return nil, err
+	}
+	if !valid {
+		return nil, apperrors.NewAppError("TOTP_INVALID_CODE", "Kode 2FA tidak valid", 401)
+	}
+
+	// Create session with token pair
+	sessionService := NewSessionService(s.db)
+	tokenPair, err := sessionService.CreateSession(user, ipAddress, userAgent)
+	if err != nil {
+		return nil, err
+	}
+
+	username := ""
+	if user.Username != nil {
+		username = *user.Username
+	}
+
+	logger.Info("User completed TOTP login",
+		zap.Uint("user_id", user.ID),
+		zap.String("email", user.Email),
+		zap.String("ip", ipAddress))
+
+	return &LoginResponse{
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
+		ExpiresIn:    tokenPair.ExpiresIn,
+		Email:        user.Email,
+		Username:     username,
+		FullName:     user.FullName,
+		RequiresTOTP: false,
+	}, nil
+}
+
+// CompleteTOTPLoginWithBackupCode completes login using a backup code
+func (s *AuthService) CompleteTOTPLoginWithBackupCode(pendingToken, backupCode string, ipAddress, userAgent string) (*LoginResponse, error) {
+	// Validate pending token and get user
+	user, err := s.validateTOTPPendingToken(pendingToken)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify TOTP is still enabled
+	if !user.IsTOTPEnabled() {
+		return nil, apperrors.NewAppError("TOTP_NOT_ENABLED", "2FA tidak lagi aktif. Silakan login ulang.", 400)
+	}
+
+	// Check if account is locked
+	var lock models.SessionLock
+	if err := s.db.Where("user_id = ?", user.ID).Order("created_at DESC").First(&lock).Error; err == nil {
+		if lock.IsLocked() {
+			return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04"))
+		}
+	}
+
+	// Initialize TOTP service and verify backup code
+	totpService := NewTOTPService(s.db, logger.GetLogger())
+	valid, err := totpService.VerifyBackupCode(user.ID, backupCode)
+	if err != nil {
+		return nil, err
+	}
+	if !valid {
+		return nil, apperrors.NewAppError("BACKUP_CODE_INVALID", "Backup code tidak valid", 401)
+	}
+
+	// Create session with token pair
+	sessionService := NewSessionService(s.db)
+	tokenPair, err := sessionService.CreateSession(user, ipAddress, userAgent)
+	if err != nil {
+		return nil, err
+	}
+
+	username := ""
+	if user.Username != nil {
+		username = *user.Username
+	}
+
+	logger.Info("User completed login with backup code",
+		zap.Uint("user_id", user.ID),
+		zap.String("email", user.Email),
+		zap.String("ip", ipAddress))
+
+	return &LoginResponse{
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
+		ExpiresIn:    tokenPair.ExpiresIn,
+		Email:        user.Email,
+		Username:     username,
+		FullName:     user.FullName,
+		RequiresTOTP: false,
+	}, nil
 }

@@ -126,10 +126,12 @@ func main() {
 	authService := services.NewAuthService(database.DB)
 	sessionService := services.NewSessionService(database.DB)
 	threadService := services.NewThreadService(database.DB)
+	totpService := services.NewTOTPService(database.DB, logger.GetLogger())
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, sessionService)
 	threadHandler := handlers.NewThreadHandler(threadService)
+	totpHandler := handlers.NewTOTPHandler(totpService, logger.GetLogger())
 	walletHandler := handlers.NewWalletHandler()
 	transferHandler := handlers.NewTransferHandler()
 	disputeHandler := handlers.NewDisputeHandler()
@@ -157,6 +159,8 @@ func main() {
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/login/totp", authHandler.LoginTOTP)
+			auth.POST("/login/backup-code", authHandler.LoginBackupCode)
 			auth.POST("/refresh", authHandler.RefreshToken)
 			auth.POST("/logout", authHandler.Logout)
 			auth.POST("/logout-all", middleware.AuthMiddleware(), authHandler.LogoutAll)
@@ -167,6 +171,19 @@ func main() {
 			auth.POST("/forgot-password", authHandler.ForgotPassword)
 			auth.POST("/reset-password", authHandler.ResetPassword)
 			auth.POST("/username", middleware.AuthMiddleware(), handlers.CreateUsernameHandler)
+
+			// TOTP / 2FA routes
+			totp := auth.Group("/totp")
+			totp.Use(middleware.AuthMiddleware())
+			{
+				totp.GET("/status", totpHandler.GetStatus)
+				totp.POST("/setup", totpHandler.Setup)
+				totp.POST("/verify", totpHandler.Verify)
+				totp.POST("/verify-code", totpHandler.VerifyCode)
+				totp.POST("/disable", totpHandler.Disable)
+				totp.POST("/backup-codes", totpHandler.GenerateBackupCodes)
+				totp.GET("/backup-codes/count", totpHandler.GetBackupCodeCount)
+			}
 		}
 
 		account := api.Group("/account")
