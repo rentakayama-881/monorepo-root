@@ -339,7 +339,46 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	// 1. Delete thread chunks (RAG index) for user's threads
+	// 1. Revoke all active sessions (access/refresh) and sudo sessions
+	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Session{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mencabut sesi aktif"})
+		return
+	}
+	if err := tx.Where("user_id = ?", user.ID).Delete(&models.SessionLock{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus kunci sesi"})
+		return
+	}
+	if err := tx.Where("user_id = ?", user.ID).Delete(&models.SudoSession{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus sesi sudo"})
+		return
+	}
+
+	// 2. Delete authentication artifacts (passkeys, backup codes, verification tokens)
+	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Passkey{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus passkey"})
+		return
+	}
+	if err := tx.Where("user_id = ?", user.ID).Delete(&models.BackupCode{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus backup code"})
+		return
+	}
+	if err := tx.Where("user_id = ?", user.ID).Delete(&models.EmailVerificationToken{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus token verifikasi email"})
+		return
+	}
+	if err := tx.Where("user_id = ?", user.ID).Delete(&models.PasswordResetToken{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus token reset password"})
+		return
+	}
+
+	// 3. Delete thread chunks (RAG index) for user's threads
 	if err := tx.Exec(`
 		DELETE FROM thread_chunks 
 		WHERE thread_id IN (SELECT id FROM threads WHERE user_id = ?)
@@ -349,70 +388,63 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	// 2. Delete all user's threads
+	// 4. Delete all user's threads
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Thread{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus thread"})
 		return
 	}
 
-	// 3. Delete user badges
+	// 5. Delete user badges
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.UserBadge{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus badge"})
 		return
 	}
 
-	// 4. Delete wallet transactions
+	// 6. Delete wallet transactions
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.WalletTransaction{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus riwayat transaksi"})
 		return
 	}
 
-	// 5. Delete deposits
+	// 7. Delete deposits
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Deposit{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus riwayat deposit"})
 		return
 	}
 
-	// 6. Delete withdrawals
+	// 8. Delete withdrawals
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Withdrawal{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus riwayat withdrawal"})
 		return
 	}
 
-	// 7. Delete dispute messages by user
+	// 9. Delete dispute messages by user
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.DisputeMessage{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus pesan dispute"})
 		return
 	}
 
-	// 8. Delete dispute evidence by user
+	// 10. Delete dispute evidence by user
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.DisputeEvidence{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus bukti dispute"})
 		return
 	}
 
-	// 9. Delete user wallet
+	// 11. Delete user wallet
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.UserWallet{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus wallet"})
 		return
 	}
 
-	// 10. Delete user badges
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.UserBadge{}).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus badges"})
-		return
-	}
-
-	// 11. Delete user (finally)
+	// 12. Delete user (finally)
 	if err := tx.Delete(user).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus akun"})

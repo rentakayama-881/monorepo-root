@@ -13,6 +13,8 @@ import { maskEmail } from "@/lib/email";
 import TOTPSettings from "@/components/TOTPSettings";
 import PasskeySettings from "@/components/PasskeySettings";
 import { useSudoAction } from "@/components/SudoModal";
+import { clearToken } from "@/lib/auth";
+import { getValidToken } from "@/lib/tokenRefresh";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -457,7 +459,7 @@ function DeleteAccountSection({ API, router }) {
   const [totpEnabled, setTotpEnabled] = useState(null);
   const [checkingTOTP, setCheckingTOTP] = useState(false);
 
-  function handleOpenModal() {
+  async function handleOpenModal() {
     if (deleteConfirmation !== "DELETE") return;
     setShowModal(true);
     setDeletePassword("");
@@ -466,14 +468,25 @@ function DeleteAccountSection({ API, router }) {
     setCheckingTOTP(true);
     
     // Check TOTP status when modal opens
-    const t = localStorage.getItem("token");
-    fetch(`${API}/auth/totp/status`, {
-      headers: { Authorization: `Bearer ${t}` },
-    })
-      .then(res => res.ok ? res.json() : Promise.reject())
-      .then(data => setTotpEnabled(data.enabled))
-      .catch(() => setTotpEnabled(false))
-      .finally(() => setCheckingTOTP(false));
+    try {
+      const t = await getValidToken();
+      if (!t) {
+        setTotpEnabled(false);
+        setDeleteError("Sesi berakhir. Silakan login kembali.");
+        return;
+      }
+      const res = await fetch(`${API}/auth/totp/status`, {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      if (!res.ok) throw new Error("Gagal mengecek status 2FA");
+      const data = await res.json();
+      setTotpEnabled(data.enabled);
+    } catch (err) {
+      setTotpEnabled(false);
+      if (err?.message) setDeleteError(err.message);
+    } finally {
+      setCheckingTOTP(false);
+    }
   }
 
   function handleCloseModal() {
@@ -490,7 +503,10 @@ function DeleteAccountSection({ API, router }) {
     setDeleteLoading(true);
     
     try {
-      const t = localStorage.getItem("token");
+      const t = await getValidToken();
+      if (!t) {
+        throw new Error("Sesi berakhir. Silakan login kembali.");
+      }
       const res = await fetch(`${API}/account`, {
         method: "DELETE",
         headers: {
@@ -508,10 +524,14 @@ function DeleteAccountSection({ API, router }) {
         throw new Error(data.error || "Gagal menghapus akun");
       }
       // Clean logout
-      localStorage.removeItem("token");
+      clearToken();
       localStorage.removeItem("sudo_token");
       localStorage.removeItem("sudo_expires");
-      router.push("/");
+      setShowModal(false);
+      setDeleteConfirmation("");
+      setDeletePassword("");
+      setTotpCode("");
+      router.replace("/");
     } catch (err) {
       setDeleteError(err.message);
     } finally {
