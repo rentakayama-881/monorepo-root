@@ -167,14 +167,14 @@ func (s *AuthService) Register(input validators.RegisterInput) (*RegisterRespons
 
 // LoginResponse represents login response
 type LoginResponse struct {
-	AccessToken  string
-	RefreshToken string
-	ExpiresIn    int64
-	Email        string
-	Username     string
-	FullName     *string
-	RequiresTOTP bool   // True if 2FA is required to complete login
-	TOTPPending  string // Temporary token for TOTP verification
+	AccessToken  string  `json:"access_token"`
+	RefreshToken string  `json:"refresh_token"`
+	ExpiresIn    int64   `json:"expires_in"`
+	Email        string  `json:"email"`
+	Username     string  `json:"username"`
+	FullName     *string `json:"full_name,omitempty"`
+	RequiresTOTP bool    `json:"requires_totp"`
+	TOTPPending  string  `json:"totp_pending,omitempty"`
 }
 
 // LoginWithSession authenticates a user and creates a session with token pair

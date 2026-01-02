@@ -318,7 +318,8 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	clientIP := c.ClientIP()
 
 	// Generate tokens using auth service
-	response, err := h.authService.LoginWithPasskey(user, userAgent, clientIP)
+	// Signature: LoginWithPasskey(user *User, ipAddress, userAgent string)
+	response, err := h.authService.LoginWithPasskey(user, clientIP, userAgent)
 	if err != nil {
 		h.handleError(c, err)
 		return

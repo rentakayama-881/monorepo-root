@@ -1,34 +1,85 @@
+# ============================================
+# Alephdraad - Root .gitignore
+# Go Backend + Next.js Frontend Monorepo
+# ============================================
+
+# -------------------- Dependencies --------------------
 **/node_modules/
+/vendor/
+go.work
+go.work.sum
+
+# -------------------- Build Outputs --------------------
+# Next.js
 **/.next/
+**/out/
 **/dist/
 **/build/
+.vercel
+.turbo
+
+# Go binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/backend/app
+/backend/server
+/backend/backend
+/backend/backend-gin
+__debug_bin*
+
+# -------------------- Environment --------------------
 .env
 .env.*
 !.env.example
+!.env.*.example
+*.local
 
-# IDE
+# -------------------- IDE & Editors --------------------
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
+*.sublime-workspace
+*.sublime-project
 
-# OS
+# -------------------- Operating System --------------------
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Logs
+# -------------------- Logs --------------------
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# Coverage
+# -------------------- Test & Coverage --------------------
 coverage/
+*.cover
+*.out
+.nyc_output/
 
-# Build outputs
-*.exe
-*.dll
-*.so
-*.dylib
+# -------------------- Security --------------------
+*.pem
+*.key
+*.crt
+*.p12
 
-# User uploaded files (stored in Supabase)
-backend/public/avatars/*
-!backend/public/avatars/.gitkeep
+# -------------------- Temporary Files --------------------
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# -------------------- Uploads (stored in Supabase) --------------------
+/backend/public/avatars/*
+!/backend/public/avatars/.gitkeep
+/uploads/

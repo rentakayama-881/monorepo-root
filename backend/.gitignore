@@ -1,14 +1,24 @@
+# ============================================
+# Backend-specific .gitignore
+# (Root .gitignore handles common patterns)
+# ============================================
+
+# Environment
 .env
 
-# Build outputs
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+# Go binary outputs (named builds)
+app
+server
 backend
 backend-gin
-app
+
+# Air live reload
+tmp/
+
+# Test files
+*.test
+coverage.txt
+coverage.html
 
 # User uploads (stored in Supabase)
 public/avatars/*
