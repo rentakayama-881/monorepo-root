@@ -29,6 +29,3 @@ coverage/
 *.so
 *.dylib
 
-# User uploaded files (stored in Supabase)
-backend/public/avatars/*
-!backend/public/avatars/.gitkeep

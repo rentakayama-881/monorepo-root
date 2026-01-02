@@ -64,7 +64,7 @@ func buildCORSConfig() cors.Config {
 
 	frontend := strings.TrimSpace(os.Getenv("FRONTEND_BASE_URL"))
 	if frontend == "" {
-		frontend = "https://monorepo-root-dun.vercel.app"
+		frontend = "https:alephdraad.fun"
 	}
 
 	allowedOriginsEnv := os.Getenv("CORS_ALLOWED_ORIGINS")
@@ -116,7 +116,7 @@ func main() {
 	logger.InitLogger()
 	defer func() { _ = logger.Log.Sync() }()
 
-	logger.Info("Starting Ballerina Backend Server")
+	logger.Info("Starting Alephdraad Backend Server")
 
 	// Initialize database
 	database.InitDB()
