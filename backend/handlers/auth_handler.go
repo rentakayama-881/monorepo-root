@@ -116,6 +116,20 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// Check if TOTP verification is required
+	if response.RequiresTOTP {
+		c.JSON(http.StatusOK, gin.H{
+			"requires_totp":  true,
+			"totp_pending":   response.TOTPPending,
+			"user": gin.H{
+				"email":     response.Email,
+				"username":  response.Username,
+				"full_name": response.FullName,
+			},
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"access_token":  response.AccessToken,
 		"refresh_token": response.RefreshToken,
@@ -345,4 +359,78 @@ func (h *AuthHandler) RevokeSession(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Session berhasil dicabut"})
+}
+
+// LoginTOTP completes login with TOTP code after password verification
+// POST /api/auth/login/totp
+func (h *AuthHandler) LoginTOTP(c *gin.Context) {
+	if !h.loginLimiter.Allow(c.ClientIP()) {
+		handleError(c, apperrors.ErrTooManyRequests)
+		return
+	}
+
+	var req struct {
+		TOTPPending string `json:"totp_pending" binding:"required"`
+		Code        string `json:"code" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Debug("Invalid TOTP login request", zap.Error(err))
+		handleError(c, apperrors.ErrInvalidInput.WithDetails("Format request tidak valid"))
+		return
+	}
+
+	response, err := h.authService.CompleteTOTPLogin(req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"))
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  response.AccessToken,
+		"refresh_token": response.RefreshToken,
+		"expires_in":    response.ExpiresIn,
+		"token_type":    "Bearer",
+		"user": gin.H{
+			"email":     response.Email,
+			"username":  response.Username,
+			"full_name": response.FullName,
+		},
+	})
+}
+
+// LoginBackupCode completes login with backup code after password verification
+// POST /api/auth/login/backup-code
+func (h *AuthHandler) LoginBackupCode(c *gin.Context) {
+	if !h.loginLimiter.Allow(c.ClientIP()) {
+		handleError(c, apperrors.ErrTooManyRequests)
+		return
+	}
+
+	var req struct {
+		TOTPPending string `json:"totp_pending" binding:"required"`
+		Code        string `json:"code" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Debug("Invalid backup code login request", zap.Error(err))
+		handleError(c, apperrors.ErrInvalidInput.WithDetails("Format request tidak valid"))
+		return
+	}
+
+	response, err := h.authService.CompleteTOTPLoginWithBackupCode(req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"))
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  response.AccessToken,
+		"refresh_token": response.RefreshToken,
+		"expires_in":    response.ExpiresIn,
+		"token_type":    "Bearer",
+		"user": gin.H{
+			"email":     response.Email,
+			"username":  response.Username,
+			"full_name": response.FullName,
+		},
+	})
 }
