@@ -127,11 +127,35 @@ func main() {
 	sessionService := services.NewSessionService(database.DB)
 	threadService := services.NewThreadService(database.DB)
 	totpService := services.NewTOTPService(database.DB, logger.GetLogger())
+	sudoService := services.NewSudoService(database.DB, logger.GetLogger(), totpService)
+
+	// Initialize passkey service with WebAuthn config
+	rpID := os.Getenv("WEBAUTHN_RP_ID")
+	if rpID == "" {
+		rpID = "localhost"
+	}
+	rpOrigin := os.Getenv("WEBAUTHN_RP_ORIGIN")
+	if rpOrigin == "" {
+		rpOrigin = strings.TrimSpace(os.Getenv("FRONTEND_BASE_URL"))
+		if rpOrigin == "" {
+			rpOrigin = "http://localhost:3000"
+		}
+	}
+	rpName := os.Getenv("WEBAUTHN_RP_NAME")
+	if rpName == "" {
+		rpName = "Alephdraad"
+	}
+	passkeyService, err := services.NewPasskeyService(database.DB, logger.GetLogger(), rpID, rpOrigin, rpName)
+	if err != nil {
+		logger.Fatal("Failed to initialize passkey service", zap.Error(err))
+	}
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, sessionService)
 	threadHandler := handlers.NewThreadHandler(threadService)
 	totpHandler := handlers.NewTOTPHandler(totpService, logger.GetLogger())
+	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authService, logger.GetLogger())
+	sudoHandler := handlers.NewSudoHandler(sudoService, logger.GetLogger())
 	walletHandler := handlers.NewWalletHandler()
 	transferHandler := handlers.NewTransferHandler()
 	disputeHandler := handlers.NewDisputeHandler()
@@ -184,6 +208,34 @@ func main() {
 				totp.POST("/backup-codes", totpHandler.GenerateBackupCodes)
 				totp.GET("/backup-codes/count", totpHandler.GetBackupCodeCount)
 			}
+
+			// Passkey / WebAuthn routes
+			passkeys := auth.Group("/passkeys")
+			{
+				// Public endpoints (for login)
+				passkeys.POST("/check", passkeyHandler.CheckPasskeys)
+				passkeys.POST("/login/begin", passkeyHandler.BeginLogin)
+				passkeys.POST("/login/finish", passkeyHandler.FinishLogin)
+
+				// Protected endpoints (for registration/management)
+				passkeys.Use(middleware.AuthMiddleware())
+				passkeys.GET("/status", passkeyHandler.GetStatus)
+				passkeys.GET("", passkeyHandler.ListPasskeys)
+				passkeys.POST("/register/begin", passkeyHandler.BeginRegistration)
+				passkeys.POST("/register/finish", passkeyHandler.FinishRegistration)
+				passkeys.DELETE("/:id", passkeyHandler.DeletePasskey)
+				passkeys.PUT("/:id/name", passkeyHandler.RenamePasskey)
+			}
+
+			// Sudo mode routes (re-authentication for critical actions)
+			sudo := auth.Group("/sudo")
+			sudo.Use(middleware.AuthMiddleware())
+			{
+				sudo.POST("/verify", sudoHandler.Verify)
+				sudo.GET("/status", sudoHandler.GetStatus)
+				sudo.POST("/extend", sudoHandler.Extend)
+				sudo.DELETE("", sudoHandler.Revoke)
+			}
 		}
 
 		account := api.Group("/account")
@@ -193,7 +245,8 @@ func main() {
 			account.POST("/change-username", middleware.AuthMiddleware(), handlers.ChangeUsernamePaidHandler)
 			account.PUT("/avatar", middleware.AuthMiddleware(), handlers.UploadAvatarHandler)
 			account.DELETE("/avatar", middleware.AuthMiddleware(), handlers.DeleteAvatarHandler)
-			account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), handlers.DeleteAccountHandler)
+			// Delete account requires sudo mode
+			account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), middleware.RequireSudo(sudoService), handlers.DeleteAccountHandler)
 		}
 
 		user := api.Group("/user")
@@ -222,7 +275,8 @@ func main() {
 		{
 			wallet.GET("/balance", walletHandler.GetBalance)
 			wallet.POST("/pin/set", walletHandler.SetPIN)
-			wallet.POST("/pin/change", walletHandler.ChangePIN)
+			// Change PIN requires sudo mode
+			wallet.POST("/pin/change", middleware.RequireSudo(sudoService), walletHandler.ChangePIN)
 			wallet.POST("/pin/verify", walletHandler.VerifyPIN)
 			wallet.POST("/deposit", walletHandler.CreateDeposit)
 			wallet.GET("/deposits", walletHandler.GetDeposits)
@@ -233,7 +287,8 @@ func main() {
 		transfers := api.Group("/transfers")
 		transfers.Use(middleware.AuthMiddleware())
 		{
-			transfers.POST("", transferHandler.CreateTransfer)
+			// Create transfer requires sudo mode (sending money)
+			transfers.POST("", middleware.RequireSudo(sudoService), transferHandler.CreateTransfer)
 			transfers.GET("", transferHandler.GetMyTransfers)
 			transfers.GET("/pending/sent", transferHandler.GetPendingSentTransfers)
 			transfers.GET("/pending/received", transferHandler.GetPendingReceivedTransfers)
@@ -263,7 +318,8 @@ func main() {
 		withdrawals := api.Group("/withdrawals")
 		withdrawals.Use(middleware.AuthMiddleware())
 		{
-			withdrawals.POST("", withdrawalHandler.CreateWithdrawal)
+			// Create withdrawal requires sudo mode
+			withdrawals.POST("", middleware.RequireSudo(sudoService), withdrawalHandler.CreateWithdrawal)
 			withdrawals.GET("", withdrawalHandler.GetMyWithdrawals)
 			withdrawals.GET("/banks", withdrawalHandler.GetAvailableBanks)
 		}

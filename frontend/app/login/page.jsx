@@ -1,10 +1,41 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchJson, getApiBase } from "@/lib/api";
 import { setTokens } from "@/lib/auth";
+
+// Helper to convert ArrayBuffer to Base64URL
+function bufferToBase64URL(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+// Helper to convert Base64URL to ArrayBuffer
+function base64URLToBuffer(base64url) {
+  const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+  const padLen = (4 - (base64.length % 4)) % 4;
+  const padded = base64 + "=".repeat(padLen);
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+// Check if WebAuthn is supported
+function isWebAuthnSupported() {
+  return typeof window !== "undefined" && !!(
+    window.PublicKeyCredential &&
+    typeof window.PublicKeyCredential === "function"
+  );
+}
 
 export default function LoginPage() {
   return (
@@ -28,13 +59,126 @@ function LoginForm() {
   const [totpCode, setTotpCode] = useState("");
   const [useBackupCode, setUseBackupCode] = useState(false);
 
+  // Passkey state
+  const [webAuthnSupported, setWebAuthnSupported] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+
   const registeredNotice = searchParams.get("registered") === "1";
   const sessionExpired = searchParams.get("session") === "expired";
+
+  useEffect(() => {
+    setWebAuthnSupported(isWebAuthnSupported());
+  }, []);
 
   const inputClass =
     "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
   const primaryButton =
     "w-full inline-flex justify-center items-center rounded-md bg-[rgb(var(--brand))] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]";
+  const secondaryButton =
+    "w-full inline-flex justify-center items-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm font-semibold text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))] disabled:opacity-60";
+
+  // Passkey login handler
+  async function onPasskeyLogin() {
+    if (!isWebAuthnSupported()) {
+      setError("Browser Anda tidak mendukung Passkey");
+      return;
+    }
+
+    setPasskeyLoading(true);
+    setError("");
+
+    try {
+      const API = getApiBase();
+
+      // 1. Begin login - get options (discoverable login, no email needed)
+      const beginRes = await fetch(`${API}/api/auth/passkeys/login/begin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}), // Empty for discoverable login
+      });
+
+      if (!beginRes.ok) {
+        const errData = await beginRes.json();
+        throw new Error(errData.error || "Gagal memulai login dengan passkey");
+      }
+
+      const { options, session_id } = await beginRes.json();
+      const publicKeyOptions = options.publicKey;
+
+      // Convert challenge from base64url to ArrayBuffer
+      publicKeyOptions.challenge = base64URLToBuffer(publicKeyOptions.challenge);
+
+      // Convert allowCredentials if present
+      if (publicKeyOptions.allowCredentials) {
+        publicKeyOptions.allowCredentials = publicKeyOptions.allowCredentials.map((cred) => ({
+          ...cred,
+          id: base64URLToBuffer(cred.id),
+        }));
+      }
+
+      // 2. Get credential using WebAuthn API
+      const credential = await navigator.credentials.get({
+        publicKey: publicKeyOptions,
+      });
+
+      if (!credential) {
+        throw new Error("Login dibatalkan");
+      }
+
+      // 3. Prepare response for server
+      const credentialForServer = {
+        id: credential.id,
+        rawId: bufferToBase64URL(credential.rawId),
+        type: credential.type,
+        response: {
+          authenticatorData: bufferToBase64URL(credential.response.authenticatorData),
+          clientDataJSON: bufferToBase64URL(credential.response.clientDataJSON),
+          signature: bufferToBase64URL(credential.response.signature),
+        },
+      };
+
+      // Add userHandle if present (for discoverable credentials)
+      if (credential.response.userHandle) {
+        credentialForServer.response.userHandle = bufferToBase64URL(credential.response.userHandle);
+      }
+
+      // 4. Finish login - send credential to server
+      const finishRes = await fetch(`${API}/api/auth/passkeys/login/finish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: session_id,
+          credential: credentialForServer,
+        }),
+      });
+
+      if (!finishRes.ok) {
+        const errData = await finishRes.json();
+        throw new Error(errData.error || "Gagal menyelesaikan login");
+      }
+
+      const data = await finishRes.json();
+
+      // Success - store tokens
+      setTokens(data.AccessToken || data.access_token, data.RefreshToken || data.refresh_token, data.ExpiresIn || data.expires_in);
+
+      // Check if user has username
+      const username = data.Username || data.username;
+      if (!username || username === "") {
+        router.replace("/set-username");
+      } else {
+        router.replace("/");
+      }
+    } catch (err) {
+      if (err.name === "NotAllowedError") {
+        setError("Login dibatalkan atau tidak diizinkan");
+      } else {
+        setError(err.message || "Gagal login dengan passkey");
+      }
+    } finally {
+      setPasskeyLoading(false);
+    }
+  }
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -225,6 +369,41 @@ function LoginForm() {
             {loading ? "Memproses..." : "Masuk"}
           </button>
         </form>
+
+        {/* Passkey Login Option */}
+        {webAuthnSupported && (
+          <>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[rgb(var(--border))]" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-[rgb(var(--surface))] px-2 text-[rgb(var(--muted))]">atau</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onPasskeyLogin}
+              disabled={passkeyLoading || loading}
+              className={secondaryButton}
+            >
+              {passkeyLoading ? (
+                <>
+                  <span className="inline-block h-4 w-4 mr-2 animate-spin rounded-full border-2 border-[rgb(var(--fg))] border-t-transparent" />
+                  Memverifikasi...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                  </svg>
+                  Masuk dengan Passkey
+                </>
+              )}
+            </button>
+          </>
+        )}
       </div>
 
       <div className="text-center text-sm text-[rgb(var(--muted))]">

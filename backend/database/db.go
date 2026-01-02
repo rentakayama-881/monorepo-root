@@ -85,6 +85,8 @@ func migrateAndSeed() {
 		&models.SessionLock{},
 		// TOTP / 2FA tables
 		&models.BackupCode{},
+		// Passkey / WebAuthn tables
+		&models.Passkey{},
 		// wallet & payment tables
 		&models.UserWallet{},
 		&models.Deposit{},
@@ -118,6 +120,26 @@ func migrateAndSeed() {
 		CREATE INDEX IF NOT EXISTS idx_totp_pending_tokens_token_hash ON totp_pending_tokens(token_hash);
 	`).Error; err != nil {
 		panic("Failed to create totp_pending_tokens table: " + err.Error())
+	}
+
+	// Migrate SudoSession table (defined in services package)
+	if err := DB.Exec(`
+		CREATE TABLE IF NOT EXISTS sudo_sessions (
+			id SERIAL PRIMARY KEY,
+			created_at TIMESTAMP DEFAULT NOW(),
+			updated_at TIMESTAMP DEFAULT NOW(),
+			deleted_at TIMESTAMP,
+			user_id INT NOT NULL,
+			token_hash TEXT NOT NULL UNIQUE,
+			expires_at TIMESTAMP NOT NULL,
+			ip_address TEXT,
+			user_agent TEXT
+		);
+		CREATE INDEX IF NOT EXISTS idx_sudo_sessions_user_id ON sudo_sessions(user_id);
+		CREATE INDEX IF NOT EXISTS idx_sudo_sessions_token_hash ON sudo_sessions(token_hash);
+		CREATE INDEX IF NOT EXISTS idx_sudo_sessions_expires_at ON sudo_sessions(expires_at);
+	`).Error; err != nil {
+		panic("Failed to create sudo_sessions table: " + err.Error())
 	}
 
 	// Seed categories if empty

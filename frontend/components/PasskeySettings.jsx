@@ -1,0 +1,414 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { getApiBase } from "@/lib/api";
+
+// Helper to convert ArrayBuffer to Base64URL
+function bufferToBase64URL(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+// Helper to convert Base64URL to ArrayBuffer
+function base64URLToBuffer(base64url) {
+  const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+  const padLen = (4 - (base64.length % 4)) % 4;
+  const padded = base64 + "=".repeat(padLen);
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+// Check if WebAuthn is supported
+function isWebAuthnSupported() {
+  return !!(
+    window.PublicKeyCredential &&
+    typeof window.PublicKeyCredential === "function"
+  );
+}
+
+export default function PasskeySettings() {
+  const [loading, setLoading] = useState(true);
+  const [passkeys, setPasskeys] = useState([]);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [registering, setRegistering] = useState(false);
+  const [deleting, setDeleting] = useState(null);
+  const [renaming, setRenaming] = useState(null);
+  const [newName, setNewName] = useState("");
+  const [webAuthnSupported, setWebAuthnSupported] = useState(true);
+
+  const API = `${getApiBase()}/api/auth/passkeys`;
+
+  const fetchPasskeys = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(API, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Gagal memuat passkeys");
+      const data = await res.json();
+      setPasskeys(data.passkeys || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [API]);
+
+  useEffect(() => {
+    setWebAuthnSupported(isWebAuthnSupported());
+    fetchPasskeys();
+  }, [fetchPasskeys]);
+
+  async function registerPasskey() {
+    if (!isWebAuthnSupported()) {
+      setError("Browser Anda tidak mendukung Passkey/WebAuthn");
+      return;
+    }
+
+    setRegistering(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const token = localStorage.getItem("token");
+
+      // 1. Begin registration - get options from server
+      const beginRes = await fetch(`${API}/register/begin`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!beginRes.ok) {
+        const errData = await beginRes.json();
+        throw new Error(errData.error || "Gagal memulai registrasi");
+      }
+      const { options } = await beginRes.json();
+
+      // 2. Convert options for WebAuthn API
+      const publicKeyOptions = options.publicKey;
+
+      // Convert challenge from base64url to ArrayBuffer
+      publicKeyOptions.challenge = base64URLToBuffer(publicKeyOptions.challenge);
+
+      // Convert user.id from base64url to ArrayBuffer
+      publicKeyOptions.user.id = base64URLToBuffer(publicKeyOptions.user.id);
+
+      // Convert excludeCredentials if present
+      if (publicKeyOptions.excludeCredentials) {
+        publicKeyOptions.excludeCredentials = publicKeyOptions.excludeCredentials.map((cred) => ({
+          ...cred,
+          id: base64URLToBuffer(cred.id),
+        }));
+      }
+
+      // 3. Create credential using WebAuthn API
+      const credential = await navigator.credentials.create({
+        publicKey: publicKeyOptions,
+      });
+
+      if (!credential) {
+        throw new Error("Registrasi dibatalkan");
+      }
+
+      // 4. Prepare response for server
+      const credentialForServer = {
+        id: credential.id,
+        rawId: bufferToBase64URL(credential.rawId),
+        type: credential.type,
+        response: {
+          attestationObject: bufferToBase64URL(credential.response.attestationObject),
+          clientDataJSON: bufferToBase64URL(credential.response.clientDataJSON),
+        },
+      };
+
+      // Add transports if available
+      if (credential.response.getTransports) {
+        credentialForServer.response.transports = credential.response.getTransports();
+      }
+
+      // Prompt for passkey name
+      const passkeyName = prompt("Beri nama untuk passkey ini:", "Passkey") || "Passkey";
+
+      // 5. Finish registration - send credential to server
+      const finishRes = await fetch(`${API}/register/finish`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: passkeyName,
+          credential: credentialForServer,
+        }),
+      });
+
+      if (!finishRes.ok) {
+        const errData = await finishRes.json();
+        throw new Error(errData.error || "Gagal menyelesaikan registrasi");
+      }
+
+      setSuccess("Passkey berhasil didaftarkan!");
+      fetchPasskeys();
+    } catch (err) {
+      if (err.name === "NotAllowedError") {
+        setError("Registrasi dibatalkan atau tidak diizinkan");
+      } else if (err.name === "InvalidStateError") {
+        setError("Passkey ini sudah terdaftar");
+      } else {
+        setError(err.message || "Gagal mendaftarkan passkey");
+      }
+    } finally {
+      setRegistering(false);
+    }
+  }
+
+  async function deletePasskey(id) {
+    if (!confirm("Hapus passkey ini? Anda tidak dapat login dengan passkey ini lagi.")) {
+      return;
+    }
+
+    setDeleting(id);
+    setError("");
+    setSuccess("");
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API}/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Gagal menghapus passkey");
+      }
+      setSuccess("Passkey berhasil dihapus");
+      fetchPasskeys();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  async function renamePasskey(id) {
+    if (!newName.trim()) {
+      setError("Nama tidak boleh kosong");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API}/${id}/name`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newName.trim() }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Gagal mengubah nama");
+      }
+      setSuccess("Nama passkey berhasil diubah");
+      setRenaming(null);
+      setNewName("");
+      fetchPasskeys();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function getTransportIcon(transports) {
+    if (!transports || transports.length === 0) return "🔐";
+    if (transports.includes("internal")) return "📱"; // Built-in (fingerprint, face)
+    if (transports.includes("usb")) return "🔑"; // Security key
+    if (transports.includes("nfc")) return "📶"; // NFC
+    if (transports.includes("ble")) return "📡"; // Bluetooth
+    return "🔐";
+  }
+
+  if (!webAuthnSupported) {
+    return (
+      <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
+        <h3 className="text-sm font-medium text-[rgb(var(--fg))] flex items-center gap-2">
+          🔐 Passkeys
+        </h3>
+        <div className="mt-3 p-3 rounded-md bg-[rgb(var(--warning-bg))] border border-[rgb(var(--warning-border))]">
+          <p className="text-sm text-[rgb(var(--warning))]">
+            Browser Anda tidak mendukung Passkey/WebAuthn. Gunakan browser modern seperti Chrome, Firefox, Safari, atau Edge versi terbaru.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-[rgb(var(--fg))] flex items-center gap-2">
+          🔐 Passkeys
+        </h3>
+        <span className="text-xs text-[rgb(var(--muted))]">
+          {passkeys.length} terdaftar
+        </span>
+      </div>
+
+      <p className="mt-2 text-xs text-[rgb(var(--muted))]">
+        Passkeys memungkinkan Anda login tanpa password menggunakan fingerprint, face ID, atau security key.
+      </p>
+
+      {error && (
+        <div className="mt-3 p-2 rounded-md bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] text-sm text-[rgb(var(--error))]">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="mt-3 p-2 rounded-md bg-[rgb(var(--success-bg))] border border-[rgb(var(--success-border))] text-sm text-[rgb(var(--success))]">
+          {success}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="mt-4 flex items-center gap-2 text-sm text-[rgb(var(--muted))]">
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[rgb(var(--border))] border-t-[rgb(var(--fg))]" />
+          Memuat...
+        </div>
+      ) : (
+        <>
+          {/* Passkey List */}
+          {passkeys.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {passkeys.map((pk) => (
+                <div
+                  key={pk.id}
+                  className="flex items-center justify-between p-3 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl" title={pk.transports?.join(", ") || "Unknown"}>
+                      {getTransportIcon(pk.transports)}
+                    </span>
+                    <div>
+                      {renaming === pk.id ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            className="w-32 px-2 py-1 text-sm rounded border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--fg))]"
+                            placeholder="Nama baru"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => renamePasskey(pk.id)}
+                            className="text-xs text-[rgb(var(--brand))] hover:underline"
+                          >
+                            Simpan
+                          </button>
+                          <button
+                            onClick={() => {
+                              setRenaming(null);
+                              setNewName("");
+                            }}
+                            className="text-xs text-[rgb(var(--muted))] hover:underline"
+                          >
+                            Batal
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium text-[rgb(var(--fg))]">{pk.name}</p>
+                          <p className="text-xs text-[rgb(var(--muted))]">
+                            Dibuat: {formatDate(pk.created_at)}
+                            {pk.last_used_at && ` • Terakhir: ${formatDate(pk.last_used_at)}`}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {renaming !== pk.id && (
+                      <>
+                        <button
+                          onClick={() => {
+                            setRenaming(pk.id);
+                            setNewName(pk.name);
+                          }}
+                          className="text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline"
+                        >
+                          Ubah nama
+                        </button>
+                        <button
+                          onClick={() => deletePasskey(pk.id)}
+                          disabled={deleting === pk.id}
+                          className="text-xs text-[rgb(var(--error))] hover:underline disabled:opacity-50"
+                        >
+                          {deleting === pk.id ? "Menghapus..." : "Hapus"}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Register Button */}
+          <div className="mt-4">
+            <button
+              onClick={registerPasskey}
+              disabled={registering}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-[rgb(var(--brand))] text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {registering ? (
+                <>
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Mendaftarkan...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Tambah Passkey
+                </>
+              )}
+            </button>
+          </div>
+
+          {passkeys.length === 0 && (
+            <p className="mt-3 text-xs text-[rgb(var(--muted))]">
+              Belum ada passkey terdaftar. Tambahkan passkey untuk login lebih aman dan mudah.
+            </p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}

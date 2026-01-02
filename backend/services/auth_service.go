@@ -330,6 +330,53 @@ func (s *AuthService) Login(input validators.LoginInput) (*LoginResponse, error)
 	}, nil
 }
 
+// User type alias for models.User (used by passkey handler)
+type User = models.User
+
+// LoginWithPasskey creates a session for a user authenticated via passkey
+// This skips password and TOTP checks since passkey already verified the user
+func (s *AuthService) LoginWithPasskey(user *User, ipAddress, userAgent string) (*LoginResponse, error) {
+	// Check if account is locked
+	var lock models.SessionLock
+	if err := s.db.Where("user_id = ?", user.ID).Order("created_at DESC").First(&lock).Error; err == nil {
+		if lock.IsLocked() {
+			return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04"))
+		}
+	}
+
+	// Check email verification
+	if !user.EmailVerified {
+		return nil, apperrors.ErrEmailNotVerified
+	}
+
+	username := ""
+	if user.Username != nil {
+		username = *user.Username
+	}
+
+	// Create session with token pair (passkey login bypasses TOTP)
+	sessionService := NewSessionService(s.db)
+	tokenPair, err := sessionService.CreateSession(user, ipAddress, userAgent)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info("User logged in via passkey",
+		zap.Uint("user_id", user.ID),
+		zap.String("email", user.Email),
+		zap.String("ip", ipAddress))
+
+	return &LoginResponse{
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
+		ExpiresIn:    tokenPair.ExpiresIn,
+		Email:        user.Email,
+		Username:     username,
+		FullName:     user.FullName,
+		RequiresTOTP: false,
+	}, nil
+}
+
 // RequestVerification requests a new verification email
 func (s *AuthService) RequestVerification(email string) (string, string, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
