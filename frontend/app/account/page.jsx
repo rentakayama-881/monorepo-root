@@ -417,10 +417,15 @@ export default function AccountPage() {
             <h3 className="text-sm font-medium text-[rgb(var(--fg))]">Username</h3>
             <div className="mt-1 text-sm text-[rgb(var(--fg))]">Saat ini: <b>{username || "(belum ada)"}</b></div>
             <div className="mt-3 p-3 rounded-md bg-[rgb(var(--muted))]/10 border border-[rgb(var(--border))]">
-              <p className="text-sm text-[rgb(var(--muted))]">
-                <span className="font-medium">🚧 Segera Hadir</span><br/>
-                Fitur ganti username berbayar (Rp 100.000) akan tersedia dalam waktu dekat.
-              </p>
+              <div className="flex items-start gap-2">
+                <svg className="h-4 w-4 text-[rgb(var(--fg))]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <p className="text-sm text-[rgb(var(--muted))]">
+                  <span className="font-medium">Segera Hadir</span><br/>
+                  Fitur ganti username berbayar (Rp 100.000) akan tersedia dalam waktu dekat.
+                </p>
+              </div>
             </div>
           </section>
 
@@ -567,8 +572,8 @@ function DeleteAccountSection({ API, router }) {
                 Konfirmasi Hapus Akun
               </h3>
               <p className="mt-1 text-sm text-[rgb(var(--muted))]">
-                Masukkan password dan kode 2FA untuk menghapus akun secara pp-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-          <div className="w-full max-w-md rounded-lg bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 shadow-2
+                Masukkan password dan kode 2FA untuk menghapus akun secara permanen.
+              </p>
             </div>
 
             <div className="p-4 space-y-4">
