@@ -474,37 +474,43 @@ export default function AccountPage() {
 
 // Separate component for delete account
 function DeleteAccountSection({ API, router }) {
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [showModal, setShowModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [totpCode, setTotpCode] = useState("");
-  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [totpEnabled, setTotpEnabled] = useState(null);
-  const [checkingTOTP, setCheckingTOTP] = useState(true);
+  const [checkingTOTP, setCheckingTOTP] = useState(false);
 
-  // Check TOTP status on mount
-  useEffect(() => {
-    async function checkTOTPStatus() {
-      try {
-        const t = localStorage.getItem("token");
-        const res = await fetch(`${API}/auth/totp/status`, {
-          headers: { Authorization: `Bearer ${t}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setTotpEnabled(data.enabled);
-        }
-      } catch (err) {
-        console.error("Failed to check TOTP status:", err);
-      } finally {
-        setCheckingTOTP(false);
-      }
-    }
-    checkTOTPStatus();
-  }, [API]);
+  function handleOpenModal() {
+    if (deleteConfirmation !== "DELETE") return;
+    setShowModal(true);
+    setDeletePassword("");
+    setTotpCode("");
+    setDeleteError("");
+    setCheckingTOTP(true);
+    
+    // Check TOTP status when modal opens
+    const t = localStorage.getItem("token");
+    fetch(`${API}/auth/totp/status`, {
+      headers: { Authorization: `Bearer ${t}` },
+    })
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(data => setTotpEnabled(data.enabled))
+      .catch(() => setTotpEnabled(false))
+      .finally(() => setCheckingTOTP(false));
+  }
+
+  function handleCloseModal() {
+    setShowModal(false);
+    setDeletePassword("");
+    setTotpCode("");
+    setDeleteError("");
+  }
 
   async function handleDelete() {
-    if (deleteConfirmation !== "DELETE" || !deletePassword || totpCode.length !== 6) return;
+    if (!deletePassword || totpCode.length !== 6) return;
     
     setDeleteError("");
     setDeleteLoading(true);
@@ -540,27 +546,19 @@ function DeleteAccountSection({ API, router }) {
   }
 
   return (
-    <section className="rounded-lg border-2 border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] p-4">
-      <h3 className="text-sm font-medium text-[rgb(var(--error))] flex items-center gap-2">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-        </svg>
-        Zona Berbahaya
-      </h3>
-      <p className="mt-2 text-xs text-[rgb(var(--error))]/80">
-        Menghapus akun akan menghapus semua data Anda secara permanen termasuk semua thread yang pernah dibuat. 
-        Aksi ini tidak dapat dibatalkan.
-      </p>
-      
-      {checkingTOTP ? (
-        <div className="mt-4 flex items-center justify-center py-4">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[rgb(var(--error))]"></div>
-        </div>
-      ) : totpEnabled === false ? (
-        <div className="mt-4">
-          <Alert type="warning" message="Anda harus mengaktifkan 2FA (Two-Factor Authentication) terlebih dahulu sebelum dapat menghapus akun. Silakan aktifkan 2FA di bagian Keamanan di atas." />
-        </div>
-      ) : (
+    <>
+      <section className="rounded-lg border-2 border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] p-4">
+        <h3 className="text-sm font-medium text-[rgb(var(--error))] flex items-center gap-2">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          Zona Berbahaya
+        </h3>
+        <p className="mt-2 text-xs text-[rgb(var(--error))]/80">
+          Menghapus akun akan menghapus semua data Anda secara permanen termasuk semua thread yang pernah dibuat. 
+          Aksi ini tidak dapat dibatalkan.
+        </p>
+        
         <div className="mt-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
@@ -573,41 +571,12 @@ function DeleteAccountSection({ API, router }) {
               onChange={e => setDeleteConfirmation(e.target.value)}
             />
           </div>
-
-          <div>
-            <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
-              Password
-            </label>
-            <Input
-              type="password"
-              placeholder="Masukkan password Anda"
-              value={deletePassword}
-              onChange={e => setDeletePassword(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
-              Kode 2FA (TOTP)
-            </label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              placeholder="000000"
-              maxLength={6}
-              value={totpCode}
-              onChange={e => setTotpCode(e.target.value.replace(/\D/g, ""))}
-            />
-          </div>
-          
-          {deleteError && <Alert type="error" message={deleteError} />}
           
           <Button
             variant="danger"
             className="w-full disabled:opacity-50"
-            disabled={deleteLoading || deleteConfirmation !== "DELETE" || !deletePassword || totpCode.length !== 6}
-            loading={deleteLoading}
-            onClick={handleDelete}
+            disabled={deleteConfirmation !== "DELETE"}
+            onClick={handleOpenModal}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -615,7 +584,88 @@ function DeleteAccountSection({ API, router }) {
             Hapus Akun Permanen
           </Button>
         </div>
+      </section>
+
+      {/* Delete Confirmation Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-[rgb(var(--card))] border border-[rgb(var(--border))] shadow-xl">
+            <div className="p-4 border-b border-[rgb(var(--border))]">
+              <h3 className="text-lg font-semibold text-[rgb(var(--error))] flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                Konfirmasi Hapus Akun
+              </h3>
+              <p className="mt-1 text-sm text-[rgb(var(--muted))]">
+                Masukkan password dan kode 2FA untuk menghapus akun secara permanen
+              </p>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {checkingTOTP ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--primary))]"></div>
+                </div>
+              ) : totpEnabled === false ? (
+                <Alert type="warning" message="Anda harus mengaktifkan 2FA (Two-Factor Authentication) terlebih dahulu sebelum dapat menghapus akun. Silakan aktifkan 2FA di bagian Keamanan." />
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-1">
+                      Password
+                    </label>
+                    <Input
+                      type="password"
+                      placeholder="Masukkan password Anda"
+                      value={deletePassword}
+                      onChange={e => setDeletePassword(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-[rgb(var(--foreground))] mb-1">
+                      Kode 2FA (TOTP)
+                    </label>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="000000"
+                      maxLength={6}
+                      value={totpCode}
+                      onChange={e => setTotpCode(e.target.value.replace(/\D/g, ""))}
+                    />
+                  </div>
+
+                  {deleteError && <Alert type="error" message={deleteError} />}
+                </>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-[rgb(var(--border))] flex gap-3">
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={handleCloseModal}
+                disabled={deleteLoading}
+              >
+                Batal
+              </Button>
+              {totpEnabled !== false && !checkingTOTP && (
+                <Button
+                  variant="danger"
+                  className="flex-1 disabled:opacity-50"
+                  disabled={deleteLoading || !deletePassword || totpCode.length !== 6}
+                  loading={deleteLoading}
+                  onClick={handleDelete}
+                >
+                  Hapus Akun
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
-    </section>
+    </>
   );
 }
