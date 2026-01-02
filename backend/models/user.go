@@ -55,6 +55,9 @@ type Passkey struct {
 	LastUsedAt      *time.Time
 	// Transport hints (usb, nfc, ble, internal)
 	Transports datatypes.JSON `gorm:"type:jsonb"`
+	// Backup flags for WebAuthn credential consistency
+	BackupEligible bool `gorm:"default:false"` // BE flag - credential can be backed up
+	BackupState    bool `gorm:"default:false"` // BS flag - credential is currently backed up
 }
 
 // IsTOTPEnabled returns true if user has TOTP enabled
@@ -119,6 +122,11 @@ func (p *Passkey) ToWebAuthnCredential() webauthn.Credential {
 			SignCount: p.SignCount,
 		},
 		Transport: authTransports,
+		// Include Flags to fix BackupEligible inconsistency during login validation
+		Flags: webauthn.CredentialFlags{
+			BackupEligible: p.BackupEligible,
+			BackupState:    p.BackupState,
+		},
 	}
 }
 
