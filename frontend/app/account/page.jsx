@@ -474,13 +474,14 @@ export default function AccountPage() {
 
 // Separate component for delete account to use sudo hook
 function DeleteAccountSection({ API, router }) {
+  const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const { execute: executeSudo } = useSudoAction("Menghapus akun secara permanen");
 
   async function handleDelete() {
-    if (deleteConfirmation !== "DELETE") return;
+    if (deleteConfirmation !== "DELETE" || !deletePassword) return;
     
     setDeleteError("");
     setDeleteLoading(true);
@@ -497,6 +498,7 @@ function DeleteAccountSection({ API, router }) {
             "X-Sudo-Token": sudoToken,
           },
           body: JSON.stringify({
+            password: deletePassword,
             confirmation: deleteConfirmation,
           }),
         });
@@ -535,6 +537,18 @@ function DeleteAccountSection({ API, router }) {
       <div className="mt-4 space-y-3">
         <div>
           <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
+            Password
+          </label>
+          <Input
+            type="password"
+            placeholder="Masukkan password Anda"
+            value={deletePassword}
+            onChange={e => setDeletePassword(e.target.value)}
+          />
+        </div>
+        
+        <div>
+          <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
             Ketik <span className="font-mono font-bold">DELETE</span> untuk konfirmasi
           </label>
           <Input
@@ -550,7 +564,7 @@ function DeleteAccountSection({ API, router }) {
         <Button
           variant="danger"
           className="w-full disabled:opacity-50"
-          disabled={deleteLoading || deleteConfirmation !== "DELETE"}
+          disabled={deleteLoading || deleteConfirmation !== "DELETE" || !deletePassword}
           loading={deleteLoading}
           onClick={handleDelete}
         >
@@ -561,7 +575,7 @@ function DeleteAccountSection({ API, router }) {
         </Button>
         
         <p className="text-xs text-[rgb(var(--muted))] text-center">
-          Akan diminta verifikasi identitas sebelum menghapus
+          Akan diminta verifikasi 2FA sebelum menghapus
         </p>
       </div>
     </section>
