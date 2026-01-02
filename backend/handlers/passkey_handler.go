@@ -271,60 +271,81 @@ func (h *PasskeyHandler) BeginLogin(c *gin.Context) {
 
 // FinishLogin completes passkey login
 func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
+	h.logger.Info("[PASSKEY-HANDLER] FinishLogin started")
+	
 	var rawRequest struct {
 		Email      string          `json:"email"`
 		SessionID  string          `json:"session_id"`
 		Credential json.RawMessage `json:"credential"`
 	}
 	if err := c.ShouldBindJSON(&rawRequest); err != nil {
+		h.logger.Error("[PASSKEY-HANDLER] Invalid request body", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
+	h.logger.Info("[PASSKEY-HANDLER] Request parsed", 
+		zap.String("email", rawRequest.Email),
+		zap.String("session_id", rawRequest.SessionID),
+		zap.Int("credential_len", len(rawRequest.Credential)))
 
 	// Parse the credential
 	parsedResponse, err := protocol.ParseCredentialRequestResponseBody(
 		bytes.NewReader(rawRequest.Credential),
 	)
 	if err != nil {
-		h.logger.Error("Failed to parse credential", zap.Error(err))
+		h.logger.Error("[PASSKEY-HANDLER] Failed to parse credential", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid credential format"})
 		return
 	}
+	h.logger.Info("[PASSKEY-HANDLER] Credential parsed successfully")
 
 	var user *models.User
 	if rawRequest.SessionID != "" {
+		h.logger.Info("[PASSKEY-HANDLER] Using discoverable login")
 		// Discoverable login
 		u, err := h.passkeyService.FinishDiscoverableLogin(rawRequest.SessionID, parsedResponse)
 		if err != nil {
+			h.logger.Error("[PASSKEY-HANDLER] FinishDiscoverableLogin failed", zap.Error(err))
 			h.handleError(c, err)
 			return
 		}
 		user = u
 	} else if rawRequest.Email != "" {
+		h.logger.Info("[PASSKEY-HANDLER] Using email-based login")
 		// Non-discoverable login
 		u, err := h.passkeyService.FinishLogin(rawRequest.Email, parsedResponse)
 		if err != nil {
+			h.logger.Error("[PASSKEY-HANDLER] FinishLogin failed", zap.Error(err))
 			h.handleError(c, err)
 			return
 		}
 		user = u
 	} else {
+		h.logger.Error("[PASSKEY-HANDLER] No email or session_id provided")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email or session_id required"})
 		return
 	}
+
+	h.logger.Info("[PASSKEY-HANDLER] User authenticated", zap.Uint("user_id", user.ID))
 
 	// Get client info for session
 	userAgent := c.GetHeader("User-Agent")
 	clientIP := c.ClientIP()
 
+	h.logger.Info("[PASSKEY-HANDLER] Calling LoginWithPasskey", 
+		zap.String("ip", clientIP),
+		zap.String("user_agent", userAgent[:min(50, len(userAgent))]))
+
 	// Generate tokens using auth service
 	// Signature: LoginWithPasskey(user *User, ipAddress, userAgent string)
 	response, err := h.authService.LoginWithPasskey(user, clientIP, userAgent)
 	if err != nil {
+		h.logger.Error("[PASSKEY-HANDLER] LoginWithPasskey failed", zap.Error(err))
 		h.handleError(c, err)
 		return
 	}
 
+	h.logger.Info("[PASSKEY-HANDLER] Login successful")
 	c.JSON(http.StatusOK, response)
 }
 

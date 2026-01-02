@@ -237,23 +237,30 @@ func (s *PasskeyService) BeginDiscoverableLogin() (*protocol.CredentialAssertion
 
 // FinishLogin completes the WebAuthn login process
 func (s *PasskeyService) FinishLogin(email string, response *protocol.ParsedCredentialAssertionData) (*models.User, error) {
+	s.logger.Info("[PASSKEY-SVC] FinishLogin started", zap.String("email", email))
+	
 	var user models.User
 	if err := s.db.Preload("Passkeys").Where("email = ?", email).First(&user).Error; err != nil {
+		s.logger.Error("[PASSKEY-SVC] User not found", zap.Error(err))
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
+	s.logger.Info("[PASSKEY-SVC] User found", zap.Uint("user_id", user.ID), zap.Int("passkey_count", len(user.Passkeys)))
 
 	// Get session
 	sessionKey := fmt.Sprintf("login_%s", email)
 	session, ok := s.getSession(sessionKey)
 	if !ok {
+		s.logger.Error("[PASSKEY-SVC] Session not found", zap.String("session_key", sessionKey))
 		return nil, errors.New("login session expired or not found")
 	}
+	s.logger.Info("[PASSKEY-SVC] Session found")
 
 	credential, err := s.webauthn.ValidateLogin(&user, *session, response)
 	if err != nil {
-		s.logger.Error("Failed to validate login", zap.Error(err))
+		s.logger.Error("[PASSKEY-SVC] ValidateLogin failed", zap.Error(err))
 		return nil, fmt.Errorf("failed to validate login: %w", err)
 	}
+	s.logger.Info("[PASSKEY-SVC] ValidateLogin success")
 
 	// Update sign count for clone detection
 	if err := s.updateSignCount(credential.ID, credential.Authenticator.SignCount); err != nil {
@@ -274,17 +281,23 @@ func (s *PasskeyService) FinishLogin(email string, response *protocol.ParsedCred
 
 // FinishDiscoverableLogin completes a discoverable login
 func (s *PasskeyService) FinishDiscoverableLogin(sessionID string, response *protocol.ParsedCredentialAssertionData) (*models.User, error) {
+	s.logger.Info("[PASSKEY-SVC] FinishDiscoverableLogin started", zap.String("session_id", sessionID))
+	
 	// Get session
 	session, ok := s.getSession(sessionID)
 	if !ok {
+		s.logger.Error("[PASSKEY-SVC] Discoverable session not found", zap.String("session_id", sessionID))
 		return nil, errors.New("login session expired or not found")
 	}
+	s.logger.Info("[PASSKEY-SVC] Discoverable session found")
 
 	// Handler function to find user by credential
 	handler := func(rawID, userHandle []byte) (webauthn.User, error) {
+		s.logger.Info("[PASSKEY-SVC] Looking up credential", zap.Int("rawID_len", len(rawID)))
 		// Find passkey by credential ID
 		var passkey models.Passkey
 		if err := s.db.Where("credential_id = ?", rawID).First(&passkey).Error; err != nil {
+			s.logger.Error("[PASSKEY-SVC] Credential not found in DB", zap.Error(err))
 			return nil, fmt.Errorf("credential not found: %w", err)
 		}
 
