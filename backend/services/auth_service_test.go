@@ -150,7 +150,7 @@ func TestAuthService_Login_Success(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, loginResp)
-	assert.NotEmpty(t, loginResp.Token)
+	assert.NotEmpty(t, loginResp.AccessToken)
 	assert.Equal(t, "test@example.com", loginResp.Email)
 }
 

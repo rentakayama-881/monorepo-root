@@ -167,13 +167,81 @@ func (s *AuthService) Register(input validators.RegisterInput) (*RegisterRespons
 
 // LoginResponse represents login response
 type LoginResponse struct {
-	Token    string
-	Email    string
-	Username string
-	FullName *string
+	AccessToken  string
+	RefreshToken string
+	ExpiresIn    int64
+	Email        string
+	Username     string
+	FullName     *string
 }
 
-// Login authenticates a user
+// LoginWithSession authenticates a user and creates a session with token pair
+func (s *AuthService) LoginWithSession(input validators.LoginInput, ipAddress, userAgent string) (*LoginResponse, error) {
+	// Validate input
+	if err := input.Validate(); err != nil {
+		return nil, err
+	}
+
+	email := strings.TrimSpace(strings.ToLower(input.Email))
+
+	// Find user
+	var user models.User
+	if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			logger.Debug("Login attempt for non-existent user", zap.String("email", email))
+			return nil, apperrors.ErrInvalidCredentials
+		}
+		logger.Error("Failed to query user", zap.Error(err))
+		return nil, apperrors.ErrDatabase.WithDetails("Gagal memeriksa kredensial")
+	}
+
+	// Check if account is locked
+	var lock models.SessionLock
+	if err := s.db.Where("user_id = ?", user.ID).Order("created_at DESC").First(&lock).Error; err == nil {
+		if lock.IsLocked() {
+			return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04") + ". Hubungi admin untuk membuka.")
+		}
+	}
+
+	// Check password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
+		logger.Debug("Invalid password attempt", zap.String("email", email))
+		return nil, apperrors.ErrInvalidCredentials
+	}
+
+	// Check email verification
+	if !user.EmailVerified {
+		return nil, apperrors.ErrEmailNotVerified
+	}
+
+	// Create session with token pair
+	sessionService := NewSessionService(s.db)
+	tokenPair, err := sessionService.CreateSession(&user, ipAddress, userAgent)
+	if err != nil {
+		return nil, err
+	}
+
+	username := ""
+	if user.Username != nil {
+		username = *user.Username
+	}
+
+	logger.Info("User logged in successfully",
+		zap.Uint("user_id", user.ID),
+		zap.String("email", email),
+		zap.String("ip", ipAddress))
+
+	return &LoginResponse{
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
+		ExpiresIn:    tokenPair.ExpiresIn,
+		Email:        user.Email,
+		Username:     username,
+		FullName:     user.FullName,
+	}, nil
+}
+
+// Login authenticates a user (legacy - for backward compatibility)
 func (s *AuthService) Login(input validators.LoginInput) (*LoginResponse, error) {
 	// Validate input
 	if err := input.Validate(); err != nil {
@@ -193,6 +261,14 @@ func (s *AuthService) Login(input validators.LoginInput) (*LoginResponse, error)
 		return nil, apperrors.ErrDatabase.WithDetails("Gagal memeriksa kredensial")
 	}
 
+	// Check if account is locked
+	var lock models.SessionLock
+	if err := s.db.Where("user_id = ?", user.ID).Order("created_at DESC").First(&lock).Error; err == nil {
+		if lock.IsLocked() {
+			return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04"))
+		}
+	}
+
 	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
 		logger.Debug("Invalid password attempt", zap.String("email", email))
@@ -204,7 +280,7 @@ func (s *AuthService) Login(input validators.LoginInput) (*LoginResponse, error)
 		return nil, apperrors.ErrEmailNotVerified
 	}
 
-	// Generate JWT
+	// Generate JWT (legacy single token)
 	token, err := middleware.GenerateJWT(user.Email, 24*time.Hour)
 	if err != nil {
 		logger.Error("Failed to generate JWT", zap.Error(err), zap.Uint("user_id", user.ID))
@@ -221,10 +297,10 @@ func (s *AuthService) Login(input validators.LoginInput) (*LoginResponse, error)
 		zap.String("email", email))
 
 	return &LoginResponse{
-		Token:    token,
-		Email:    user.Email,
-		Username: username,
-		FullName: user.FullName,
+		AccessToken: token,
+		Email:       user.Email,
+		Username:    username,
+		FullName:    user.FullName,
 	}, nil
 }
 

@@ -80,6 +80,9 @@ func migrateAndSeed() {
 		&models.Thread{},
 		&models.EmailVerificationToken{},
 		&models.PasswordResetToken{},
+		// Session & security tables
+		&models.Session{},
+		&models.SessionLock{},
 		// wallet & payment tables
 		&models.UserWallet{},
 		&models.Deposit{},

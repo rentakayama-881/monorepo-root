@@ -4,10 +4,12 @@ import (
 	"net/http"
 	"time"
 
+	"backend-gin/database"
 	"backend-gin/dto"
 	apperrors "backend-gin/errors"
 	"backend-gin/logger"
 	"backend-gin/middleware"
+	"backend-gin/models"
 	"backend-gin/services"
 	"backend-gin/validators"
 
@@ -18,18 +20,22 @@ import (
 // AuthHandler handles authentication HTTP requests
 type AuthHandler struct {
 	authService     *services.AuthService
+	sessionService  *services.SessionService
 	loginLimiter    *middleware.RateLimiter
 	registerLimiter *middleware.RateLimiter
 	verifyLimiter   *middleware.RateLimiter
+	refreshLimiter  *middleware.RateLimiter
 }
 
 // NewAuthHandler creates a new auth handler
-func NewAuthHandler(authService *services.AuthService) *AuthHandler {
+func NewAuthHandler(authService *services.AuthService, sessionService *services.SessionService) *AuthHandler {
 	return &AuthHandler{
 		authService:     authService,
+		sessionService:  sessionService,
 		loginLimiter:    middleware.NewRateLimiter(10, time.Minute),
 		registerLimiter: middleware.NewRateLimiter(6, time.Minute),
 		verifyLimiter:   middleware.NewRateLimiter(10, time.Minute),
+		refreshLimiter:  middleware.NewRateLimiter(30, time.Minute),
 	}
 }
 
@@ -103,14 +109,18 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		Password: req.Password,
 	}
 
-	response, err := h.authService.Login(input)
+	// Use new session-based login
+	response, err := h.authService.LoginWithSession(input, c.ClientIP(), c.GetHeader("User-Agent"))
 	if err != nil {
 		handleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"token": response.Token,
+		"access_token":  response.AccessToken,
+		"refresh_token": response.RefreshToken,
+		"expires_in":    response.ExpiresIn,
+		"token_type":    "Bearer",
 		"user": gin.H{
 			"email":     response.Email,
 			"username":  response.Username,
@@ -212,4 +222,127 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Password berhasil direset. Silakan login dengan password baru.",
 	})
+}
+
+// RefreshToken handles token refresh with rotation
+// POST /api/auth/refresh
+func (h *AuthHandler) RefreshToken(c *gin.Context) {
+	if !h.refreshLimiter.Allow(c.ClientIP()) {
+		handleError(c, apperrors.ErrTooManyRequests)
+		return
+	}
+
+	var req dto.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleError(c, apperrors.ErrInvalidInput.WithDetails("Refresh token wajib diisi"))
+		return
+	}
+
+	tokenPair, err := h.sessionService.RefreshSession(req.RefreshToken, c.ClientIP(), c.GetHeader("User-Agent"))
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  tokenPair.AccessToken,
+		"refresh_token": tokenPair.RefreshToken,
+		"expires_in":    tokenPair.ExpiresIn,
+		"token_type":    tokenPair.TokenType,
+	})
+}
+
+// Logout revokes the current session
+// POST /api/auth/logout
+func (h *AuthHandler) Logout(c *gin.Context) {
+	var req dto.LogoutRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// Allow logout without body for backward compatibility
+		c.JSON(http.StatusOK, gin.H{"message": "Berhasil logout"})
+		return
+	}
+
+	if req.RefreshToken != "" {
+		// Find and revoke session by refresh token
+		_ = h.sessionService.RevokeSessionByRefreshToken(req.RefreshToken, "User logout")
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Berhasil logout"})
+}
+
+// LogoutAll revokes all sessions for the current user
+// POST /api/auth/logout-all
+func (h *AuthHandler) LogoutAll(c *gin.Context) {
+	userIfc, ok := c.Get("user")
+	if !ok {
+		handleError(c, apperrors.ErrUnauthorized)
+		return
+	}
+	user := userIfc.(*models.User)
+
+	if err := h.sessionService.RevokeAllUserSessions(user.ID, "User requested logout from all devices"); err != nil {
+		handleError(c, apperrors.ErrInternalServer)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Berhasil logout dari semua perangkat"})
+}
+
+// GetActiveSessions returns all active sessions for the current user
+// GET /api/auth/sessions
+func (h *AuthHandler) GetActiveSessions(c *gin.Context) {
+	userIfc, ok := c.Get("user")
+	if !ok {
+		handleError(c, apperrors.ErrUnauthorized)
+		return
+	}
+	user := userIfc.(*models.User)
+
+	sessions, err := h.sessionService.GetActiveSessions(user.ID)
+	if err != nil {
+		handleError(c, apperrors.ErrInternalServer)
+		return
+	}
+
+	// Map to safe response (don't expose token hashes)
+	var response []gin.H
+	for _, s := range sessions {
+		response = append(response, gin.H{
+			"id":           s.ID,
+			"ip_address":   s.IPAddress,
+			"user_agent":   s.UserAgent,
+			"created_at":   s.CreatedAt,
+			"last_used_at": s.LastUsedAt,
+			"expires_at":   s.ExpiresAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"sessions": response})
+}
+
+// RevokeSession revokes a specific session
+// DELETE /api/auth/sessions/:id
+func (h *AuthHandler) RevokeSession(c *gin.Context) {
+	userIfc, ok := c.Get("user")
+	if !ok {
+		handleError(c, apperrors.ErrUnauthorized)
+		return
+	}
+	user := userIfc.(*models.User)
+
+	sessionID := c.Param("id")
+
+	// Verify session belongs to user
+	var session models.Session
+	if err := database.DB.Where("id = ? AND user_id = ?", sessionID, user.ID).First(&session).Error; err != nil {
+		handleError(c, apperrors.ErrSessionInvalid)
+		return
+	}
+
+	if err := h.sessionService.RevokeSession(session.ID, "User revoked session"); err != nil {
+		handleError(c, apperrors.ErrInternalServer)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Session berhasil dicabut"})
 }

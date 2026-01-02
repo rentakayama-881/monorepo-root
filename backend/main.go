@@ -124,10 +124,11 @@ func main() {
 
 	// Initialize services
 	authService := services.NewAuthService(database.DB)
+	sessionService := services.NewSessionService(database.DB)
 	threadService := services.NewThreadService(database.DB)
 
 	// Initialize handlers
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(authService, sessionService)
 	threadHandler := handlers.NewThreadHandler(threadService)
 	walletHandler := handlers.NewWalletHandler()
 	transferHandler := handlers.NewTransferHandler()
@@ -156,6 +157,11 @@ func main() {
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/refresh", authHandler.RefreshToken)
+			auth.POST("/logout", authHandler.Logout)
+			auth.POST("/logout-all", middleware.AuthMiddleware(), authHandler.LogoutAll)
+			auth.GET("/sessions", middleware.AuthMiddleware(), authHandler.GetActiveSessions)
+			auth.DELETE("/sessions/:id", middleware.AuthMiddleware(), authHandler.RevokeSession)
 			auth.POST("/verify/request", authHandler.RequestVerification)
 			auth.POST("/verify/confirm", authHandler.ConfirmVerification)
 			auth.POST("/forgot-password", authHandler.ForgotPassword)

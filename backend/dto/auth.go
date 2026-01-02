@@ -30,3 +30,13 @@ type ResetPasswordRequest struct {
 	Token       string `json:"token" binding:"required"`
 	NewPassword string `json:"new_password" binding:"required"`
 }
+
+// RefreshTokenRequest for token refresh
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+// LogoutRequest for logout (optional refresh token)
+type LogoutRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}

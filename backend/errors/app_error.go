@@ -43,10 +43,13 @@ var (
 	ErrEmailNotVerified      = NewAppError("AUTH002", "Email belum terverifikasi. Silakan cek inbox email Anda.", http.StatusForbidden)
 	ErrEmailAlreadyExists    = NewAppError("AUTH003", "Email ini sudah terdaftar dan terverifikasi. Silakan login.", http.StatusBadRequest)
 	ErrUsernameAlreadyExists = NewAppError("AUTH004", "Username sudah digunakan. Silakan pilih username lain.", http.StatusConflict)
-	ErrInvalidToken          = NewAppError("AUTH005", "Token tidak valid atau sudah kedaluwarsa", http.StatusBadRequest)
-	ErrTokenExpired          = NewAppError("AUTH006", "Token sudah kedaluwarsa", http.StatusBadRequest)
+	ErrInvalidToken          = NewAppError("AUTH005", "Token tidak valid atau sudah kedaluwarsa", http.StatusUnauthorized)
+	ErrTokenExpired          = NewAppError("AUTH006", "Token sudah kedaluwarsa", http.StatusUnauthorized)
 	ErrWeakPassword          = NewAppError("AUTH007", "Password terlalu lemah. Gunakan minimal 8 karakter.", http.StatusBadRequest)
 	ErrInvalidEmail          = NewAppError("AUTH008", "Format email tidak valid", http.StatusBadRequest)
+	ErrAccountLocked         = NewAppError("AUTH009", "Akun terkunci karena aktivitas mencurigakan", http.StatusForbidden)
+	ErrSessionInvalid        = NewAppError("AUTH010", "Session tidak valid atau sudah dicabut", http.StatusUnauthorized)
+	ErrSessionExpired        = NewAppError("AUTH011", "Session sudah berakhir, silakan login kembali", http.StatusUnauthorized)
 
 	// User errors
 	ErrUserNotFound     = NewAppError("USER001", "Pengguna tidak ditemukan", http.StatusNotFound)
