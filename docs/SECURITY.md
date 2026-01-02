@@ -227,32 +227,7 @@ hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.Defaul
 
 ---
 
-## 9. Smart Contract Security
-
-### Escrow Signature Verification
-
-Backend menandatangani order creation dengan EIP-191:
-
-```go
-signature := crypto.Sign(hash, BackendSignerPrivateKey)
-```
-
-Factory contract memverifikasi signature sebelum deploy escrow:
-
-```solidity
-address signer = ECDSA.recover(hash, signature);
-require(signer == backendSigner, "Invalid signature");
-```
-
-### Escrow Protection
-
-- Funds locked until delivery/dispute resolution
-- Time-locked refund untuk buyer protection
-- Arbitration dengan multi-sig voting
-
----
-
-## 10. Security Checklist
+## 9. Security Checklist
 
 ### Development
 

@@ -390,10 +390,10 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	// 10. Delete user credentials
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Credential{}).Error; err != nil {
+	// 10. Delete user badges
+	if err := tx.Where("user_id = ?", user.ID).Delete(&models.UserBadge{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus kredensial"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus badges"})
 		return
 	}
 

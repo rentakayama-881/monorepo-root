@@ -75,7 +75,6 @@ func migrateAndSeed() {
 	// Auto-migrate all models
 	if err := DB.AutoMigrate(
 		&models.User{},
-		&models.Credential{},
 		&models.Category{},
 		&models.Thread{},
 		&models.EmailVerificationToken{},

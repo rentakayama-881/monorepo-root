@@ -125,7 +125,6 @@ func main() {
 	// Initialize services
 	authService := services.NewAuthService(database.DB)
 	sessionService := services.NewSessionService(database.DB)
-	threadService := services.NewThreadService(database.DB)
 	totpService := services.NewTOTPService(database.DB, logger.GetLogger())
 	sudoService := services.NewSudoService(database.DB, logger.GetLogger(), totpService)
 
@@ -152,7 +151,6 @@ func main() {
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, sessionService)
-	threadHandler := handlers.NewThreadHandler(threadService)
 	totpHandler := handlers.NewTOTPHandler(totpService, logger.GetLogger())
 	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authService, logger.GetLogger())
 	sudoHandler := handlers.NewSudoHandler(sudoService, logger.GetLogger())
@@ -162,7 +160,7 @@ func main() {
 	withdrawalHandler := handlers.NewWithdrawalHandler()
 
 	// Verify all handlers are properly initialized
-	if authHandler == nil || threadHandler == nil {
+	if authHandler == nil {
 		logger.Fatal("Failed to initialize handlers")
 	}
 

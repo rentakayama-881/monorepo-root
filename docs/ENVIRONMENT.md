@@ -108,12 +108,12 @@ DATABASE_URL=postgresql://postgres:password@localhost:5432/alephdraad_dev
 
 # Auth
 JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
+ADMIN_JWT_SECRET=your-admin-jwt-secret-minimum-32-characters
 
-# Blockchain
-CHAIN_ID=137
-RPC_URL=https://polygon-mainnet.g.alchemy.com/v2/your-key
-BACKEND_SIGNER_PRIVATE_KEY=0xYourPrivateKeyHex
-ESCROW_FACTORY_ADDRESS=0xYourFactoryAddress
+# WebAuthn/Passkeys
+WEBAUTHN_RP_ID=localhost
+WEBAUTHN_RP_ORIGIN=http://localhost:3000
+WEBAUTHN_RP_NAME=Alephdraad
 
 # Email
 RESEND_API_KEY=re_your_resend_key
@@ -135,8 +135,7 @@ LOG_LEVEL=debug
 
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:8080
-NEXT_PUBLIC_ESCROW_FACTORY=0xYourFactoryAddress
-NEXT_PUBLIC_CHAIN_ID=137
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 ---
@@ -145,6 +144,7 @@ NEXT_PUBLIC_CHAIN_ID=137
 
 1. **Never commit** `.env` files to version control
 2. Use platform secrets management (Render, Vercel, etc.)
-3. `BACKEND_SIGNER_PRIVATE_KEY` adalah sensitif - simpan dengan aman
-4. Set `DB_SSLMODE=require` di production
-5. Gunakan HTTPS untuk semua URLs di production
+3. Set `DB_SSLMODE=require` di production
+4. Gunakan HTTPS untuk semua URLs di production
+5. For passkeys: `WEBAUTHN_RP_ID` should match your domain (e.g., `alephdraad.fun`)
+6. For passkeys: `WEBAUTHN_RP_ORIGIN` should be your full frontend URL (e.g., `https://www.alephdraad.fun`)

@@ -97,7 +97,6 @@ GORM AutoMigrate berjalan otomatis saat server start. Models yang di-migrate:
 monorepo-root/
 ├── backend/          # Go API server
 ├── frontend/         # Next.js web app
-├── contracts/        # Solidity smart contracts
 └── docs/             # Documentation
 ```
 
