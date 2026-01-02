@@ -25,8 +25,6 @@ export default function AccountPage() {
   const [socials, setSocials] = useState([{ label: "", url: "" }]);
   const [form, setForm] = useState({ full_name: "", bio: "", pronouns: "", company: "", telegram: "" });
   const [username, setUsername] = useState("");
-  const [newUsername, setNewUsername] = useState("");
-  const [chgLoading, setChgLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("");
@@ -189,25 +187,6 @@ export default function AccountPage() {
       if (!r.ok) throw new Error(await r.text() || "Gagal menyimpan akun");
       setOk("Akun diperbarui.");
     } catch (e) { setError(String(e.message || e)); }
-  }
-
-  async function changeUsername() {
-    setError(""); setOk(""); setChgLoading(true);
-    try {
-      if (!newUsername) throw new Error("Masukkan username baru");
-      const t = localStorage.getItem("token");
-      const r = await fetch(`${API}/account/change-username`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
-        body: JSON.stringify({ new_username: newUsername }),
-      });
-      const txt = await r.text();
-      if (!r.ok) throw new Error(txt || "Gagal mengganti username");
-      const data = JSON.parse(txt);
-      setOk(`Username diubah menjadi ${data.new_username}.`);
-      setUsername(data.new_username);
-      setNewUsername("");
-    } catch (e) { setError(String(e.message || e)); } finally { setChgLoading(false); }
   }
 
   if (!authed) return (
@@ -437,21 +416,11 @@ export default function AccountPage() {
           <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
             <h3 className="text-sm font-medium text-[rgb(var(--fg))]">Username</h3>
             <div className="mt-1 text-sm text-[rgb(var(--fg))]">Saat ini: <b>{username || "(belum ada)"}</b></div>
-            <div className="mt-1 text-xs text-[rgb(var(--muted))]">Ganti username berbayar Rp.100.000. Saldo IDR akan dipotong otomatis.</div>
-            <div className="mt-2 flex gap-2">
-              <Input
-                placeholder="Username baru"
-                value={newUsername}
-                onChange={e => setNewUsername(e.target.value)}
-                className=""
-              />
-              <Button
-                onClick={changeUsername}
-                loading={chgLoading}
-                disabled={chgLoading}
-              >
-                Ganti Username
-              </Button>
+            <div className="mt-3 p-3 rounded-md bg-[rgb(var(--muted))]/10 border border-[rgb(var(--border))]">
+              <p className="text-sm text-[rgb(var(--muted))]">
+                <span className="font-medium">🚧 Segera Hadir</span><br/>
+                Fitur ganti username berbayar (Rp 100.000) akan tersedia dalam waktu dekat.
+              </p>
             </div>
           </section>
 
@@ -598,8 +567,8 @@ function DeleteAccountSection({ API, router }) {
                 Konfirmasi Hapus Akun
               </h3>
               <p className="mt-1 text-sm text-[rgb(var(--muted))]">
-                Masukkan password dan kode 2FA untuk menghapus akun secara permanen
-              </p>
+                Masukkan password dan kode 2FA untuk menghapus akun secara pp-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <div className="w-full max-w-md rounded-lg bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 shadow-2
             </div>
 
             <div className="p-4 space-y-4">

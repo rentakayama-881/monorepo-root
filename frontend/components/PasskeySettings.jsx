@@ -245,19 +245,38 @@ export default function PasskeySettings() {
   }
 
   function getTransportIcon(transports) {
-    if (!transports || transports.length === 0) return "🔐";
-    if (transports.includes("internal")) return "📱"; // Built-in (fingerprint, face)
-    if (transports.includes("usb")) return "🔑"; // Security key
-    if (transports.includes("nfc")) return "📶"; // NFC
-    if (transports.includes("ble")) return "📡"; // Bluetooth
-    return "🔐";
+    const KeyIcon = (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+      </svg>
+    );
+    const PhoneIcon = (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+      </svg>
+    );
+    const WirelessIcon = (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0M12.53 18.22l-.53.53-.53-.53a.75.75 0 011.06 0z" />
+      </svg>
+    );
+    
+    if (!transports || transports.length === 0) return KeyIcon;
+    if (transports.includes("internal")) return PhoneIcon; // Built-in (fingerprint, face)
+    if (transports.includes("usb")) return KeyIcon; // Security key
+    if (transports.includes("nfc")) return WirelessIcon; // NFC
+    if (transports.includes("ble")) return WirelessIcon; // Bluetooth
+    return KeyIcon;
   }
 
   if (!webAuthnSupported) {
     return (
       <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
         <h3 className="text-sm font-medium text-[rgb(var(--fg))] flex items-center gap-2">
-          🔐 Passkeys
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+          </svg>
+          Passkeys
         </h3>
         <div className="mt-3 p-3 rounded-md bg-[rgb(var(--warning-bg))] border border-[rgb(var(--warning-border))]">
           <p className="text-sm text-[rgb(var(--warning))]">
@@ -272,7 +291,10 @@ export default function PasskeySettings() {
     <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-[rgb(var(--fg))] flex items-center gap-2">
-          🔐 Passkeys
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+          </svg>
+          Passkeys
         </h3>
         <span className="text-xs text-[rgb(var(--muted))]">
           {passkeys.length} terdaftar
