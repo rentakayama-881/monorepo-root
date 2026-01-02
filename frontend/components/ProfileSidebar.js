@@ -3,7 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { getApiBase } from "../lib/api";
-import { clearToken, getToken } from "@/lib/auth";
+import { clearToken, getToken, getRefreshToken } from "@/lib/auth";
+import { fetchWithAuth } from "@/lib/tokenRefresh";
 import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
 import { maskEmail } from "@/lib/email";
 
@@ -26,15 +27,13 @@ export default function ProfileSidebar({ onClose }) {
       }
       setIsLoading(true);
       try {
-        // Load user data
-        const res = await fetch(`${getApiBase()}/api/user/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Load user data with automatic token refresh
+        const res = await fetchWithAuth(`${getApiBase()}/api/user/me`);
         if (res.status === 401) {
           // Session expired - clear and redirect
           clearToken();
           onClose?.();
-          window.location.href = "/login";
+          window.location.href = "/login?session=expired";
           return;
         }
         if (!res.ok) throw new Error("failed");
@@ -45,11 +44,9 @@ export default function ProfileSidebar({ onClose }) {
           avatar_url: data.avatar_url || "",
         });
         
-        // Load wallet balance
+        // Load wallet balance with automatic token refresh
         try {
-          const walletRes = await fetch(`${getApiBase()}/api/wallet/balance`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const walletRes = await fetchWithAuth(`${getApiBase()}/api/wallet/balance`);
           if (walletRes.ok) {
             const walletData = await walletRes.json();
             if (!cancelled) {
@@ -98,7 +95,24 @@ export default function ProfileSidebar({ onClose }) {
     };
   }, [onClose]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Call logout API to invalidate server-side session
+    const token = getToken();
+    const refreshToken = getRefreshToken();
+    if (token && refreshToken) {
+      try {
+        await fetch(`${getApiBase()}/api/auth/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+      } catch (e) {
+        // Ignore errors, we'll clear local tokens anyway
+      }
+    }
     clearToken();
     window.location.href = "/login";
   };
