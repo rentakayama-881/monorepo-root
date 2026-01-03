@@ -317,8 +317,14 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	userAgent := c.GetHeader("User-Agent")
 	clientIP := c.ClientIP()
 
-	// Generate tokens using auth service
-	response, err := h.authService.LoginWithPasskey(user, userAgent, clientIP)
+	h.logger.Info("Passkey login user info",
+		zap.Uint("user_id", user.ID),
+		zap.String("email", user.Email),
+		zap.Bool("email_verified", user.EmailVerified),
+	)
+
+	// Generate tokens using auth service (correct order: user, ipAddress, userAgent)
+	response, err := h.authService.LoginWithPasskey(user, clientIP, userAgent)
 	if err != nil {
 		h.handleError(c, err)
 		return

@@ -23,9 +23,9 @@ type PasskeyService struct {
 	webauthn *webauthn.WebAuthn
 	// In-memory session store for WebAuthn ceremonies
 	// In production, use Redis or database
-	sessionStore     map[string]*webauthn.SessionData
-	sessionStoreMu   sync.RWMutex
-	sessionTTL       time.Duration
+	sessionStore   map[string]*webauthn.SessionData
+	sessionStoreMu sync.RWMutex
+	sessionTTL     time.Duration
 }
 
 // NewPasskeyService creates a new PasskeyService
