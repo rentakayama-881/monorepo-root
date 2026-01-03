@@ -336,6 +336,13 @@ type User = models.User
 // LoginWithPasskey creates a session for a user authenticated via passkey
 // This skips password and TOTP checks since passkey already verified the user
 func (s *AuthService) LoginWithPasskey(user *User, ipAddress, userAgent string) (*LoginResponse, error) {
+	logger.Info("LoginWithPasskey called",
+		zap.Uint("user_id", user.ID),
+		zap.String("email", user.Email),
+		zap.Bool("email_verified", user.EmailVerified),
+		zap.String("ip", ipAddress),
+	)
+
 	// Check if account is locked
 	var lock models.SessionLock
 	if err := s.db.Where("user_id = ?", user.ID).Order("created_at DESC").First(&lock).Error; err == nil {
@@ -344,10 +351,28 @@ func (s *AuthService) LoginWithPasskey(user *User, ipAddress, userAgent string) 
 		}
 	}
 
-	// Check email verification
-	if !user.EmailVerified {
+	// Check email verification - re-fetch from DB to ensure fresh data
+	var freshUser models.User
+	if err := s.db.First(&freshUser, user.ID).Error; err != nil {
+		logger.Error("Failed to fetch fresh user data", zap.Error(err))
+		return nil, apperrors.ErrInternalServer
+	}
+
+	logger.Info("Fresh user data from DB",
+		zap.Uint("user_id", freshUser.ID),
+		zap.Bool("email_verified", freshUser.EmailVerified),
+	)
+
+	if !freshUser.EmailVerified {
+		logger.Warn("Email not verified for passkey login",
+			zap.Uint("user_id", freshUser.ID),
+			zap.String("email", freshUser.Email),
+		)
 		return nil, apperrors.ErrEmailNotVerified
 	}
+
+	// Use fresh user data
+	user = &freshUser
 
 	username := ""
 	if user.Username != nil {
