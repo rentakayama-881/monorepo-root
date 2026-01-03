@@ -51,6 +51,8 @@ type Passkey struct {
 	AttestationType string `gorm:"not null"`                        // Attestation type (none, direct, etc)
 	AAGUID          []byte `gorm:"type:bytea"`                      // Authenticator Attestation GUID
 	SignCount       uint32 `gorm:"not null;default:0"`              // Signature counter for clone detection
+	BackupEligible  bool   `gorm:"not null;default:false"`          // Whether credential can be backed up
+	BackupState     bool   `gorm:"not null;default:false"`          // Whether credential is currently backed up
 	Name            string `gorm:"not null;default:'Passkey'"`      // User-friendly name
 	LastUsedAt      *time.Time
 	// Transport hints (usb, nfc, ble, internal)
@@ -119,6 +121,10 @@ func (p *Passkey) ToWebAuthnCredential() webauthn.Credential {
 			SignCount: p.SignCount,
 		},
 		Transport: authTransports,
+		Flags: webauthn.CredentialFlags{
+			BackupEligible: p.BackupEligible,
+			BackupState:    p.BackupState,
+		},
 	}
 }
 

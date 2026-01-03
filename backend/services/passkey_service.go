@@ -168,7 +168,7 @@ func (s *PasskeyService) FinishRegistration(userID uint, name string, response *
 		name = "Passkey"
 	}
 
-	// Create passkey record
+	// Create passkey record with backup flags from credential
 	passkey := &models.Passkey{
 		UserID:          userID,
 		CredentialID:    credential.ID,
@@ -176,6 +176,8 @@ func (s *PasskeyService) FinishRegistration(userID uint, name string, response *
 		AttestationType: credential.AttestationType,
 		AAGUID:          credential.Authenticator.AAGUID,
 		SignCount:       credential.Authenticator.SignCount,
+		BackupEligible:  credential.Flags.BackupEligible,
+		BackupState:     credential.Flags.BackupState,
 		Name:            name,
 		Transports:      datatypes.JSON(transportsJSON),
 	}

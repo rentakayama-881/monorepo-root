@@ -150,16 +150,20 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [requiresTOTP, setRequiresTOTP] = useState(initialRequiresTOTP);
+  const [requiresTOTP, setRequiresTOTP] = useState(initialRequiresTOTP || false);
   const [checking, setChecking] = useState(true);
 
   // Check sudo status on mount
   useEffect(() => {
     async function checkStatus() {
       setChecking(true);
-      const status = await onCheckStatus();
-      if (status) {
-        setRequiresTOTP(status.requires_totp);
+      try {
+        const status = await onCheckStatus();
+        if (status && typeof status.requires_totp === 'boolean') {
+          setRequiresTOTP(status.requires_totp);
+        }
+      } catch (err) {
+        console.error("Failed to check sudo status:", err);
       }
       setChecking(false);
     }
