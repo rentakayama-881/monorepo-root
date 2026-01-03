@@ -1,21 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Alert from "../../components/ui/Alert";
 import Select from "../../components/ui/Select";
 import { BadgeChip } from "../../components/ui/Badge";
 import Avatar from "../../components/ui/Avatar";
-import { getApiBase } from "@/lib/api";
+import { getApiBase, fetchJsonAuth } from "@/lib/api";
 import { maskEmail } from "@/lib/email";
 import TOTPSettings from "@/components/TOTPSettings";
 import PasskeySettings from "@/components/PasskeySettings";
 import { useSudoAction } from "@/components/SudoModal";
 
 export default function AccountPage() {
-  const router = useRouter();
   const API = `${getApiBase()}/api`;
   const authed = useMemo(() => { try { return !!localStorage.getItem("token"); } catch { return false; } }, []);
   const [loading, setLoading] = useState(true);
@@ -457,7 +455,7 @@ export default function AccountPage() {
           <PasskeySettings />
 
           {/* Zona Berbahaya - Delete Account */}
-          <DeleteAccountSection API={API} router={router} />
+          <DeleteAccountSection />
 
           {error && <Alert type="error" message={error} />}
           {ok && <Alert type="success" message={ok} />}
@@ -468,7 +466,7 @@ export default function AccountPage() {
 }
 
 // Separate component for delete account to use sudo hook
-function DeleteAccountSection({ API, router }) {
+function DeleteAccountSection() {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -483,17 +481,14 @@ function DeleteAccountSection({ API, router }) {
     try {
       // Request sudo mode dan langsung lakukan delete di dalam callback
       await executeSudo(async (sudoToken) => {
-        const t = localStorage.getItem("token");
-        
         if (!sudoToken) {
           throw new Error("Gagal mendapatkan token sudo");
         }
         
-        const res = await fetch(`${API}/account`, {
+        await fetchJsonAuth("/api/account", {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${t}`,
             "X-Sudo-Token": sudoToken,
           },
           body: JSON.stringify({
@@ -501,25 +496,13 @@ function DeleteAccountSection({ API, router }) {
           }),
         });
         
-        // Handle response
-        let data;
-        try {
-          data = await res.json();
-        } catch {
-          data = {};
-        }
-        
-        if (!res.ok) {
-          throw new Error(data.error || `Gagal menghapus akun (${res.status})`);
-        }
-        
         // Clean logout
         localStorage.removeItem("token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("sudo_token");
         localStorage. removeItem("sudo_expires");
         
-        // Redirect harus di luar callback karena router mungkin sudah tidak valid
+        // Redirect setelah operasi selesai
         window.location.href = "/";
       });
       
