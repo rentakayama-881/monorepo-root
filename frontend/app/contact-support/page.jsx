@@ -1,3 +1,21 @@
+import {
+  HelpCircleIcon,
+  MailIcon,
+  ClockIcon,
+  ShieldIcon,
+  UserIcon,
+  LockIcon,
+  AwardIcon,
+  WarningIcon,
+  TrashIcon,
+  CreditCardIcon,
+  FileTextIcon,
+  UsersIcon,
+  InfoIcon,
+  CheckIcon,
+  ChevronRightIcon,
+} from "@/components/ui/LegalIcons";
+
 export const dynamic = "force-static";
 
 export const metadata = { 
@@ -5,240 +23,279 @@ export const metadata = {
   description: "Pusat bantuan dan dukungan pelanggan AlephDraad"
 };
 
+// Contact Card
+function ContactCard({ icon: Icon, title, children, highlight = false }) {
+  return (
+    <div className={`rounded-xl border p-5 transition-all hover:border-[rgb(var(--brand))]/30 ${highlight ? 'border-[rgb(var(--brand))]/20 bg-[rgb(var(--brand))]/5' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-1))]'}`}>
+      <div className="mb-3 flex items-center gap-2">
+        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${highlight ? 'bg-[rgb(var(--brand))]/20' : 'bg-[rgb(var(--brand))]/10'} text-[rgb(var(--brand))]`}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <span className="text-sm font-medium text-[rgb(var(--fg))]">{title}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// FAQ Accordion Item
+function FAQItem({ question, children, icon: Icon = HelpCircleIcon }) {
+  return (
+    <details className="group overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] transition-all hover:border-[rgb(var(--brand))]/20">
+      <summary className="flex cursor-pointer items-center justify-between p-5 text-sm font-medium text-[rgb(var(--fg))]">
+        <div className="flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))] transition-colors group-hover:bg-[rgb(var(--brand))]/20">
+            <Icon className="h-4 w-4" />
+          </span>
+          <span>{question}</span>
+        </div>
+        <svg className="h-5 w-5 shrink-0 text-[rgb(var(--muted))] transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div className="border-t border-[rgb(var(--border))] p-5 text-sm text-[rgb(var(--muted))]">
+        {children}
+      </div>
+    </details>
+  );
+}
+
+// Numbered Step
+function Step({ number, title, description }) {
+  return (
+    <li className="flex items-start gap-3">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--brand))]/10 text-xs font-semibold text-[rgb(var(--brand))]">
+        {number}
+      </span>
+      <div className="pt-0.5">
+        {title && <strong className="text-[rgb(var(--fg))]">{title}</strong>}
+        {title && description && " — "}
+        {description}
+      </div>
+    </li>
+  );
+}
+
+// List Item with icon
+function ListItem({ children, icon: Icon = CheckIcon }) {
+  return (
+    <li className="flex items-start gap-3">
+      <span className="mt-0.5 shrink-0 text-[rgb(var(--brand))]">
+        <Icon className="h-4 w-4" />
+      </span>
+      <span>{children}</span>
+    </li>
+  );
+}
+
+// Guide Link Card
+function GuideCard({ href, icon: Icon, title, description }) {
+  return (
+    <a href={href} className="group flex items-center gap-4 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-4 transition-all hover:border-[rgb(var(--brand))]/30 hover:shadow-md">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--brand))]/10 text-[rgb(var(--muted))] transition-colors group-hover:bg-[rgb(var(--brand))]/20 group-hover:text-[rgb(var(--brand))]">
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="flex-1">
+        <p className="text-sm font-medium text-[rgb(var(--fg))]">{title}</p>
+        <p className="text-xs text-[rgb(var(--muted))]">{description}</p>
+      </div>
+      <ChevronRightIcon className="h-4 w-4 text-[rgb(var(--muted))] transition-transform group-hover:translate-x-1 group-hover:text-[rgb(var(--brand))]" />
+    </a>
+  );
+}
+
 export default function HelpPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
-        <h1 className="text-2xl font-semibold text-[rgb(var(--fg))]">Pusat Bantuan</h1>
-        <p className="mt-1 text-sm text-[rgb(var(--muted))]">
-          Temukan jawaban atau hubungi tim kami
-        </p>
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]">
+            <HelpCircleIcon className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-2xl font-semibold text-[rgb(var(--fg))]">Pusat Bantuan</h1>
+            <p className="mt-0.5 text-sm text-[rgb(var(--muted))]">
+              Temukan jawaban atau hubungi tim kami
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Contact Section */}
       <section className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold text-[rgb(var(--fg))]">Hubungi Kami</h2>
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[rgb(var(--fg))]">
+          <MailIcon className="h-5 w-5 text-[rgb(var(--brand))]" />
+          Hubungi Kami
+        </h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-[rgb(var(--border))] p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <svg className="h-4 w-4 text-[rgb(var(--brand))]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span className="text-sm font-medium text-[rgb(var(--fg))]">Email</span>
-            </div>
-            <a href="mailto:ops@alephdraad.fun" className="text-sm text-[rgb(var(--brand))] hover:underline">
+          <ContactCard icon={MailIcon} title="Email" highlight={true}>
+            <a href="mailto:ops@alephdraad.fun" className="text-sm font-medium text-[rgb(var(--brand))] hover:underline">
               ops@alephdraad.fun
             </a>
             <p className="mt-1 text-xs text-[rgb(var(--muted))]">Respons dalam 1-2 hari kerja</p>
-          </div>
-          <div className="rounded-lg border border-[rgb(var(--border))] p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <svg className="h-4 w-4 text-[rgb(var(--brand))]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-sm font-medium text-[rgb(var(--fg))]">Jam Operasional</span>
-            </div>
+          </ContactCard>
+          <ContactCard icon={ClockIcon} title="Jam Operasional">
             <p className="text-sm text-[rgb(var(--muted))]">Senin - Jumat</p>
-            <p className="text-sm text-[rgb(var(--muted))]">09.00 - 18.00 WIB</p>
-          </div>
+            <p className="text-sm font-medium text-[rgb(var(--fg))]">09.00 - 18.00 WIB</p>
+          </ContactCard>
         </div>
       </section>
 
       {/* FAQ Section */}
       <section className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold text-[rgb(var(--fg))]">Pertanyaan Umum (FAQ)</h2>
-        <div className="space-y-4">
-          <details className="group rounded-lg border border-[rgb(var(--border))]">
-            <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-[rgb(var(--fg))]">
-              Bagaimana cara mendaftar akun?
-              <svg className="h-4 w-4 shrink-0 text-[rgb(var(--muted))] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <div className="border-t border-[rgb(var(--border))] p-4 text-sm text-[rgb(var(--muted))]">
-              <p>Untuk mendaftar akun AlephDraad:</p>
-              <ol className="mt-2 ml-5 list-decimal space-y-1">
-                <li>Klik tombol "Daftar" di pojok kanan atas</li>
-                <li>Masukkan alamat email yang valid</li>
-                <li>Buat kata sandi yang kuat (minimal 8 karakter)</li>
-                <li>Verifikasi email Anda melalui tautan yang dikirim</li>
-                <li>Lengkapi profil Anda</li>
-              </ol>
-            </div>
-          </details>
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[rgb(var(--fg))]">
+          <HelpCircleIcon className="h-5 w-5 text-[rgb(var(--brand))]" />
+          Pertanyaan Umum (FAQ)
+        </h2>
+        <div className="space-y-3">
+          <FAQItem question="Bagaimana cara mendaftar akun?" icon={UserIcon}>
+            <p className="mb-3">Untuk mendaftar akun AlephDraad:</p>
+            <ol className="space-y-2.5">
+              <Step number={1} description='Klik tombol "Daftar" di pojok kanan atas' />
+              <Step number={2} description="Masukkan alamat email yang valid" />
+              <Step number={3} description="Buat kata sandi yang kuat (minimal 8 karakter)" />
+              <Step number={4} description="Verifikasi email Anda melalui tautan yang dikirim" />
+              <Step number={5} description="Lengkapi profil Anda" />
+            </ol>
+          </FAQItem>
 
-          <details className="group rounded-lg border border-[rgb(var(--border))]">
-            <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-[rgb(var(--fg))]">
-              Bagaimana sistem escrow bekerja?
-              <svg className="h-4 w-4 shrink-0 text-[rgb(var(--muted))] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <div className="border-t border-[rgb(var(--border))] p-4 text-sm text-[rgb(var(--muted))]">
-              <p className="mb-3">Sistem escrow melindungi pembeli dan penjual dalam transaksi:</p>
-              <ol className="ml-5 list-decimal space-y-2">
-                <li><strong className="text-[rgb(var(--fg))]">Pembeli memulai transaksi</strong> — Dana ditransfer ke rekening escrow AlephDraad</li>
-                <li><strong className="text-[rgb(var(--fg))]">Penjual menerima notifikasi</strong> — Penjual mengirimkan produk/jasa sesuai kesepakatan</li>
-                <li><strong className="text-[rgb(var(--fg))]">Pembeli melakukan inspeksi</strong> — Pembeli memiliki waktu untuk memeriksa produk/jasa</li>
-                <li><strong className="text-[rgb(var(--fg))]">Konfirmasi penyelesaian</strong> — Jika sesuai, pembeli mengkonfirmasi dan dana diteruskan ke penjual</li>
-                <li><strong className="text-[rgb(var(--fg))]">Penyelesaian sengketa</strong> — Jika ada masalah, tim arbitrase akan membantu menyelesaikan</li>
-              </ol>
-              <p className="mt-3 text-xs">Biaya layanan escrow: 2.5% dari nilai transaksi</p>
-            </div>
-          </details>
+          <FAQItem question="Bagaimana sistem escrow bekerja?" icon={ShieldIcon}>
+            <p className="mb-3">Sistem escrow melindungi pembeli dan penjual dalam transaksi:</p>
+            <ol className="space-y-2.5">
+              <Step number={1} title="Pembeli memulai transaksi" description="Dana ditransfer ke rekening escrow AlephDraad" />
+              <Step number={2} title="Penjual menerima notifikasi" description="Penjual mengirimkan produk/jasa sesuai kesepakatan" />
+              <Step number={3} title="Pembeli melakukan inspeksi" description="Pembeli memiliki waktu untuk memeriksa produk/jasa" />
+              <Step number={4} title="Konfirmasi penyelesaian" description="Jika sesuai, pembeli mengkonfirmasi dan dana diteruskan ke penjual" />
+              <Step number={5} title="Penyelesaian sengketa" description="Jika ada masalah, tim arbitrase akan membantu menyelesaikan" />
+            </ol>
+            <p className="mt-4 rounded-lg bg-[rgb(var(--surface-2))] p-3 text-xs">
+              💡 Biaya layanan escrow: <strong className="text-[rgb(var(--fg))]">2.5%</strong> dari nilai transaksi
+            </p>
+          </FAQItem>
 
-          <details className="group rounded-lg border border-[rgb(var(--border))]">
-            <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-[rgb(var(--fg))]">
-              Bagaimana cara mengaktifkan keamanan dua faktor (2FA)?
-              <svg className="h-4 w-4 shrink-0 text-[rgb(var(--muted))] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <div className="border-t border-[rgb(var(--border))] p-4 text-sm text-[rgb(var(--muted))]">
-              <p>Untuk mengaktifkan 2FA:</p>
-              <ol className="mt-2 ml-5 list-decimal space-y-1">
-                <li>Buka Pengaturan Akun → Keamanan</li>
-                <li>Pilih "Aktifkan Autentikasi Dua Faktor"</li>
-                <li>Pindai kode QR dengan aplikasi authenticator (Google Authenticator, Authy, dll)</li>
-                <li>Masukkan kode verifikasi 6 digit</li>
-                <li>Simpan kode pemulihan di tempat aman</li>
-              </ol>
-              <p className="mt-3">Kami juga mendukung Passkey untuk keamanan yang lebih tinggi.</p>
-            </div>
-          </details>
+          <FAQItem question="Bagaimana cara mengaktifkan keamanan dua faktor (2FA)?" icon={LockIcon}>
+            <p className="mb-3">Untuk mengaktifkan 2FA:</p>
+            <ol className="space-y-2.5">
+              <Step number={1} description="Buka Pengaturan Akun → Keamanan" />
+              <Step number={2} description='"Aktifkan Autentikasi Dua Faktor"' />
+              <Step number={3} description="Pindai kode QR dengan aplikasi authenticator (Google Authenticator, Authy, dll)" />
+              <Step number={4} description="Masukkan kode verifikasi 6 digit" />
+              <Step number={5} description="Simpan kode pemulihan di tempat aman" />
+            </ol>
+            <p className="mt-4 text-sm">Kami juga mendukung <strong className="text-[rgb(var(--fg))]">Passkey</strong> untuk keamanan yang lebih tinggi.</p>
+          </FAQItem>
 
-          <details className="group rounded-lg border border-[rgb(var(--border))]">
-            <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-[rgb(var(--fg))]">
-              Bagaimana cara mendapatkan lencana?
-              <svg className="h-4 w-4 shrink-0 text-[rgb(var(--muted))] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <div className="border-t border-[rgb(var(--border))] p-4 text-sm text-[rgb(var(--muted))]">
-              <p>Lencana diberikan berdasarkan kontribusi dan reputasi:</p>
-              <ul className="mt-2 ml-5 list-disc space-y-1">
-                <li><strong className="text-[rgb(var(--fg))]">Kontributor Aktif</strong> — Membuat konten berkualitas secara konsisten</li>
-                <li><strong className="text-[rgb(var(--fg))]">Penjual Terpercaya</strong> — Menyelesaikan transaksi dengan rating tinggi</li>
-                <li><strong className="text-[rgb(var(--fg))]">Verified</strong> — Identitas telah diverifikasi oleh tim</li>
-                <li><strong className="text-[rgb(var(--fg))]">Expert</strong> — Memiliki keahlian khusus yang diakui komunitas</li>
-              </ul>
-              <p className="mt-3">Lencana juga dapat diberikan berdasarkan reputasi dari platform lain yang dapat diverifikasi.</p>
-            </div>
-          </details>
+          <FAQItem question="Bagaimana cara mendapatkan lencana?" icon={AwardIcon}>
+            <p className="mb-3">Lencana diberikan berdasarkan kontribusi dan reputasi:</p>
+            <ul className="space-y-2.5">
+              <ListItem icon={AwardIcon}>
+                <strong className="text-[rgb(var(--fg))]">Kontributor Aktif</strong> — Membuat konten berkualitas secara konsisten
+              </ListItem>
+              <ListItem icon={ShieldIcon}>
+                <strong className="text-[rgb(var(--fg))]">Penjual Terpercaya</strong> — Menyelesaikan transaksi dengan rating tinggi
+              </ListItem>
+              <ListItem icon={CheckIcon}>
+                <strong className="text-[rgb(var(--fg))]">Verified</strong> — Identitas telah diverifikasi oleh tim
+              </ListItem>
+              <ListItem icon={UserIcon}>
+                <strong className="text-[rgb(var(--fg))]">Expert</strong> — Memiliki keahlian khusus yang diakui komunitas
+              </ListItem>
+            </ul>
+            <p className="mt-4 text-xs text-[rgb(var(--muted))]">Lencana juga dapat diberikan berdasarkan reputasi dari platform lain yang dapat diverifikasi.</p>
+          </FAQItem>
 
-          <details className="group rounded-lg border border-[rgb(var(--border))]">
-            <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-[rgb(var(--fg))]">
-              Bagaimana cara melaporkan konten yang melanggar?
-              <svg className="h-4 w-4 shrink-0 text-[rgb(var(--muted))] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <div className="border-t border-[rgb(var(--border))] p-4 text-sm text-[rgb(var(--muted))]">
-              <p>Untuk melaporkan konten yang melanggar:</p>
-              <ol className="mt-2 ml-5 list-decimal space-y-1">
-                <li>Klik ikon titik tiga (⋯) pada konten yang ingin dilaporkan</li>
-                <li>Pilih "Laporkan"</li>
-                <li>Pilih kategori pelanggaran</li>
-                <li>Berikan penjelasan tambahan jika diperlukan</li>
-                <li>Kirim laporan</li>
-              </ol>
-              <p className="mt-3">Tim moderasi akan meninjau laporan dalam 24-48 jam.</p>
-            </div>
-          </details>
+          <FAQItem question="Bagaimana cara melaporkan konten yang melanggar?" icon={WarningIcon}>
+            <p className="mb-3">Untuk melaporkan konten yang melanggar:</p>
+            <ol className="space-y-2.5">
+              <Step number={1} description="Klik ikon titik tiga (⋯) pada konten yang ingin dilaporkan" />
+              <Step number={2} description='"Laporkan"' />
+              <Step number={3} description="Pilih kategori pelanggaran" />
+              <Step number={4} description="Berikan penjelasan tambahan jika diperlukan" />
+              <Step number={5} description="Kirim laporan" />
+            </ol>
+            <p className="mt-4 rounded-lg bg-[rgb(var(--surface-2))] p-3 text-xs">
+              ⏱️ Tim moderasi akan meninjau laporan dalam <strong className="text-[rgb(var(--fg))]">24-48 jam</strong>.
+            </p>
+          </FAQItem>
 
-          <details className="group rounded-lg border border-[rgb(var(--border))]">
-            <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-[rgb(var(--fg))]">
-              Bagaimana cara menghapus akun?
-              <svg className="h-4 w-4 shrink-0 text-[rgb(var(--muted))] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <div className="border-t border-[rgb(var(--border))] p-4 text-sm text-[rgb(var(--muted))]">
-              <p>Untuk menghapus akun secara permanen:</p>
-              <ol className="mt-2 ml-5 list-decimal space-y-1">
-                <li>Pastikan tidak ada transaksi yang sedang berjalan</li>
-                <li>Buka Pengaturan Akun → Akun</li>
-                <li>Scroll ke bagian "Zona Bahaya"</li>
-                <li>Klik "Hapus Akun"</li>
-                <li>Konfirmasi dengan memasukkan kata sandi atau kode 2FA</li>
-              </ol>
-              <p className="mt-3 text-xs text-[rgb(var(--error))]">Perhatian: Penghapusan akun bersifat permanen dan tidak dapat dibatalkan.</p>
-            </div>
-          </details>
+          <FAQItem question="Bagaimana cara menghapus akun?" icon={TrashIcon}>
+            <p className="mb-3">Untuk menghapus akun secara permanen:</p>
+            <ol className="space-y-2.5">
+              <Step number={1} description="Pastikan tidak ada transaksi yang sedang berjalan" />
+              <Step number={2} description="Buka Pengaturan Akun → Akun" />
+              <Step number={3} description='Scroll ke bagian "Zona Bahaya"' />
+              <Step number={4} description='"Hapus Akun"' />
+              <Step number={5} description="Konfirmasi dengan memasukkan kata sandi atau kode 2FA" />
+            </ol>
+            <p className="mt-4 rounded-lg border border-[rgb(var(--error))]/20 bg-[rgb(var(--error))]/5 p-3 text-xs text-[rgb(var(--error))]">
+              ⚠️ Perhatian: Penghapusan akun bersifat permanen dan tidak dapat dibatalkan.
+            </p>
+          </FAQItem>
 
-          <details className="group rounded-lg border border-[rgb(var(--border))]">
-            <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-[rgb(var(--fg))]">
-              Metode pembayaran apa yang didukung?
-              <svg className="h-4 w-4 shrink-0 text-[rgb(var(--muted))] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <div className="border-t border-[rgb(var(--border))] p-4 text-sm text-[rgb(var(--muted))]">
-              <p>AlephDraad mendukung berbagai metode pembayaran:</p>
-              <ul className="mt-2 ml-5 list-disc space-y-1">
-                <li><strong className="text-[rgb(var(--fg))]">Transfer Bank</strong> — BCA, Mandiri, BNI, BRI, dan bank lainnya</li>
-                <li><strong className="text-[rgb(var(--fg))]">E-Wallet</strong> — OVO, GoPay, DANA, ShopeePay</li>
-                <li><strong className="text-[rgb(var(--fg))]">QRIS</strong> — Scan QR untuk pembayaran instan</li>
-                <li><strong className="text-[rgb(var(--fg))]">Virtual Account</strong> — Tersedia untuk semua bank utama</li>
-              </ul>
-              <p className="mt-3">Pembayaran diproses melalui payment gateway berlisensi OJK.</p>
-            </div>
-          </details>
+          <FAQItem question="Metode pembayaran apa yang didukung?" icon={CreditCardIcon}>
+            <p className="mb-3">AlephDraad mendukung berbagai metode pembayaran:</p>
+            <ul className="space-y-2.5">
+              <ListItem icon={CreditCardIcon}>
+                <strong className="text-[rgb(var(--fg))]">Transfer Bank</strong> — BCA, Mandiri, BNI, BRI, dan bank lainnya
+              </ListItem>
+              <ListItem icon={CreditCardIcon}>
+                <strong className="text-[rgb(var(--fg))]">E-Wallet</strong> — OVO, GoPay, DANA, ShopeePay
+              </ListItem>
+              <ListItem icon={CreditCardIcon}>
+                <strong className="text-[rgb(var(--fg))]">QRIS</strong> — Scan QR untuk pembayaran instan
+              </ListItem>
+              <ListItem icon={CreditCardIcon}>
+                <strong className="text-[rgb(var(--fg))]">Virtual Account</strong> — Tersedia untuk semua bank utama
+              </ListItem>
+            </ul>
+            <p className="mt-4 text-xs text-[rgb(var(--muted))]">Pembayaran diproses melalui payment gateway berlisensi OJK.</p>
+          </FAQItem>
         </div>
       </section>
 
       {/* Guidelines */}
       <section className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold text-[rgb(var(--fg))]">Panduan Pengguna</h2>
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[rgb(var(--fg))]">
+          <FileTextIcon className="h-5 w-5 text-[rgb(var(--brand))]" />
+          Panduan Pengguna
+        </h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <a href="/rules-content" className="flex items-center gap-3 rounded-lg border border-[rgb(var(--border))] p-4 transition-colors hover:border-[rgb(var(--brand))]">
-            <svg className="h-5 w-5 text-[rgb(var(--muted))]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <div>
-              <p className="text-sm font-medium text-[rgb(var(--fg))]">Syarat dan Ketentuan</p>
-              <p className="text-xs text-[rgb(var(--muted))]">Aturan penggunaan platform</p>
-            </div>
-          </a>
-          <a href="/privacy" className="flex items-center gap-3 rounded-lg border border-[rgb(var(--border))] p-4 transition-colors hover:border-[rgb(var(--brand))]">
-            <svg className="h-5 w-5 text-[rgb(var(--muted))]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            <div>
-              <p className="text-sm font-medium text-[rgb(var(--fg))]">Kebijakan Privasi</p>
-              <p className="text-xs text-[rgb(var(--muted))]">Cara kami melindungi data Anda</p>
-            </div>
-          </a>
-          <a href="/community-guidelines" className="flex items-center gap-3 rounded-lg border border-[rgb(var(--border))] p-4 transition-colors hover:border-[rgb(var(--brand))]">
-            <svg className="h-5 w-5 text-[rgb(var(--muted))]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <div>
-              <p className="text-sm font-medium text-[rgb(var(--fg))]">Pedoman Komunitas</p>
-              <p className="text-xs text-[rgb(var(--muted))]">Etika dan perilaku di platform</p>
-            </div>
-          </a>
-          <a href="/changelog" className="flex items-center gap-3 rounded-lg border border-[rgb(var(--border))] p-4 transition-colors hover:border-[rgb(var(--brand))]">
-            <svg className="h-5 w-5 text-[rgb(var(--muted))]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <div>
-              <p className="text-sm font-medium text-[rgb(var(--fg))]">Catatan Perubahan</p>
-              <p className="text-xs text-[rgb(var(--muted))]">Pembaruan dan fitur baru</p>
-            </div>
-          </a>
+          <GuideCard 
+            href="/rules-content" 
+            icon={FileTextIcon}
+            title="Syarat dan Ketentuan"
+            description="Aturan penggunaan platform"
+          />
+          <GuideCard 
+            href="/privacy" 
+            icon={LockIcon}
+            title="Kebijakan Privasi"
+            description="Cara kami melindungi data Anda"
+          />
+          <GuideCard 
+            href="/community-guidelines" 
+            icon={UsersIcon}
+            title="Pedoman Komunitas"
+            description="Etika dan perilaku di platform"
+          />
+          <GuideCard 
+            href="/changelog" 
+            icon={ClockIcon}
+            title="Catatan Perubahan"
+            description="Pembaruan dan fitur baru"
+          />
         </div>
       </section>
 
       {/* Tips Box */}
-      <section className="rounded-lg border border-[rgb(var(--brand))/0.2] bg-[rgb(var(--brand))/0.05] p-4">
-        <div className="flex gap-3">
-          <svg className="h-5 w-5 shrink-0 text-[rgb(var(--brand))]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+      <section className="rounded-xl border border-[rgb(var(--brand))]/20 bg-[rgb(var(--brand))]/5 p-5">
+        <div className="flex gap-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]">
+            <InfoIcon className="h-5 w-5" />
+          </span>
           <div>
-            <p className="text-sm font-medium text-[rgb(var(--fg))]">Tips untuk respons cepat</p>
+            <p className="font-medium text-[rgb(var(--fg))]">Tips untuk respons cepat</p>
             <p className="mt-1 text-sm text-[rgb(var(--muted))]">
               Sertakan detail lengkap dalam pertanyaan Anda: ID akun, tangkapan layar error, dan langkah-langkah yang sudah dicoba.
             </p>
