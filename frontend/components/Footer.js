@@ -6,7 +6,7 @@ const footerSections = [
   {
     title: "Platform",
     links: [
-      { href: "/threads", label: "Forum" },
+      { href: "/category/akun-digital", label: "Digital Goods & Services" },
       { href: "/ai-search", label: "AI Search" },
       { href: "/fees", label: "Biaya Layanan" },
       { href: "/changelog", label: "Changelog" },
