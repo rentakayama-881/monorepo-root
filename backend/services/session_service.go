@@ -112,46 +112,76 @@ func (s *SessionService) RefreshSession(refreshToken, ipAddress, userAgent strin
 		return nil, apperrors.ErrInvalidToken.WithDetails("Session telah berakhir atau dicabut")
 	}
 
-	// REUSE DETECTION: Check if this refresh token was already used
+	// REUSE DETECTION with grace period for multi-tab scenario
+	// Allow reuse within 30 seconds to handle race conditions from multiple browser tabs
 	if session.IsUsed {
-		// Token reuse detected! This indicates the refresh token was stolen
-		logger.Warn("Refresh token reuse detected! Possible token theft.",
+		// Check if this is within grace period (30 seconds from last use)
+		gracePeriod := 30 * time.Second
+		timeSinceLastUse := time.Since(session.LastUsedAt)
+
+		if timeSinceLastUse > gracePeriod {
+			// Token reuse detected outside grace period - possible theft
+			logger.Warn("Refresh token reuse detected outside grace period!",
+				zap.Uint("user_id", session.UserID),
+				zap.Uint("session_id", session.ID),
+				zap.String("token_family", session.TokenFamily),
+				zap.Duration("time_since_last_use", timeSinceLastUse))
+
+			// Revoke ALL sessions in this token family
+			_ = s.RevokeTokenFamily(session.TokenFamily, "Token reuse detected - possible theft")
+
+			// Lock the account for 7 days
+			_ = s.LockAccount(session.UserID, "Refresh token reuse terdeteksi - kemungkinan token dicuri")
+
+			return nil, apperrors.ErrAccountLocked.WithDetails("Aktivitas mencurigakan terdeteksi. Akun dikunci 7 hari.")
+		}
+
+		// Within grace period - this is likely a multi-tab scenario
+		// Return the same token without creating new session (idempotent refresh)
+		logger.Info("Refresh token reuse within grace period - multi-tab scenario",
 			zap.Uint("user_id", session.UserID),
-			zap.Uint("session_id", session.ID),
-			zap.String("token_family", session.TokenFamily))
+			zap.Duration("time_since_last_use", timeSinceLastUse))
 
-		// Revoke ALL sessions in this token family
-		_ = s.RevokeTokenFamily(session.TokenFamily, "Token reuse detected - possible theft")
+		// Find the latest session in this token family
+		var latestSession models.Session
+		if err := s.db.Where("token_family = ? AND is_used = ?", session.TokenFamily, false).
+			Order("created_at DESC").First(&latestSession).Error; err == nil {
+			// Return existing active session's token info
+			var user models.User
+			if err := s.db.First(&user, latestSession.UserID).Error; err != nil {
+				return nil, apperrors.ErrUserNotFound
+			}
 
-		// Lock the account for 7 days
-		_ = s.LockAccount(session.UserID, "Refresh token reuse terdeteksi - kemungkinan token dicuri")
+			// Generate new access token but keep same refresh token
+			accessToken, _, err := middleware.GenerateAccessToken(user.ID, user.Email)
+			if err != nil {
+				return nil, apperrors.ErrInternalServer.WithDetails("Gagal membuat token")
+			}
 
-		return nil, apperrors.ErrAccountLocked.WithDetails("Aktivitas mencurigakan terdeteksi. Akun dikunci 7 hari.")
+			return &TokenPair{
+				AccessToken:  accessToken,
+				RefreshToken: refreshToken, // Return same refresh token
+				ExpiresIn:    300,
+				ExpiresAt:    time.Now().Add(5 * time.Minute),
+				TokenType:    "Bearer",
+			}, nil
+		}
 	}
 
-	// Session fingerprinting - strict mode
+	// Session fingerprinting - WARNING mode (log but allow with update)
+	// This prevents legitimate users from getting locked out
 	if session.IPAddress != "" && session.IPAddress != ipAddress {
-		logger.Warn("IP address mismatch on refresh",
+		logger.Warn("IP address changed on refresh",
 			zap.Uint("user_id", session.UserID),
 			zap.String("old_ip", session.IPAddress),
 			zap.String("new_ip", ipAddress))
-
-		// Revoke session and lock account
-		_ = s.RevokeSession(session.ID, "IP address changed during refresh")
-		_ = s.LockAccount(session.UserID, "Perubahan IP address saat refresh token")
-
-		return nil, apperrors.ErrAccountLocked.WithDetails("Session dicabut karena perubahan IP. Akun dikunci 7 hari.")
+		// Continue with new IP - allow roaming
 	}
 
 	if session.UserAgent != "" && session.UserAgent != truncateString(userAgent, 512) {
-		logger.Warn("User-Agent mismatch on refresh",
+		logger.Warn("User-Agent changed on refresh",
 			zap.Uint("user_id", session.UserID))
-
-		// Revoke session and lock account
-		_ = s.RevokeSession(session.ID, "User-Agent changed during refresh")
-		_ = s.LockAccount(session.UserID, "Perubahan User-Agent saat refresh token")
-
-		return nil, apperrors.ErrAccountLocked.WithDetails("Session dicabut karena perubahan device. Akun dikunci 7 hari.")
+		// Continue with new UA - allow browser updates
 	}
 
 	// Get user
@@ -170,6 +200,7 @@ func (s *SessionService) RefreshSession(refreshToken, ipAddress, userAgent strin
 
 	// Mark current refresh token as used (for reuse detection)
 	session.IsUsed = true
+	session.LastUsedAt = time.Now()
 	s.db.Save(&session)
 
 	// Generate new tokens

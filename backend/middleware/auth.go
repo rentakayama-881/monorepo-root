@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"backend-gin/database"
+	"backend-gin/logger"
 	"backend-gin/models"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // AuthMiddleware validates JWT token and checks session validity
@@ -60,6 +62,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			if lock.IsLocked() {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 					"error":      "Akun terkunci karena aktivitas mencurigakan. Hubungi admin untuk membuka.",
+					"code":       "account_locked",
 					"locked_at":  lock.LockedAt,
 					"expires_at": lock.ExpiresAt,
 					"reason":     lock.Reason,
@@ -78,40 +81,32 @@ func AuthMiddleware() gin.HandlerFunc {
 					return
 				}
 
-				// Session fingerprinting - strict mode
+				// Session fingerprinting - WARNING mode (log but don't block)
+				// This prevents legitimate users from getting locked out due to:
+				// - Mobile network switching (WiFi <-> Cellular)
+				// - VPN connect/disconnect
+				// - Browser updates that change User-Agent
 				clientIP := c.ClientIP()
 				clientUA := c.GetHeader("User-Agent")
 
 				if session.IPAddress != "" && session.IPAddress != clientIP {
-					// IP changed - revoke session and lock account
-					now := time.Now()
-					session.RevokedAt = &now
-					session.RevokeReason = "IP address changed"
-					database.DB.Save(&session)
-
-					// Lock account for 7 days
-					lockAccount(user.ID, "Perubahan IP address terdeteksi - kemungkinan session hijacking")
-
-					c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-						"error": "Session dicabut karena perubahan IP address. Akun dikunci 7 hari.",
-					})
-					return
+					// IP changed - log warning but continue
+					logger.Warn("IP address changed during session",
+						zap.Uint("user_id", user.ID),
+						zap.String("session_ip", session.IPAddress),
+						zap.String("request_ip", clientIP),
+					)
+					// Update session with new IP (allow roaming)
+					session.IPAddress = clientIP
 				}
 
 				if session.UserAgent != "" && session.UserAgent != clientUA {
-					// User-Agent changed - revoke session and lock account
-					now := time.Now()
-					session.RevokedAt = &now
-					session.RevokeReason = "User-Agent changed"
-					database.DB.Save(&session)
-
-					// Lock account for 7 days
-					lockAccount(user.ID, "Perubahan User-Agent terdeteksi - kemungkinan session hijacking")
-
-					c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-						"error": "Session dicabut karena perubahan browser/device. Akun dikunci 7 hari.",
-					})
-					return
+					// User-Agent changed - log warning but continue
+					logger.Warn("User-Agent changed during session",
+						zap.Uint("user_id", user.ID),
+					)
+					// Update session with new UA (allow browser updates)
+					session.UserAgent = truncateString(clientUA, 512)
 				}
 
 				// Update last used time
@@ -127,6 +122,14 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("claims", claims)
 		c.Next()
 	}
+}
+
+// truncateString truncates a string to max length
+func truncateString(s string, max int) string {
+	if len(s) > max {
+		return s[:max]
+	}
+	return s
 }
 
 // lockAccount creates a 7-day lock on the account

@@ -36,7 +36,26 @@ export async function refreshAccessToken() {
       });
 
       if (!res.ok) {
-        // Refresh failed - clear tokens and redirect to login
+        let data = null;
+        try {
+          data = await res.json();
+        } catch (e) {
+          // Ignore JSON parse errors
+        }
+
+        // Check if account is locked (403 with specific message)
+        if (res.status === 403 && data?.error?.includes("terkunci")) {
+          console.error("Account locked:", data?.error);
+          clearToken();
+          if (typeof window !== "undefined") {
+            if (!window.location.pathname.includes("/login")) {
+              window.location.href = "/login?error=account_locked";
+            }
+          }
+          return null;
+        }
+
+        // Other refresh failures - clear tokens and redirect to login
         clearToken();
         if (typeof window !== "undefined") {
           // Check if we're not already on login page

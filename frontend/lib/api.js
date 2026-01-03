@@ -119,6 +119,24 @@ export async function fetchJsonAuth(path, options = {}) {
         throw error;
       }
 
+      if (res.status === 403) {
+        // Check if account is locked
+        if (data?.code === "account_locked" || data?.error?.includes("terkunci")) {
+          const error = new Error(data?.error || "Akun terkunci. Hubungi admin untuk bantuan.");
+          error.status = 403;
+          error.code = "account_locked";
+          error.lockedAt = data?.locked_at;
+          error.expiresAt = data?.expires_at;
+          error.reason = data?.reason;
+          throw error;
+        }
+        // Other 403 errors (permission denied, etc)
+        const error = new Error(data?.error || "Akses ditolak.");
+        error.status = 403;
+        error.code = data?.code || "forbidden";
+        throw error;
+      }
+
       // Prioritaskan pesan error dari backend
       const message = data?.error || data?.message || res.statusText || `Request gagal dengan status ${res.status}`;
       const error = new Error(message);

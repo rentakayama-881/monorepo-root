@@ -43,13 +43,13 @@ func (s *AuthService) Register(input validators.RegisterInput) (*RegisterRespons
 		return nil, err
 	}
 
-	// Normalize email
+	// Normalize email (always lowercase for case-insensitive matching)
 	email := strings.TrimSpace(strings.ToLower(input.Email))
 	password := strings.TrimSpace(input.Password)
 
-	// Check if email already exists
+	// Check if email already exists (case-insensitive query)
 	var existing models.User
-	if err := s.db.Where("email = ?", email).First(&existing).Error; err == nil {
+	if err := s.db.Where("LOWER(email) = ?", email).First(&existing).Error; err == nil {
 		// Email exists - check if verified
 		if existing.EmailVerified {
 			// Sudah verified, tidak boleh register lagi
@@ -509,19 +509,54 @@ func (s *AuthService) createVerificationToken(user *models.User) (string, string
 	return raw, link, nil
 }
 
-// deleteUnverifiedUser deletes an unverified user and their tokens
+// deleteUnverifiedUser deletes an unverified user and all their related records
+// This is more robust to handle all foreign key relationships
 func (s *AuthService) deleteUnverifiedUser(user *models.User) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
-		// Delete all verification tokens for this user
-		if err := tx.Where("user_id = ?", user.ID).Delete(&models.EmailVerificationToken{}).Error; err != nil {
-			return err
+		userID := user.ID
+
+		// Delete verification tokens
+		if err := tx.Where("user_id = ?", userID).Delete(&models.EmailVerificationToken{}).Error; err != nil {
+			logger.Warn("Failed to delete verification tokens", zap.Error(err), zap.Uint("user_id", userID))
 		}
-		// Delete the user (hard delete to allow re-registration with same email)
+
+		// Delete passkeys (if any were registered before verification somehow)
+		if err := tx.Where("user_id = ?", userID).Delete(&models.Passkey{}).Error; err != nil {
+			logger.Warn("Failed to delete passkeys", zap.Error(err), zap.Uint("user_id", userID))
+		}
+
+		// Delete backup codes
+		if err := tx.Where("user_id = ?", userID).Delete(&models.BackupCode{}).Error; err != nil {
+			logger.Warn("Failed to delete backup codes", zap.Error(err), zap.Uint("user_id", userID))
+		}
+
+		// Delete sessions
+		if err := tx.Where("user_id = ?", userID).Delete(&models.Session{}).Error; err != nil {
+			logger.Warn("Failed to delete sessions", zap.Error(err), zap.Uint("user_id", userID))
+		}
+
+		// Delete session locks
+		if err := tx.Where("user_id = ?", userID).Delete(&models.SessionLock{}).Error; err != nil {
+			logger.Warn("Failed to delete session locks", zap.Error(err), zap.Uint("user_id", userID))
+		}
+
+		// Delete sudo sessions
+		if err := tx.Where("user_id = ?", userID).Delete(&models.SudoSession{}).Error; err != nil {
+			logger.Warn("Failed to delete sudo sessions", zap.Error(err), zap.Uint("user_id", userID))
+		}
+
+		// Delete password reset tokens
+		if err := tx.Where("user_id = ?", userID).Delete(&models.PasswordResetToken{}).Error; err != nil {
+			logger.Warn("Failed to delete password reset tokens", zap.Error(err), zap.Uint("user_id", userID))
+		}
+
+		// Finally delete the user (hard delete to allow re-registration with same email)
 		if err := tx.Unscoped().Delete(user).Error; err != nil {
 			return err
 		}
-		logger.Info("Deleted unverified user and tokens",
-			zap.Uint("user_id", user.ID),
+
+		logger.Info("Deleted unverified user and all related records",
+			zap.Uint("user_id", userID),
 			zap.String("email", user.Email))
 		return nil
 	})
