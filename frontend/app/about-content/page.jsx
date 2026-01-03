@@ -23,7 +23,7 @@ export const metadata = {
 function ListItem({ children, icon: Icon = CheckIcon }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="mt-0.5 shrink-0 text-[rgb(var(--brand))]">
+      <span className="mt-0.5 shrink-0 text-[rgb(var(--muted))]">
         <Icon className="h-4 w-4" />
       </span>
       <span>{children}</span>
@@ -34,10 +34,10 @@ function ListItem({ children, icon: Icon = CheckIcon }) {
 // Section card with icon header
 function Section({ title, icon: Icon, children, highlight = false }) {
   return (
-    <section className={`mb-6 overflow-hidden rounded-xl border transition-all hover:border-[rgb(var(--brand))]/20 ${highlight ? 'border-[rgb(var(--brand))]/30 bg-[rgb(var(--brand))]/5' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-1))]'}`}>
-      <div className={`border-b px-5 py-4 ${highlight ? 'border-[rgb(var(--brand))]/20 bg-[rgb(var(--brand))]/5' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50'}`}>
+    <section className={`mb-6 overflow-hidden rounded-xl border transition-all hover:border-[rgb(var(--muted))]/30 ${highlight ? 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/30' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-1))]'}`}>
+      <div className={`border-b px-5 py-4 ${highlight ? 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50'}`}>
         <h2 className="flex items-center gap-3 text-base font-semibold text-[rgb(var(--fg))]">
-          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${highlight ? 'bg-[rgb(var(--brand))]/20' : 'bg-[rgb(var(--brand))]/10'} text-[rgb(var(--brand))]`}>
+          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${highlight ? 'bg-[rgb(var(--surface-2))]' : 'bg-[rgb(var(--surface-2))]'} text-[rgb(var(--fg))]`}>
             <Icon className="h-4 w-4" />
           </span>
           <span>{title}</span>
@@ -53,8 +53,8 @@ function Section({ title, icon: Icon, children, highlight = false }) {
 // Service Card
 function ServiceCard({ title, description, icon: Icon }) {
   return (
-    <div className="group rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-5 transition-all hover:border-[rgb(var(--brand))]/30 hover:shadow-md">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))] transition-colors group-hover:bg-[rgb(var(--brand))]/20">
+    <div className="group rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-5 transition-all hover:border-[rgb(var(--muted))]/50 hover:shadow-md">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))] transition-colors group-hover:bg-[rgb(var(--surface-2))]">
         <Icon className="h-5 w-5" />
       </div>
       <h3 className="mb-2 text-sm font-semibold text-[rgb(var(--fg))]">{title}</h3>
@@ -69,7 +69,7 @@ export default function AboutPage() {
       {/* Header */}
       <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
             <UsersIcon className="h-5 w-5" />
           </span>
           <div>
@@ -124,7 +124,7 @@ export default function AboutPage() {
         {/* Layanan */}
         <section className="mb-6">
           <div className="mb-4 flex items-center gap-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
               <ZapIcon className="h-4 w-4" />
             </span>
             <h2 className="text-base font-semibold text-[rgb(var(--fg))]">Layanan Kami</h2>
@@ -172,7 +172,7 @@ export default function AboutPage() {
         {/* Contact */}
         <section className="rounded-xl border border-[rgb(var(--border))] bg-gradient-to-br from-[rgb(var(--surface-2))] to-[rgb(var(--surface-1))] p-5">
           <h2 className="mb-4 flex items-center gap-3 text-base font-semibold text-[rgb(var(--fg))]">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
               <MailIcon className="h-4 w-4" />
             </span>
             Kontak Perusahaan
@@ -184,7 +184,7 @@ export default function AboutPage() {
               </span>
               <div>
                 <p className="text-xs text-[rgb(var(--muted))]">Email</p>
-                <a href="mailto:ops@alephdraad.fun" className="text-sm font-medium text-[rgb(var(--brand))] hover:underline">
+                <a href="mailto:ops@alephdraad.fun" className="text-sm font-medium text-[rgb(var(--fg))] hover:underline">
                   ops@alephdraad.fun
                 </a>
               </div>
@@ -195,7 +195,7 @@ export default function AboutPage() {
               </span>
               <div>
                 <p className="text-xs text-[rgb(var(--muted))]">Website</p>
-                <a href="https://www.alephdraad.fun" className="text-sm font-medium text-[rgb(var(--brand))] hover:underline">
+                <a href="https://www.alephdraad.fun" className="text-sm font-medium text-[rgb(var(--fg))] hover:underline">
                   www.alephdraad.fun
                 </a>
               </div>

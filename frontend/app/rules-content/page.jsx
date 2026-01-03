@@ -25,10 +25,10 @@ export const metadata = {
 // Section card with icon header
 function Section({ number, title, icon: Icon, children, note }) {
   return (
-    <section className="mb-6 overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] transition-all hover:border-[rgb(var(--brand))]/20">
+    <section className="mb-6 overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] transition-all hover:border-[rgb(var(--muted))]/30">
       <div className="border-b border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 px-5 py-4">
         <h2 className="flex items-center gap-3 text-base font-semibold text-[rgb(var(--fg))]">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
             <Icon className="h-4 w-4" />
           </span>
           <span>Pasal {number} — {title}</span>
@@ -50,7 +50,7 @@ function Section({ number, title, icon: Icon, children, note }) {
 function NumberedItem({ number, children, icon: Icon }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--brand))]/10 text-xs font-semibold text-[rgb(var(--brand))]">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-xs font-semibold text-[rgb(var(--fg))]">
         {number}
       </span>
       <span className="pt-0.5">{children}</span>
@@ -62,7 +62,7 @@ function NumberedItem({ number, children, icon: Icon }) {
 function DefinitionItem({ term, children }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="mt-0.5 shrink-0 text-[rgb(var(--brand))]">
+      <span className="mt-0.5 shrink-0 text-[rgb(var(--muted))]">
         <CheckIcon className="h-4 w-4" />
       </span>
       <span><strong className="text-[rgb(var(--fg))]">{term}</strong> {children}</span>
@@ -88,7 +88,7 @@ export default function TermsPage() {
       {/* Header */}
       <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
             <ScaleIcon className="h-5 w-5" />
           </span>
           <div>
@@ -103,9 +103,9 @@ export default function TermsPage() {
 
       <article>
         {/* Intro */}
-        <div className="mb-6 rounded-xl border border-[rgb(var(--brand))]/20 bg-[rgb(var(--brand))]/5 p-5">
+        <div className="mb-6 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 p-5">
           <p className="text-sm leading-relaxed text-[rgb(var(--muted))]">
-            Dengan mengakses dan menggunakan platform AlephDraad (<a href="https://www.alephdraad.fun" className="font-medium text-[rgb(var(--brand))] hover:underline">www.alephdraad.fun</a>), 
+            Dengan mengakses dan menggunakan platform AlephDraad (<a href="https://www.alephdraad.fun" className="font-medium text-[rgb(var(--fg))] hover:underline">www.alephdraad.fun</a>), 
             Anda menyatakan telah membaca, memahami, dan menyetujui untuk terikat dengan syarat dan ketentuan ini. 
             Dokumen ini merupakan perjanjian yang sah secara hukum antara Anda ("Pengguna") dan PT AlephDraad Utility Stack ("Kami").
           </p>
@@ -139,7 +139,7 @@ export default function TermsPage() {
           <ol className="space-y-3 text-sm text-[rgb(var(--muted))]">
             <NumberedItem number={1}>Pengguna dilarang mengunggah konten yang melanggar hukum Republik Indonesia.</NumberedItem>
             <li className="flex items-start gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--brand))]/10 text-xs font-semibold text-[rgb(var(--brand))]">2</span>
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-xs font-semibold text-[rgb(var(--fg))]">2</span>
               <div className="pt-0.5">
                 <span>Konten yang dilarang meliputi namun tidak terbatas pada:</span>
                 <ul className="mt-3 space-y-2 ml-1">
@@ -232,14 +232,14 @@ export default function TermsPage() {
         {/* Contact */}
         <section className="rounded-xl border border-[rgb(var(--border))] bg-gradient-to-br from-[rgb(var(--surface-2))] to-[rgb(var(--surface-1))] p-5">
           <div className="flex items-start gap-4">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
               <MailIcon className="h-5 w-5" />
             </span>
             <div>
               <h2 className="mb-1 text-sm font-semibold text-[rgb(var(--fg))]">Kontak</h2>
               <p className="text-sm text-[rgb(var(--muted))]">
                 Untuk pertanyaan terkait Syarat dan Ketentuan ini, silakan hubungi:{" "}
-                <a href="mailto:ops@alephdraad.fun" className="font-medium text-[rgb(var(--brand))] hover:underline">
+                <a href="mailto:ops@alephdraad.fun" className="font-medium text-[rgb(var(--fg))] hover:underline">
                   ops@alephdraad.fun
                 </a>
               </p>
