@@ -84,6 +84,27 @@ Daftar lengkap environment variables yang digunakan dalam project.
 | `COINGECKO_BASE_URL` | Custom CoinGecko API base URL | CoinGecko default |
 | `RATE_CACHE_TTL_SECONDS` | Rate cache TTL | `300` |
 
+### Fee Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `WITHDRAWAL_FEE` | Flat withdrawal fee in IDR | `2500` |
+| `ESCROW_FEE_PERCENT` | Escrow fee percentage (charged to seller) | `2.0` |
+| `MIN_WITHDRAWAL_DEFAULT` | Default minimum withdrawal in IDR | `10000` |
+| `MIN_WITHDRAWAL_TIER1` | Min withdrawal for active users (>= 1M tx) | `400000` |
+| `MIN_WITHDRAWAL_TIER2` | Min withdrawal for premium users (>= 30M tx) | `900000` |
+| `TIER1_TX_THRESHOLD` | Transaction volume threshold for Tier 1 | `1000000` |
+| `TIER2_TX_THRESHOLD` | Transaction volume threshold for Tier 2 | `30000000` |
+
+### Settlement Days (Faspay)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SETTLEMENT_DAYS_BANK` | H+N for bank transfer/VA | `1` |
+| `SETTLEMENT_DAYS_QRIS` | H+N for QRIS | `1` |
+| `SETTLEMENT_DAYS_EWALLET` | H+N for e-wallets | `2` |
+| `SETTLEMENT_DAYS_CARD` | H+N for credit/debit cards | `3` |
+
 ---
 
 ## Frontend (Next.js)

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,11 +8,11 @@ import (
 	"strconv"
 	"time"
 
+	"backend-gin/config"
 	"backend-gin/database"
 	"backend-gin/middleware"
 	"backend-gin/models"
 	"backend-gin/services"
-	"backend-gin/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,20 +24,19 @@ var withdrawalPinLimiter = middleware.NewRateLimiter(5, 15*time.Minute)
 // WithdrawalHandler handles withdrawal-related endpoints
 type WithdrawalHandler struct {
 	walletService *services.WalletService
-	xenditClient  *utils.XenditClient
+	// TODO: Add faspayClient when API integration is ready
 }
 
 // NewWithdrawalHandler creates a new withdrawal handler
 func NewWithdrawalHandler() *WithdrawalHandler {
 	return &WithdrawalHandler{
 		walletService: services.NewWalletService(),
-		xenditClient:  utils.NewXenditClient(),
 	}
 }
 
 // CreateWithdrawalRequest represents a request to create a withdrawal
 type CreateWithdrawalRequest struct {
-	Amount        int64  `json:"amount" binding:"required,min=50000"` // Minimum 50,000 IDR
+	Amount        int64  `json:"amount" binding:"required,min=10000"` // Minimum 10,000 IDR (tiered)
 	BankCode      string `json:"bank_code" binding:"required"`
 	AccountNumber string `json:"account_number" binding:"required"`
 	AccountName   string `json:"account_name" binding:"required"`
@@ -51,7 +49,20 @@ func (h *WithdrawalHandler) CreateWithdrawal(c *gin.Context) {
 
 	var req CreateWithdrawalRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: minimum withdrawal is Rp 50,000"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	// Get user's total transaction volume for tiered minimum
+	totalTxVolume := h.getUserTotalTransactionVolume(userID)
+	minWithdrawal := config.GetMinWithdrawalForUser(totalTxVolume)
+
+	if req.Amount < minWithdrawal {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":          fmt.Sprintf("Minimum penarikan untuk akun Anda adalah Rp %d", minWithdrawal),
+			"min_withdrawal": minWithdrawal,
+			"tx_volume":      totalTxVolume,
+		})
 		return
 	}
 
@@ -79,8 +90,8 @@ func (h *WithdrawalHandler) CreateWithdrawal(c *gin.Context) {
 		return
 	}
 
-	// Calculate fee (e.g., fixed fee or percentage)
-	withdrawalFee := int64(5000) // Fixed Rp 5,000 fee
+	// Get fee from config
+	withdrawalFee := config.WithdrawalFee
 	totalDeduction := req.Amount + withdrawalFee
 
 	if balance < totalDeduction {
@@ -125,32 +136,21 @@ func (h *WithdrawalHandler) CreateWithdrawal(c *gin.Context) {
 		return
 	}
 
-	// Process via Xendit if configured
-	if h.xenditClient.IsConfigured() {
-		disbursement, err := h.xenditClient.CreateDisbursement(utils.DisbursementRequest{
-			ExternalID:        withdrawalCode,
-			Amount:            req.Amount,
-			BankCode:          req.BankCode,
-			AccountHolderName: req.AccountName,
-			AccountNumber:     req.AccountNumber,
-			Description:       "Withdrawal from wallet",
-		})
-		if err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process withdrawal: " + err.Error()})
-			return
-		}
-
-		withdrawal.XenditDisbursementID = disbursement.ID
-		withdrawal.Status = models.WithdrawalStatusProcessing
-		tx.Save(&withdrawal)
-	}
+	// TODO: Process via Faspay when API integration is ready
+	// For now, withdrawal stays in "pending" status until manual processing
+	// if h.faspayClient.IsConfigured() {
+	//     disbursement, err := h.faspayClient.CreateDisbursement(...)
+	//     ...
+	// }
 
 	tx.Commit()
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":    "Withdrawal request created",
-		"withdrawal": withdrawal,
+		"message":        "Permintaan penarikan berhasil dibuat",
+		"withdrawal":     withdrawal,
+		"min_withdrawal": config.GetMinWithdrawalForUser(totalTxVolume),
+		"fee":            withdrawalFee,
+		"note":           "Pencairan dana akan diproses dalam 1-3 hari kerja",
 	})
 }
 
@@ -206,6 +206,55 @@ func (e *InsufficientBalanceError) Error() string {
 	return "insufficient balance"
 }
 
+// getUserTotalTransactionVolume calculates total transaction volume for a user
+// This is used to determine the minimum withdrawal tier
+func (h *WithdrawalHandler) getUserTotalTransactionVolume(userID uint) int64 {
+	var totalVolume int64
+
+	// Sum all completed escrow transactions where user was sender or receiver
+	database.DB.Model(&models.Transfer{}).
+		Where("(sender_id = ? OR receiver_id = ?) AND status = ?", userID, userID, models.TransferStatusReleased).
+		Select("COALESCE(SUM(amount), 0)").
+		Scan(&totalVolume)
+
+	return totalVolume
+}
+
+// GetWithdrawalInfo returns withdrawal requirements and limits for the user
+func (h *WithdrawalHandler) GetWithdrawalInfo(c *gin.Context) {
+	userID := c.GetUint("user_id")
+
+	// Get user's total transaction volume
+	totalTxVolume := h.getUserTotalTransactionVolume(userID)
+	minWithdrawal := config.GetMinWithdrawalForUser(totalTxVolume)
+
+	// Get user's wallet balance
+	balance, _ := h.walletService.GetBalance(userID)
+
+	// Determine tier
+	tier := "Pengguna Baru"
+	if totalTxVolume >= config.Tier2TransactionThreshold {
+		tier = "Pengguna Premium"
+	} else if totalTxVolume >= config.Tier1TransactionThreshold {
+		tier = "Pengguna Aktif"
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"min_withdrawal":  minWithdrawal,
+		"withdrawal_fee":  config.WithdrawalFee,
+		"balance":         balance,
+		"total_tx_volume": totalTxVolume,
+		"tier":            tier,
+		"can_withdraw":    balance >= (minWithdrawal + config.WithdrawalFee),
+		"settlement_info": "Pencairan dana diproses dalam H+1 hingga H+3 hari kerja tergantung metode pembayaran asal.",
+		"tiers": []gin.H{
+			{"name": "Pengguna Baru", "threshold": 0, "min_withdrawal": config.MinWithdrawalDefault},
+			{"name": "Pengguna Aktif", "threshold": config.Tier1TransactionThreshold, "min_withdrawal": config.MinWithdrawalTier1},
+			{"name": "Pengguna Premium", "threshold": config.Tier2TransactionThreshold, "min_withdrawal": config.MinWithdrawalTier2},
+		},
+	})
+}
+
 // GetMyWithdrawals returns the user's withdrawal history
 func (h *WithdrawalHandler) GetMyWithdrawals(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -230,17 +279,8 @@ func (h *WithdrawalHandler) GetMyWithdrawals(c *gin.Context) {
 
 // GetAvailableBanks returns list of available banks for withdrawal
 func (h *WithdrawalHandler) GetAvailableBanks(c *gin.Context) {
-	if h.xenditClient.IsConfigured() {
-		banks, err := h.xenditClient.GetAvailableBanks()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get banks"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"banks": banks})
-		return
-	}
-
-	// Return default Indonesian banks if Xendit not configured
+	// List of Indonesian banks supported for withdrawal
+	// TODO: Fetch from Faspay API when integration is ready
 	banks := []gin.H{
 		{"code": "BCA", "name": "Bank Central Asia"},
 		{"code": "BNI", "name": "Bank Negara Indonesia"},
@@ -261,17 +301,21 @@ func (h *WithdrawalHandler) GetAvailableBanks(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"banks": banks})
 }
 
-// XenditDisbursementCallback handles Xendit disbursement callbacks
-func (h *WithdrawalHandler) XenditDisbursementCallback(c *gin.Context) {
-	// Verify callback token
-	callbackToken := c.GetHeader("x-callback-token")
-	expectedToken := os.Getenv("XENDIT_CALLBACK_TOKEN")
-	if expectedToken != "" && callbackToken != expectedToken {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid callback token"})
-		return
+// FaspayDisbursementCallback handles Faspay disbursement callbacks
+// TODO: Implement when Faspay API integration is ready
+func (h *WithdrawalHandler) FaspayDisbursementCallback(c *gin.Context) {
+	// Verify callback signature
+	// callbackSignature := c.GetHeader("X-Faspay-Signature")
+	// ... verify signature ...
+
+	var callback struct {
+		TrxID      string `json:"trx_id"`
+		MerchantID string `json:"merchant_id"`
+		Status     string `json:"status"`
+		Amount     string `json:"amount"`
+		DateTime   string `json:"date_time"`
 	}
 
-	var callback utils.DisbursementCallback
 	if err := c.ShouldBindJSON(&callback); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid callback payload"})
 		return
@@ -279,43 +323,48 @@ func (h *WithdrawalHandler) XenditDisbursementCallback(c *gin.Context) {
 
 	// Find withdrawal by external ID (withdrawal code)
 	var withdrawal models.Withdrawal
-	if err := database.DB.Where("withdrawal_code = ?", callback.ExternalID).First(&withdrawal).Error; err != nil {
+	if err := database.DB.Where("withdrawal_code = ?", callback.TrxID).First(&withdrawal).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Withdrawal not found"})
 		return
 	}
 
 	// Update withdrawal based on status
+	// Faspay status codes: 0 = pending, 1 = success, 2 = failed
 	switch callback.Status {
-	case "COMPLETED":
+	case "1": // Success
 		withdrawal.Status = models.WithdrawalStatusSuccess
-		now := callback.Updated
+		now := time.Now()
 		withdrawal.ProcessedAt = &now
 
-	case "FAILED":
+	case "2": // Failed
 		withdrawal.Status = models.WithdrawalStatusFailed
-		withdrawal.FailureReason = callback.FailureCode
+		withdrawal.FailureReason = "Disbursement failed by payment gateway"
 
 		// Refund to user's wallet
-		totalRefund := withdrawal.Amount + withdrawal.Fee
-		if err := h.walletService.Credit(
-			withdrawal.UserID,
-			totalRefund,
-			models.WalletTxTypeRefund,
-			"withdrawal",
-			withdrawal.ID,
-			"Withdrawal failed - refund",
-		); err != nil {
-			// Log error but continue processing callback
-			log.Printf("Failed to refund withdrawal %d: %v", withdrawal.ID, err)
+		if err := h.refundWithdrawal(&withdrawal); err != nil {
+			log.Printf("Failed to refund withdrawal %s: %v", withdrawal.WithdrawalCode, err)
 		}
 	}
 
-	callbackData, _ := json.Marshal(callback)
-	_ = callbackData // Could store this for audit
+	if err := database.DB.Save(&withdrawal).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update withdrawal"})
+		return
+	}
 
-	database.DB.Save(&withdrawal)
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Callback processed"})
+// refundWithdrawal refunds a failed withdrawal to user's wallet
+func (h *WithdrawalHandler) refundWithdrawal(withdrawal *models.Withdrawal) error {
+	totalRefund := withdrawal.Amount + withdrawal.Fee
+	return h.walletService.Credit(
+		withdrawal.UserID,
+		totalRefund,
+		models.WalletTxTypeRefund,
+		"withdrawal",
+		withdrawal.ID,
+		"Withdrawal failed - refund",
+	)
 }
 
 // SimulateWithdrawal simulates a successful withdrawal (for demo/testing only)

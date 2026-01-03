@@ -322,13 +322,16 @@ func main() {
 			withdrawals.POST("", middleware.RequireSudo(sudoService), withdrawalHandler.CreateWithdrawal)
 			withdrawals.GET("", withdrawalHandler.GetMyWithdrawals)
 			withdrawals.GET("/banks", withdrawalHandler.GetAvailableBanks)
+			withdrawals.GET("/info", withdrawalHandler.GetWithdrawalInfo) // Get withdrawal limits/requirements
 		}
 
-		// Xendit webhook callbacks (no auth - verified by callback token)
+		// Payment gateway webhook callbacks (no auth - verified by callback signature)
 		webhooks := api.Group("/webhooks")
 		{
+			// Keep Xendit webhooks for backward compatibility / migration period
 			webhooks.POST("/xendit/invoice", walletHandler.XenditInvoiceCallback)
-			webhooks.POST("/xendit/disbursement", withdrawalHandler.XenditDisbursementCallback)
+			// Faspay webhooks (for future integration)
+			webhooks.POST("/faspay/disbursement", withdrawalHandler.FaspayDisbursementCallback)
 		}
 
 		// Demo/testing endpoints (only in development - protected by env var)
