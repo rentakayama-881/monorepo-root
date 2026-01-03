@@ -51,6 +51,17 @@ var (
 	ErrSessionInvalid        = NewAppError("AUTH010", "Session tidak valid atau sudah dicabut", http.StatusUnauthorized)
 	ErrSessionExpired        = NewAppError("AUTH011", "Session sudah berakhir, silakan login kembali", http.StatusUnauthorized)
 
+	// Brute force protection errors
+	ErrAccountLockedBruteForce = NewAppError("AUTH012", "Akun dikunci sementara karena terlalu banyak percobaan login gagal", http.StatusForbidden)
+	ErrLoginAttemptDelayed     = NewAppError("AUTH013", "Mohon tunggu sebelum mencoba login kembali", http.StatusTooManyRequests)
+	ErrTOTPMaxAttempts         = NewAppError("AUTH014", "Terlalu banyak percobaan verifikasi. Silakan coba lagi nanti.", http.StatusTooManyRequests)
+	ErrIPBlocked               = NewAppError("AUTH015", "Akses dari IP Anda diblokir sementara", http.StatusForbidden)
+
+	// Email rate limiting errors
+	ErrVerificationLimitReached  = NewAppError("AUTH016", "Batas pengiriman email verifikasi tercapai. Coba lagi dalam 24 jam.", http.StatusTooManyRequests)
+	ErrPasswordResetLimitReached = NewAppError("AUTH017", "Batas pengiriman email reset password tercapai. Coba lagi dalam 24 jam.", http.StatusTooManyRequests)
+	ErrIPEmailLimitReached       = NewAppError("AUTH018", "Terlalu banyak permintaan email dari IP ini. Coba lagi nanti.", http.StatusTooManyRequests)
+
 	// User errors
 	ErrUserNotFound     = NewAppError("USER001", "Pengguna tidak ditemukan", http.StatusNotFound)
 	ErrUnauthorized     = NewAppError("USER002", "Tidak memiliki akses", http.StatusUnauthorized)

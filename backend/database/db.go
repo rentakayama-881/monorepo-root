@@ -142,6 +142,33 @@ func migrateAndSeed() {
 		panic("Failed to create sudo_sessions table: " + err.Error())
 	}
 
+	// Migrate SecurityEvent table for security audit logging
+	if err := DB.Exec(`
+		CREATE TABLE IF NOT EXISTS security_events (
+			id SERIAL PRIMARY KEY,
+			created_at TIMESTAMP DEFAULT NOW(),
+			updated_at TIMESTAMP DEFAULT NOW(),
+			deleted_at TIMESTAMP,
+			user_id INT,
+			email VARCHAR(255),
+			event_type VARCHAR(50) NOT NULL,
+			ip_address VARCHAR(45),
+			user_agent VARCHAR(512),
+			success BOOLEAN DEFAULT FALSE,
+			details TEXT,
+			severity VARCHAR(20) DEFAULT 'info',
+			country VARCHAR(2),
+			city VARCHAR(100)
+		);
+		CREATE INDEX IF NOT EXISTS idx_security_events_user_id ON security_events(user_id);
+		CREATE INDEX IF NOT EXISTS idx_security_events_email ON security_events(email);
+		CREATE INDEX IF NOT EXISTS idx_security_events_event_type ON security_events(event_type);
+		CREATE INDEX IF NOT EXISTS idx_security_events_created_at ON security_events(created_at);
+		CREATE INDEX IF NOT EXISTS idx_security_events_ip_address ON security_events(ip_address);
+	`).Error; err != nil {
+		panic("Failed to create security_events table: " + err.Error())
+	}
+
 	// Seed categories if empty
 	var count int64
 	DB.Model(&models.Category{}).Count(&count)

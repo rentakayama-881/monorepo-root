@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/go-webauthn/webauthn/protocol"
@@ -30,8 +31,41 @@ type User struct {
 	TOTPEnabled    bool       `gorm:"column:totp_enabled;default:false"` // Is 2FA enabled
 	TOTPVerifiedAt *time.Time `gorm:"column:totp_verified_at"`           // When 2FA was first verified
 
+	// Security tracking fields
+	FailedLoginAttempts int        `gorm:"default:0"`              // Count of consecutive failed login attempts
+	LastFailedLoginAt   *time.Time `gorm:"column:last_failed_at"`  // Last failed login timestamp
+	LastLoginAt         *time.Time `gorm:"column:last_login_at"`   // Last successful login timestamp
+	LastLoginIP         string     `gorm:"size:45"`                // Last successful login IP
+	LockedUntil         *time.Time `gorm:"column:locked_until"`    // Account lock expiry (brute force protection)
+	LockReason          string     `gorm:"size:255"`               // Reason for account lock
+
 	// Passkeys relationship
 	Passkeys []Passkey `gorm:"foreignKey:UserID"`
+}
+
+// IsAccountLocked checks if the user account is currently locked
+func (u *User) IsAccountLocked() bool {
+	if u.LockedUntil == nil {
+		return false
+	}
+	return time.Now().Before(*u.LockedUntil)
+}
+
+// GetLockRemainingTime returns remaining lock time in human-readable format
+func (u *User) GetLockRemainingTime() string {
+	if u.LockedUntil == nil {
+		return ""
+	}
+	remaining := time.Until(*u.LockedUntil)
+	if remaining <= 0 {
+		return ""
+	}
+	hours := int(remaining.Hours())
+	minutes := int(remaining.Minutes()) % 60
+	if hours > 0 {
+		return fmt.Sprintf("%d jam %d menit", hours, minutes)
+	}
+	return fmt.Sprintf("%d menit", minutes)
 }
 
 // BackupCode represents a single-use recovery code for 2FA

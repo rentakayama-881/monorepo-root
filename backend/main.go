@@ -123,6 +123,8 @@ func main() {
 	config.InitConfig()
 
 	// Initialize services
+	services.InitSecurityServices(database.DB) // Initialize security services first
+	services.InitEmailRateLimiter()            // Initialize email rate limiter
 	authService := services.NewAuthService(database.DB)
 	sessionService := services.NewSessionService(database.DB)
 	threadService := services.NewThreadService(database.DB)

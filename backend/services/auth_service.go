@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"time"
 
@@ -18,6 +19,29 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
+
+// Global instances for security services
+var (
+	loginTracker   *LoginAttemptTracker
+	securityAudit  *SecurityAuditService
+)
+
+// InitSecurityServices initializes the global security services
+func InitSecurityServices(db *gorm.DB) {
+	loginTracker = NewLoginAttemptTracker(db)
+	securityAudit = NewSecurityAuditService(db)
+	logger.Info("Security services initialized")
+}
+
+// GetLoginTracker returns the global login tracker instance
+func GetLoginTracker() *LoginAttemptTracker {
+	return loginTracker
+}
+
+// GetSecurityAudit returns the global security audit instance
+func GetSecurityAudit() *SecurityAuditService {
+	return securityAudit
+}
 
 // AuthService handles authentication business logic
 type AuthService struct {
@@ -187,18 +211,56 @@ func (s *AuthService) LoginWithSession(input validators.LoginInput, ipAddress, u
 
 	email := strings.TrimSpace(strings.ToLower(input.Email))
 
+	// Check if account is locked by login tracker (brute force protection)
+	if loginTracker != nil {
+		if locked, lockedUntil := loginTracker.IsLocked(email); locked {
+			if securityAudit != nil {
+				securityAudit.LogLoginFailed(email, ipAddress, userAgent, "Account locked - brute force protection")
+			}
+			remaining := time.Until(*lockedUntil)
+			return nil, apperrors.ErrAccountLockedBruteForce.WithDetails(
+				fmt.Sprintf("Akun dikunci selama %s akibat terlalu banyak percobaan gagal", formatDuration(remaining)))
+		}
+
+		// Apply progressive delay
+		delay := loginTracker.GetDelay(email)
+		if delay > 0 {
+			time.Sleep(delay)
+		}
+	}
+
 	// Find user
 	var user models.User
 	if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			logger.Debug("Login attempt for non-existent user", zap.String("email", email))
+			// Record failed attempt even for non-existent users to prevent user enumeration
+			if loginTracker != nil {
+				locked, _, _ := loginTracker.RecordFailedLogin(email, ipAddress)
+				if locked && securityAudit != nil {
+					securityAudit.LogBruteForceDetected(email, ipAddress, MaxFailedLoginAttempts)
+				}
+			}
+			if securityAudit != nil {
+				securityAudit.LogLoginFailed(email, ipAddress, userAgent, "User not found")
+			}
 			return nil, apperrors.ErrInvalidCredentials
 		}
 		logger.Error("Failed to query user", zap.Error(err))
 		return nil, apperrors.ErrDatabase.WithDetails("Gagal memeriksa kredensial")
 	}
 
-	// Check if account is locked
+	// Check if user account is locked in database (persistent lock)
+	if user.IsAccountLocked() {
+		remaining := user.GetLockRemainingTime()
+		if securityAudit != nil {
+			securityAudit.LogLoginFailed(email, ipAddress, userAgent, "Account locked in database")
+		}
+		return nil, apperrors.ErrAccountLockedBruteForce.WithDetails(
+			fmt.Sprintf("Akun dikunci selama %s. Alasan: %s", remaining, user.LockReason))
+	}
+
+	// Check if account is locked (legacy session lock)
 	var lock models.SessionLock
 	if err := s.db.Where("user_id = ?", user.ID).Order("created_at DESC").First(&lock).Error; err == nil {
 		if lock.IsLocked() {
@@ -209,12 +271,37 @@ func (s *AuthService) LoginWithSession(input validators.LoginInput, ipAddress, u
 	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
 		logger.Debug("Invalid password attempt", zap.String("email", email))
+		
+		// Record failed login attempt
+		if loginTracker != nil {
+			locked, _, _ := loginTracker.RecordFailedLogin(email, ipAddress)
+			
+			// If account got locked, persist to database
+			if locked {
+				if err := loginTracker.PersistLock(&user, "Terlalu banyak percobaan login gagal"); err != nil {
+					logger.Error("Failed to persist account lock", zap.Error(err))
+				}
+				if securityAudit != nil {
+					securityAudit.LogAccountLocked(&user, ipAddress, "Brute force protection triggered", LockDuration)
+					securityAudit.LogBruteForceDetected(email, ipAddress, MaxFailedLoginAttempts)
+				}
+			}
+		}
+		
+		if securityAudit != nil {
+			securityAudit.LogLoginFailed(email, ipAddress, userAgent, "Invalid password")
+		}
 		return nil, apperrors.ErrInvalidCredentials
 	}
 
 	// Check email verification
 	if !user.EmailVerified {
 		return nil, apperrors.ErrEmailNotVerified
+	}
+
+	// Successful password verification - reset failed attempts
+	if loginTracker != nil {
+		loginTracker.ResetAttempts(email)
 	}
 
 	username := ""
@@ -251,6 +338,15 @@ func (s *AuthService) LoginWithSession(input validators.LoginInput, ipAddress, u
 		return nil, err
 	}
 
+	// Record successful login
+	if loginTracker != nil {
+		loginTracker.RecordSuccessfulLogin(&user, ipAddress)
+	}
+	if securityAudit != nil {
+		securityAudit.LogLoginSuccess(&user, ipAddress, userAgent)
+		securityAudit.LogSessionCreated(&user, ipAddress, userAgent)
+	}
+
 	logger.Info("User logged in successfully",
 		zap.Uint("user_id", user.ID),
 		zap.String("email", email),
@@ -265,6 +361,21 @@ func (s *AuthService) LoginWithSession(input validators.LoginInput, ipAddress, u
 		FullName:     user.FullName,
 		RequiresTOTP: false,
 	}, nil
+}
+
+// formatDuration formats a duration in a human-readable way
+func formatDuration(d time.Duration) string {
+	if d < time.Minute {
+		return fmt.Sprintf("%d detik", int(d.Seconds()))
+	}
+	if d < time.Hour {
+		return fmt.Sprintf("%d menit", int(d.Minutes()))
+	}
+	hours := int(d.Hours())
+	if hours < 24 {
+		return fmt.Sprintf("%d jam", hours)
+	}
+	return fmt.Sprintf("%d hari", hours/24)
 }
 
 // Login authenticates a user (legacy - for backward compatibility)
@@ -403,11 +514,33 @@ func (s *AuthService) LoginWithPasskey(user *User, ipAddress, userAgent string) 
 }
 
 // RequestVerification requests a new verification email
-func (s *AuthService) RequestVerification(email string) (string, string, error) {
+func (s *AuthService) RequestVerification(email, ip string) (string, string, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 
 	if err := validators.ValidateEmail(email); err != nil {
 		return "", "", err
+	}
+
+	// Check email rate limit
+	if emailRateLimiter != nil {
+		allowed, remaining, nextAllowed := emailRateLimiter.CanSendVerification(email, ip)
+		if !allowed {
+			if securityAudit != nil {
+				securityAudit.LogEvent(SecurityEvent{
+					Email:     email,
+					EventType: "verification_limit_reached",
+					IPAddress: ip,
+					Success:   false,
+					Details:   fmt.Sprintf("Rate limit reached. Next allowed: %v", nextAllowed),
+					Severity:  "warning",
+				})
+			}
+			return "", "", apperrors.ErrVerificationLimitReached.WithDetails(
+				fmt.Sprintf("Maksimal %d email verifikasi per 24 jam", MaxVerificationPerEmail))
+		}
+		logger.Debug("Verification rate limit check",
+			zap.String("email", email),
+			zap.Int("remaining", remaining))
 	}
 
 	var user models.User
@@ -425,6 +558,11 @@ func (s *AuthService) RequestVerification(email string) (string, string, error) 
 
 	if err := utils.SendVerificationEmail(user.Email, token); err != nil {
 		logger.Warn("Failed to send verification email", zap.Error(err))
+	} else {
+		// Record successful email send
+		if emailRateLimiter != nil {
+			emailRateLimiter.RecordVerificationSent(email, ip)
+		}
 	}
 
 	return token, link, nil
@@ -581,11 +719,33 @@ type ForgotPasswordResponse struct {
 }
 
 // ForgotPassword sends password reset email
-func (s *AuthService) ForgotPassword(email string) (*ForgotPasswordResponse, error) {
+func (s *AuthService) ForgotPassword(email, ip string) (*ForgotPasswordResponse, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 
 	if err := validators.ValidateEmail(email); err != nil {
 		return nil, err
+	}
+
+	// Check email rate limit
+	if emailRateLimiter != nil {
+		allowed, remaining, nextAllowed := emailRateLimiter.CanSendPasswordReset(email, ip)
+		if !allowed {
+			if securityAudit != nil {
+				securityAudit.LogEvent(SecurityEvent{
+					Email:     email,
+					EventType: EventPasswordResetReq,
+					IPAddress: ip,
+					Success:   false,
+					Details:   fmt.Sprintf("Rate limit reached. Next allowed: %v", nextAllowed),
+					Severity:  "warning",
+				})
+			}
+			return nil, apperrors.ErrPasswordResetLimitReached.WithDetails(
+				fmt.Sprintf("Maksimal %d email reset password per 24 jam", MaxPasswordResetPerEmail))
+		}
+		logger.Debug("Password reset rate limit check",
+			zap.String("email", email),
+			zap.Int("remaining", remaining))
 	}
 
 	// Find user - but don't reveal if email exists
@@ -623,6 +783,21 @@ func (s *AuthService) ForgotPassword(email string) (*ForgotPasswordResponse, err
 	if err := utils.SendPasswordResetEmail(user.Email, raw); err != nil {
 		logger.Warn("Failed to send password reset email", zap.Error(err), zap.String("email", email))
 		// Don't fail - still return success to avoid email enumeration
+	} else {
+		// Record successful email send
+		if emailRateLimiter != nil {
+			emailRateLimiter.RecordPasswordResetSent(email, ip)
+		}
+		if securityAudit != nil {
+			securityAudit.LogEvent(SecurityEvent{
+				UserID:    &user.ID,
+				Email:     email,
+				EventType: EventPasswordResetReq,
+				IPAddress: ip,
+				Success:   true,
+				Severity:  "info",
+			})
+		}
 	}
 
 	logger.Info("Password reset requested", zap.String("email", email))
@@ -788,6 +963,17 @@ func (s *AuthService) CompleteTOTPLogin(pendingToken, totpCode string, ipAddress
 		return nil, err
 	}
 
+	// Check TOTP attempt limits
+	if loginTracker != nil {
+		attemptsRemaining := loginTracker.GetTOTPAttemptsRemaining(user.Email)
+		if attemptsRemaining <= 0 {
+			if securityAudit != nil {
+				securityAudit.LogTOTPMaxAttempts(user, ipAddress)
+			}
+			return nil, apperrors.ErrTOTPMaxAttempts
+		}
+	}
+
 	// Verify TOTP is still enabled (in case it was disabled between steps)
 	if !user.IsTOTPEnabled() {
 		return nil, apperrors.NewAppError("TOTP_NOT_ENABLED", "2FA tidak lagi aktif. Silakan login ulang.", 400)
@@ -808,7 +994,19 @@ func (s *AuthService) CompleteTOTPLogin(pendingToken, totpCode string, ipAddress
 		return nil, err
 	}
 	if !valid {
+		// Record failed TOTP attempt
+		if loginTracker != nil {
+			_, attemptsRemaining := loginTracker.RecordTOTPAttempt(user.Email)
+			if securityAudit != nil {
+				securityAudit.LogTOTPFailed(user, ipAddress, userAgent, attemptsRemaining)
+			}
+		}
 		return nil, apperrors.NewAppError("TOTP_INVALID_CODE", "Kode 2FA tidak valid", 401)
+	}
+
+	// Reset TOTP attempts on success
+	if loginTracker != nil {
+		loginTracker.ResetTOTPAttempts(user.Email)
 	}
 
 	// Create session with token pair
@@ -816,6 +1014,16 @@ func (s *AuthService) CompleteTOTPLogin(pendingToken, totpCode string, ipAddress
 	tokenPair, err := sessionService.CreateSession(user, ipAddress, userAgent)
 	if err != nil {
 		return nil, err
+	}
+
+	// Record successful login
+	if loginTracker != nil {
+		loginTracker.RecordSuccessfulLogin(user, ipAddress)
+	}
+	if securityAudit != nil {
+		securityAudit.LogTOTPSuccess(user, ipAddress, userAgent)
+		securityAudit.LogLoginSuccess(user, ipAddress, userAgent)
+		securityAudit.LogSessionCreated(user, ipAddress, userAgent)
 	}
 
 	username := ""
@@ -847,6 +1055,17 @@ func (s *AuthService) CompleteTOTPLoginWithBackupCode(pendingToken, backupCode s
 		return nil, err
 	}
 
+	// Check TOTP attempt limits (backup codes share the same limit)
+	if loginTracker != nil {
+		attemptsRemaining := loginTracker.GetTOTPAttemptsRemaining(user.Email)
+		if attemptsRemaining <= 0 {
+			if securityAudit != nil {
+				securityAudit.LogTOTPMaxAttempts(user, ipAddress)
+			}
+			return nil, apperrors.ErrTOTPMaxAttempts
+		}
+	}
+
 	// Verify TOTP is still enabled
 	if !user.IsTOTPEnabled() {
 		return nil, apperrors.NewAppError("TOTP_NOT_ENABLED", "2FA tidak lagi aktif. Silakan login ulang.", 400)
@@ -867,7 +1086,19 @@ func (s *AuthService) CompleteTOTPLoginWithBackupCode(pendingToken, backupCode s
 		return nil, err
 	}
 	if !valid {
+		// Record failed backup code attempt
+		if loginTracker != nil {
+			_, attemptsRemaining := loginTracker.RecordTOTPAttempt(user.Email)
+			if securityAudit != nil {
+				securityAudit.LogTOTPFailed(user, ipAddress, userAgent, attemptsRemaining)
+			}
+		}
 		return nil, apperrors.NewAppError("BACKUP_CODE_INVALID", "Backup code tidak valid", 401)
+	}
+
+	// Reset TOTP attempts on success
+	if loginTracker != nil {
+		loginTracker.ResetTOTPAttempts(user.Email)
 	}
 
 	// Create session with token pair
@@ -875,6 +1106,15 @@ func (s *AuthService) CompleteTOTPLoginWithBackupCode(pendingToken, backupCode s
 	tokenPair, err := sessionService.CreateSession(user, ipAddress, userAgent)
 	if err != nil {
 		return nil, err
+	}
+
+	// Record successful login
+	if loginTracker != nil {
+		loginTracker.RecordSuccessfulLogin(user, ipAddress)
+	}
+	if securityAudit != nil {
+		securityAudit.LogLoginSuccess(user, ipAddress, userAgent)
+		securityAudit.LogSessionCreated(user, ipAddress, userAgent)
 	}
 
 	username := ""

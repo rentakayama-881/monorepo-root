@@ -158,7 +158,7 @@ func (h *AuthHandler) RequestVerification(c *gin.Context) {
 		return
 	}
 
-	_, _, err := h.authService.RequestVerification(req.Email)
+	_, _, err := h.authService.RequestVerification(req.Email, c.ClientIP())
 	if err != nil {
 		handleError(c, err)
 		return
@@ -207,7 +207,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.ForgotPassword(req.Email)
+	response, err := h.authService.ForgotPassword(req.Email, c.ClientIP())
 	if err != nil {
 		handleError(c, err)
 		return
