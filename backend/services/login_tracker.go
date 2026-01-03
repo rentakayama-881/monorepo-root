@@ -36,21 +36,21 @@ type totpRecord struct {
 
 // Configuration constants
 const (
-	MaxFailedLoginAttempts = 4              // Lock after 4 failed attempts
-	LockDuration           = 24 * time.Hour // 24 hour lockout
+	MaxFailedLoginAttempts = 4                // Lock after 4 failed attempts
+	LockDuration           = 24 * time.Hour   // 24 hour lockout
 	AttemptWindow          = 15 * time.Minute // Reset counter after 15 min of no attempts
-	MaxTOTPAttempts        = 3              // Max TOTP verification attempts
-	TOTPAttemptWindow      = 5 * time.Minute // TOTP attempt window
-	CleanupInterval        = 5 * time.Minute // Cleanup old records every 5 minutes
+	MaxTOTPAttempts        = 3                // Max TOTP verification attempts
+	TOTPAttemptWindow      = 5 * time.Minute  // TOTP attempt window
+	CleanupInterval        = 5 * time.Minute  // Cleanup old records every 5 minutes
 )
 
 // Progressive delay durations (exponential backoff)
 var ProgressiveDelays = []time.Duration{
-	0,                    // First attempt: no delay
-	1 * time.Second,      // After 1 failure
-	2 * time.Second,      // After 2 failures
-	4 * time.Second,      // After 3 failures
-	8 * time.Second,      // After 4 failures (before lock)
+	0,               // First attempt: no delay
+	1 * time.Second, // After 1 failure
+	2 * time.Second, // After 2 failures
+	4 * time.Second, // After 3 failures
+	8 * time.Second, // After 4 failures (before lock)
 }
 
 // NewLoginAttemptTracker creates a new login attempt tracker

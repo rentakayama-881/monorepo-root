@@ -51,11 +51,11 @@ type recentDeviceRecord struct {
 
 // Configuration constants
 const (
-	MaxAccountsPerDevice   = 2               // Maximum 2 accounts per device
-	DeviceCacheExpiry      = 30 * time.Minute // Cache expiry for device records
-	DeviceCleanupInterval  = 10 * time.Minute // Cleanup interval
-	SuspiciousIPThreshold  = 5               // Number of different IPs to trigger warning
-	IPRotationWindow       = 1 * time.Hour   // Time window for IP rotation detection
+	MaxAccountsPerDevice  = 2                // Maximum 2 accounts per device
+	DeviceCacheExpiry     = 30 * time.Minute // Cache expiry for device records
+	DeviceCleanupInterval = 10 * time.Minute // Cleanup interval
+	SuspiciousIPThreshold = 5                // Number of different IPs to trigger warning
+	IPRotationWindow      = 1 * time.Hour    // Time window for IP rotation detection
 )
 
 // Global device tracker instance

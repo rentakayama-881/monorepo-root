@@ -21,29 +21,29 @@ func NewInputSecurityValidator() *InputSecurityValidator {
 
 // SQL injection patterns to detect
 var sqlInjectionPatterns = []string{
-	`(?i)(\s|^|\()SELECT\s+.*\s+FROM\s`,            // SELECT ... FROM
-	`(?i)(\s|^)INSERT\s+INTO\s`,                    // INSERT INTO
-	`(?i)(\s|^)UPDATE\s+\w+\s+SET\s`,               // UPDATE ... SET
-	`(?i)(\s|^)DELETE\s+FROM\s`,                    // DELETE FROM
-	`(?i)(\s|^)DROP\s+(TABLE|DATABASE|INDEX)\s`,   // DROP TABLE/DATABASE/INDEX
-	`(?i)(\s|^)CREATE\s+(TABLE|DATABASE|INDEX)\s`, // CREATE TABLE/DATABASE/INDEX
-	`(?i)(\s|^)ALTER\s+(TABLE|DATABASE)\s`,        // ALTER TABLE/DATABASE
-	`(?i)(\s|^)TRUNCATE\s+(TABLE\s+)?\w`,          // TRUNCATE TABLE
-	`(?i)(\s|^)EXEC(UTE)?\s+`,                     // EXEC/EXECUTE
-	`(?i)(\s|^)UNION\s+(ALL\s+)?SELECT\s`,         // UNION SELECT
-	`(?i)(\s|^)DECLARE\s+@`,                       // DECLARE @variable
-	`(?i)(\s|^)(OR|AND)\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?`,  // OR 1=1
+	`(?i)(\s|^|\()SELECT\s+.*\s+FROM\s`,                        // SELECT ... FROM
+	`(?i)(\s|^)INSERT\s+INTO\s`,                                // INSERT INTO
+	`(?i)(\s|^)UPDATE\s+\w+\s+SET\s`,                           // UPDATE ... SET
+	`(?i)(\s|^)DELETE\s+FROM\s`,                                // DELETE FROM
+	`(?i)(\s|^)DROP\s+(TABLE|DATABASE|INDEX)\s`,                // DROP TABLE/DATABASE/INDEX
+	`(?i)(\s|^)CREATE\s+(TABLE|DATABASE|INDEX)\s`,              // CREATE TABLE/DATABASE/INDEX
+	`(?i)(\s|^)ALTER\s+(TABLE|DATABASE)\s`,                     // ALTER TABLE/DATABASE
+	`(?i)(\s|^)TRUNCATE\s+(TABLE\s+)?\w`,                       // TRUNCATE TABLE
+	`(?i)(\s|^)EXEC(UTE)?\s+`,                                  // EXEC/EXECUTE
+	`(?i)(\s|^)UNION\s+(ALL\s+)?SELECT\s`,                      // UNION SELECT
+	`(?i)(\s|^)DECLARE\s+@`,                                    // DECLARE @variable
+	`(?i)(\s|^)(OR|AND)\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?`,   // OR 1=1
 	`(?i)(\s|^)(OR|AND)\s+['"][^'"]*['"]\s*=\s*['"][^'"]*['"]`, // OR "a"="a"
-	`(?i);\s*--`,                                  // Statement terminator + comment
-	`(?i)/\*.*\*/`,                                // Block comment
-	`(?i)'\s*(OR|AND)\s+'`,                        // ' OR '
-	`(?i)WAITFOR\s+DELAY\s`,                       // Time-based injection
-	`(?i)BENCHMARK\s*\(`,                          // MySQL time-based
-	`(?i)SLEEP\s*\(\s*\d`,                         // MySQL/PostgreSQL time-based
-	`(?i)PG_SLEEP\s*\(`,                           // PostgreSQL time-based
-	`(?i)LOAD_FILE\s*\(`,                          // File read
-	`(?i)INTO\s+(OUTFILE|DUMPFILE)\s`,             // File write
-	`(?i)INFORMATION_SCHEMA\.\w`,                  // Schema enumeration
+	`(?i);\s*--`,                                        // Statement terminator + comment
+	`(?i)/\*.*\*/`,                                      // Block comment
+	`(?i)'\s*(OR|AND)\s+'`,                              // ' OR '
+	`(?i)WAITFOR\s+DELAY\s`,                             // Time-based injection
+	`(?i)BENCHMARK\s*\(`,                                // MySQL time-based
+	`(?i)SLEEP\s*\(\s*\d`,                               // MySQL/PostgreSQL time-based
+	`(?i)PG_SLEEP\s*\(`,                                 // PostgreSQL time-based
+	`(?i)LOAD_FILE\s*\(`,                                // File read
+	`(?i)INTO\s+(OUTFILE|DUMPFILE)\s`,                   // File write
+	`(?i)INFORMATION_SCHEMA\.\w`,                        // Schema enumeration
 	`(?i)SYS\.(ALL_TABLES|USER_TABLES|ALL_TAB_COLUMNS)`, // Oracle schema
 }
 
@@ -80,40 +80,40 @@ func (v *InputSecurityValidator) IsSafeFromSQLInjection(input string) bool {
 
 // XSS patterns to detect
 var xssPatterns = []string{
-	`(?i)<script[^>]*>`,                        // Script tags
-	`(?i)</script>`,                            // Closing script tags
-	`(?i)<iframe[^>]*>`,                        // Iframe tags
-	`(?i)<object[^>]*>`,                        // Object tags
-	`(?i)<embed[^>]*>`,                         // Embed tags
-	`(?i)<applet[^>]*>`,                        // Applet tags
-	`(?i)<meta[^>]*http-equiv`,                 // Meta refresh
-	`(?i)<link[^>]*>`,                          // Link tags (can be used for CSS injection)
-	`(?i)<base[^>]*>`,                          // Base tag hijacking
-	`(?i)<form[^>]*>`,                          // Form injection
-	`(?i)<input[^>]*>`,                         // Input injection
-	`(?i)<img[^>]*onerror`,                     // Img onerror
-	`(?i)<svg[^>]*onload`,                      // SVG onload
-	`(?i)<body[^>]*onload`,                     // Body onload
-	`(?i)<marquee[^>]*>`,                       // Marquee (rare but used)
-	`(?i)\s+on\w+\s*=`,                         // Event handlers (onclick, onerror, etc.)
-	`(?i)javascript\s*:`,                       // javascript: protocol
-	`(?i)vbscript\s*:`,                         // vbscript: protocol
-	`(?i)data\s*:[^,]*;base64`,                 // data: with base64
-	`(?i)expression\s*\(`,                      // CSS expression
-	`(?i)@import\s`,                            // CSS import
-	`(?i)binding\s*:`,                          // Mozilla binding
-	`(?i)-moz-binding\s*:`,                     // Mozilla binding
-	`(?i)behavior\s*:`,                         // IE behavior
-	`(?i)<style[^>]*>`,                         // Style tags
-	`(?i)url\s*\(\s*['"]?\s*javascript`,        // CSS url with javascript
-	`(?i)<!--`,                                  // HTML comments (can hide payloads)
-	`(?i)-->`,                                  // Closing HTML comments
-	`(?i)<!\[CDATA\[`,                          // CDATA sections
-	`(?i)\]\]>`,                                // CDATA close
-	`(?i)&\{[^}]*\}`,                           // HTML entity encoding tricks
-	`(?i)\\u00[0-9a-f]{2}`,                     // Unicode escapes
-	`(?i)&#x[0-9a-f]+;?`,                       // Hex encoded entities
-	`(?i)&#\d+;?`,                              // Decimal encoded entities
+	`(?i)<script[^>]*>`,                 // Script tags
+	`(?i)</script>`,                     // Closing script tags
+	`(?i)<iframe[^>]*>`,                 // Iframe tags
+	`(?i)<object[^>]*>`,                 // Object tags
+	`(?i)<embed[^>]*>`,                  // Embed tags
+	`(?i)<applet[^>]*>`,                 // Applet tags
+	`(?i)<meta[^>]*http-equiv`,          // Meta refresh
+	`(?i)<link[^>]*>`,                   // Link tags (can be used for CSS injection)
+	`(?i)<base[^>]*>`,                   // Base tag hijacking
+	`(?i)<form[^>]*>`,                   // Form injection
+	`(?i)<input[^>]*>`,                  // Input injection
+	`(?i)<img[^>]*onerror`,              // Img onerror
+	`(?i)<svg[^>]*onload`,               // SVG onload
+	`(?i)<body[^>]*onload`,              // Body onload
+	`(?i)<marquee[^>]*>`,                // Marquee (rare but used)
+	`(?i)\s+on\w+\s*=`,                  // Event handlers (onclick, onerror, etc.)
+	`(?i)javascript\s*:`,                // javascript: protocol
+	`(?i)vbscript\s*:`,                  // vbscript: protocol
+	`(?i)data\s*:[^,]*;base64`,          // data: with base64
+	`(?i)expression\s*\(`,               // CSS expression
+	`(?i)@import\s`,                     // CSS import
+	`(?i)binding\s*:`,                   // Mozilla binding
+	`(?i)-moz-binding\s*:`,              // Mozilla binding
+	`(?i)behavior\s*:`,                  // IE behavior
+	`(?i)<style[^>]*>`,                  // Style tags
+	`(?i)url\s*\(\s*['"]?\s*javascript`, // CSS url with javascript
+	`(?i)<!--`,                          // HTML comments (can hide payloads)
+	`(?i)-->`,                           // Closing HTML comments
+	`(?i)<!\[CDATA\[`,                   // CDATA sections
+	`(?i)\]\]>`,                         // CDATA close
+	`(?i)&\{[^}]*\}`,                    // HTML entity encoding tricks
+	`(?i)\\u00[0-9a-f]{2}`,              // Unicode escapes
+	`(?i)&#x[0-9a-f]+;?`,                // Hex encoded entities
+	`(?i)&#\d+;?`,                       // Decimal encoded entities
 }
 
 var compiledXSSPatterns []*regexp.Regexp
@@ -178,27 +178,27 @@ func (v *InputSecurityValidator) decodeInput(input string) string {
 
 // Path traversal patterns to detect
 var pathTraversalPatterns = []string{
-	`(?i)\.\.(/|\\)`,          // ../ or ..\
-	`(?i)\.\.%2f`,             // URL encoded ../
-	`(?i)\.\.%5c`,             // URL encoded ..\
+	`(?i)\.\.(/|\\)`,           // ../ or ..\
+	`(?i)\.\.%2f`,              // URL encoded ../
+	`(?i)\.\.%5c`,              // URL encoded ..\
 	`(?i)%2e%2e(/|\\|%2f|%5c)`, // Double URL encoded
-	`(?i)\.\.%c0%af`,          // Overlong UTF-8
-	`(?i)\.\.%c1%9c`,          // Overlong UTF-8
-	`(?i)/etc/passwd`,         // Linux password file
-	`(?i)/etc/shadow`,         // Linux shadow file
-	`(?i)c:\\windows`,         // Windows system path
-	`(?i)c:/windows`,          // Windows system path (forward slash)
-	`(?i)\\\\`,                // UNC path
-	`(?i)/proc/self`,          // Linux proc filesystem
-	`(?i)/var/log`,            // Log files
-	`(?i)web\.config`,         // ASP.NET config
-	`(?i)\.htaccess`,          // Apache config
-	`(?i)\.htpasswd`,          // Apache password file
-	`(?i)\.env`,               // Environment file
-	`(?i)\.git`,               // Git directory
-	`(?i)\.svn`,               // SVN directory
-	`(?i)id_rsa`,              // SSH keys
-	`(?i)authorized_keys`,     // SSH authorized keys
+	`(?i)\.\.%c0%af`,           // Overlong UTF-8
+	`(?i)\.\.%c1%9c`,           // Overlong UTF-8
+	`(?i)/etc/passwd`,          // Linux password file
+	`(?i)/etc/shadow`,          // Linux shadow file
+	`(?i)c:\\windows`,          // Windows system path
+	`(?i)c:/windows`,           // Windows system path (forward slash)
+	`(?i)\\\\`,                 // UNC path
+	`(?i)/proc/self`,           // Linux proc filesystem
+	`(?i)/var/log`,             // Log files
+	`(?i)web\.config`,          // ASP.NET config
+	`(?i)\.htaccess`,           // Apache config
+	`(?i)\.htpasswd`,           // Apache password file
+	`(?i)\.env`,                // Environment file
+	`(?i)\.git`,                // Git directory
+	`(?i)\.svn`,                // SVN directory
+	`(?i)id_rsa`,               // SSH keys
+	`(?i)authorized_keys`,      // SSH authorized keys
 }
 
 var compiledPathPatterns []*regexp.Regexp
@@ -238,20 +238,20 @@ func (v *InputSecurityValidator) IsSafeFromPathTraversal(input string) bool {
 var commandInjectionPatterns = []string{
 	`(?i);\s*(ls|dir|cat|type|more|less|head|tail|grep|find|wget|curl|nc|netcat|bash|sh|cmd|powershell)`,
 	`(?i)\|\s*(ls|dir|cat|type|more|less|head|tail|grep|find|wget|curl|nc|netcat|bash|sh|cmd|powershell)`,
-	`(?i)\$\(.*\)`,             // Command substitution
-	"(?i)`[^`]+`",              // Backtick command substitution
-	`(?i)>\s*/dev/tcp`,         // Bash TCP redirect
-	`(?i)eval\s*\(`,            // Eval
-	`(?i)exec\s*\(`,            // Exec
-	`(?i)system\s*\(`,          // System
-	`(?i)passthru\s*\(`,        // Passthru (PHP)
-	`(?i)shell_exec\s*\(`,      // Shell exec (PHP)
-	`(?i)popen\s*\(`,           // Popen
-	`(?i)proc_open\s*\(`,       // Proc open
-	`(?i)\|\|`,                 // Command chaining
-	`(?i)&&`,                   // Command chaining
-	`(?i)\$IFS`,                // Internal Field Separator
-	`(?i)%0[ad]`,               // Newline injection
+	`(?i)\$\(.*\)`,        // Command substitution
+	"(?i)`[^`]+`",         // Backtick command substitution
+	`(?i)>\s*/dev/tcp`,    // Bash TCP redirect
+	`(?i)eval\s*\(`,       // Eval
+	`(?i)exec\s*\(`,       // Exec
+	`(?i)system\s*\(`,     // System
+	`(?i)passthru\s*\(`,   // Passthru (PHP)
+	`(?i)shell_exec\s*\(`, // Shell exec (PHP)
+	`(?i)popen\s*\(`,      // Popen
+	`(?i)proc_open\s*\(`,  // Proc open
+	`(?i)\|\|`,            // Command chaining
+	`(?i)&&`,              // Command chaining
+	`(?i)\$IFS`,           // Internal Field Separator
+	`(?i)%0[ad]`,          // Newline injection
 }
 
 var compiledCommandPatterns []*regexp.Regexp
@@ -289,12 +289,12 @@ func (v *InputSecurityValidator) IsSafeFromCommandInjection(input string) bool {
 
 // LDAP injection patterns to detect
 var ldapInjectionPatterns = []string{
-	`(?i)\)\(\|`,               // LDAP OR injection
-	`(?i)\)\(&`,               // LDAP AND injection
-	`(?i)\*\)`,                // Wildcard injection
-	`(?i)\(\*\)`,              // Wildcard filter
-	`(?i)[\x00-\x1f]`,         // Control characters
-	`(?i)\\[0-9a-f]{2}`,       // Hex escape
+	`(?i)\)\(\|`,        // LDAP OR injection
+	`(?i)\)\(&`,         // LDAP AND injection
+	`(?i)\*\)`,          // Wildcard injection
+	`(?i)\(\*\)`,        // Wildcard filter
+	`(?i)[\x00-\x1f]`,   // Control characters
+	`(?i)\\[0-9a-f]{2}`, // Hex escape
 }
 
 var compiledLDAPPatterns []*regexp.Regexp
@@ -425,9 +425,9 @@ func (v *InputSecurityValidator) IsValidURL(inputURL string) bool {
 
 // ValidationResult contains the result of a comprehensive validation
 type ValidationResult struct {
-	IsValid    bool
-	Threats    []string
-	SafeValue  string
+	IsValid   bool
+	Threats   []string
+	SafeValue string
 }
 
 // ValidateInput performs comprehensive input validation
@@ -501,7 +501,7 @@ func (v *InputSecurityValidator) SanitizeInput(input string) string {
 
 // Email validation patterns
 var (
-	emailRegexStrict = regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$`)
+	emailRegexStrict       = regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$`)
 	disposableEmailDomains = []string{
 		"tempmail.com", "throwaway.email", "guerrillamail.com", "10minutemail.com",
 		"mailinator.com", "maildrop.cc", "yopmail.com", "trashmail.com",

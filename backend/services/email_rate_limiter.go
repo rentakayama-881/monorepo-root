@@ -11,11 +11,11 @@ import (
 
 // EmailRateLimiter tracks email sending rate limits for verification and password reset
 type EmailRateLimiter struct {
-	mu              sync.RWMutex
-	verificationReq map[string]*emailRateRecord // Key: email
+	mu               sync.RWMutex
+	verificationReq  map[string]*emailRateRecord // Key: email
 	passwordResetReq map[string]*emailRateRecord // Key: email
-	ipRequests      map[string]*ipRateRecord    // Key: IP address
-	cleanupTicker   *time.Ticker
+	ipRequests       map[string]*ipRateRecord    // Key: IP address
+	cleanupTicker    *time.Ticker
 }
 
 type emailRateRecord struct {
@@ -33,11 +33,11 @@ type ipRateRecord struct {
 
 // Configuration constants
 const (
-	MaxVerificationPerEmail = 2               // Max 2 verification emails per email per 24h
-	MaxPasswordResetPerEmail = 3              // Max 3 password reset emails per email per 24h
-	MaxEmailsPerIP          = 10              // Max 10 total emails per IP per 24h
-	EmailRateWindow         = 24 * time.Hour  // 24 hour window
-	EmailCleanupInterval    = 30 * time.Minute // Cleanup old records every 30 minutes
+	MaxVerificationPerEmail  = 2                // Max 2 verification emails per email per 24h
+	MaxPasswordResetPerEmail = 3                // Max 3 password reset emails per email per 24h
+	MaxEmailsPerIP           = 10               // Max 10 total emails per IP per 24h
+	EmailRateWindow          = 24 * time.Hour   // 24 hour window
+	EmailCleanupInterval     = 30 * time.Minute // Cleanup old records every 30 minutes
 )
 
 // Global email rate limiter instance

@@ -22,8 +22,8 @@ import (
 
 // Global instances for security services
 var (
-	loginTracker   *LoginAttemptTracker
-	securityAudit  *SecurityAuditService
+	loginTracker  *LoginAttemptTracker
+	securityAudit *SecurityAuditService
 )
 
 // InitSecurityServices initializes the global security services
@@ -65,7 +65,7 @@ func (s *AuthService) RegisterWithDevice(input validators.RegisterInput, deviceF
 	// Check device limit if fingerprint provided
 	if deviceFingerprint != "" && deviceTracker != nil {
 		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
-		
+
 		// Check if device is blocked
 		if blocked, reason := deviceTracker.IsDeviceBlocked(fingerprintHash); blocked {
 			if securityAudit != nil {
@@ -81,7 +81,7 @@ func (s *AuthService) RegisterWithDevice(input validators.RegisterInput, deviceF
 			}
 			return nil, apperrors.ErrDeviceBlocked
 		}
-		
+
 		// Check device account limit
 		allowed, count, err := deviceTracker.CanRegisterAccount(fingerprintHash, ip, userAgent)
 		if err != nil {
@@ -331,11 +331,11 @@ func (s *AuthService) LoginWithSession(input validators.LoginInput, ipAddress, u
 	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
 		logger.Debug("Invalid password attempt", zap.String("email", email))
-		
+
 		// Record failed login attempt
 		if loginTracker != nil {
 			locked, _, _ := loginTracker.RecordFailedLogin(email, ipAddress)
-			
+
 			// If account got locked, persist to database
 			if locked {
 				if err := loginTracker.PersistLock(&user, "Terlalu banyak percobaan login gagal"); err != nil {
@@ -347,7 +347,7 @@ func (s *AuthService) LoginWithSession(input validators.LoginInput, ipAddress, u
 				}
 			}
 		}
-		
+
 		if securityAudit != nil {
 			securityAudit.LogLoginFailed(email, ipAddress, userAgent, "Invalid password")
 		}

@@ -54,7 +54,7 @@ type LogoutRequest struct {
 
 // TOTPSetupResponse returned when initiating TOTP setup
 type TOTPSetupResponse struct {
-	Secret    string `json:"secret"`     // Base32 encoded secret (for manual entry)
+	Secret    string `json:"secret"`      // Base32 encoded secret (for manual entry)
 	QRCodeURL string `json:"qr_code_url"` // otpauth:// URL for QR code generation
 	Issuer    string `json:"issuer"`      // App name shown in authenticator
 	Account   string `json:"account"`     // User identifier (email)

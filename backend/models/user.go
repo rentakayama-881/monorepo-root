@@ -32,12 +32,12 @@ type User struct {
 	TOTPVerifiedAt *time.Time `gorm:"column:totp_verified_at"`           // When 2FA was first verified
 
 	// Security tracking fields
-	FailedLoginAttempts int        `gorm:"default:0"`              // Count of consecutive failed login attempts
-	LastFailedLoginAt   *time.Time `gorm:"column:last_failed_at"`  // Last failed login timestamp
-	LastLoginAt         *time.Time `gorm:"column:last_login_at"`   // Last successful login timestamp
-	LastLoginIP         string     `gorm:"size:45"`                // Last successful login IP
-	LockedUntil         *time.Time `gorm:"column:locked_until"`    // Account lock expiry (brute force protection)
-	LockReason          string     `gorm:"size:255"`               // Reason for account lock
+	FailedLoginAttempts int        `gorm:"default:0"`             // Count of consecutive failed login attempts
+	LastFailedLoginAt   *time.Time `gorm:"column:last_failed_at"` // Last failed login timestamp
+	LastLoginAt         *time.Time `gorm:"column:last_login_at"`  // Last successful login timestamp
+	LastLoginIP         string     `gorm:"size:45"`               // Last successful login IP
+	LockedUntil         *time.Time `gorm:"column:locked_until"`   // Account lock expiry (brute force protection)
+	LockReason          string     `gorm:"size:255"`              // Reason for account lock
 
 	// Passkeys relationship
 	Passkeys []Passkey `gorm:"foreignKey:UserID"`

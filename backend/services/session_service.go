@@ -18,10 +18,10 @@ import (
 
 // Session security constants
 const (
-	MaxConcurrentSessions = 5                // Maximum concurrent sessions per user
-	SessionGracePeriod    = 30 * time.Second // Grace period for token reuse (multi-tab)
-	IPChangeSuspiciousCount = 3              // Number of different IPs to trigger warning
-	IPChangeWindow        = 1 * time.Hour    // Time window for IP change tracking
+	MaxConcurrentSessions   = 5                // Maximum concurrent sessions per user
+	SessionGracePeriod      = 30 * time.Second // Grace period for token reuse (multi-tab)
+	IPChangeSuspiciousCount = 3                // Number of different IPs to trigger warning
+	IPChangeWindow          = 1 * time.Hour    // Time window for IP change tracking
 )
 
 // SessionService handles session management
@@ -38,8 +38,8 @@ func NewSessionService(db *gorm.DB) *SessionService {
 type TokenPair struct {
 	AccessToken  string    `json:"access_token"`
 	RefreshToken string    `json:"refresh_token"`
-	ExpiresIn    int64     `json:"expires_in"`    // Access token expiry in seconds
-	ExpiresAt    time.Time `json:"expires_at"`    // Access token expiry timestamp
+	ExpiresIn    int64     `json:"expires_in"` // Access token expiry in seconds
+	ExpiresAt    time.Time `json:"expires_at"` // Access token expiry timestamp
 	TokenType    string    `json:"token_type"`
 }
 
@@ -579,7 +579,7 @@ func (s *SessionService) DetectSessionAnomaly(userID uint) (bool, string) {
 	// 3. Check for token reuse attempts (any sessions with is_used=true that caused family revoke)
 	var revokedFamilies int64
 	s.db.Model(&models.Session{}).
-		Where("user_id = ? AND revoke_reason LIKE ? AND created_at > ?", 
+		Where("user_id = ? AND revoke_reason LIKE ? AND created_at > ?",
 			userID, "%token reuse%", time.Now().Add(-24*time.Hour)).
 		Count(&revokedFamilies)
 
@@ -636,7 +636,7 @@ func (s *SessionService) GetSessionSecurityStats(userID uint) map[string]interfa
 	// Revoked sessions in last 30 days
 	var revokedCount int64
 	s.db.Model(&models.Session{}).
-		Where("user_id = ? AND revoked_at IS NOT NULL AND created_at > ?", 
+		Where("user_id = ? AND revoked_at IS NOT NULL AND created_at > ?",
 			userID, time.Now().AddDate(0, 0, -30)).
 		Count(&revokedCount)
 	stats["revoked_sessions_30_days"] = revokedCount

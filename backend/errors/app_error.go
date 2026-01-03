@@ -94,5 +94,6 @@ var (
 	ErrEmailService   = NewAppError("SRV003", "Gagal mengirim email", http.StatusInternalServerError)
 
 	// Rate limiting
-	ErrTooManyRequests = NewAppError("RATE001", "Terlalu banyak percobaan. Coba lagi nanti.", http.StatusTooManyRequests)
+	ErrTooManyRequests   = NewAppError("RATE001", "Terlalu banyak percobaan. Coba lagi nanti.", http.StatusTooManyRequests)
+	ErrRateLimitExceeded = NewAppError("RATE002", "Batas permintaan tercapai. Coba lagi nanti.", http.StatusTooManyRequests)
 )

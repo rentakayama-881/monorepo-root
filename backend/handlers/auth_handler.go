@@ -120,8 +120,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// Check if TOTP verification is required
 	if response.RequiresTOTP {
 		c.JSON(http.StatusOK, gin.H{
-			"requires_totp":  true,
-			"totp_pending":   response.TOTPPending,
+			"requires_totp": true,
+			"totp_pending":  response.TOTPPending,
 			"user": gin.H{
 				"email":     response.Email,
 				"username":  response.Username,

@@ -16,60 +16,60 @@ type SecurityEventType string
 
 const (
 	// Login events
-	EventLoginSuccess       SecurityEventType = "login_success"
-	EventLoginFailed        SecurityEventType = "login_failed"
-	EventLoginLocked        SecurityEventType = "login_locked"
-	EventAccountLocked      SecurityEventType = "account_locked"
-	EventAccountUnlocked    SecurityEventType = "account_unlocked"
+	EventLoginSuccess    SecurityEventType = "login_success"
+	EventLoginFailed     SecurityEventType = "login_failed"
+	EventLoginLocked     SecurityEventType = "login_locked"
+	EventAccountLocked   SecurityEventType = "account_locked"
+	EventAccountUnlocked SecurityEventType = "account_unlocked"
 
 	// TOTP events
-	EventTOTPEnabled        SecurityEventType = "totp_enabled"
-	EventTOTPDisabled       SecurityEventType = "totp_disabled"
-	EventTOTPSuccess        SecurityEventType = "totp_success"
-	EventTOTPFailed         SecurityEventType = "totp_failed"
-	EventTOTPMaxAttempts    SecurityEventType = "totp_max_attempts"
+	EventTOTPEnabled     SecurityEventType = "totp_enabled"
+	EventTOTPDisabled    SecurityEventType = "totp_disabled"
+	EventTOTPSuccess     SecurityEventType = "totp_success"
+	EventTOTPFailed      SecurityEventType = "totp_failed"
+	EventTOTPMaxAttempts SecurityEventType = "totp_max_attempts"
 
 	// Password events
-	EventPasswordChanged    SecurityEventType = "password_changed"
-	EventPasswordResetReq   SecurityEventType = "password_reset_requested"
-	EventPasswordReset      SecurityEventType = "password_reset"
+	EventPasswordChanged  SecurityEventType = "password_changed"
+	EventPasswordResetReq SecurityEventType = "password_reset_requested"
+	EventPasswordReset    SecurityEventType = "password_reset"
 
 	// Session events
-	EventSessionCreated     SecurityEventType = "session_created"
-	EventSessionRefreshed   SecurityEventType = "session_refreshed"
-	EventSessionRevoked     SecurityEventType = "session_revoked"
-	EventTokenReuse         SecurityEventType = "token_reuse_detected"
+	EventSessionCreated   SecurityEventType = "session_created"
+	EventSessionRefreshed SecurityEventType = "session_refreshed"
+	EventSessionRevoked   SecurityEventType = "session_revoked"
+	EventTokenReuse       SecurityEventType = "token_reuse_detected"
 
 	// Passkey events
-	EventPasskeyAdded       SecurityEventType = "passkey_added"
-	EventPasskeyRemoved     SecurityEventType = "passkey_removed"
-	EventPasskeyLogin       SecurityEventType = "passkey_login"
+	EventPasskeyAdded   SecurityEventType = "passkey_added"
+	EventPasskeyRemoved SecurityEventType = "passkey_removed"
+	EventPasskeyLogin   SecurityEventType = "passkey_login"
 
 	// Critical actions
-	EventSudoActivated      SecurityEventType = "sudo_activated"
-	EventAccountDeleted     SecurityEventType = "account_deleted"
-	EventEmailChanged       SecurityEventType = "email_changed"
+	EventSudoActivated  SecurityEventType = "sudo_activated"
+	EventAccountDeleted SecurityEventType = "account_deleted"
+	EventEmailChanged   SecurityEventType = "email_changed"
 
 	// Suspicious activity
-	EventSuspiciousIP       SecurityEventType = "suspicious_ip"
-	EventDeviceRotation     SecurityEventType = "device_rotation"
-	EventIPRotation         SecurityEventType = "ip_rotation"
-	EventBruteForce         SecurityEventType = "brute_force_detected"
+	EventSuspiciousIP   SecurityEventType = "suspicious_ip"
+	EventDeviceRotation SecurityEventType = "device_rotation"
+	EventIPRotation     SecurityEventType = "ip_rotation"
+	EventBruteForce     SecurityEventType = "brute_force_detected"
 )
 
 // SecurityEvent represents a security audit log entry
 type SecurityEvent struct {
 	gorm.Model
-	UserID      *uint             `gorm:"index"`                      // Nullable for pre-auth events
-	Email       string            `gorm:"size:255;index"`             // Email involved
-	EventType   SecurityEventType `gorm:"size:50;not null;index"`
-	IPAddress   string            `gorm:"size:45"`
-	UserAgent   string            `gorm:"size:512"`
-	Success     bool              `gorm:"default:false"`
-	Details     string            `gorm:"type:text"`                  // JSON details
-	Severity    string            `gorm:"size:20;default:'info'"`     // info, warning, critical
-	Country     string            `gorm:"size:2"`                     // ISO country code
-	City        string            `gorm:"size:100"`
+	UserID    *uint             `gorm:"index"`          // Nullable for pre-auth events
+	Email     string            `gorm:"size:255;index"` // Email involved
+	EventType SecurityEventType `gorm:"size:50;not null;index"`
+	IPAddress string            `gorm:"size:45"`
+	UserAgent string            `gorm:"size:512"`
+	Success   bool              `gorm:"default:false"`
+	Details   string            `gorm:"type:text"`              // JSON details
+	Severity  string            `gorm:"size:20;default:'info'"` // info, warning, critical
+	Country   string            `gorm:"size:2"`                 // ISO country code
+	City      string            `gorm:"size:100"`
 }
 
 // SecurityAuditService handles security event logging
