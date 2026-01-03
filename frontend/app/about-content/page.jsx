@@ -15,8 +15,8 @@ import {
 export const dynamic = "force-static";
 
 export const metadata = { 
-  title: "Tentang Kami - AlephDraad",
-  description: "PT AlephDraad Utility Stack - Platform komunitas digital untuk forum, marketplace, dan pertukaran pengetahuan"
+  title: "Tentang Kami - Alephdraad",
+  description: "PT Alephdraad Utility Stack - Platform komunitas digital untuk forum, marketplace, dan pertukaran pengetahuan"
 };
 
 // Reusable styled list item with icon
