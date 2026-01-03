@@ -13,7 +13,6 @@ import (
 	"backend-gin/utils"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/datatypes"
 )
 
@@ -274,12 +273,13 @@ func DeleteAvatarHandler(c *gin.Context) {
 }
 
 // DeleteAccountRequest for account deletion
+// Note: Password not required here because RequireSudo middleware already verifies identity
 type DeleteAccountRequest struct {
-	Password     string `json:"password" binding:"required"`
 	Confirmation string `json:"confirmation" binding:"required"`
 }
 
 // DELETE /api/account - Delete user account permanently
+// Protected by RequireSudo middleware which already validates user identity
 func DeleteAccountHandler(c *gin.Context) {
 	userIfc, ok := c.Get("user")
 	if !ok {
@@ -290,19 +290,13 @@ func DeleteAccountHandler(c *gin.Context) {
 
 	var req DeleteAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password dan konfirmasi diperlukan"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Konfirmasi diperlukan"})
 		return
 	}
 
 	// Validate confirmation text
 	if req.Confirmation != "DELETE" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ketik DELETE untuk mengkonfirmasi penghapusan akun"})
-		return
-	}
-
-	// Validate password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Password salah"})
 		return
 	}
 
