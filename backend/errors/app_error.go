@@ -62,6 +62,10 @@ var (
 	ErrPasswordResetLimitReached = NewAppError("AUTH017", "Batas pengiriman email reset password tercapai. Coba lagi dalam 24 jam.", http.StatusTooManyRequests)
 	ErrIPEmailLimitReached       = NewAppError("AUTH018", "Terlalu banyak permintaan email dari IP ini. Coba lagi nanti.", http.StatusTooManyRequests)
 
+	// Device tracking errors
+	ErrDeviceLimitReached = NewAppError("AUTH019", "Perangkat ini sudah digunakan untuk maksimal akun yang diizinkan", http.StatusForbidden)
+	ErrDeviceBlocked      = NewAppError("AUTH020", "Perangkat ini diblokir karena aktivitas mencurigakan", http.StatusForbidden)
+
 	// User errors
 	ErrUserNotFound     = NewAppError("USER001", "Pengguna tidak ditemukan", http.StatusNotFound)
 	ErrUnauthorized     = NewAppError("USER002", "Tidak memiliki akses", http.StatusUnauthorized)

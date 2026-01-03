@@ -60,6 +60,66 @@ type RegisterResponse struct {
 	RequiresVerification bool
 }
 
+// RegisterWithDevice registers a new user with device fingerprint tracking
+func (s *AuthService) RegisterWithDevice(input validators.RegisterInput, deviceFingerprint, ip, userAgent string) (*RegisterResponse, error) {
+	// Check device limit if fingerprint provided
+	if deviceFingerprint != "" && deviceTracker != nil {
+		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+		
+		// Check if device is blocked
+		if blocked, reason := deviceTracker.IsDeviceBlocked(fingerprintHash); blocked {
+			if securityAudit != nil {
+				securityAudit.LogEvent(SecurityEvent{
+					Email:     input.Email,
+					EventType: "registration_device_blocked",
+					IPAddress: ip,
+					UserAgent: userAgent,
+					Success:   false,
+					Details:   reason,
+					Severity:  "warning",
+				})
+			}
+			return nil, apperrors.ErrDeviceBlocked
+		}
+		
+		// Check device account limit
+		allowed, count, err := deviceTracker.CanRegisterAccount(fingerprintHash, ip, userAgent)
+		if err != nil {
+			logger.Warn("Failed to check device limit", zap.Error(err))
+		} else if !allowed {
+			if securityAudit != nil {
+				securityAudit.LogEvent(SecurityEvent{
+					Email:     input.Email,
+					EventType: "registration_device_limit",
+					IPAddress: ip,
+					UserAgent: userAgent,
+					Success:   false,
+					Details:   fmt.Sprintf("Device already has %d accounts (max %d)", count, MaxAccountsPerDevice),
+					Severity:  "warning",
+				})
+			}
+			return nil, apperrors.ErrDeviceLimitReached.WithDetails(
+				fmt.Sprintf("Perangkat ini sudah memiliki %d akun terdaftar (maksimal %d)", count, MaxAccountsPerDevice))
+		}
+	}
+
+	// Continue with normal registration
+	response, err := s.Register(input)
+	if err != nil {
+		return nil, err
+	}
+
+	// Record device registration if successful
+	if deviceFingerprint != "" && deviceTracker != nil && response != nil {
+		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+		if err := deviceTracker.RecordDeviceRegistration(response.UserID, fingerprintHash, ip, userAgent); err != nil {
+			logger.Warn("Failed to record device registration", zap.Error(err))
+		}
+	}
+
+	return response, nil
+}
+
 // Register registers a new user
 func (s *AuthService) Register(input validators.RegisterInput) (*RegisterResponse, error) {
 	// Validate input

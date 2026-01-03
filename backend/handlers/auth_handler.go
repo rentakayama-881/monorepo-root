@@ -75,7 +75,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		FullName: req.FullName,
 	}
 
-	response, err := h.authService.Register(input)
+	// Use RegisterWithDevice if device fingerprint provided
+	response, err := h.authService.RegisterWithDevice(input, req.DeviceFingerprint, c.ClientIP(), c.GetHeader("User-Agent"))
 	if err != nil {
 		handleError(c, err)
 		return
