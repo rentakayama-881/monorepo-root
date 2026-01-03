@@ -169,6 +169,48 @@ func migrateAndSeed() {
 		panic("Failed to create security_events table: " + err.Error())
 	}
 
+	// Migrate DeviceFingerprint table for device tracking
+	if err := DB.Exec(`
+		CREATE TABLE IF NOT EXISTS device_fingerprints (
+			id SERIAL PRIMARY KEY,
+			created_at TIMESTAMP DEFAULT NOW(),
+			updated_at TIMESTAMP DEFAULT NOW(),
+			deleted_at TIMESTAMP,
+			fingerprint_hash VARCHAR(64) NOT NULL UNIQUE,
+			user_id INT,
+			ip_address VARCHAR(45),
+			user_agent VARCHAR(512),
+			account_count INT DEFAULT 1,
+			last_seen_at TIMESTAMP,
+			blocked BOOLEAN DEFAULT FALSE,
+			block_reason VARCHAR(255)
+		);
+		CREATE INDEX IF NOT EXISTS idx_device_fingerprints_hash ON device_fingerprints(fingerprint_hash);
+		CREATE INDEX IF NOT EXISTS idx_device_fingerprints_user_id ON device_fingerprints(user_id);
+		CREATE INDEX IF NOT EXISTS idx_device_fingerprints_blocked ON device_fingerprints(blocked);
+	`).Error; err != nil {
+		panic("Failed to create device_fingerprints table: " + err.Error())
+	}
+
+	// Migrate DeviceUserMapping table
+	if err := DB.Exec(`
+		CREATE TABLE IF NOT EXISTS device_user_mappings (
+			id SERIAL PRIMARY KEY,
+			created_at TIMESTAMP DEFAULT NOW(),
+			updated_at TIMESTAMP DEFAULT NOW(),
+			deleted_at TIMESTAMP,
+			fingerprint_hash VARCHAR(64) NOT NULL,
+			user_id INT NOT NULL,
+			first_seen_at TIMESTAMP,
+			last_seen_at TIMESTAMP,
+			UNIQUE(fingerprint_hash, user_id)
+		);
+		CREATE INDEX IF NOT EXISTS idx_device_user_mappings_hash ON device_user_mappings(fingerprint_hash);
+		CREATE INDEX IF NOT EXISTS idx_device_user_mappings_user_id ON device_user_mappings(user_id);
+	`).Error; err != nil {
+		panic("Failed to create device_user_mappings table: " + err.Error())
+	}
+
 	// Seed categories if empty
 	var count int64
 	DB.Model(&models.Category{}).Count(&count)

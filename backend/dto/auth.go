@@ -1,15 +1,17 @@
 package dto
 
 type RegisterRequest struct {
-	Email    string  `json:"email" binding:"required"`
-	Password string  `json:"password" binding:"required"`
-	Username *string `json:"username"`
-	FullName *string `json:"full_name"`
+	Email             string  `json:"email" binding:"required"`
+	Password          string  `json:"password" binding:"required"`
+	Username          *string `json:"username"`
+	FullName          *string `json:"full_name"`
+	DeviceFingerprint string  `json:"device_fingerprint"` // Optional device fingerprint from frontend
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Email             string `json:"email" binding:"required"`
+	Password          string `json:"password" binding:"required"`
+	DeviceFingerprint string `json:"device_fingerprint"` // Optional device fingerprint from frontend
 }
 
 // LoginTOTPRequest for completing 2FA login
