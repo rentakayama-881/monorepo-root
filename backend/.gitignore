@@ -1,12 +1,50 @@
-.env
+# ===================================
+# Backend .gitignore
+# ===================================
 
-# Build outputs
+# Environment files (SENSITIVE!)
+.env
+.env.*
+!.env.example
+
+# Go build outputs / binaries
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+app
+server
 backend
 backend-gin
-app
+main
 
+# Go workspace
+go.work
+go.work.sum
+
+# Vendor directory (if using vendoring)
+vendor/
+
+# Test cache and coverage
+*.test
+*.out
+coverage.txt
+coverage.html
+
+# IDE
+.idea/
+.vscode/
+
+# Debug files
+*.pprof
+debug-*.sh
+
+# Uploaded files (if stored locally)
+uploads/
+public/avatars/*
+!public/avatars/.gitkeep
+
+# Logs
+*.log
+logs/
