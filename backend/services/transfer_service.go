@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"backend-gin/config"
 	"backend-gin/database"
 	"backend-gin/models"
 
@@ -166,6 +167,7 @@ func (s *TransferService) creditWithTx(tx *gorm.DB, userID uint, amount int64) e
 }
 
 // ReleaseTransfer releases held funds to receiver (by sender or auto-release)
+// Escrow fee (2%) is deducted from the receiver (seller)
 func (s *TransferService) ReleaseTransfer(transferID uint, releasedByUserID uint) (*models.Transfer, error) {
 	var transfer models.Transfer
 	err := database.DB.First(&transfer, transferID).Error
@@ -178,6 +180,10 @@ func (s *TransferService) ReleaseTransfer(transferID uint, releasedByUserID uint
 		return nil, errors.New("only sender can release the transfer")
 	}
 
+	// Calculate escrow fee (charged to seller/receiver)
+	escrowFee := config.CalculateEscrowFee(transfer.Amount)
+	netAmount := transfer.Amount - escrowFee
+
 	err = database.DB.Transaction(func(tx *gorm.DB) error {
 		// Re-fetch with lock to prevent race conditions
 		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&transfer, transferID).Error; err != nil {
@@ -189,8 +195,8 @@ func (s *TransferService) ReleaseTransfer(transferID uint, releasedByUserID uint
 			return errors.New("transfer is not in held status")
 		}
 
-		// Credit receiver's wallet
-		if err := s.creditWithTx(tx, transfer.ReceiverID, transfer.Amount); err != nil {
+		// Credit receiver's wallet with net amount (after fee deduction)
+		if err := s.creditWithTx(tx, transfer.ReceiverID, netAmount); err != nil {
 			return err
 		}
 
@@ -203,17 +209,37 @@ func (s *TransferService) ReleaseTransfer(transferID uint, releasedByUserID uint
 			return err
 		}
 
-		// Create wallet transaction log for receiver
-		walletTx := models.WalletTransaction{
+		// Create wallet transaction log for receiver (net amount)
+		walletTxReceiver := models.WalletTransaction{
 			UserID:        transfer.ReceiverID,
 			Type:          models.WalletTxTypeTransferIn,
-			Amount:        transfer.Amount,
+			Amount:        netAmount,
 			ReferenceType: "transfer",
 			ReferenceID:   transfer.ID,
-			Description:   "Received transfer",
+			Description:   "Received transfer (after 2% escrow fee)",
 		}
 
-		return tx.Create(&walletTx).Error
+		if err := tx.Create(&walletTxReceiver).Error; err != nil {
+			return err
+		}
+
+		// Create separate wallet transaction log for fee
+		if escrowFee > 0 {
+			walletTxFee := models.WalletTransaction{
+				UserID:        transfer.ReceiverID,
+				Type:          models.WalletTxTypeFee,
+				Amount:        -escrowFee,
+				ReferenceType: "transfer",
+				ReferenceID:   transfer.ID,
+				Description:   "Escrow service fee (2%)",
+			}
+
+			if err := tx.Create(&walletTxFee).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
 
 	if err != nil {

@@ -19,23 +19,28 @@ type UserWallet struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-// Deposit represents a deposit transaction from Xendit
+// Deposit represents a deposit transaction
 type Deposit struct {
-	ID                 uint           `gorm:"primaryKey" json:"id"`
-	UserID             uint           `gorm:"index;not null" json:"user_id"`
-	User               User           `gorm:"foreignKey:UserID" json:"-"`
-	ExternalID         string         `gorm:"size:100;uniqueIndex" json:"external_id"` // Xendit invoice/payment ID
-	Amount             int64          `gorm:"not null" json:"amount"`                  // Amount in IDR
-	PaymentMethod      string         `gorm:"size:50" json:"payment_method"`           // QRIS, OVO, DANA, BCA_VA, etc.
-	PaymentChannel     string         `gorm:"size:50" json:"payment_channel"`          // Specific channel
-	Status             DepositStatus  `gorm:"size:20;default:'pending'" json:"status"` // pending, success, failed, expired
-	XenditCallbackData string         `gorm:"type:text" json:"-"`                      // JSON callback data from Xendit
-	InvoiceURL         string         `gorm:"size:500" json:"invoice_url"`             // Payment URL from Xendit
-	ExpiresAt          *time.Time     `json:"expires_at"`
-	PaidAt             *time.Time     `json:"paid_at"`
-	CreatedAt          time.Time      `json:"created_at"`
-	UpdatedAt          time.Time      `json:"updated_at"`
-	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
+	ID             uint          `gorm:"primaryKey" json:"id"`
+	UserID         uint          `gorm:"index;not null" json:"user_id"`
+	User           User          `gorm:"foreignKey:UserID" json:"-"`
+	ExternalID     string        `gorm:"size:100;uniqueIndex" json:"external_id"` // Payment gateway invoice/payment ID
+	Amount         int64         `gorm:"not null" json:"amount"`                  // Amount in IDR
+	PaymentMethod  string        `gorm:"size:50" json:"payment_method"`           // QRIS, OVO, DANA, BCA_VA, etc.
+	PaymentChannel string        `gorm:"size:50" json:"payment_channel"`          // Specific channel
+	Status         DepositStatus `gorm:"size:20;default:'pending'" json:"status"` // pending, success, failed, expired
+	CallbackData   string        `gorm:"type:text" json:"-"`                      // JSON callback data from payment gateway
+	InvoiceURL     string        `gorm:"size:500" json:"invoice_url"`             // Payment URL
+	ExpiresAt      *time.Time    `json:"expires_at"`
+	PaidAt         *time.Time    `json:"paid_at"`
+	// Settlement tracking (Faspay H+1/H+3)
+	SettlementDays int            `gorm:"default:1" json:"settlement_days"` // H+N days for settlement
+	SettlementDate *time.Time     `json:"settlement_date"`                  // Expected settlement date
+	SettledAt      *time.Time     `json:"settled_at"`                       // Actual settlement date
+	IsSettled      bool           `gorm:"default:false" json:"is_settled"`  // Whether funds have settled
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 type DepositStatus string
@@ -164,23 +169,23 @@ type DisputeMessage struct {
 
 // Withdrawal represents a withdrawal request to bank/e-wallet
 type Withdrawal struct {
-	ID                   uint             `gorm:"primaryKey" json:"id"`
-	UserID               uint             `gorm:"index;not null" json:"user_id"`
-	User                 User             `gorm:"foreignKey:UserID" json:"-"`
-	WithdrawalCode       string           `gorm:"size:20;uniqueIndex" json:"withdrawal_code"` // WDR-XXXXXX
-	Amount               int64            `gorm:"not null" json:"amount"`                     // Amount in IDR
-	Fee                  int64            `gorm:"default:0" json:"fee"`                       // Withdrawal fee
-	NetAmount            int64            `gorm:"not null" json:"net_amount"`                 // Amount after fee
-	BankCode             string           `gorm:"size:20" json:"bank_code"`
-	AccountNumber        string           `gorm:"size:50" json:"account_number"`
-	AccountName          string           `gorm:"size:100" json:"account_name"`
-	Status               WithdrawalStatus `gorm:"size:20;default:'pending'" json:"status"`
-	XenditDisbursementID string           `gorm:"size:100" json:"xendit_disbursement_id"`
-	FailureReason        string           `gorm:"size:500" json:"failure_reason"`
-	ProcessedAt          *time.Time       `json:"processed_at"`
-	CreatedAt            time.Time        `json:"created_at"`
-	UpdatedAt            time.Time        `json:"updated_at"`
-	DeletedAt            gorm.DeletedAt   `gorm:"index" json:"-"`
+	ID             uint             `gorm:"primaryKey" json:"id"`
+	UserID         uint             `gorm:"index;not null" json:"user_id"`
+	User           User             `gorm:"foreignKey:UserID" json:"-"`
+	WithdrawalCode string           `gorm:"size:20;uniqueIndex" json:"withdrawal_code"` // WDR-XXXXXX
+	Amount         int64            `gorm:"not null" json:"amount"`                     // Amount in IDR
+	Fee            int64            `gorm:"default:0" json:"fee"`                       // Withdrawal fee
+	NetAmount      int64            `gorm:"not null" json:"net_amount"`                 // Amount after fee
+	BankCode       string           `gorm:"size:20" json:"bank_code"`
+	AccountNumber  string           `gorm:"size:50" json:"account_number"`
+	AccountName    string           `gorm:"size:100" json:"account_name"`
+	Status         WithdrawalStatus `gorm:"size:20;default:'pending'" json:"status"`
+	DisbursementID string           `gorm:"size:100" json:"disbursement_id"` // Payment gateway disbursement ID
+	FailureReason  string           `gorm:"size:500" json:"failure_reason"`
+	ProcessedAt    *time.Time       `json:"processed_at"`
+	CreatedAt      time.Time        `json:"created_at"`
+	UpdatedAt      time.Time        `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt   `gorm:"index" json:"-"`
 }
 
 type WithdrawalStatus string

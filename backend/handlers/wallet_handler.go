@@ -223,8 +223,8 @@ func (h *WalletHandler) CreateDeposit(c *gin.Context) {
 	}
 
 	if xenditID != "" {
-		callbackData, _ := json.Marshal(map[string]string{"xendit_id": xenditID})
-		deposit.XenditCallbackData = string(callbackData)
+		callbackData, _ := json.Marshal(map[string]string{"payment_gateway_id": xenditID})
+		deposit.CallbackData = string(callbackData)
 	}
 
 	if err := database.DB.Create(&deposit).Error; err != nil {
@@ -322,7 +322,7 @@ func (h *WalletHandler) XenditInvoiceCallback(c *gin.Context) {
 		deposit.PaidAt = &callback.PaidAt
 
 		callbackData, _ := json.Marshal(callback)
-		deposit.XenditCallbackData = string(callbackData)
+		deposit.CallbackData = string(callbackData)
 
 		if err := database.DB.Save(&deposit).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update deposit"})
