@@ -1,124 +1,182 @@
 export const dynamic = "force-static";
 
 export const metadata = { 
-  title: "Aturan Komunitas",
-  description: "Pedoman dan aturan komunitas Alephdraad untuk menciptakan lingkungan yang aman dan produktif"
+  title: "Syarat dan Ketentuan - AlephDraad",
+  description: "Syarat dan ketentuan penggunaan platform AlephDraad serta pedoman komunitas"
 };
 
-export default function RulesContentPage() {
+export default function TermsPage() {
   return (
-    <div className="relative">
-      {/* Background accent */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-[-80px] h-[280px] blur-3xl"
-        style={{
-          background: 'radial-gradient(500px circle at 50% 0%, rgb(var(--brand) / 0.12), transparent 60%)'
-        }}
-      />
+    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
+        <h1 className="text-2xl font-semibold text-[rgb(var(--fg))]">Syarat dan Ketentuan</h1>
+        <p className="mt-1 text-sm text-[rgb(var(--muted))]">
+          Terakhir diperbarui: 3 Januari 2026
+        </p>
+      </div>
 
-      <section className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 shadow-sm sm:p-8 lg:p-12">
-          {/* Header */}
-          <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
-            <h1 className="text-3xl font-bold tracking-tight text-[rgb(var(--fg))] sm:text-4xl">
-              Aturan Komunitas
-            </h1>
-            <p className="mt-2 text-base text-[rgb(var(--muted))]">
-              Pedoman untuk menciptakan lingkungan yang aman dan produktif
-            </p>
-          </div>
+      <article className="prose-doc">
+        {/* Intro */}
+        <section className="mb-8">
+          <p className="text-sm leading-relaxed text-[rgb(var(--muted))]">
+            Dengan mengakses dan menggunakan platform AlephDraad (<a href="https://www.alephdraad.fun" className="text-[rgb(var(--brand))] hover:underline">www.alephdraad.fun</a>), 
+            Anda menyatakan telah membaca, memahami, dan menyetujui untuk terikat dengan syarat dan ketentuan ini. 
+            Dokumen ini merupakan perjanjian yang sah secara hukum antara Anda ("Pengguna") dan PT AlephDraad Utility Stack ("Kami").
+          </p>
+        </section>
 
-          {/* Content */}
-          <div className="prose prose-neutral max-w-none dark:prose-invert space-y-6">
-            <div className="rounded-xl bg-[rgb(var(--brand)/0.1)] p-6 border border-[rgb(var(--brand)/0.2)]">
-              <h3 className="mb-2 text-lg font-semibold text-[rgb(var(--fg))]">Prinsip Utama</h3>
-              <p className="leading-relaxed text-[rgb(var(--fg))]">
-                Platform ini didirikan untuk memfasilitasi pertukaran pengetahuan, pengalaman, serta mengatasi kesenjangan sosial. Kami menjunjung tinggi ilmu dan pengalaman, memberikan penghargaan tertinggi untuk setiap upaya, sekecil apa pun, yang telah Anda lakukan. Kami menyingkirkan sebutan "teori" karena di sini setiap pengguna didorong untuk merealisasikan ide mereka dalam berbagai bentuk tindakan, teknik, dan inovasi.
-              </p>
-            </div>
+        {/* Pasal 1 */}
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Pasal 1 — Definisi</h2>
+          <ul className="space-y-2 text-sm text-[rgb(var(--muted))]">
+            <li><strong className="text-[rgb(var(--fg))]">Platform</strong> adalah situs web AlephDraad beserta seluruh layanan yang disediakan.</li>
+            <li><strong className="text-[rgb(var(--fg))]">Pengguna</strong> adalah setiap individu yang mengakses atau menggunakan Platform.</li>
+            <li><strong className="text-[rgb(var(--fg))]">Konten</strong> adalah segala informasi, teks, gambar, atau materi lain yang diunggah ke Platform.</li>
+            <li><strong className="text-[rgb(var(--fg))]">Escrow</strong> adalah sistem penjaminan dana yang dikelola Platform untuk keamanan transaksi.</li>
+            <li><strong className="text-[rgb(var(--fg))]">Lencana</strong> adalah penghargaan digital yang diberikan kepada Pengguna berdasarkan kontribusi.</li>
+          </ul>
+        </section>
 
-            <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-6">
-              <h2 className="mb-4 text-xl font-semibold text-[rgb(var(--fg))]">I. Pendaftaran & Akun</h2>
-              <ol className="ml-6 space-y-3 text-[rgb(var(--muted))]">
-                <li className="leading-relaxed">Gunakan nama pengguna yang layak dan pantas. Hindari penggunaan kata-kata yang kasar atau melecehkan.</li>
-                <li className="leading-relaxed">Jaga keamanan akun Anda. Jika terjadi peretasan, segera laporkan agar akun tidak disalahgunakan.</li>
-                <li className="leading-relaxed">Kami sengaja hanya menyediakan opsi pendaftaran/masuk melalui akun GitHub untuk mencegah penyalahgunaan akun secara masif.</li>
-              </ol>
-            </div>
+        {/* Pasal 2 */}
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Pasal 2 — Pendaftaran dan Akun</h2>
+          <ol className="list-decimal ml-5 space-y-2 text-sm text-[rgb(var(--muted))]">
+            <li>Pengguna wajib berusia minimal 17 (tujuh belas) tahun atau didampingi orang tua/wali untuk mendaftar.</li>
+            <li>Pengguna wajib memberikan informasi yang akurat dan terkini saat pendaftaran.</li>
+            <li>Setiap Pengguna hanya diperbolehkan memiliki satu akun aktif.</li>
+            <li>Pengguna bertanggung jawab penuh atas keamanan kredensial akun (kata sandi, passkey, kode 2FA).</li>
+            <li>Pengguna wajib segera melaporkan jika terjadi akses tidak sah terhadap akunnya.</li>
+            <li>Nama pengguna tidak boleh mengandung kata-kata kasar, menyinggung, atau menyerupai nama resmi pihak lain.</li>
+          </ol>
+          <p className="mt-3 text-xs text-[rgb(var(--muted))]">
+            Dasar hukum: Pasal 26 ayat (1) UU No. 19 Tahun 2016 tentang Perubahan UU ITE
+          </p>
+        </section>
 
-            <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-6">
-              <h2 className="mb-4 text-xl font-semibold text-[rgb(var(--fg))]">II. Etika & Perilaku</h2>
-              <ol className="ml-6 space-y-3 text-[rgb(var(--muted))]">
-                <li className="leading-relaxed">Dilarang melakukan serangan pribadi, termasuk menghina, merendahkan, atau mengancam pengguna lain.</li>
-                <li className="leading-relaxed">Kritik diperbolehkan, namun harus berfokus pada argumen atau gagasan, bukan pada individu.</li>
-                <li className="leading-relaxed">Dilarang melakukan diskriminasi berdasarkan ras, agama, gender, orientasi, atau latar belakang sosial.</li>
-                <li className="leading-relaxed">
-                  Dilarang menyebarkan konten yang merusak kemanusiaan, termasuk:
-                  <ol className="ml-4 mt-2 space-y-1">
-                    <li>Kekerasan brutal, pelecehan seksual, eksploitasi anak, terorisme, perdagangan manusia, atau promosi bunuh diri.</li>
-                  </ol>
-                </li>
-                <li className="leading-relaxed">
-                  <strong className="text-[rgb(var(--fg))]">Diskusi tentang topik sensitif</strong>, seperti peretasan, eksploitasi, perangkat perusak (malware), rekayasa sosial (social engineering), serangan DDoS, Injeksi SQL, XSS, pembobolan, dan serangan bruteforce diperbolehkan, <strong className="text-[rgb(var(--fg))]">sebatas untuk tujuan edukasi, penelitian, atau simulasi</strong>. Dengan ketentuan:
-                  <ol className="ml-4 mt-2 space-y-2">
-                    <li>Tidak diperbolehkan memublikasikan data pribadi (doxing), akses ilegal yang masih aktif, atau metode yang dapat merugikan individu secara langsung.</li>
-                    <li>Tidak diperbolehkan mencuri data pribadi (misalnya, alamat surel) milik orang lain.</li>
-                    <li>Setiap pengguna bertanggung jawab secara pribadi atau kelompok atas segala konsekuensi hukum tanpa melibatkan pihak platform.</li>
-                  </ol>
-                </li>
-                <li className="leading-relaxed">Humor, meme, atau percakapan ringan tidak dilarang selama tidak merendahkan atau melukai martabat orang lain.</li>
-              </ol>
-            </div>
-
-            <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-6">
-              <h2 className="mb-4 text-xl font-semibold text-[rgb(var(--fg))]">III. Konten & Diskusi</h2>
-              <ol className="ml-6 space-y-3 text-[rgb(var(--muted))]">
-                <li className="leading-relaxed">Unggah konten pada kategori yang sesuai.</li>
-                <li className="leading-relaxed">Hindari pengiriman konten berulang (flood) dan spam.</li>
-                <li className="leading-relaxed">Judul thread harus jelas dan deskriptif, bukan hanya "Tolong!!!" atau "Help".</li>
-                <li className="leading-relaxed">Berbagi data atau alat uji diizinkan selama tidak digunakan untuk merugikan pihak nyata (misalnya, menyebarluaskan data sensitif yang masih aktif).</li>
-              </ol>
-            </div>
-
-            <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-6">
-              <h2 className="mb-4 text-xl font-semibold text-[rgb(var(--fg))]">IV. Transaksi & Komunitas</h2>
-              <ol className="ml-6 space-y-3 text-[rgb(var(--muted))]">
-                <li className="leading-relaxed">Apabila terjadi transaksi, disarankan untuk menggunakan sistem penjaminan dana (escrow) hingga batas waktu kesepakatan tercapai.</li>
-                <li className="leading-relaxed">Dilarang menipu, memeras, atau menyalahgunakan kepercayaan pengguna lain.</li>
-                <li className="leading-relaxed">Di sini, <strong className="text-[rgb(var(--fg))]">pengetahuan jauh lebih berharga daripada keuntungan semata</strong>.</li>
-                <li className="leading-relaxed">Pengguna yang memiliki portofolio atau reputasi dari platform lain, seperti pengguna A yang telah menjual ribuan akun, atau pengguna B yang memiliki reputasi di platform lain, dapat menerima penghargaan berupa lencana. Kami tidak membatasi pengguna untuk memperoleh penghargaan dari berbagai platform. Kami memiliki pedoman selektif untuk mengidentifikasi kelayakan pengguna sebelum memutuskan untuk memberikan penghargaan.</li>
-              </ol>
-            </div>
-
-            <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-6">
-              <h2 className="mb-4 text-xl font-semibold text-[rgb(var(--fg))]">V. Penegakan Aturan</h2>
-              <ol className="ml-6 space-y-3 text-[rgb(var(--muted))]">
-                <li className="leading-relaxed">Moderator dan arbitrator akan bertindak sebagai mediator untuk menyelesaikan konflik, bukan untuk membela salah satu pihak atau mengintervensi satu sama lain.</li>
-                <li className="leading-relaxed">Pelanggaran ringan akan dikenai teguran.</li>
-                <li className="leading-relaxed">Pelanggaran serius, seperti merugikan individu secara langsung, eksploitasi manusia, atau penipuan, akan berujung pada sanksi larangan permanen (ban).</li>
-                <li className="leading-relaxed">Diskusi mengenai keputusan moderator atau arbitrator diperbolehkan.</li>
-              </ol>
-            </div>
-
-            <div className="rounded-xl border-2 border-[rgb(var(--brand)/0.3)] bg-[rgb(var(--brand)/0.05)] p-6">
-              <h2 className="mb-4 text-xl font-semibold text-[rgb(var(--fg))]">VI. Nilai Dasar Komunitas</h2>
-              <ul className="ml-6 space-y-2 text-[rgb(var(--muted))]">
-                <li className="leading-relaxed">✦ Kemanusiaan di atas segalanya.</li>
-                <li className="leading-relaxed">✦ Ilmu untuk berkembang, bukan untuk menindas.</li>
-                <li className="leading-relaxed">✦ Kebebasan berpendapat harus dibarengi dengan tanggung jawab.</li>
-                <li className="leading-relaxed">✦ Bertindak dengan rasionalitas dan kesadaran penuh.</li>
-                <li className="leading-relaxed">✦ Saling menghargai, meskipun berbeda pandangan.</li>
-                <li className="leading-relaxed">✦ Memiliki simpati, empati, dan kepedulian terhadap sesama.</li>
+        {/* Pasal 3 */}
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Pasal 3 — Konten dan Perilaku</h2>
+          <ol className="list-decimal ml-5 space-y-2 text-sm text-[rgb(var(--muted))]">
+            <li>Pengguna dilarang mengunggah konten yang melanggar hukum Republik Indonesia.</li>
+            <li>
+              <span>Konten yang dilarang meliputi namun tidak terbatas pada:</span>
+              <ul className="list-disc ml-5 mt-2 space-y-1">
+                <li>Pornografi, terutama yang melibatkan anak di bawah umur</li>
+                <li>Ujaran kebencian berbasis SARA (Suku, Agama, Ras, Antargolongan)</li>
+                <li>Ancaman kekerasan atau terorisme</li>
+                <li>Penipuan dan pemerasan</li>
+                <li>Pelanggaran hak kekayaan intelektual</li>
+                <li>Data pribadi pihak lain tanpa persetujuan (doxing)</li>
               </ul>
-              <p className="mt-4 italic leading-relaxed text-[rgb(var(--fg))]">
-                Di sini, kebebasan dan etika berpadu menjadi satu. Ketika Anda melanggar aturan, Anda akan menerima konsekuensinya, begitu pun sebaliknya. Anda tidak perlu membongkar seluruh rumah hanya untuk mengeluarkan mobil; ada banyak cara yang lebih baik, misalnya merusak garasi. <span className="font-semibold">Salam.</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+            </li>
+            <li>Diskusi teknis tentang keamanan siber diperbolehkan untuk tujuan edukasi dengan batasan tidak merugikan pihak nyata.</li>
+            <li>Kritik konstruktif diperbolehkan; serangan personal dilarang.</li>
+          </ol>
+          <p className="mt-3 text-xs text-[rgb(var(--muted))]">
+            Dasar hukum: Pasal 27-29 UU No. 11 Tahun 2008 jo. UU No. 19 Tahun 2016 tentang ITE
+          </p>
+        </section>
+
+        {/* Pasal 4 */}
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Pasal 4 — Transaksi dan Escrow</h2>
+          <ol className="list-decimal ml-5 space-y-2 text-sm text-[rgb(var(--muted))]">
+            <li>Platform menyediakan sistem escrow untuk memfasilitasi transaksi antar Pengguna.</li>
+            <li>Dana pembeli akan ditahan oleh Platform hingga kedua belah pihak mengkonfirmasi penyelesaian transaksi.</li>
+            <li>Penjual wajib menyerahkan produk/jasa sesuai deskripsi yang tercantum.</li>
+            <li>Pembeli memiliki waktu yang ditentukan untuk melakukan inspeksi dan mengajukan klaim jika ada ketidaksesuaian.</li>
+            <li>Platform berhak memotong biaya layanan dari setiap transaksi sesuai ketentuan yang berlaku.</li>
+            <li>Sengketa transaksi akan diselesaikan melalui mekanisme arbitrase internal Platform.</li>
+            <li>Keputusan arbitrase bersifat final dan mengikat kedua belah pihak.</li>
+          </ol>
+          <p className="mt-3 text-xs text-[rgb(var(--muted))]">
+            Dasar hukum: Pasal 17 PP No. 71 Tahun 2019 tentang PSTE; UU No. 8 Tahun 1999 tentang Perlindungan Konsumen
+          </p>
+        </section>
+
+        {/* Pasal 5 */}
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Pasal 5 — Hak Kekayaan Intelektual</h2>
+          <ol className="list-decimal ml-5 space-y-2 text-sm text-[rgb(var(--muted))]">
+            <li>Pengguna mempertahankan hak atas konten yang diunggah ke Platform.</li>
+            <li>Dengan mengunggah konten, Pengguna memberikan lisensi non-eksklusif kepada Platform untuk menampilkan konten tersebut.</li>
+            <li>Platform berhak menghapus konten yang diduga melanggar hak kekayaan intelektual pihak lain.</li>
+            <li>Merek dagang "AlephDraad" dan logo terkait adalah milik PT AlephDraad Utility Stack.</li>
+          </ol>
+          <p className="mt-3 text-xs text-[rgb(var(--muted))]">
+            Dasar hukum: UU No. 28 Tahun 2014 tentang Hak Cipta; UU No. 20 Tahun 2016 tentang Merek dan Indikasi Geografis
+          </p>
+        </section>
+
+        {/* Pasal 6 */}
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Pasal 6 — Privasi dan Data Pribadi</h2>
+          <ol className="list-decimal ml-5 space-y-2 text-sm text-[rgb(var(--muted))]">
+            <li>Platform mengumpulkan dan memproses data pribadi sesuai dengan Kebijakan Privasi yang merupakan bagian tidak terpisahkan dari Syarat dan Ketentuan ini.</li>
+            <li>Pengguna menyetujui pengumpulan data yang diperlukan untuk operasional Platform.</li>
+            <li>Platform tidak akan menjual data pribadi Pengguna kepada pihak ketiga.</li>
+            <li>Pengguna berhak mengakses, memperbaiki, dan menghapus data pribadinya.</li>
+          </ol>
+          <p className="mt-3 text-xs text-[rgb(var(--muted))]">
+            Dasar hukum: UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi
+          </p>
+        </section>
+
+        {/* Pasal 7 */}
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Pasal 7 — Sanksi Pelanggaran</h2>
+          <ol className="list-decimal ml-5 space-y-2 text-sm text-[rgb(var(--muted))]">
+            <li><strong className="text-[rgb(var(--fg))]">Teguran:</strong> Pelanggaran ringan akan dikenai peringatan tertulis.</li>
+            <li><strong className="text-[rgb(var(--fg))]">Pembatasan fitur:</strong> Pelanggaran berulang dapat mengakibatkan pembatasan akses fitur tertentu.</li>
+            <li><strong className="text-[rgb(var(--fg))]">Penangguhan sementara:</strong> Pelanggaran serius dapat mengakibatkan penangguhan akun sementara.</li>
+            <li><strong className="text-[rgb(var(--fg))]">Pemutusan permanen:</strong> Pelanggaran berat akan mengakibatkan pemutusan akun secara permanen tanpa pengembalian dana.</li>
+            <li>Platform berhak melaporkan pelanggaran pidana kepada pihak berwajib.</li>
+          </ol>
+        </section>
+
+        {/* Pasal 8 */}
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Pasal 8 — Batasan Tanggung Jawab</h2>
+          <ol className="list-decimal ml-5 space-y-2 text-sm text-[rgb(var(--muted))]">
+            <li>Platform disediakan "sebagaimana adanya" tanpa jaminan apapun.</li>
+            <li>Platform tidak bertanggung jawab atas kerugian yang timbul dari penggunaan Platform.</li>
+            <li>Platform tidak bertanggung jawab atas konten yang diunggah oleh Pengguna.</li>
+            <li>Platform tidak menjamin ketersediaan layanan tanpa gangguan.</li>
+          </ol>
+        </section>
+
+        {/* Pasal 9 */}
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Pasal 9 — Perubahan Ketentuan</h2>
+          <ol className="list-decimal ml-5 space-y-2 text-sm text-[rgb(var(--muted))]">
+            <li>Platform berhak mengubah Syarat dan Ketentuan ini sewaktu-waktu.</li>
+            <li>Perubahan akan diberitahukan melalui Platform atau email terdaftar.</li>
+            <li>Penggunaan Platform setelah perubahan berlaku dianggap sebagai persetujuan atas perubahan tersebut.</li>
+          </ol>
+        </section>
+
+        {/* Pasal 10 */}
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Pasal 10 — Hukum yang Berlaku</h2>
+          <ol className="list-decimal ml-5 space-y-2 text-sm text-[rgb(var(--muted))]">
+            <li>Syarat dan Ketentuan ini diatur oleh dan ditafsirkan sesuai dengan hukum Republik Indonesia.</li>
+            <li>Segala sengketa yang timbul akan diselesaikan melalui musyawarah untuk mufakat.</li>
+            <li>Apabila musyawarah tidak mencapai kesepakatan, sengketa akan diselesaikan melalui Pengadilan Negeri Jakarta Selatan.</li>
+          </ol>
+        </section>
+
+        {/* Contact */}
+        <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-4">
+          <h2 className="mb-2 text-sm font-semibold text-[rgb(var(--fg))]">Kontak</h2>
+          <p className="text-sm text-[rgb(var(--muted))]">
+            Untuk pertanyaan terkait Syarat dan Ketentuan ini, silakan hubungi:{" "}
+            <a href="mailto:ops@alephdraad.fun" className="text-[rgb(var(--brand))] hover:underline">
+              ops@alephdraad.fun
+            </a>
+          </p>
+        </section>
+      </article>
+    </main>
   );
 }
-
