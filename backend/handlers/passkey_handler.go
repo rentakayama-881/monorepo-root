@@ -39,7 +39,7 @@ func (h *PasskeyHandler) handleError(c *gin.Context, err error) {
 		return
 	}
 	h.logger.Error("Passkey error", zap.Error(err))
-	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "Akun Anda telah di hapus atau tidak di temukan"})
 }
 
 // GetStatus returns passkey status for current user
