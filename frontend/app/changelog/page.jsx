@@ -47,7 +47,7 @@ const releases = [
     summary: "Versi beta untuk pengujian internal dan early adopters.",
     changes: {
       added: [
-        "Integrasi payment gateway (Xendit)",
+        "Integrasi payment gateway",
         "Sistem wallet internal",
         "Fitur penarikan dana",
         "Notifikasi email transaksional",
