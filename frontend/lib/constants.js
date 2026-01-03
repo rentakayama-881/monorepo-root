@@ -164,3 +164,9 @@ export const STORAGE_KEYS = {
   ADMIN_TOKEN: "admin_token",
   THEME: "theme",
 };
+
+// Locked Categories (cannot create new threads)
+export const LOCKED_CATEGORIES = [
+  "kolaborator-phd",
+  "drama-korea",
+];

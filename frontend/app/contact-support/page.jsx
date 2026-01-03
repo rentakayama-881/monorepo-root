@@ -26,9 +26,9 @@ export const metadata = {
 // Contact Card
 function ContactCard({ icon: Icon, title, children, highlight = false }) {
   return (
-    <div className={`rounded-xl border p-5 transition-all hover:border-[rgb(var(--brand))]/30 ${highlight ? 'border-[rgb(var(--brand))]/20 bg-[rgb(var(--brand))]/5' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-1))]'}`}>
+    <div className={`rounded-xl border p-5 transition-all hover:border-[rgb(var(--muted))]/50 ${highlight ? 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/30' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-1))]'}`}>
       <div className="mb-3 flex items-center gap-2">
-        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${highlight ? 'bg-[rgb(var(--brand))]/20' : 'bg-[rgb(var(--brand))]/10'} text-[rgb(var(--brand))]`}>
+        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${highlight ? 'bg-[rgb(var(--surface-2))]' : 'bg-[rgb(var(--surface-2))]'} text-[rgb(var(--fg))]`}>
           <Icon className="h-4 w-4" />
         </span>
         <span className="text-sm font-medium text-[rgb(var(--fg))]">{title}</span>
@@ -41,10 +41,10 @@ function ContactCard({ icon: Icon, title, children, highlight = false }) {
 // FAQ Accordion Item
 function FAQItem({ question, children, icon: Icon = HelpCircleIcon }) {
   return (
-    <details className="group overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] transition-all hover:border-[rgb(var(--brand))]/20">
+    <details className="group overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] transition-all hover:border-[rgb(var(--muted))]/30">
       <summary className="flex cursor-pointer items-center justify-between p-5 text-sm font-medium text-[rgb(var(--fg))]">
         <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))] transition-colors group-hover:bg-[rgb(var(--brand))]/20">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))] transition-colors group-hover:bg-[rgb(var(--surface-2))]">
             <Icon className="h-4 w-4" />
           </span>
           <span>{question}</span>
@@ -64,7 +64,7 @@ function FAQItem({ question, children, icon: Icon = HelpCircleIcon }) {
 function Step({ number, title, description }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--brand))]/10 text-xs font-semibold text-[rgb(var(--brand))]">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-xs font-semibold text-[rgb(var(--fg))]">
         {number}
       </span>
       <div className="pt-0.5">
@@ -80,7 +80,7 @@ function Step({ number, title, description }) {
 function ListItem({ children, icon: Icon = CheckIcon }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="mt-0.5 shrink-0 text-[rgb(var(--brand))]">
+      <span className="mt-0.5 shrink-0 text-[rgb(var(--muted))]">
         <Icon className="h-4 w-4" />
       </span>
       <span>{children}</span>
@@ -91,15 +91,15 @@ function ListItem({ children, icon: Icon = CheckIcon }) {
 // Guide Link Card
 function GuideCard({ href, icon: Icon, title, description }) {
   return (
-    <a href={href} className="group flex items-center gap-4 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-4 transition-all hover:border-[rgb(var(--brand))]/30 hover:shadow-md">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--brand))]/10 text-[rgb(var(--muted))] transition-colors group-hover:bg-[rgb(var(--brand))]/20 group-hover:text-[rgb(var(--brand))]">
+    <a href={href} className="group flex items-center gap-4 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-4 transition-all hover:border-[rgb(var(--muted))]/50 hover:shadow-md">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))] transition-colors group-hover:bg-[rgb(var(--surface-2))] group-hover:text-[rgb(var(--fg))]">
         <Icon className="h-5 w-5" />
       </span>
       <div className="flex-1">
         <p className="text-sm font-medium text-[rgb(var(--fg))]">{title}</p>
         <p className="text-xs text-[rgb(var(--muted))]">{description}</p>
       </div>
-      <ChevronRightIcon className="h-4 w-4 text-[rgb(var(--muted))] transition-transform group-hover:translate-x-1 group-hover:text-[rgb(var(--brand))]" />
+      <ChevronRightIcon className="h-4 w-4 text-[rgb(var(--muted))] transition-transform group-hover:translate-x-1 group-hover:text-[rgb(var(--fg))]" />
     </a>
   );
 }
@@ -110,7 +110,7 @@ export default function HelpPage() {
       {/* Header */}
       <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
             <HelpCircleIcon className="h-5 w-5" />
           </span>
           <div>
@@ -125,12 +125,12 @@ export default function HelpPage() {
       {/* Contact Section */}
       <section className="mb-8">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[rgb(var(--fg))]">
-          <MailIcon className="h-5 w-5 text-[rgb(var(--brand))]" />
+          <MailIcon className="h-5 w-5 text-[rgb(var(--muted))]" />
           Hubungi Kami
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <ContactCard icon={MailIcon} title="Email" highlight={true}>
-            <a href="mailto:ops@alephdraad.fun" className="text-sm font-medium text-[rgb(var(--brand))] hover:underline">
+            <a href="mailto:ops@alephdraad.fun" className="text-sm font-medium text-[rgb(var(--fg))] hover:underline">
               ops@alephdraad.fun
             </a>
             <p className="mt-1 text-xs text-[rgb(var(--muted))]">Respons dalam 1-2 hari kerja</p>
@@ -145,7 +145,7 @@ export default function HelpPage() {
       {/* FAQ Section */}
       <section className="mb-8">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[rgb(var(--fg))]">
-          <HelpCircleIcon className="h-5 w-5 text-[rgb(var(--brand))]" />
+          <HelpCircleIcon className="h-5 w-5 text-[rgb(var(--muted))]" />
           Pertanyaan Umum (FAQ)
         </h2>
         <div className="space-y-3">
@@ -257,7 +257,7 @@ export default function HelpPage() {
       {/* Guidelines */}
       <section className="mb-8">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[rgb(var(--fg))]">
-          <FileTextIcon className="h-5 w-5 text-[rgb(var(--brand))]" />
+          <FileTextIcon className="h-5 w-5 text-[rgb(var(--muted))]" />
           Panduan Pengguna
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -289,9 +289,9 @@ export default function HelpPage() {
       </section>
 
       {/* Tips Box */}
-      <section className="rounded-xl border border-[rgb(var(--brand))]/20 bg-[rgb(var(--brand))]/5 p-5">
+      <section className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 p-5">
         <div className="flex gap-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
             <InfoIcon className="h-5 w-5" />
           </span>
           <div>

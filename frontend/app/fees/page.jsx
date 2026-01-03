@@ -28,7 +28,7 @@ const feeStructure = [
   },
   {
     type: "Penarikan Dana",
-    fee: "Rp 2.500",
+    fee: "Rp 7.500",
     description: "Pencairan ke rekening bank",
     details: [
       "Biaya flat per penarikan",
@@ -78,7 +78,7 @@ export default function FeesPage() {
             >
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-medium text-[rgb(var(--fg))]">{item.type}</h3>
-                <span className="rounded-md bg-[rgb(var(--brand))/0.1] px-2 py-0.5 text-sm font-semibold text-[rgb(var(--brand))]">
+                <span className="rounded-md bg-[rgb(var(--surface-2))] px-2 py-0.5 text-sm font-semibold text-[rgb(var(--fg))]">
                   {item.fee}
                 </span>
               </div>
@@ -154,15 +154,15 @@ export default function FeesPage() {
             <h4 className="mb-2 text-sm font-medium text-[rgb(var(--fg))]">Bagaimana Sistem Ini Bekerja?</h4>
             <ol className="space-y-2 text-sm text-[rgb(var(--muted))]">
               <li className="flex gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--brand))/0.1] text-xs font-medium text-[rgb(var(--brand))]">1</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-xs font-medium text-[rgb(var(--fg))]">1</span>
                 <span>Ketika Anda melakukan <strong className="text-[rgb(var(--fg))]">deposit</strong>, saldo akan langsung ditampilkan di wallet setelah pembayaran dikonfirmasi.</span>
               </li>
               <li className="flex gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--brand))/0.1] text-xs font-medium text-[rgb(var(--brand))]">2</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-xs font-medium text-[rgb(var(--fg))]">2</span>
                 <span>Dana tersebut sudah bisa digunakan untuk <strong className="text-[rgb(var(--fg))]">transaksi escrow</strong> di marketplace.</span>
               </li>
               <li className="flex gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--brand))/0.1] text-xs font-medium text-[rgb(var(--brand))]">3</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-xs font-medium text-[rgb(var(--fg))]">3</span>
                 <span>Namun, dana baru bisa <strong className="text-[rgb(var(--fg))]">ditarik ke rekening bank</strong> setelah proses settlement dari payment gateway selesai.</span>
               </li>
             </ol>
@@ -311,7 +311,7 @@ export default function FeesPage() {
             <p className="text-sm font-medium text-[rgb(var(--fg))]">Ada Pertanyaan?</p>
             <p className="mt-1 text-sm text-[rgb(var(--muted))]">
               Hubungi tim kami di{" "}
-              <a href="mailto:ops@alephdraad.fun" className="text-[rgb(var(--brand))] hover:underline">
+              <a href="mailto:ops@alephdraad.fun" className="text-[rgb(var(--fg))] font-medium hover:underline">
                 ops@alephdraad.fun
               </a>
             </p>
