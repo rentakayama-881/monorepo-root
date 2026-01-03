@@ -13,7 +13,6 @@ import (
 	"backend-gin/utils"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/datatypes"
 )
 
@@ -32,15 +31,15 @@ type ChangeUsernameRequest struct {
 
 // GET /api/account/me
 func GetMyAccountHandler(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	userIfc, ok := c. Get("user")
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc. (*models.User)
 
 	var socials interface{}
-	if len(user.SocialAccounts) > 0 {
+	if len(user. SocialAccounts) > 0 {
 		_ = json.Unmarshal(user.SocialAccounts, &socials)
 	}
 	name := ""
@@ -54,7 +53,7 @@ func GetMyAccountHandler(c *gin.Context) {
 		"bio":             user.Bio,
 		"pronouns":        user.Pronouns,
 		"company":         user.Company,
-		"telegram":        user.Telegram,
+		"telegram":        user. Telegram,
 		"social_accounts": socials,
 		"avatar_url":      user.AvatarURL,
 	})
@@ -106,14 +105,14 @@ func UpdateMyAccountHandler(c *gin.Context) {
 func ChangeUsernamePaidHandler(c *gin.Context) {
 	userIfc, ok := c.Get("user")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error":  "Unauthorized"})
 		return
 	}
 	user := userIfc.(*models.User)
 
 	var req ChangeUsernameRequest
 	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.NewUsername) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "username baru wajib diisi"})
+		c.JSON(http.StatusBadRequest, gin.H{"error":  "username baru wajib diisi"})
 		return
 	}
 
@@ -126,7 +125,7 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 	}
 
 	if err := database.DB.Model(&models.User{}).Where("id = ?", user.ID).Update("name", req.NewUsername).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal memproses perubahan username"})
+		c. JSON(http.StatusInternalServerError, gin.H{"error":  "gagal memproses perubahan username"})
 		return
 	}
 	name := req.NewUsername
@@ -138,7 +137,7 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 func BuildPublicProfile(u *models.User) gin.H {
 	var socials interface{}
 	if len(u.SocialAccounts) > 0 {
-		_ = json.Unmarshal(u.SocialAccounts, &socials)
+		_ = json. Unmarshal(u.SocialAccounts, &socials)
 	}
 	name := ""
 	if u.Username != nil {
@@ -149,11 +148,11 @@ func BuildPublicProfile(u *models.User) gin.H {
 	var primaryBadge interface{}
 	if u.PrimaryBadgeID != nil && *u.PrimaryBadgeID > 0 {
 		var badge models.Badge
-		if err := database.DB.First(&badge, *u.PrimaryBadgeID).Error; err == nil {
+		if err := database.DB.First(&badge, *u. PrimaryBadgeID).Error; err == nil {
 			primaryBadge = gin.H{
-				"id":       badge.ID,
+				"id":        badge.ID,
 				"name":     badge.Name,
-				"slug":     badge.Slug,
+				"slug":     badge. Slug,
 				"icon_url": badge.IconURL,
 				"color":    badge.Color,
 			}
@@ -162,30 +161,30 @@ func BuildPublicProfile(u *models.User) gin.H {
 
 	// Get active badges
 	var userBadges []models.UserBadge
-	database.DB.Preload("Badge").Where("user_id = ? AND revoked_at IS NULL", u.ID).Find(&userBadges)
+	database.DB. Preload("Badge").Where("user_id = ?  AND revoked_at IS NULL", u.ID).Find(&userBadges)
 	var badges []gin.H
 	for _, ub := range userBadges {
 		badges = append(badges, gin.H{
 			"id":       ub.Badge.ID,
 			"name":     ub.Badge.Name,
 			"slug":     ub.Badge.Slug,
-			"icon_url": ub.Badge.IconURL,
-			"color":    ub.Badge.Color,
+			"icon_url": ub.Badge. IconURL,
+			"color":     ub.Badge.Color,
 		})
 	}
 
 	return gin.H{
 		"username":        name,
-		"full_name":       u.FullName,
-		"bio":             u.Bio,
+		"full_name":       u. FullName,
+		"bio":              u.Bio,
 		"pronouns":        u.Pronouns,
 		"company":         u.Company,
 		"telegram":        u.Telegram,
 		"social_accounts": socials,
-		"avatar_url":      u.AvatarURL,
+		"avatar_url":       u.AvatarURL,
 		"id":              u.ID,
 		"primary_badge":   primaryBadge,
-		"badges":          badges,
+		"badges":           badges,
 	}
 }
 
@@ -193,7 +192,7 @@ func BuildPublicProfile(u *models.User) gin.H {
 func UploadAvatarHandler(c *gin.Context) {
 	userIfc, ok := c.Get("user")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error":  "Unauthorized"})
 		return
 	}
 	user := userIfc.(*models.User)
@@ -207,13 +206,13 @@ func UploadAvatarHandler(c *gin.Context) {
 
 	// Validasi ukuran (misal max 2MB)
 	if header.Size > 2*1024*1024 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ukuran file maksimal 2MB"})
+		c.JSON(http.StatusBadRequest, gin.H{"error":  "ukuran file maksimal 2MB"})
 		return
 	}
 
 	// Validasi ekstensi - hanya JPG dan PNG
 	ext := strings.ToLower(filepath.Ext(header.Filename))
-	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true}
+	allowed := map[string]bool{". jpg": true, ".jpeg": true, ".png": true}
 	if !allowed[ext] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "format gambar harus JPG atau PNG"})
 		return
@@ -236,13 +235,13 @@ func UploadAvatarHandler(c *gin.Context) {
 	filename := fmt.Sprintf("u%d_%d%s", user.ID, time.Now().Unix(), ext)
 	avatarURL, err := supabase.UploadFile(file, filename, contentTypes[ext])
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal mengupload ke storage: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal mengupload ke storage:  " + err.Error()})
 		return
 	}
 
 	user.AvatarURL = avatarURL
-	if err := database.DB.Save(user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan avatar ke profil"})
+	if err := database. DB.Save(user).Error; err != nil {
+		c. JSON(http.StatusInternalServerError, gin.H{"error":  "gagal menyimpan avatar ke profil"})
 		return
 	}
 
@@ -253,7 +252,7 @@ func UploadAvatarHandler(c *gin.Context) {
 func DeleteAvatarHandler(c *gin.Context) {
 	userIfc, ok := c.Get("user")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin. H{"error": "Unauthorized"})
 		return
 	}
 	user := userIfc.(*models.User)
@@ -265,7 +264,7 @@ func DeleteAvatarHandler(c *gin.Context) {
 
 	// Clear avatar URL in database
 	user.AvatarURL = ""
-	if err := database.DB.Save(user).Error; err != nil {
+	if err := database.DB. Save(user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menghapus foto profil"})
 		return
 	}
@@ -274,37 +273,37 @@ func DeleteAvatarHandler(c *gin.Context) {
 }
 
 // DeleteAccountRequest for account deletion
+// Password tidak diperlukan di sini karena sudah diverifikasi via Sudo mode (RequireSudo middleware)
 type DeleteAccountRequest struct {
-	Password     string `json:"password" binding:"required"`
 	Confirmation string `json:"confirmation" binding:"required"`
 }
 
 // DELETE /api/account - Delete user account permanently
+// Requires sudo mode (password + TOTP verification via X-Sudo-Token header)
+// The RequireSudo middleware validates the sudo token before this handler is called
 func DeleteAccountHandler(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	userIfc, ok := c. Get("user")
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc. (*models.User)
 
 	var req DeleteAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password dan konfirmasi diperlukan"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Konfirmasi diperlukan"})
 		return
 	}
 
 	// Validate confirmation text
 	if req.Confirmation != "DELETE" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Ketik DELETE untuk mengkonfirmasi penghapusan akun"})
+		c.JSON(http.StatusBadRequest, gin. H{"error": "Ketik DELETE untuk mengkonfirmasi penghapusan akun"})
 		return
 	}
 
-	// Validate password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Password salah"})
-		return
-	}
+	// NOTE: Password validation tidak diperlukan di sini karena sudah diverifikasi
+	// via RequireSudo middleware yang memvalidasi X-Sudo-Token header. 
+	// Sudo token diperoleh setelah user memasukkan password + TOTP (jika aktif).
 
 	// Check for pending transfers/disputes - user cannot delete if has active transactions
 	var pendingTransfers int64
@@ -313,19 +312,19 @@ func DeleteAccountHandler(c *gin.Context) {
 		user.ID, user.ID,
 	).Count(&pendingTransfers)
 	if pendingTransfers > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Tidak dapat menghapus akun. Anda memiliki transaksi yang masih berjalan."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Tidak dapat menghapus akun.  Anda memiliki transaksi yang masih berjalan."})
 		return
 	}
 
 	// Start transaction - delete all user data
-	tx := database.DB.Begin()
+	tx := database.DB. Begin()
 	if tx.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses penghapusan"})
 		return
 	}
 
 	// 1. Delete thread chunks (RAG index) for user's threads
-	if err := tx.Exec(`
+	if err := tx. Exec(`
 		DELETE FROM thread_chunks 
 		WHERE thread_id IN (SELECT id FROM threads WHERE user_id = ?)
 	`, user.ID).Error; err != nil {
@@ -337,20 +336,20 @@ func DeleteAccountHandler(c *gin.Context) {
 	// 2. Delete all user's threads
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Thread{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus thread"})
+		c.JSON(http.StatusInternalServerError, gin. H{"error": "Gagal menghapus thread"})
 		return
 	}
 
 	// 3. Delete user badges
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.UserBadge{}).Error; err != nil {
-		tx.Rollback()
+		tx. Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus badge"})
 		return
 	}
 
 	// 4. Delete wallet transactions
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.WalletTransaction{}).Error; err != nil {
-		tx.Rollback()
+		tx. Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus riwayat transaksi"})
 		return
 	}
@@ -363,21 +362,21 @@ func DeleteAccountHandler(c *gin.Context) {
 	}
 
 	// 6. Delete withdrawals
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Withdrawal{}).Error; err != nil {
+	if err := tx. Where("user_id = ?", user.ID).Delete(&models.Withdrawal{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus riwayat withdrawal"})
 		return
 	}
 
 	// 7. Delete dispute messages by user
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.DisputeMessage{}).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus pesan dispute"})
+	if err := tx. Where("user_id = ?", user.ID).Delete(&models.DisputeMessage{}).Error; err != nil {
+		tx. Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error":  "Gagal menghapus pesan dispute"})
 		return
 	}
 
 	// 8. Delete dispute evidence by user
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.DisputeEvidence{}).Error; err != nil {
+	if err := tx. Where("user_id = ?", user.ID).Delete(&models.DisputeEvidence{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus bukti dispute"})
 		return
@@ -400,7 +399,7 @@ func DeleteAccountHandler(c *gin.Context) {
 	// 11. Delete user (finally)
 	if err := tx.Delete(user).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus akun"})
+		c.JSON(http.StatusInternalServerError, gin. H{"error": "Gagal menghapus akun"})
 		return
 	}
 
