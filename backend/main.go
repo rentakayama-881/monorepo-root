@@ -58,19 +58,20 @@ func AIExplainRateLimit() gin.HandlerFunc {
 }
 
 func buildCORSConfig() cors.Config {
-	corsConfig := cors.DefaultConfig()
+	corsConfig := cors. DefaultConfig()
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	// Tambahkan X-Sudo-Token ke allowed headers
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "X-Sudo-Token"}
 
 	frontend := strings.TrimSpace(os.Getenv("FRONTEND_BASE_URL"))
 	if frontend == "" {
-		frontend = "https:alephdraad.fun"
+		frontend = "https://alephdraad.fun"  // Juga fix typo:  "https:" -> "https://"
 	}
 
-	allowedOriginsEnv := os.Getenv("CORS_ALLOWED_ORIGINS")
+	allowedOriginsEnv := os. Getenv("CORS_ALLOWED_ORIGINS")
 	var rawOrigins []string
 	if allowedOriginsEnv != "" {
-		rawOrigins = strings.Split(allowedOriginsEnv, ",")
+		rawOrigins = strings. Split(allowedOriginsEnv, ",")
 	} else {
 		rawOrigins = []string{frontend}
 	}
