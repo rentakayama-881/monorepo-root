@@ -437,21 +437,16 @@ export default function AccountPage() {
           <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
             <h3 className="text-sm font-medium text-[rgb(var(--fg))]">Username</h3>
             <div className="mt-1 text-sm text-[rgb(var(--fg))]">Saat ini: <b>{username || "(belum ada)"}</b></div>
-            <div className="mt-1 text-xs text-[rgb(var(--muted))]">Ganti username berbayar Rp.100.000. Saldo IDR akan dipotong otomatis.</div>
-            <div className="mt-2 flex gap-2">
-              <Input
-                placeholder="Username baru"
-                value={newUsername}
-                onChange={e => setNewUsername(e.target.value)}
-                className=""
-              />
-              <Button
-                onClick={changeUsername}
-                loading={chgLoading}
-                disabled={chgLoading}
-              >
-                Ganti Username
-              </Button>
+            <div className="mt-3 rounded-md border border-[rgb(var(--warning-border))] bg-[rgb(var(--warning-bg))] p-3">
+              <div className="flex items-center gap-2 text-sm text-[rgb(var(--warning))]">
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <span className="font-medium">Fitur Segera Hadir</span>
+              </div>
+              <p className="mt-1 text-xs text-[rgb(var(--warning))]/80">
+                Fitur ganti username akan segera tersedia. Layanan ini berbayar Rp.100.000 dan saldo IDR akan dipotong otomatis.
+              </p>
             </div>
           </section>
 
