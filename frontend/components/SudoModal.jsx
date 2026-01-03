@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext, useCallback } from "react";
+import { useState, useEffect, createContext, useContext, useCallback, useRef } from "react";
 import { getApiBase } from "@/lib/api";
 
 // Sudo Context for global state management
@@ -24,7 +24,6 @@ export function SudoProvider({ children }) {
   const [sudoExpires, setSudoExpires] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
-  const [requiresTOTP, setRequiresTOTP] = useState(false);
 
   // Load sudo token from storage on mount
   useEffect(() => {
@@ -36,7 +35,6 @@ export function SudoProvider({ children }) {
         setSudoToken(token);
         setSudoExpires(expiresAt);
       } else {
-        // Expired, clear storage
         localStorage.removeItem(SUDO_TOKEN_KEY);
         localStorage.removeItem(SUDO_EXPIRES_KEY);
       }
@@ -96,35 +94,12 @@ export function SudoProvider({ children }) {
     setShowModal(false);
   }, [pendingAction]);
 
-  // Fetch sudo status (to check if TOTP required)
-  const fetchSudoStatus = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${getApiBase()}/api/auth/sudo/status`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Sudo-Token": sudoToken || "",
-        },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setRequiresTOTP(data.requires_totp);
-        return data;
-      }
-    } catch (err) {
-      console.error("Failed to fetch sudo status:", err);
-    }
-    return null;
-  }, [sudoToken]);
-
   const value = {
     sudoToken,
     sudoExpires,
     isSudoActive,
     requestSudo,
     clearSudoToken,
-    fetchSudoStatus,
-    requiresTOTP,
   };
 
   return (
@@ -134,37 +109,59 @@ export function SudoProvider({ children }) {
         <SudoModal
           onSuccess={onSudoSuccess}
           onCancel={onSudoCancel}
-          actionDescription={pendingAction?.action}
-          requiresTOTP={requiresTOTP}
-          onCheckStatus={fetchSudoStatus}
+          actionDescription={pendingAction?. action}
         />
       )}
-    </SudoContext.Provider>
+    </SudoContext. Provider>
   );
 }
 
-// Sudo Modal Component
-function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initialRequiresTOTP, onCheckStatus }) {
+// Sudo Modal Component - fetches its own status
+function SudoModal({ onSuccess, onCancel, actionDescription }) {
   const [password, setPassword] = useState("");
   const [totpCode, setTotpCode] = useState("");
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [requiresTOTP, setRequiresTOTP] = useState(initialRequiresTOTP);
+  const [requiresTOTP, setRequiresTOTP] = useState(false);
   const [checking, setChecking] = useState(true);
+  
+  // Use ref to prevent double fetch
+  const hasFetched = useRef(false);
 
-  // Check sudo status on mount
+  // Fetch sudo status on mount - only once
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+    
     async function checkStatus() {
       setChecking(true);
-      const status = await onCheckStatus();
-      if (status) {
-        setRequiresTOTP(status.requires_totp);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setChecking(false);
+          return;
+        }
+        
+        const res = await fetch(`${getApiBase()}/api/auth/sudo/status`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          setRequiresTOTP(data.requires_totp === true);
+        }
+      } catch (err) {
+        console.error("Failed to fetch sudo status:", err);
+      } finally {
+        setChecking(false);
       }
-      setChecking(false);
     }
+    
     checkStatus();
-  }, [onCheckStatus]);
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -173,9 +170,8 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
 
     try {
       const token = localStorage.getItem("token");
-      const body = {
-        password,
-      };
+      const body = { password };
+      
       if (requiresTOTP) {
         if (useBackupCode) {
           body.backup_code = totpCode;
@@ -195,7 +191,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
 
       const data = await res.json();
 
-      if (!res.ok) {
+      if (! res.ok) {
         throw new Error(data.error || "Verifikasi gagal");
       }
 
@@ -208,7 +204,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
   }
 
   const inputClass =
-    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
+    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]";
   const primaryButton =
     "w-full inline-flex justify-center items-center rounded-md bg-[rgb(var(--brand))] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60";
 
@@ -219,7 +215,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
           <div className="flex items-center gap-3 mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgb(var(--warning-bg))]">
               <svg className="h-5 w-5 text-[rgb(var(--warning))]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3. 75m9-. 75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
               </svg>
             </div>
             <div>
@@ -261,7 +257,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
                     maxLength={useBackupCode ? 9 : 6}
                     required
                     value={totpCode}
-                    onChange={(e) => setTotpCode(useBackupCode ? e.target.value : e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) => setTotpCode(useBackupCode ? e.target. value : e.target.value. replace(/\D/g, ""))}
                     className={`${inputClass} font-mono text-center tracking-widest`}
                     placeholder={useBackupCode ? "XXXX-XXXX" : "000000"}
                   />
