@@ -282,7 +282,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
                     }}
                     className="text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline"
                   >
-                    {useBackupCode ? "Gunakan kode authenticator" : "Gunakan backup code"}
+                    {useBackupCode ? "Gunakan kode authenticator" : "Masukkan kode 2FA atau backup code"}
                   </button>
                 </div>
               )}
@@ -318,7 +318,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
               </div>
 
               <p className="text-xs text-center text-[rgb(var(--muted))]">
-                Sesi sudo berlaku selama 15 menit
+                Tindakan ini memiliki batasan
               </p>
             </form>
           )}
