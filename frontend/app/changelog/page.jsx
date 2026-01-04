@@ -255,8 +255,8 @@ export default function ChangelogPage() {
             <p className="text-sm font-medium text-[rgb(var(--fg))]">Ingin fitur baru?</p>
             <p className="mt-1 text-sm text-[rgb(var(--muted))]">
               Kirimkan saran dan masukan Anda ke{" "}
-              <a href="mailto:ops@alephdraad.fun" className="text-[rgb(var(--brand))] hover:underline">
-                ops@alephdraad.fun
+              <a href="mailto:feedback@alephdraad.fun" className="text-[rgb(var(--brand))] hover:underline">
+                feedback@alephdraad.fun
               </a>
             </p>
           </div>

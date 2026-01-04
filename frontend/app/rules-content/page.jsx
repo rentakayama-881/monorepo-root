@@ -239,8 +239,8 @@ export default function TermsPage() {
               <h2 className="mb-1 text-sm font-semibold text-[rgb(var(--fg))]">Kontak</h2>
               <p className="text-sm text-[rgb(var(--muted))]">
                 Untuk pertanyaan terkait Syarat dan Ketentuan ini, silakan hubungi:{" "}
-                <a href="mailto:ops@alephdraad.fun" className="font-medium text-[rgb(var(--fg))] hover:underline">
-                  ops@alephdraad.fun
+                <a href="mailto:info@alephdraad.fun" className="font-medium text-[rgb(var(--fg))] hover:underline">
+                  info@alephdraad.fun
                 </a>
               </p>
             </div>

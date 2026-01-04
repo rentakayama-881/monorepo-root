@@ -311,8 +311,8 @@ export default function FeesPage() {
             <p className="text-sm font-medium text-[rgb(var(--fg))]">Ada Pertanyaan?</p>
             <p className="mt-1 text-sm text-[rgb(var(--muted))]">
               Hubungi tim kami di{" "}
-              <a href="mailto:ops@alephdraad.fun" className="text-[rgb(var(--fg))] font-medium hover:underline">
-                ops@alephdraad.fun
+              <a href="mailto:tx@alephdraad.fun" className="text-[rgb(var(--fg))] font-medium hover:underline">
+                tx@alephdraad.fun
               </a>
             </p>
           </div>
