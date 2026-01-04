@@ -7,6 +7,7 @@ const __dirname = dirname(__filename);
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
+  resolvePluginsRelativeTo: __dirname,
 });
 
 const eslintConfig = [
@@ -17,6 +18,7 @@ const eslintConfig = [
       ".next/**",
       "out/**",
       "build/**",
+      "public/**",
       "next-env.d.ts",
     ],
   },
