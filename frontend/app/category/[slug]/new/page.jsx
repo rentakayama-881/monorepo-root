@@ -101,20 +101,7 @@ export default function CreateThreadPage() {
           <MarkdownEditor
             value={content}
             onChange={setContent}
-            placeholder="Tuliskan isi thread dengan Markdown...
-
-Contoh format:
-## Heading
-**Bold** dan _italic_
-- List item
-`inline code`
-
-```
-code block
-```
-
-[Link](https://example.com)
-![Gambar](https://example.com/image.jpg)"
+            placeholder="Silakan menulis..."
             minHeight="200px"
             disabled={loading}
             preview={MarkdownPreview}
