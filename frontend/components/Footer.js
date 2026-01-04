@@ -31,7 +31,7 @@ const footerSections = [
     title: "Sumber Daya",
     links: [
       { href: "/contact-support#faq", label: "FAQ" },
-      { href: "mailto:ops@alephdraad.fun", label: "Dukungan" },
+      { href: "mailto:help@alephdraad.fun", label: "Dukungan" },
     ],
   },
 ];
@@ -84,7 +84,7 @@ export default function Footer() {
               />
             </Link>
             <span className="text-xs text-[rgb(var(--muted))]">
-              © {new Date().getFullYear()} PT Alephdraad Utility Stack
+              © {new Date().getFullYear()} PT ALEPHDRAAD UTILITY STACK
             </span>
           </div>
 
