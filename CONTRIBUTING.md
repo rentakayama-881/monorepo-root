@@ -121,6 +121,47 @@ const submit = async (d) => {
 };
 ```
 
+### TypeScript Migration
+
+The frontend is gradually migrating to TypeScript for better type safety and developer experience.
+
+#### Current Status
+- TypeScript infrastructure is configured with strict mode enabled
+- JavaScript files are still supported and type-checked using JSDoc comments
+- New files should be written in TypeScript when possible
+- Existing files can remain as JavaScript until actively modified
+
+#### Guidelines
+- **New features**: Write in TypeScript (`.ts`, `.tsx` extensions)
+- **Bug fixes**: You may keep existing JavaScript files, but consider converting critical files
+- **Refactoring**: Good opportunity to migrate to TypeScript
+- Use JSDoc comments in JavaScript files for type hints:
+
+```javascript
+/**
+ * @param {string} userId - The user ID
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.includeMetadata - Include metadata
+ * @returns {Promise<User>}
+ */
+async function fetchUser(userId, options) {
+  // ...
+}
+```
+
+#### Type Checking
+Run type checking locally before committing:
+```bash
+npm run typecheck
+```
+
+#### Priority Files for Migration
+Consider migrating these file types first:
+1. Utility functions and helpers (`lib/`)
+2. API client code
+3. Complex components with business logic
+4. Shared components (`components/ui/`)
+
 ### CSS/Styling
 
 - Use Tailwind CSS utility classes
@@ -184,7 +225,7 @@ refactor(handlers): extract common validation logic
    cd backend && go test ./...
    
    # Frontend
-   cd frontend && npm run lint && npm run build
+   cd frontend && npm run lint && npm run typecheck && npm run build
    ```
 
 4. **Commit your changes**

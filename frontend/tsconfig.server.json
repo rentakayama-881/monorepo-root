@@ -1,0 +1,33 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Override jsx for server components
+    "jsx": "react-jsx",
+    
+    // Server-specific settings
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ES2020",
+    "noEmit": true
+  },
+  "include": [
+    "app/**/layout.js",
+    "app/**/page.js",
+    "app/**/loading.js",
+    "app/**/error.js",
+    "app/**/not-found.js",
+    "app/**/route.js",
+    "app/**/*.server.js",
+    "app/**/*.server.jsx",
+    "app/**/*.server.ts",
+    "app/**/*.server.tsx",
+    "next.config.mjs"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    "out",
+    "dist",
+    "build"
+  ]
+}
