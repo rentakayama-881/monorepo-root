@@ -130,8 +130,8 @@ export default function HelpPage() {
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <ContactCard icon={MailIcon} title="Email" highlight={true}>
-            <a href="mailto:ops@alephdraad.fun" className="text-sm font-medium text-[rgb(var(--fg))] hover:underline">
-              ops@alephdraad.fun
+            <a href="mailto:help@alephdraad.fun" className="text-sm font-medium text-[rgb(var(--fg))] hover:underline">
+              help@alephdraad.fun
             </a>
             <p className="mt-1 text-xs text-[rgb(var(--muted))]">Respons dalam 1-2 hari kerja</p>
           </ContactCard>
