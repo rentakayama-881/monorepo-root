@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   ScaleIcon,
   UserIcon,
@@ -105,7 +106,7 @@ export default function TermsPage() {
         {/* Intro */}
         <div className="mb-6 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 p-5">
           <p className="text-sm leading-relaxed text-[rgb(var(--muted))]">
-            Dengan mengakses dan menggunakan platform AlephDraad (<a href="https://www.alephdraad.fun" className="font-medium text-[rgb(var(--fg))] hover:underline">www.alephdraad.fun</a>), 
+            Dengan mengakses dan menggunakan platform AlephDraad (<Link href="/" className="font-medium text-[rgb(var(--fg))] hover:underline">www.alephdraad.fun</Link>), 
             Anda menyatakan telah membaca, memahami, dan menyetujui untuk terikat dengan syarat dan ketentuan ini. 
             Dokumen ini merupakan perjanjian yang sah secara hukum antara Anda ("Pengguna") dan PT AlephDraad Utility Stack ("Kami").
           </p>
