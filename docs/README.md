@@ -14,6 +14,7 @@ Platform komunitas dan utilitas digital dengan fitur forum, marketplace escrow, 
 
 ## Documentation Index
 
+### Core Documentation
 | Document | Description |
 |----------|-------------|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture, folder structure, data flow |
@@ -22,6 +23,17 @@ Platform komunitas dan utilitas digital dengan fitur forum, marketplace escrow, 
 | [SETUP.md](./SETUP.md) | Development setup guide |
 | [SECURITY.md](./SECURITY.md) | Security features & patterns |
 | [CHANGELOG.md](./CHANGELOG.md) | Version history & migration notes |
+
+### Production Readiness (Phase 71-80)
+| Document | Description |
+|----------|-------------|
+| [PHASE_71_80_IMPLEMENTATION_GUIDE.md](./PHASE_71_80_IMPLEMENTATION_GUIDE.md) | Complete guide for Phase 71-80 execution |
+| [PHASE_71_80_TRACKING.md](./PHASE_71_80_TRACKING.md) | Master tracking document with status and metrics |
+| [PHASE_71_80_QUICK_REFERENCE.md](./PHASE_71_80_QUICK_REFERENCE.md) | Quick commands and troubleshooting |
+| [PHASE_71_80_PROJECT_SETUP.md](./PHASE_71_80_PROJECT_SETUP.md) | GitHub project/milestone setup guide |
+| [MIGRATION.md](./MIGRATION.md) | Migration guide with upgrade/rollback paths |
+| [VERSION_MATRIX.md](./VERSION_MATRIX.md) | Key dependency versions |
+| [../PR_CHECKLIST.md](../PR_CHECKLIST.md) | Comprehensive PR quality checklist |
 
 ## Quick Start
 
