@@ -3,8 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"strconv"
-	"time"
 
 	"backend-gin/database"
 	"backend-gin/middleware"
@@ -13,10 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
-// transferPinLimiter limits PIN verification attempts for transfers
-// 5 attempts per 15 minutes per user
-var transferPinLimiter = middleware.NewRateLimiter(5, 15*time.Minute)
 
 // TransferHandler handles transfer-related endpoints
 type TransferHandler struct {
@@ -67,7 +61,7 @@ func (h *TransferHandler) CreateTransfer(c *gin.Context) {
 	}
 
 	// Rate limit PIN verification to prevent brute-force
-	if !transferPinLimiter.Allow(fmt.Sprintf("transfer-pin:%d", senderID)) {
+	if !middleware.PINVerificationLimiter.Allow(fmt.Sprintf("transfer-pin:%d", senderID)) {
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many PIN attempts. Please try again later."})
 		return
 	}
@@ -111,8 +105,8 @@ func (h *TransferHandler) GetMyTransfers(c *gin.Context) {
 
 	role := c.DefaultQuery("role", "") // sender, receiver, or empty for both
 	status := c.DefaultQuery("status", "")
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit := ParseOptionalIntQuery(c, "limit", 20)
+	offset := ParseOptionalIntQuery(c, "offset", 0)
 
 	transfers, total, err := h.transferService.GetUserTransfers(userID, role, status, limit, offset)
 	if err != nil {
@@ -131,13 +125,12 @@ func (h *TransferHandler) GetMyTransfers(c *gin.Context) {
 // GetTransferByID returns a specific transfer
 func (h *TransferHandler) GetTransferByID(c *gin.Context) {
 	userID := c.GetUint("user_id")
-	transferID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid transfer ID"})
+	transferID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
-	transfer, err := h.transferService.GetTransferByID(uint(transferID))
+	transfer, err := h.transferService.GetTransferByID(transferID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Transfer not found"})
 		return
@@ -180,9 +173,8 @@ type ReleaseTransferRequest struct {
 // ReleaseTransfer releases held funds to the receiver
 func (h *TransferHandler) ReleaseTransfer(c *gin.Context) {
 	userID := c.GetUint("user_id")
-	transferID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid transfer ID"})
+	transferID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -199,7 +191,7 @@ func (h *TransferHandler) ReleaseTransfer(c *gin.Context) {
 		return
 	}
 
-	transfer, err := h.transferService.ReleaseTransfer(uint(transferID), userID)
+	transfer, err := h.transferService.ReleaseTransfer(transferID, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -214,13 +206,12 @@ func (h *TransferHandler) ReleaseTransfer(c *gin.Context) {
 // CancelTransfer cancels a held transfer (receiver action)
 func (h *TransferHandler) CancelTransfer(c *gin.Context) {
 	userID := c.GetUint("user_id")
-	transferID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid transfer ID"})
+	transferID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
-	transfer, err := h.transferService.CancelTransfer(uint(transferID), userID)
+	transfer, err := h.transferService.CancelTransfer(transferID, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

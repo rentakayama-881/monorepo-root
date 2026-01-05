@@ -18,10 +18,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// adminLoginLimiter limits admin login attempts to prevent brute-force attacks
-// 5 attempts per 15 minutes per IP
-var adminLoginLimiter = middleware.NewRateLimiter(5, 15*time.Minute)
-
 // ==================== Admin Auth ====================
 
 type AdminLoginRequest struct {
@@ -31,7 +27,7 @@ type AdminLoginRequest struct {
 
 func AdminLogin(c *gin.Context) {
 	// Rate limit admin login attempts
-	if !adminLoginLimiter.Allow(c.ClientIP()) {
+	if !middleware.AdminLoginLimiter.Allow(c.ClientIP()) {
 		c.JSON(http.StatusTooManyRequests, gin.H{
 			"error": gin.H{"code": "RATE001", "message": "Terlalu banyak percobaan. Coba lagi nanti."},
 		})

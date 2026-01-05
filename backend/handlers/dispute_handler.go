@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"backend-gin/models"
 	"backend-gin/services"
@@ -58,8 +57,8 @@ func (h *DisputeHandler) CreateDispute(c *gin.Context) {
 func (h *DisputeHandler) GetMyDisputes(c *gin.Context) {
 	userID := c.GetUint("user_id")
 
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit := ParseOptionalIntQuery(c, "limit", 20)
+	offset := ParseOptionalIntQuery(c, "offset", 0)
 
 	disputes, total, err := h.disputeService.GetUserDisputes(userID, limit, offset)
 	if err != nil {
@@ -78,13 +77,12 @@ func (h *DisputeHandler) GetMyDisputes(c *gin.Context) {
 // GetDisputeByID returns a specific dispute
 func (h *DisputeHandler) GetDisputeByID(c *gin.Context) {
 	userID := c.GetUint("user_id")
-	disputeID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid dispute ID"})
+	disputeID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
-	dispute, err := h.disputeService.GetDisputeByID(uint(disputeID))
+	dispute, err := h.disputeService.GetDisputeByID(disputeID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Dispute not found"})
 		return
@@ -118,9 +116,8 @@ type AddEvidenceRequest struct {
 // AddEvidence adds evidence to a dispute
 func (h *DisputeHandler) AddEvidence(c *gin.Context) {
 	userID := c.GetUint("user_id")
-	disputeID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid dispute ID"})
+	disputeID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -131,7 +128,7 @@ func (h *DisputeHandler) AddEvidence(c *gin.Context) {
 	}
 
 	evidence, err := h.disputeService.AddEvidence(
-		uint(disputeID),
+		disputeID,
 		userID,
 		models.EvidenceType(req.EvidenceType),
 		req.Content,
@@ -157,9 +154,8 @@ type AddMessageRequest struct {
 // AddMessage adds a message to the dispute chat
 func (h *DisputeHandler) AddMessage(c *gin.Context) {
 	userID := c.GetUint("user_id")
-	disputeID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid dispute ID"})
+	disputeID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -169,7 +165,7 @@ func (h *DisputeHandler) AddMessage(c *gin.Context) {
 		return
 	}
 
-	message, err := h.disputeService.AddMessage(uint(disputeID), userID, req.Message, false)
+	message, err := h.disputeService.AddMessage(disputeID, userID, req.Message, false)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -183,14 +179,13 @@ func (h *DisputeHandler) AddMessage(c *gin.Context) {
 // GetMessages returns all messages for a dispute
 func (h *DisputeHandler) GetMessages(c *gin.Context) {
 	userID := c.GetUint("user_id")
-	disputeID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid dispute ID"})
+	disputeID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
 	// Verify user is part of dispute
-	dispute, err := h.disputeService.GetDisputeByID(uint(disputeID))
+	dispute, err := h.disputeService.GetDisputeByID(disputeID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Dispute not found"})
 		return
@@ -201,7 +196,7 @@ func (h *DisputeHandler) GetMessages(c *gin.Context) {
 		return
 	}
 
-	messages, err := h.disputeService.GetDisputeMessages(uint(disputeID))
+	messages, err := h.disputeService.GetDisputeMessages(disputeID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get messages"})
 		return
@@ -213,13 +208,12 @@ func (h *DisputeHandler) GetMessages(c *gin.Context) {
 // MutualRelease allows sender to release funds during dispute
 func (h *DisputeHandler) MutualRelease(c *gin.Context) {
 	userID := c.GetUint("user_id")
-	disputeID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid dispute ID"})
+	disputeID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
-	dispute, err := h.disputeService.MutualRelease(uint(disputeID), userID)
+	dispute, err := h.disputeService.MutualRelease(disputeID, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -234,13 +228,12 @@ func (h *DisputeHandler) MutualRelease(c *gin.Context) {
 // MutualRefund allows receiver to agree to refund during dispute
 func (h *DisputeHandler) MutualRefund(c *gin.Context) {
 	userID := c.GetUint("user_id")
-	disputeID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid dispute ID"})
+	disputeID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
-	dispute, err := h.disputeService.MutualRefund(uint(disputeID), userID)
+	dispute, err := h.disputeService.MutualRefund(disputeID, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -255,14 +248,13 @@ func (h *DisputeHandler) MutualRefund(c *gin.Context) {
 // EscalateToAdmin escalates the dispute to admin review
 func (h *DisputeHandler) EscalateToAdmin(c *gin.Context) {
 	userID := c.GetUint("user_id")
-	disputeID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid dispute ID"})
+	disputeID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
 	// Verify user is part of dispute
-	dispute, err := h.disputeService.GetDisputeByID(uint(disputeID))
+	dispute, err := h.disputeService.GetDisputeByID(disputeID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Dispute not found"})
 		return
@@ -273,7 +265,7 @@ func (h *DisputeHandler) EscalateToAdmin(c *gin.Context) {
 		return
 	}
 
-	dispute, err = h.disputeService.EscalateToAdmin(uint(disputeID))
+	dispute, err = h.disputeService.EscalateToAdmin(disputeID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -290,8 +282,8 @@ func (h *DisputeHandler) EscalateToAdmin(c *gin.Context) {
 // AdminGetAllDisputes returns all disputes for admin
 func (h *DisputeHandler) AdminGetAllDisputes(c *gin.Context) {
 	status := c.DefaultQuery("status", "")
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit := ParseOptionalIntQuery(c, "limit", 20)
+	offset := ParseOptionalIntQuery(c, "offset", 0)
 
 	var disputes []models.Dispute
 	var total int64
@@ -322,9 +314,8 @@ type AdminResolveDisputeRequest struct {
 // AdminResolveDispute resolves a dispute (admin action)
 func (h *DisputeHandler) AdminResolveDispute(c *gin.Context) {
 	adminID := c.GetUint("admin_id")
-	disputeID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid dispute ID"})
+	disputeID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -334,7 +325,7 @@ func (h *DisputeHandler) AdminResolveDispute(c *gin.Context) {
 		return
 	}
 
-	dispute, err := h.disputeService.ResolveDispute(uint(disputeID), adminID, req.ResolveToSender, req.Decision)
+	dispute, err := h.disputeService.ResolveDispute(disputeID, adminID, req.ResolveToSender, req.Decision)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -349,9 +340,8 @@ func (h *DisputeHandler) AdminResolveDispute(c *gin.Context) {
 // AdminAddMessage allows admin to add message to dispute
 func (h *DisputeHandler) AdminAddMessage(c *gin.Context) {
 	adminID := c.GetUint("admin_id")
-	disputeID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid dispute ID"})
+	disputeID, ok := ParseIDParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -361,7 +351,7 @@ func (h *DisputeHandler) AdminAddMessage(c *gin.Context) {
 		return
 	}
 
-	message, err := h.disputeService.AddMessage(uint(disputeID), adminID, req.Message, true)
+	message, err := h.disputeService.AddMessage(disputeID, adminID, req.Message, true)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

@@ -17,10 +17,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// withdrawalPinLimiter limits PIN verification attempts for withdrawals
-// 5 attempts per 15 minutes per user
-var withdrawalPinLimiter = middleware.NewRateLimiter(5, 15*time.Minute)
-
 // WithdrawalHandler handles withdrawal-related endpoints
 type WithdrawalHandler struct {
 	walletService *services.WalletService
@@ -67,7 +63,7 @@ func (h *WithdrawalHandler) CreateWithdrawal(c *gin.Context) {
 	}
 
 	// Rate limit PIN verification to prevent brute-force
-	if !withdrawalPinLimiter.Allow(fmt.Sprintf("withdrawal-pin:%d", userID)) {
+	if !middleware.PINVerificationLimiter.Allow(fmt.Sprintf("withdrawal-pin:%d", userID)) {
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many PIN attempts. Please try again later."})
 		return
 	}
