@@ -29,7 +29,7 @@ async function baseFetch(url, options = {}) {
 
     let data;
     try {
-      data = await res.clone().json();
+      data = await res.json();
     } catch (e) {
       data = null;
     }
@@ -70,7 +70,7 @@ async function baseFetch(url, options = {}) {
       throw error;
     }
 
-    return data ?? (await res.json());
+    return data;
   } catch (err) {
     // Jangan override error message yang sudah ada dari backend
     if (err.message && err.status) {
