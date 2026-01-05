@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: feature-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: feature_service_db
+    networks:
+      - feature-network
+
+  feature-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: feature-api
+    ports:
+      - "5000:5000"
+    environment:
+      ASPNETCORE_URLS: "http://0.0.0.0:5000"
+      MONGODB__CONNECTIONSTRING: "mongodb://mongodb:27017"
+      MONGODB__DATABASENAME: "feature_service_db"
+      JWT__SECRET: "${JWT_SECRET}"
+      JWT__ISSUER: "api.alephdraad.fun"
+      JWT__AUDIENCE: "alephdraad-clients"
+      CORS__ALLOWEDORIGINS__0: "https://alephdraad.fun"
+    depends_on:
+      - mongodb
+    networks:
+      - feature-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  feature-network:
+    driver: bridge
