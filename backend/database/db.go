@@ -87,15 +87,6 @@ func migrateAndSeed() {
 		&models.BackupCode{},
 		// Passkey / WebAuthn tables
 		&models.Passkey{},
-		// wallet & payment tables
-		&models.UserWallet{},
-		&models.Deposit{},
-		&models.Transfer{},
-		&models.Dispute{},
-		&models.DisputeEvidence{},
-		&models.DisputeMessage{},
-		&models.Withdrawal{},
-		&models.WalletTransaction{},
 		// admin & badge tables
 		&models.Admin{},
 		&models.Badge{},

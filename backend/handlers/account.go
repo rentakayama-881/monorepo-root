@@ -300,17 +300,6 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	// Check for pending transfers/disputes - user cannot delete if has active transactions
-	var pendingTransfers int64
-	database.DB.Model(&models.Transfer{}).Where(
-		"(buyer_id = ? OR seller_id = ?) AND status IN ('pending', 'in_progress')",
-		user.ID, user.ID,
-	).Count(&pendingTransfers)
-	if pendingTransfers > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Tidak dapat menghapus akun. Anda memiliki transaksi yang masih berjalan."})
-		return
-	}
-
 	// Start transaction - delete all user data
 	tx := database.DB.Begin()
 	if tx.Error != nil {
@@ -342,56 +331,14 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	// 4. Delete wallet transactions
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.WalletTransaction{}).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus riwayat transaksi"})
-		return
-	}
-
-	// 5. Delete deposits
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Deposit{}).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus riwayat deposit"})
-		return
-	}
-
-	// 6. Delete withdrawals
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Withdrawal{}).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus riwayat withdrawal"})
-		return
-	}
-
-	// 7. Delete dispute messages by user
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.DisputeMessage{}).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus pesan dispute"})
-		return
-	}
-
-	// 8. Delete dispute evidence by user
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.DisputeEvidence{}).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus bukti dispute"})
-		return
-	}
-
-	// 9. Delete user wallet
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.UserWallet{}).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus wallet"})
-		return
-	}
-
-	// 10. Delete user credentials
+	// 4. Delete user credentials
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Credential{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus kredensial"})
 		return
 	}
 
-	// 11. Delete user (finally)
+	// 5. Delete user (finally)
 	if err := tx.Delete(user).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus akun"})
