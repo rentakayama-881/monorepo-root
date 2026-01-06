@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"backend-gin/ent"
 	"backend-gin/logger"
 	"backend-gin/models"
 
@@ -285,4 +286,119 @@ func (s *SecurityAuditService) GetFailedLoginsByIP(ip string, since time.Time) (
 func (s *SecurityAuditService) CleanupOldEvents(retentionDays int) error {
 	cutoff := time.Now().AddDate(0, 0, -retentionDays)
 	return s.db.Where("created_at < ?", cutoff).Delete(&SecurityEvent{}).Error
+}
+
+// ========== Ent-compatible helper methods ==========
+
+// LogSessionCreatedForEnt logs new session creation for Ent user
+func (s *SecurityAuditService) LogSessionCreatedForEnt(user *ent.User, ip, userAgent string) {
+	userID := uint(user.ID)
+	s.LogEvent(SecurityEvent{
+		UserID:    &userID,
+		Email:     user.Email,
+		EventType: EventSessionCreated,
+		IPAddress: ip,
+		UserAgent: userAgent,
+		Success:   true,
+		Severity:  "info",
+	})
+}
+
+// LogTokenReuseForEnt logs refresh token reuse detection for Ent user
+func (s *SecurityAuditService) LogTokenReuseForEnt(user *ent.User, ip, userAgent string) {
+	userID := uint(user.ID)
+	s.LogEvent(SecurityEvent{
+		UserID:    &userID,
+		Email:     user.Email,
+		EventType: EventTokenReuse,
+		IPAddress: ip,
+		UserAgent: userAgent,
+		Success:   false,
+		Details:   "Refresh token reuse detected - possible token theft",
+		Severity:  "critical",
+	})
+}
+
+// LogLoginSuccessForEnt logs a successful login for Ent user
+func (s *SecurityAuditService) LogLoginSuccessForEnt(user *ent.User, ip, userAgent string) {
+	userID := uint(user.ID)
+	s.LogEvent(SecurityEvent{
+		UserID:    &userID,
+		Email:     user.Email,
+		EventType: EventLoginSuccess,
+		IPAddress: ip,
+		UserAgent: userAgent,
+		Success:   true,
+		Severity:  "info",
+	})
+}
+
+// LogAccountLockedForEnt logs when an account is locked for Ent user
+func (s *SecurityAuditService) LogAccountLockedForEnt(user *ent.User, ip, reason string, duration time.Duration) {
+	userID := uint(user.ID)
+	s.LogEvent(SecurityEvent{
+		UserID:    &userID,
+		Email:     user.Email,
+		EventType: EventAccountLocked,
+		IPAddress: ip,
+		Success:   false,
+		Details:   reason + " - Locked for " + duration.String(),
+		Severity:  "critical",
+	})
+}
+
+// LogTOTPSuccessForEnt logs successful TOTP verification for Ent user
+func (s *SecurityAuditService) LogTOTPSuccessForEnt(user *ent.User, ip, userAgent string) {
+	userID := uint(user.ID)
+	s.LogEvent(SecurityEvent{
+		UserID:    &userID,
+		Email:     user.Email,
+		EventType: EventTOTPSuccess,
+		IPAddress: ip,
+		UserAgent: userAgent,
+		Success:   true,
+		Severity:  "info",
+	})
+}
+
+// LogTOTPFailedForEnt logs a failed TOTP attempt for Ent user
+func (s *SecurityAuditService) LogTOTPFailedForEnt(user *ent.User, ip, userAgent string, attemptsRemaining int) {
+	userID := uint(user.ID)
+	s.LogEvent(SecurityEvent{
+		UserID:    &userID,
+		Email:     user.Email,
+		EventType: EventTOTPFailed,
+		IPAddress: ip,
+		UserAgent: userAgent,
+		Success:   false,
+		Details:   fmt.Sprintf("%d attempts remaining", attemptsRemaining),
+		Severity:  "warning",
+	})
+}
+
+// LogPasswordChangedForEnt logs password change for Ent user
+func (s *SecurityAuditService) LogPasswordChangedForEnt(user *ent.User, ip string) {
+	userID := uint(user.ID)
+	s.LogEvent(SecurityEvent{
+		UserID:    &userID,
+		Email:     user.Email,
+		EventType: EventPasswordChanged,
+		IPAddress: ip,
+		Success:   true,
+		Severity:  "info",
+	})
+}
+
+// LogSudoActivatedForEnt logs sudo mode activation for Ent user
+func (s *SecurityAuditService) LogSudoActivatedForEnt(user *ent.User, ip, userAgent string) {
+	userID := uint(user.ID)
+	s.LogEvent(SecurityEvent{
+		UserID:    &userID,
+		Email:     user.Email,
+		EventType: EventSudoActivated,
+		IPAddress: ip,
+		UserAgent: userAgent,
+		Success:   true,
+		Severity:  "info",
+	})
 }

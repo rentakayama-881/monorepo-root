@@ -102,7 +102,8 @@ func buildCORSConfig() cors.Config {
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("Tidak dapat memuat file .env, pastikan file .env ada di root folder!")
+		// Environment file not found - this is acceptable in production with env vars set directly
+		_ = err
 	}
 
 	// Validate required environment variables
@@ -116,8 +117,13 @@ func main() {
 
 	logger.Info("Starting Alephdraad Backend Server")
 
-	// Initialize database
+	// Initialize database (GORM - legacy, to be deprecated)
 	database.InitDB()
+
+	// Initialize Ent database (new ORM)
+	database.InitEntDB()
+	defer database.CloseEntDB()
+
 	config.InitConfig()
 
 	// Initialize services
@@ -126,9 +132,20 @@ func main() {
 	services.InitDeviceTracker(database.DB)    // Initialize device tracker
 	authService := services.NewAuthService(database.DB)
 	sessionService := services.NewSessionService(database.DB)
-	threadService := services.NewThreadService(database.DB)
 	totpService := services.NewTOTPService(database.DB, logger.GetLogger())
 	sudoService := services.NewSudoService(database.DB, logger.GetLogger(), totpService)
+
+	// Use Ent-based ThreadService (migration step)
+	// TODO: Migrate other services to Ent and remove GORM dependency
+	var threadService services.ThreadServiceInterface
+	useEntORM := os.Getenv("USE_ENT_ORM") == "true"
+	if useEntORM {
+		threadService = services.NewEntThreadService()
+		logger.Info("Using Ent ORM for ThreadService")
+	} else {
+		threadService = services.NewThreadService(database.DB)
+		logger.Info("Using GORM for ThreadService (legacy)")
+	}
 
 	// Initialize passkey service with WebAuthn config
 	rpID := os.Getenv("WEBAUTHN_RP_ID")
@@ -277,14 +294,10 @@ func main() {
 		account.GET("/badges", middleware.AuthMiddleware(), handlers.GetMyBadges)
 		account.PUT("/primary-badge", middleware.AuthMiddleware(), handlers.SetPrimaryBadge)
 
-		router.POST("/api/rag/index-chunk", handlers.IndexChunkHandler)
+		// RAG/AI Search endpoints
+		// Public: search and explain (read-only)
 		router.GET("/api/rag/ask", handlers.AskHandler)
 		router.GET("/api/rag/answer", handlers.AnswerHandler)
-		router.POST("/api/rag/index-long", handlers.IndexLongHandler)
-		router.POST("/api/rag/index-thread/:id", handlers.IndexThreadByIDHandler)
-		router.GET("/api/rag/debug-chunks/:thread_id", handlers.DebugChunksHandler)
-
-		// NEW: Two-step AI Search endpoints
 		router.GET("/api/rag/search-threads", handlers.SearchThreadsHandler)
 		router.GET("/api/rag/explain/:id", AIExplainRateLimit(), handlers.ExplainThreadHandler)
 	}
@@ -310,23 +323,22 @@ func main() {
 			adminProtected.GET("/users/:userId", handlers.AdminGetUser)
 			adminProtected.POST("/users/:userId/badges", handlers.AssignBadgeToUser)
 			adminProtected.DELETE("/users/:userId/badges/:badgeId", handlers.RevokeBadgeFromUser)
+
+			// RAG indexing (admin only)
+			adminProtected.POST("/rag/index-chunk", handlers.IndexChunkHandler)
+			adminProtected.POST("/rag/index-long", handlers.IndexLongHandler)
+			adminProtected.POST("/rag/index-thread/:id", handlers.IndexThreadByIDHandler)
 		}
 	}
 
-	// --- BAGIAN INI YANG DIUBAH ---
-
-	// Ambil port dari Environment Variable (Inject dari Render)
+	// Get port from environment variable
 	port := os.Getenv("PORT")
-
-	// Jika kosong (artinya sedang jalan di laptop/local), pakai 8080
 	if port == "" {
 		port = "8080"
 	}
 
 	logger.Info("Server backend berjalan di port "+port, zap.String("port", port))
 
-	// Jalankan server dengan port dinamis
-	// Tambahkan "0.0.0.0" agar bisa diakses dari luar container Render
 	if err := router.Run("0.0.0.0:" + port); err != nil {
 		log.Fatal("Failed to start server: ", err)
 	}

@@ -400,7 +400,7 @@ func (s *AuthService) LoginWithSession(input validators.LoginInput, ipAddress, u
 
 	// Record successful login
 	if loginTracker != nil {
-		loginTracker.RecordSuccessfulLogin(&user, ipAddress)
+		_ = loginTracker.RecordSuccessfulLogin(&user, ipAddress)
 	}
 	if securityAudit != nil {
 		securityAudit.LogLoginSuccess(&user, ipAddress, userAgent)
@@ -1078,7 +1078,7 @@ func (s *AuthService) CompleteTOTPLogin(pendingToken, totpCode string, ipAddress
 
 	// Record successful login
 	if loginTracker != nil {
-		loginTracker.RecordSuccessfulLogin(user, ipAddress)
+		_ = loginTracker.RecordSuccessfulLogin(user, ipAddress)
 	}
 	if securityAudit != nil {
 		securityAudit.LogTOTPSuccess(user, ipAddress, userAgent)
@@ -1170,7 +1170,7 @@ func (s *AuthService) CompleteTOTPLoginWithBackupCode(pendingToken, backupCode s
 
 	// Record successful login
 	if loginTracker != nil {
-		loginTracker.RecordSuccessfulLogin(user, ipAddress)
+		_ = loginTracker.RecordSuccessfulLogin(user, ipAddress)
 	}
 	if securityAudit != nil {
 		securityAudit.LogLoginSuccess(user, ipAddress, userAgent)

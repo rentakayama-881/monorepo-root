@@ -131,24 +131,3 @@ func truncateString(s string, max int) string {
 	}
 	return s
 }
-
-// lockAccount creates a 7-day lock on the account
-func lockAccount(userID uint, reason string) {
-	lock := models.SessionLock{
-		UserID:    userID,
-		LockedAt:  time.Now(),
-		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
-		Reason:    reason,
-		LockedBy:  "system",
-	}
-	database.DB.Create(&lock)
-
-	// Revoke all sessions for this user
-	database.DB.Model(&models.Session{}).
-		Where("user_id = ? AND revoked_at IS NULL", userID).
-		Updates(map[string]interface{}{
-			"revoked_at":    time.Now(),
-			"revoke_reason": "Account locked: " + reason,
-		})
-}
-

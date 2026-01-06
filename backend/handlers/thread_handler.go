@@ -16,11 +16,11 @@ import (
 
 // ThreadHandler handles HTTP requests for threads
 type ThreadHandler struct {
-	threadService *services.ThreadService
+	threadService services.ThreadServiceInterface
 }
 
 // NewThreadHandler creates a new thread handler
-func NewThreadHandler(threadService *services.ThreadService) *ThreadHandler {
+func NewThreadHandler(threadService services.ThreadServiceInterface) *ThreadHandler {
 	return &ThreadHandler{
 		threadService: threadService,
 	}

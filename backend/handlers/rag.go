@@ -366,38 +366,7 @@ func IndexThreadByIDHandler(c *gin.Context) {
 	})
 }
 
-// GET /api/rag/debug-chunks/:thread_id?limit=10
-// Menampilkan preview isi chunk untuk thread tertentu (buat inspeksi cepat).
-func DebugChunksHandler(c *gin.Context) {
-	tid := c.Param("thread_id")
-	if tid == "" {
-		c.JSON(400, gin.H{"error": "thread_id wajib diisi"})
-		return
-	}
-	limit := c.DefaultQuery("limit", "10")
-
-	type Row struct {
-		Content string `json:"content"`
-	}
-	var rows []Row
-	q := `
-		SELECT LEFT(content, 160) AS content
-		FROM public.thread_chunks
-		WHERE thread_id = ?
-		ORDER BY id
-		LIMIT ` + limit
-	if err := database.DB.Raw(q, tid).Scan(&rows).Error; err != nil {
-		c.JSON(500, gin.H{"error": "query gagal: " + err.Error()})
-		return
-	}
-	c.JSON(200, gin.H{
-		"thread_id": tid,
-		"count":     len(rows),
-		"previews":  rows,
-	})
-}
-
-// ==== NEW: Two-Step AI Search ====
+// ==== Two-Step AI Search ====
 
 // ThreadSearchResult represents a thread in search results
 type ThreadSearchResult struct {

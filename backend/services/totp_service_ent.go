@@ -1,0 +1,306 @@
+package services
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"strings"
+	"time"
+
+	"backend-gin/database"
+	"backend-gin/dto"
+	"backend-gin/ent"
+	"backend-gin/ent/backupcode"
+	"backend-gin/errors"
+
+	"github.com/pquerna/otp"
+	"github.com/pquerna/otp/totp"
+	"go.uber.org/zap"
+)
+
+// EntTOTPService handles TOTP/2FA operations using Ent ORM
+type EntTOTPService struct {
+	client *ent.Client
+	logger *zap.Logger
+}
+
+// NewEntTOTPService creates a new TOTP service with Ent
+func NewEntTOTPService(logger *zap.Logger) *EntTOTPService {
+	return &EntTOTPService{
+		client: database.GetEntClient(),
+		logger: logger,
+	}
+}
+
+// GenerateSetup creates a new TOTP secret for the user
+func (s *EntTOTPService) GenerateSetup(ctx context.Context, userID int) (*dto.TOTPSetupResponse, error) {
+	u, err := s.client.User.Get(ctx, userID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, errors.ErrUserNotFound
+		}
+		return nil, errors.ErrDatabase
+	}
+
+	// If TOTP is already enabled, require disabling first
+	if u.TotpEnabled {
+		return nil, errors.NewAppError("TOTP_ALREADY_ENABLED", "2FA sudah aktif. Nonaktifkan terlebih dahulu untuk mengatur ulang.", 400)
+	}
+
+	// Generate a new TOTP key
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      TOTPIssuer,
+		AccountName: u.Email,
+		Period:      30,
+		Digits:      otp.DigitsSix,
+		Algorithm:   otp.AlgorithmSHA1,
+	})
+	if err != nil {
+		s.logger.Error("failed to generate TOTP key", zap.Error(err), zap.Int("user_id", userID))
+		return nil, errors.ErrInternalServer
+	}
+
+	// Store the secret (not enabled yet - user must verify first)
+	_, err = s.client.User.
+		UpdateOneID(userID).
+		SetTotpSecret(key.Secret()).
+		Save(ctx)
+	if err != nil {
+		s.logger.Error("failed to store TOTP secret", zap.Error(err), zap.Int("user_id", userID))
+		return nil, errors.ErrInternalServer
+	}
+
+	s.logger.Info("TOTP setup initiated", zap.Int("user_id", userID), zap.String("email", u.Email))
+
+	return &dto.TOTPSetupResponse{
+		Secret:    key.Secret(),
+		QRCodeURL: key.URL(),
+		Issuer:    TOTPIssuer,
+		Account:   u.Email,
+	}, nil
+}
+
+// VerifyAndEnable verifies a TOTP code and enables 2FA for the user
+func (s *EntTOTPService) VerifyAndEnable(ctx context.Context, userID int, code string) error {
+	u, err := s.client.User.Get(ctx, userID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return errors.ErrUserNotFound
+		}
+		return errors.ErrDatabase
+	}
+
+	// Must have a secret set
+	if u.TotpSecret == nil || *u.TotpSecret == "" {
+		return errors.NewAppError("TOTP_NOT_SETUP", "2FA belum diatur. Mulai setup terlebih dahulu.", 400)
+	}
+
+	// Verify the code
+	valid := totp.Validate(code, *u.TotpSecret)
+	if !valid {
+		s.logger.Warn("invalid TOTP code during enable", zap.Int("user_id", userID))
+		return errors.NewAppError("TOTP_INVALID_CODE", "Kode tidak valid. Pastikan waktu di perangkat Anda sinkron.", 400)
+	}
+
+	// Enable TOTP
+	now := time.Now()
+	_, err = s.client.User.
+		UpdateOneID(userID).
+		SetTotpEnabled(true).
+		SetTotpVerified(true).
+		SetTotpVerifiedAt(now).
+		Save(ctx)
+	if err != nil {
+		s.logger.Error("failed to enable TOTP", zap.Error(err), zap.Int("user_id", userID))
+		return errors.ErrInternalServer
+	}
+
+	s.logger.Info("TOTP enabled successfully", zap.Int("user_id", userID), zap.String("email", u.Email))
+	return nil
+}
+
+// Verify checks if a TOTP code is valid for the user
+func (s *EntTOTPService) Verify(ctx context.Context, userID int, code string) (bool, error) {
+	u, err := s.client.User.Get(ctx, userID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, errors.ErrUserNotFound
+		}
+		return false, errors.ErrDatabase
+	}
+
+	if !u.TotpEnabled || u.TotpSecret == nil || *u.TotpSecret == "" {
+		return false, errors.NewAppError("TOTP_NOT_ENABLED", "2FA tidak aktif untuk akun ini.", 400)
+	}
+
+	valid := totp.Validate(code, *u.TotpSecret)
+	if !valid {
+		s.logger.Warn("invalid TOTP code", zap.Int("user_id", userID))
+	}
+
+	return valid, nil
+}
+
+// Disable disables 2FA for the user after verification
+func (s *EntTOTPService) Disable(ctx context.Context, userID int, password, code string, verifyPassword func(hash, password string) bool) error {
+	u, err := s.client.User.Get(ctx, userID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return errors.ErrUserNotFound
+		}
+		return errors.ErrDatabase
+	}
+
+	if !u.TotpEnabled {
+		return errors.NewAppError("TOTP_NOT_ENABLED", "2FA tidak aktif untuk akun ini.", 400)
+	}
+
+	// Verify password
+	if !verifyPassword(u.PasswordHash, password) {
+		s.logger.Warn("TOTP disable: invalid password", zap.Int("user_id", userID))
+		return errors.NewAppError("INVALID_PASSWORD", "Password tidak valid.", 401)
+	}
+
+	// Verify TOTP code
+	if u.TotpSecret != nil && *u.TotpSecret != "" {
+		valid := totp.Validate(code, *u.TotpSecret)
+		if !valid {
+			s.logger.Warn("TOTP disable: invalid code", zap.Int("user_id", userID))
+			return errors.NewAppError("TOTP_INVALID_CODE", "Kode 2FA tidak valid.", 400)
+		}
+	}
+
+	// Disable TOTP and clear secret
+	_, err = s.client.User.
+		UpdateOneID(userID).
+		SetTotpEnabled(false).
+		SetTotpVerified(false).
+		ClearTotpSecret().
+		ClearTotpVerifiedAt().
+		Save(ctx)
+	if err != nil {
+		s.logger.Error("failed to disable TOTP", zap.Error(err), zap.Int("user_id", userID))
+		return errors.ErrInternalServer
+	}
+
+	// Delete backup codes
+	_, _ = s.client.BackupCode.
+		Delete().
+		Where(backupcode.UserIDEQ(userID)).
+		Exec(ctx)
+
+	s.logger.Info("TOTP disabled successfully", zap.Int("user_id", userID))
+	return nil
+}
+
+// GenerateBackupCodes generates new backup codes for the user
+func (s *EntTOTPService) GenerateBackupCodes(ctx context.Context, userID int) ([]string, error) {
+	u, err := s.client.User.Get(ctx, userID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, errors.ErrUserNotFound
+		}
+		return nil, errors.ErrDatabase
+	}
+
+	if !u.TotpEnabled {
+		return nil, errors.NewAppError("TOTP_NOT_ENABLED", "2FA harus aktif untuk membuat backup codes.", 400)
+	}
+
+	// Delete existing backup codes
+	_, _ = s.client.BackupCode.
+		Delete().
+		Where(backupcode.UserIDEQ(userID)).
+		Exec(ctx)
+
+	// Generate new backup codes
+	codes := make([]string, BackupCodeCount)
+	for i := 0; i < BackupCodeCount; i++ {
+		code := generateBackupCode()
+		codes[i] = code
+
+		// Hash for storage
+		hash := sha256.Sum256([]byte(code))
+		codeHash := hex.EncodeToString(hash[:])
+
+		_, err := s.client.BackupCode.
+			Create().
+			SetUserID(userID).
+			SetCodeHash(codeHash).
+			SetUsedAt(time.Time{}). // Will be set when used
+			Save(ctx)
+		if err != nil {
+			s.logger.Error("failed to save backup code", zap.Error(err), zap.Int("user_id", userID))
+			return nil, errors.ErrInternalServer
+		}
+	}
+
+	s.logger.Info("Backup codes generated", zap.Int("user_id", userID), zap.Int("count", BackupCodeCount))
+	return codes, nil
+}
+
+// VerifyBackupCode verifies and consumes a backup code
+func (s *EntTOTPService) VerifyBackupCode(ctx context.Context, userID int, code string) (bool, error) {
+	code = strings.TrimSpace(code)
+	code = strings.ReplaceAll(code, "-", "")
+	code = strings.ReplaceAll(code, " ", "")
+	code = strings.ToUpper(code)
+
+	// Hash the code
+	hash := sha256.Sum256([]byte(code))
+	codeHash := hex.EncodeToString(hash[:])
+
+	// Find unused backup code
+	bc, err := s.client.BackupCode.
+		Query().
+		Where(
+			backupcode.UserIDEQ(userID),
+			backupcode.CodeHashEQ(codeHash),
+			backupcode.UsedAtIsNil(),
+		).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			s.logger.Warn("Invalid or used backup code attempt", zap.Int("user_id", userID))
+			return false, nil
+		}
+		return false, errors.ErrDatabase
+	}
+
+	// Mark as used
+	now := time.Now()
+	_, err = s.client.BackupCode.
+		UpdateOneID(bc.ID).
+		SetUsedAt(now).
+		Save(ctx)
+	if err != nil {
+		s.logger.Error("Failed to mark backup code as used", zap.Error(err))
+	}
+
+	s.logger.Info("Backup code used successfully", zap.Int("user_id", userID))
+	return true, nil
+}
+
+// GetBackupCodeStatus returns the count of remaining backup codes
+func (s *EntTOTPService) GetBackupCodeStatus(ctx context.Context, userID int) (int, int, error) {
+	total, err := s.client.BackupCode.
+		Query().
+		Where(backupcode.UserIDEQ(userID)).
+		Count(ctx)
+	if err != nil {
+		return 0, 0, errors.ErrDatabase
+	}
+
+	used, err := s.client.BackupCode.
+		Query().
+		Where(
+			backupcode.UserIDEQ(userID),
+			backupcode.UsedAtNotNil(),
+		).
+		Count(ctx)
+	if err != nil {
+		return 0, 0, errors.ErrDatabase
+	}
+
+	return total - used, total, nil
+}
