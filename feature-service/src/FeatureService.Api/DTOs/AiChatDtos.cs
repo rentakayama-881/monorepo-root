@@ -17,9 +17,10 @@ public record TokenBalanceDto(
 public record TokenPackageDto(
     string Id,
     string Name,
-    long PriceIdr,
-    long TokenAmount,
-    string PriceFormatted  // e.g., "Rp 10.000"
+    int TokenAmount,
+    int PriceIdr,
+    int BonusTokens,
+    string Description
 );
 
 /// <summary>
@@ -151,7 +152,7 @@ public record CreateChatSessionResponse(
 /// Request to send a chat message
 /// </summary>
 public record SendChatMessageRequest(
-    string Content
+    string Message
 );
 
 /// <summary>

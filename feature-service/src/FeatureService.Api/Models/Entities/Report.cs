@@ -138,4 +138,6 @@ public static class ReportAction
     public const string Delete = "delete";
     public const string BanUser = "ban_user";
     public const string BanDevice = "ban_device";
+
+    public static readonly string[] All = { None, Warning, Hide, Delete, BanUser, BanDevice };
 }

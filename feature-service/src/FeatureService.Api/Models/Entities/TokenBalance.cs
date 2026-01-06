@@ -149,12 +149,12 @@ public static class TokenPackages
 {
     public static readonly TokenPackage[] All = new[]
     {
-        new TokenPackage("pkg_10k", "Starter", 10_000, 100),
-        new TokenPackage("pkg_25k", "Basic", 25_000, 300),
-        new TokenPackage("pkg_50k", "Standard", 50_000, 700),
-        new TokenPackage("pkg_100k", "Plus", 100_000, 1_600),
-        new TokenPackage("pkg_250k", "Pro", 250_000, 4_500),
-        new TokenPackage("pkg_500k", "Enterprise", 500_000, 10_000),
+        new TokenPackage("pkg_10k", "Starter", 10_000, 10_000, 0, "Basic starter pack"),
+        new TokenPackage("pkg_25k", "Basic", 25_000, 30_000, 3_000, "Great for regular use"),
+        new TokenPackage("pkg_50k", "Standard", 50_000, 70_000, 7_000, "Best value for active users"),
+        new TokenPackage("pkg_100k", "Plus", 100_000, 160_000, 16_000, "For power users"),
+        new TokenPackage("pkg_250k", "Pro", 250_000, 450_000, 45_000, "Professional tier"),
+        new TokenPackage("pkg_500k", "Enterprise", 500_000, 1_000_000, 100_000, "Maximum value"),
     };
 
     public static TokenPackage? GetById(string id) => All.FirstOrDefault(p => p.Id == id);
@@ -163,4 +163,16 @@ public static class TokenPackages
 /// <summary>
 /// Token package definition
 /// </summary>
-public record TokenPackage(string Id, string Name, long PriceIdr, long TokenAmount);
+/// <param name="Id">Package identifier</param>
+/// <param name="Name">Display name</param>
+/// <param name="TokenAmount">Base tokens included</param>
+/// <param name="PriceIdr">Price in IDR</param>
+/// <param name="BonusTokens">Bonus tokens included</param>
+/// <param name="Description">Package description</param>
+public record TokenPackage(string Id, string Name, int TokenAmount, int PriceIdr, int BonusTokens, string Description)
+{
+    /// <summary>
+    /// All available packages (alias for TokenPackages.All)
+    /// </summary>
+    public static TokenPackage[] AllPackages => TokenPackages.All;
+}

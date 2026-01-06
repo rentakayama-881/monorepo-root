@@ -396,7 +396,7 @@ public class AdminModerationController : ControllerBase
 
         try
         {
-            await _moderationService.DeleteThreadAsync(adminId, new AdminDeleteThreadRequest(threadId, hardDelete, reason));
+            await _moderationService.DeleteThreadAsync(adminId, new FeatureService.Api.DTOs.AdminDeleteThreadRequest(threadId, reason ?? "", hardDelete));
             return Ok(new { message = "Thread deleted successfully", hardDelete });
         }
         catch (Exception ex)
@@ -451,5 +451,3 @@ public record CreateWarningRequest(uint UserId, string Reason, string Message, s
 public record WarningCreatedResponse(string WarningId, string Message);
 public record HideContentRequest(string ContentType, string ContentId, uint ThreadId, uint UserId, string Reason, string? ReportId);
 public record ContentHiddenResponse(string HiddenId, string Message);
-public record AdminDeleteThreadRequest(uint ThreadId, bool HardDelete, string? Reason);
-public record PaginatedDeviceBansResponse(List<DeviceBanDto> Bans, int TotalCount, int Page, int PageSize);

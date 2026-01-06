@@ -2,7 +2,7 @@ using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
-using NUlid;
+using Ulid = NUlid.Ulid;
 
 namespace FeatureService.Api.Services;
 
@@ -67,9 +67,10 @@ public class TokenService : ITokenService
         var packages = TokenPackages.All.Select(p => new TokenPackageDto(
             p.Id,
             p.Name,
-            p.PriceIdr,
             p.TokenAmount,
-            FormatCurrency(p.PriceIdr)
+            p.PriceIdr,
+            p.BonusTokens,
+            p.Description
         )).ToList();
 
         return Task.FromResult(packages);

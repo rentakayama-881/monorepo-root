@@ -2,18 +2,18 @@ using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
-using NUlid;
+using FeatureService.Api.Controllers;
+using Ulid = NUlid.Ulid;
 
 namespace FeatureService.Api.Services;
 
 public interface IReportService
 {
-    Task<string> CreateReportAsync(uint reporterUserId, CreateReportRequest request);
+    Task<string> CreateReportAsync(uint reporterUserId, string targetType, string targetId, uint threadId, string reason, string? description);
     Task<Report?> GetReportByIdAsync(string reportId);
-    Task<PaginatedReportsResponse> GetPendingReportsAsync(int page, int pageSize);
-    Task<PaginatedReportsResponse> GetReportsByStatusAsync(string status, int page, int pageSize);
-    Task<PaginatedReportsResponse> GetReportsByUserAsync(uint userId, int page, int pageSize);
-    Task TakeActionAsync(string reportId, uint adminId, TakeReportActionRequest request);
+    Task<PaginatedReportsResponse> GetPendingReportsAsync(int page, int pageSize, string? status = null);
+    Task<PaginatedReportsResponse> GetUserReportsAsync(uint userId, int page, int pageSize);
+    Task TakeActionAsync(string reportId, uint adminId, string action, string? adminNotes, string? ipAddress, string? userAgent);
     Task<bool> HasUserReportedContentAsync(uint userId, string targetType, string targetId);
 }
 
@@ -28,16 +28,16 @@ public class ReportService : IReportService
         _logger = logger;
     }
 
-    public async Task<string> CreateReportAsync(uint reporterUserId, CreateReportRequest request)
+    public async Task<string> CreateReportAsync(uint reporterUserId, string targetType, string targetId, uint threadId, string reason, string? description)
     {
         // Validate reason
-        if (!ReportReason.All.Contains(request.Reason))
+        if (!ReportReason.All.Contains(reason))
         {
             throw new ArgumentException($"Invalid reason. Must be one of: {string.Join(", ", ReportReason.All)}");
         }
 
         // Check if user already reported this content
-        if (await HasUserReportedContentAsync(reporterUserId, request.TargetType, request.TargetId))
+        if (await HasUserReportedContentAsync(reporterUserId, targetType, targetId))
         {
             throw new InvalidOperationException("You have already reported this content");
         }
@@ -45,13 +45,13 @@ public class ReportService : IReportService
         var report = new Report
         {
             Id = $"rpt_{Ulid.NewUlid()}",
-            TargetType = request.TargetType,
-            TargetId = request.TargetId,
-            ThreadId = request.ThreadId,
+            TargetType = targetType,
+            TargetId = targetId,
+            ThreadId = threadId,
             ReportedUserId = 0, // Will be set by caller or fetched from Go backend
             ReporterUserId = reporterUserId,
-            Reason = request.Reason,
-            Description = request.Description,
+            Reason = reason,
+            Description = description,
             Status = ReportStatus.Pending,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -59,7 +59,7 @@ public class ReportService : IReportService
 
         await _context.Reports.InsertOneAsync(report);
         _logger.LogInformation("Report created: {ReportId} by user {UserId} for {TargetType} {TargetId}", 
-            report.Id, reporterUserId, request.TargetType, request.TargetId);
+            report.Id, reporterUserId, targetType, targetId);
 
         return report.Id;
     }
@@ -71,14 +71,12 @@ public class ReportService : IReportService
             .FirstOrDefaultAsync();
     }
 
-    public async Task<PaginatedReportsResponse> GetPendingReportsAsync(int page, int pageSize)
+    public async Task<PaginatedReportsResponse> GetPendingReportsAsync(int page, int pageSize, string? status = null)
     {
-        return await GetReportsByStatusAsync(ReportStatus.Pending, page, pageSize);
-    }
-
-    public async Task<PaginatedReportsResponse> GetReportsByStatusAsync(string status, int page, int pageSize)
-    {
-        var filter = Builders<Report>.Filter.Eq(r => r.Status, status);
+        var filterBuilder = Builders<Report>.Filter;
+        var filter = status != null 
+            ? filterBuilder.Eq(r => r.Status, status)
+            : filterBuilder.Eq(r => r.Status, ReportStatus.Pending);
         
         var totalCount = await _context.Reports.CountDocumentsAsync(filter);
         
@@ -108,9 +106,9 @@ public class ReportService : IReportService
         return new PaginatedReportsResponse(summaries, (int)totalCount, page, pageSize);
     }
 
-    public async Task<PaginatedReportsResponse> GetReportsByUserAsync(uint userId, int page, int pageSize)
+    public async Task<PaginatedReportsResponse> GetUserReportsAsync(uint userId, int page, int pageSize)
     {
-        var filter = Builders<Report>.Filter.Eq(r => r.ReportedUserId, userId);
+        var filter = Builders<Report>.Filter.Eq(r => r.ReporterUserId, userId);
         
         var totalCount = await _context.Reports.CountDocumentsAsync(filter);
         
@@ -140,7 +138,7 @@ public class ReportService : IReportService
         return new PaginatedReportsResponse(summaries, (int)totalCount, page, pageSize);
     }
 
-    public async Task TakeActionAsync(string reportId, uint adminId, TakeReportActionRequest request)
+    public async Task TakeActionAsync(string reportId, uint adminId, string action, string? adminNotes, string? ipAddress, string? userAgent)
     {
         var report = await GetReportByIdAsync(reportId);
         if (report == null)
@@ -154,17 +152,17 @@ public class ReportService : IReportService
         }
 
         var update = Builders<Report>.Update
-            .Set(r => r.ActionTaken, request.Action)
-            .Set(r => r.AdminNotes, request.AdminNotes)
+            .Set(r => r.ActionTaken, action)
+            .Set(r => r.AdminNotes, adminNotes)
             .Set(r => r.ReviewedByAdminId, adminId)
             .Set(r => r.ReviewedAt, DateTime.UtcNow)
-            .Set(r => r.Status, request.Action == ReportAction.None ? ReportStatus.Dismissed : ReportStatus.Resolved)
+            .Set(r => r.Status, action == ReportAction.None ? ReportStatus.Dismissed : ReportStatus.Resolved)
             .Set(r => r.UpdatedAt, DateTime.UtcNow);
 
         await _context.Reports.UpdateOneAsync(r => r.Id == reportId, update);
 
         _logger.LogInformation("Report {ReportId} processed by admin {AdminId} with action {Action}", 
-            reportId, adminId, request.Action);
+            reportId, adminId, action);
     }
 
     public async Task<bool> HasUserReportedContentAsync(uint userId, string targetType, string targetId)

@@ -73,4 +73,6 @@ public static class WarningSeverity
     public const string Minor = "minor";
     public const string Moderate = "moderate";
     public const string Severe = "severe";
+
+    public static readonly string[] All = { Minor, Moderate, Severe };
 }

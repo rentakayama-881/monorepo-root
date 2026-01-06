@@ -3,7 +3,7 @@ using MongoDB.Bson;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
-using NUlid;
+using Ulid = NUlid.Ulid;
 
 namespace FeatureService.Api.Services;
 

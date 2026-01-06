@@ -46,9 +46,9 @@ public class DocumentController : ControllerBase
         }
 
         // Validate file size (10MB max)
-        if (request.File.Length > Document.MaxFileSizeBytes)
+        if (request.File.Length > DocumentFileType.MaxFileSizeBytes)
         {
-            return StatusCode(413, new { error = $"File size exceeds maximum limit of {Document.MaxFileSizeBytes / (1024 * 1024)}MB" });
+            return StatusCode(413, new { error = $"File size exceeds maximum limit of {DocumentFileType.MaxFileSizeBytes / (1024 * 1024)}MB" });
         }
 
         // Validate file type
@@ -330,4 +330,3 @@ public class UploadDocumentFormRequest
 
 public record DocumentUploadResponse(string DocumentId, string Message);
 public record DocumentCategoriesResponse(List<string> Categories);
-public record PaginatedDocumentsResponse(List<DocumentSummaryDto> Documents, int TotalCount, int Page, int PageSize);

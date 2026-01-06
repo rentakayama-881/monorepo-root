@@ -18,6 +18,12 @@ public class Reaction
     [BsonElement("targetId")]
     public string TargetId { get; set; } = string.Empty; // threadId or replyId
 
+    /// <summary>
+    /// Thread ID for easier querying (copied from target if target is thread, or from reply's threadId)
+    /// </summary>
+    [BsonElement("threadId")]
+    public uint ThreadId { get; set; }
+
     [BsonElement("reactionType")]
     public string ReactionType { get; set; } = string.Empty; // like, love, fire, sad, laugh
 

@@ -93,9 +93,18 @@ public class Document
 
     /// <summary>
     /// Whether the document is soft deleted
+    /// <summary>
+    /// Whether the document is soft deleted
     /// </summary>
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; } = false;
+
+    /// <summary>
+    /// File data stored in MongoDB (for simplicity, use GridFS or external storage in production)
+    /// </summary>
+    [BsonElement("fileData")]
+    [BsonIgnoreIfNull]
+    public byte[]? FileData { get; set; }
 
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -111,6 +120,8 @@ public static class DocumentVisibility
 {
     public const string Public = "public";
     public const string Private = "private";
+
+    public static readonly IReadOnlyList<string> All = new[] { Public, Private };
 }
 
 /// <summary>

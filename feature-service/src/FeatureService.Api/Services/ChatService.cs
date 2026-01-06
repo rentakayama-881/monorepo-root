@@ -2,17 +2,17 @@ using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
-using NUlid;
+using Ulid = NUlid.Ulid;
 using System.Text.Json;
 
 namespace FeatureService.Api.Services;
 
 public interface IChatService
 {
-    Task<ChatSession> CreateSessionAsync(uint userId, string serviceType, string? model);
+    Task<string> CreateSessionAsync(uint userId, string serviceType, string? model, string? title);
     Task<ChatSession?> GetSessionByIdAsync(string sessionId);
     Task<ChatSessionDetailDto?> GetSessionDetailAsync(string sessionId, uint userId);
-    Task<ChatSessionsResponse> GetUserSessionsAsync(uint userId, string? serviceType);
+    Task<ChatSessionsResponse> GetUserSessionsAsync(uint userId, int page, int pageSize, string? serviceType);
     Task<SendChatMessageResponse> SendMessageAsync(string sessionId, uint userId, string content);
     Task ArchiveSessionAsync(string sessionId, uint userId);
     Task DeleteSessionAsync(string sessionId, uint userId);
@@ -40,7 +40,7 @@ public class ChatService : IChatService
         _logger = logger;
     }
 
-    public async Task<ChatSession> CreateSessionAsync(uint userId, string serviceType, string? model)
+    public async Task<string> CreateSessionAsync(uint userId, string serviceType, string? model, string? title)
     {
         // Validate service type
         if (serviceType != ChatServiceType.HuggingFace && serviceType != ChatServiceType.ExternalLlm)
@@ -67,7 +67,7 @@ public class ChatService : IChatService
             UserId = userId,
             ServiceType = serviceType,
             Model = model,
-            Title = "New Chat",
+            Title = title ?? "New Chat",
             TotalTokensUsed = 0,
             MessageCount = 0,
             IsArchived = false,
@@ -79,7 +79,7 @@ public class ChatService : IChatService
         _logger.LogInformation("Chat session created: {SessionId} for user {UserId}, service: {Service}", 
             session.Id, userId, serviceType);
 
-        return session;
+        return session.Id;
     }
 
     public async Task<ChatSession?> GetSessionByIdAsync(string sessionId)
@@ -122,7 +122,7 @@ public class ChatService : IChatService
         );
     }
 
-    public async Task<ChatSessionsResponse> GetUserSessionsAsync(uint userId, string? serviceType)
+    public async Task<ChatSessionsResponse> GetUserSessionsAsync(uint userId, int page, int pageSize, string? serviceType)
     {
         var filterBuilder = Builders<ChatSession>.Filter;
         var filter = filterBuilder.And(
@@ -135,9 +135,13 @@ public class ChatService : IChatService
             filter = filterBuilder.And(filter, filterBuilder.Eq(s => s.ServiceType, serviceType));
         }
 
+        var totalCount = await _context.ChatSessions.CountDocumentsAsync(filter);
+
         var sessions = await _context.ChatSessions
             .Find(filter)
             .SortByDescending(s => s.UpdatedAt)
+            .Skip((page - 1) * pageSize)
+            .Limit(pageSize)
             .ToListAsync();
 
         var dtos = sessions.Select(s => new ChatSessionSummaryDto(
@@ -151,7 +155,7 @@ public class ChatService : IChatService
             s.CreatedAt
         )).ToList();
 
-        return new ChatSessionsResponse(dtos, sessions.Count);
+        return new ChatSessionsResponse(dtos, (int)totalCount);
     }
 
     public async Task<SendChatMessageResponse> SendMessageAsync(string sessionId, uint userId, string content)

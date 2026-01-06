@@ -2,20 +2,22 @@ using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
-using NUlid;
+using FeatureService.Api.Controllers;
+using Ulid = NUlid.Ulid;
 
 namespace FeatureService.Api.Services;
 
 public interface IDocumentService
 {
-    Task<Document> UploadDocumentAsync(uint userId, Stream fileStream, string fileName, UploadDocumentRequest request);
-    Task<Document?> GetDocumentByIdAsync(string documentId);
-    Task<UserDocumentsResponse> GetUserDocumentsAsync(uint userId);
-    Task<PublicDocumentsResponse> GetPublicDocumentsByUserAsync(uint userId);
-    Task<Document> UpdateDocumentAsync(string documentId, uint userId, UpdateDocumentRequest request);
-    Task DeleteDocumentAsync(string documentId, uint userId);
+    Task<string> UploadDocumentAsync(uint userId, UploadDocumentRequest request);
+    Task<DocumentDetailDto?> GetDocumentByIdAsync(string documentId);
+    Task<PaginatedDocumentsResponse> GetUserDocumentsAsync(uint userId, int page, int pageSize, string? category = null);
+    Task<PaginatedDocumentsResponse> GetPublicDocumentsAsync(uint userId, int page, int pageSize, string? category = null);
+    Task UpdateDocumentAsync(string documentId, UpdateDocumentRequest request);
+    Task DeleteDocumentAsync(string documentId);
     Task<StorageQuotaDto> GetUserQuotaAsync(uint userId);
     Task IncrementDownloadCountAsync(string documentId);
+    Task<byte[]?> GetDocumentFileAsync(string documentId);
 }
 
 public class DocumentService : IDocumentService
@@ -31,24 +33,24 @@ public class DocumentService : IDocumentService
         _configuration = configuration;
     }
 
-    public async Task<Document> UploadDocumentAsync(uint userId, Stream fileStream, string fileName, UploadDocumentRequest request)
+    public async Task<string> UploadDocumentAsync(uint userId, UploadDocumentRequest request)
     {
         // Validate file extension
-        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        var extension = $".{request.FileType.ToLowerInvariant()}";
         if (!DocumentFileType.AllowedExtensions.Contains(extension))
         {
             throw new ArgumentException($"Invalid file type. Allowed types: {string.Join(", ", DocumentFileType.AllowedExtensions)}");
         }
 
         // Validate file size
-        if (fileStream.Length > DocumentFileType.MaxFileSizeBytes)
+        if (request.FileData.Length > DocumentFileType.MaxFileSizeBytes)
         {
             throw new ArgumentException($"File size exceeds maximum allowed ({DocumentFileType.MaxFileSizeBytes / 1024 / 1024} MB)");
         }
 
         // Check user quota
         var quota = await GetUserQuotaAsync(userId);
-        if (quota.UsedBytes + fileStream.Length > DocumentFileType.MaxUserStorageBytes)
+        if (quota.UsedBytes + request.FileData.Length > DocumentFileType.MaxUserStorageBytes)
         {
             throw new InvalidOperationException($"Storage quota exceeded. Used: {quota.UsedBytes / 1024 / 1024} MB, Max: {DocumentFileType.MaxUserStorageBytes / 1024 / 1024} MB");
         }
@@ -71,21 +73,24 @@ public class DocumentService : IDocumentService
         var storagePath = $"documents/{userId}/{documentId}{extension}";
 
         // TODO: Upload to Supabase Storage
-        // For now, we'll store the path and assume upload is handled separately
-        var publicUrl = $"{_configuration["Supabase:Url"]}/storage/v1/object/public/{_configuration["Supabase:Bucket"]}/{storagePath}";
+        // For now, store file data in MongoDB (GridFS should be used for production)
+        var publicUrl = request.Visibility == DocumentVisibility.Public 
+            ? $"/api/v1/documents/{documentId}/download"
+            : null;
 
         var document = new Document
         {
             Id = documentId,
             UserId = userId,
-            FileName = fileName,
-            Title = request.Title,
+            FileName = request.FileName,
+            Title = request.Title ?? Path.GetFileNameWithoutExtension(request.FileName),
             Description = request.Description,
-            FileType = extension.TrimStart('.'),
+            FileType = request.FileType.ToLowerInvariant(),
             MimeType = mimeType,
-            FileSize = fileStream.Length,
+            FileSize = request.FileData.Length,
+            FileData = request.FileData, // Store in document for simplicity
             StoragePath = storagePath,
-            PublicUrl = request.Visibility == DocumentVisibility.Public ? publicUrl : null,
+            PublicUrl = publicUrl,
             Visibility = request.Visibility,
             Category = request.Category,
             Tags = request.Tags ?? new List<string>(),
@@ -97,30 +102,61 @@ public class DocumentService : IDocumentService
 
         await _context.Documents.InsertOneAsync(document);
         _logger.LogInformation("Document uploaded: {DocumentId} by user {UserId}. Size: {Size} bytes", 
-            document.Id, userId, fileStream.Length);
+            document.Id, userId, request.FileData.Length);
 
-        return document;
+        return documentId;
     }
 
-    public async Task<Document?> GetDocumentByIdAsync(string documentId)
+    public async Task<DocumentDetailDto?> GetDocumentByIdAsync(string documentId)
     {
-        return await _context.Documents
+        var doc = await _context.Documents
             .Find(d => d.Id == documentId && !d.IsDeleted)
             .FirstOrDefaultAsync();
+
+        if (doc == null) return null;
+
+        return new DocumentDetailDto(
+            doc.Id,
+            doc.UserId,
+            doc.Title ?? doc.FileName,
+            doc.Description,
+            doc.FileName,
+            doc.FileType,
+            doc.FileSize,
+            doc.Visibility,
+            doc.Category,
+            doc.Tags,
+            doc.DownloadCount,
+            doc.CreatedAt,
+            doc.UpdatedAt
+        );
     }
 
-    public async Task<UserDocumentsResponse> GetUserDocumentsAsync(uint userId)
+    public async Task<PaginatedDocumentsResponse> GetUserDocumentsAsync(uint userId, int page, int pageSize, string? category = null)
     {
-        var documents = await _context.Documents
-            .Find(d => d.UserId == userId && !d.IsDeleted)
-            .SortByDescending(d => d.CreatedAt)
-            .ToListAsync();
+        var filterBuilder = Builders<Document>.Filter;
+        var filter = filterBuilder.And(
+            filterBuilder.Eq(d => d.UserId, userId),
+            filterBuilder.Eq(d => d.IsDeleted, false)
+        );
 
-        var quota = await GetUserQuotaAsync(userId);
+        if (!string.IsNullOrEmpty(category))
+        {
+            filter = filterBuilder.And(filter, filterBuilder.Eq(d => d.Category, category));
+        }
+
+        var totalCount = await _context.Documents.CountDocumentsAsync(filter);
+
+        var documents = await _context.Documents
+            .Find(filter)
+            .SortByDescending(d => d.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Limit(pageSize)
+            .ToListAsync();
 
         var summaries = documents.Select(d => new DocumentSummaryDto(
             d.Id,
-            d.Title,
+            d.Title ?? d.FileName,
             d.Description,
             d.FileName,
             d.FileType,
@@ -133,19 +169,35 @@ public class DocumentService : IDocumentService
             d.UpdatedAt
         )).ToList();
 
-        return new UserDocumentsResponse(summaries, quota, documents.Count);
+        return new PaginatedDocumentsResponse(summaries, (int)totalCount, page, pageSize);
     }
 
-    public async Task<PublicDocumentsResponse> GetPublicDocumentsByUserAsync(uint userId)
+    public async Task<PaginatedDocumentsResponse> GetPublicDocumentsAsync(uint userId, int page, int pageSize, string? category = null)
     {
+        var filterBuilder = Builders<Document>.Filter;
+        var filter = filterBuilder.And(
+            filterBuilder.Eq(d => d.UserId, userId),
+            filterBuilder.Eq(d => d.Visibility, DocumentVisibility.Public),
+            filterBuilder.Eq(d => d.IsDeleted, false)
+        );
+
+        if (!string.IsNullOrEmpty(category))
+        {
+            filter = filterBuilder.And(filter, filterBuilder.Eq(d => d.Category, category));
+        }
+
+        var totalCount = await _context.Documents.CountDocumentsAsync(filter);
+
         var documents = await _context.Documents
-            .Find(d => d.UserId == userId && d.Visibility == DocumentVisibility.Public && !d.IsDeleted)
+            .Find(filter)
             .SortByDescending(d => d.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Limit(pageSize)
             .ToListAsync();
 
         var summaries = documents.Select(d => new DocumentSummaryDto(
             d.Id,
-            d.Title,
+            d.Title ?? d.FileName,
             d.Description,
             d.FileName,
             d.FileType,
@@ -158,22 +210,11 @@ public class DocumentService : IDocumentService
             d.UpdatedAt
         )).ToList();
 
-        return new PublicDocumentsResponse(summaries, documents.Count);
+        return new PaginatedDocumentsResponse(summaries, (int)totalCount, page, pageSize);
     }
 
-    public async Task<Document> UpdateDocumentAsync(string documentId, uint userId, UpdateDocumentRequest request)
+    public async Task UpdateDocumentAsync(string documentId, UpdateDocumentRequest request)
     {
-        var document = await GetDocumentByIdAsync(documentId);
-        if (document == null)
-        {
-            throw new KeyNotFoundException("Document not found");
-        }
-
-        if (document.UserId != userId)
-        {
-            throw new UnauthorizedAccessException("You don't have permission to update this document");
-        }
-
         var updateBuilder = Builders<Document>.Update.Set(d => d.UpdatedAt, DateTime.UtcNow);
 
         if (request.Title != null)
@@ -181,58 +222,23 @@ public class DocumentService : IDocumentService
         if (request.Description != null)
             updateBuilder = updateBuilder.Set(d => d.Description, request.Description);
         if (request.Visibility != null)
-        {
             updateBuilder = updateBuilder.Set(d => d.Visibility, request.Visibility);
-            // Update public URL based on visibility
-            if (request.Visibility == DocumentVisibility.Public)
-            {
-                var publicUrl = $"{_configuration["Supabase:Url"]}/storage/v1/object/public/{_configuration["Supabase:Bucket"]}/{document.StoragePath}";
-                updateBuilder = updateBuilder.Set(d => d.PublicUrl, publicUrl);
-            }
-            else
-            {
-                updateBuilder = updateBuilder.Set(d => d.PublicUrl, (string?)null);
-            }
-        }
         if (request.Category != null)
-        {
-            if (!DocumentCategory.All.Contains(request.Category))
-            {
-                throw new ArgumentException($"Invalid category. Allowed: {string.Join(", ", DocumentCategory.All)}");
-            }
             updateBuilder = updateBuilder.Set(d => d.Category, request.Category);
-        }
         if (request.Tags != null)
             updateBuilder = updateBuilder.Set(d => d.Tags, request.Tags);
 
         await _context.Documents.UpdateOneAsync(d => d.Id == documentId, updateBuilder);
-
-        return (await GetDocumentByIdAsync(documentId))!;
     }
 
-    public async Task DeleteDocumentAsync(string documentId, uint userId)
+    public async Task DeleteDocumentAsync(string documentId)
     {
-        var document = await GetDocumentByIdAsync(documentId);
-        if (document == null)
-        {
-            throw new KeyNotFoundException("Document not found");
-        }
-
-        if (document.UserId != userId)
-        {
-            throw new UnauthorizedAccessException("You don't have permission to delete this document");
-        }
-
-        // Soft delete
         var update = Builders<Document>.Update
             .Set(d => d.IsDeleted, true)
             .Set(d => d.UpdatedAt, DateTime.UtcNow);
 
         await _context.Documents.UpdateOneAsync(d => d.Id == documentId, update);
-
-        // TODO: Delete from Supabase Storage
-
-        _logger.LogInformation("Document deleted: {DocumentId} by user {UserId}", documentId, userId);
+        _logger.LogInformation("Document deleted: {DocumentId}", documentId);
     }
 
     public async Task<StorageQuotaDto> GetUserQuotaAsync(uint userId)
@@ -252,5 +258,14 @@ public class DocumentService : IDocumentService
     {
         var update = Builders<Document>.Update.Inc(d => d.DownloadCount, 1);
         await _context.Documents.UpdateOneAsync(d => d.Id == documentId, update);
+    }
+
+    public async Task<byte[]?> GetDocumentFileAsync(string documentId)
+    {
+        var doc = await _context.Documents
+            .Find(d => d.Id == documentId && !d.IsDeleted)
+            .FirstOrDefaultAsync();
+
+        return doc?.FileData;
     }
 }

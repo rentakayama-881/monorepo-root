@@ -1,4 +1,5 @@
 using FeatureService.Api.Models.Entities;
+using FeatureService.Api.DTOs;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -10,7 +11,7 @@ public interface IExternalLlmService
 {
     Task<AiChatResult> ChatAsync(string model, string userMessage, List<ChatMessage> history);
     Task<bool> IsAvailableAsync();
-    Task<List<LlmModelDto>> GetAvailableModelsAsync();
+    Task<List<LlmModel>> GetAvailableModelsAsync();
 }
 
 public class ExternalLlmService : IExternalLlmService
@@ -116,17 +117,9 @@ public class ExternalLlmService : IExternalLlmService
         }
     }
 
-    public Task<List<LlmModelDto>> GetAvailableModelsAsync()
+    public Task<List<LlmModel>> GetAvailableModelsAsync()
     {
-        var models = ExternalLlmModels.All.Select(m => new LlmModelDto(
-            m.Id,
-            m.Name,
-            m.Description,
-            m.InputTokenCost,
-            m.OutputTokenCost
-        )).ToList();
-
-        return Task.FromResult(models);
+        return Task.FromResult(ExternalLlmModels.All.ToList());
     }
 
     private static int EstimateTokens(string text)

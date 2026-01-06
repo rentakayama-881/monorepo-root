@@ -113,6 +113,39 @@ try
     builder.Services.AddScoped<IWalletService, WalletService>();
     // TODO: Add TransferService when implemented
 
+    // Register moderation services
+    builder.Services.AddScoped<IReportService, ReportService>();
+    builder.Services.AddScoped<IDeviceBanService, DeviceBanService>();
+    builder.Services.AddScoped<IUserWarningService, UserWarningService>();
+    builder.Services.AddScoped<IAdminModerationService, AdminModerationService>();
+
+    // Register document storage service
+    builder.Services.AddScoped<IDocumentService, DocumentService>();
+
+    // Register token/wallet service for AI
+    builder.Services.AddScoped<ITokenService, TokenService>();
+
+    // Register AI chat services
+    builder.Services.AddScoped<IChatService, ChatService>();
+    builder.Services.AddScoped<IHuggingFaceService, HuggingFaceService>();
+    builder.Services.AddScoped<IExternalLlmService, ExternalLlmService>();
+
+    // Configure HttpClient for external APIs
+    builder.Services.AddHttpClient<IHuggingFaceService, HuggingFaceService>(client =>
+    {
+        client.Timeout = TimeSpan.FromMinutes(2);
+    });
+    
+    builder.Services.AddHttpClient<IExternalLlmService, ExternalLlmService>(client =>
+    {
+        client.Timeout = TimeSpan.FromMinutes(3);
+    });
+
+    builder.Services.AddHttpClient<IAdminModerationService, AdminModerationService>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(30);
+    });
+
     // Add FluentValidation
     builder.Services.AddFluentValidationAutoValidation();
     builder.Services.AddValidatorsFromAssemblyContaining<Program>();

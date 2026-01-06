@@ -162,4 +162,3 @@ public class ReportController : ControllerBase
 public record ReportCreatedResponse(string ReportId, string Message);
 public record ReportStatusResponse(string ReportId, string Status, string? ActionTaken, DateTime CreatedAt, DateTime? ReviewedAt);
 public record ReportReasonsResponse(List<string> Reasons);
-public record PaginatedReportsResponse(List<ReportSummaryDto> Reports, int TotalCount, int Page, int PageSize);

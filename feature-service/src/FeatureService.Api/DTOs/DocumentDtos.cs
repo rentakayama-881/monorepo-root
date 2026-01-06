@@ -6,7 +6,10 @@ namespace FeatureService.Api.DTOs;
 /// Request to upload a document
 /// </summary>
 public record UploadDocumentRequest(
-    string Title,
+    string FileName,
+    string FileType,    // pdf, docx
+    byte[] FileData,
+    string? Title,
     string? Description,
     string Category,    // whitepaper, article, research, other
     string Visibility,  // public, private
@@ -50,14 +53,11 @@ public record DocumentSummaryDto(
 public record DocumentDetailDto(
     string Id,
     uint UserId,
-    string? Username,
     string Title,
     string? Description,
     string FileName,
     string FileType,
-    string MimeType,
     long FileSize,
-    string? PublicUrl,
     string Visibility,
     string Category,
     List<string> Tags,
@@ -102,4 +102,14 @@ public record UserDocumentsResponse(
 public record PublicDocumentsResponse(
     List<DocumentSummaryDto> Documents,
     int TotalCount
+);
+
+/// <summary>
+/// Paginated documents response
+/// </summary>
+public record PaginatedDocumentsResponse(
+    List<DocumentSummaryDto> Documents,
+    int TotalCount,
+    int Page,
+    int PageSize
 );

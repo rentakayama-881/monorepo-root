@@ -49,6 +49,7 @@ public class MongoDbContext
 
     #region Token/Wallet Collections
 
+    public IMongoCollection<UserWallet> Wallets => _database.GetCollection<UserWallet>("wallets");
     public IMongoCollection<TokenBalance> TokenBalances => _database.GetCollection<TokenBalance>("token_balances");
     public IMongoCollection<TokenPurchase> TokenPurchases => _database.GetCollection<TokenPurchase>("token_purchases");
     public IMongoCollection<TokenUsage> TokenUsages => _database.GetCollection<TokenUsage>("token_usages");
@@ -156,7 +157,7 @@ public class MongoDbContext
         TokenUsages.Indexes.CreateMany(new[]
         {
             new CreateIndexModel<TokenUsage>(Builders<TokenUsage>.IndexKeys.Ascending(t => t.UserId)),
-            new CreateIndexModel<TokenUsage>(Builders<TokenUsage>.IndexKeys.Ascending(t => t.SessionId)),
+            new CreateIndexModel<TokenUsage>(Builders<TokenUsage>.IndexKeys.Ascending(t => t.ChatSessionId)),
             new CreateIndexModel<TokenUsage>(Builders<TokenUsage>.IndexKeys.Descending(t => t.CreatedAt))
         });
 

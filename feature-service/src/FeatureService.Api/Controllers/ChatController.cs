@@ -90,27 +90,18 @@ public class ChatController : ControllerBase
 
         try
         {
-            // In production, this would integrate with a payment gateway
-            // For now, we simulate a successful purchase
-            var purchaseId = await _tokenService.PurchaseTokensAsync(
-                userId,
-                request.PackageId,
-                package.TokenAmount + package.BonusTokens,
-                package.PriceIdr,
-                request.PaymentMethod,
-                request.TransactionId ?? $"sim_{Guid.NewGuid():N}"
-            );
-
-            var newBalance = await _tokenService.GetBalanceAsync(userId);
+            // Purchase tokens using the simplified service method
+            // In production, this would integrate with a payment gateway before calling the service
+            var purchaseResponse = await _tokenService.PurchaseTokensAsync(userId, request.PackageId);
 
             _logger.LogInformation("Token purchase: {PurchaseId} for user {UserId}, {Tokens} tokens",
-                purchaseId, userId, package.TokenAmount + package.BonusTokens);
+                purchaseResponse.TransactionId, userId, purchaseResponse.TokensPurchased);
 
             return Ok(new TokenPurchaseResponse(
-                purchaseId,
-                package.TokenAmount + package.BonusTokens,
-                newBalance.Balance,
-                "Purchase successful"
+                purchaseResponse.TransactionId,
+                (int)purchaseResponse.TokensPurchased,
+                (int)purchaseResponse.NewBalance,
+                purchaseResponse.Message
             ));
         }
         catch (Exception ex)
@@ -124,8 +115,8 @@ public class ChatController : ControllerBase
     /// Get token usage history
     /// </summary>
     [HttpGet("usage")]
-    [ProducesResponseType(typeof(PaginatedTokenUsageResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetUsageHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    [ProducesResponseType(typeof(TokenUsageHistoryResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetUsageHistory([FromQuery] int limit = 50, [FromQuery] string? cursor = null)
     {
         var userId = GetCurrentUserId();
         if (userId == 0)
@@ -133,8 +124,8 @@ public class ChatController : ControllerBase
             return Unauthorized(new { error = "User not authenticated" });
         }
 
-        pageSize = Math.Min(pageSize, 100);
-        var usage = await _tokenService.GetUsageHistoryAsync(userId, page, pageSize);
+        limit = Math.Min(limit, 100);
+        var usage = await _tokenService.GetUsageHistoryAsync(userId, limit, cursor);
         return Ok(usage);
     }
 
@@ -165,9 +156,9 @@ public class ChatController : ControllerBase
         // Validate model for external LLM
         if (request.ServiceType == ChatServiceType.ExternalLlm)
         {
-            if (string.IsNullOrEmpty(request.Model) || !ExternalLlmModels.All.Contains(request.Model))
+            if (string.IsNullOrEmpty(request.Model) || !ExternalLlmModels.AllIds.Contains(request.Model))
             {
-                return BadRequest(new { error = "Invalid model. Must be one of: " + string.Join(", ", ExternalLlmModels.All) });
+                return BadRequest(new { error = "Invalid model. Must be one of: " + string.Join(", ", ExternalLlmModels.AllIds) });
             }
         }
 
@@ -422,8 +413,8 @@ public class ChatController : ControllerBase
 }
 
 // Request/Response DTOs
-public record PurchaseTokensRequest(string PackageId, string PaymentMethod, string? TransactionId);
-public record TokenPurchaseResponse(string PurchaseId, int TokensAdded, int NewBalance, string Message);
+public record PurchaseTokensRequest(string PackageId);
+public record TokenPurchaseResponse(string PurchaseId, long TokensAdded, long NewBalance, string Message);
 public record TokenPackagesResponse(List<TokenPackageDto> Packages);
 public record CreateChatSessionRequest(string ServiceType, string? Model, string? Title);
 public record ChatSessionCreatedResponse(string SessionId, string Message);

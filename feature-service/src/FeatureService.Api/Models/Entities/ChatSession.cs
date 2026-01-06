@@ -124,6 +124,8 @@ public static class ChatServiceType
 {
     public const string HuggingFace = "huggingface";
     public const string ExternalLlm = "external_llm";
+
+    public static readonly string[] All = { HuggingFace, ExternalLlm };
 }
 
 /// <summary>
@@ -141,16 +143,34 @@ public static class MessageRole
 /// </summary>
 public static class ExternalLlmModels
 {
+    // String constants for model IDs
+    public const string Gpt4o = "gpt-4o";
+    public const string Gpt4oMini = "gpt-4o-mini";
+    public const string Claude35Sonnet = "claude-3-5-sonnet";
+    public const string Claude35Haiku = "claude-3-5-haiku";
+    public const string GeminiPro = "gemini-pro";
+    public const string GeminiFlash = "gemini-flash";
+    public const string DeepseekV3 = "deepseek-v3";
+    public const string Llama370b = "llama-3-70b";
+    public const string MistralLarge = "mistral-large";
+
     public static readonly LlmModel[] All = new[]
     {
-        new LlmModel("gpt-4o", "GPT-4o", "OpenAI's most capable model", 5, 15),
-        new LlmModel("gpt-4o-mini", "GPT-4o Mini", "Faster, more affordable GPT-4", 1, 3),
-        new LlmModel("claude-3-5-sonnet", "Claude 3.5 Sonnet", "Anthropic's balanced model", 3, 15),
-        new LlmModel("claude-3-5-haiku", "Claude 3.5 Haiku", "Fast and efficient", 1, 5),
-        new LlmModel("gemini-pro", "Gemini Pro", "Google's advanced model", 2, 8),
-        new LlmModel("llama-3-70b", "Llama 3 70B", "Meta's open model", 1, 4),
-        new LlmModel("mistral-large", "Mistral Large", "Mistral's flagship", 2, 6),
+        new LlmModel(Gpt4o, "GPT-4o", "OpenAI's most capable model", 5, 15),
+        new LlmModel(Gpt4oMini, "GPT-4o Mini", "Faster, more affordable GPT-4", 1, 3),
+        new LlmModel(Claude35Sonnet, "Claude 3.5 Sonnet", "Anthropic's balanced model", 3, 15),
+        new LlmModel(Claude35Haiku, "Claude 3.5 Haiku", "Fast and efficient", 1, 5),
+        new LlmModel(GeminiPro, "Gemini Pro", "Google's advanced model", 2, 8),
+        new LlmModel(GeminiFlash, "Gemini Flash", "Fast Gemini variant", 1, 4),
+        new LlmModel(DeepseekV3, "Deepseek V3", "Powerful coding-focused model", 2, 6),
+        new LlmModel(Llama370b, "Llama 3 70B", "Meta's open model", 1, 4),
+        new LlmModel(MistralLarge, "Mistral Large", "Mistral's flagship", 2, 6),
     };
+
+    /// <summary>
+    /// All model IDs as strings
+    /// </summary>
+    public static readonly string[] AllIds = All.Select(m => m.Id).ToArray();
 
     public static LlmModel? GetById(string id) => All.FirstOrDefault(m => m.Id == id);
 }

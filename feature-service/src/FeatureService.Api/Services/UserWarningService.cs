@@ -2,17 +2,17 @@ using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
-using NUlid;
+using Ulid = NUlid.Ulid;
 
 namespace FeatureService.Api.Services;
 
 public interface IUserWarningService
 {
-    Task<string> CreateWarningAsync(uint userId, string reason, string message, string severity, string? reportId, uint adminId);
-    Task<UserWarningsResponse> GetUserWarningsAsync(uint userId);
+    Task<string> CreateWarningAsync(uint userId, string reason, string message, string severity, uint adminId, string? reportId = null);
+    Task<List<UserWarningDto>> GetUserWarningsAsync(uint userId);
+    Task<UserWarningDto?> GetWarningByIdAsync(string warningId);
     Task AcknowledgeWarningAsync(string warningId, uint userId);
     Task<int> GetUnacknowledgedCountAsync(uint userId);
-    Task<int> GetTotalWarningCountAsync(uint userId);
 }
 
 public class UserWarningService : IUserWarningService
@@ -26,10 +26,10 @@ public class UserWarningService : IUserWarningService
         _logger = logger;
     }
 
-    public async Task<string> CreateWarningAsync(uint userId, string reason, string message, string severity, string? reportId, uint adminId)
+    public async Task<string> CreateWarningAsync(uint userId, string reason, string message, string severity, uint adminId, string? reportId = null)
     {
         // Validate severity
-        if (severity != WarningSeverity.Minor && severity != WarningSeverity.Moderate && severity != WarningSeverity.Severe)
+        if (!WarningSeverity.All.Contains(severity))
         {
             throw new ArgumentException("Invalid severity. Must be minor, moderate, or severe");
         }
@@ -54,14 +54,14 @@ public class UserWarningService : IUserWarningService
         return warning.Id;
     }
 
-    public async Task<UserWarningsResponse> GetUserWarningsAsync(uint userId)
+    public async Task<List<UserWarningDto>> GetUserWarningsAsync(uint userId)
     {
         var warnings = await _context.UserWarnings
             .Find(w => w.UserId == userId)
             .SortByDescending(w => w.CreatedAt)
             .ToListAsync();
 
-        var dtos = warnings.Select(w => new UserWarningDto(
+        return warnings.Select(w => new UserWarningDto(
             w.Id,
             w.Reason,
             w.Message,
@@ -70,10 +70,25 @@ public class UserWarningService : IUserWarningService
             w.CreatedAt,
             w.AcknowledgedAt
         )).ToList();
+    }
 
-        var unacknowledgedCount = warnings.Count(w => !w.Acknowledged);
+    public async Task<UserWarningDto?> GetWarningByIdAsync(string warningId)
+    {
+        var warning = await _context.UserWarnings
+            .Find(w => w.Id == warningId)
+            .FirstOrDefaultAsync();
 
-        return new UserWarningsResponse(dtos, warnings.Count, unacknowledgedCount);
+        if (warning == null) return null;
+
+        return new UserWarningDto(
+            warning.Id,
+            warning.Reason,
+            warning.Message,
+            warning.Severity,
+            warning.Acknowledged,
+            warning.CreatedAt,
+            warning.AcknowledgedAt
+        );
     }
 
     public async Task AcknowledgeWarningAsync(string warningId, uint userId)
@@ -104,13 +119,6 @@ public class UserWarningService : IUserWarningService
     {
         var count = await _context.UserWarnings
             .CountDocumentsAsync(w => w.UserId == userId && !w.Acknowledged);
-        return (int)count;
-    }
-
-    public async Task<int> GetTotalWarningCountAsync(uint userId)
-    {
-        var count = await _context.UserWarnings
-            .CountDocumentsAsync(w => w.UserId == userId);
         return (int)count;
     }
 }
