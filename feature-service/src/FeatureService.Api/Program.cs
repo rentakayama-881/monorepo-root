@@ -108,6 +108,10 @@ try
     builder.Services.AddScoped<IUserContextAccessor, UserContextAccessor>();
     builder.Services.AddScoped<IReplyService, ReplyService>();
     builder.Services.AddScoped<IReactionService, ReactionService>();
+    
+    // Register financial services
+    builder.Services.AddScoped<IWalletService, WalletService>();
+    // TODO: Add TransferService when implemented
 
     // Add FluentValidation
     builder.Services.AddFluentValidationAutoValidation();

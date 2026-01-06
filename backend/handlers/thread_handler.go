@@ -225,6 +225,11 @@ func (h *ThreadHandler) GetUserThreads(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"threads": threads})
 }
 
+// GetMyThreads is an alias for GetUserThreads for /api/threads/me endpoint
+func (h *ThreadHandler) GetMyThreads(c *gin.Context) {
+	h.GetUserThreads(c)
+}
+
 // GetThreadsByUsername handles GET /api/user/:username/threads
 func (h *ThreadHandler) GetThreadsByUsername(c *gin.Context) {
 	username := c.Param("username")

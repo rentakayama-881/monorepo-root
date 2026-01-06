@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"os"
@@ -17,7 +16,6 @@ import (
 	"backend-gin/logger"
 	"backend-gin/middleware"
 	"backend-gin/services"
-	"backend-gin/worker"
 
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -154,23 +152,19 @@ func main() {
 	}
 
 	// Initialize handlers
+	userService := services.NewUserService(database.DB)
+	userHandler := handlers.NewUserHandler(userService)
 	authHandler := handlers.NewAuthHandler(authService, sessionService)
 	threadHandler := handlers.NewThreadHandler(threadService)
 	totpHandler := handlers.NewTOTPHandler(totpService, logger.GetLogger())
 	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authService, logger.GetLogger())
 	sudoHandler := handlers.NewSudoHandler(sudoService, logger.GetLogger())
-	walletHandler := handlers.NewWalletHandler()
-	transferHandler := handlers.NewTransferHandler()
-	disputeHandler := handlers.NewDisputeHandler()
-	withdrawalHandler := handlers.NewWithdrawalHandler()
+	// Financial features are handled by the ASP.NET service; keep Go focused on core identity/content.
 
 	// Verify all handlers are properly initialized
-	if authHandler == nil || threadHandler == nil {
+	if authHandler == nil || threadHandler == nil || userHandler == nil {
 		logger.Fatal("Failed to initialize handlers")
 	}
-
-	// Start event worker
-	worker.StartEventWorker(context.Background())
 
 	router := gin.Default()
 	router.Use(middleware.SecurityHeadersMiddleware())
@@ -254,97 +248,25 @@ func main() {
 
 		user := api.Group("/user")
 		{
-			user.GET("/me", middleware.AuthMiddleware(), handlers.GetUserInfoHandler)
-			user.GET("/:username", handlers.GetPublicUserProfileHandler)
-			user.GET("/:username/threads", handlers.GetUserThreadsHandler)
+			user.GET("/me", middleware.AuthMiddleware(), userHandler.GetUserInfo)
+			user.GET("/:username", userHandler.GetPublicUserProfile)
+			user.GET("/:username/threads", threadHandler.GetThreadsByUsername)
 			user.GET("/:username/badges", handlers.GetUserBadgesHandler)
 		}
 
 		threads := api.Group("/threads")
 		{
-			threads.GET("/categories", handlers.GetCategoriesHandler)
-			threads.GET("/category/:slug", handlers.GetThreadsByCategoryHandler)
-			threads.GET("/latest", handlers.GetLatestThreadsHandler)
-			threads.GET("/:id/public", handlers.GetPublicThreadDetailHandler)
-			threads.GET("/:id", middleware.AuthMiddleware(), handlers.GetThreadDetailHandler)
-			threads.POST("", middleware.AuthMiddleware(), handlers.CreateThreadHandler)
-			threads.GET("/me", middleware.AuthMiddleware(), handlers.GetMyThreadsHandler)
-			threads.PUT("/:id", middleware.AuthMiddleware(), handlers.UpdateThreadHandler)
+			threads.GET("/categories", threadHandler.GetCategories)
+			threads.GET("/category/:slug", threadHandler.GetThreadsByCategory)
+			threads.GET("/latest", threadHandler.GetLatestThreads)
+			threads.GET("/:id/public", threadHandler.GetPublicThreadDetail)
+			threads.GET("/:id", middleware.AuthMiddleware(), threadHandler.GetThreadDetail)
+			threads.POST("", middleware.AuthMiddleware(), threadHandler.CreateThread)
+			threads.GET("/me", middleware.AuthMiddleware(), threadHandler.GetMyThreads)
+			threads.PUT("/:id", middleware.AuthMiddleware(), threadHandler.UpdateThread)
 		}
 
-		// Wallet endpoints
-		wallet := api.Group("/wallet")
-		wallet.Use(middleware.AuthMiddleware())
-		{
-			wallet.GET("/balance", walletHandler.GetBalance)
-			wallet.POST("/pin/set", walletHandler.SetPIN)
-			// Change PIN requires sudo mode
-			wallet.POST("/pin/change", middleware.RequireSudo(sudoService), walletHandler.ChangePIN)
-			wallet.POST("/pin/verify", walletHandler.VerifyPIN)
-			wallet.POST("/deposit", walletHandler.CreateDeposit)
-			wallet.GET("/deposits", walletHandler.GetDeposits)
-			wallet.GET("/transactions", walletHandler.GetTransactionHistory)
-		}
-
-		// Transfer endpoints
-		transfers := api.Group("/transfers")
-		transfers.Use(middleware.AuthMiddleware())
-		{
-			// Create transfer requires sudo mode (sending money)
-			transfers.POST("", middleware.RequireSudo(sudoService), transferHandler.CreateTransfer)
-			transfers.GET("", transferHandler.GetMyTransfers)
-			transfers.GET("/pending/sent", transferHandler.GetPendingSentTransfers)
-			transfers.GET("/pending/received", transferHandler.GetPendingReceivedTransfers)
-			transfers.GET("/search-user", transferHandler.SearchUser)
-			transfers.GET("/:id", transferHandler.GetTransferByID)
-			transfers.GET("/code/:code", transferHandler.GetTransferByCode)
-			transfers.POST("/:id/release", transferHandler.ReleaseTransfer)
-			transfers.POST("/:id/cancel", transferHandler.CancelTransfer)
-		}
-
-		// Dispute endpoints
-		disputes := api.Group("/disputes")
-		disputes.Use(middleware.AuthMiddleware())
-		{
-			disputes.POST("", disputeHandler.CreateDispute)
-			disputes.GET("", disputeHandler.GetMyDisputes)
-			disputes.GET("/:id", disputeHandler.GetDisputeByID)
-			disputes.POST("/:id/evidence", disputeHandler.AddEvidence)
-			disputes.GET("/:id/messages", disputeHandler.GetMessages)
-			disputes.POST("/:id/messages", disputeHandler.AddMessage)
-			disputes.POST("/:id/release", disputeHandler.MutualRelease)
-			disputes.POST("/:id/refund", disputeHandler.MutualRefund)
-			disputes.POST("/:id/escalate", disputeHandler.EscalateToAdmin)
-		}
-
-		// Withdrawal endpoints
-		withdrawals := api.Group("/withdrawals")
-		withdrawals.Use(middleware.AuthMiddleware())
-		{
-			// Create withdrawal requires sudo mode
-			withdrawals.POST("", middleware.RequireSudo(sudoService), withdrawalHandler.CreateWithdrawal)
-			withdrawals.GET("", withdrawalHandler.GetMyWithdrawals)
-			withdrawals.GET("/banks", withdrawalHandler.GetAvailableBanks)
-			withdrawals.GET("/info", withdrawalHandler.GetWithdrawalInfo) // Get withdrawal limits/requirements
-		}
-
-		// Payment gateway webhook callbacks (no auth - verified by callback signature)
-		webhooks := api.Group("/webhooks")
-		{
-			// Keep Xendit webhooks for backward compatibility / migration period
-			webhooks.POST("/xendit/invoice", walletHandler.XenditInvoiceCallback)
-			// Faspay webhooks (for future integration)
-			webhooks.POST("/faspay/disbursement", withdrawalHandler.FaspayDisbursementCallback)
-		}
-
-		// Demo/testing endpoints (only in development - protected by env var)
-		if os.Getenv("ENABLE_DEMO_ENDPOINTS") == "true" {
-			demo := api.Group("/demo")
-			{
-				demo.POST("/deposit/:external_id/simulate", walletHandler.SimulateDeposit)
-				demo.POST("/withdrawal/:code/simulate", withdrawalHandler.SimulateWithdrawal)
-			}
-		}
+		// Financial endpoints are handled by the ASP.NET service; omitted here to keep responsibilities separated.
 
 		badges := api.Group("/badges")
 		{
@@ -388,11 +310,6 @@ func main() {
 			adminProtected.GET("/users/:userId", handlers.AdminGetUser)
 			adminProtected.POST("/users/:userId/badges", handlers.AssignBadgeToUser)
 			adminProtected.DELETE("/users/:userId/badges/:badgeId", handlers.RevokeBadgeFromUser)
-
-			// Dispute management
-			adminProtected.GET("/disputes", disputeHandler.AdminGetAllDisputes)
-			adminProtected.POST("/disputes/:id/resolve", disputeHandler.AdminResolveDispute)
-			adminProtected.POST("/disputes/:id/messages", disputeHandler.AdminAddMessage)
 		}
 	}
 
