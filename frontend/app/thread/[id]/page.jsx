@@ -6,6 +6,11 @@ import { useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
+import ReactionBar from "@/components/ReactionBar";
+import ReplyList from "@/components/ReplyList";
+import ReplyForm from "@/components/ReplyForm";
+import ReportModal from "@/components/ReportModal";
+import { REPORT_TARGET_TYPES } from "@/lib/useReport";
 
 export default function ThreadDetailPage() {
   const params = useParams();
@@ -15,8 +20,11 @@ export default function ThreadDetailPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [repliesKey, setRepliesKey] = useState(0); // Force refresh replies
 
   const isAuthed = typeof window !== "undefined" ? !!localStorage.getItem("token") : false;
+  const currentUsername = typeof window !== "undefined" ? localStorage.getItem("username") : null;
 
   useEffect(() => {
     if (!isAuthed) {
@@ -169,8 +177,13 @@ export default function ThreadDetailPage() {
             )}
           </div>
 
+          {/* Reactions */}
+          <div className="border-t border-[rgb(var(--border))] px-6 py-4">
+            <ReactionBar threadId={id} />
+          </div>
+
           {/* Footer actions */}
-          <div className="flex items-center gap-3 border-t border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-6 py-4">
+          <div className="flex flex-wrap items-center gap-3 border-t border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-6 py-4">
             <Link
               href="/threads"
               className="inline-flex items-center gap-2 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2 text-sm font-medium text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))]"
@@ -191,8 +204,49 @@ export default function ThreadDetailPage() {
                 </svg>
               </Link>
             )}
+            
+            {/* Report button */}
+            <button
+              onClick={() => setShowReportModal(true)}
+              className="ml-auto inline-flex items-center gap-2 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2 text-sm font-medium text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--error))] transition-colors"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+              </svg>
+              Laporkan
+            </button>
           </div>
         </article>
+
+        {/* Replies Section */}
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold text-[rgb(var(--fg))] mb-4">Balasan</h2>
+          
+          {/* Reply Form */}
+          <div className="mb-6 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
+            <ReplyForm
+              threadId={id}
+              onSuccess={() => setRepliesKey((k) => k + 1)}
+              placeholder="Tulis balasan untuk thread ini..."
+            />
+          </div>
+
+          {/* Reply List */}
+          <ReplyList
+            key={repliesKey}
+            threadId={id}
+            currentUsername={currentUsername}
+          />
+        </section>
+
+        {/* Report Modal */}
+        <ReportModal
+          open={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          targetType={REPORT_TARGET_TYPES.THREAD}
+          targetId={id}
+          targetTitle={data?.title}
+        />
       ) : null}
     </main>
   );
