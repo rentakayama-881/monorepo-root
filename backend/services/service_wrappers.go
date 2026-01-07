@@ -51,6 +51,11 @@ func (w *AuthServiceWrapper) LoginWithPasskey(user *models.User, ipAddress, user
 	return w.ent.LoginWithPasskey(context.Background(), entUser, ipAddress, userAgent)
 }
 
+// LoginWithPasskeyEnt directly uses ent.User without conversion
+func (w *AuthServiceWrapper) LoginWithPasskeyEnt(user *ent.User, ipAddress, userAgent string) (*LoginResponse, error) {
+	return w.ent.LoginWithPasskey(context.Background(), user, ipAddress, userAgent)
+}
+
 // RequestVerification creates verification token and sends email
 func (w *AuthServiceWrapper) RequestVerification(email, ip string) (string, string, error) {
 	// Delegate to internal createVerificationToken after finding user

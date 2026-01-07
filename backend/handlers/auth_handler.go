@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"backend-gin/database"
 	"backend-gin/dto"
+	"backend-gin/ent/session"
 	apperrors "backend-gin/errors"
 	"backend-gin/logger"
 	"backend-gin/middleware"
@@ -346,15 +348,22 @@ func (h *AuthHandler) RevokeSession(c *gin.Context) {
 	user := userIfc.(*models.User)
 
 	sessionID := c.Param("id")
+	sessionIDInt, err := strconv.Atoi(sessionID)
+	if err != nil {
+		handleError(c, apperrors.ErrInvalidInput.WithDetails("ID session tidak valid"))
+		return
+	}
 
-	// Verify session belongs to user
-	var session models.Session
-	if err := database.DB.Where("id = ? AND user_id = ?", sessionID, user.ID).First(&session).Error; err != nil {
+	// Verify session belongs to user using Ent
+	_, err = database.GetEntClient().Session.Query().
+		Where(session.IDEQ(sessionIDInt), session.UserIDEQ(int(user.ID))).
+		Only(c.Request.Context())
+	if err != nil {
 		handleError(c, apperrors.ErrSessionInvalid)
 		return
 	}
 
-	if err := h.sessionService.RevokeSession(session.ID, "User revoked session"); err != nil {
+	if err := h.sessionService.RevokeSession(uint(sessionIDInt), "User revoked session"); err != nil {
 		handleError(c, apperrors.ErrInternalServer)
 		return
 	}

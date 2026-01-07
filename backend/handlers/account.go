@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"backend-gin/database"
+	"backend-gin/ent/credential"
+	"backend-gin/ent/thread"
 	entuser "backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
 	"backend-gin/models"
@@ -267,7 +269,9 @@ func UploadAvatarHandler(c *gin.Context) {
 	}
 
 	user.AvatarURL = avatarURL
-	if err := database.DB.Save(user).Error; err != nil {
+	if _, err := database.GetEntClient().User.UpdateOneID(int(user.ID)).
+		SetAvatarURL(avatarURL).
+		Save(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan avatar ke profil"})
 		return
 	}
@@ -291,7 +295,9 @@ func DeleteAvatarHandler(c *gin.Context) {
 
 	// Clear avatar URL in database
 	user.AvatarURL = ""
-	if err := database.DB.Save(user).Error; err != nil {
+	if _, err := database.GetEntClient().User.UpdateOneID(int(user.ID)).
+		ClearAvatarURL().
+		Save(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menghapus foto profil"})
 		return
 	}
@@ -327,53 +333,57 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	// Start transaction - delete all user data
-	tx := database.DB.Begin()
-	if tx.Error != nil {
+	ctx := c.Request.Context()
+	client := database.GetEntClient()
+	db := database.GetSQLDB()
+
+	// Use Ent transaction for cascading delete
+	tx, err := client.Tx(ctx)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses penghapusan"})
 		return
 	}
 
-	// 1. Delete thread chunks (RAG index) for user's threads
-	if err := tx.Exec(`
+	// 1. Delete thread chunks (RAG index) for user's threads - raw SQL needed for thread_chunks table
+	if _, err := db.ExecContext(ctx, `
 		DELETE FROM thread_chunks 
-		WHERE thread_id IN (SELECT id FROM threads WHERE user_id = ?)
-	`, user.ID).Error; err != nil {
-		tx.Rollback()
+		WHERE thread_id IN (SELECT id FROM threads WHERE user_id = $1)
+	`, user.ID); err != nil {
+		_ = tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus index thread"})
 		return
 	}
 
 	// 2. Delete all user's threads
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Thread{}).Error; err != nil {
-		tx.Rollback()
+	if _, err := tx.Thread.Delete().Where(thread.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
+		_ = tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus thread"})
 		return
 	}
 
 	// 3. Delete user badges
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.UserBadge{}).Error; err != nil {
-		tx.Rollback()
+	if _, err := tx.UserBadge.Delete().Where(userbadge.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
+		_ = tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus badge"})
 		return
 	}
 
 	// 4. Delete user credentials
-	if err := tx.Where("user_id = ?", user.ID).Delete(&models.Credential{}).Error; err != nil {
-		tx.Rollback()
+	if _, err := tx.Credential.Delete().Where(credential.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
+		_ = tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus kredensial"})
 		return
 	}
 
 	// 5. Delete user (finally)
-	if err := tx.Delete(user).Error; err != nil {
-		tx.Rollback()
+	if err := tx.User.DeleteOneID(int(user.ID)).Exec(ctx); err != nil {
+		_ = tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus akun"})
 		return
 	}
 
 	// Commit transaction
-	if err := tx.Commit().Error; err != nil {
+	if err := tx.Commit(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyelesaikan penghapusan"})
 		return
 	}

@@ -387,12 +387,13 @@ func IndexThreadByIDHandler(c *gin.Context) {
 		}
 		vecLit := utils.VectorLiteral(vec)
 
-		if err := database.DB.Exec(`
+		db := database.GetSQLDB()
+		if _, err := db.ExecContext(c.Request.Context(), `
             INSERT INTO public.thread_chunks
                 (thread_id, content, embedding, chunk_index, model_name, embedding_dim)
             VALUES
                 ($1,        $2,      $3::vector, $4,         $5,         $6)
-        `, r.ID, chunk, vecLit, idx, model, len(vec)).Error; err != nil {
+        `, r.ID, chunk, vecLit, idx, model, len(vec)); err != nil {
 			c.JSON(500, gin.H{"error": "insert gagal: " + err.Error(), "indexed": indexed})
 			return
 		}

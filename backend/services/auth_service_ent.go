@@ -709,9 +709,9 @@ func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, to
 		return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04"))
 	}
 
-	// Verify TOTP code (using existing GORM-based TOTP service for now)
-	totpService := NewTOTPService(database.DB, logger.GetLogger())
-	valid, err := totpService.Verify(uint(u.ID), totpCode)
+	// Verify TOTP code using Ent-based TOTP service
+	totpEntService := NewEntTOTPService(logger.GetLogger())
+	valid, err := totpEntService.Verify(ctx, u.ID, totpCode)
 	if err != nil {
 		return nil, err
 	}
