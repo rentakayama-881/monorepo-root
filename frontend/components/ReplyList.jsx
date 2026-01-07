@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Avatar from "@/components/ui/Avatar";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import Button from "@/components/ui/Button";
-import { Skeleton } from "@/components/ui/Skeleton";
+import Skeleton from "@/components/ui/Skeleton";
 import { useReplies, useDeleteReply } from "@/lib/useReplies";
 import { getToken } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
