@@ -43,6 +43,8 @@ func IndexLongHandler(c *gin.Context) {
 	chunks := utils.SplitToChunks(req.ContentLong, 800) // ~800 char/chunk
 	indexed := 0
 
+	db := database.GetSQLDB()
+	ctx := c.Request.Context()
 	for _, chunk := range chunks {
 		// embed dokumen
 		vec, err := utils.EmbedForDocument(chunk)
@@ -57,7 +59,7 @@ func IndexLongHandler(c *gin.Context) {
 			INSERT INTO public.thread_chunks (id, thread_id, content, embedding)
 			VALUES (gen_random_uuid()::text, $1, $2, $3::vector)
 		`
-		if err := database.DB.Exec(sql, req.ThreadID, chunk, vecLit).Error; err != nil {
+		if _, err := db.ExecContext(ctx, sql, req.ThreadID, chunk, vecLit); err != nil {
 			c.JSON(500, gin.H{"error": "insert gagal: " + err.Error(), "indexed": indexed})
 			return
 		}
@@ -121,13 +123,15 @@ func IndexChunkHandler(c *gin.Context) {
         VALUES
             ($1, $2, $3::vector, $4, $5)
     `
-	if err := database.DB.Exec(sql,
-		tid,         // thread_id bigint
-		req.Content, // konten chunk
-		vecLit,      // embedding vektor
-		model,       // nama model embedding
-		len(vec),    // dimensi embedding
-	).Error; err != nil {
+	db := database.GetSQLDB()
+	ctx := c.Request.Context()
+	if _, err := db.ExecContext(ctx, sql,
+		tid,
+		req.Content,
+		vecLit,
+		model,
+		len(vec),
+	); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "insert gagal: " + err.Error()})
 		return
 	}
@@ -161,15 +165,28 @@ func AskHandler(c *gin.Context) {
 
 	// 2) Ambil top-k dari Postgres (cosine)
 	hits := make([]Hit, 0)
+	db := database.GetSQLDB()
+	ctx := c.Request.Context()
 	sql := `
 		SELECT thread_id, content
 		FROM public.thread_chunks
 		ORDER BY embedding <=> $1::vector
 		LIMIT 5
 	`
-	if err := database.DB.Raw(sql, vecLit).Scan(&hits).Error; err != nil {
+	rows, err := db.QueryContext(ctx, sql, vecLit)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query gagal: " + err.Error()})
 		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var tid int64
+		var content string
+		if err := rows.Scan(&tid, &content); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "scan gagal: " + err.Error()})
+			return
+		}
+		hits = append(hits, Hit{ThreadID: strconv.FormatInt(tid, 10), Content: content})
 	}
 
 	// 3) Rerank dengan Cohere (jika ada >1)
@@ -214,15 +231,28 @@ func AnswerHandler(c *gin.Context) {
 
 	// 2) Ambil top-k dari Postgres
 	hits := make([]Hit, 0)
+	db := database.GetSQLDB()
+	ctx := c.Request.Context()
 	sql := `
 		SELECT thread_id, content
 		FROM public.thread_chunks
 		ORDER BY embedding <=> $1::vector
 		LIMIT 5
 	`
-	if err := database.DB.Raw(sql, vecLit).Scan(&hits).Error; err != nil {
+	rows, err := db.QueryContext(ctx, sql, vecLit)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query gagal: " + err.Error()})
 		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var tid int64
+		var content string
+		if err := rows.Scan(&tid, &content); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "scan gagal: " + err.Error()})
+			return
+		}
+		hits = append(hits, Hit{ThreadID: strconv.FormatInt(tid, 10), Content: content})
 	}
 	if len(hits) == 0 {
 		c.JSON(http.StatusOK, gin.H{
@@ -298,15 +328,24 @@ func IndexThreadByIDHandler(c *gin.Context) {
 		ContentJSON json.RawMessage `json:"content_json"`
 	}
 	var r row
-	if err := database.DB.Raw(`
+	db := database.GetSQLDB()
+	ctx := c.Request.Context()
+	query := `
         SELECT id, title, summary, content_json
         FROM public.threads
         WHERE id = ?
         LIMIT 1
-    `, tid).Scan(&r).Error; err != nil {
+	`
+	// summary nullable, content_json json
+	var summary *string
+	var contentJSON []byte
+	err = db.QueryRowContext(ctx, query, tid).Scan(&r.ID, &r.Title, &summary, &contentJSON)
+	if err != nil {
 		c.JSON(500, gin.H{"error": "ambil thread gagal: " + err.Error()})
 		return
 	}
+	r.Summary = summary
+	r.ContentJSON = json.RawMessage(contentJSON)
 	if r.ID == 0 {
 		c.JSON(404, gin.H{"error": "thread tidak ditemukan"})
 		return
@@ -409,6 +448,8 @@ func SearchThreadsHandler(c *gin.Context) {
 
 	// 2) Search chunks + JOIN to threads, get DISTINCT threads with best score
 	var results []ThreadSearchResult
+	db := database.GetSQLDB()
+	ctx := c.Request.Context()
 	sql := `
 		WITH ranked_chunks AS (
 			SELECT 
@@ -432,9 +473,23 @@ func SearchThreadsHandler(c *gin.Context) {
 		LIMIT $2 OFFSET $3
 	`
 
-	if err := database.DB.Raw(sql, vecLit, limit+1, cursor).Scan(&results).Error; err != nil {
+	rows, err := db.QueryContext(ctx, sql, vecLit, limit+1, cursor)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query gagal: " + err.Error()})
 		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id int64
+		var title string
+		var summary *string
+		var category string
+		var score float64
+		if err := rows.Scan(&id, &title, &summary, &category, &score); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "scan gagal: " + err.Error()})
+			return
+		}
+		results = append(results, ThreadSearchResult{ID: id, Title: title, Summary: summary, Category: category, Score: score})
 	}
 
 	// Check if there are more results
@@ -490,7 +545,9 @@ func ExplainThreadHandler(c *gin.Context) {
 		WHERE t.id = $1
 		LIMIT 1
 	`
-	if err := database.DB.Raw(threadSQL, tid).Scan(&thread).Error; err != nil {
+	db := database.GetSQLDB()
+	ctx := c.Request.Context()
+	if err := db.QueryRowContext(ctx, threadSQL, tid).Scan(&thread.ID, &thread.Title, &thread.Summary, &thread.Category); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query thread gagal: " + err.Error()})
 		return
 	}
@@ -507,9 +564,19 @@ func ExplainThreadHandler(c *gin.Context) {
 		WHERE thread_id = $1
 		ORDER BY chunk_index ASC NULLS LAST, id ASC
 	`
-	if err := database.DB.Raw(chunkSQL, tid).Pluck("content", &chunks).Error; err != nil {
+	rows, err := db.QueryContext(ctx, chunkSQL, tid)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query chunks gagal: " + err.Error()})
 		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var s string
+		if err := rows.Scan(&s); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "scan gagal: " + err.Error()})
+			return
+		}
+		chunks = append(chunks, s)
 	}
 
 	if len(chunks) == 0 {

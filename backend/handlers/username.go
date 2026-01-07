@@ -6,6 +6,7 @@ import (
 
 	"backend-gin/database"
 	"backend-gin/dto"
+	entuser "backend-gin/ent/user"
 	"backend-gin/models"
 	"backend-gin/validators"
 
@@ -41,19 +42,23 @@ func CreateUsernameHandler(c *gin.Context) {
 		return
 	}
 
-	// Cek username sudah dipakai user lain
-	var existingUser models.User
-	if database.DB.Where("name = ?", username).First(&existingUser).Error == nil {
+	// Cek username sudah dipakai user lain (Ent)
+	exists, err := database.GetEntClient().User.Query().Where(entuser.UsernameEQ(username)).Exist(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memeriksa username"})
+		return
+	}
+	if exists {
 		c.JSON(http.StatusConflict, gin.H{"error": "Username sudah digunakan"})
 		return
 	}
 
-	user.Username = &username
-
-	if err := database.DB.Save(user).Error; err != nil {
+	// Update via Ent
+	if _, err := database.GetEntClient().User.UpdateOneID(int(user.ID)).SetUsername(username).Save(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan username"})
 		return
 	}
+	user.Username = &username
 
 	c.JSON(http.StatusOK, gin.H{
 		"user": gin.H{

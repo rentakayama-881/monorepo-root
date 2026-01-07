@@ -19,6 +19,9 @@ import (
 // EntClient is the global Ent client instance
 var EntClient *ent.Client
 
+// SQLDB holds the underlying *sql.DB used by Ent
+var SQLDB *sql.DB
+
 // InitEntDB initializes the Ent database client
 func InitEntDB() {
 	var dsn string
@@ -51,6 +54,9 @@ func InitEntDB() {
 	db.SetConnMaxLifetime(time.Hour)
 	db.SetConnMaxIdleTime(10 * time.Minute)
 
+	// Assign global SQL handle
+	SQLDB = db
+
 	// Create Ent driver
 	drv := entsql.OpenDB(dialect.Postgres, db)
 
@@ -78,4 +84,9 @@ func CloseEntDB() {
 // GetEntClient returns the global Ent client
 func GetEntClient() *ent.Client {
 	return EntClient
+}
+
+// GetSQLDB returns the underlying *sql.DB for raw SQL operations
+func GetSQLDB() *sql.DB {
+	return SQLDB
 }

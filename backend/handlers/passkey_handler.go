@@ -20,12 +20,12 @@ import (
 // PasskeyHandler handles passkey/WebAuthn endpoints
 type PasskeyHandler struct {
 	passkeyService *services.PasskeyService
-	authService    *services.AuthService
+	authService    *services.AuthServiceWrapper
 	logger         *zap.Logger
 }
 
 // NewPasskeyHandler creates a new PasskeyHandler
-func NewPasskeyHandler(passkeyService *services.PasskeyService, authService *services.AuthService, logger *zap.Logger) *PasskeyHandler {
+func NewPasskeyHandler(passkeyService *services.PasskeyService, authService *services.AuthServiceWrapper, logger *zap.Logger) *PasskeyHandler {
 	return &PasskeyHandler{
 		passkeyService: passkeyService,
 		authService:    authService,
@@ -156,9 +156,9 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.PasskeyResponse{
-		ID:        passkey.ID,
-		Name:      passkey.Name,
-		CreatedAt: passkey.CreatedAt,
+		ID:         passkey.ID,
+		Name:       passkey.Name,
+		CreatedAt:  passkey.CreatedAt,
 		Transports: transports,
 	})
 }

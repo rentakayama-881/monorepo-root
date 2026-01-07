@@ -19,8 +19,8 @@ import (
 
 // AuthHandler handles authentication HTTP requests
 type AuthHandler struct {
-	authService     *services.AuthService
-	sessionService  *services.SessionService
+	authService     *services.AuthServiceWrapper
+	sessionService  *services.SessionServiceWrapper
 	loginLimiter    *middleware.RateLimiter
 	registerLimiter *middleware.RateLimiter
 	verifyLimiter   *middleware.RateLimiter
@@ -28,7 +28,7 @@ type AuthHandler struct {
 }
 
 // NewAuthHandler creates a new auth handler
-func NewAuthHandler(authService *services.AuthService, sessionService *services.SessionService) *AuthHandler {
+func NewAuthHandler(authService *services.AuthServiceWrapper, sessionService *services.SessionServiceWrapper) *AuthHandler {
 	return &AuthHandler{
 		authService:     authService,
 		sessionService:  sessionService,

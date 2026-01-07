@@ -6,6 +6,10 @@ import (
 	"time"
 
 	"backend-gin/database"
+	"backend-gin/ent"
+	"backend-gin/ent/session"
+	"backend-gin/ent/sessionlock"
+	"backend-gin/ent/user"
 	"backend-gin/logger"
 	"backend-gin/models"
 
@@ -37,29 +41,60 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Get user from DB
-		var user models.User
+		// Get user via Ent
+		client := database.GetEntClient()
+		var entUser *ent.User
 		var err2 error
 
-		// Try to find by UserID first (new tokens), fallback to email (legacy tokens)
 		if claims.UserID > 0 {
-			err2 = database.DB.First(&user, claims.UserID).Error
+			entUser, err2 = client.User.Get(c.Request.Context(), int(claims.UserID))
 		} else if claims.Email != "" {
-			err2 = database.DB.Where("email = ?", claims.Email).First(&user).Error
+			entUser, err2 = client.User.Query().Where(user.EmailEQ(claims.Email)).Only(c.Request.Context())
 		} else {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token tidak valid"})
 			return
 		}
-
 		if err2 != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User tidak ditemukan"})
 			return
 		}
+		// Map ent.User to models.User for existing handlers
+		mappedUser := &models.User{
+			Model:         models.User{}.Model,
+			Email:         entUser.Email,
+			Username:      nil,
+			PasswordHash:  entUser.PasswordHash,
+			EmailVerified: entUser.EmailVerified,
+			AvatarURL:     entUser.AvatarURL,
+			FullName:      nil,
+			Bio:           entUser.Bio,
+			Pronouns:      entUser.Pronouns,
+			Company:       entUser.Company,
+			Telegram:      entUser.Telegram,
+			PrimaryBadgeID: func() *uint {
+				if entUser.PrimaryBadgeID != nil {
+					v := uint(*entUser.PrimaryBadgeID)
+					return &v
+				}
+				return nil
+			}(),
+		}
+		// Optional pointer fields
+		if entUser.Username != nil {
+			uname := *entUser.Username
+			mappedUser.Username = &uname
+		}
+		if entUser.FullName != nil {
+			fn := *entUser.FullName
+			mappedUser.FullName = &fn
+		}
+		// Assign ID
+		mappedUser.ID = uint(entUser.ID)
 
-		// Check if account is locked
-		var lock models.SessionLock
-		if err := database.DB.Where("user_id = ?", user.ID).Order("created_at DESC").First(&lock).Error; err == nil {
-			if lock.IsLocked() {
+		// Check if account is locked via SessionLock
+		if lock, err := client.SessionLock.Query().Where(sessionlock.UserIDEQ(entUser.ID)).Order(ent.Desc(sessionlock.FieldCreatedAt)).First(c.Request.Context()); err == nil && lock != nil {
+			// Consider locked if unlocked_at is nil and expires_at in future
+			if lock.UnlockedAt == nil && lock.ExpiresAt.After(time.Now()) {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 					"error":      "Akun terkunci karena aktivitas mencurigakan. Hubungi admin untuk membuka.",
 					"code":       "account_locked",
@@ -73,52 +108,50 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// If JTI exists, validate session in database (new auth flow)
 		if claims.JTI != "" {
-			var session models.Session
-			if err := database.DB.Where("access_token_jti = ? AND user_id = ?", claims.JTI, user.ID).First(&session).Error; err == nil {
-				// Session found - validate it
-				if !session.IsValid() {
+			sess, err := client.Session.
+				Query().
+				Where(
+					session.AccessTokenJtiEQ(claims.JTI),
+					session.UserIDEQ(entUser.ID),
+				).
+				First(c.Request.Context())
+			if err == nil && sess != nil {
+				// Validate not revoked and not expired
+				if sess.RevokedAt != nil || sess.ExpiresAt.Before(time.Now()) {
 					c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session tidak valid"})
 					return
 				}
 
-				// Session fingerprinting - WARNING mode (log but don't block)
-				// This prevents legitimate users from getting locked out due to:
-				// - Mobile network switching (WiFi <-> Cellular)
-				// - VPN connect/disconnect
-				// - Browser updates that change User-Agent
 				clientIP := c.ClientIP()
 				clientUA := c.GetHeader("User-Agent")
 
-				if session.IPAddress != "" && session.IPAddress != clientIP {
-					// IP changed - log warning but continue
+				// Update session with drift-aware behavior
+				updates := client.Session.UpdateOneID(sess.ID).SetLastUsedAt(time.Now())
+				if sess.IPAddress != "" && sess.IPAddress != clientIP {
 					logger.Warn("IP address changed during session",
-						zap.Uint("user_id", user.ID),
-						zap.String("session_ip", session.IPAddress),
+						zap.Uint("user_id", uint(entUser.ID)),
+						zap.String("session_ip", sess.IPAddress),
 						zap.String("request_ip", clientIP),
 					)
-					// Update session with new IP (allow roaming)
-					session.IPAddress = clientIP
+					updates = updates.SetIPAddress(clientIP)
 				}
-
-				if session.UserAgent != "" && session.UserAgent != clientUA {
-					// User-Agent changed - log warning but continue
+				if sess.UserAgent != "" && sess.UserAgent != clientUA {
 					logger.Warn("User-Agent changed during session",
-						zap.Uint("user_id", user.ID),
+						zap.Uint("user_id", uint(entUser.ID)),
 					)
-					// Update session with new UA (allow browser updates)
-					session.UserAgent = truncateString(clientUA, 512)
+					if len(clientUA) > 512 {
+						clientUA = clientUA[:512]
+					}
+					updates = updates.SetUserAgent(clientUA)
 				}
-
-				// Update last used time
-				session.LastUsedAt = time.Now()
-				database.DB.Save(&session)
+				_, _ = updates.Save(c.Request.Context())
 			}
-			// If session not found but token is valid, allow (backward compatibility)
 		}
 
 		// Set user ke context
-		c.Set("user", &user)
-		c.Set("user_id", user.ID)
+		c.Set("user", mappedUser)
+		c.Set("user_id", mappedUser.ID)
+		c.Set("ent_user", entUser)
 		c.Set("claims", claims)
 		c.Next()
 	}

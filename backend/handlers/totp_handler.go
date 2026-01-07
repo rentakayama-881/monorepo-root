@@ -15,12 +15,12 @@ import (
 
 // TOTPHandler handles TOTP/2FA related endpoints
 type TOTPHandler struct {
-	totpService *services.TOTPService
+	totpService *services.TOTPServiceWrapper
 	logger      *zap.Logger
 }
 
 // NewTOTPHandler creates a new TOTP handler
-func NewTOTPHandler(totpService *services.TOTPService, log *zap.Logger) *TOTPHandler {
+func NewTOTPHandler(totpService *services.TOTPServiceWrapper, log *zap.Logger) *TOTPHandler {
 	return &TOTPHandler{
 		totpService: totpService,
 		logger:      log,

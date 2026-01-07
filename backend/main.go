@@ -117,35 +117,27 @@ func main() {
 
 	logger.Info("Starting Alephdraad Backend Server")
 
-	// Initialize database (GORM - legacy, to be deprecated)
-	database.InitDB()
-
 	// Initialize Ent database (new ORM)
 	database.InitEntDB()
 	defer database.CloseEntDB()
 
 	config.InitConfig()
+	// Initialize services (Ent)
+	services.InitEmailRateLimiter()
+	authEntService := services.NewEntAuthService()
+	sessionEntService := services.NewEntSessionService()
+	totpEntService := services.NewEntTOTPService(logger.GetLogger())
+	sudoEntService := services.NewEntSudoService(logger.GetLogger(), totpEntService)
 
-	// Initialize services
-	services.InitSecurityServices(database.DB) // Initialize security services first
-	services.InitEmailRateLimiter()            // Initialize email rate limiter
-	services.InitDeviceTracker(database.DB)    // Initialize device tracker
-	authService := services.NewAuthService(database.DB)
-	sessionService := services.NewSessionService(database.DB)
-	totpService := services.NewTOTPService(database.DB, logger.GetLogger())
-	sudoService := services.NewSudoService(database.DB, logger.GetLogger(), totpService)
+	// Create service wrappers for handler compatibility
+	authServiceWrapper := services.NewAuthServiceWrapper(authEntService)
+	sessionServiceWrapper := services.NewSessionServiceWrapper(sessionEntService)
+	totpServiceWrapper := services.NewTOTPServiceWrapper(totpEntService)
 
-	// Use Ent-based ThreadService (migration step)
-	// TODO: Migrate other services to Ent and remove GORM dependency
+	// Use Ent-based ThreadService exclusively
 	var threadService services.ThreadServiceInterface
-	useEntORM := os.Getenv("USE_ENT_ORM") == "true"
-	if useEntORM {
-		threadService = services.NewEntThreadService()
-		logger.Info("Using Ent ORM for ThreadService")
-	} else {
-		threadService = services.NewThreadService(database.DB)
-		logger.Info("Using GORM for ThreadService (legacy)")
-	}
+	threadService = services.NewEntThreadService()
+	logger.Info("Using Ent ORM for ThreadService")
 
 	// Initialize passkey service with WebAuthn config
 	rpID := os.Getenv("WEBAUTHN_RP_ID")
@@ -169,13 +161,16 @@ func main() {
 	}
 
 	// Initialize handlers
-	userService := services.NewUserService(database.DB)
-	userHandler := handlers.NewUserHandler(userService)
-	authHandler := handlers.NewAuthHandler(authService, sessionService)
+	userEntService := services.NewEntUserService()
+	userHandler := handlers.NewUserHandler(userEntService)
+
+	// Use service wrappers for handlers expecting legacy interfaces
+	authHandler := handlers.NewAuthHandler(authServiceWrapper, sessionServiceWrapper)
 	threadHandler := handlers.NewThreadHandler(threadService)
-	totpHandler := handlers.NewTOTPHandler(totpService, logger.GetLogger())
-	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authService, logger.GetLogger())
-	sudoHandler := handlers.NewSudoHandler(sudoService, logger.GetLogger())
+	totpHandler := handlers.NewTOTPHandler(totpServiceWrapper, logger.GetLogger())
+	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authServiceWrapper, logger.GetLogger())
+	sudoHandler := handlers.NewEntSudoHandler(sudoEntService, logger.GetLogger())
+	sudoValidator := services.NewSudoValidatorAdapter(sudoEntService)
 	// Financial features are handled by the ASP.NET service; keep Go focused on core identity/content.
 
 	// Verify all handlers are properly initialized
@@ -260,7 +255,7 @@ func main() {
 			account.PUT("/avatar", middleware.AuthMiddleware(), handlers.UploadAvatarHandler)
 			account.DELETE("/avatar", middleware.AuthMiddleware(), handlers.DeleteAvatarHandler)
 			// Delete account requires sudo mode
-			account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), middleware.RequireSudo(sudoService), handlers.DeleteAccountHandler)
+			account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), middleware.RequireSudo(sudoValidator), handlers.DeleteAccountHandler)
 		}
 
 		user := api.Group("/user")

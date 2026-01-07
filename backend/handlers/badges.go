@@ -4,20 +4,25 @@ import (
 	"net/http"
 
 	"backend-gin/database"
-	"backend-gin/models"
+	"backend-gin/ent"
+	"backend-gin/ent/credential"
+	"backend-gin/ent/user"
+
 	"github.com/gin-gonic/gin"
 )
 
 // For now, use existing Credential model as badges
 func GetUserBadgesHandler(c *gin.Context) {
 	username := c.Param("username")
-	var user models.User
-	if err := database.DB.Where("name = ?", username).First(&user).Error; err != nil {
+	ctx := c.Request.Context()
+	client := database.GetEntClient()
+	u, err := client.User.Query().Where(user.UsernameEQ(username)).Only(ctx)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user tidak ditemukan"})
 		return
 	}
-	var creds []models.Credential
-	if err := database.DB.Where("user_id = ?", user.ID).Order("created_at desc").Find(&creds).Error; err != nil {
+	creds, err := client.Credential.Query().Where(credential.UserIDEQ(u.ID)).Order(ent.Desc(credential.FieldCreatedAt)).All(ctx)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membaca badges"})
 		return
 	}

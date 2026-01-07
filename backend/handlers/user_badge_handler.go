@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"backend-gin/database"
-	"backend-gin/models"
+	"backend-gin/ent/user"
+	"backend-gin/ent/userbadge"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +21,7 @@ func SetPrimaryBadge(c *gin.Context) {
 	}
 
 	var req struct {
-		BadgeID *uint `json:"badge_id"` // nil to clear primary badge
+		BadgeID *int `json:"badge_id"` // nil to clear primary badge
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -32,9 +33,11 @@ func SetPrimaryBadge(c *gin.Context) {
 
 	// If setting a badge (not clearing)
 	if req.BadgeID != nil && *req.BadgeID > 0 {
-		// Check user has this badge
-		var userBadge models.UserBadge
-		if err := database.DB.Where("user_id = ? AND badge_id = ? AND revoked_at IS NULL", userID, *req.BadgeID).First(&userBadge).Error; err != nil {
+		// Check user has this badge (Ent)
+		exists, err := database.GetEntClient().UserBadge.Query().
+			Where(userbadge.UserIDEQ(int(userID)), userbadge.BadgeIDEQ(*req.BadgeID), userbadge.RevokedAtIsNil()).
+			Exist(c.Request.Context())
+		if err != nil || !exists {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": gin.H{"code": "BADGE005", "message": "Anda tidak memiliki badge ini"},
 			})
@@ -42,8 +45,9 @@ func SetPrimaryBadge(c *gin.Context) {
 		}
 	}
 
-	// Update user's primary badge
-	if err := database.DB.Model(&models.User{}).Where("id = ?", userID).Update("primary_badge_id", req.BadgeID).Error; err != nil {
+	// Update user's primary badge (Ent)
+	_, err := database.GetEntClient().User.UpdateOneID(int(userID)).SetNillablePrimaryBadgeID(req.BadgeID).Save(c.Request.Context())
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"code": "SRV001", "message": "Gagal mengupdate primary badge"},
 		})
@@ -59,42 +63,48 @@ func SetPrimaryBadge(c *gin.Context) {
 func GetUserBadgesPublic(c *gin.Context) {
 	username := c.Param("username")
 
-	var user models.User
-	if err := database.DB.Where("name = ?", username).First(&user).Error; err != nil {
+	// Get user via Ent
+	u, err := database.GetEntClient().User.Query().Where(user.UsernameEQ(username)).Only(c.Request.Context())
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{"code": "USER001", "message": "User tidak ditemukan"},
 		})
 		return
 	}
 
-	// Get active badges
-	var userBadges []models.UserBadge
-	database.DB.Preload("Badge").Where("user_id = ? AND revoked_at IS NULL", user.ID).Order("granted_at ASC").Find(&userBadges)
+	// Get active badges via Ent
+	userBadges, _ := database.GetEntClient().UserBadge.Query().
+		Where(userbadge.UserIDEQ(u.ID), userbadge.RevokedAtIsNil()).
+		WithBadge().
+		Order(userbadge.ByGrantedAt()).
+		All(c.Request.Context())
 
 	var badges []gin.H
 	for _, ub := range userBadges {
-		badges = append(badges, gin.H{
-			"id":          ub.Badge.ID,
-			"name":        ub.Badge.Name,
-			"slug":        ub.Badge.Slug,
-			"description": ub.Badge.Description,
-			"icon_url":    ub.Badge.IconURL,
-			"color":       ub.Badge.Color,
-			"granted_at":  ub.GrantedAt,
-		})
+		if ub.Edges.Badge != nil {
+			badges = append(badges, gin.H{
+				"id":          ub.Edges.Badge.ID,
+				"name":        ub.Edges.Badge.Name,
+				"slug":        ub.Edges.Badge.Slug,
+				"description": ub.Edges.Badge.Description,
+				"icon_url":    ub.Edges.Badge.IconURL,
+				"color":       ub.Edges.Badge.Color,
+				"granted_at":  ub.GrantedAt,
+			})
+		}
 	}
 
 	// Get primary badge
 	var primaryBadge *gin.H
-	if user.PrimaryBadgeID != nil {
-		var badge models.Badge
-		if database.DB.First(&badge, *user.PrimaryBadgeID).Error == nil {
+	if u.PrimaryBadgeID != nil {
+		b, err := database.GetEntClient().Badge.Get(c.Request.Context(), *u.PrimaryBadgeID)
+		if err == nil && b != nil {
 			primaryBadge = &gin.H{
-				"id":       badge.ID,
-				"name":     badge.Name,
-				"slug":     badge.Slug,
-				"icon_url": badge.IconURL,
-				"color":    badge.Color,
+				"id":       b.ID,
+				"name":     b.Name,
+				"slug":     b.Slug,
+				"icon_url": b.IconURL,
+				"color":    b.Color,
 			}
 		}
 	}
@@ -109,33 +119,37 @@ func GetUserBadgesPublic(c *gin.Context) {
 func GetMyBadges(c *gin.Context) {
 	userID := c.GetUint("user_id")
 
-	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": gin.H{"code": "USER001", "message": "User tidak ditemukan"},
-		})
-		return
-	}
-
-	// Get active badges
-	var userBadges []models.UserBadge
-	database.DB.Preload("Badge").Where("user_id = ? AND revoked_at IS NULL", user.ID).Order("granted_at ASC").Find(&userBadges)
+	// Get active badges for user (Ent)
+	userBadges, _ := database.GetEntClient().UserBadge.Query().
+		Where(userbadge.UserIDEQ(int(userID)), userbadge.RevokedAtIsNil()).
+		WithBadge().
+		Order(userbadge.ByGrantedAt()).
+		All(c.Request.Context())
 
 	var badges []gin.H
 	for _, ub := range userBadges {
-		badges = append(badges, gin.H{
-			"id":          ub.Badge.ID,
-			"name":        ub.Badge.Name,
-			"slug":        ub.Badge.Slug,
-			"description": ub.Badge.Description,
-			"icon_url":    ub.Badge.IconURL,
-			"color":       ub.Badge.Color,
-			"granted_at":  ub.GrantedAt,
-		})
+		if ub.Edges.Badge != nil {
+			badges = append(badges, gin.H{
+				"id":          ub.Edges.Badge.ID,
+				"name":        ub.Edges.Badge.Name,
+				"slug":        ub.Edges.Badge.Slug,
+				"description": ub.Edges.Badge.Description,
+				"icon_url":    ub.Edges.Badge.IconURL,
+				"color":       ub.Edges.Badge.Color,
+				"granted_at":  ub.GrantedAt,
+			})
+		}
+	}
+
+	// Get user to fetch primary_badge_id
+	u, _ := database.GetEntClient().User.Get(c.Request.Context(), int(userID))
+	var primaryBadgeID *int
+	if u != nil && u.PrimaryBadgeID != nil {
+		primaryBadgeID = u.PrimaryBadgeID
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"badges":           badges,
-		"primary_badge_id": user.PrimaryBadgeID,
+		"primary_badge_id": primaryBadgeID,
 	})
 }

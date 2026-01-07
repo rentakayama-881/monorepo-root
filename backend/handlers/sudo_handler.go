@@ -12,12 +12,12 @@ import (
 
 // SudoHandler handles sudo mode endpoints
 type SudoHandler struct {
-	sudoService *services.SudoService
+	sudoService *services.EntSudoService
 	logger      *zap.Logger
 }
 
 // NewSudoHandler creates a new SudoHandler
-func NewSudoHandler(sudoService *services.SudoService, logger *zap.Logger) *SudoHandler {
+func NewEntSudoHandler(sudoService *services.EntSudoService, logger *zap.Logger) *SudoHandler {
 	return &SudoHandler{
 		sudoService: sudoService,
 		logger:      logger,
@@ -38,16 +38,15 @@ func (h *SudoHandler) Verify(c *gin.Context) {
 		return
 	}
 
-	input := services.SudoVerifyInput{
-		UserID:     userID,
+	input := services.EntSudoVerifyInput{
+		UserID:     int(userID),
 		Password:   req.Password,
 		TOTPCode:   req.TOTPCode,
 		BackupCode: req.BackupCode,
 		IPAddress:  c.ClientIP(),
 		UserAgent:  c.GetHeader("User-Agent"),
 	}
-
-	result, err := h.sudoService.Verify(input)
+	result, err := h.sudoService.Verify(c.Request.Context(), input)
 	if err != nil {
 		h.logger.Debug("Sudo verification failed",
 			zap.Uint("user_id", userID),
@@ -75,18 +74,21 @@ func (h *SudoHandler) GetStatus(c *gin.Context) {
 	// Get sudo token from header
 	sudoToken := c.GetHeader("X-Sudo-Token")
 
-	status, err := h.sudoService.GetStatus(userID, sudoToken)
+	active, err := h.sudoService.GetActiveSession(c.Request.Context(), int(userID), sudoToken)
 	if err != nil {
 		h.logger.Error("Failed to get sudo status", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memeriksa status sudo"})
 		return
 	}
-
+	if active == nil {
+		c.JSON(http.StatusOK, dto.SudoStatusResponse{IsActive: false, RequiresTOTP: false})
+		return
+	}
 	c.JSON(http.StatusOK, dto.SudoStatusResponse{
-		IsActive:     status.IsActive,
-		RequiresTOTP: status.RequiresTOTP,
-		ExpiresAt:    status.ExpiresAt,
-		ExpiresIn:    status.ExpiresIn,
+		IsActive:     true,
+		RequiresTOTP: false,
+		ExpiresAt:    &active.ExpiresAt,
+		ExpiresIn:    active.ExpiresIn,
 	})
 }
 
@@ -104,7 +106,7 @@ func (h *SudoHandler) Extend(c *gin.Context) {
 		return
 	}
 
-	result, err := h.sudoService.ExtendSession(userID, sudoToken)
+	result, err := h.sudoService.ExtendSession(c.Request.Context(), int(userID), sudoToken)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
@@ -127,7 +129,7 @@ func (h *SudoHandler) Revoke(c *gin.Context) {
 
 	sudoToken := c.GetHeader("X-Sudo-Token")
 	if sudoToken != "" {
-		if err := h.sudoService.RevokeToken(userID, sudoToken); err != nil {
+		if err := h.sudoService.Revoke(c.Request.Context(), int(userID), sudoToken); err != nil {
 			h.logger.Warn("Failed to revoke sudo token", zap.Error(err))
 		}
 	}

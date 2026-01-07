@@ -245,3 +245,42 @@ func (s *EntSudoService) cleanupExpiredSessions(ctx context.Context, userID int)
 			zap.Int("deleted", deleted))
 	}
 }
+
+// ExtendSession extends a valid sudo session by SudoTTL
+func (s *EntSudoService) ExtendSession(ctx context.Context, userID int, token string) (*SudoVerifyResult, error) {
+	if token == "" {
+		return nil, apperrors.NewAppError("SUDO_TOKEN_REQUIRED", "Sudo token diperlukan", 400)
+	}
+	// Hash provided token
+	hash := sha256.Sum256([]byte(token))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	// Find session
+	sess, err := s.client.SudoSession.
+		Query().
+		Where(
+			sudosession.UserIDEQ(userID),
+			sudosession.TokenHashEQ(tokenHash),
+			sudosession.ExpiresAtGT(time.Now()),
+		).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, apperrors.NewAppError("SUDO_SESSION_INVALID", "Sesi sudo tidak valid atau kadaluarsa", 401)
+		}
+		return nil, apperrors.ErrDatabase
+	}
+
+	// Extend expiry
+	newExp := time.Now().Add(SudoTTL)
+	_, err = s.client.SudoSession.UpdateOneID(sess.ID).SetExpiresAt(newExp).Save(ctx)
+	if err != nil {
+		return nil, apperrors.ErrInternalServer
+	}
+
+	return &SudoVerifyResult{
+		SudoToken: token,
+		ExpiresAt: newExp,
+		ExpiresIn: int64(SudoTTL.Seconds()),
+	}, nil
+}

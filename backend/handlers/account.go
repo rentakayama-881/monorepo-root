@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"backend-gin/database"
+	entuser "backend-gin/ent/user"
+	"backend-gin/ent/userbadge"
 	"backend-gin/models"
 	"backend-gin/utils"
 
@@ -93,7 +95,24 @@ func UpdateMyAccountHandler(c *gin.Context) {
 		b, _ := json.Marshal(req.SocialAccounts)
 		user.SocialAccounts = datatypes.JSON(b)
 	}
-	if err := database.DB.Save(user).Error; err != nil {
+	// Update via Ent ORM
+	upd := database.GetEntClient().User.UpdateOneID(int(user.ID))
+	if req.FullName != nil {
+		upd = upd.SetNillableFullName(req.FullName)
+	}
+	if req.Bio != nil {
+		upd = upd.SetBio(*req.Bio)
+	}
+	if req.Pronouns != nil {
+		upd = upd.SetPronouns(*req.Pronouns)
+	}
+	if req.Company != nil {
+		upd = upd.SetCompany(*req.Company)
+	}
+	if req.Telegram != nil {
+		upd = upd.SetTelegram(*req.Telegram)
+	}
+	if _, err := upd.Save(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan"})
 		return
 	}
@@ -116,15 +135,18 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 		return
 	}
 
-	// Check username availability
-	var count int64
-	database.DB.Model(&models.User{}).Where("name = ?", req.NewUsername).Count(&count)
-	if count > 0 {
+	// Check username availability via Ent
+	exists, err := database.GetEntClient().User.Query().Where(entuser.UsernameEQ(req.NewUsername)).Exist(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal memeriksa username"})
+		return
+	}
+	if exists {
 		c.JSON(http.StatusConflict, gin.H{"error": "Username sudah digunakan"})
 		return
 	}
-
-	if err := database.DB.Model(&models.User{}).Where("id = ?", user.ID).Update("name", req.NewUsername).Error; err != nil {
+	// Update username via Ent
+	if _, err := database.GetEntClient().User.UpdateOneID(int(user.ID)).SetUsername(req.NewUsername).Save(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal memproses perubahan username"})
 		return
 	}
@@ -134,7 +156,8 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 }
 
 // Public projection used by GetPublicUserProfileHandler will include new fields
-func BuildPublicProfile(u *models.User) gin.H {
+func BuildPublicProfile(c *gin.Context, u *models.User) gin.H {
+	ctx := c.Request.Context()
 	var socials interface{}
 	if len(u.SocialAccounts) > 0 {
 		_ = json.Unmarshal(u.SocialAccounts, &socials)
@@ -144,33 +167,37 @@ func BuildPublicProfile(u *models.User) gin.H {
 		name = *u.Username
 	}
 
-	// Get primary badge if set
+	// Get primary badge if set (Ent)
 	var primaryBadge interface{}
+	var badges []gin.H
 	if u.PrimaryBadgeID != nil && *u.PrimaryBadgeID > 0 {
-		var badge models.Badge
-		if err := database.DB.First(&badge, *u.PrimaryBadgeID).Error; err == nil {
+		b, err := database.GetEntClient().Badge.Get(ctx, int(*u.PrimaryBadgeID))
+		if err == nil && b != nil {
 			primaryBadge = gin.H{
-				"id":       badge.ID,
-				"name":     badge.Name,
-				"slug":     badge.Slug,
-				"icon_url": badge.IconURL,
-				"color":    badge.Color,
+				"id":       b.ID,
+				"name":     b.Name,
+				"slug":     b.Slug,
+				"icon_url": b.IconURL,
+				"color":    b.Color,
 			}
 		}
 	}
 
-	// Get active badges
-	var userBadges []models.UserBadge
-	database.DB.Preload("Badge").Where("user_id = ? AND revoked_at IS NULL", u.ID).Find(&userBadges)
-	var badges []gin.H
+	// Get active badges via Ent
+	userBadges, _ := database.GetEntClient().UserBadge.Query().
+		Where(userbadge.UserIDEQ(int(u.ID)), userbadge.RevokedAtIsNil()).
+		WithBadge().
+		All(ctx)
 	for _, ub := range userBadges {
-		badges = append(badges, gin.H{
-			"id":       ub.Badge.ID,
-			"name":     ub.Badge.Name,
-			"slug":     ub.Badge.Slug,
-			"icon_url": ub.Badge.IconURL,
-			"color":    ub.Badge.Color,
-		})
+		if ub.Edges.Badge != nil {
+			badges = append(badges, gin.H{
+				"id":       ub.Edges.Badge.ID,
+				"name":     ub.Edges.Badge.Name,
+				"slug":     ub.Edges.Badge.Slug,
+				"icon_url": ub.Edges.Badge.IconURL,
+				"color":    ub.Edges.Badge.Color,
+			})
+		}
 	}
 
 	return gin.H{

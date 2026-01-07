@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"backend-gin/ent"
 	"backend-gin/models"
 	"backend-gin/services"
 
@@ -11,11 +12,11 @@ import (
 
 // UserHandler handles user HTTP requests
 type UserHandler struct {
-	userService *services.UserService
+	userService *services.EntUserService
 }
 
 // NewUserHandler creates a new user handler
-func NewUserHandler(userService *services.UserService) *UserHandler {
+func NewUserHandler(userService *services.EntUserService) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 	}
@@ -44,12 +45,42 @@ func (h *UserHandler) GetUserInfo(c *gin.Context) {
 // GetPublicUserProfile returns public profile by username
 func (h *UserHandler) GetPublicUserProfile(c *gin.Context) {
 	username := c.Param("username")
-	
-	user, err := h.userService.GetUserByUsername(username)
+
+	u, err := h.userService.GetUserByUsername(c.Request.Context(), username)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user tidak ditemukan"})
 		return
 	}
-	
-	c.JSON(http.StatusOK, BuildPublicProfile(user))
+
+	// Map ent.User to models.User for existing projection function
+	mapped := mapEntUserToModel(u)
+	c.JSON(http.StatusOK, BuildPublicProfile(c, mapped))
+}
+
+func mapEntUserToModel(u *ent.User) *models.User {
+	m := &models.User{
+		Email:     u.Email,
+		AvatarURL: u.AvatarURL,
+		Bio:       u.Bio,
+		Pronouns:  u.Pronouns,
+		Company:   u.Company,
+		Telegram:  u.Telegram,
+		PrimaryBadgeID: func() *uint {
+			if u.PrimaryBadgeID != nil {
+				v := uint(*u.PrimaryBadgeID)
+				return &v
+			}
+			return nil
+		}(),
+	}
+	m.ID = uint(u.ID)
+	if u.Username != nil {
+		name := *u.Username
+		m.Username = &name
+	}
+	if u.FullName != nil {
+		fn := *u.FullName
+		m.FullName = &fn
+	}
+	return m
 }

@@ -8,6 +8,11 @@ import (
 	"time"
 
 	"backend-gin/database"
+	"backend-gin/ent"
+	"backend-gin/ent/admin"
+	"backend-gin/ent/badge"
+	"backend-gin/ent/user"
+	"backend-gin/ent/userbadge"
 	"backend-gin/logger"
 	"backend-gin/middleware"
 	"backend-gin/models"
@@ -46,15 +51,18 @@ func AdminLogin(c *gin.Context) {
 		return
 	}
 
-	var admin models.Admin
-	if err := database.DB.Where("email = ?", strings.ToLower(req.Email)).First(&admin).Error; err != nil {
+	// Query Ent Admin by email using admin predicate
+	adminUser, err := database.GetEntClient().Admin.Query().
+		Where(admin.EmailEQ(strings.ToLower(req.Email))).
+		Only(c.Request.Context())
+	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": gin.H{"code": "ADMIN006", "message": "Email atau password salah"},
 		})
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(req.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(adminUser.PasswordHash), []byte(req.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": gin.H{"code": "ADMIN006", "message": "Email atau password salah"},
 		})
@@ -73,9 +81,9 @@ func AdminLogin(c *gin.Context) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"type":     "admin",
-		"admin_id": admin.ID,
-		"email":    admin.Email,
-		"name":     admin.Name,
+		"admin_id": adminUser.ID,
+		"email":    adminUser.Email,
+		"name":     adminUser.Name,
 		"exp":      time.Now().Add(8 * time.Hour).Unix(), // 8 hour expiry
 		"iat":      time.Now().Unix(),
 	})
@@ -92,9 +100,9 @@ func AdminLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"token": tokenString,
 		"admin": gin.H{
-			"id":    admin.ID,
-			"email": admin.Email,
-			"name":  admin.Name,
+			"id":    adminUser.ID,
+			"email": adminUser.Email,
+			"name":  adminUser.Name,
 		},
 	})
 }
@@ -122,28 +130,31 @@ func CreateBadge(c *gin.Context) {
 	req.Slug = strings.ToLower(strings.TrimSpace(req.Slug))
 	req.Slug = strings.ReplaceAll(req.Slug, " ", "-")
 
-	// Check duplicate slug
-	var existing models.Badge
-	if database.DB.Where("slug = ?", req.Slug).First(&existing).Error == nil {
+	// Check duplicate slug using Ent
+	exists, err := database.GetEntClient().Badge.Query().
+		Where(badge.SlugEQ(req.Slug)).
+		Exist(c.Request.Context())
+	if err == nil && exists {
 		c.JSON(http.StatusConflict, gin.H{
 			"error": gin.H{"code": "BADGE001", "message": "Slug badge sudah digunakan"},
 		})
 		return
 	}
 
-	badge := models.Badge{
-		Name:        req.Name,
-		Slug:        req.Slug,
-		Description: req.Description,
-		IconURL:     req.IconURL,
-		Color:       req.Color,
+	color := req.Color
+	if color == "" {
+		color = "#6366f1"
 	}
 
-	if badge.Color == "" {
-		badge.Color = "#6366f1"
-	}
-
-	if err := database.DB.Create(&badge).Error; err != nil {
+	// Create badge using Ent
+	badgeEnt, err := database.GetEntClient().Badge.Create().
+		SetName(req.Name).
+		SetSlug(req.Slug).
+		SetDescription(req.Description).
+		SetIconURL(req.IconURL).
+		SetColor(color).
+		Save(c.Request.Context())
+	if err != nil {
 		logger.Error("Failed to create badge", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"code": "SRV001", "message": "Gagal membuat badge"},
@@ -151,28 +162,55 @@ func CreateBadge(c *gin.Context) {
 		return
 	}
 
-	logger.Info("Badge created", zap.Uint("badge_id", badge.ID), zap.String("slug", badge.Slug))
+	logger.Info("Badge created", zap.Int("badge_id", badgeEnt.ID), zap.String("slug", badgeEnt.Slug))
+
+	// Map to models.Badge for response
+	mappedBadge := models.Badge{
+		Name:        badgeEnt.Name,
+		Slug:        badgeEnt.Slug,
+		Description: badgeEnt.Description,
+		IconURL:     badgeEnt.IconURL,
+		Color:       badgeEnt.Color,
+	}
+	mappedBadge.ID = uint(badgeEnt.ID)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Badge berhasil dibuat",
-		"badge":   badge,
+		"badge":   mappedBadge,
 	})
 }
 
 func ListBadges(c *gin.Context) {
-	var badges []models.Badge
-	if err := database.DB.Order("name ASC").Find(&badges).Error; err != nil {
+	// Query all badges using Ent, ordered by name
+	badges, err := database.GetEntClient().Badge.Query().
+		Order(ent.Asc(badge.FieldName)).
+		All(c.Request.Context())
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"code": "SRV001", "message": "Gagal mengambil data badge"},
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"badges": badges})
+	// Map to models.Badge for response
+	var mappedBadges []models.Badge
+	for _, b := range badges {
+		mb := models.Badge{
+			Name:        b.Name,
+			Slug:        b.Slug,
+			Description: b.Description,
+			IconURL:     b.IconURL,
+			Color:       b.Color,
+		}
+		mb.ID = uint(b.ID)
+		mappedBadges = append(mappedBadges, mb)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"badges": mappedBadges})
 }
 
 func GetBadge(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"code": "VAL001", "message": "ID badge tidak valid"},
@@ -180,19 +218,30 @@ func GetBadge(c *gin.Context) {
 		return
 	}
 
-	var badge models.Badge
-	if err := database.DB.First(&badge, id).Error; err != nil {
+	// Query badge by ID using Ent
+	badgeEnt, err := database.GetEntClient().Badge.Get(c.Request.Context(), int(id))
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{"code": "BADGE002", "message": "Badge tidak ditemukan"},
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"badge": badge})
+	// Map to models.Badge
+	mappedBadge := models.Badge{
+		Name:        badgeEnt.Name,
+		Slug:        badgeEnt.Slug,
+		Description: badgeEnt.Description,
+		IconURL:     badgeEnt.IconURL,
+		Color:       badgeEnt.Color,
+	}
+	mappedBadge.ID = uint(badgeEnt.ID)
+
+	c.JSON(http.StatusOK, gin.H{"badge": mappedBadge})
 }
 
 func UpdateBadge(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"code": "VAL001", "message": "ID badge tidak valid"},
@@ -200,8 +249,9 @@ func UpdateBadge(c *gin.Context) {
 		return
 	}
 
-	var badge models.Badge
-	if err := database.DB.First(&badge, id).Error; err != nil {
+	// Get badge using Ent
+	badgeEnt, err := database.GetEntClient().Badge.Get(c.Request.Context(), int(id))
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{"code": "BADGE002", "message": "Badge tidak ditemukan"},
 		})
@@ -220,37 +270,58 @@ func UpdateBadge(c *gin.Context) {
 	req.Slug = strings.ToLower(strings.TrimSpace(req.Slug))
 	req.Slug = strings.ReplaceAll(req.Slug, " ", "-")
 
-	var existing models.Badge
-	if database.DB.Where("slug = ? AND id != ?", req.Slug, id).First(&existing).Error == nil {
+	// Check if slug is taken by another badge
+	exists, err := database.GetEntClient().Badge.Query().
+		Where(
+			badge.SlugEQ(req.Slug),
+			badge.IDNEQ(int(id)),
+		).
+		Exist(c.Request.Context())
+	if err == nil && exists {
 		c.JSON(http.StatusConflict, gin.H{
 			"error": gin.H{"code": "BADGE001", "message": "Slug badge sudah digunakan"},
 		})
 		return
 	}
 
-	badge.Name = req.Name
-	badge.Slug = req.Slug
-	badge.Description = req.Description
-	badge.IconURL = req.IconURL
-	if req.Color != "" {
-		badge.Color = req.Color
+	color := req.Color
+	if color == "" {
+		color = badgeEnt.Color // Keep existing if not provided
 	}
 
-	if err := database.DB.Save(&badge).Error; err != nil {
+	// Update badge using Ent
+	updatedBadge, err := database.GetEntClient().Badge.UpdateOneID(int(id)).
+		SetName(req.Name).
+		SetSlug(req.Slug).
+		SetDescription(req.Description).
+		SetIconURL(req.IconURL).
+		SetColor(color).
+		Save(c.Request.Context())
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"code": "SRV001", "message": "Gagal mengupdate badge"},
 		})
 		return
 	}
 
+	// Map to models.Badge
+	mappedBadge := models.Badge{
+		Name:        updatedBadge.Name,
+		Slug:        updatedBadge.Slug,
+		Description: updatedBadge.Description,
+		IconURL:     updatedBadge.IconURL,
+		Color:       updatedBadge.Color,
+	}
+	mappedBadge.ID = uint(updatedBadge.ID)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Badge berhasil diupdate",
-		"badge":   badge,
+		"badge":   mappedBadge,
 	})
 }
 
 func DeleteBadge(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"code": "VAL001", "message": "ID badge tidak valid"},
@@ -258,9 +329,20 @@ func DeleteBadge(c *gin.Context) {
 		return
 	}
 
-	// Check if badge is assigned to any user
-	var count int64
-	database.DB.Model(&models.UserBadge{}).Where("badge_id = ? AND revoked_at IS NULL", id).Count(&count)
+	// Check if badge is assigned to any user (not revoked)
+	count, err := database.GetEntClient().UserBadge.Query().
+		Where(
+			userbadge.BadgeIDEQ(int(id)),
+			userbadge.RevokedAtIsNil(),
+		).
+		Count(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": gin.H{"code": "SRV001", "message": "Gagal mengecek penggunaan badge"},
+		})
+		return
+	}
+
 	if count > 0 {
 		c.JSON(http.StatusConflict, gin.H{
 			"error": gin.H{"code": "BADGE003", "message": "Badge masih digunakan oleh user. Cabut semua badge terlebih dahulu."},
@@ -268,7 +350,9 @@ func DeleteBadge(c *gin.Context) {
 		return
 	}
 
-	if err := database.DB.Delete(&models.Badge{}, id).Error; err != nil {
+	// Delete badge using Ent
+	err = database.GetEntClient().Badge.DeleteOneID(int(id)).Exec(c.Request.Context())
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"code": "SRV001", "message": "Gagal menghapus badge"},
 		})
@@ -286,7 +370,7 @@ type AssignBadgeRequest struct {
 }
 
 func AssignBadgeToUser(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("userId"), 10, 32)
+	userID, err := strconv.ParseInt(c.Param("userId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"code": "VAL001", "message": "ID user tidak valid"},
@@ -302,18 +386,18 @@ func AssignBadgeToUser(c *gin.Context) {
 		return
 	}
 
-	// Check user exists
-	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	// Check user exists using Ent
+	_, err = database.GetEntClient().User.Get(c.Request.Context(), int(userID))
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{"code": "USER001", "message": "User tidak ditemukan"},
 		})
 		return
 	}
 
-	// Check badge exists
-	var badge models.Badge
-	if err := database.DB.First(&badge, req.BadgeID).Error; err != nil {
+	// Check badge exists using Ent
+	_, err = database.GetEntClient().Badge.Get(c.Request.Context(), int(req.BadgeID))
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{"code": "BADGE002", "message": "Badge tidak ditemukan"},
 		})
@@ -321,8 +405,14 @@ func AssignBadgeToUser(c *gin.Context) {
 	}
 
 	// Check if already assigned (and not revoked)
-	var existing models.UserBadge
-	if database.DB.Where("user_id = ? AND badge_id = ? AND revoked_at IS NULL", userID, req.BadgeID).First(&existing).Error == nil {
+	exists, err := database.GetEntClient().UserBadge.Query().
+		Where(
+			userbadge.UserIDEQ(int(userID)),
+			userbadge.BadgeIDEQ(int(req.BadgeID)),
+			userbadge.RevokedAtIsNil(),
+		).
+		Exist(c.Request.Context())
+	if err == nil && exists {
 		c.JSON(http.StatusConflict, gin.H{
 			"error": gin.H{"code": "BADGE004", "message": "User sudah memiliki badge ini"},
 		})
@@ -331,15 +421,15 @@ func AssignBadgeToUser(c *gin.Context) {
 
 	adminID := c.GetUint("admin_id")
 
-	userBadge := models.UserBadge{
-		UserID:    uint(userID),
-		BadgeID:   req.BadgeID,
-		Reason:    req.Reason,
-		GrantedBy: adminID,
-		GrantedAt: time.Now(),
-	}
-
-	if err := database.DB.Create(&userBadge).Error; err != nil {
+	// Create user badge using Ent
+	userBadgeEnt, err := database.GetEntClient().UserBadge.Create().
+		SetUserID(int(userID)).
+		SetBadgeID(int(req.BadgeID)).
+		SetReason(req.Reason).
+		SetGrantedBy(int(adminID)).
+		SetGrantedAt(time.Now()).
+		Save(c.Request.Context())
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"code": "SRV001", "message": "Gagal memberikan badge"},
 		})
@@ -347,14 +437,24 @@ func AssignBadgeToUser(c *gin.Context) {
 	}
 
 	logger.Info("Badge assigned to user",
-		zap.Uint("user_id", uint(userID)),
-		zap.Uint("badge_id", req.BadgeID),
+		zap.Int("user_id", int(userID)),
+		zap.Int("badge_id", int(req.BadgeID)),
 		zap.Uint("admin_id", adminID),
 	)
 
+	// Map to models.UserBadge for response
+	mappedUserBadge := models.UserBadge{
+		UserID:    uint(userBadgeEnt.UserID),
+		BadgeID:   uint(userBadgeEnt.BadgeID),
+		Reason:    userBadgeEnt.Reason,
+		GrantedBy: uint(userBadgeEnt.GrantedBy),
+		GrantedAt: userBadgeEnt.GrantedAt,
+	}
+	mappedUserBadge.ID = uint(userBadgeEnt.ID)
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message":    "Badge berhasil diberikan",
-		"user_badge": userBadge,
+		"user_badge": mappedUserBadge,
 	})
 }
 
@@ -363,7 +463,7 @@ type RevokeBadgeRequest struct {
 }
 
 func RevokeBadgeFromUser(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("userId"), 10, 32)
+	userID, err := strconv.ParseInt(c.Param("userId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"code": "VAL001", "message": "ID user tidak valid"},
@@ -371,7 +471,7 @@ func RevokeBadgeFromUser(c *gin.Context) {
 		return
 	}
 
-	badgeID, err := strconv.ParseUint(c.Param("badgeId"), 10, 32)
+	badgeID, err := strconv.ParseInt(c.Param("badgeId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"code": "VAL001", "message": "ID badge tidak valid"},
@@ -382,8 +482,15 @@ func RevokeBadgeFromUser(c *gin.Context) {
 	var req RevokeBadgeRequest
 	_ = c.ShouldBindJSON(&req) // Reason is optional, ignore bind errors
 
-	var userBadge models.UserBadge
-	if err := database.DB.Where("user_id = ? AND badge_id = ? AND revoked_at IS NULL", userID, badgeID).First(&userBadge).Error; err != nil {
+	// Find user badge using Ent
+	userBadgeEnt, err := database.GetEntClient().UserBadge.Query().
+		Where(
+			userbadge.UserIDEQ(int(userID)),
+			userbadge.BadgeIDEQ(int(badgeID)),
+			userbadge.RevokedAtIsNil(),
+		).
+		Only(c.Request.Context())
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{"code": "BADGE005", "message": "User tidak memiliki badge ini"},
 		})
@@ -391,23 +498,28 @@ func RevokeBadgeFromUser(c *gin.Context) {
 	}
 
 	now := time.Now()
-	userBadge.RevokedAt = &now
-	userBadge.RevokeReason = req.Reason
 
-	if err := database.DB.Save(&userBadge).Error; err != nil {
+	// Update user badge to revoke it using Ent
+	_, err = database.GetEntClient().UserBadge.UpdateOneID(userBadgeEnt.ID).
+		SetRevokedAt(now).
+		SetRevokeReason(req.Reason).
+		Save(c.Request.Context())
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"code": "SRV001", "message": "Gagal mencabut badge"},
 		})
 		return
 	}
 
-	// If this was the user's primary badge, clear it
-	database.DB.Model(&models.User{}).Where("id = ? AND primary_badge_id = ?", userID, badgeID).
-		Update("primary_badge_id", nil)
+	// If this was the user's primary badge, clear it using Ent
+	database.GetEntClient().User.UpdateOneID(int(userID)).
+		ClearPrimaryBadge().
+		Where(user.PrimaryBadgeIDEQ(int(badgeID))).
+		Save(c.Request.Context())
 
 	logger.Info("Badge revoked from user",
-		zap.Uint("user_id", uint(userID)),
-		zap.Uint("badge_id", uint(badgeID)),
+		zap.Int("user_id", int(userID)),
+		zap.Int("badge_id", int(badgeID)),
 	)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Badge berhasil dicabut"})
@@ -428,21 +540,69 @@ func AdminListUsers(c *gin.Context) {
 	}
 	offset := (page - 1) * limit
 
-	var users []models.User
+	// Build query with optional search filter
 	var total int64
-
-	query := database.DB.Model(&models.User{})
+	var users []*ent.User
 
 	if search != "" {
-		searchPattern := "%" + strings.ToLower(search) + "%"
-		query = query.Where(
-			"LOWER(email) LIKE ? OR LOWER(COALESCE(name, '')) LIKE ? OR LOWER(COALESCE(full_name, '')) LIKE ?",
-			searchPattern, searchPattern, searchPattern,
-		)
-	}
+		// We'll query and filter manually since Ent doesn't have built-in COALESCE support
+		allUsers, _ := database.GetEntClient().User.Query().All(c.Request.Context())
+		var filtered []*ent.User
+		searchLower := strings.ToLower(search)
+		for _, u := range allUsers {
+			username := ""
+			if u.Username != nil {
+				username = strings.ToLower(*u.Username)
+			}
+			fullName := ""
+			if u.FullName != nil {
+				fullName = strings.ToLower(*u.FullName)
+			}
+			if strings.Contains(strings.ToLower(u.Email), searchLower) ||
+				strings.Contains(username, searchLower) ||
+				strings.Contains(fullName, searchLower) {
+				filtered = append(filtered, u)
+			}
+		}
+		// For pagination, we'll use the filtered set
+		total = int64(len(filtered))
+		start := offset
+		end := offset + limit
+		if start >= len(filtered) {
+			start = len(filtered)
+		}
+		if end > len(filtered) {
+			end = len(filtered)
+		}
+		if start < end {
+			users = filtered[start:end]
+		}
+	} else {
+		// No search, get all with pagination
+		count, countErr := database.GetEntClient().User.Query().Count(c.Request.Context())
+		total = int64(count)
+		if countErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": gin.H{"code": "SRV001", "message": "Gagal mengambil data user"},
+			})
+			return
+		}
 
-	query.Count(&total)
-	query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&users)
+		// Query users with offset and limit, ordered by created_at DESC
+		usersErr := error(nil)
+		users, usersErr = database.GetEntClient().User.Query().
+			Offset(offset).
+			Limit(limit).
+			Order(ent.Desc(user.FieldCreatedAt)).
+			WithPrimaryBadge().
+			All(c.Request.Context())
+		if usersErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": gin.H{"code": "SRV001", "message": "Gagal mengambil data user"},
+			})
+			return
+		}
+	}
 
 	// Prepare response with user badges
 	type UserWithBadges struct {
@@ -458,26 +618,48 @@ func AdminListUsers(c *gin.Context) {
 	var result []UserWithBadges
 	for _, u := range users {
 		uwb := UserWithBadges{
-			ID:        u.ID,
+			ID:        uint(u.ID),
 			Email:     u.Email,
 			Username:  u.Username,
 			AvatarURL: u.AvatarURL,
 			CreatedAt: u.CreatedAt,
 		}
 
-		// Get primary badge if set
-		if u.PrimaryBadgeID != nil && *u.PrimaryBadgeID > 0 {
-			var badge models.Badge
-			if database.DB.First(&badge, *u.PrimaryBadgeID).Error == nil {
-				uwb.PrimaryBadge = &badge
+		// Get primary badge if set using eager loaded data
+		if u.Edges.PrimaryBadge != nil {
+			pb := models.Badge{
+				Name:        u.Edges.PrimaryBadge.Name,
+				Slug:        u.Edges.PrimaryBadge.Slug,
+				Description: u.Edges.PrimaryBadge.Description,
+				IconURL:     u.Edges.PrimaryBadge.IconURL,
+				Color:       u.Edges.PrimaryBadge.Color,
 			}
+			pb.ID = uint(u.Edges.PrimaryBadge.ID)
+			uwb.PrimaryBadge = &pb
 		}
 
 		// Get user's active badges
-		var userBadges []models.UserBadge
-		database.DB.Preload("Badge").Where("user_id = ? AND revoked_at IS NULL", u.ID).Find(&userBadges)
-		for _, ub := range userBadges {
-			uwb.Badges = append(uwb.Badges, ub.Badge)
+		userBadges, err := database.GetEntClient().UserBadge.Query().
+			Where(
+				userbadge.UserIDEQ(u.ID),
+				userbadge.RevokedAtIsNil(),
+			).
+			WithBadge().
+			All(c.Request.Context())
+		if err == nil {
+			for _, ub := range userBadges {
+				if ub.Edges.Badge != nil {
+					mb := models.Badge{
+						Name:        ub.Edges.Badge.Name,
+						Slug:        ub.Edges.Badge.Slug,
+						Description: ub.Edges.Badge.Description,
+						IconURL:     ub.Edges.Badge.IconURL,
+						Color:       ub.Edges.Badge.Color,
+					}
+					mb.ID = uint(ub.Edges.Badge.ID)
+					uwb.Badges = append(uwb.Badges, mb)
+				}
+			}
 		}
 
 		result = append(result, uwb)
@@ -492,7 +674,7 @@ func AdminListUsers(c *gin.Context) {
 }
 
 func AdminGetUser(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("userId"), 10, 32)
+	userID, err := strconv.ParseInt(c.Param("userId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"code": "VAL001", "message": "ID user tidak valid"},
@@ -500,20 +682,60 @@ func AdminGetUser(c *gin.Context) {
 		return
 	}
 
-	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	// Get user using Ent
+	entUser, err := database.GetEntClient().User.Get(c.Request.Context(), int(userID))
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{"code": "USER001", "message": "User tidak ditemukan"},
 		})
 		return
 	}
 
+	// Map to models.User
+	mappedUser := models.User{
+		Email:        entUser.Email,
+		PasswordHash: entUser.PasswordHash,
+		Username:     entUser.Username,
+		FullName:     entUser.FullName,
+		Bio:          entUser.Bio,
+		AvatarURL:    entUser.AvatarURL,
+		Pronouns:     entUser.Pronouns,
+		Company:      entUser.Company,
+		Telegram:     entUser.Telegram,
+	}
+	mappedUser.ID = uint(entUser.ID)
+	if entUser.PrimaryBadgeID != nil && *entUser.PrimaryBadgeID > 0 {
+		badgeID := uint(*entUser.PrimaryBadgeID)
+		mappedUser.PrimaryBadgeID = &badgeID
+	}
+
 	// Get user's badges (including revoked for admin view)
-	var userBadges []models.UserBadge
-	database.DB.Preload("Badge").Preload("Admin").Where("user_id = ?", userID).Order("granted_at DESC").Find(&userBadges)
+	userBadges, err := database.GetEntClient().UserBadge.Query().
+		Where(userbadge.UserIDEQ(int(userID))).
+		WithBadge().
+		Order(ent.Desc(userbadge.FieldGrantedAt)).
+		All(c.Request.Context())
+	if err != nil {
+		userBadges = []*ent.UserBadge{}
+	}
+
+	// Map to models.UserBadge
+	var mappedBadges []models.UserBadge
+	for _, ub := range userBadges {
+		mb := models.UserBadge{
+			UserID:    uint(ub.UserID),
+			BadgeID:   uint(ub.BadgeID),
+			Reason:    ub.Reason,
+			GrantedBy: uint(ub.GrantedBy),
+			GrantedAt: ub.GrantedAt,
+			RevokedAt: ub.RevokedAt,
+		}
+		mb.ID = uint(ub.ID)
+		mappedBadges = append(mappedBadges, mb)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"user":   user,
-		"badges": userBadges,
+		"user":   mappedUser,
+		"badges": mappedBadges,
 	})
 }
