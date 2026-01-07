@@ -220,7 +220,7 @@ NEXT_PUBLIC_FEATURE_API_URL=https://feature.alephdraad.fun
 | Platform | Feature |
 |----------|---------|
 | Vercel | Environment Variables |
-| Railway | Variables tab |
+| VPS | .env file atau systemd EnvironmentFile |
 | GitHub | Actions Secrets |
 
 ### Generate secure secrets:

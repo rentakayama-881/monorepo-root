@@ -369,7 +369,7 @@ RESEND_API_KEY=re_...
 - [x] Device fingerprinting
 
 ### Infrastructure
-- [x] HTTPS only (via Vercel/Railway)
+- [x] HTTPS only (via Vercel/Nginx+Let's Encrypt)
 - [x] Secure database connections (SSL)
 - [x] Environment variable secrets
 - [ ] WAF (recommended for production)

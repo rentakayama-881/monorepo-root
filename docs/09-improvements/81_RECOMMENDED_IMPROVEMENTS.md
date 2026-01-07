@@ -64,7 +64,7 @@ func GetCachedUser(id uint) (*User, error) {
 
 **Priority**: High  
 **Effort**: Medium  
-**Provider**: Upstash Redis (free tier) atau Railway Redis
+**Provider**: Upstash Redis (free tier) atau Redis di VPS
 
 ---
 

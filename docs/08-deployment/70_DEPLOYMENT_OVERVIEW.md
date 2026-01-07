@@ -12,9 +12,9 @@
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────────┐  │
-│  │   Vercel    │    │   Railway   │    │        Railway/Docker      │  │
-│  │  Frontend   │    │ Backend Gin │    │      Feature Service       │  │
-│  │  (Next.js)  │    │    (Go)     │    │       (ASP.NET Core)       │  │
+│  │   Vercel    │    │     VPS     │    │           VPS               │  │
+│  │  Frontend   │    │ Backend Gin │    │      Feature Service        │  │
+│  │  (Next.js)  │    │    (Go)     │    │       (ASP.NET Core)        │  │
 │  └──────┬──────┘    └──────┬──────┘    └─────────────┬───────────────┘  │
 │         │                  │                         │                  │
 │         │                  ▼                         ▼                  │
@@ -40,8 +40,8 @@
 | Service | Platform | URL |
 |---------|----------|-----|
 | Frontend | Vercel | alephdraad.fun |
-| Backend Gin | Railway | api.alephdraad.fun |
-| Feature Service | Railway | feature.alephdraad.fun |
+| Backend Gin | VPS | api.alephdraad.fun |
+| Feature Service | VPS | feature.alephdraad.fun |
 | PostgreSQL | Neon | (internal) |
 | MongoDB | MongoDB Atlas | (internal) |
 | DNS | Cloudflare | - |
@@ -91,7 +91,7 @@
 ## 🔗 Related Documents
 
 - [71_VERCEL_DEPLOYMENT.md](./71_VERCEL_DEPLOYMENT.md) - Frontend deployment
-- [72_RAILWAY_DEPLOYMENT.md](./72_RAILWAY_DEPLOYMENT.md) - Backend deployment
+- [72_VPS_DEPLOYMENT.md](./72_VPS_DEPLOYMENT.md) - Backend deployment ke VPS
 - [73_DATABASE_SETUP.md](./73_DATABASE_SETUP.md) - Database configuration
 - [74_ENVIRONMENT_VARIABLES.md](./74_ENVIRONMENT_VARIABLES.md) - All env vars
 

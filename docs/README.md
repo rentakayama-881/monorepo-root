@@ -76,7 +76,7 @@ Alephdraad adalah **platform komunitas/forum online** seperti Reddit atau Discou
 |---------|-----------|
 | [70_DEPLOYMENT_OVERVIEW.md](./08-deployment/70_DEPLOYMENT_OVERVIEW.md) | Gambaran deployment |
 | [71_VERCEL_DEPLOYMENT.md](./08-deployment/71_VERCEL_DEPLOYMENT.md) | Deploy frontend ke Vercel |
-| [72_RAILWAY_DEPLOYMENT.md](./08-deployment/72_RAILWAY_DEPLOYMENT.md) | Deploy backend ke Railway |
+| [72_VPS_DEPLOYMENT.md](./08-deployment/72_VPS_DEPLOYMENT.md) | Deploy backend ke VPS |
 | [73_DATABASE_SETUP.md](./08-deployment/73_DATABASE_SETUP.md) | Setup Neon & MongoDB |
 | [74_ENVIRONMENT_VARIABLES.md](./08-deployment/74_ENVIRONMENT_VARIABLES.md) | Semua environment variables |
 

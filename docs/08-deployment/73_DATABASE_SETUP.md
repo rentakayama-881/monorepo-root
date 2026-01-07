@@ -126,7 +126,7 @@ Role: readWrite on alephdraad database
 IP: 0.0.0.0/0 (allow all - HANYA untuk dev!)
 
 # Production
-IP: [Railway IP addresses]
+IP: [VPS IP address]
 ```
 
 ### Step 4: Get Connection String

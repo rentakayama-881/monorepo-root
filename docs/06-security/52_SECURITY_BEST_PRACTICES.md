@@ -209,7 +209,7 @@ func SecurityHeaders() gin.HandlerFunc {
 JWT_SECRET=${JWT_SECRET}
 
 # Use secret managers
-# - Railway Secrets
+# - VPS .env files
 # - Vercel Environment Variables
 # - AWS Secrets Manager
 # - HashiCorp Vault

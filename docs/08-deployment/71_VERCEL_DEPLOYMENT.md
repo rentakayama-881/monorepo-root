@@ -226,4 +226,4 @@ Backend harus allow origin `https://alephdraad.fun`.
 
 ## ▶️ Selanjutnya
 
-- [72_RAILWAY_DEPLOYMENT.md](./72_RAILWAY_DEPLOYMENT.md) - Deploy Backend ke Railway
+- [72_VPS_DEPLOYMENT.md](./72_VPS_DEPLOYMENT.md) - Deploy Backend ke VPS
