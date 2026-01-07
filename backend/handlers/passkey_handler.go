@@ -2,14 +2,14 @@ package handlers
 
 import (
 	"bytes"
-	"encoding/json"
+	"context"
 	"io"
 	"net/http"
 	"strconv"
 
 	"backend-gin/dto"
+	"backend-gin/ent"
 	"backend-gin/errors"
-	"backend-gin/models"
 	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
@@ -19,13 +19,13 @@ import (
 
 // PasskeyHandler handles passkey/WebAuthn endpoints
 type PasskeyHandler struct {
-	passkeyService *services.PasskeyService
+	passkeyService *services.EntPasskeyService
 	authService    *services.AuthServiceWrapper
 	logger         *zap.Logger
 }
 
 // NewPasskeyHandler creates a new PasskeyHandler
-func NewPasskeyHandler(passkeyService *services.PasskeyService, authService *services.AuthServiceWrapper, logger *zap.Logger) *PasskeyHandler {
+func NewPasskeyHandler(passkeyService *services.EntPasskeyService, authService *services.AuthServiceWrapper, logger *zap.Logger) *PasskeyHandler {
 	return &PasskeyHandler{
 		passkeyService: passkeyService,
 		authService:    authService,
@@ -50,7 +50,8 @@ func (h *PasskeyHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	count, err := h.passkeyService.GetPasskeyCount(userID)
+	ctx := context.Background()
+	count, err := h.passkeyService.GetPasskeyCount(ctx, int(userID))
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -58,7 +59,7 @@ func (h *PasskeyHandler) GetStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, dto.PasskeyStatusResponse{
 		HasPasskeys: count > 0,
-		Count:       int(count),
+		Count:       count,
 	})
 }
 
@@ -70,7 +71,8 @@ func (h *PasskeyHandler) ListPasskeys(c *gin.Context) {
 		return
 	}
 
-	passkeys, err := h.passkeyService.ListPasskeys(userID)
+	ctx := context.Background()
+	passkeys, err := h.passkeyService.ListPasskeys(ctx, int(userID))
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -78,16 +80,12 @@ func (h *PasskeyHandler) ListPasskeys(c *gin.Context) {
 
 	response := make([]dto.PasskeyResponse, len(passkeys))
 	for i, pk := range passkeys {
-		var transports []string
-		if pk.Transports != nil {
-			_ = json.Unmarshal(pk.Transports, &transports)
-		}
 		response[i] = dto.PasskeyResponse{
-			ID:         pk.ID,
+			ID:         uint(pk.ID),
 			Name:       pk.Name,
 			CreatedAt:  pk.CreatedAt,
 			LastUsedAt: pk.LastUsedAt,
-			Transports: transports,
+			Transports: pk.Transports,
 		}
 	}
 
@@ -105,7 +103,8 @@ func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 		return
 	}
 
-	options, err := h.passkeyService.BeginRegistration(userID)
+	ctx := context.Background()
+	options, err := h.passkeyService.BeginRegistration(ctx, int(userID))
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -126,8 +125,8 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 
 	// Parse the raw body to get name and credential
 	var rawRequest struct {
-		Name       string          `json:"name"`
-		Credential json.RawMessage `json:"credential"`
+		Name       string `json:"name"`
+		Credential []byte `json:"credential"`
 	}
 	if err := c.ShouldBindJSON(&rawRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -144,22 +143,18 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 		return
 	}
 
-	passkey, err := h.passkeyService.FinishRegistration(userID, rawRequest.Name, parsedResponse)
+	ctx := context.Background()
+	passkey, err := h.passkeyService.FinishRegistration(ctx, int(userID), rawRequest.Name, parsedResponse)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
-	var transports []string
-	if passkey.Transports != nil {
-		_ = json.Unmarshal(passkey.Transports, &transports)
-	}
-
 	c.JSON(http.StatusOK, dto.PasskeyResponse{
-		ID:         passkey.ID,
+		ID:         uint(passkey.ID),
 		Name:       passkey.Name,
 		CreatedAt:  passkey.CreatedAt,
-		Transports: transports,
+		Transports: passkey.Transports,
 	})
 }
 
@@ -172,13 +167,14 @@ func (h *PasskeyHandler) DeletePasskey(c *gin.Context) {
 	}
 
 	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid passkey ID"})
 		return
 	}
 
-	if err := h.passkeyService.DeletePasskey(userID, uint(id)); err != nil {
+	ctx := context.Background()
+	if err := h.passkeyService.DeletePasskey(ctx, int(userID), id); err != nil {
 		h.handleError(c, err)
 		return
 	}
@@ -195,7 +191,7 @@ func (h *PasskeyHandler) RenamePasskey(c *gin.Context) {
 	}
 
 	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid passkey ID"})
 		return
@@ -207,7 +203,8 @@ func (h *PasskeyHandler) RenamePasskey(c *gin.Context) {
 		return
 	}
 
-	if err := h.passkeyService.RenamePasskey(userID, uint(id), req.Name); err != nil {
+	ctx := context.Background()
+	if err := h.passkeyService.RenamePasskey(ctx, int(userID), id, req.Name); err != nil {
 		h.handleError(c, err)
 		return
 	}
@@ -223,7 +220,8 @@ func (h *PasskeyHandler) CheckPasskeys(c *gin.Context) {
 		return
 	}
 
-	hasPasskeys, err := h.passkeyService.HasPasskeysByEmail(req.Email)
+	ctx := context.Background()
+	hasPasskeys, err := h.passkeyService.HasPasskeysByEmail(ctx, req.Email)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -242,9 +240,11 @@ func (h *PasskeyHandler) BeginLogin(c *gin.Context) {
 		req = dto.PasskeyLoginBeginRequest{}
 	}
 
+	ctx := context.Background()
+
 	if req.Email != "" {
 		// Non-discoverable login with email
-		options, err := h.passkeyService.BeginLogin(req.Email)
+		options, err := h.passkeyService.BeginLogin(ctx, req.Email)
 		if err != nil {
 			h.handleError(c, err)
 			return
@@ -272,9 +272,9 @@ func (h *PasskeyHandler) BeginLogin(c *gin.Context) {
 // FinishLogin completes passkey login
 func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	var rawRequest struct {
-		Email      string          `json:"email"`
-		SessionID  string          `json:"session_id"`
-		Credential json.RawMessage `json:"credential"`
+		Email      string `json:"email"`
+		SessionID  string `json:"session_id"`
+		Credential []byte `json:"credential"`
 	}
 	if err := c.ShouldBindJSON(&rawRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -291,23 +291,24 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 		return
 	}
 
-	var user *models.User
+	ctx := context.Background()
+	var entUser *ent.User
 	if rawRequest.SessionID != "" {
 		// Discoverable login
-		u, err := h.passkeyService.FinishDiscoverableLogin(rawRequest.SessionID, parsedResponse)
+		u, err := h.passkeyService.FinishDiscoverableLogin(ctx, rawRequest.SessionID, parsedResponse)
 		if err != nil {
 			h.handleError(c, err)
 			return
 		}
-		user = u
+		entUser = u
 	} else if rawRequest.Email != "" {
 		// Non-discoverable login
-		u, err := h.passkeyService.FinishLogin(rawRequest.Email, parsedResponse)
+		u, err := h.passkeyService.FinishLogin(ctx, rawRequest.Email, parsedResponse)
 		if err != nil {
 			h.handleError(c, err)
 			return
 		}
-		user = u
+		entUser = u
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email or session_id required"})
 		return
@@ -318,13 +319,13 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	clientIP := c.ClientIP()
 
 	h.logger.Info("Passkey login user info",
-		zap.Uint("user_id", user.ID),
-		zap.String("email", user.Email),
-		zap.Bool("email_verified", user.EmailVerified),
+		zap.Int("user_id", entUser.ID),
+		zap.String("email", entUser.Email),
+		zap.Bool("email_verified", entUser.EmailVerified),
 	)
 
-	// Generate tokens using auth service (correct order: user, ipAddress, userAgent)
-	response, err := h.authService.LoginWithPasskey(user, clientIP, userAgent)
+	// Generate tokens using auth service with Ent user
+	response, err := h.authService.LoginWithPasskeyEnt(entUser, clientIP, userAgent)
 	if err != nil {
 		h.handleError(c, err)
 		return

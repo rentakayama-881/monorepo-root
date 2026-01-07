@@ -405,9 +405,9 @@ All handlers receive `models.User` (GORM model) instead of Ent models:
 - ✅ Core services (GORM-free)
 - ✅ User, badge, account handlers (GORM-free)
 - ✅ Admin operations (GORM-free)
+- ✅ **Passkey service (WebAuthn) - Migrated Jan 7, 2026**
 
 **Still Using GORM (Lower Priority):**
-- ⏳ Passkey service (WebAuthn integration)
 - ⏳ Security audit service
 - ⏳ Device fingerprint tracking
 - ⏳ Login tracker
@@ -418,9 +418,9 @@ All handlers receive `models.User` (GORM model) instead of Ent models:
 | Phase | Target | Timeline |
 |-------|--------|----------|
 | **Phase 1** | ✅ **Complete** - Core hot paths (auth, users, badges) | Jan 7, 2026 |
-| **Phase 2** | Passkey service + WebAuthn schema | Feb 2026 |
-| **Phase 3** | Security audit + device tracking | Mar 2026 |
-| **Phase 4** | Test suite migration to Ent fixtures | Apr 2026 |
+| **Phase 2** | ✅ **Complete** - Passkey service + WebAuthn | Jan 7, 2026 |
+| **Phase 3** | Security audit + device tracking | Feb 2026 |
+| **Phase 4** | Test suite migration to Ent fixtures | Mar 2026 |
 
 ### Cleanup Steps (When Ready)
 1. Refactor remaining GORM services
@@ -616,36 +616,90 @@ assert.Equal(t, "test@example.com", user.Email)
 
 ## Conclusion
 
-The migration from GORM to Ent ORM is **complete for all critical hot paths**. The implementation:
+The migration from GORM to Ent ORM is **complete for all critical hot paths including Passkey/WebAuthn**. The implementation:
 
 ✅ **Achieves Type Safety:** Compile-time query validation  
 ✅ **Maintains Compatibility:** Existing handlers work without changes  
 ✅ **Improves Performance:** 2-3% throughput increase  
 ✅ **Enables Scaling:** Context threading supports proper async/cancellation  
 ✅ **Follows Best Practices:** Clean architecture, SOLID principles  
+✅ **WebAuthn Ready:** Passkey service fully migrated to Ent
 
 **Next Steps:**
 1. Monitor production performance (measure claimed improvements)
-2. Plan Phase 2: Passkey service migration
+2. Plan Phase 3: Security audit + device tracking migration
 3. Gather team feedback on Ent learning curve
 4. Document any encountered edge cases
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Last Updated:** January 7, 2026  
 **Author:** Backend Engineering Team  
-**Status:** ✅ PRODUCTION READY (Core Paths)
+**Status:** ✅ PRODUCTION READY (Core Paths + WebAuthn)
 
 ---
 
-## Appendix: Handler Integration Plan (Phase 2)
+## Phase 2 Complete: PasskeyService Migration (Jan 7, 2026)
 
-- Objective: Align handler constructors with Ent service types (`EntAuthService`, `EntSessionService`, `EntTOTPService`).
-- Current: Handlers expect legacy service types (`AuthService`, `SessionService`, `TOTPService`).
-- Approach:
-    - Add lightweight adapter interfaces in services to bridge Ent → handler expectations without duplicating logic.
-    - Gradually update handler constructors to accept Ent services directly with `context.Context` support.
-    - Replace temporary stubs in `main.go` with real service instances.
-- Impact: No public API changes; internal constructor signatures updated.
-- Timeline: Phase 2 (Feb 2026) alongside passkey service migration.
+### Summary
+Migrated `PasskeyService` from GORM to Ent ORM, creating `EntPasskeyService` with full WebAuthn support.
+
+### Files Created
+- `services/passkey_service_ent.go` - Complete Ent-based passkey service
+
+### Files Modified
+- `handlers/passkey_handler.go` - Updated to use `EntPasskeyService`
+- `services/service_wrappers.go` - Added `LoginWithPasskeyEnt()` method
+- `main.go` - Now uses `NewEntPasskeyService()` instead of GORM version
+
+### Key Changes
+
+#### 1. EntWebAuthnUser Adapter
+```go
+// EntWebAuthnUser wraps ent.User to implement webauthn.User interface
+type EntWebAuthnUser struct {
+    User     *ent.User
+    Passkeys []*ent.Passkey
+}
+
+func (u *EntWebAuthnUser) WebAuthnID() []byte { ... }
+func (u *EntWebAuthnUser) WebAuthnName() string { ... }
+func (u *EntWebAuthnUser) WebAuthnDisplayName() string { ... }
+func (u *EntWebAuthnUser) WebAuthnCredentials() []webauthn.Credential { ... }
+```
+
+#### 2. Context-Aware Methods
+All service methods now accept `context.Context` for proper cancellation support:
+```go
+func (s *EntPasskeyService) BeginRegistration(ctx context.Context, userID int) (*protocol.CredentialCreation, error)
+func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, name string, response *protocol.ParsedCredentialCreationData) (*ent.Passkey, error)
+func (s *EntPasskeyService) BeginLogin(ctx context.Context, email string) (*protocol.CredentialAssertion, error)
+func (s *EntPasskeyService) FinishLogin(ctx context.Context, email string, response *protocol.ParsedCredentialAssertionData) (*ent.User, error)
+```
+
+#### 3. GORM-Free main.go
+```go
+// Before (GORM)
+passkeyService, err := services.NewPasskeyService(database.DB, logger, rpID, rpOrigin, rpName)
+
+// After (Ent)
+passkeyService, err := services.NewEntPasskeyService(logger, rpID, rpOrigin, rpName)
+```
+
+### Remaining GORM Usage
+| Service | Reason | Phase |
+|---------|--------|-------|
+| SecurityAuditService | Low priority, audit logging | Phase 3 |
+| DeviceTracker | Device fingerprinting | Phase 3 |
+| LoginTracker | Login attempt tracking | Phase 3 |
+| Seed scripts | One-time admin seeding | Phase 4 |
+| Test fixtures | SQLite test database | Phase 4 |
+
+---
+
+## Appendix: Handler Integration Plan (Phase 3)
+
+- Objective: Migrate remaining security services to Ent.
+- Target Services: `SecurityAuditService`, `DeviceTracker`, `LoginTracker`
+- Timeline: February 2026

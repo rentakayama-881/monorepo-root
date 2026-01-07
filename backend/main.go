@@ -155,7 +155,7 @@ func main() {
 	if rpName == "" {
 		rpName = "Alephdraad"
 	}
-	passkeyService, err := services.NewPasskeyService(database.DB, logger.GetLogger(), rpID, rpOrigin, rpName)
+	passkeyService, err := services.NewEntPasskeyService(logger.GetLogger(), rpID, rpOrigin, rpName)
 	if err != nil {
 		logger.Fatal("Failed to initialize passkey service", zap.Error(err))
 	}
