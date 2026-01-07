@@ -90,6 +90,7 @@ export default function ThreadDetailPage() {
       ) : error ? (
         <div className="rounded-lg border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] p-4 text-sm text-[rgb(var(--error))]">{error}</div>
       ) : data ? (
+        <>
         <article className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
           {/* Header */}
           <div className="border-b border-[rgb(var(--border))] p-6">
@@ -247,6 +248,7 @@ export default function ThreadDetailPage() {
           targetId={id}
           targetTitle={data?.title}
         />
+        </>
       ) : null}
     </main>
   );
