@@ -4,11 +4,14 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { fetchCategories } from "../lib/categories";
 import { LOCKED_CATEGORIES } from "../lib/constants";
+import { EXTERNAL_LLM_MODELS } from "@/lib/useAIChat";
 
 export default function Sidebar({ open, onClose }) {
   const [search, setSearch] = useState("");
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [showModelPicker, setShowModelPicker] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +84,85 @@ export default function Sidebar({ open, onClose }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 5l7 7-7 7" />
             </svg>
           </Link>
+
+          {/* AI Studio - Multi-model Chat */}
+          <div className="rounded-lg border border-[rgb(var(--border))] bg-gradient-to-br from-[rgb(var(--surface))] to-[rgb(var(--surface-2))] p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-6 w-6 rounded-md bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-[rgb(var(--fg))]">AI Studio</div>
+                <div className="text-[10px] text-[rgb(var(--muted))]">Premium multi-model chat</div>
+              </div>
+            </div>
+            
+            {/* Model Picker Toggle */}
+            <button
+              onClick={() => setShowModelPicker(!showModelPicker)}
+              className="w-full flex items-center justify-between rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-xs transition hover:border-[rgb(var(--muted))]"
+            >
+              <span className="flex items-center gap-2">
+                {selectedModel ? (
+                  <>
+                    <span className="h-2 w-2 rounded-full bg-green-500" />
+                    <span className="text-[rgb(var(--fg))] font-medium">{selectedModel.name}</span>
+                    <span className="text-[rgb(var(--muted))]">• {selectedModel.provider}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="h-2 w-2 rounded-full bg-[rgb(var(--muted))]" />
+                    <span className="text-[rgb(var(--muted))]">Pilih Model AI...</span>
+                  </>
+                )}
+              </span>
+              <svg className={`h-4 w-4 text-[rgb(var(--muted))] transition-transform ${showModelPicker ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Model Dropdown */}
+            {showModelPicker && (
+              <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] divide-y divide-[rgb(var(--border))]">
+                {EXTERNAL_LLM_MODELS.map((model) => (
+                  <button
+                    key={model.id}
+                    onClick={() => {
+                      setSelectedModel(model);
+                      setShowModelPicker(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-xs transition hover:bg-[rgb(var(--surface-2))] ${
+                      selectedModel?.id === model.id ? 'bg-[rgb(var(--brand))]/5' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-[rgb(var(--fg))]">{model.name}</span>
+                      <span className="text-[rgb(var(--muted))]">{model.provider}</span>
+                    </div>
+                    <div className="text-[rgb(var(--muted))] mt-0.5">{model.description}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Start Chat Button */}
+            <Link
+              href={selectedModel ? `/ai-studio?model=${selectedModel.id}` : '/ai-studio'}
+              onClick={onClose}
+              className={`mt-2 w-full flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition ${
+                selectedModel 
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90' 
+                  : 'bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))] hover:bg-[rgb(var(--border))]'
+              }`}
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              {selectedModel ? 'Mulai Chat' : 'Pilih Model Dulu'}
+            </Link>
+          </div>
 
           {/* Search kategori */}
           <div className="relative">

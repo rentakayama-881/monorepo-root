@@ -7,12 +7,20 @@ import { clearToken, getToken, getRefreshToken } from "@/lib/auth";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
 import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
 import { maskEmail } from "@/lib/email";
+import { useTokenBalance } from "@/lib/useAIChat";
+import { useDocumentStats, formatFileSize } from "@/lib/useDocuments";
 
 export default function ProfileSidebar({ onClose }) {
   const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
   const [wallet, setWallet] = useState({ balance: 0, pin_set: false });
   const [isLoading, setIsLoading] = useState(true);
   const panelRef = useRef(null);
+
+  // AI Token balance
+  const { balance: tokenBalance, loading: tokenLoading } = useTokenBalance({ skip: false });
+  
+  // Document stats
+  const { stats: docStats, loading: docStatsLoading } = useDocumentStats({ skip: false });
 
   useEffect(() => {
     let cancelled = false;
@@ -278,10 +286,137 @@ export default function ProfileSidebar({ onClose }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
+
+            {/* AI Hub Section */}
+            <div className="text-xs font-semibold uppercase text-[rgb(var(--muted))] px-1 mt-3 flex items-center gap-1.5">
+              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+              AI Hub
+            </div>
+            
+            {/* AI Token Balance Mini Card */}
+            <div className="rounded-md border border-[rgb(var(--brand))]/30 bg-gradient-to-r from-[rgb(var(--brand))]/5 to-transparent px-3 py-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-[rgb(var(--brand))]/10 flex items-center justify-center">
+                    <svg className="h-3.5 w-3.5 text-[rgb(var(--brand))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 6v6l4 2" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-[rgb(var(--muted))] uppercase tracking-wide">AI Credits</div>
+                    <div className="text-sm font-bold text-[rgb(var(--fg))]">
+                      {tokenLoading ? "..." : tokenBalance.tokens.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  href="/ai-chat/tokens"
+                  className="text-[10px] font-medium text-[rgb(var(--brand))] hover:underline"
+                >
+                  Top Up
+                </Link>
+              </div>
+            </div>
+
+            <Link
+              href="/ai-chat"
+              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--brand))] hover:bg-[rgb(var(--brand))]/5"
+            >
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4 text-[rgb(var(--brand))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                </svg>
+                <span className="font-medium">Aleph Assistant</span>
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))] font-medium">FREE</span>
+            </Link>
+
+            {/* DocVault Section */}
+            <div className="text-xs font-semibold uppercase text-[rgb(var(--muted))] px-1 mt-3 flex items-center gap-1.5">
+              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+              </svg>
+              DocVault
+            </div>
+            
+            {/* Storage Usage Mini Card */}
+            <div className="rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-3 py-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] text-[rgb(var(--muted))] uppercase tracking-wide">Storage</span>
+                <span className="text-[10px] text-[rgb(var(--muted))]">
+                  {docStatsLoading ? "..." : `${formatFileSize(docStats.totalSize)} / ${formatFileSize(docStats.maxSize)}`}
+                </span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-[rgb(var(--border))] overflow-hidden">
+                <div 
+                  className="h-full rounded-full bg-[rgb(var(--brand))] transition-all duration-300"
+                  style={{ width: `${docStatsLoading ? 0 : docStats.usedPercentage}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between mt-1.5">
+                <span className="text-[10px] text-[rgb(var(--muted))]">
+                  {docStatsLoading ? "..." : `${docStats.totalDocuments} files`}
+                </span>
+                <span className="text-[10px] text-[rgb(var(--muted))]">
+                  {docStatsLoading ? "..." : `${docStats.usedPercentage}%`}
+                </span>
+              </div>
+            </div>
+
+            <Link
+              href="/documents"
+              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
+            >
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                My Documents
+              </span>
+              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+            <Link
+              href="/documents/upload"
+              className="flex items-center justify-between rounded-md border border-dashed border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--brand))] hover:bg-[rgb(var(--brand))]/5"
+            >
+              <span className="flex items-center gap-2 text-[rgb(var(--muted))]">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Upload Document
+              </span>
+            </Link>
+
+            {/* Activity Section */}
+            <div className="text-xs font-semibold uppercase text-[rgb(var(--muted))] px-1 mt-3 flex items-center gap-1.5">
+              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+              </svg>
+              Activity
+            </div>
+            <Link
+              href="/reports"
+              className="flex items-center justify-between rounded-md border border-[rgb(var(--border))] px-3 py-2 transition hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
+            >
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                </svg>
+                My Reports
+              </span>
+              <svg className="h-4 w-4 text-[rgb(var(--muted))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </nav>
           <button
             onClick={handleLogout}
-            className="mt-3 w-full rounded-md border border-[rgb(var(--border))] px-3 py-2 text-left text-sm font-semibold text-[rgb(var(--error))] transition hover:border-[rgb(var(--error-border))] hover:bg-[rgb(var(--error-bg))]"
+            className="mt-4 w-full rounded-md border border-[rgb(var(--border))] px-3 py-2 text-left text-sm font-semibold text-[rgb(var(--error))] transition hover:border-[rgb(var(--error-border))] hover:bg-[rgb(var(--error-bg))]"
             type="button"
           >
             Keluar
