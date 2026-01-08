@@ -91,12 +91,12 @@ try
         {
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuer = true,
-                ValidateAudience = true,
+                ValidateIssuer = jwtSettings.ValidateIssuer,
+                ValidateAudience = jwtSettings.ValidateAudience,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtSettings.Issuer,
-                ValidAudience = jwtSettings.Audience,
+                ValidIssuer = string.IsNullOrEmpty(jwtSettings.Issuer) ? null : jwtSettings.Issuer,
+                ValidAudience = string.IsNullOrEmpty(jwtSettings.Audience) ? null : jwtSettings.Audience,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
             };
         });
