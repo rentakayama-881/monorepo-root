@@ -66,11 +66,13 @@ public class MongoDbContext
     private void CreateIndexes()
     {
         // Reply indexes
+        // Note: Using string-based index for ParentId because it's a nullable field
+        // and MongoDB Driver LINQ3 doesn't support lambda expressions for nullable fields
         Replies.Indexes.CreateMany(new[]
         {
             new CreateIndexModel<Reply>(Builders<Reply>.IndexKeys.Ascending(r => r.ThreadId)),
             new CreateIndexModel<Reply>(Builders<Reply>.IndexKeys.Ascending(r => r.UserId)),
-            new CreateIndexModel<Reply>(Builders<Reply>.IndexKeys.Ascending(r => r.ParentId)),
+            new CreateIndexModel<Reply>(Builders<Reply>.IndexKeys.Ascending("ParentId")),
             new CreateIndexModel<Reply>(Builders<Reply>.IndexKeys.Descending(r => r.CreatedAt))
         });
 
