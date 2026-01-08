@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fetchJson } from "@/lib/api";
-import { setTokens } from "@/lib/auth";
+import { setTokens, getToken, TOKEN_KEY, AUTH_CHANGED_EVENT } from "@/lib/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -12,6 +12,39 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+
+  // Listen for auth changes from other tabs (cross-tab sync)
+  useEffect(() => {
+    // Check if already logged in on mount
+    const token = getToken();
+    if (token) {
+      router.replace("/");
+      return;
+    }
+
+    // Listen for storage changes (from other tabs)
+    const handleStorageChange = (e) => {
+      if (e.key === TOKEN_KEY && e.newValue) {
+        router.replace("/");
+      }
+    };
+
+    // Listen for auth changes in same tab
+    const handleAuthChange = () => {
+      const token = getToken();
+      if (token) {
+        router.replace("/");
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener(AUTH_CHANGED_EVENT, handleAuthChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener(AUTH_CHANGED_EVENT, handleAuthChange);
+    };
+  }, [router]);
 
   const inputClass =
     "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";

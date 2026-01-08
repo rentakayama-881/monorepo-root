@@ -406,24 +406,27 @@ All handlers receive `models.User` (GORM model) instead of Ent models:
 - ✅ User, badge, account handlers (GORM-free)
 - ✅ Admin operations (GORM-free)
 - ✅ **Passkey service (WebAuthn) - Migrated Jan 7, 2026**
+- ✅ **Security audit service - Migrated Jan 8, 2026**
+- ✅ **Device fingerprint tracking - Migrated Jan 8, 2026**
+- ✅ **Login tracker - Migrated Jan 8, 2026**
+- ✅ **Seed scripts (Ent version) - Added Jan 8, 2026**
 
-**Still Using GORM (Lower Priority):**
-- ⏳ Security audit service
-- ⏳ Device fingerprint tracking
-- ⏳ Login tracker
+**Still Using GORM (Legacy - Backward Compatibility):**
+- ⏳ Legacy services (kept for gradual deprecation)
 - ⏳ Test fixtures (SQLite-based tests)
-- ⏳ Seed scripts (`cmd/seed_admin/`)
 
 ### Future Iterations
 | Phase | Target | Timeline |
 |-------|--------|----------|
 | **Phase 1** | ✅ **Complete** - Core hot paths (auth, users, badges) | Jan 7, 2026 |
 | **Phase 2** | ✅ **Complete** - Passkey service + WebAuthn | Jan 7, 2026 |
-| **Phase 3** | Security audit + device tracking | Feb 2026 |
-| **Phase 4** | Test suite migration to Ent fixtures | Mar 2026 |
+| **Phase 3** | ✅ **Complete** - Security audit + device tracking + login tracker | Jan 8, 2026 |
+| **Phase 4** | ✅ **Complete** - Seed scripts (Ent version) | Jan 8, 2026 |
+| **Phase 5** | Test suite migration to Ent fixtures | Feb 2026 |
+| **Phase 6** | Remove GORM dependency entirely | Mar 2026 |
 
 ### Cleanup Steps (When Ready)
-1. Refactor remaining GORM services
+1. ~~Refactor remaining GORM services~~ ✅ Done
 2. Update test fixtures to use Ent
 3. Remove `gorm.io/gorm` from go.mod
 4. Remove `database/db.go` entirely
@@ -432,7 +435,7 @@ All handlers receive `models.User` (GORM model) instead of Ent models:
 **Current Go Module Status:**
 ```bash
 $ go mod tidy  # Run after each phase
-$ grep gorm go.mod  # Should show zero results in Phase 4
+$ grep gorm go.mod  # Should show zero results in Phase 6
 ```
 
 ---
@@ -634,9 +637,9 @@ The migration from GORM to Ent ORM is **complete for all critical hot paths incl
 ---
 
 **Document Version:** 1.1  
-**Last Updated:** January 7, 2026  
+**Last Updated:** January 8, 2026  
 **Author:** Backend Engineering Team  
-**Status:** ✅ PRODUCTION READY (Core Paths + WebAuthn)
+**Status:** ✅ PRODUCTION READY (Core Paths + WebAuthn + Security Services)
 
 ---
 
@@ -690,16 +693,138 @@ passkeyService, err := services.NewEntPasskeyService(logger, rpID, rpOrigin, rpN
 ### Remaining GORM Usage
 | Service | Reason | Phase |
 |---------|--------|-------|
-| SecurityAuditService | Low priority, audit logging | Phase 3 |
-| DeviceTracker | Device fingerprinting | Phase 3 |
-| LoginTracker | Login attempt tracking | Phase 3 |
-| Seed scripts | One-time admin seeding | Phase 4 |
-| Test fixtures | SQLite test database | Phase 4 |
+| ~~SecurityAuditService~~ | ✅ Migrated Jan 8, 2026 | ~~Phase 3~~ |
+| ~~DeviceTracker~~ | ✅ Migrated Jan 8, 2026 | ~~Phase 3~~ |
+| ~~LoginTracker~~ | ✅ Migrated Jan 8, 2026 | ~~Phase 3~~ |
+| ~~Seed scripts~~ | ✅ Migrated Jan 8, 2026 | ~~Phase 4~~ |
+| Test fixtures | SQLite test database | Phase 5 |
 
 ---
 
-## Appendix: Handler Integration Plan (Phase 3)
+## Phase 3 Complete: Security Services Migration (Jan 8, 2026)
 
-- Objective: Migrate remaining security services to Ent.
-- Target Services: `SecurityAuditService`, `DeviceTracker`, `LoginTracker`
+### Summary
+Migrated all security-related services from GORM to Ent ORM:
+- `EntSecurityAuditService` - Security event logging
+- `EntDeviceTracker` - Device fingerprint tracking
+- `EntLoginAttemptTracker` - Login attempt tracking with progressive delays
+
+### Files Created
+
+#### 1. `services/security_audit_ent.go`
+Complete Ent-based security audit service with:
+- `LogEvent()` - Generic event logging
+- `LogLoginSuccess()` / `LogLoginFailed()` - Login event tracking
+- `LogAccountLocked()` / `LogAccountUnlocked()` - Account status changes
+- `LogTOTPFailed()` / `LogTOTPEnabled()` / `LogTOTPDisabled()` - TOTP events
+- `LogTokenReuse()` / `LogBackupCodeUsed()` - Security-sensitive events
+- `GetRecentEvents()` / `CleanupOldEvents()` - Event management
+
+```go
+type EntSecurityAuditService struct {
+    client *ent.Client
+    logger *slog.Logger
+}
+
+func NewEntSecurityAuditService(logger *slog.Logger) *EntSecurityAuditService {
+    return &EntSecurityAuditService{
+        client: database.GetEntClient(),
+        logger: logger,
+    }
+}
+```
+
+#### 2. `services/device_tracker_ent.go`
+Device fingerprint tracking with in-memory cache + Ent persistence:
+- `CanRegisterAccount()` - Check device registration limits
+- `RecordDeviceRegistration()` / `RecordDeviceLogin()` - Track device usage
+- `BlockDevice()` / `IsDeviceBlocked()` - Device blocking
+- `GetUserDevices()` - Retrieve user's registered devices
+
+**Key Constants:**
+```go
+const MaxAccountsPerDevice = 2
+const DeviceCacheExpiry = 30 * time.Minute
+const BlockedDeviceCacheExpiry = 24 * time.Hour
+```
+
+#### 3. `services/login_tracker_ent.go`
+Login attempt tracking with progressive lockout delays:
+- `RecordFailedLogin()` - Track failed attempts
+- `IsLocked()` - Check lockout status with progressive delays
+- `PersistLock()` - Persist lock to database
+- `RecordSuccessfulLogin()` - Clear tracking on success
+- `RecordTOTPAttempt()` - Separate TOTP tracking
+
+**Progressive Delays:**
+```go
+var progressiveDelays = []time.Duration{
+    0 * time.Second,  // 1st failure: no delay
+    1 * time.Second,  // 2nd failure: 1s delay
+    2 * time.Second,  // 3rd failure: 2s delay
+    4 * time.Second,  // 4th failure: 4s delay
+    8 * time.Second,  // 5th+ failure: 8s delay
+}
+
+const MaxFailedLoginAttempts = 4
+const LockDuration = 24 * time.Hour
+```
+
+### Ent Schemas Used
+- `securityevent` - Security event logging
+- `devicefingerprint` - Device tracking
+- `deviceusermapping` - Device-to-user relationships
+- `user` - User entity (for last_failed_at field)
+
+---
+
+## Phase 4 Complete: Seed Scripts Migration (Jan 8, 2026)
+
+### Summary
+Created Ent-based admin seeding script as alternative to GORM version.
+
+### Files Created
+
+#### `cmd/seed_admin/main_ent.go`
+Ent-based admin seeding with:
+- Email existence check using `admin.EmailEQ()` predicate
+- Password hashing with bcrypt
+- Proper error handling and logging
+
+```go
+func seedAdmin(client *ent.Client, email, password string) error {
+    exists, err := client.Admin.Query().
+        Where(admin.EmailEQ(email)).
+        Exist(context.Background())
+    if err != nil { return err }
+    
+    if !exists {
+        hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+        _, err = client.Admin.Create().
+            SetEmail(email).
+            SetPassword(string(hashedPassword)).
+            SetCreatedAt(time.Now()).
+            SetUpdatedAt(time.Now()).
+            Save(context.Background())
+        return err
+    }
+    return nil
+}
+```
+
+### Running Seed Script
+```bash
+# Using Ent version
+go run cmd/seed_admin/main_ent.go
+
+# Legacy GORM version (still available)
+go run cmd/seed_admin/main.go
+```
+
+---
+
+## Appendix: Handler Integration Plan (Phase 5)
+
+- Objective: Migrate test fixtures from SQLite/GORM to Ent.
+- Target: Test database setup and fixtures
 - Timeline: February 2026

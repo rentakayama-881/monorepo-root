@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchJson, getApiBase } from "@/lib/api";
-import { setTokens } from "@/lib/auth";
+import { setTokens, getToken, TOKEN_KEY, AUTH_CHANGED_EVENT } from "@/lib/auth";
 
 // Helper to convert ArrayBuffer to Base64URL
 function bufferToBase64URL(buffer) {
@@ -65,6 +65,40 @@ function LoginForm() {
 
   const registeredNotice = searchParams.get("registered") === "1";
   const sessionExpired = searchParams.get("session") === "expired";
+
+  // Listen for auth changes from other tabs (cross-tab sync)
+  useEffect(() => {
+    // Check if already logged in on mount
+    const token = getToken();
+    if (token) {
+      router.replace("/");
+      return;
+    }
+
+    // Listen for storage changes (from other tabs)
+    const handleStorageChange = (e) => {
+      if (e.key === TOKEN_KEY && e.newValue) {
+        // Token was set in another tab, redirect to home
+        router.replace("/");
+      }
+    };
+
+    // Listen for auth changes in same tab
+    const handleAuthChange = () => {
+      const token = getToken();
+      if (token) {
+        router.replace("/");
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener(AUTH_CHANGED_EVENT, handleAuthChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener(AUTH_CHANGED_EVENT, handleAuthChange);
+    };
+  }, [router]);
 
   useEffect(() => {
     setWebAuthnSupported(isWebAuthnSupported());
