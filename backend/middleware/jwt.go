@@ -23,6 +23,7 @@ const (
 type Claims struct {
 	UserID    uint      `json:"user_id"`
 	Email     string    `json:"email"`
+	Username  string    `json:"username,omitempty"`
 	TokenType TokenType `json:"type"`
 	JTI       string    `json:"jti"` // Unique token ID
 	jwt.RegisteredClaims
@@ -36,11 +37,12 @@ func generateJTI() string {
 }
 
 // GenerateAccessToken creates a short-lived access token (5 minutes)
-func GenerateAccessToken(userID uint, email string) (string, string, error) {
+func GenerateAccessToken(userID uint, email string, username string) (string, string, error) {
 	jti := generateJTI()
 	claims := &Claims{
 		UserID:    userID,
 		Email:     email,
+		Username:  username,
 		TokenType: TokenTypeAccess,
 		JTI:       jti,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -54,11 +56,12 @@ func GenerateAccessToken(userID uint, email string) (string, string, error) {
 }
 
 // GenerateRefreshToken creates a long-lived refresh token (7 days)
-func GenerateRefreshToken(userID uint, email string) (string, string, error) {
+func GenerateRefreshToken(userID uint, email string, username string) (string, string, error) {
 	jti := generateJTI()
 	claims := &Claims{
 		UserID:    userID,
 		Email:     email,
+		Username:  username,
 		TokenType: TokenTypeRefresh,
 		JTI:       jti,
 		RegisteredClaims: jwt.RegisteredClaims{

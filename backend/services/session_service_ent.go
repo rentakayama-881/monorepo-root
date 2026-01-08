@@ -52,13 +52,17 @@ func (s *EntSessionService) CreateSession(ctx context.Context, u *ent.User, ipAd
 	}
 
 	// Generate tokens
-	accessToken, accessJTI, err := middleware.GenerateAccessToken(uint(u.ID), u.Email)
+	username := ""
+	if u.Username != nil {
+		username = *u.Username
+	}
+	accessToken, accessJTI, err := middleware.GenerateAccessToken(uint(u.ID), u.Email, username)
 	if err != nil {
 		logger.Error("Failed to generate access token", zap.Error(err))
 		return nil, apperrors.ErrInternalServer.WithDetails("Gagal membuat token")
 	}
 
-	refreshToken, _, err := middleware.GenerateRefreshToken(uint(u.ID), u.Email)
+	refreshToken, _, err := middleware.GenerateRefreshToken(uint(u.ID), u.Email, username)
 	if err != nil {
 		logger.Error("Failed to generate refresh token", zap.Error(err))
 		return nil, apperrors.ErrInternalServer.WithDetails("Gagal membuat token")
@@ -177,7 +181,11 @@ func (s *EntSessionService) RefreshSession(ctx context.Context, refreshToken, ip
 			First(ctx)
 		if err == nil {
 			// Generate new access token but keep same refresh token
-			accessToken, _, err := middleware.GenerateAccessToken(uint(u.ID), u.Email)
+			username := ""
+			if u.Username != nil {
+				username = *u.Username
+			}
+			accessToken, _, err := middleware.GenerateAccessToken(uint(u.ID), u.Email, username)
 			if err != nil {
 				return nil, apperrors.ErrInternalServer.WithDetails("Gagal membuat token")
 			}
@@ -233,12 +241,16 @@ func (s *EntSessionService) RefreshSession(ctx context.Context, refreshToken, ip
 	}
 
 	// Generate new tokens
-	accessToken, accessJTI, err := middleware.GenerateAccessToken(uint(u.ID), u.Email)
+	refreshUsername := ""
+	if u.Username != nil {
+		refreshUsername = *u.Username
+	}
+	accessToken, accessJTI, err := middleware.GenerateAccessToken(uint(u.ID), u.Email, refreshUsername)
 	if err != nil {
 		return nil, apperrors.ErrInternalServer.WithDetails("Gagal membuat token")
 	}
 
-	newRefreshToken, _, err := middleware.GenerateRefreshToken(uint(u.ID), u.Email)
+	newRefreshToken, _, err := middleware.GenerateRefreshToken(uint(u.ID), u.Email, refreshUsername)
 	if err != nil {
 		return nil, apperrors.ErrInternalServer.WithDetails("Gagal membuat token")
 	}
