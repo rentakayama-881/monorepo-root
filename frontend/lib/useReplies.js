@@ -120,10 +120,14 @@ export function useCreateReply() {
         body: JSON.stringify(body),
       });
 
-      if (result.success) {
-        return result.data; // { createdReplyId }
-      } else {
+      // Feature Service returns ReplyResponse directly (not wrapped in {success, data})
+      // If we got here without error, the request was successful
+      if (result && result.id) {
+        return result; // Return the reply object directly
+      } else if (result && result.success === false) {
         throw new Error(result.message || "Gagal mengirim balasan");
+      } else {
+        return result; // Return whatever we got
       }
     } catch (err) {
       logger.error("Create Reply Error:", err.message);
@@ -165,10 +169,14 @@ export function useUpdateReply() {
         }
       );
 
-      if (result.success) {
-        return true;
-      } else {
+      // Feature Service returns ReplyResponse directly on success
+      // If we got here without error, the request was successful
+      if (result && result.id) {
+        return result;
+      } else if (result && result.success === false) {
         throw new Error(result.message || "Gagal mengupdate balasan");
+      } else {
+        return result || true;
       }
     } catch (err) {
       logger.error("Update Reply Error:", err.message);
