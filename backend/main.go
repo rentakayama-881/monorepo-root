@@ -21,6 +21,16 @@ import (
 	"go.uber.org/zap"
 )
 
+func init() {
+	// Set Gin mode based on environment variable
+	// GIN_MODE can be: "debug", "release", or "test"
+	mode := os.Getenv("GIN_MODE")
+	if mode == "" {
+		mode = gin.ReleaseMode // Default to release mode in production
+	}
+	gin.SetMode(mode)
+}
+
 // Delete account rate limiter: 3 attempts per hour
 var deleteAccountLimiter = middleware.NewRateLimiter(3, time.Hour)
 
