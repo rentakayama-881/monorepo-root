@@ -3,6 +3,7 @@
 /**
  * ProseMirror JSON to React renderer
  * Converts ProseMirror document JSON to React elements
+ * Theme-aware: uses CSS variables for dark/light mode support
  */
 
 export default function ProseMirrorRenderer({ content }) {
@@ -10,16 +11,16 @@ export default function ProseMirrorRenderer({ content }) {
   
   // If content is a string, just render it
   if (typeof content === "string") {
-    return <p>{content}</p>;
+    return <p className="text-[rgb(var(--fg))]">{content}</p>;
   }
 
   // Handle ProseMirror doc format
   if (content.type === "doc" && Array.isArray(content.content)) {
-    return <div className="prosemirror-content">{content.content.map((node, idx) => renderNode(node, idx))}</div>;
+    return <div className="prosemirror-content text-[rgb(var(--fg))]">{content.content.map((node, idx) => renderNode(node, idx))}</div>;
   }
 
   // Fallback: render as JSON
-  return <pre className="text-xs whitespace-pre-wrap font-mono bg-[rgb(var(--surface-2))] p-4 rounded">{JSON.stringify(content, null, 2)}</pre>;
+  return <pre className="text-xs whitespace-pre-wrap font-mono bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))] p-4 rounded">{JSON.stringify(content, null, 2)}</pre>;
 }
 
 function renderNode(node, key) {
@@ -29,13 +30,13 @@ function renderNode(node, key) {
     case "heading":
       return renderHeading(node, key);
     case "paragraph":
-      return <p key={key} className="mb-3">{renderContent(node.content)}</p>;
+      return <p key={key} className="mb-3 text-[rgb(var(--fg))]">{renderContent(node.content)}</p>;
     case "bulletList":
-      return <ul key={key} className="list-disc pl-6 mb-4 space-y-1">{renderListItems(node.content)}</ul>;
+      return <ul key={key} className="list-disc pl-6 mb-4 space-y-1 text-[rgb(var(--fg))]">{renderListItems(node.content)}</ul>;
     case "orderedList":
-      return <ol key={key} className="list-decimal pl-6 mb-4 space-y-1">{renderListItems(node.content)}</ol>;
+      return <ol key={key} className="list-decimal pl-6 mb-4 space-y-1 text-[rgb(var(--fg))]">{renderListItems(node.content)}</ol>;
     case "listItem":
-      return <li key={key}>{renderContent(node.content?.[0]?.content)}</li>;
+      return <li key={key} className="text-[rgb(var(--fg))]">{renderContent(node.content?.[0]?.content)}</li>;
     case "blockquote":
       return (
         <blockquote key={key} className="border-l-4 border-[rgb(var(--brand))] pl-4 italic my-4 text-[rgb(var(--muted))]">
@@ -44,7 +45,7 @@ function renderNode(node, key) {
       );
     case "codeBlock":
       return (
-        <pre key={key} className="bg-[rgb(var(--surface-2))] p-4 rounded-lg overflow-x-auto my-4 text-sm font-mono">
+        <pre key={key} className="bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))] p-4 rounded-lg overflow-x-auto my-4 text-sm font-mono">
           <code>{renderContent(node.content)}</code>
         </pre>
       );
@@ -55,7 +56,7 @@ function renderNode(node, key) {
     default:
       // For unknown types, try to render content or return null
       if (node.content) {
-        return <div key={key}>{node.content.map((child, idx) => renderNode(child, idx))}</div>;
+        return <div key={key} className="text-[rgb(var(--fg))]">{node.content.map((child, idx) => renderNode(child, idx))}</div>;
       }
       return null;
   }
@@ -66,12 +67,12 @@ function renderHeading(node, key) {
   const content = renderContent(node.content);
   
   const headingClasses = {
-    1: "text-2xl font-bold mb-4 mt-6",
-    2: "text-xl font-semibold mb-3 mt-5",
-    3: "text-lg font-semibold mb-2 mt-4",
-    4: "text-base font-semibold mb-2 mt-3",
-    5: "text-sm font-semibold mb-1 mt-2",
-    6: "text-sm font-medium mb-1 mt-2",
+    1: "text-2xl font-bold mb-4 mt-6 text-[rgb(var(--fg))]",
+    2: "text-xl font-semibold mb-3 mt-5 text-[rgb(var(--fg))]",
+    3: "text-lg font-semibold mb-2 mt-4 text-[rgb(var(--fg))]",
+    4: "text-base font-semibold mb-2 mt-3 text-[rgb(var(--fg))]",
+    5: "text-sm font-semibold mb-1 mt-2 text-[rgb(var(--fg))]",
+    6: "text-sm font-medium mb-1 mt-2 text-[rgb(var(--fg))]",
   };
 
   const Tag = `h${level}`;
