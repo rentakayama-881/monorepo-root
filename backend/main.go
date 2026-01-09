@@ -131,6 +131,13 @@ func main() {
 	database.InitEntDB()
 	defer database.CloseEntDB()
 
+	// Initialize Redis (optional - graceful degradation if unavailable)
+	if err := services.InitRedis(); err != nil {
+		logger.Info("Redis not available - using in-memory rate limiting", zap.String("note", "This is acceptable for development"))
+	} else {
+		defer services.CloseRedis()
+	}
+
 	config.InitConfig()
 	// Initialize services (Ent)
 	services.InitEmailRateLimiter()
@@ -197,6 +204,7 @@ func main() {
 	api := router.Group("/api")
 	{
 		api.GET("/health", handlers.HealthHandler)
+		api.GET("/ready", handlers.ReadinessHandler)
 
 		auth := api.Group("/auth")
 		{
