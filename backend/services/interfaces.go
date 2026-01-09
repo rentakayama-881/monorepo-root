@@ -1,7 +1,6 @@
 // Package services provides business logic for the application.
 // This file defines service interfaces for clean architecture abstraction.
 // Handlers depend on interfaces, not concrete implementations.
-// This allows seamless switching between GORM and Ent implementations.
 package services
 
 import (
@@ -11,7 +10,7 @@ import (
 )
 
 // ThreadServiceInterface defines the contract for thread operations.
-// Both ThreadService (GORM) and EntThreadService (Ent) implement this interface.
+// EntThreadService (Ent) implements this interface.
 type ThreadServiceInterface interface {
 	CreateThread(ctx context.Context, userID uint, input validators.CreateThreadInput) (*ThreadDetailResponse, error)
 	UpdateThread(ctx context.Context, userID uint, input validators.UpdateThreadInput) error
@@ -23,5 +22,5 @@ type ThreadServiceInterface interface {
 	ListThreadsByUsername(ctx context.Context, username string) ([]ThreadListItem, error)
 }
 
-// Ensure implementations satisfy interfaces (compile-time check)
-var _ ThreadServiceInterface = (*ThreadService)(nil)
+// Ensure EntThreadService satisfies interface (compile-time check)
+var _ ThreadServiceInterface = (*EntThreadService)(nil)

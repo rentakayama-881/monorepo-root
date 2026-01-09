@@ -5,7 +5,6 @@ import (
 
 	"backend-gin/database"
 	"backend-gin/ent/user"
-	"backend-gin/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,14 +21,9 @@ func AuthOptionalMiddleware() gin.HandlerFunc {
 				client := database.GetEntClient()
 				u, err2 := client.User.Query().Where(user.EmailEQ(claims.Email)).Only(c.Request.Context())
 				if err2 == nil && u != nil {
-					mapped := &models.User{Email: u.Email}
-					mapped.ID = uint(u.ID)
-					if u.Username != nil {
-						name := *u.Username
-						mapped.Username = &name
-					}
-					mapped.AvatarURL = u.AvatarURL
-					c.Set("user", mapped)
+					// Use ent.User directly instead of mapping to models.User
+					c.Set("user", u)
+					c.Set("user_id", uint(u.ID))
 					c.Set("ent_user", u)
 				}
 			}

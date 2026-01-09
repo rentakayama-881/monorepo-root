@@ -7,11 +7,11 @@ import (
 
 	"backend-gin/database"
 	"backend-gin/dto"
+	"backend-gin/ent"
 	"backend-gin/ent/session"
 	apperrors "backend-gin/errors"
 	"backend-gin/logger"
 	"backend-gin/middleware"
-	"backend-gin/models"
 	"backend-gin/services"
 	"backend-gin/validators"
 
@@ -295,9 +295,9 @@ func (h *AuthHandler) LogoutAll(c *gin.Context) {
 		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
-	if err := h.sessionService.RevokeAllUserSessions(user.ID, "User requested logout from all devices"); err != nil {
+	if err := h.sessionService.RevokeAllUserSessions(uint(user.ID), "User requested logout from all devices"); err != nil {
 		handleError(c, apperrors.ErrInternalServer)
 		return
 	}
@@ -313,9 +313,9 @@ func (h *AuthHandler) GetActiveSessions(c *gin.Context) {
 		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
-	sessions, err := h.sessionService.GetActiveSessions(user.ID)
+	sessions, err := h.sessionService.GetActiveSessions(uint(user.ID))
 	if err != nil {
 		handleError(c, apperrors.ErrInternalServer)
 		return
@@ -345,7 +345,7 @@ func (h *AuthHandler) RevokeSession(c *gin.Context) {
 		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
 	sessionID := c.Param("id")
 	sessionIDInt, err := strconv.Atoi(sessionID)

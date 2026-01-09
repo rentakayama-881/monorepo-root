@@ -35,6 +35,14 @@ func NewEntAuthService() *EntAuthService {
 	return &EntAuthService{client: database.GetEntClient()}
 }
 
+// strVal safely dereferences a string pointer, returning empty string if nil
+func strVal(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 // RegisterWithDevice registers a new user with device fingerprint tracking
 func (s *EntAuthService) RegisterWithDevice(ctx context.Context, input validators.RegisterInput, deviceFingerprint, ip, userAgent string) (*RegisterResponse, error) {
 	// Check device limit if fingerprint provided
@@ -356,7 +364,7 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 			TOTPPending:  pendingToken,
 			Email:        u.Email,
 			Username:     username,
-			FullName:     u.FullName,
+			FullName:     strVal(u.FullName),
 		}, nil
 	}
 
@@ -389,7 +397,7 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 		ExpiresIn:    tokenPair.ExpiresIn,
 		Email:        u.Email,
 		Username:     username,
-		FullName:     u.FullName,
+		FullName:     strVal(u.FullName),
 		RequiresTOTP: false,
 	}, nil
 }
@@ -451,7 +459,7 @@ func (s *EntAuthService) LoginWithPasskey(ctx context.Context, u *ent.User, ipAd
 		ExpiresIn:    tokenPair.ExpiresIn,
 		Email:        freshUser.Email,
 		Username:     username,
-		FullName:     freshUser.FullName,
+		FullName:     strVal(freshUser.FullName),
 		RequiresTOTP: false,
 	}, nil
 }
@@ -763,7 +771,7 @@ func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, to
 		ExpiresIn:    tokenPair.ExpiresIn,
 		Email:        u.Email,
 		Username:     username,
-		FullName:     u.FullName,
+		FullName:     strVal(u.FullName),
 		RequiresTOTP: false,
 	}, nil
 }
