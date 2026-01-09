@@ -49,7 +49,7 @@
 
 ## 🟡 Medium Issues
 
-### 3. Token Refresh Race Condition
+### 3. ✅ Token Refresh Race Condition (RESOLVED)
 
 **Masalah**: Jika multiple requests refresh token bersamaan, bisa terjadi race condition.
 
@@ -57,13 +57,16 @@
 - User bisa ter-logout tiba-tiba
 - Inconsistent session state
 
-**Status**: Known
+**Status**: ✅ RESOLVED (2026-01-09)
 
-**Workaround**:
-- Frontend debounce refresh calls
-- Backend toleransi window untuk old tokens
+**Solution Implemented**:
+- Wrapped `RefreshSession()` dalam database transaction
+- Atomic update dengan conditional check (`is_used = false`)
+- Race condition detection: concurrent requests get "Token sudah digunakan" error
+- Multi-tab scenario handled with grace period
 
-**Fix Needed**: Implement token rotation dengan grace period.
+**Files Changed**:
+- `backend/services/session_service_ent.go`
 
 ---
 
@@ -81,7 +84,7 @@
 
 ---
 
-### 5. No Email Queue
+### 5. ✅ No Email Queue (RESOLVED)
 
 **Masalah**: Email dikirim synchronously via Resend API.
 
@@ -89,11 +92,23 @@
 - Jika Resend down, registration bisa fail
 - Slow response time untuk register/forgot-password
 
-**Status**: Planned
+**Status**: ✅ RESOLVED (2026-01-09)
 
-**Recommendation**: 
-- Implement job queue (Asynq untuk Go)
-- Retry logic untuk failed emails
+**Solution Implemented**:
+- Created `backend/utils/email_queue.go` with:
+  - In-memory buffered channel queue (1000 capacity)
+  - Configurable worker pool (default: 3 workers)
+  - Automatic retry with exponential backoff (max 3 retries)
+  - Graceful shutdown support
+- Registration and password reset now use async `QueueVerificationEmail()` / `QueuePasswordResetEmail()`
+- API response is immediate, email sent in background
+
+**Files Changed**:
+- `backend/utils/email_queue.go` (new)
+- `backend/services/auth_service_ent.go`
+- `backend/main.go`
+
+**Future Enhancement**: Consider Redis-based Asynq for persistent queue across restarts
 
 ---
 

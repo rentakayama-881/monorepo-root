@@ -16,6 +16,7 @@ import (
 	"backend-gin/logger"
 	"backend-gin/middleware"
 	"backend-gin/services"
+	"backend-gin/utils"
 
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -126,6 +127,10 @@ func main() {
 	defer func() { _ = logger.Log.Sync() }()
 
 	logger.Info("Starting Alephdraad Backend Server")
+
+	// Initialize Email Queue with 3 workers for async email sending
+	utils.InitEmailQueue(3)
+	defer utils.GetEmailQueue().Shutdown()
 
 	// Initialize Ent database (new ORM)
 	database.InitEntDB()

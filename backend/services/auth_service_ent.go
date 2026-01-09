@@ -217,9 +217,9 @@ func (s *EntAuthService) Register(ctx context.Context, input validators.Register
 		return nil, apperrors.ErrInternalServer.WithDetails("Gagal membuat token verifikasi")
 	}
 
-	// Send verification email
-	if err := utils.SendVerificationEmail(createdUser.Email, token); err != nil {
-		logger.Warn("Failed to send verification email", zap.Error(err), zap.String("email", email))
+	// Send verification email asynchronously via queue
+	if err := utils.QueueVerificationEmail(createdUser.Email, token); err != nil {
+		logger.Warn("Failed to queue verification email", zap.Error(err), zap.String("email", email))
 	}
 
 	logger.Info("User registered successfully",
@@ -588,9 +588,9 @@ func (s *EntAuthService) ForgotPassword(ctx context.Context, email, ip string) (
 		return nil, apperrors.ErrDatabase.WithDetails("Gagal menyimpan token")
 	}
 
-	// Send email
-	if err := utils.SendPasswordResetEmail(u.Email, raw); err != nil {
-		logger.Warn("Failed to send password reset email", zap.Error(err), zap.String("email", email))
+	// Send email asynchronously via queue
+	if err := utils.QueuePasswordResetEmail(u.Email, raw); err != nil {
+		logger.Warn("Failed to queue password reset email", zap.Error(err), zap.String("email", email))
 	} else {
 		if emailRateLimiter != nil {
 			emailRateLimiter.RecordPasswordResetSent(email, ip)
