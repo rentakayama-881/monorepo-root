@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
+import ProseMirrorRenderer from "@/components/ui/ProseMirrorRenderer";
 import ReactionBar from "@/components/ReactionBar";
 import ReplyList from "@/components/ReplyList";
 import ReplyForm from "@/components/ReplyForm";
@@ -154,6 +155,8 @@ export default function ThreadDetailPage() {
                       : (data.content && JSON.stringify(data.content, null, 2)) || "Tidak ada konten."
                   }
                 />
+              ) : data.content_type === "prosemirror" ? (
+                <ProseMirrorRenderer content={data.content} />
               ) : (
                 <ContentTable content={data.content} />
               )}
