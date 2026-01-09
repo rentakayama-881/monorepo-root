@@ -1,0 +1,319 @@
+package services
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"time"
+
+	"backend-gin/logger"
+
+	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
+)
+
+// RedisClient is the global Redis client instance
+var RedisClient *redis.Client
+
+// RedisConfig holds Redis connection configuration
+type RedisConfig struct {
+	Host     string
+	Port     string
+	Password string
+	DB       int
+}
+
+// InitRedis initializes the Redis connection
+// Returns nil if Redis is not configured (optional dependency)
+func InitRedis() error {
+	redisURL := os.Getenv("REDIS_URL")
+	
+	// If REDIS_URL is provided, use it directly (for cloud Redis like Upstash)
+	if redisURL != "" {
+		opt, err := redis.ParseURL(redisURL)
+		if err != nil {
+			logger.Error("Failed to parse REDIS_URL", zap.Error(err))
+			return err
+		}
+		RedisClient = redis.NewClient(opt)
+	} else {
+		// Fallback to individual config values
+		host := os.Getenv("REDIS_HOST")
+		if host == "" {
+			host = "localhost"
+		}
+		port := os.Getenv("REDIS_PORT")
+		if port == "" {
+			port = "6379"
+		}
+		password := os.Getenv("REDIS_PASSWORD")
+
+		RedisClient = redis.NewClient(&redis.Options{
+			Addr:     fmt.Sprintf("%s:%s", host, port),
+			Password: password,
+			DB:       0,
+		})
+	}
+
+	// Test connection
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := RedisClient.Ping(ctx).Result()
+	if err != nil {
+		logger.Error("Failed to connect to Redis", zap.Error(err))
+		RedisClient = nil
+		return err
+	}
+
+	logger.Info("Redis connected successfully")
+	return nil
+}
+
+// CloseRedis closes the Redis connection
+func CloseRedis() {
+	if RedisClient != nil {
+		if err := RedisClient.Close(); err != nil {
+			logger.Error("Error closing Redis connection", zap.Error(err))
+		}
+	}
+}
+
+// IsRedisAvailable checks if Redis is connected and available
+func IsRedisAvailable() bool {
+	if RedisClient == nil {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_, err := RedisClient.Ping(ctx).Result()
+	return err == nil
+}
+
+// ============================================================================
+// Cache Operations
+// ============================================================================
+
+// CacheSet stores a value in Redis with expiration
+func CacheSet(ctx context.Context, key string, value interface{}, expiration time.Duration) error {
+	if RedisClient == nil {
+		return nil // Graceful degradation - no-op when Redis unavailable
+	}
+
+	data, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("failed to marshal cache value: %w", err)
+	}
+
+	return RedisClient.Set(ctx, key, data, expiration).Err()
+}
+
+// CacheGet retrieves a value from Redis
+func CacheGet(ctx context.Context, key string, dest interface{}) error {
+	if RedisClient == nil {
+		return redis.Nil // Treat as cache miss when Redis unavailable
+	}
+
+	data, err := RedisClient.Get(ctx, key).Bytes()
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(data, dest)
+}
+
+// CacheDelete removes a key from Redis
+func CacheDelete(ctx context.Context, keys ...string) error {
+	if RedisClient == nil {
+		return nil
+	}
+	return RedisClient.Del(ctx, keys...).Err()
+}
+
+// CacheExists checks if a key exists in Redis
+func CacheExists(ctx context.Context, key string) (bool, error) {
+	if RedisClient == nil {
+		return false, nil
+	}
+	result, err := RedisClient.Exists(ctx, key).Result()
+	return result > 0, err
+}
+
+// ============================================================================
+// Rate Limiting Operations
+// ============================================================================
+
+// RateLimitKey generates a rate limit key
+func RateLimitKey(prefix, identifier string) string {
+	return fmt.Sprintf("ratelimit:%s:%s", prefix, identifier)
+}
+
+// CheckRateLimit checks if the rate limit has been exceeded
+// Returns (allowed bool, remaining int, resetAt time.Time, error)
+func CheckRateLimit(ctx context.Context, key string, limit int, window time.Duration) (bool, int, time.Time, error) {
+	if RedisClient == nil {
+		// Graceful degradation - allow request when Redis unavailable
+		return true, limit, time.Now().Add(window), nil
+	}
+
+	now := time.Now()
+	windowStart := now.Truncate(window)
+	resetAt := windowStart.Add(window)
+
+	// Use Redis INCR with expiration for sliding window
+	pipe := RedisClient.Pipeline()
+	incr := pipe.Incr(ctx, key)
+	pipe.ExpireAt(ctx, key, resetAt)
+	
+	_, err := pipe.Exec(ctx)
+	if err != nil && err != redis.Nil {
+		logger.Error("Rate limit check failed", zap.Error(err))
+		// Fail open - allow request on error
+		return true, limit, resetAt, err
+	}
+
+	count := int(incr.Val())
+	remaining := limit - count
+	if remaining < 0 {
+		remaining = 0
+	}
+
+	return count <= limit, remaining, resetAt, nil
+}
+
+// IncrementRateLimit increments the rate limit counter
+func IncrementRateLimit(ctx context.Context, key string, window time.Duration) (int64, error) {
+	if RedisClient == nil {
+		return 0, nil
+	}
+
+	pipe := RedisClient.Pipeline()
+	incr := pipe.Incr(ctx, key)
+	pipe.Expire(ctx, key, window)
+	
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	return incr.Val(), nil
+}
+
+// ============================================================================
+// Session Operations
+// ============================================================================
+
+// SessionKey generates a session key
+func SessionKey(sessionID string) string {
+	return fmt.Sprintf("session:%s", sessionID)
+}
+
+// UserSessionsKey generates a key for user's session list
+func UserSessionsKey(userID string) string {
+	return fmt.Sprintf("user_sessions:%s", userID)
+}
+
+// StoreSession stores session data in Redis
+func StoreSession(ctx context.Context, sessionID string, data interface{}, expiration time.Duration) error {
+	return CacheSet(ctx, SessionKey(sessionID), data, expiration)
+}
+
+// GetSession retrieves session data from Redis
+func GetSession(ctx context.Context, sessionID string, dest interface{}) error {
+	return CacheGet(ctx, SessionKey(sessionID), dest)
+}
+
+// DeleteSession removes a session from Redis
+func DeleteSession(ctx context.Context, sessionID string) error {
+	return CacheDelete(ctx, SessionKey(sessionID))
+}
+
+// ============================================================================
+// Distributed Lock Operations
+// ============================================================================
+
+// AcquireLock tries to acquire a distributed lock
+func AcquireLock(ctx context.Context, key string, expiration time.Duration) (bool, error) {
+	if RedisClient == nil {
+		return true, nil // Allow operation when Redis unavailable
+	}
+
+	lockKey := fmt.Sprintf("lock:%s", key)
+	result, err := RedisClient.SetNX(ctx, lockKey, "1", expiration).Result()
+	return result, err
+}
+
+// ReleaseLock releases a distributed lock
+func ReleaseLock(ctx context.Context, key string) error {
+	if RedisClient == nil {
+		return nil
+	}
+
+	lockKey := fmt.Sprintf("lock:%s", key)
+	return RedisClient.Del(ctx, lockKey).Err()
+}
+
+// ============================================================================
+// Cache Keys Constants
+// ============================================================================
+
+const (
+	// Cache key prefixes
+	CacheKeyThreads      = "threads"
+	CacheKeyThread       = "thread"
+	CacheKeyUser         = "user"
+	CacheKeyCategories   = "categories"
+	CacheKeyUserProfile  = "user_profile"
+	
+	// Default cache TTLs
+	CacheTTLShort   = 1 * time.Minute
+	CacheTTLMedium  = 5 * time.Minute
+	CacheTTLLong    = 30 * time.Minute
+	CacheTTLSession = 24 * time.Hour
+)
+
+// ThreadCacheKey generates cache key for a thread
+func ThreadCacheKey(threadID string) string {
+	return fmt.Sprintf("%s:%s", CacheKeyThread, threadID)
+}
+
+// ThreadListCacheKey generates cache key for thread list
+func ThreadListCacheKey(page, limit int, category string) string {
+	return fmt.Sprintf("%s:list:%s:%d:%d", CacheKeyThreads, category, page, limit)
+}
+
+// UserProfileCacheKey generates cache key for user profile
+func UserProfileCacheKey(userID string) string {
+	return fmt.Sprintf("%s:%s", CacheKeyUserProfile, userID)
+}
+
+// InvalidateThreadCache removes thread-related cache entries
+func InvalidateThreadCache(ctx context.Context, threadID string) error {
+	if RedisClient == nil {
+		return nil
+	}
+	
+	// Delete specific thread cache
+	if err := CacheDelete(ctx, ThreadCacheKey(threadID)); err != nil {
+		return err
+	}
+	
+	// Delete thread list caches (pattern-based)
+	pattern := fmt.Sprintf("%s:list:*", CacheKeyThreads)
+	keys, err := RedisClient.Keys(ctx, pattern).Result()
+	if err != nil {
+		return err
+	}
+	
+	if len(keys) > 0 {
+		return CacheDelete(ctx, keys...)
+	}
+	
+	return nil
+}
+
+// InvalidateUserCache removes user-related cache entries
+func InvalidateUserCache(ctx context.Context, userID string) error {
+	return CacheDelete(ctx, UserProfileCacheKey(userID))
+}
