@@ -186,6 +186,7 @@ func (tc *TestClient) CreateTestSession(ctx context.Context, userID int, accessT
 		SetUserID(userID).
 		SetAccessTokenJti(accessTokenJTI).
 		SetRefreshTokenHash(refreshTokenHash).
+		SetTokenFamily(refreshTokenHash). // Use refresh hash as token family for tests
 		SetExpiresAt(expiresAt).
 		SetIPAddress("127.0.0.1").
 		SetUserAgent("Test Agent").
