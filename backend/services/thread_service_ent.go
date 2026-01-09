@@ -13,8 +13,18 @@ import (
 	"backend-gin/logger"
 	"backend-gin/validators"
 
+	"entgo.io/ent/dialect/sql"
 	"go.uber.org/zap"
 )
+
+// byPinnedDesc returns an OrderOption that orders threads by pinned status (pinned first)
+func byPinnedDesc() thread.OrderOption {
+	return func(s *sql.Selector) {
+		// Order by pinned status descending (true first), then by created_at descending
+		// COALESCE handles NULL meta or missing pinned key
+		s.OrderExpr(sql.Expr("COALESCE((meta->>'pinned')::boolean, false) DESC"))
+	}
+}
 
 // EntThreadService handles thread business logic using Ent ORM
 type EntThreadService struct {
@@ -82,12 +92,13 @@ func (s *EntThreadService) GetThreadsByCategory(ctx context.Context, slug string
 	}
 
 	// Get threads for this category
+	// Order: pinned threads first, then by created_at descending
 	threads, err := s.client.Thread.
 		Query().
 		Where(thread.CategoryIDEQ(cat.ID)).
 		WithUser().
 		WithCategory().
-		Order(ent.Desc(thread.FieldCreatedAt)).
+		Order(byPinnedDesc(), ent.Desc(thread.FieldCreatedAt)).
 		Limit(limit).
 		Offset(offset).
 		All(ctx)
@@ -331,6 +342,7 @@ func (s *EntThreadService) threadsToListItems(threads []*ent.Thread) []ThreadLis
 			Summary:   t.Summary,
 			Username:  username,
 			Category:  cat,
+			Meta:      t.Meta,
 			CreatedAt: t.CreatedAt.Unix(),
 		}
 	}

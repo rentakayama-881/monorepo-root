@@ -12,12 +12,13 @@ type CategoryResponse struct {
 
 // ThreadListItem represents a thread in list responses
 type ThreadListItem struct {
-	ID        uint             `json:"id"`
-	Title     string           `json:"title"`
-	Summary   string           `json:"summary"`
-	Username  string           `json:"username"`
-	Category  CategoryResponse `json:"category"`
-	CreatedAt int64            `json:"created_at"`
+	ID        uint                   `json:"id"`
+	Title     string                 `json:"title"`
+	Summary   string                 `json:"summary"`
+	Username  string                 `json:"username"`
+	Category  CategoryResponse       `json:"category"`
+	Meta      map[string]interface{} `json:"meta,omitempty"`
+	CreatedAt int64                  `json:"created_at"`
 }
 
 // UserInfo represents user info in thread responses
