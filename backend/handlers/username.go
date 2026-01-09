@@ -6,8 +6,8 @@ import (
 
 	"backend-gin/database"
 	"backend-gin/dto"
+	"backend-gin/ent"
 	entuser "backend-gin/ent/user"
-	"backend-gin/models"
 	"backend-gin/validators"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +20,7 @@ func CreateUsernameHandler(c *gin.Context) {
 		return
 	}
 
-	user := userCtx.(*models.User)
+	user := userCtx.(*ent.User)
 
 	var req dto.CreateUsernameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -54,16 +54,15 @@ func CreateUsernameHandler(c *gin.Context) {
 	}
 
 	// Update via Ent
-	if _, err := database.GetEntClient().User.UpdateOneID(int(user.ID)).SetUsername(username).Save(c.Request.Context()); err != nil {
+	if _, err := database.GetEntClient().User.UpdateOneID(user.ID).SetUsername(username).Save(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan username"})
 		return
 	}
-	user.Username = &username
 
 	c.JSON(http.StatusOK, gin.H{
 		"user": gin.H{
 			"email":      user.Email,
-			"name":       *user.Username,
+			"name":       username,
 			"avatar_url": user.AvatarURL,
 		},
 		"setup_completed": true,

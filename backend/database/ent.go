@@ -19,6 +19,14 @@ import (
 // EntClient is the global Ent client instance
 var EntClient *ent.Client
 
+// getenv returns the value of the environment variable or the default value
+func getenv(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}
+
 // SQLDB holds the underlying *sql.DB used by Ent
 var SQLDB *sql.DB
 

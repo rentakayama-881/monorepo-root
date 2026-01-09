@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"backend-gin/ent"
-	"backend-gin/models"
 	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
@@ -29,7 +28,7 @@ func (h *UserHandler) GetUserInfo(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 	name := ""
 	if user.Username != nil {
 		name = *user.Username
@@ -52,35 +51,5 @@ func (h *UserHandler) GetPublicUserProfile(c *gin.Context) {
 		return
 	}
 
-	// Map ent.User to models.User for existing projection function
-	mapped := mapEntUserToModel(u)
-	c.JSON(http.StatusOK, BuildPublicProfile(c, mapped))
-}
-
-func mapEntUserToModel(u *ent.User) *models.User {
-	m := &models.User{
-		Email:     u.Email,
-		AvatarURL: u.AvatarURL,
-		Bio:       u.Bio,
-		Pronouns:  u.Pronouns,
-		Company:   u.Company,
-		Telegram:  u.Telegram,
-		PrimaryBadgeID: func() *uint {
-			if u.PrimaryBadgeID != nil {
-				v := uint(*u.PrimaryBadgeID)
-				return &v
-			}
-			return nil
-		}(),
-	}
-	m.ID = uint(u.ID)
-	if u.Username != nil {
-		name := *u.Username
-		m.Username = &name
-	}
-	if u.FullName != nil {
-		fn := *u.FullName
-		m.FullName = &fn
-	}
-	return m
+	c.JSON(http.StatusOK, BuildPublicProfileFromEnt(c, u))
 }

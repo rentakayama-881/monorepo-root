@@ -11,7 +11,6 @@ import (
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/user"
 	"backend-gin/logger"
-	"backend-gin/models"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -58,38 +57,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User tidak ditemukan"})
 			return
 		}
-		// Map ent.User to models.User for existing handlers
-		mappedUser := &models.User{
-			Model:         models.User{}.Model,
-			Email:         entUser.Email,
-			Username:      nil,
-			PasswordHash:  entUser.PasswordHash,
-			EmailVerified: entUser.EmailVerified,
-			AvatarURL:     entUser.AvatarURL,
-			FullName:      nil,
-			Bio:           entUser.Bio,
-			Pronouns:      entUser.Pronouns,
-			Company:       entUser.Company,
-			Telegram:      entUser.Telegram,
-			PrimaryBadgeID: func() *uint {
-				if entUser.PrimaryBadgeID != nil {
-					v := uint(*entUser.PrimaryBadgeID)
-					return &v
-				}
-				return nil
-			}(),
-		}
-		// Optional pointer fields
-		if entUser.Username != nil {
-			uname := *entUser.Username
-			mappedUser.Username = &uname
-		}
-		if entUser.FullName != nil {
-			fn := *entUser.FullName
-			mappedUser.FullName = &fn
-		}
-		// Assign ID
-		mappedUser.ID = uint(entUser.ID)
 
 		// Check if account is locked via SessionLock
 		if lock, err := client.SessionLock.Query().Where(sessionlock.UserIDEQ(entUser.ID)).Order(ent.Desc(sessionlock.FieldCreatedAt)).First(c.Request.Context()); err == nil && lock != nil {
@@ -148,9 +115,9 @@ func AuthMiddleware() gin.HandlerFunc {
 			}
 		}
 
-		// Set user ke context
-		c.Set("user", mappedUser)
-		c.Set("user_id", mappedUser.ID)
+		// Set user ke context - now using ent.User directly
+		c.Set("user", entUser)
+		c.Set("user_id", uint(entUser.ID))
 		c.Set("ent_user", entUser)
 		c.Set("claims", claims)
 		c.Next()

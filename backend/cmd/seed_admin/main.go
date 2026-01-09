@@ -4,25 +4,20 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 
-	"github.com/joho/godotenv"
-	"golang.org/x/crypto/bcrypt"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-)
+	"backend-gin/ent"
+	entadmin "backend-gin/ent/admin"
 
-// Admin model (copied to avoid import cycle)
-type Admin struct {
-	gorm.Model
-	Email        string `gorm:"unique;not null"`
-	PasswordHash string `gorm:"not null"`
-	Name         string `gorm:"not null"`
-}
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
+)
 
 func main() {
 	// Parse flags
@@ -48,26 +43,33 @@ func main() {
 	// Load .env
 	godotenv.Load()
 
-	// Connect to database
+	// Connect to database using Ent
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL environment variable is required")
 	}
 
-	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{})
+	ctx := context.Background()
+	client, err := ent.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
+	defer client.Close()
 
-	// Auto-migrate Admin table
-	if err := db.AutoMigrate(&Admin{}); err != nil {
-		log.Fatalf("Failed to migrate Admin table: %v", err)
+	// Run Ent auto-migration for Admin schema
+	if err := client.Schema.Create(ctx); err != nil {
+		log.Fatalf("Failed to create schema: %v", err)
 	}
 
 	// Check if admin already exists
-	var existing Admin
 	normalizedEmail := strings.ToLower(strings.TrimSpace(*email))
-	if db.Where("email = ?", normalizedEmail).First(&existing).Error == nil {
+	exists, err := client.Admin.Query().
+		Where(entadmin.EmailEQ(normalizedEmail)).
+		Exist(ctx)
+	if err != nil {
+		log.Fatalf("Failed to check existing admin: %v", err)
+	}
+	if exists {
 		log.Fatalf("Admin with email '%s' already exists", normalizedEmail)
 	}
 
@@ -77,14 +79,13 @@ func main() {
 		log.Fatalf("Failed to hash password: %v", err)
 	}
 
-	// Create admin
-	admin := Admin{
-		Email:        normalizedEmail,
-		PasswordHash: string(hashedPassword),
-		Name:         *name,
-	}
-
-	if err := db.Create(&admin).Error; err != nil {
+	// Create admin using Ent
+	admin, err := client.Admin.Create().
+		SetEmail(normalizedEmail).
+		SetPasswordHash(string(hashedPassword)).
+		SetName(*name).
+		Save(ctx)
+	if err != nil {
 		log.Fatalf("Failed to create admin: %v", err)
 	}
 

@@ -15,7 +15,7 @@ import (
 	"backend-gin/ent/userbadge"
 	"backend-gin/logger"
 	"backend-gin/middleware"
-	"backend-gin/models"
+	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -164,8 +164,8 @@ func CreateBadge(c *gin.Context) {
 
 	logger.Info("Badge created", zap.Int("badge_id", badgeEnt.ID), zap.String("slug", badgeEnt.Slug))
 
-	// Map to models.Badge for response
-	mappedBadge := models.Badge{
+	// Map to services.Badge for response
+	mappedBadge := services.Badge{
 		Name:        badgeEnt.Name,
 		Slug:        badgeEnt.Slug,
 		Description: badgeEnt.Description,
@@ -192,10 +192,10 @@ func ListBadges(c *gin.Context) {
 		return
 	}
 
-	// Map to models.Badge for response
-	var mappedBadges []models.Badge
+	// Map to services.Badge for response
+	var mappedBadges []services.Badge
 	for _, b := range badges {
-		mb := models.Badge{
+		mb := services.Badge{
 			Name:        b.Name,
 			Slug:        b.Slug,
 			Description: b.Description,
@@ -227,8 +227,8 @@ func GetBadge(c *gin.Context) {
 		return
 	}
 
-	// Map to models.Badge
-	mappedBadge := models.Badge{
+	// Map to services.Badge
+	mappedBadge := services.Badge{
 		Name:        badgeEnt.Name,
 		Slug:        badgeEnt.Slug,
 		Description: badgeEnt.Description,
@@ -304,8 +304,8 @@ func UpdateBadge(c *gin.Context) {
 		return
 	}
 
-	// Map to models.Badge
-	mappedBadge := models.Badge{
+	// Map to services.Badge
+	mappedBadge := services.Badge{
 		Name:        updatedBadge.Name,
 		Slug:        updatedBadge.Slug,
 		Description: updatedBadge.Description,
@@ -442,19 +442,17 @@ func AssignBadgeToUser(c *gin.Context) {
 		zap.Uint("admin_id", adminID),
 	)
 
-	// Map to models.UserBadge for response
-	mappedUserBadge := models.UserBadge{
-		UserID:    uint(userBadgeEnt.UserID),
-		BadgeID:   uint(userBadgeEnt.BadgeID),
-		Reason:    userBadgeEnt.Reason,
-		GrantedBy: uint(userBadgeEnt.GrantedBy),
-		GrantedAt: userBadgeEnt.GrantedAt,
-	}
-	mappedUserBadge.ID = uint(userBadgeEnt.ID)
-
+	// Return response using direct values instead of models
 	c.JSON(http.StatusCreated, gin.H{
-		"message":    "Badge berhasil diberikan",
-		"user_badge": mappedUserBadge,
+		"message": "Badge berhasil diberikan",
+		"user_badge": gin.H{
+			"id":         userBadgeEnt.ID,
+			"user_id":    userBadgeEnt.UserID,
+			"badge_id":   userBadgeEnt.BadgeID,
+			"reason":     userBadgeEnt.Reason,
+			"granted_by": userBadgeEnt.GrantedBy,
+			"granted_at": userBadgeEnt.GrantedAt,
+		},
 	})
 }
 
@@ -606,13 +604,13 @@ func AdminListUsers(c *gin.Context) {
 
 	// Prepare response with user badges
 	type UserWithBadges struct {
-		ID           uint           `json:"id"`
-		Email        string         `json:"email"`
-		Username     *string        `json:"username"`
-		AvatarURL    string         `json:"avatar_url"`
-		CreatedAt    time.Time      `json:"created_at"`
-		PrimaryBadge *models.Badge  `json:"primary_badge"`
-		Badges       []models.Badge `json:"badges"`
+		ID           uint             `json:"id"`
+		Email        string           `json:"email"`
+		Username     *string          `json:"username"`
+		AvatarURL    string           `json:"avatar_url"`
+		CreatedAt    time.Time        `json:"created_at"`
+		PrimaryBadge *services.Badge  `json:"primary_badge"`
+		Badges       []services.Badge `json:"badges"`
 	}
 
 	var result []UserWithBadges
@@ -627,7 +625,7 @@ func AdminListUsers(c *gin.Context) {
 
 		// Get primary badge if set using eager loaded data
 		if u.Edges.PrimaryBadge != nil {
-			pb := models.Badge{
+			pb := services.Badge{
 				Name:        u.Edges.PrimaryBadge.Name,
 				Slug:        u.Edges.PrimaryBadge.Slug,
 				Description: u.Edges.PrimaryBadge.Description,
@@ -649,7 +647,7 @@ func AdminListUsers(c *gin.Context) {
 		if err == nil {
 			for _, ub := range userBadges {
 				if ub.Edges.Badge != nil {
-					mb := models.Badge{
+					mb := services.Badge{
 						Name:        ub.Edges.Badge.Name,
 						Slug:        ub.Edges.Badge.Slug,
 						Description: ub.Edges.Badge.Description,
@@ -691,24 +689,6 @@ func AdminGetUser(c *gin.Context) {
 		return
 	}
 
-	// Map to models.User
-	mappedUser := models.User{
-		Email:        entUser.Email,
-		PasswordHash: entUser.PasswordHash,
-		Username:     entUser.Username,
-		FullName:     entUser.FullName,
-		Bio:          entUser.Bio,
-		AvatarURL:    entUser.AvatarURL,
-		Pronouns:     entUser.Pronouns,
-		Company:      entUser.Company,
-		Telegram:     entUser.Telegram,
-	}
-	mappedUser.ID = uint(entUser.ID)
-	if entUser.PrimaryBadgeID != nil && *entUser.PrimaryBadgeID > 0 {
-		badgeID := uint(*entUser.PrimaryBadgeID)
-		mappedUser.PrimaryBadgeID = &badgeID
-	}
-
 	// Get user's badges (including revoked for admin view)
 	userBadges, err := database.GetEntClient().UserBadge.Query().
 		Where(userbadge.UserIDEQ(int(userID))).
@@ -719,23 +699,33 @@ func AdminGetUser(c *gin.Context) {
 		userBadges = []*ent.UserBadge{}
 	}
 
-	// Map to models.UserBadge
-	var mappedBadges []models.UserBadge
+	// Build badges response
+	var badgesResponse []gin.H
 	for _, ub := range userBadges {
-		mb := models.UserBadge{
-			UserID:    uint(ub.UserID),
-			BadgeID:   uint(ub.BadgeID),
-			Reason:    ub.Reason,
-			GrantedBy: uint(ub.GrantedBy),
-			GrantedAt: ub.GrantedAt,
-			RevokedAt: ub.RevokedAt,
-		}
-		mb.ID = uint(ub.ID)
-		mappedBadges = append(mappedBadges, mb)
+		badgesResponse = append(badgesResponse, gin.H{
+			"id":         ub.ID,
+			"user_id":    ub.UserID,
+			"badge_id":   ub.BadgeID,
+			"reason":     ub.Reason,
+			"granted_by": ub.GrantedBy,
+			"granted_at": ub.GrantedAt,
+			"revoked_at": ub.RevokedAt,
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"user":   mappedUser,
-		"badges": mappedBadges,
+		"user": gin.H{
+			"id":               entUser.ID,
+			"email":            entUser.Email,
+			"username":         entUser.Username,
+			"full_name":        entUser.FullName,
+			"bio":              entUser.Bio,
+			"avatar_url":       entUser.AvatarURL,
+			"pronouns":         entUser.Pronouns,
+			"company":          entUser.Company,
+			"telegram":         entUser.Telegram,
+			"primary_badge_id": entUser.PrimaryBadgeID,
+		},
+		"badges": badgesResponse,
 	})
 }

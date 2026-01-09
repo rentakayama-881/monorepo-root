@@ -6,7 +6,6 @@ import (
 	"backend-gin/dto"
 	"backend-gin/ent"
 	"backend-gin/ent/user"
-	"backend-gin/models"
 	"backend-gin/validators"
 
 	"go.uber.org/zap"
@@ -41,17 +40,7 @@ func (w *AuthServiceWrapper) LoginWithSession(input validators.LoginInput, ip, u
 	return w.ent.LoginWithSession(context.Background(), input, ip, userAgent)
 }
 
-// LoginWithPasskey converts models.User to ent.User and delegates
-func (w *AuthServiceWrapper) LoginWithPasskey(user *models.User, ipAddress, userAgent string) (*LoginResponse, error) {
-	// Fetch ent.User from database using user ID
-	entUser, err := w.ent.client.User.Get(context.Background(), int(user.ID))
-	if err != nil {
-		return nil, err
-	}
-	return w.ent.LoginWithPasskey(context.Background(), entUser, ipAddress, userAgent)
-}
-
-// LoginWithPasskeyEnt directly uses ent.User without conversion
+// LoginWithPasskeyEnt uses ent.User directly
 func (w *AuthServiceWrapper) LoginWithPasskeyEnt(user *ent.User, ipAddress, userAgent string) (*LoginResponse, error) {
 	return w.ent.LoginWithPasskey(context.Background(), user, ipAddress, userAgent)
 }

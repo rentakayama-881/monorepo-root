@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -9,24 +8,23 @@ import (
 	"time"
 
 	"backend-gin/database"
+	"backend-gin/ent"
 	"backend-gin/ent/credential"
 	"backend-gin/ent/thread"
 	entuser "backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
-	"backend-gin/models"
 	"backend-gin/utils"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/datatypes"
 )
 
 type UpdateAccountRequest struct {
-	FullName       *string             `json:"full_name"`
-	Bio            *string             `json:"bio"`
-	Pronouns       *string             `json:"pronouns"`
-	Company        *string             `json:"company"`
-	Telegram       *string             `json:"telegram"`
-	SocialAccounts []map[string]string `json:"social_accounts"` // arbitrary list of { label, url }
+	FullName       *string                `json:"full_name"`
+	Bio            *string                `json:"bio"`
+	Pronouns       *string                `json:"pronouns"`
+	Company        *string                `json:"company"`
+	Telegram       *string                `json:"telegram"`
+	SocialAccounts map[string]interface{} `json:"social_accounts"` // arbitrary social accounts map
 }
 
 type ChangeUsernameRequest struct {
@@ -40,11 +38,11 @@ func GetMyAccountHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
 	var socials interface{}
 	if len(user.SocialAccounts) > 0 {
-		_ = json.Unmarshal(user.SocialAccounts, &socials)
+		socials = user.SocialAccounts
 	}
 	name := ""
 	if user.Username != nil {
@@ -70,7 +68,7 @@ func UpdateMyAccountHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
 	var req UpdateAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -78,27 +76,8 @@ func UpdateMyAccountHandler(c *gin.Context) {
 		return
 	}
 
-	if req.FullName != nil {
-		user.FullName = req.FullName
-	}
-	if req.Bio != nil {
-		user.Bio = *req.Bio
-	}
-	if req.Pronouns != nil {
-		user.Pronouns = *req.Pronouns
-	}
-	if req.Company != nil {
-		user.Company = *req.Company
-	}
-	if req.Telegram != nil {
-		user.Telegram = *req.Telegram
-	}
-	if req.SocialAccounts != nil {
-		b, _ := json.Marshal(req.SocialAccounts)
-		user.SocialAccounts = datatypes.JSON(b)
-	}
 	// Update via Ent ORM
-	upd := database.GetEntClient().User.UpdateOneID(int(user.ID))
+	upd := database.GetEntClient().User.UpdateOneID(user.ID)
 	if req.FullName != nil {
 		upd = upd.SetNillableFullName(req.FullName)
 	}
@@ -113,6 +92,9 @@ func UpdateMyAccountHandler(c *gin.Context) {
 	}
 	if req.Telegram != nil {
 		upd = upd.SetTelegram(*req.Telegram)
+	}
+	if req.SocialAccounts != nil {
+		upd = upd.SetSocialAccounts(req.SocialAccounts)
 	}
 	if _, err := upd.Save(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan"})
@@ -129,7 +111,7 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
 	var req ChangeUsernameRequest
 	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.NewUsername) == "" {
@@ -148,21 +130,19 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 		return
 	}
 	// Update username via Ent
-	if _, err := database.GetEntClient().User.UpdateOneID(int(user.ID)).SetUsername(req.NewUsername).Save(c.Request.Context()); err != nil {
+	if _, err := database.GetEntClient().User.UpdateOneID(user.ID).SetUsername(req.NewUsername).Save(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal memproses perubahan username"})
 		return
 	}
-	name := req.NewUsername
-	user.Username = &name
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "new_username": req.NewUsername})
 }
 
-// Public projection used by GetPublicUserProfileHandler will include new fields
-func BuildPublicProfile(c *gin.Context, u *models.User) gin.H {
+// BuildPublicProfileFromEnt builds a public profile response from ent.User
+func BuildPublicProfileFromEnt(c *gin.Context, u *ent.User) gin.H {
 	ctx := c.Request.Context()
 	var socials interface{}
 	if len(u.SocialAccounts) > 0 {
-		_ = json.Unmarshal(u.SocialAccounts, &socials)
+		socials = u.SocialAccounts
 	}
 	name := ""
 	if u.Username != nil {
@@ -173,7 +153,7 @@ func BuildPublicProfile(c *gin.Context, u *models.User) gin.H {
 	var primaryBadge interface{}
 	var badges []gin.H
 	if u.PrimaryBadgeID != nil && *u.PrimaryBadgeID > 0 {
-		b, err := database.GetEntClient().Badge.Get(ctx, int(*u.PrimaryBadgeID))
+		b, err := database.GetEntClient().Badge.Get(ctx, *u.PrimaryBadgeID)
 		if err == nil && b != nil {
 			primaryBadge = gin.H{
 				"id":       b.ID,
@@ -187,7 +167,7 @@ func BuildPublicProfile(c *gin.Context, u *models.User) gin.H {
 
 	// Get active badges via Ent
 	userBadges, _ := database.GetEntClient().UserBadge.Query().
-		Where(userbadge.UserIDEQ(int(u.ID)), userbadge.RevokedAtIsNil()).
+		Where(userbadge.UserIDEQ(u.ID), userbadge.RevokedAtIsNil()).
 		WithBadge().
 		All(ctx)
 	for _, ub := range userBadges {
@@ -224,7 +204,7 @@ func UploadAvatarHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
@@ -268,8 +248,7 @@ func UploadAvatarHandler(c *gin.Context) {
 		return
 	}
 
-	user.AvatarURL = avatarURL
-	if _, err := database.GetEntClient().User.UpdateOneID(int(user.ID)).
+	if _, err := database.GetEntClient().User.UpdateOneID(user.ID).
 		SetAvatarURL(avatarURL).
 		Save(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan avatar ke profil"})
@@ -286,7 +265,7 @@ func DeleteAvatarHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
 	if user.AvatarURL == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "tidak ada foto profil"})
@@ -294,8 +273,7 @@ func DeleteAvatarHandler(c *gin.Context) {
 	}
 
 	// Clear avatar URL in database
-	user.AvatarURL = ""
-	if _, err := database.GetEntClient().User.UpdateOneID(int(user.ID)).
+	if _, err := database.GetEntClient().User.UpdateOneID(user.ID).
 		ClearAvatarURL().
 		Save(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menghapus foto profil"})
@@ -319,7 +297,7 @@ func DeleteAccountHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
 	var req DeleteAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

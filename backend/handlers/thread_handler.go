@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"backend-gin/ent"
 	apperrors "backend-gin/errors"
 	"backend-gin/logger"
-	"backend-gin/models"
 	"backend-gin/services"
 	"backend-gin/validators"
 
@@ -118,7 +118,7 @@ func (h *ThreadHandler) CreateThread(c *gin.Context) {
 		h.handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
 	// Parse request
 	var req struct {
@@ -146,7 +146,7 @@ func (h *ThreadHandler) CreateThread(c *gin.Context) {
 	}
 
 	// Create thread
-	thread, err := h.threadService.CreateThread(c.Request.Context(), user.ID, input)
+	thread, err := h.threadService.CreateThread(c.Request.Context(), uint(user.ID), input)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -163,7 +163,7 @@ func (h *ThreadHandler) UpdateThread(c *gin.Context) {
 		h.handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
 	// Parse thread ID
 	idStr := c.Param("id")
@@ -198,7 +198,7 @@ func (h *ThreadHandler) UpdateThread(c *gin.Context) {
 	}
 
 	// Update thread
-	if err := h.threadService.UpdateThread(c.Request.Context(), user.ID, input); err != nil {
+	if err := h.threadService.UpdateThread(c.Request.Context(), uint(user.ID), input); err != nil {
 		h.handleError(c, err)
 		return
 	}
@@ -214,9 +214,9 @@ func (h *ThreadHandler) GetUserThreads(c *gin.Context) {
 		h.handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
-	user := userIfc.(*models.User)
+	user := userIfc.(*ent.User)
 
-	threads, err := h.threadService.ListUserThreads(c.Request.Context(), user.ID)
+	threads, err := h.threadService.ListUserThreads(c.Request.Context(), uint(user.ID))
 	if err != nil {
 		h.handleError(c, err)
 		return
