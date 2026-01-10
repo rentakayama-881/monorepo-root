@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import Sidebar from "./Sidebar";
 import ProfileSidebar from "./ProfileSidebar";
 import { Logo } from "./ui/Logo";
+import Avatar from "./ui/Avatar";
 import { fetchCategories } from "../lib/categories";
 import { AUTH_CHANGED_EVENT, getToken, TOKEN_KEY } from "@/lib/auth";
-import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
 import { getApiBase } from "@/lib/api";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
 
@@ -72,7 +71,7 @@ export default function Header() {
         }
         const data = await res.json();
         if (!cancelled) {
-          setAvatarUrl(resolveAvatarSrc(data.avatar_url));
+          setAvatarUrl(data.avatar_url || null);
           setUserName(data.username || data.full_name || data.email || "");
         }
       } catch {
@@ -137,7 +136,7 @@ export default function Header() {
     "inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))]/95 backdrop-blur supports-[backdrop-filter]:bg-[rgb(var(--surface))]/60">
+    <header className="sticky top-0 z-50 w-full border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))] backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-[rgb(var(--surface))]/80">
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4 sm:px-6">
         {/* Mobile menu */}
         <button
@@ -238,23 +237,11 @@ export default function Header() {
                 aria-label="Akun"
                 type="button"
               >
-                <span 
-                  className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] text-sm font-semibold text-white"
-                  style={avatarUrl ? {} : { backgroundColor: getAvatarColor(userName) }}
-                >
-                  {avatarUrl ? (
-                    <Image
-                      src={avatarUrl}
-                      alt="Akun"
-                      width={32}
-                      height={32}
-                      className="h-full w-full object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    getInitials(userName)
-                  )}
-                </span>
+                <Avatar 
+                  src={avatarUrl} 
+                  name={userName} 
+                  size="sm" 
+                />
                 <span className="hidden sm:inline text-sm font-medium text-[rgb(var(--fg))]">Akun</span>
               </button>
 

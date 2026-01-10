@@ -13,7 +13,32 @@ export default function ProfileSidebar({ onClose }) {
   const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
   const [wallet, setWallet] = useState({ balance: 0, pin_set: false });
   const [isLoading, setIsLoading] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const panelRef = useRef(null);
+
+  // Animate in on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 10);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Lock body scroll when profile sidebar is open (like prompts.chat Sheet)
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
 
   // AI Token balance
   const { balance: tokenBalance, loading: tokenLoading } = useTokenBalance({ skip: false });
@@ -129,51 +154,71 @@ export default function ProfileSidebar({ onClose }) {
   // Show loading spinner while fetching user data
   if (isLoading || !hasUser) {
     return (
-      <div
-        ref={panelRef}
-        className="absolute right-0 top-11 z-50 w-80 origin-top-right rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-lg"
-      >
-        <div className="flex items-center justify-center py-8">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[rgb(var(--muted))] border-t-[rgb(var(--brand))]" />
+      <>
+        {/* Backdrop overlay */}
+        <div 
+          className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+          onClick={onClose}
+          aria-hidden="true"
+        />
+        <div
+          ref={panelRef}
+          className={`fixed right-4 top-16 z-50 w-80 origin-top-right rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-xl transition-all duration-200 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+        >
+          <div className="flex items-center justify-center py-8">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-[rgb(var(--muted))] border-t-[rgb(var(--brand))]" />
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div
-      ref={panelRef}
-      className="absolute right-0 top-11 z-50 w-80 origin-top-right rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-lg"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <Avatar 
-            src={user.avatar_url} 
-            name={user.username} 
-            size="md" 
-          />
-          <div className="min-w-0">
-            <div className="truncate text-base font-semibold text-[rgb(var(--fg))]">{user.username}</div>
-            {user.email && (
-              <div className="text-xs text-[rgb(var(--muted))]">{maskEmail(user.email)}</div>
-            )}
-            <div className="text-xs text-[rgb(var(--muted))]">Kelola aktivitas & profil Anda</div>
+    <>
+      {/* Backdrop overlay - click to close */}
+      <div 
+        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        ref={panelRef}
+        className={`fixed right-4 top-16 z-50 w-80 origin-top-right rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-xl flex flex-col max-h-[calc(100vh-5rem)] transition-all duration-200 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+      >
+        {/* Fixed header section */}
+        <div className="p-4 pb-0 shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <Avatar 
+              src={user.avatar_url} 
+              name={user.username} 
+              size="md" 
+            />
+            <div className="min-w-0">
+              <div className="truncate text-base font-semibold text-[rgb(var(--fg))]">{user.username}</div>
+              {user.email && (
+                <div className="text-xs text-[rgb(var(--muted))]">{maskEmail(user.email)}</div>
+              )}
+              <div className="text-xs text-[rgb(var(--muted))]">Kelola aktivitas & profil Anda</div>
+            </div>
           </div>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--fg))]"
+            type="button"
+          >
+            <span className="sr-only">Tutup menu profil</span>
+            <svg className="h-5 w-5" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="rounded-md p-1 text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--fg))]"
-          type="button"
-        >
-          <span className="sr-only">Tutup menu profil</span>
-          <svg className="h-5 w-5" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        </button>
       </div>
 
-      {/* Wallet Balance Card */}
-      <div className="mt-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-3">
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto p-4 pt-0" style={{ overscrollBehavior: 'contain' }}>
+        {/* Wallet Balance Card */}
+        <div className="mt-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-3">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-[rgb(var(--muted))]">Saldo</div>
@@ -408,13 +453,19 @@ export default function ProfileSidebar({ onClose }) {
               </svg>
             </Link>
           </nav>
+        </div>
+
+        {/* Fixed footer - Logout button */}
+        <div className="shrink-0 p-4 pt-0 border-t border-[rgb(var(--border))] mt-auto">
           <button
             onClick={handleLogout}
-            className="mt-4 w-full rounded-md border border-[rgb(var(--border))] px-3 py-2 text-left text-sm font-semibold text-[rgb(var(--error))] transition hover:border-[rgb(var(--error-border))] hover:bg-[rgb(var(--error-bg))]"
+            className="w-full rounded-md border border-[rgb(var(--border))] px-3 py-2 text-left text-sm font-semibold text-[rgb(var(--error))] transition hover:border-[rgb(var(--error-border))] hover:bg-[rgb(var(--error-bg))]"
             type="button"
           >
             Keluar
           </button>
-    </div>
+        </div>
+      </div>
+    </>
   );
 }

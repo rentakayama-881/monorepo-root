@@ -38,13 +38,16 @@ const footerSections = [
 
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Main Footer Grid */}
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+    <footer className="mt-auto border-t border-[rgb(var(--border))] bg-[rgb(var(--bg))]">
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+        {/* Main Footer Grid - Card Style like prompts.chat */}
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
           {footerSections.map((section) => (
-            <div key={section.title}>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[rgb(var(--fg))]">
+            <div 
+              key={section.title}
+              className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 transition-colors hover:border-[rgb(var(--muted))]"
+            >
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--muted))]">
                 {section.title}
               </h3>
               <ul className="mt-3 space-y-2">
@@ -52,7 +55,7 @@ export default function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-xs text-[rgb(var(--muted))] transition hover:text-[rgb(var(--fg))]"
+                      className="text-sm text-[rgb(var(--fg))] transition-colors hover:text-[rgb(var(--brand))]"
                     >
                       {link.label}
                     </Link>
@@ -63,11 +66,11 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Bottom Bar */}
+        {/* Bottom Bar - Compact like prompts.chat */}
         <div className="mt-8 flex flex-col items-center gap-4 border-t border-[rgb(var(--border))] pt-6 sm:flex-row sm:justify-between">
           {/* Logo & Copyright */}
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
               <Image
                 src="/logo/logo-icon-only.svg"
                 alt="Alephdraad"
@@ -84,22 +87,25 @@ export default function Footer() {
               />
             </Link>
             <span className="text-xs text-[rgb(var(--muted))]">
-              © {new Date().getFullYear()} PT ALEPHDRAAD UTILITY STACK
+              © {new Date().getFullYear()} Alephdraad. All rights reserved.
             </span>
           </div>
 
-          {/* Version & Status */}
-          <div className="flex items-center gap-4 text-xs text-[rgb(var(--muted))]">
-            <Link href="/changelog" className="flex items-center gap-1.5 transition hover:text-[rgb(var(--fg))]">
-              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          {/* Version & Status - Badge style */}
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/changelog" 
+              className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2.5 py-1 text-xs text-[rgb(var(--muted))] transition-colors hover:border-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+            >
+              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 8v4l3 3" />
                 <circle cx="12" cy="12" r="9" />
               </svg>
-              <span>v1.0.0</span>
+              v1.0.0
             </Link>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[rgb(var(--success))]" />
-              <span>Operasional</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--success))]/30 bg-[rgb(var(--success))]/10 px-2.5 py-1 text-xs text-[rgb(var(--success))]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--success))] animate-pulse" />
+              Operasional
             </span>
           </div>
         </div>

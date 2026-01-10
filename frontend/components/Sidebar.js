@@ -13,6 +13,26 @@ export default function Sidebar({ open, onClose }) {
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [selectedModel, setSelectedModel] = useState(null);
 
+  // Lock body scroll when sidebar is open (like prompts.chat Sheet)
+  useEffect(() => {
+    if (open) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [open]);
+
   useEffect(() => {
     let cancelled = false;
     async function loadCategories() {
@@ -225,12 +245,12 @@ export default function Sidebar({ open, onClose }) {
         </div>
       </aside>
 
-      {/* Overlay untuk mobile */}
+      {/* Overlay untuk mobile - match prompts.chat Sheet overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-black/30 md:hidden"
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
           onClick={onClose}
-          aria-label="Sidebar Overlay"
+          aria-hidden="true"
         />
       )}
     </>
