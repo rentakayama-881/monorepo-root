@@ -26,7 +26,7 @@ export const metadata = {
 // Contact Card
 function ContactCard({ icon: Icon, title, children, highlight = false }) {
   return (
-    <div className={`rounded-xl border p-5 transition-all hover:border-[rgb(var(--muted))]/50 ${highlight ? 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/30' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-1))]'}`}>
+    <div className={`rounded-lg border p-5 transition-all hover:border-[rgb(var(--muted))]/50 ${highlight ? 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/30' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-1))]'}`}>
       <div className="mb-3 flex items-center gap-2">
         <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${highlight ? 'bg-[rgb(var(--surface-2))]' : 'bg-[rgb(var(--surface-2))]'} text-[rgb(var(--fg))]`}>
           <Icon className="h-4 w-4" />
@@ -41,7 +41,7 @@ function ContactCard({ icon: Icon, title, children, highlight = false }) {
 // FAQ Accordion Item
 function FAQItem({ question, children, icon: Icon = HelpCircleIcon }) {
   return (
-    <details className="group overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] transition-all hover:border-[rgb(var(--muted))]/30">
+    <details className="group overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] transition-all hover:border-[rgb(var(--muted))]/30">
       <summary className="flex cursor-pointer items-center justify-between p-5 text-sm font-medium text-[rgb(var(--fg))]">
         <div className="flex items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))] transition-colors group-hover:bg-[rgb(var(--surface-2))]">
@@ -91,7 +91,7 @@ function ListItem({ children, icon: Icon = CheckIcon }) {
 // Guide Link Card
 function GuideCard({ href, icon: Icon, title, description }) {
   return (
-    <a href={href} className="group flex items-center gap-4 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-4 transition-all hover:border-[rgb(var(--muted))]/50 hover:shadow-md">
+    <a href={href} className="group flex items-center gap-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-4 transition-all hover:border-[rgb(var(--muted))]/50 hover:shadow-md">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))] transition-colors group-hover:bg-[rgb(var(--surface-2))] group-hover:text-[rgb(var(--fg))]">
         <Icon className="h-5 w-5" />
       </span>
@@ -110,7 +110,7 @@ export default function HelpPage() {
       {/* Header */}
       <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
             <HelpCircleIcon className="h-5 w-5" />
           </span>
           <div>
@@ -289,9 +289,9 @@ export default function HelpPage() {
       </section>
 
       {/* Tips Box */}
-      <section className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 p-5">
+      <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 p-5">
         <div className="flex gap-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
             <InfoIcon className="h-5 w-5" />
           </span>
           <div>

@@ -2,113 +2,54 @@
 import Link from "next/link";
 import Image from "next/image";
 
-const footerSections = [
-  {
-    title: "Platform",
-    links: [
-      { href: "/category/akun-digital", label: "Digital Goods & Services" },
-      { href: "/ai-search", label: "AI Search" },
-      { href: "/fees", label: "Biaya Layanan" },
-      { href: "/changelog", label: "Changelog" },
-    ],
-  },
-  {
-    title: "Perusahaan",
-    links: [
-      { href: "/about-content", label: "Tentang Kami" },
-      { href: "/contact-support", label: "Hubungi Kami" },
-    ],
-  },
-  {
-    title: "Legal",
-    links: [
-      { href: "/rules-content", label: "Syarat Ketentuan" },
-      { href: "/privacy", label: "Kebijakan Privasi" },
-      { href: "/community-guidelines", label: "Pedoman Komunitas" },
-    ],
-  },
-  {
-    title: "Sumber Daya",
-    links: [
-      { href: "/contact-support#faq", label: "FAQ" },
-      { href: "mailto:help@alephdraad.fun", label: "Dukungan" },
-    ],
-  },
-];
-
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-[rgb(var(--border))] bg-[rgb(var(--bg))]">
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-        {/* Main Footer Grid - Card Style like prompts.chat */}
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-          {footerSections.map((section) => (
-            <div 
-              key={section.title}
-              className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 transition-colors hover:border-[rgb(var(--muted))]"
-            >
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--muted))]">
-                {section.title}
-              </h3>
-              <ul className="mt-3 space-y-2">
-                {section.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-[rgb(var(--fg))] transition-colors hover:text-[rgb(var(--brand))]"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        {/* Bottom Bar - Compact like prompts.chat */}
-        <div className="mt-8 flex flex-col items-center gap-4 border-t border-[rgb(var(--border))] pt-6 sm:flex-row sm:justify-between">
-          {/* Logo & Copyright */}
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
-              <Image
-                src="/logo/logo-icon-only.svg"
-                alt="Alephdraad"
-                width={20}
-                height={20}
-                className="dark:hidden"
-              />
-              <Image
-                src="/logo/logo-icon-only-dark.svg"
-                alt="Alephdraad"
-                width={20}
-                height={20}
-                className="hidden dark:block"
-              />
-            </Link>
-            <span className="text-xs text-[rgb(var(--muted))]">
-              © {new Date().getFullYear()} Alephdraad. All rights reserved.
-            </span>
-          </div>
-
-          {/* Version & Status - Badge style */}
-          <div className="flex items-center gap-3">
-            <Link 
-              href="/changelog" 
-              className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2.5 py-1 text-xs text-[rgb(var(--muted))] transition-colors hover:border-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
-            >
-              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 8v4l3 3" />
-                <circle cx="12" cy="12" r="9" />
-              </svg>
-              v1.0.0
-            </Link>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--success))]/30 bg-[rgb(var(--success))]/10 px-2.5 py-1 text-xs text-[rgb(var(--success))]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--success))] animate-pulse" />
-              Operasional
-            </span>
-          </div>
-        </div>
+    <footer className="border-t border-[rgb(var(--border))] shrink-0 bg-[rgb(var(--surface))]">
+      <div className="mx-auto max-w-5xl flex flex-col items-center gap-3 py-4 text-xs text-[rgb(var(--muted))] px-4 sm:flex-row sm:justify-between sm:h-12 sm:py-0 sm:gap-4">
+        {/* Logo & Copyright */}
+        <span className="flex items-center gap-1.5">
+          <Image
+            src="/logo/logo-icon-only.svg"
+            alt="Alephdraad"
+            width={14}
+            height={14}
+            className="dark:hidden"
+          />
+          <Image
+            src="/logo/logo-icon-only-dark.svg"
+            alt="Alephdraad"
+            width={14}
+            height={14}
+            className="hidden dark:block"
+          />
+          <span>© {new Date().getFullYear()} Alephdraad</span>
+        </span>
+        
+        {/* Nav links - inline like prompts.chat */}
+        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          <Link href="/about-content" className="hover:text-[rgb(var(--fg))] transition-colors">
+            Tentang
+          </Link>
+          <Link href="/rules-content" className="hover:text-[rgb(var(--fg))] transition-colors">
+            Aturan
+          </Link>
+          <Link href="/privacy" className="hover:text-[rgb(var(--fg))] transition-colors">
+            Privasi
+          </Link>
+          <Link href="/community-guidelines" className="hover:text-[rgb(var(--fg))] transition-colors">
+            Pedoman
+          </Link>
+          <Link href="/contact-support" className="hover:text-[rgb(var(--fg))] transition-colors">
+            Bantuan
+          </Link>
+          <Link href="/fees" className="hover:text-[rgb(var(--fg))] transition-colors">
+            Biaya
+          </Link>
+          <Link href="/changelog" className="hover:text-[rgb(var(--fg))] transition-colors flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--success))]" />
+            v1.0.0
+          </Link>
+        </nav>
       </div>
     </footer>
   );
