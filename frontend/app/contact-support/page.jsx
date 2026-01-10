@@ -23,51 +23,49 @@ export const metadata = {
   description: "Pusat bantuan dan dukungan pelanggan AlephDraad"
 };
 
-// Contact Card
+// Contact Card - compact
 function ContactCard({ icon: Icon, title, children, highlight = false }) {
   return (
-    <div className={`rounded-lg border p-5 transition-all hover:border-[rgb(var(--muted))]/50 ${highlight ? 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/30' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-1))]'}`}>
-      <div className="mb-3 flex items-center gap-2">
-        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${highlight ? 'bg-[rgb(var(--surface-2))]' : 'bg-[rgb(var(--surface-2))]'} text-[rgb(var(--fg))]`}>
-          <Icon className="h-4 w-4" />
-        </span>
-        <span className="text-sm font-medium text-[rgb(var(--fg))]">{title}</span>
+    <div className={`rounded-lg border p-3 ${highlight ? 'border-[rgb(var(--brand))]/20 bg-[rgb(var(--brand))]/5' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface))]'}`}>
+      <div className="mb-2 flex items-center gap-2">
+        <Icon className="h-4 w-4 text-[rgb(var(--muted))]" />
+        <span className="text-[13px] font-medium text-[rgb(var(--fg))]">{title}</span>
       </div>
-      {children}
+      <div className="text-xs text-[rgb(var(--muted))]">
+        {children}
+      </div>
     </div>
   );
 }
 
-// FAQ Accordion Item
+// FAQ Accordion Item - compact
 function FAQItem({ question, children, icon: Icon = HelpCircleIcon }) {
   return (
-    <details className="group overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] transition-all hover:border-[rgb(var(--muted))]/30">
-      <summary className="flex cursor-pointer items-center justify-between p-5 text-sm font-medium text-[rgb(var(--fg))]">
-        <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))] transition-colors group-hover:bg-[rgb(var(--surface-2))]">
-            <Icon className="h-4 w-4" />
-          </span>
+    <details className="group overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
+      <summary className="flex cursor-pointer items-center justify-between p-3 text-[13px] font-medium text-[rgb(var(--fg))]">
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-[rgb(var(--muted))]" />
           <span>{question}</span>
         </div>
-        <svg className="h-5 w-5 shrink-0 text-[rgb(var(--muted))] transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className="h-4 w-4 shrink-0 text-[rgb(var(--muted))] transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </summary>
-      <div className="border-t border-[rgb(var(--border))] p-5 text-sm text-[rgb(var(--muted))]">
+      <div className="border-t border-[rgb(var(--border))] p-3 text-xs text-[rgb(var(--muted))] leading-relaxed">
         {children}
       </div>
     </details>
   );
 }
 
-// Numbered Step
+// Numbered Step - compact
 function Step({ number, title, description }) {
   return (
-    <li className="flex items-start gap-3">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-xs font-semibold text-[rgb(var(--fg))]">
+    <li className="flex items-start gap-2">
+      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-[10px] font-semibold text-[rgb(var(--fg))]">
         {number}
       </span>
-      <div className="pt-0.5">
+      <div className="pt-0.5 text-xs">
         {title && <strong className="text-[rgb(var(--fg))]">{title}</strong>}
         {title && description && " — "}
         {description}
@@ -76,28 +74,26 @@ function Step({ number, title, description }) {
   );
 }
 
-// List Item with icon
+// List Item with icon - compact
 function ListItem({ children, icon: Icon = CheckIcon }) {
   return (
-    <li className="flex items-start gap-3">
+    <li className="flex items-start gap-1.5">
       <span className="mt-0.5 shrink-0 text-[rgb(var(--muted))]">
-        <Icon className="h-4 w-4" />
+        <Icon className="h-3.5 w-3.5" />
       </span>
-      <span>{children}</span>
+      <span className="text-xs">{children}</span>
     </li>
   );
 }
 
-// Guide Link Card
+// Guide Link Card - compact
 function GuideCard({ href, icon: Icon, title, description }) {
   return (
-    <a href={href} className="group flex items-center gap-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-4 transition-all hover:border-[rgb(var(--muted))]/50 hover:shadow-md">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))] transition-colors group-hover:bg-[rgb(var(--surface-2))] group-hover:text-[rgb(var(--fg))]">
-        <Icon className="h-5 w-5" />
-      </span>
-      <div className="flex-1">
-        <p className="text-sm font-medium text-[rgb(var(--fg))]">{title}</p>
-        <p className="text-xs text-[rgb(var(--muted))]">{description}</p>
+    <a href={href} className="group flex items-center gap-3 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3 transition-all hover:border-[rgb(var(--muted))]/50">
+      <Icon className="h-4 w-4 shrink-0 text-[rgb(var(--muted))] group-hover:text-[rgb(var(--fg))]" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-medium text-[rgb(var(--fg))]">{title}</p>
+        <p className="text-[11px] text-[rgb(var(--muted))] truncate">{description}</p>
       </div>
       <ChevronRightIcon className="h-4 w-4 text-[rgb(var(--muted))] transition-transform group-hover:translate-x-1 group-hover:text-[rgb(var(--fg))]" />
     </a>
@@ -106,20 +102,13 @@ function GuideCard({ href, icon: Icon, title, description }) {
 
 export default function HelpPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       {/* Header */}
-      <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
-            <HelpCircleIcon className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold text-[rgb(var(--fg))]">Pusat Bantuan</h1>
-            <p className="mt-0.5 text-sm text-[rgb(var(--muted))]">
-              Temukan jawaban atau hubungi tim kami
-            </p>
-          </div>
-        </div>
+      <div className="mb-6 border-b border-[rgb(var(--border))] pb-4">
+        <h1 className="text-lg font-semibold text-[rgb(var(--fg))]">Pusat Bantuan</h1>
+        <p className="mt-0.5 text-xs text-[rgb(var(--muted))]">
+          Temukan jawaban atau hubungi tim kami
+        </p>
       </div>
 
       {/* Contact Section */}

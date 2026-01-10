@@ -19,66 +19,57 @@ export const metadata = {
   description: "PT Alephdraad Utility Stack - Platform komunitas digital untuk forum, marketplace, dan pertukaran pengetahuan"
 };
 
-// Reusable styled list item with icon
+// Reusable styled list item with icon - compact
 function ListItem({ children, icon: Icon = CheckIcon }) {
   return (
-    <li className="flex items-start gap-3">
+    <li className="flex items-start gap-2">
       <span className="mt-0.5 shrink-0 text-[rgb(var(--muted))]">
-        <Icon className="h-4 w-4" />
+        <Icon className="h-3.5 w-3.5" />
       </span>
-      <span>{children}</span>
+      <span className="text-[13px]">{children}</span>
     </li>
   );
 }
 
-// Section card with icon header
+// Section card with icon header - compact style
 function Section({ title, icon: Icon, children, highlight = false }) {
   return (
-    <section className={`mb-6 overflow-hidden rounded-lg border transition-all hover:border-[rgb(var(--muted))]/30 ${highlight ? 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/30' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-1))]'}`}>
-      <div className={`border-b px-5 py-4 ${highlight ? 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50'}`}>
-        <h2 className="flex items-center gap-3 text-base font-semibold text-[rgb(var(--fg))]">
-          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${highlight ? 'bg-[rgb(var(--surface-2))]' : 'bg-[rgb(var(--surface-2))]'} text-[rgb(var(--fg))]`}>
-            <Icon className="h-4 w-4" />
-          </span>
+    <section className={`mb-4 overflow-hidden rounded-lg border ${highlight ? 'border-[rgb(var(--brand))]/20 bg-[rgb(var(--brand))]/5' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface))]'}`}>
+      <div className={`border-b px-4 py-3 ${highlight ? 'border-[rgb(var(--brand))]/20 bg-[rgb(var(--brand))]/5' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/30'}`}>
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-[rgb(var(--fg))]">
+          <Icon className="h-4 w-4 text-[rgb(var(--muted))]" />
           <span>{title}</span>
         </h2>
       </div>
-      <div className="p-5">
+      <div className="p-4 text-[13px] leading-relaxed">
         {children}
       </div>
     </section>
   );
 }
 
-// Service Card
+// Service Card - compact style
 function ServiceCard({ title, description, icon: Icon }) {
   return (
-    <div className="group rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-5 transition-all hover:border-[rgb(var(--muted))]/50 hover:shadow-md">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))] transition-colors group-hover:bg-[rgb(var(--surface-2))]">
-        <Icon className="h-5 w-5" />
+    <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 transition-all hover:border-[rgb(var(--muted))]/50">
+      <div className="mb-2 flex items-center gap-2">
+        <Icon className="h-4 w-4 text-[rgb(var(--muted))]" />
+        <h3 className="text-[13px] font-medium text-[rgb(var(--fg))]">{title}</h3>
       </div>
-      <h3 className="mb-2 text-sm font-semibold text-[rgb(var(--fg))]">{title}</h3>
-      <p className="text-sm text-[rgb(var(--muted))]">{description}</p>
+      <p className="text-xs text-[rgb(var(--muted))] leading-relaxed">{description}</p>
     </div>
   );
 }
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       {/* Header */}
-      <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
-            <UsersIcon className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold text-[rgb(var(--fg))]">Tentang AlephDraad</h1>
-            <p className="mt-0.5 text-sm text-[rgb(var(--muted))]">
-              Platform komunitas digital Indonesia
-            </p>
-          </div>
-        </div>
+      <div className="mb-6 border-b border-[rgb(var(--border))] pb-4">
+        <h1 className="text-lg font-semibold text-[rgb(var(--fg))]">Tentang AlephDraad</h1>
+        <p className="mt-0.5 text-xs text-[rgb(var(--muted))]">
+          Platform komunitas digital Indonesia
+        </p>
       </div>
 
       <article>
@@ -105,7 +96,7 @@ export default function AboutPage() {
 
         {/* Misi */}
         <Section title="Misi" icon={HeartIcon}>
-          <ul className="space-y-3 text-sm text-[rgb(var(--muted))]">
+          <ul className="space-y-2 text-[rgb(var(--muted))]">
             <ListItem icon={MessageCircleIcon}>
               Menyediakan platform diskusi yang berkualitas dan bebas dari konten berbahaya
             </ListItem>
@@ -122,14 +113,12 @@ export default function AboutPage() {
         </Section>
 
         {/* Layanan */}
-        <section className="mb-6">
-          <div className="mb-4 flex items-center gap-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
-              <ZapIcon className="h-4 w-4" />
-            </span>
-            <h2 className="text-base font-semibold text-[rgb(var(--fg))]">Layanan Kami</h2>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-3">
+        <section className="mb-4">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[rgb(var(--fg))]">
+            <ZapIcon className="h-4 w-4 text-[rgb(var(--muted))]" />
+            Layanan Kami
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-3">
             <ServiceCard 
               title="Forum Diskusi" 
               description="Ruang interaksi untuk berbagi ide, pengalaman, dan pengetahuan dengan sesama anggota komunitas."

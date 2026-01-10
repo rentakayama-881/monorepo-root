@@ -7,20 +7,20 @@ export const metadata = {
 
 export default function CommunityGuidelinesPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       {/* Header */}
-      <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
-        <h1 className="text-2xl font-semibold text-[rgb(var(--fg))]">Pedoman Komunitas</h1>
-        <p className="mt-1 text-sm text-[rgb(var(--muted))]">
+      <div className="mb-6 border-b border-[rgb(var(--border))] pb-4">
+        <h1 className="text-lg font-semibold text-[rgb(var(--fg))]">Pedoman Komunitas</h1>
+        <p className="mt-0.5 text-xs text-[rgb(var(--muted))]">
           Panduan untuk menciptakan lingkungan yang aman, inklusif, dan produktif
         </p>
       </div>
 
-      <article className="prose-doc">
+      <article>
         {/* Prinsip */}
-        <section className="mb-8 rounded-lg border border-[rgb(var(--brand))/0.2] bg-[rgb(var(--brand))/0.05] p-4">
-          <h2 className="mb-2 text-base font-semibold text-[rgb(var(--fg))]">Prinsip Dasar</h2>
-          <p className="text-sm text-[rgb(var(--muted))]">
+        <section className="mb-4 rounded-lg border border-[rgb(var(--brand))]/20 bg-[rgb(var(--brand))]/5 p-3">
+          <h2 className="mb-1.5 text-sm font-semibold text-[rgb(var(--fg))]">Prinsip Dasar</h2>
+          <p className="text-xs text-[rgb(var(--muted))] leading-relaxed">
             AlephDraad didirikan untuk memfasilitasi pertukaran pengetahuan dan pengalaman. Kami menjunjung 
             tinggi ilmu dan memberikan penghargaan tertinggi untuk setiap upaya, sekecil apapun. Di sini, 
             setiap pengguna didorong untuk merealisasikan ide mereka dalam berbagai bentuk tindakan, teknik, dan inovasi.
@@ -28,30 +28,30 @@ export default function CommunityGuidelinesPage() {
         </section>
 
         {/* Perilaku yang Diharapkan */}
-        <section className="mb-8">
-          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Perilaku yang Diharapkan</h2>
-          <ul className="space-y-2 text-sm text-[rgb(var(--muted))]">
-            <li className="flex items-start gap-2">
+        <section className="mb-4">
+          <h2 className="mb-2 text-sm font-semibold text-[rgb(var(--fg))]">Perilaku yang Diharapkan</h2>
+          <ul className="space-y-1 text-xs text-[rgb(var(--muted))]">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--success))]">✓</span>
               <span>Bersikap sopan, hormat, dan profesional dalam setiap interaksi</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--success))]">✓</span>
               <span>Memberikan kritik yang konstruktif berfokus pada argumen, bukan individu</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--success))]">✓</span>
               <span>Menghargai perbedaan pendapat, latar belakang, dan pengalaman</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--success))]">✓</span>
               <span>Berkontribusi dengan konten yang bermanfaat dan berkualitas</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--success))]">✓</span>
               <span>Melaporkan konten atau perilaku yang melanggar pedoman</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--success))]">✓</span>
               <span>Bertransaksi dengan jujur dan memenuhi kesepakatan</span>
             </li>
@@ -59,44 +59,44 @@ export default function CommunityGuidelinesPage() {
         </section>
 
         {/* Perilaku yang Dilarang */}
-        <section className="mb-8">
-          <h2 className="mb-3 text-lg font-semibold text-[rgb(var(--fg))]">Perilaku yang Dilarang</h2>
+        <section className="mb-4">
+          <h2 className="mb-2 text-sm font-semibold text-[rgb(var(--fg))]">Perilaku yang Dilarang</h2>
           
-          <h3 className="mb-2 mt-4 text-sm font-medium text-[rgb(var(--fg))]">Pelecehan dan Kekerasan</h3>
-          <ul className="mb-4 space-y-1 text-sm text-[rgb(var(--muted))]">
-            <li className="flex items-start gap-2">
+          <h3 className="mb-1.5 mt-3 text-xs font-medium text-[rgb(var(--fg))]">Pelecehan dan Kekerasan</h3>
+          <ul className="mb-3 space-y-0.5 text-xs text-[rgb(var(--muted))]">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--error))]">✗</span>
               <span>Serangan pribadi, penghinaan, atau ancaman terhadap pengguna lain</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--error))]">✗</span>
               <span>Diskriminasi berdasarkan ras, agama, gender, orientasi seksual, atau latar belakang sosial</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--error))]">✗</span>
               <span>Doxxing (mempublikasikan informasi pribadi tanpa izin)</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--error))]">✗</span>
               <span>Stalking atau pelecehan berkelanjutan</span>
             </li>
           </ul>
 
-          <h3 className="mb-2 mt-4 text-sm font-medium text-[rgb(var(--fg))]">Konten Berbahaya</h3>
-          <ul className="mb-4 space-y-1 text-sm text-[rgb(var(--muted))]">
-            <li className="flex items-start gap-2">
+          <h3 className="mb-1.5 mt-3 text-xs font-medium text-[rgb(var(--fg))]">Konten Berbahaya</h3>
+          <ul className="mb-3 space-y-0.5 text-xs text-[rgb(var(--muted))]">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--error))]">✗</span>
               <span>Pornografi, terutama yang melibatkan anak di bawah umur</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--error))]">✗</span>
               <span>Konten kekerasan grafis atau gore</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--error))]">✗</span>
               <span>Propaganda terorisme atau ekstremisme</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex items-start gap-1.5">
               <span className="mt-0.5 text-[rgb(var(--error))]">✗</span>
               <span>Promosi bunuh diri atau menyakiti diri sendiri</span>
             </li>
