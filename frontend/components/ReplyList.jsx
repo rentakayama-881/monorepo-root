@@ -166,6 +166,7 @@ function ReplyItem({
               onCancel={() => setShowReplyForm(false)}
               placeholder={`Balas ke ${reply.username}...`}
               compact
+              autoFocus
             />
           </div>
         )}
