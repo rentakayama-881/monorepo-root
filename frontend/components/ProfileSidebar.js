@@ -13,14 +13,7 @@ export default function ProfileSidebar({ onClose }) {
   const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
   const [wallet, setWallet] = useState({ balance: 0, pin_set: false });
   const [isLoading, setIsLoading] = useState(true);
-  const [isVisible, setIsVisible] = useState(false);
   const panelRef = useRef(null);
-
-  // Animate in on mount
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 10);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Lock body scroll when profile sidebar is open (like prompts.chat Sheet)
   useEffect(() => {
@@ -157,13 +150,13 @@ export default function ProfileSidebar({ onClose }) {
       <>
         {/* Backdrop overlay */}
         <div 
-          className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+          className="fixed inset-0 z-40 bg-black/50"
           onClick={onClose}
           aria-hidden="true"
         />
         <div
           ref={panelRef}
-          className={`fixed right-4 top-16 z-50 w-80 origin-top-right rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-xl transition-all duration-200 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+          className="fixed right-4 top-16 z-50 w-80 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 shadow-xl"
         >
           <div className="flex items-center justify-center py-8">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-[rgb(var(--muted))] border-t-[rgb(var(--brand))]" />
@@ -177,13 +170,13 @@ export default function ProfileSidebar({ onClose }) {
     <>
       {/* Backdrop overlay - click to close */}
       <div 
-        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+        className="fixed inset-0 z-40 bg-black/50"
         onClick={onClose}
         aria-hidden="true"
       />
       <div
         ref={panelRef}
-        className={`fixed right-4 top-16 z-50 w-80 origin-top-right rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-xl flex flex-col max-h-[calc(100vh-5rem)] transition-all duration-200 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+        className="fixed right-4 top-16 z-50 w-80 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-xl flex flex-col max-h-[calc(100dvh-6rem)]"
       >
         {/* Fixed header section */}
         <div className="p-4 pb-0 shrink-0">
@@ -454,9 +447,10 @@ export default function ProfileSidebar({ onClose }) {
             </Link>
           </nav>
         </div>
+        {/* End of scrollable content area */}
 
-        {/* Fixed footer - Logout button */}
-        <div className="shrink-0 p-4 pt-0 border-t border-[rgb(var(--border))] mt-auto">
+        {/* Fixed footer - Logout button - OUTSIDE scrollable area */}
+        <div className="shrink-0 p-4 border-t border-[rgb(var(--border))]">
           <button
             onClick={handleLogout}
             className="w-full rounded-md border border-[rgb(var(--border))] px-3 py-2 text-left text-sm font-semibold text-[rgb(var(--error))] transition hover:border-[rgb(var(--error-border))] hover:bg-[rgb(var(--error-bg))]"

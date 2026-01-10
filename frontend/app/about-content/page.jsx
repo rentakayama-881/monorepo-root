@@ -34,7 +34,7 @@ function ListItem({ children, icon: Icon = CheckIcon }) {
 // Section card with icon header
 function Section({ title, icon: Icon, children, highlight = false }) {
   return (
-    <section className={`mb-6 overflow-hidden rounded-xl border transition-all hover:border-[rgb(var(--muted))]/30 ${highlight ? 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/30' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-1))]'}`}>
+    <section className={`mb-6 overflow-hidden rounded-lg border transition-all hover:border-[rgb(var(--muted))]/30 ${highlight ? 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/30' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-1))]'}`}>
       <div className={`border-b px-5 py-4 ${highlight ? 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50' : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50'}`}>
         <h2 className="flex items-center gap-3 text-base font-semibold text-[rgb(var(--fg))]">
           <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${highlight ? 'bg-[rgb(var(--surface-2))]' : 'bg-[rgb(var(--surface-2))]'} text-[rgb(var(--fg))]`}>
@@ -53,7 +53,7 @@ function Section({ title, icon: Icon, children, highlight = false }) {
 // Service Card
 function ServiceCard({ title, description, icon: Icon }) {
   return (
-    <div className="group rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-5 transition-all hover:border-[rgb(var(--muted))]/50 hover:shadow-md">
+    <div className="group rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-5 transition-all hover:border-[rgb(var(--muted))]/50 hover:shadow-md">
       <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))] transition-colors group-hover:bg-[rgb(var(--surface-2))]">
         <Icon className="h-5 w-5" />
       </div>
@@ -69,7 +69,7 @@ export default function AboutPage() {
       {/* Header */}
       <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
             <UsersIcon className="h-5 w-5" />
           </span>
           <div>
@@ -170,7 +170,7 @@ export default function AboutPage() {
         </Section>
 
         {/* Contact */}
-        <section className="rounded-xl border border-[rgb(var(--border))] bg-gradient-to-br from-[rgb(var(--surface-2))] to-[rgb(var(--surface-1))] p-5">
+        <section className="rounded-lg border border-[rgb(var(--border))] bg-gradient-to-br from-[rgb(var(--surface-2))] to-[rgb(var(--surface-1))] p-5">
           <h2 className="mb-4 flex items-center gap-3 text-base font-semibold text-[rgb(var(--fg))]">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
               <MailIcon className="h-4 w-4" />

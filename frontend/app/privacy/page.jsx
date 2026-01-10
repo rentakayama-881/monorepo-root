@@ -38,7 +38,7 @@ function ListItem({ children, icon: Icon = CheckIcon }) {
 // Section card with icon header
 function Section({ number, title, icon: Icon, children }) {
   return (
-    <section className="mb-6 overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] transition-all hover:border-[rgb(var(--muted))]/30">
+    <section className="mb-6 overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] transition-all hover:border-[rgb(var(--muted))]/30">
       <div className="border-b border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 px-5 py-4">
         <h2 className="flex items-center gap-3 text-base font-semibold text-[rgb(var(--fg))]">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
       {/* Header */}
       <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
             <ShieldIcon className="h-5 w-5" />
           </span>
           <div>
@@ -82,7 +82,7 @@ export default function PrivacyPage() {
 
       <article>
         {/* Intro */}
-        <div className="mb-6 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 p-5">
+        <div className="mb-6 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 p-5">
           <p className="text-sm leading-relaxed text-[rgb(var(--muted))]">
             PT AlephDraad Utility Stack ("Kami") berkomitmen untuk melindungi privasi dan data pribadi Anda. 
             Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, menyimpan, dan melindungi 
@@ -211,9 +211,9 @@ export default function PrivacyPage() {
         </Section>
 
         {/* Kontak */}
-        <section className="rounded-xl border border-[rgb(var(--border))] bg-gradient-to-br from-[rgb(var(--surface-2))] to-[rgb(var(--surface-1))] p-5">
+        <section className="rounded-lg border border-[rgb(var(--border))] bg-gradient-to-br from-[rgb(var(--surface-2))] to-[rgb(var(--surface-1))] p-5">
           <div className="flex items-start gap-4">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
               <MailIcon className="h-5 w-5" />
             </span>
             <div>
