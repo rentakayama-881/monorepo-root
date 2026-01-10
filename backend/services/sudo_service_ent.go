@@ -195,6 +195,18 @@ func (s *EntSudoService) RevokeAll(ctx context.Context, userID int) error {
 	return err
 }
 
+// CheckUserTOTPEnabled checks if the user has TOTP enabled
+func (s *EntSudoService) CheckUserTOTPEnabled(ctx context.Context, userID int) (bool, error) {
+	u, err := s.client.User.Get(ctx, userID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return u.TotpEnabled && u.TotpSecret != nil && *u.TotpSecret != "", nil
+}
+
 // GetActiveSession returns info about the current sudo session
 func (s *EntSudoService) GetActiveSession(ctx context.Context, userID int, token string) (*SudoVerifyResult, error) {
 	if token == "" {

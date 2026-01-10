@@ -106,6 +106,8 @@ func (q *EmailQueue) worker(id int) {
 // processJob processes a single email job with retry logic
 func (q *EmailQueue) processJob(workerID int, job EmailJob) {
 	var err error
+	queueDuration := time.Since(job.CreatedAt)
+	log.Printf("[EmailQueue] Worker %d: Processing job for %s (queued for %v)", workerID, job.Recipient, queueDuration)
 
 	for attempt := 0; attempt <= q.maxRetries; attempt++ {
 		if attempt > 0 {
@@ -113,6 +115,7 @@ func (q *EmailQueue) processJob(workerID int, job EmailJob) {
 			time.Sleep(q.retryDelay * time.Duration(attempt)) // Exponential backoff
 		}
 
+		startTime := time.Now()
 		switch job.Type {
 		case EmailTypeVerification:
 			err = sendVerificationEmailDirect(job.Recipient, job.Token)
@@ -122,13 +125,14 @@ func (q *EmailQueue) processJob(workerID int, job EmailJob) {
 			log.Printf("[EmailQueue] Worker %d: Unknown email type %d", workerID, job.Type)
 			return
 		}
+		sendDuration := time.Since(startTime)
 
 		if err == nil {
-			log.Printf("[EmailQueue] Worker %d: Successfully sent email to %s", workerID, job.Recipient)
+			log.Printf("[EmailQueue] Worker %d: Successfully sent email to %s (API call took %v)", workerID, job.Recipient, sendDuration)
 			return
 		}
 
-		log.Printf("[EmailQueue] Worker %d: Failed to send email to %s: %v", workerID, job.Recipient, err)
+		log.Printf("[EmailQueue] Worker %d: Failed to send email to %s: %v (took %v)", workerID, job.Recipient, err, sendDuration)
 	}
 
 	// All retries exhausted

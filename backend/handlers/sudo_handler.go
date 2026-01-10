@@ -71,6 +71,14 @@ func (h *SudoHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
+	// Check if user has TOTP enabled
+	totpEnabled, err := h.sudoService.CheckUserTOTPEnabled(c.Request.Context(), int(userID))
+	if err != nil {
+		h.logger.Error("Failed to check TOTP status", zap.Error(err))
+		// Continue with false - non-critical
+		totpEnabled = false
+	}
+
 	// Get sudo token from header
 	sudoToken := c.GetHeader("X-Sudo-Token")
 
@@ -81,12 +89,12 @@ func (h *SudoHandler) GetStatus(c *gin.Context) {
 		return
 	}
 	if active == nil {
-		c.JSON(http.StatusOK, dto.SudoStatusResponse{IsActive: false, RequiresTOTP: false})
+		c.JSON(http.StatusOK, dto.SudoStatusResponse{IsActive: false, RequiresTOTP: totpEnabled})
 		return
 	}
 	c.JSON(http.StatusOK, dto.SudoStatusResponse{
 		IsActive:     true,
-		RequiresTOTP: false,
+		RequiresTOTP: totpEnabled,
 		ExpiresAt:    &active.ExpiresAt,
 		ExpiresIn:    active.ExpiresIn,
 	})
