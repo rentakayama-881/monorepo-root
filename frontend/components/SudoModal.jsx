@@ -100,24 +100,19 @@ export function SudoProvider({ children }) {
   const fetchSudoStatus = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      console.log("[SudoProvider] Fetching sudo status...");
       const res = await fetch(`${getApiBase()}/api/auth/sudo/status`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "X-Sudo-Token": sudoToken || "",
         },
       });
-      console.log("[SudoProvider] Status response:", res.status);
       if (res.ok) {
         const data = await res.json();
-        console.log("[SudoProvider] Status data:", data);
         setRequiresTOTP(data.requires_totp === true);
         return data;
-      } else {
-        console.error("[SudoProvider] Status request failed:", res.status);
       }
     } catch (err) {
-      console.error("[SudoProvider] Failed to fetch sudo status:", err);
+      // Silently fail - sudo status check is non-critical
     }
     return null;
   }, [sudoToken]);
@@ -167,8 +162,8 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
         if (status && typeof status.requires_totp === 'boolean') {
           setRequiresTOTP(status.requires_totp);
         }
-      } catch (err) {
-        console.error("Failed to check sudo status:", err);
+      } catch {
+        // Silently fail - status check is non-critical
       }
       setChecking(false);
     }
