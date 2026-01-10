@@ -93,8 +93,6 @@ public class Document
 
     /// <summary>
     /// Whether the document is soft deleted
-    /// <summary>
-    /// Whether the document is soft deleted
     /// </summary>
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; } = false;

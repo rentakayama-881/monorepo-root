@@ -6,10 +6,14 @@ using FeatureService.Api.Infrastructure.Auth;
 
 namespace FeatureService.Api.Controllers.Social;
 
+/// <summary>
+/// Reaction management endpoints for threads
+/// </summary>
 [ApiController]
 [Route("api/v1/threads/{threadId}/reactions")]
 [Authorize]
-public class ReactionsController : ControllerBase
+[Produces("application/json")]
+public class ReactionsController : ApiControllerBase
 {
     private readonly IReactionService _reactionService;
     private readonly IUserContextAccessor _userContextAccessor;
@@ -20,7 +24,12 @@ public class ReactionsController : ControllerBase
         _userContextAccessor = userContextAccessor;
     }
 
+    /// <summary>
+    /// Add or update a reaction on a thread
+    /// </summary>
     [HttpPost]
+    [ProducesResponseType(typeof(ReactionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ReactionResponse>> AddReaction(
         [FromRoute] uint threadId,
         [FromBody] CreateReactionRequest request)
@@ -28,7 +37,7 @@ public class ReactionsController : ControllerBase
         var user = _userContextAccessor.GetCurrentUser();
         if (user == null)
         {
-            return Unauthorized();
+            return ApiUnauthorized("Login diperlukan untuk memberi reaksi");
         }
 
         var response = await _reactionService.AddOrUpdateReactionAsync(
@@ -41,13 +50,18 @@ public class ReactionsController : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>
+    /// Remove a reaction from a thread
+    /// </summary>
     [HttpDelete]
+    [ProducesResponseType(typeof(ReactionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ReactionResponse>> RemoveReaction([FromRoute] uint threadId)
     {
         var user = _userContextAccessor.GetCurrentUser();
         if (user == null)
         {
-            return Unauthorized();
+            return ApiUnauthorized("Login diperlukan untuk menghapus reaksi");
         }
 
         var response = await _reactionService.RemoveReactionAsync(
@@ -59,8 +73,12 @@ public class ReactionsController : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>
+    /// Get reaction summary for a thread
+    /// </summary>
     [HttpGet("summary")]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(ReactionSummaryResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<ReactionSummaryResponse>> GetReactionSummary([FromRoute] uint threadId)
     {
         var user = _userContextAccessor.GetCurrentUser();

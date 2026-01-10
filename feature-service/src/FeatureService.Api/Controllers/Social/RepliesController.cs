@@ -6,10 +6,14 @@ using FeatureService.Api.Infrastructure.Auth;
 
 namespace FeatureService.Api.Controllers.Social;
 
+/// <summary>
+/// Reply management endpoints for threads
+/// </summary>
 [ApiController]
 [Route("api/v1/threads/{threadId}/replies")]
 [Authorize]
-public class RepliesController : ControllerBase
+[Produces("application/json")]
+public class RepliesController : ApiControllerBase
 {
     private readonly IReplyService _replyService;
     private readonly IUserContextAccessor _userContextAccessor;
@@ -37,6 +41,8 @@ public class RepliesController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(ReplyResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ReplyResponse>> CreateReply(
         [FromRoute] uint threadId,
         [FromBody] CreateReplyRequest request)
@@ -44,7 +50,7 @@ public class RepliesController : ControllerBase
         var user = _userContextAccessor.GetCurrentUser();
         if (user == null)
         {
-            return Unauthorized();
+            return ApiUnauthorized("Login diperlukan untuk membuat balasan");
         }
 
         var response = await _replyService.CreateReplyAsync(threadId, request, user);
@@ -52,6 +58,8 @@ public class RepliesController : ControllerBase
     }
 
     [HttpPatch("{replyId}")]
+    [ProducesResponseType(typeof(ReplyResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ReplyResponse>> UpdateReply(
         [FromRoute] uint threadId,
         [FromRoute] string replyId,
@@ -60,7 +68,7 @@ public class RepliesController : ControllerBase
         var user = _userContextAccessor.GetCurrentUser();
         if (user == null)
         {
-            return Unauthorized();
+            return ApiUnauthorized("Login diperlukan untuk mengedit balasan");
         }
 
         var response = await _replyService.UpdateReplyAsync(threadId, replyId, request, user);
@@ -68,6 +76,8 @@ public class RepliesController : ControllerBase
     }
 
     [HttpDelete("{replyId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult> DeleteReply(
         [FromRoute] uint threadId,
         [FromRoute] string replyId)
@@ -75,7 +85,7 @@ public class RepliesController : ControllerBase
         var user = _userContextAccessor.GetCurrentUser();
         if (user == null)
         {
-            return Unauthorized();
+            return ApiUnauthorized("Login diperlukan untuk menghapus balasan");
         }
 
         await _replyService.DeleteReplyAsync(threadId, replyId, user);

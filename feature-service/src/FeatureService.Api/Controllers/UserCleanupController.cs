@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using FeatureService.Api.Services;
-using System.Security.Claims;
+using FeatureService.Api.DTOs;
+using FeatureService.Api.Infrastructure.Auth;
 
 namespace FeatureService.Api.Controllers;
 
@@ -10,16 +11,20 @@ namespace FeatureService.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/user")]
-public class UserCleanupController : ControllerBase
+[Produces("application/json")]
+public class UserCleanupController : ApiControllerBase
 {
     private readonly IUserCleanupService _cleanupService;
+    private readonly IUserContextAccessor _userContext;
     private readonly ILogger<UserCleanupController> _logger;
 
     public UserCleanupController(
         IUserCleanupService cleanupService,
+        IUserContextAccessor userContext,
         ILogger<UserCleanupController> logger)
     {
         _cleanupService = cleanupService;
+        _userContext = userContext;
         _logger = logger;
     }
 
@@ -30,23 +35,23 @@ public class UserCleanupController : ControllerBase
     /// Called by Go backend before showing delete confirmation.
     /// </summary>
     [HttpGet("{userId}/can-delete")]
-    [Authorize] // Requires valid JWT - either user's own or internal service token
+    [Authorize]
     [ProducesResponseType(typeof(UserDeleteValidationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ValidateAccountDeletion(uint userId)
     {
-        // Verify the request is either:
-        // 1. From the user themselves
-        // 2. From an admin
-        // 3. From internal service (service-to-service)
-        var userIdClaim = User.FindFirst("user_id")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isAdmin = User.IsInRole("admin");
+        if (!_userContext.IsAuthenticated)
+        {
+            return ApiUnauthorized("User not authenticated");
+        }
+
+        var currentUser = _userContext.GetCurrentUser();
         var isInternal = User.HasClaim("scope", "internal") || User.HasClaim("aud", "feature-service-internal");
 
-        if (!isAdmin && !isInternal && userIdClaim != userId.ToString())
+        if (!_userContext.IsAdmin && !isInternal && currentUser?.UserId != userId)
         {
-            return Forbid();
+            return ApiForbidden("You can only validate your own account deletion");
         }
 
         var result = await _cleanupService.ValidateAccountDeletionAsync(userId);
@@ -59,32 +64,34 @@ public class UserCleanupController : ControllerBase
     /// Will re-validate before deleting and refuse if conditions not met.
     /// </summary>
     [HttpDelete("{userId}/cleanup")]
-    [Authorize] // Requires valid JWT
+    [Authorize]
     [ProducesResponseType(typeof(UserCleanupResult), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(UserCleanupResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CleanupUserData(uint userId)
     {
-        // Same authorization check
-        var userIdClaim = User.FindFirst("user_id")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isAdmin = User.IsInRole("admin");
-        var isInternal = User.HasClaim("scope", "internal") || User.HasClaim("aud", "feature-service-internal");
-
-        if (!isAdmin && !isInternal && userIdClaim != userId.ToString())
+        if (!_userContext.IsAuthenticated)
         {
-            return Forbid();
+            return ApiUnauthorized("User not authenticated");
         }
 
-        _logger.LogWarning("Account cleanup initiated for user {UserId} by {Actor}", 
-            userId, 
-            isAdmin ? "admin" : (isInternal ? "internal-service" : "self"));
+        var currentUser = _userContext.GetCurrentUser();
+        var isInternal = User.HasClaim("scope", "internal") || User.HasClaim("aud", "feature-service-internal");
+
+        if (!_userContext.IsAdmin && !isInternal && currentUser?.UserId != userId)
+        {
+            return ApiForbidden("You can only cleanup your own account");
+        }
+
+        var actor = _userContext.IsAdmin ? "admin" : (isInternal ? "internal-service" : "self");
+        _logger.LogWarning("Account cleanup initiated for user {UserId} by {Actor}", userId, actor);
 
         var result = await _cleanupService.CleanupUserDataAsync(userId);
 
         if (!result.Success)
         {
-            return BadRequest(result);
+            return ApiBadRequest(result.Error ?? "Cannot cleanup user data");
         }
 
         return Ok(result);

@@ -32,54 +32,61 @@ public class ErrorHandlingMiddleware
     {
         var requestId = context.Items["RequestId"]?.ToString() ?? Guid.NewGuid().ToString();
 
-        _logger.LogError(exception, "Unhandled exception occurred - RequestId: {RequestId}", requestId);
-
-        var errorResponse = new ErrorResponse
-        {
-            Success = false,
-            Error = new ErrorDetail
-            {
-                Code = "INTERNAL_ERROR",
-                Message = "An internal error occurred"
-            },
-            Meta = new ErrorMeta
-            {
-                RequestId = requestId,
-                Timestamp = DateTime.UtcNow
-            }
-        };
-
         var statusCode = HttpStatusCode.InternalServerError;
+        var errorCode = ApiErrorCodes.InternalError;
+        var errorMessage = "Terjadi kesalahan internal";
+        List<string>? details = null;
 
         switch (exception)
         {
             case ValidationException validationException:
                 statusCode = HttpStatusCode.BadRequest;
-                errorResponse.Error.Code = "VALIDATION_ERROR";
-                errorResponse.Error.Message = "Validation failed";
-                errorResponse.Error.Details = validationException.Errors
+                errorCode = ApiErrorCodes.ValidationError;
+                errorMessage = "Validasi gagal";
+                details = validationException.Errors
                     .Select(e => e.ErrorMessage)
                     .ToList();
+                _logger.LogWarning("Validation failed - RequestId: {RequestId}, Errors: {Errors}", 
+                    requestId, string.Join(", ", details));
                 break;
 
             case UnauthorizedAccessException:
                 statusCode = HttpStatusCode.Unauthorized;
-                errorResponse.Error.Code = "UNAUTHORIZED";
-                errorResponse.Error.Message = "Unauthorized access";
+                errorCode = ApiErrorCodes.Unauthorized;
+                errorMessage = exception.Message;
+                _logger.LogWarning("Unauthorized access - RequestId: {RequestId}", requestId);
                 break;
 
             case KeyNotFoundException:
                 statusCode = HttpStatusCode.NotFound;
-                errorResponse.Error.Code = "NOT_FOUND";
-                errorResponse.Error.Message = exception.Message;
+                errorCode = ApiErrorCodes.NotFound;
+                errorMessage = exception.Message;
+                _logger.LogWarning("Resource not found - RequestId: {RequestId}, Message: {Message}", 
+                    requestId, exception.Message);
                 break;
 
             case InvalidOperationException invalidOpEx:
                 statusCode = HttpStatusCode.BadRequest;
-                errorResponse.Error.Code = "INVALID_OPERATION";
-                errorResponse.Error.Message = invalidOpEx.Message;
+                errorCode = ApiErrorCodes.BadRequest;
+                errorMessage = invalidOpEx.Message;
+                _logger.LogWarning("Invalid operation - RequestId: {RequestId}, Message: {Message}", 
+                    requestId, exception.Message);
+                break;
+
+            case ArgumentException argEx:
+                statusCode = HttpStatusCode.BadRequest;
+                errorCode = ApiErrorCodes.BadRequest;
+                errorMessage = argEx.Message;
+                _logger.LogWarning("Invalid argument - RequestId: {RequestId}, Message: {Message}", 
+                    requestId, exception.Message);
+                break;
+
+            default:
+                _logger.LogError(exception, "Unhandled exception - RequestId: {RequestId}", requestId);
                 break;
         }
+
+        var errorResponse = new ApiErrorResponse(errorCode, errorMessage, details, requestId);
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;

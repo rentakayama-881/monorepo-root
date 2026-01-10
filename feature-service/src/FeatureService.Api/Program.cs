@@ -111,7 +111,7 @@ try
     
     // Register financial services
     builder.Services.AddScoped<IWalletService, WalletService>();
-    // TODO: Add TransferService when implemented
+    // TransferService will be added in Phase 2 (Finance) - see docs/10-roadmap
 
     // Register moderation services
     builder.Services.AddScoped<IReportService, ReportService>();
@@ -162,7 +162,13 @@ try
             tags: new[] { "db", "mongodb" }
         );
 
-    builder.Services.AddControllers();
+    builder.Services.AddControllers()
+        .AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+            options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+            options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        });
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
     {
@@ -170,8 +176,21 @@ try
         {
             Title = "Feature Service API",
             Version = "v1",
-            Description = "Feature Service with Social & Finance endpoints"
+            Description = "Feature Service API untuk AlephDraad - Social & Finance endpoints untuk komunitas investasi Indonesia",
+            Contact = new OpenApiContact
+            {
+                Name = "AlephDraad Team",
+                Url = new Uri("https://github.com/alephdraad")
+            }
         });
+
+        // Include XML comments
+        var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (File.Exists(xmlPath))
+        {
+            c.IncludeXmlComments(xmlPath);
+        }
 
         // Add JWT authentication to Swagger
         c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -211,14 +230,22 @@ try
 
     // Configure middleware pipeline
     app.UseMiddleware<CorrelationIdMiddleware>();
+    app.UseMiddleware<SecurityHeadersMiddleware>();
+    app.UseRateLimiting(options =>
+    {
+        options.MaxRequests = 100;  // 100 requests
+        options.WindowSeconds = 60; // per minute
+    });
     app.UseMiddleware<RequestLoggingMiddleware>();
     app.UseMiddleware<ErrorHandlingMiddleware>();
 
-    if (app.Environment.IsDevelopment())
+    // Enable Swagger in all environments (protected by auth in production)
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Feature Service API v1");
+        c.RoutePrefix = "swagger";
+    });
 
     app.UseCors();
 
