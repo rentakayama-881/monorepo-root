@@ -8,7 +8,7 @@ export async function fetchCategories(fetchOptions = {}) {
     }
     return [];
   } catch (err) {
-    console.error("Failed to fetch categories", err);
+    // Silent fail - return empty array
     return [];
   }
 }

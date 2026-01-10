@@ -6,7 +6,8 @@ import (
 )
 
 var (
-	JWTKey []byte
+	JWTKey            []byte
+	FeatureServiceURL string
 )
 
 func InitConfig() {
@@ -16,4 +17,9 @@ func InitConfig() {
 	}
 	JWTKey = []byte(secret)
 
+	// Feature-Service URL for internal calls
+	FeatureServiceURL = os.Getenv("FEATURE_SERVICE_URL")
+	if FeatureServiceURL == "" {
+		FeatureServiceURL = "http://localhost:5000" // Default for development
+	}
 }

@@ -67,6 +67,12 @@ export default function AdminLayout({ children }) {
     { href: "/admin", label: "Dashboard", icon: "🏠" },
     { href: "/admin/badges", label: "Badges", icon: "🏆" },
     { href: "/admin/users", label: "Users", icon: "👥" },
+    { href: "/admin/reports", label: "Reports", icon: "🚨" },
+    { href: "/admin/device-bans", label: "Device Bans", icon: "🔒" },
+    { href: "/admin/warnings", label: "Warnings", icon: "⚠️" },
+    { href: "/admin/content", label: "Hidden Content", icon: "👁️" },
+    { href: "/admin/threads", label: "Thread Mgmt", icon: "📝" },
+    { href: "/admin/audit-logs", label: "Audit Logs", icon: "📋" },
   ];
 
   return (

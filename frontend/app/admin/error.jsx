@@ -3,10 +3,15 @@
 import { useEffect } from "react";
 import Button from "@/components/ui/Button";
 
+const isDev = process.env.NODE_ENV === "development";
+
 export default function AdminError({ error, reset }) {
   useEffect(() => {
-    // Log error details to console for debugging
-    console.error("Admin Error:", error);
+    // Only log error details in development to prevent information leakage
+    if (isDev) {
+      console.error("Admin Error:", error);
+    }
+    // In production, errors should be sent to error tracking service (e.g., Sentry)
   }, [error]);
 
   return (
@@ -36,17 +41,30 @@ export default function AdminError({ error, reset }) {
           Terjadi kesalahan saat memuat halaman admin.
         </p>
 
-        {/* Show error details in development */}
-        <div className="mb-6 p-4 rounded-lg bg-[rgb(var(--surface-2))] text-left overflow-auto max-h-40">
-          <p className="text-sm font-mono text-[rgb(var(--error))] break-all">
-            {error?.message || "Unknown error"}
-          </p>
-          {error?.digest && (
-            <p className="text-xs text-[rgb(var(--muted))] mt-2">
-              Digest: {error.digest}
+        {/* Show error details only in development - hide internal details in production */}
+        {isDev ? (
+          <div className="mb-6 p-4 rounded-lg bg-[rgb(var(--surface-2))] text-left overflow-auto max-h-40">
+            <p className="text-sm font-mono text-[rgb(var(--error))] break-all">
+              {error?.message || "Unknown error"}
             </p>
-          )}
-        </div>
+            {error?.digest && (
+              <p className="text-xs text-[rgb(var(--muted))] mt-2">
+                Digest: {error.digest}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="mb-6 p-4 rounded-lg bg-[rgb(var(--surface-2))] text-left">
+            <p className="text-sm text-[rgb(var(--muted))]">
+              Silakan coba lagi atau hubungi administrator jika masalah berlanjut.
+            </p>
+            {error?.digest && (
+              <p className="text-xs text-[rgb(var(--muted))] mt-2">
+                Reference: {error.digest}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button onClick={reset} variant="primary">

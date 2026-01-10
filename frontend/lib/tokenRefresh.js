@@ -45,7 +45,7 @@ export async function refreshAccessToken() {
 
         // Check if account is locked (403 with specific message)
         if (res.status === 403 && data?.error?.includes("terkunci")) {
-          console.error("Account locked:", data?.error);
+          // Account locked - redirect silently
           clearToken();
           if (typeof window !== "undefined") {
             if (!window.location.pathname.includes("/login")) {
@@ -70,7 +70,7 @@ export async function refreshAccessToken() {
       setTokens(data.access_token, data.refresh_token, data.expires_in);
       return data.access_token;
     } catch (error) {
-      console.error("Token refresh failed:", error);
+      // Token refresh failed - redirect silently
       clearToken();
       return null;
     } finally {

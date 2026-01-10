@@ -479,7 +479,8 @@ func (s *EntAuthService) ConfirmVerification(ctx context.Context, input validato
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			logger.Debug("Invalid verification token", zap.String("token_hash", hash[:8]))
+			// Don't log token hash - security risk
+			logger.Debug("Invalid email verification token attempt")
 			return apperrors.ErrInvalidToken
 		}
 		return apperrors.ErrDatabase

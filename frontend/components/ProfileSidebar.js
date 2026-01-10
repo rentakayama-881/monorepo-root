@@ -65,7 +65,7 @@ export default function ProfileSidebar({ onClose }) {
             }
           }
         } catch (e) {
-          console.error("Failed to load wallet:", e);
+          // Silent fail for wallet - not critical
         }
         
         setIsLoading(false);

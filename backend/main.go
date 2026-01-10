@@ -277,6 +277,8 @@ func main() {
 			account.POST("/change-username", middleware.AuthMiddleware(), handlers.ChangeUsernamePaidHandler)
 			account.PUT("/avatar", middleware.AuthMiddleware(), handlers.UploadAvatarHandler)
 			account.DELETE("/avatar", middleware.AuthMiddleware(), handlers.DeleteAvatarHandler)
+			// Check if user can delete account (validates wallet balance, pending transfers, disputes)
+			account.GET("/can-delete", middleware.AuthMiddleware(), handlers.CanDeleteAccountHandler)
 			// Delete account requires sudo mode
 			account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), middleware.RequireSudo(sudoValidator), handlers.DeleteAccountHandler)
 		}

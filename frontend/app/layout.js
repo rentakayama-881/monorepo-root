@@ -4,6 +4,7 @@ import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 import { ToastProvider } from "../components/ui/Toast";
 import { SudoProvider } from "../components/SudoModal";
+import Providers from "../components/Providers";
 
 const siteName = "Alephdraad";
 const siteDescription = "Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.";
@@ -89,16 +90,18 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning>
       <body className="flex min-h-dvh flex-col antialiased bg-[rgb(var(--bg))] text-[rgb(var(--fg))] selection:bg-[rgb(var(--brand))]/30">
-        <ToastProvider>
-          <SudoProvider>
-            <Header />
-            <ApiStatusBanner />
+        <Providers>
+          <ToastProvider>
+            <SudoProvider>
+              <Header />
+              <ApiStatusBanner />
 
-            <main className="flex-1">{children}</main>
-            
-            <Footer />
-          </SudoProvider>
-        </ToastProvider>
+              <main className="flex-1">{children}</main>
+              
+              <Footer />
+            </SudoProvider>
+          </ToastProvider>
+        </Providers>
       </body>
     </html>
   );

@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"backend-gin/config"
 	"backend-gin/database"
 	"backend-gin/ent"
 	"backend-gin/ent/backupcode"
@@ -300,6 +303,137 @@ type DeleteAccountRequest struct {
 	Confirmation string `json:"confirmation" binding:"required"`
 }
 
+// FeatureServiceValidationResult represents the response from Feature-Service validation
+type FeatureServiceValidationResult struct {
+	CanDelete         bool     `json:"canDelete"`
+	BlockingReasons   []string `json:"blockingReasons"`
+	Warnings          []string `json:"warnings"`
+	WalletBalance     int64    `json:"walletBalance"`
+	TokenBalance      int64    `json:"tokenBalance"`
+	PendingTransfers  int      `json:"pendingTransfers"`
+	DisputedTransfers int      `json:"disputedTransfers"`
+}
+
+// FeatureServiceCleanupResult represents the response from Feature-Service cleanup
+type FeatureServiceCleanupResult struct {
+	Success        bool             `json:"success"`
+	BlockingReason string           `json:"blockingReason"`
+	DeletedCounts  map[string]int64 `json:"deletedCounts"`
+}
+
+// GET /api/account/can-delete - Check if user can delete their account
+// Returns blocking reasons and warnings
+func CanDeleteAccountHandler(c *gin.Context) {
+	userIfc, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	user := userIfc.(*ent.User)
+
+	// Call Feature-Service to check validation
+	result, err := callFeatureServiceValidation(c, uint(user.ID))
+	if err != nil {
+		// If Feature-Service is unavailable, assume can delete (only PostgreSQL data)
+		c.JSON(http.StatusOK, gin.H{
+			"can_delete":         true,
+			"blocking_reasons":   []string{},
+			"warnings":           []string{"Tidak dapat memverifikasi saldo wallet (layanan tidak tersedia)"},
+			"wallet_balance":     0,
+			"token_balance":      0,
+			"pending_transfers":  0,
+			"disputed_transfers": 0,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"can_delete":         result.CanDelete,
+		"blocking_reasons":   result.BlockingReasons,
+		"warnings":           result.Warnings,
+		"wallet_balance":     result.WalletBalance,
+		"token_balance":      result.TokenBalance,
+		"pending_transfers":  result.PendingTransfers,
+		"disputed_transfers": result.DisputedTransfers,
+	})
+}
+
+// callFeatureServiceValidation calls Feature-Service to validate account deletion
+func callFeatureServiceValidation(c *gin.Context, userID uint) (*FeatureServiceValidationResult, error) {
+	url := fmt.Sprintf("%s/api/v1/user/%d/can-delete", config.FeatureServiceURL, userID)
+
+	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Forward the JWT token for authentication
+	authHeader := c.GetHeader("Authorization")
+	if authHeader != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("feature-service error: %s", string(body))
+	}
+
+	var result FeatureServiceValidationResult
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// callFeatureServiceCleanup calls Feature-Service to delete user data from MongoDB
+func callFeatureServiceCleanup(c *gin.Context, userID uint) (*FeatureServiceCleanupResult, error) {
+	url := fmt.Sprintf("%s/api/v1/user/%d/cleanup", config.FeatureServiceURL, userID)
+
+	req, err := http.NewRequestWithContext(c.Request.Context(), "DELETE", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Forward the JWT token for authentication
+	authHeader := c.GetHeader("Authorization")
+	if authHeader != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+
+	var result FeatureServiceCleanupResult
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		if result.BlockingReason != "" {
+			return &result, fmt.Errorf(result.BlockingReason)
+		}
+		return nil, fmt.Errorf("feature-service cleanup failed")
+	}
+
+	return &result, nil
+}
+
 // DELETE /api/account - Delete user account permanently
 // Protected by RequireSudo middleware which already validates user identity
 func DeleteAccountHandler(c *gin.Context) {
@@ -323,6 +457,39 @@ func DeleteAccountHandler(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
+
+	// Step 1: Validate with Feature-Service (check wallet balance, pending transfers, disputes)
+	validation, err := callFeatureServiceValidation(c, uint(user.ID))
+	if err == nil && validation != nil {
+		// Feature-Service available, check blocking reasons
+		if !validation.CanDelete && len(validation.BlockingReasons) > 0 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":              "Tidak dapat menghapus akun",
+				"blocking_reasons":   validation.BlockingReasons,
+				"wallet_balance":     validation.WalletBalance,
+				"pending_transfers":  validation.PendingTransfers,
+				"disputed_transfers": validation.DisputedTransfers,
+			})
+			return
+		}
+	}
+	// If Feature-Service unavailable, continue with PostgreSQL deletion only (no wallet data)
+
+	// Step 2: Call Feature-Service cleanup (hard delete MongoDB data)
+	_, cleanupErr := callFeatureServiceCleanup(c, uint(user.ID))
+	if cleanupErr != nil {
+		// Check if it's a blocking error (wallet balance, pending transfer discovered during cleanup)
+		if strings.Contains(cleanupErr.Error(), "saldo") ||
+			strings.Contains(cleanupErr.Error(), "transfer") ||
+			strings.Contains(cleanupErr.Error(), "dispute") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": cleanupErr.Error()})
+			return
+		}
+		// For other errors (network, etc.), log but continue with PostgreSQL deletion
+		// Data in MongoDB becomes orphan but user can still delete account
+	}
+
+	// Step 3: Delete from PostgreSQL
 	client := database.GetEntClient()
 	db := database.GetSQLDB()
 

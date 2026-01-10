@@ -119,6 +119,9 @@ try
     builder.Services.AddScoped<IUserWarningService, UserWarningService>();
     builder.Services.AddScoped<IAdminModerationService, AdminModerationService>();
 
+    // Register user cleanup service (for account deletion)
+    builder.Services.AddScoped<IUserCleanupService, UserCleanupService>();
+
     // Register document storage service
     builder.Services.AddScoped<IDocumentService, DocumentService>();
 

@@ -129,7 +129,8 @@ func (s *EntSessionService) RefreshSession(ctx context.Context, refreshToken, ip
 			Only(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				logger.Debug("Refresh token not found", zap.String("hash", refreshTokenHash[:16]))
+				// Don't log token hash - security risk
+				logger.Debug("Refresh token not found")
 				txErr = apperrors.ErrInvalidToken
 				return txErr
 			}
@@ -158,7 +159,6 @@ func (s *EntSessionService) RefreshSession(ctx context.Context, refreshToken, ip
 				logger.Warn("Refresh token reuse detected outside grace period!",
 					zap.Int("user_id", sess.UserID),
 					zap.Int("session_id", sess.ID),
-					zap.String("token_family", sess.TokenFamily),
 					zap.Duration("time_since_last_use", timeSinceLastUse))
 
 				// Log security event
@@ -435,7 +435,6 @@ func (s *EntSessionService) RevokeTokenFamily(ctx context.Context, tokenFamily, 
 	}
 
 	logger.Info("Token family revoked",
-		zap.String("token_family", tokenFamily),
 		zap.Int("sessions_revoked", affected))
 
 	return nil
