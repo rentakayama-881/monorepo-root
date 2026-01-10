@@ -23,31 +23,29 @@ export const metadata = {
   description: "Kebijakan privasi dan perlindungan data pribadi pengguna AlephDraad"
 };
 
-// Reusable styled list item with icon
+// Reusable styled list item with icon - compact
 function ListItem({ children, icon: Icon = CheckIcon }) {
   return (
-    <li className="flex items-start gap-3">
+    <li className="flex items-start gap-2">
       <span className="mt-0.5 shrink-0 text-[rgb(var(--muted))]">
-        <Icon className="h-4 w-4" />
+        <Icon className="h-3.5 w-3.5" />
       </span>
-      <span>{children}</span>
+      <span className="text-[13px]">{children}</span>
     </li>
   );
 }
 
-// Section card with icon header
+// Section card with icon header - compact
 function Section({ number, title, icon: Icon, children }) {
   return (
-    <section className="mb-6 overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] transition-all hover:border-[rgb(var(--muted))]/30">
-      <div className="border-b border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 px-5 py-4">
-        <h2 className="flex items-center gap-3 text-base font-semibold text-[rgb(var(--fg))]">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
-            <Icon className="h-4 w-4" />
-          </span>
+    <section className="mb-4 overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
+      <div className="border-b border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/30 px-4 py-3">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-[rgb(var(--fg))]">
+          <Icon className="h-4 w-4 text-[rgb(var(--muted))]" />
           <span>{number}. {title}</span>
         </h2>
       </div>
-      <div className="p-5">
+      <div className="p-4 text-[13px] leading-relaxed">
         {children}
       </div>
     </section>
@@ -63,27 +61,20 @@ function SubSection({ title }) {
 
 export default function PrivacyPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       {/* Header */}
-      <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
-            <ShieldIcon className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold text-[rgb(var(--fg))]">Kebijakan Privasi</h1>
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-[rgb(var(--muted))]">
-              <ClockIcon className="h-3.5 w-3.5" />
-              Terakhir diperbarui: 3 Januari 2026
-            </p>
-          </div>
-        </div>
+      <div className="mb-6 border-b border-[rgb(var(--border))] pb-4">
+        <h1 className="text-lg font-semibold text-[rgb(var(--fg))]">Kebijakan Privasi</h1>
+        <p className="mt-0.5 flex items-center gap-1 text-xs text-[rgb(var(--muted))]">
+          <ClockIcon className="h-3 w-3" />
+          Terakhir diperbarui: 3 Januari 2026
+        </p>
       </div>
 
       <article>
         {/* Intro */}
-        <div className="mb-6 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 p-5">
-          <p className="text-sm leading-relaxed text-[rgb(var(--muted))]">
+        <div className="mb-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3">
+          <p className="text-xs leading-relaxed text-[rgb(var(--muted))]">
             PT AlephDraad Utility Stack ("Kami") berkomitmen untuk melindungi privasi dan data pribadi Anda. 
             Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, menyimpan, dan melindungi 
             informasi Anda saat menggunakan platform AlephDraad.

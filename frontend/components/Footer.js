@@ -39,20 +39,20 @@ const footerSections = [
 export default function Footer() {
   return (
     <footer className="mt-auto border-t border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        {/* Section Links - Inline style like prompts.chat */}
-        <div className="flex flex-wrap gap-x-8 gap-y-6 pb-6 border-b border-[rgb(var(--border))]">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+        {/* Section Links - Compact inline style */}
+        <div className="flex flex-wrap gap-x-6 gap-y-4 pb-4 border-b border-[rgb(var(--border))] sm:gap-x-10">
           {footerSections.map((section) => (
-            <div key={section.title} className="min-w-[140px]">
-              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--muted))]">
+            <div key={section.title} className="min-w-[120px]">
+              <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-[rgb(var(--muted))]">
                 {section.title}
               </h3>
-              <ul className="space-y-1.5">
+              <ul className="space-y-0.5">
                 {section.links.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-[rgb(var(--fg))] transition-colors hover:text-[rgb(var(--brand))]"
+                      className="text-xs text-[rgb(var(--fg))]/80 transition-colors hover:text-[rgb(var(--brand))]"
                     >
                       {link.label}
                     </Link>
@@ -63,43 +63,43 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Bottom Bar - Compact inline like prompts.chat */}
-        <div className="flex flex-col items-center gap-3 pt-6 text-xs text-[rgb(var(--muted))] sm:flex-row sm:justify-between">
+        {/* Bottom Bar - Minimal */}
+        <div className="flex flex-col items-center gap-2 pt-4 text-[10px] text-[rgb(var(--muted))] sm:flex-row sm:justify-between">
           {/* Logo & Copyright */}
-          <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1.5">
+            <Link href="/" className="flex items-center opacity-60 hover:opacity-100 transition-opacity">
               <Image
                 src="/logo/logo-icon-only.svg"
                 alt="Alephdraad"
-                width={16}
-                height={16}
+                width={14}
+                height={14}
                 className="dark:hidden"
               />
               <Image
                 src="/logo/logo-icon-only-dark.svg"
                 alt="Alephdraad"
-                width={16}
-                height={16}
+                width={14}
+                height={14}
                 className="hidden dark:block"
               />
             </Link>
-            <span>© {new Date().getFullYear()} Alephdraad. All rights reserved.</span>
+            <span>© {new Date().getFullYear()} Alephdraad</span>
           </div>
 
           {/* Version & Status Badges */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Link 
               href="/changelog" 
-              className="inline-flex items-center gap-1 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2 py-0.5 text-[11px] transition-colors hover:border-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+              className="inline-flex items-center gap-0.5 rounded-full border border-[rgb(var(--border))] px-1.5 py-0.5 text-[10px] transition-colors hover:border-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
             >
-              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 8v4l3 3" />
                 <circle cx="12" cy="12" r="9" />
               </svg>
               v1.0.0
             </Link>
-            <span className="inline-flex items-center gap-1 rounded-full border border-[rgb(var(--success))]/30 bg-[rgb(var(--success))]/10 px-2 py-0.5 text-[11px] text-[rgb(var(--success))]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--success))] animate-pulse" />
+            <span className="inline-flex items-center gap-1 rounded-full border border-[rgb(var(--success))]/20 bg-[rgb(var(--success))]/5 px-1.5 py-0.5 text-[10px] text-[rgb(var(--success))]">
+              <span className="h-1 w-1 rounded-full bg-[rgb(var(--success))] animate-pulse" />
               Operasional
             </span>
           </div>

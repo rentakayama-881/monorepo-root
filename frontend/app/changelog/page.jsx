@@ -85,9 +85,9 @@ const releases = [
 
 function VersionBadge({ type }) {
   const styles = {
-    major: "bg-[rgb(var(--brand))/0.1] text-[rgb(var(--brand))] border-[rgb(var(--brand))/0.2]",
-    minor: "bg-[rgb(var(--success))/0.1] text-[rgb(var(--success))] border-[rgb(var(--success))/0.2]",
-    patch: "bg-[rgb(var(--muted))/0.1] text-[rgb(var(--muted))] border-[rgb(var(--muted))/0.2]",
+    major: "bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))] border-[rgb(var(--brand))]/20",
+    minor: "bg-[rgb(var(--success))]/10 text-[rgb(var(--success))] border-[rgb(var(--success))]/20",
+    patch: "bg-[rgb(var(--muted))]/10 text-[rgb(var(--muted))] border-[rgb(var(--muted))]/20",
   };
 
   const labels = {
@@ -97,7 +97,7 @@ function VersionBadge({ type }) {
   };
 
   return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${styles[type]}`}>
+    <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${styles[type]}`}>
       {labels[type]}
     </span>
   );
@@ -107,15 +107,15 @@ function ChangeSection({ title, items, icon, color }) {
   if (!items || items.length === 0) return null;
 
   return (
-    <div className="mt-4">
-      <h4 className={`mb-2 flex items-center gap-2 text-sm font-medium ${color}`}>
+    <div className="mt-3">
+      <h4 className={`mb-1.5 flex items-center gap-1.5 text-xs font-medium ${color}`}>
         {icon}
         {title}
       </h4>
-      <ul className="space-y-1 text-sm text-[rgb(var(--muted))]">
+      <ul className="space-y-0.5 text-xs text-[rgb(var(--muted))]">
         {items.map((item, index) => (
-          <li key={index} className="flex items-start gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-50" />
+          <li key={index} className="flex items-start gap-1.5">
+            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-current opacity-50" />
             <span>{item}</span>
           </li>
         ))}
@@ -126,28 +126,28 @@ function ChangeSection({ title, items, icon, color }) {
 
 export default function ChangelogPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       {/* Header */}
-      <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
-        <h1 className="text-2xl font-semibold text-[rgb(var(--fg))]">Catatan Perubahan</h1>
-        <p className="mt-1 text-sm text-[rgb(var(--muted))]">
+      <div className="mb-6 border-b border-[rgb(var(--border))] pb-4">
+        <h1 className="text-lg font-semibold text-[rgb(var(--fg))]">Catatan Perubahan</h1>
+        <p className="mt-0.5 text-xs text-[rgb(var(--muted))]">
           Riwayat pembaruan dan perbaikan platform
         </p>
       </div>
 
       {/* Version Info */}
-      <section className="mb-8 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-4">
-        <div className="flex flex-wrap items-center gap-4">
+      <section className="mb-6 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
           <div>
-            <p className="text-xs text-[rgb(var(--muted))]">Versi Saat Ini</p>
-            <p className="text-lg font-semibold text-[rgb(var(--fg))]">v{releases[0].version}</p>
+            <p className="text-[10px] text-[rgb(var(--muted))]">Versi Saat Ini</p>
+            <p className="font-semibold text-[rgb(var(--fg))]">v{releases[0].version}</p>
           </div>
-          <div className="h-8 w-px bg-[rgb(var(--border))]" />
+          <div className="h-6 w-px bg-[rgb(var(--border))]" />
           <div>
-            <p className="text-xs text-[rgb(var(--muted))]">Codename</p>
-            <p className="text-sm font-medium text-[rgb(var(--fg))]">{releases[0].codename}</p>
+            <p className="text-[10px] text-[rgb(var(--muted))]">Codename</p>
+            <p className="font-medium text-[rgb(var(--fg))]">{releases[0].codename}</p>
           </div>
-          <div className="h-8 w-px bg-[rgb(var(--border))]" />
+          <div className="h-6 w-px bg-[rgb(var(--border))]" />
           <div>
             <p className="text-xs text-[rgb(var(--muted))]">Tanggal Rilis</p>
             <p className="text-sm text-[rgb(var(--fg))]">{new Date(releases[0].date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>

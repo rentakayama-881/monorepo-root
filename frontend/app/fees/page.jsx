@@ -58,35 +58,35 @@ const withdrawalTiers = [
 
 export default function FeesPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       {/* Header */}
-      <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
-        <h1 className="text-2xl font-semibold text-[rgb(var(--fg))]">Biaya Layanan</h1>
-        <p className="mt-1 text-sm text-[rgb(var(--muted))]">
+      <div className="mb-6 border-b border-[rgb(var(--border))] pb-4">
+        <h1 className="text-lg font-semibold text-[rgb(var(--fg))]">Biaya Layanan</h1>
+        <p className="mt-0.5 text-xs text-[rgb(var(--muted))]">
           Struktur biaya transparan untuk semua layanan AlephDraad
         </p>
       </div>
 
       {/* Fee Structure */}
-      <section className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold text-[rgb(var(--fg))]">Struktur Biaya</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
+      <section className="mb-6">
+        <h2 className="mb-3 text-sm font-semibold text-[rgb(var(--fg))]">Struktur Biaya</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
           {feeStructure.map((item) => (
             <div
               key={item.type}
-              className="rounded-lg border border-[rgb(var(--border))] p-4"
+              className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3"
             >
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-[rgb(var(--fg))]">{item.type}</h3>
-                <span className="rounded-md bg-[rgb(var(--surface-2))] px-2 py-0.5 text-sm font-semibold text-[rgb(var(--fg))]">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-[13px] font-medium text-[rgb(var(--fg))]">{item.type}</h3>
+                <span className="rounded bg-[rgb(var(--surface-2))] px-1.5 py-0.5 text-xs font-semibold text-[rgb(var(--fg))]">
                   {item.fee}
                 </span>
               </div>
-              <p className="mb-3 text-xs text-[rgb(var(--muted))]">{item.description}</p>
-              <ul className="space-y-1.5">
+              <p className="mb-2 text-[11px] text-[rgb(var(--muted))]">{item.description}</p>
+              <ul className="space-y-1">
                 {item.details.map((detail, idx) => (
-                  <li key={idx} className="flex items-start gap-2 text-xs text-[rgb(var(--muted))]">
-                    <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[rgb(var(--success))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <li key={idx} className="flex items-start gap-1.5 text-[11px] text-[rgb(var(--muted))]">
+                    <svg className="mt-0.5 h-3 w-3 shrink-0 text-[rgb(var(--success))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M20 6L9 17l-5-5" />
                     </svg>
                     <span>{detail}</span>
@@ -99,49 +99,49 @@ export default function FeesPage() {
       </section>
 
       {/* Minimum Withdrawal Tiers */}
-      <section className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold text-[rgb(var(--fg))]">Minimum Penarikan</h2>
-        <p className="mb-4 text-sm text-[rgb(var(--muted))]">
+      <section className="mb-6">
+        <h2 className="mb-3 text-sm font-semibold text-[rgb(var(--fg))]">Minimum Penarikan</h2>
+        <p className="mb-3 text-xs text-[rgb(var(--muted))]">
           Minimum penarikan ditentukan berdasarkan total nilai transaksi kumulatif Anda di platform.
         </p>
-        <div className="overflow-hidden rounded-lg border border-[rgb(var(--border))]">
-          <table className="w-full text-sm">
+        <div className="overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
+          <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]">
-                <th className="px-4 py-3 text-left text-xs font-medium text-[rgb(var(--muted))]">Tier</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-[rgb(var(--muted))]">Kriteria</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-[rgb(var(--muted))]">Min. Penarikan</th>
+              <tr className="border-b border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50">
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-[rgb(var(--muted))]">Tier</th>
+                <th className="px-3 py-2 text-left text-[11px] font-medium text-[rgb(var(--muted))]">Kriteria</th>
+                <th className="px-3 py-2 text-right text-[11px] font-medium text-[rgb(var(--muted))]">Min. Penarikan</th>
               </tr>
             </thead>
             <tbody>
               {withdrawalTiers.map((tier, idx) => (
                 <tr key={tier.tier} className={idx !== withdrawalTiers.length - 1 ? "border-b border-[rgb(var(--border))]" : ""}>
-                  <td className="px-4 py-3 font-medium text-[rgb(var(--fg))]">{tier.tier}</td>
-                  <td className="px-4 py-3 text-[rgb(var(--muted))]">{tier.criteria}</td>
-                  <td className="px-4 py-3 text-right font-medium text-[rgb(var(--fg))]">{tier.minWithdraw}</td>
+                  <td className="px-3 py-2 font-medium text-[rgb(var(--fg))]">{tier.tier}</td>
+                  <td className="px-3 py-2 text-[rgb(var(--muted))]">{tier.criteria}</td>
+                  <td className="px-3 py-2 text-right font-medium text-[rgb(var(--fg))]">{tier.minWithdraw}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-xs text-[rgb(var(--muted))]">
+        <p className="mt-2 text-[11px] text-[rgb(var(--muted))]">
           Kebijakan ini bertujuan untuk menjaga stabilitas sistem pembayaran dan mengurangi risiko penyalahgunaan.
         </p>
       </section>
 
       {/* Settlement Information */}
-      <section className="mb-8">
-        <h2 className="mb-4 text-lg font-semibold text-[rgb(var(--fg))]">Informasi Pencairan Dana</h2>
+      <section className="mb-6">
+        <h2 className="mb-3 text-sm font-semibold text-[rgb(var(--fg))]">Informasi Pencairan Dana</h2>
         
-        <div className="rounded-lg border border-[rgb(var(--warning))/0.3] bg-[rgb(var(--warning))/0.05] p-4">
-          <div className="flex items-start gap-3">
-            <svg className="mt-0.5 h-5 w-5 shrink-0 text-[rgb(var(--warning))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="rounded-lg border border-[rgb(var(--warning))]/20 bg-[rgb(var(--warning))]/5 p-3">
+          <div className="flex items-start gap-2">
+            <svg className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(var(--warning))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
               <path d="M12 8v4M12 16h.01" />
             </svg>
             <div>
-              <h3 className="text-sm font-medium text-[rgb(var(--fg))]">Penting: Waktu Pencairan Dana</h3>
-              <p className="mt-1 text-sm text-[rgb(var(--muted))]">
+              <h3 className="text-[13px] font-medium text-[rgb(var(--fg))]">Penting: Waktu Pencairan Dana</h3>
+              <p className="mt-0.5 text-xs text-[rgb(var(--muted))]">
                 AlephDraad menggunakan sistem pembayaran dengan mekanisme settlement H+1 hingga H+3 hari kerja, 
                 tergantung metode pembayaran yang digunakan.
               </p>
@@ -149,20 +149,20 @@ export default function FeesPage() {
           </div>
         </div>
 
-        <div className="mt-4 space-y-4">
-          <div className="rounded-lg border border-[rgb(var(--border))] p-4">
-            <h4 className="mb-2 text-sm font-medium text-[rgb(var(--fg))]">Bagaimana Sistem Ini Bekerja?</h4>
-            <ol className="space-y-2 text-sm text-[rgb(var(--muted))]">
-              <li className="flex gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-xs font-medium text-[rgb(var(--fg))]">1</span>
+        <div className="mt-3 space-y-3">
+          <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3">
+            <h4 className="mb-2 text-[13px] font-medium text-[rgb(var(--fg))]">Bagaimana Sistem Ini Bekerja?</h4>
+            <ol className="space-y-1.5 text-xs text-[rgb(var(--muted))]">
+              <li className="flex gap-2">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-[10px] font-medium text-[rgb(var(--fg))]">1</span>
                 <span>Ketika Anda melakukan <strong className="text-[rgb(var(--fg))]">deposit</strong>, saldo akan langsung ditampilkan di wallet setelah pembayaran dikonfirmasi.</span>
               </li>
-              <li className="flex gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-xs font-medium text-[rgb(var(--fg))]">2</span>
+              <li className="flex gap-2">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-[10px] font-medium text-[rgb(var(--fg))]">2</span>
                 <span>Dana tersebut sudah bisa digunakan untuk <strong className="text-[rgb(var(--fg))]">transaksi escrow</strong> di marketplace.</span>
               </li>
-              <li className="flex gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-xs font-medium text-[rgb(var(--fg))]">3</span>
+              <li className="flex gap-2">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--surface-2))] text-[10px] font-medium text-[rgb(var(--fg))]">3</span>
                 <span>Namun, dana baru bisa <strong className="text-[rgb(var(--fg))]">ditarik ke rekening bank</strong> setelah proses settlement dari payment gateway selesai.</span>
               </li>
             </ol>
