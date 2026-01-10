@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { LOCKED_CATEGORIES } from "@/lib/constants";
-import { ThreadCard, ThreadCardSkeleton } from "@/components/ui/ThreadCard";
+import ThreadCard, { ThreadCardSkeleton } from "@/components/ui/ThreadCard";
 
 export default function CategoryThreadsPage() {
   const params = useParams();
