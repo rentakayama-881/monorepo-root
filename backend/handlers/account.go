@@ -322,14 +322,27 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	// 1. Delete thread chunks (RAG index) for user's threads - raw SQL needed for thread_chunks table
-	if _, err := db.ExecContext(ctx, `
-		DELETE FROM thread_chunks 
-		WHERE thread_id IN (SELECT id FROM threads WHERE user_id = $1)
-	`, user.ID); err != nil {
-		_ = tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus index thread"})
-		return
+	// 1. Delete thread chunks (RAG index) for user's threads - only if table exists
+	var tableExists bool
+	err = db.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.tables 
+			WHERE table_schema = 'public' AND table_name = 'thread_chunks'
+		)
+	`).Scan(&tableExists)
+	if err != nil {
+		tableExists = false // Assume not exists on error
+	}
+
+	if tableExists {
+		if _, err := db.ExecContext(ctx, `
+			DELETE FROM thread_chunks 
+			WHERE thread_id IN (SELECT id FROM threads WHERE user_id = $1)
+		`, user.ID); err != nil {
+			_ = tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus index thread"})
+			return
+		}
 	}
 
 	// 2. Delete all user's threads

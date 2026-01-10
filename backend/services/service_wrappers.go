@@ -179,7 +179,6 @@ func (w *TOTPServiceWrapper) GetStatus(userID uint) (*dto.TOTPStatusResponse, er
 
 // GetBackupCodeCount returns remaining backup codes count
 func (w *TOTPServiceWrapper) GetBackupCodeCount(userID uint) (int, error) {
-	// Placeholder implementation until EntTOTPService.GetBackupCodeCount is implemented
-	// For now return 0 - needs proper implementation
-	return 0, nil
+	remaining, _, err := w.ent.GetBackupCodeStatus(context.Background(), int(userID))
+	return remaining, err
 }
