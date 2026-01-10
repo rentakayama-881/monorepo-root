@@ -17,6 +17,7 @@ import { useToast } from "@/components/ui/Toast";
  * @param {string} props.placeholder - Textarea placeholder
  * @param {boolean} props.compact - Compact mode for nested replies
  * @param {string} props.className - Additional CSS classes
+ * @param {boolean} props.autoFocus - Auto-focus textarea on mount (default: false)
  */
 export default function ReplyForm({
   threadId,
@@ -26,6 +27,7 @@ export default function ReplyForm({
   placeholder = "Tulis balasan...",
   compact = false,
   className = "",
+  autoFocus = false,
 }) {
   const [content, setContent] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -38,12 +40,12 @@ export default function ReplyForm({
   const maxLength = 10000;
   const remainingChars = maxLength - content.length;
 
-  // Auto-focus textarea on mount
+  // Auto-focus textarea on mount only when explicitly requested
   useEffect(() => {
-    if (textareaRef.current && !compact) {
+    if (textareaRef.current && autoFocus) {
       textareaRef.current.focus();
     }
-  }, [compact]);
+  }, [autoFocus]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
