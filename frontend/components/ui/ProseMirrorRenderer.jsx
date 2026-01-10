@@ -85,10 +85,10 @@ function renderListItems(items) {
     // listItem contains paragraph(s)
     const paragraphs = item.content || [];
     return (
-      <li key={idx}>
+      <li key={idx} className="text-[rgb(var(--fg))]">
         {paragraphs.map((p, pIdx) => {
           if (p.type === "paragraph") {
-            return <span key={pIdx}>{renderContent(p.content)}</span>;
+            return <span key={pIdx} className="text-inherit">{renderContent(p.content)}</span>;
           }
           return renderNode(p, pIdx);
         })}
@@ -120,24 +120,25 @@ function renderText(textNode, key) {
   }
 
   // Apply marks (bold, italic, code, etc.)
+  // Use text-inherit to inherit color from parent for dark/light mode support
   let element = text;
 
   for (const mark of marks) {
     switch (mark.type) {
       case "bold":
-        element = <strong key={key} className="font-semibold">{element}</strong>;
+        element = <strong key={key} className="font-semibold text-inherit">{element}</strong>;
         break;
       case "italic":
-        element = <em key={key}>{element}</em>;
+        element = <em key={key} className="text-inherit">{element}</em>;
         break;
       case "code":
-        element = <code key={key} className="bg-[rgb(var(--surface-2))] px-1.5 py-0.5 rounded text-sm font-mono">{element}</code>;
+        element = <code key={key} className="bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))] px-1.5 py-0.5 rounded text-sm font-mono">{element}</code>;
         break;
       case "strike":
-        element = <s key={key}>{element}</s>;
+        element = <s key={key} className="text-inherit">{element}</s>;
         break;
       case "underline":
-        element = <u key={key}>{element}</u>;
+        element = <u key={key} className="text-inherit">{element}</u>;
         break;
       case "link":
         element = (
