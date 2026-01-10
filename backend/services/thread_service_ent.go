@@ -187,11 +187,22 @@ func (s *EntThreadService) createThreadInternal(ctx context.Context, userID int,
 		switch v := input.Content.(type) {
 		case map[string]interface{}:
 			contentMap = v
+		case string:
+			// For text content, wrap string in a map
+			contentMap = map[string]interface{}{"text": v}
 		default:
 			// Try to marshal and unmarshal to convert
 			contentBytes, err := json.Marshal(input.Content)
 			if err == nil {
-				_ = json.Unmarshal(contentBytes, &contentMap)
+				// Check if it's a JSON string (quoted)
+				var str string
+				if json.Unmarshal(contentBytes, &str) == nil {
+					// It's a string, wrap it
+					contentMap = map[string]interface{}{"text": str}
+				} else {
+					// Try to unmarshal as object
+					_ = json.Unmarshal(contentBytes, &contentMap)
+				}
 			}
 		}
 	}
@@ -272,10 +283,21 @@ func (s *EntThreadService) updateThreadInternal(ctx context.Context, threadID, u
 		switch v := input.Content.(type) {
 		case map[string]interface{}:
 			contentMap = v
+		case string:
+			// For text content, wrap string in a map
+			contentMap = map[string]interface{}{"text": v}
 		default:
 			contentBytes, err := json.Marshal(input.Content)
 			if err == nil {
-				_ = json.Unmarshal(contentBytes, &contentMap)
+				// Check if it's a JSON string (quoted)
+				var str string
+				if json.Unmarshal(contentBytes, &str) == nil {
+					// It's a string, wrap it
+					contentMap = map[string]interface{}{"text": str}
+				} else {
+					// Try to unmarshal as object
+					_ = json.Unmarshal(contentBytes, &contentMap)
+				}
 			}
 		}
 		update.SetContentJSON(contentMap)

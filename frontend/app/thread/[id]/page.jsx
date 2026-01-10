@@ -152,7 +152,7 @@ export default function ThreadDetailPage() {
                   content={
                     typeof data.content === "string"
                       ? data.content
-                      : (data.content && JSON.stringify(data.content, null, 2)) || "Tidak ada konten."
+                      : (data.content?.text || JSON.stringify(data.content, null, 2))
                   }
                 />
               ) : data.content_type === "prosemirror" ? (
