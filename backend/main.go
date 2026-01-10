@@ -299,6 +299,7 @@ func main() {
 			threads.POST("", middleware.AuthMiddleware(), threadHandler.CreateThread)
 			threads.GET("/me", middleware.AuthMiddleware(), threadHandler.GetMyThreads)
 			threads.PUT("/:id", middleware.AuthMiddleware(), threadHandler.UpdateThread)
+			threads.DELETE("/:id", middleware.AuthMiddleware(), threadHandler.DeleteThread)
 		}
 
 		// Financial endpoints are handled by the ASP.NET service; omitted here to keep responsibilities separated.

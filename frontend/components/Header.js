@@ -10,6 +10,7 @@ import { fetchCategories } from "../lib/categories";
 import { AUTH_CHANGED_EVENT, getToken, TOKEN_KEY } from "@/lib/auth";
 import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
 import { getApiBase } from "@/lib/api";
+import { fetchWithAuth } from "@/lib/tokenRefresh";
 
 export default function Header() {
   const [isAuthed, setIsAuthed] = useState(false);
@@ -63,10 +64,9 @@ export default function Header() {
         return;
       }
       try {
-        const res = await fetch(`${getApiBase()}/api/user/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) {
+        // Use fetchWithAuth for auto token refresh
+        const res = await fetchWithAuth(`${getApiBase()}/api/user/me`);
+        if (!res || !res.ok) {
           setAvatarUrl(null);
           return;
         }

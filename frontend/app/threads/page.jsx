@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
+import { fetchWithAuth } from "@/lib/tokenRefresh";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 
@@ -28,12 +29,15 @@ export default function MyThreadsPage() {
   });
   const [saving, setSaving] = useState(false);
 
+  // delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
   const reloadMyThreads = useCallback(async () => {
-    const t = localStorage.getItem("token");
-    const r = await fetch(`${API}/threads/me`, { headers: { Authorization: `Bearer ${t}` } });
-    if (!r.ok) throw new Error("Gagal memuat threads");
-    const data = await r.json();
-    const list = Array.isArray(data) ? data : Array.isArray(data.items) ? data.items : [];
+    const res = await fetchWithAuth(`${API}/threads/me`);
+    if (!res || !res.ok) throw new Error("Gagal memuat threads");
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : Array.isArray(data.threads) ? data.threads : Array.isArray(data.items) ? data.items : [];
     list.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
     setThreads(list);
   }, [API]);
@@ -53,13 +57,24 @@ export default function MyThreadsPage() {
     return () => { cancelled = true; };
   }, [API, authed, reloadMyThreads]);
 
+  // Auto-refresh when page becomes visible (tab focus)
+  useEffect(() => {
+    if (!authed) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        reloadMyThreads().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [authed, reloadMyThreads]);
+
   function startEdit(th) {
     setOk(""); setError(""); setEditingThread(th);
     (async () => {
       try {
-        const t = localStorage.getItem("token");
-        const res = await fetch(`${API}/threads/${th.id}`, { headers: { Authorization: `Bearer ${t}` } });
-        if (!res.ok) throw new Error("Gagal memuat detail thread");
+        const res = await fetchWithAuth(`${API}/threads/${th.id}`);
+        if (!res || !res.ok) throw new Error("Gagal memuat detail thread");
         const full = await res.json();
 
         const ctype = (full.content_type || "text").toLowerCase();
@@ -92,8 +107,6 @@ export default function MyThreadsPage() {
   async function saveEdit(id) {
     setSaving(true); setOk(""); setError("");
     try {
-      const t = localStorage.getItem("token");
-
       let contentToSend;
       if (originalType === "text") {
         contentToSend = form.content;
@@ -111,13 +124,15 @@ export default function MyThreadsPage() {
         },
       };
 
-      const r = await fetch(`${API}/threads/${id}`, {
+      const r = await fetchWithAuth(`${API}/threads/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const txt = await r.text();
-      if (!r.ok) throw new Error(txt || "Gagal menyimpan thread");
+      if (!r || !r.ok) {
+        const txt = r ? await r.text() : "Request failed";
+        throw new Error(txt || "Gagal menyimpan thread");
+      }
 
       await reloadMyThreads();
       setOk("Thread berhasil diperbarui.");
@@ -129,12 +144,39 @@ export default function MyThreadsPage() {
     }
   }
 
+  // Delete thread handler
+  async function confirmDelete() {
+    if (!deleteConfirm) return;
+    setDeleting(true); setOk(""); setError("");
+    try {
+      const res = await fetchWithAuth(`${API}/threads/${deleteConfirm.id}`, {
+        method: "DELETE",
+      });
+      if (!res || !res.ok) {
+        const txt = res ? await res.text() : "Request failed";
+        throw new Error(txt || "Gagal menghapus thread");
+      }
+      await reloadMyThreads();
+      setOk("Thread berhasil dihapus.");
+      setDeleteConfirm(null);
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   // Close modal on escape
   useEffect(() => {
-    const handleKey = (e) => { if (e.key === "Escape") cancelEdit(); };
-    if (editingThread) window.addEventListener("keydown", handleKey);
+    const handleKey = (e) => {
+      if (e.key === "Escape") {
+        cancelEdit();
+        setDeleteConfirm(null);
+      }
+    };
+    if (editingThread || deleteConfirm) window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [editingThread]);
+  }, [editingThread, deleteConfirm]);
 
   if (!authed) {
     return (
@@ -252,6 +294,15 @@ export default function MyThreadsPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
+                      <button
+                        onClick={() => setDeleteConfirm(th)}
+                        className="rounded-md p-2 text-[rgb(var(--muted))] hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30"
+                        title="Hapus"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
 
@@ -343,6 +394,54 @@ export default function MyThreadsPage() {
                 className="rounded-md bg-[rgb(var(--brand))] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
               >
                 {saving ? "Menyimpan..." : "Simpan Perubahan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-xl">
+            {/* Modal Header */}
+            <div className="flex items-center gap-3 border-b border-[rgb(var(--border))] px-6 py-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-[rgb(var(--fg))]">Hapus Thread</h2>
+                <p className="text-sm text-[rgb(var(--muted))]">Tindakan ini tidak dapat dibatalkan</p>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-4">
+              <p className="text-sm text-[rgb(var(--fg))]">
+                Apakah Anda yakin ingin menghapus thread <strong>&quot;{deleteConfirm.title || "(Tanpa Judul)"}&quot;</strong>?
+              </p>
+              <p className="mt-2 text-sm text-[rgb(var(--muted))]">
+                Thread ini akan dihapus secara permanen dari database dan tidak dapat dikembalikan.
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 border-t border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-6 py-4">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+                className="rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2 text-sm font-medium text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))] disabled:opacity-60"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {deleting ? "Menghapus..." : "Ya, Hapus Thread"}
               </button>
             </div>
           </div>

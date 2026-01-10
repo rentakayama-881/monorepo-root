@@ -493,5 +493,55 @@ func (s *EntThreadService) ListThreadsByUsername(ctx context.Context, username s
 	return s.getThreadsByUsernameInternal(ctx, username, 100, 0)
 }
 
+// DeleteThread deletes a thread and its related thread_chunks (hard delete)
+// Only the thread owner can delete their thread
+func (s *EntThreadService) DeleteThread(ctx context.Context, userID uint, threadID uint) error {
+	// Get the thread to verify ownership
+	t, err := s.client.Thread.
+		Query().
+		Where(thread.IDEQ(int(threadID))).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return apperrors.ErrThreadNotFound
+		}
+		logger.Error("Failed to get thread for delete", zap.Error(err), zap.Uint("thread_id", threadID))
+		return apperrors.ErrDatabase
+	}
+
+	// Check ownership
+	if t.UserID != int(userID) {
+		logger.Warn("Attempt to delete thread by non-owner",
+			zap.Uint("thread_id", threadID),
+			zap.Uint("user_id", userID),
+			zap.Int("owner_id", t.UserID),
+		)
+		return apperrors.ErrThreadOwnership
+	}
+
+	// Delete thread_chunks first (RAG index) - raw SQL needed
+	db := database.GetSQLDB()
+	_, err = db.ExecContext(ctx, `DELETE FROM thread_chunks WHERE thread_id = $1`, threadID)
+	if err != nil {
+		logger.Error("Failed to delete thread_chunks", zap.Error(err), zap.Uint("thread_id", threadID))
+		// Continue anyway - thread_chunks might not exist
+	}
+
+	// Delete the thread
+	err = s.client.Thread.DeleteOneID(int(threadID)).Exec(ctx)
+	if err != nil {
+		logger.Error("Failed to delete thread", zap.Error(err), zap.Uint("thread_id", threadID))
+		return apperrors.ErrDatabase.WithDetails("Gagal menghapus thread")
+	}
+
+	logger.Info("Thread deleted successfully",
+		zap.Uint("thread_id", threadID),
+		zap.Uint("user_id", userID),
+		zap.String("title", t.Title),
+	)
+
+	return nil
+}
+
 // Ensure EntThreadService satisfies the interface
 var _ ThreadServiceInterface = (*EntThreadService)(nil)

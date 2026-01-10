@@ -243,6 +243,33 @@ func (h *ThreadHandler) GetThreadsByUsername(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"threads": threads})
 }
 
+// DeleteThread handles DELETE /api/threads/:id (auth required)
+func (h *ThreadHandler) DeleteThread(c *gin.Context) {
+	// Get user from context
+	userIfc, ok := c.Get("user")
+	if !ok {
+		h.handleError(c, apperrors.ErrUnauthorized)
+		return
+	}
+	user := userIfc.(*ent.User)
+
+	// Parse thread ID
+	idStr := c.Param("id")
+	threadID, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		h.handleError(c, apperrors.ErrInvalidInput.WithDetails("thread_id harus berupa angka"))
+		return
+	}
+
+	// Delete thread
+	if err := h.threadService.DeleteThread(c.Request.Context(), uint(user.ID), uint(threadID)); err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "message": "Thread berhasil dihapus"})
+}
+
 // handleError handles errors consistently
 func (h *ThreadHandler) handleError(c *gin.Context, err error) {
 	if appErr, ok := err.(*apperrors.AppError); ok {

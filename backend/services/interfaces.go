@@ -14,6 +14,7 @@ import (
 type ThreadServiceInterface interface {
 	CreateThread(ctx context.Context, userID uint, input validators.CreateThreadInput) (*ThreadDetailResponse, error)
 	UpdateThread(ctx context.Context, userID uint, input validators.UpdateThreadInput) error
+	DeleteThread(ctx context.Context, userID uint, threadID uint) error
 	GetThreadByID(ctx context.Context, threadID uint) (*ThreadDetailResponse, error)
 	GetCategories(ctx context.Context) ([]CategoryResponse, error)
 	ListLatestThreads(ctx context.Context, categorySlug string, limit int) ([]ThreadListItem, error)
