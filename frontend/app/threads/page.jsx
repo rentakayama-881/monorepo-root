@@ -80,10 +80,19 @@ export default function MyThreadsPage() {
         const ctype = (full.content_type || "text").toLowerCase();
         setOriginalType(ctype);
 
-        const contentText =
-          ctype === "text"
-            ? (typeof full.content === "string" ? full.content : (full.content ? JSON.stringify(full.content, null, 2) : ""))
-            : (full.content ? JSON.stringify(full.content, null, 2) : "");
+        let contentText = "";
+        if (ctype === "text") {
+          if (typeof full.content === "string") {
+            contentText = full.content;
+          } else if (full.content && typeof full.content === "object" && typeof full.content.text === "string") {
+            // Extract text from {"text": "..."} wrapper
+            contentText = full.content.text;
+          } else if (full.content) {
+            contentText = JSON.stringify(full.content, null, 2);
+          }
+        } else {
+          contentText = full.content ? JSON.stringify(full.content, null, 2) : "";
+        }
 
         setForm({
           title: full.title || "",
