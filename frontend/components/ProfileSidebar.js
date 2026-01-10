@@ -1,14 +1,13 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { getApiBase } from "../lib/api";
 import { clearToken, getToken, getRefreshToken } from "@/lib/auth";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
-import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
 import { maskEmail } from "@/lib/email";
 import { useTokenBalance } from "@/lib/useAIChat";
 import { useDocumentStats, formatFileSize } from "@/lib/useDocuments";
+import Avatar from "@/components/ui/Avatar";
 
 export default function ProfileSidebar({ onClose }) {
   const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
@@ -126,9 +125,6 @@ export default function ProfileSidebar({ onClose }) {
   };
 
   const hasUser = !!user.username;
-  const avatarSrc = resolveAvatarSrc(user.avatar_url);
-  const initials = getInitials(user.username);
-  const avatarBgColor = getAvatarColor(user.username);
 
   // Show loading spinner while fetching user data
   if (isLoading || !hasUser) {
@@ -151,13 +147,11 @@ export default function ProfileSidebar({ onClose }) {
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--border))] text-sm font-semibold uppercase text-white" style={avatarSrc ? {} : { backgroundColor: avatarBgColor }}>
-            {avatarSrc ? (
-              <Image src={avatarSrc} alt="Avatar" width={40} height={40} className="h-full w-full object-cover" unoptimized />
-            ) : (
-              initials
-            )}
-          </div>
+          <Avatar 
+            src={user.avatar_url} 
+            name={user.username} 
+            size="md" 
+          />
           <div className="min-w-0">
             <div className="truncate text-base font-semibold text-[rgb(var(--fg))]">{user.username}</div>
             {user.email && (

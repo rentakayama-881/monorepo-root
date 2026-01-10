@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { LOCKED_CATEGORIES } from "@/lib/constants";
+import { ThreadCard, ThreadCardSkeleton } from "@/components/ui/ThreadCard";
 
 export default function CategoryThreadsPage() {
   const params = useParams();
@@ -73,7 +74,7 @@ export default function CategoryThreadsPage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]" />
+            <ThreadCardSkeleton key={i} variant="list" />
           ))}
         </div>
       ) : threads.length === 0 ? (
@@ -83,33 +84,13 @@ export default function CategoryThreadsPage() {
       ) : (
         <div className="overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
           {threads.map((thread, idx) => (
-            <Link
+            <ThreadCard
               key={thread.id}
-              href={`/thread/${thread.id}`}
-              className={`block p-4 transition-colors hover:bg-[rgb(var(--surface-2))] ${idx !== threads.length - 1 ? "border-b border-[rgb(var(--border))]" : ""}`}
-            >
-              <h2 className="text-base font-semibold text-[rgb(var(--fg))] hover:text-[rgb(var(--brand))]">
-                {thread.title}
-              </h2>
-
-              {thread.summary && (
-                <p className="mt-1 line-clamp-2 text-sm text-[rgb(var(--muted))]">
-                  {thread.summary}
-                </p>
-              )}
-
-              <div className="mt-2 flex items-center gap-2 text-xs text-[rgb(var(--muted))]">
-                <span>@{thread.username}</span>
-                <span>•</span>
-                <span>
-                  {new Date(thread.created_at * 1000).toLocaleDateString("en-US", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-            </Link>
+              thread={thread}
+              variant="list"
+              showCategory={false}
+              className={idx !== threads.length - 1 ? "border-b border-[rgb(var(--border))]" : ""}
+            />
           ))}
         </div>
       )}

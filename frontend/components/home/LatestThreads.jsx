@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Card from "../ui/Card";
 import { getApiBase } from "../../lib/api";
+import ThreadCard, { ThreadCardList } from "../ui/ThreadCard";
 
 async function getLatestThreads() {
   const API = getApiBase();
@@ -12,30 +12,6 @@ async function getLatestThreads() {
   } catch (err) {
     return [];
   }
-}
-
-function formatDate(timestamp) {
-  if (!timestamp) return "";
-  return new Date(timestamp * 1000).toLocaleDateString("id-ID", {
-    day: "numeric", month: "short", year: "numeric",
-  });
-}
-
-function BadgeIcon({ badge }) {
-  if (!badge) return null;
-  return (
-    <span 
-      className="inline-flex items-center" 
-      title={badge.name}
-      style={{ color: badge.color || "#6366f1" }}
-    >
-      {badge.icon_url ? (
-        <img src={badge.icon_url} alt={badge.name} className="h-4 w-4 object-contain" />
-      ) : (
-        <span className="text-xs">🏆</span>
-      )}
-    </span>
-  );
 }
 
 export default async function LatestThreads() {
@@ -51,40 +27,15 @@ export default async function LatestThreads() {
       </div>
       
       {threads.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
-          {threads.map((th, idx) => (
-            <Link
+        <ThreadCardList>
+          {threads.map((th) => (
+            <ThreadCard
               key={th.id}
-              href={`/thread/${th.id}`}
-              className={`block p-4 transition-colors hover:bg-[rgb(var(--surface-2))] ${idx !== threads.length - 1 ? "border-b border-[rgb(var(--border))]" : ""}`}
-            >
-              <h3 className="text-base font-semibold text-[rgb(var(--fg))]">
-                {th.title}
-              </h3>
-              {th.summary && (
-                <p className="mt-1 line-clamp-2 text-sm text-[rgb(var(--muted))]">
-                  {th.summary}
-                </p>
-              )}
-              <div className="mt-2 flex items-center gap-2 text-xs text-[rgb(var(--muted))]">
-                <span className="inline-flex items-center gap-1 font-medium text-[rgb(var(--fg))]">
-                  {th.username || "Anonim"}
-                  <BadgeIcon badge={th.primary_badge} />
-                </span>
-                <span>•</span>
-                <span>{formatDate(th.created_at)}</span>
-                {th.category && (
-                  <>
-                    <span>•</span>
-                    <span className="rounded-full bg-[rgb(var(--surface-2))] px-2 py-0.5 text-xs font-medium">
-                      {th.category.name || th.category.slug}
-                    </span>
-                  </>
-                )}
-              </div>
-            </Link>
+              thread={th}
+              variant="list"
+            />
           ))}
-        </div>
+        </ThreadCardList>
       ) : (
         <div className="rounded-lg border border-dashed border-[rgb(var(--border))] bg-[rgb(var(--surface))] py-8 text-center text-sm text-[rgb(var(--muted))]">
           Belum ada thread terbaru.
