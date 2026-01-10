@@ -149,7 +149,7 @@ func (h *TOTPHandler) GenerateBackupCodes(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, codes)
+	c.JSON(http.StatusOK, gin.H{"codes": codes})
 }
 
 // GetBackupCodeCount returns the number of remaining backup codes

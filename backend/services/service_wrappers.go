@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"time"
 
 	"backend-gin/dto"
 	"backend-gin/ent"
@@ -165,15 +166,21 @@ func (w *TOTPServiceWrapper) GenerateBackupCodes(userID uint) ([]string, error) 
 
 // GetStatus returns TOTP enabled status for user
 func (w *TOTPServiceWrapper) GetStatus(userID uint) (*dto.TOTPStatusResponse, error) {
-	// Placeholder implementation until EntTOTPService.GetStatus is implemented
-	// Check if user has TOTP enabled by querying user
 	ctx := context.Background()
 	u, err := w.ent.client.User.Get(ctx, int(userID))
 	if err != nil {
 		return nil, err
 	}
+
+	var verifiedAt *string
+	if u.TotpVerifiedAt != nil {
+		t := u.TotpVerifiedAt.Format(time.RFC3339)
+		verifiedAt = &t
+	}
+
 	return &dto.TOTPStatusResponse{
-		Enabled: u.TotpEnabled,
+		Enabled:    u.TotpEnabled,
+		VerifiedAt: verifiedAt,
 	}, nil
 }
 
