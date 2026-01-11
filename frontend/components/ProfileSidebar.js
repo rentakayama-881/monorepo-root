@@ -170,23 +170,27 @@ export default function ProfileSidebar({ onClose }) {
     <>
       {/* Backdrop overlay - click to close */}
       <div 
-        className="fixed inset-0 z-40 bg-black/50"
+        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-strong animate-fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
       <div
         ref={panelRef}
-        className="fixed right-4 top-16 z-50 w-80 rounded-[var(--radius)] border bg-card shadow-xl flex flex-col max-h-[calc(100dvh-6rem)]"
+        className="fixed right-4 top-16 z-50 w-80 rounded-[var(--radius)] border bg-card shadow-xl flex flex-col max-h-[calc(100dvh-6rem)] animate-slide-down"
       >
         {/* Fixed header section */}
         <div className="p-4 pb-0 shrink-0">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 overflow-hidden">
-            <Avatar 
-              src={user.avatar_url} 
-              name={user.username} 
-              size="md" 
-            />
+            <div className="relative">
+              <Avatar 
+                src={user.avatar_url} 
+                name={user.username} 
+                size="md" 
+              />
+              {/* Status indicator */}
+              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card bg-green-500 ring-2 ring-card" />
+            </div>
             <div className="min-w-0">
               <div className="truncate text-base font-semibold text-foreground">{user.username}</div>
               {user.email && (
@@ -209,9 +213,25 @@ export default function ProfileSidebar({ onClose }) {
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto p-4 pt-0" style={{ overscrollBehavior: 'contain' }}>
+      <div className="flex-1 overflow-y-auto p-4 pt-0 scrollbar-thin" style={{ overscrollBehavior: 'contain' }}>
+        {/* User Stats Section */}
+        <div className="mt-4 grid grid-cols-3 gap-2 rounded-[var(--radius)] border bg-secondary/50 p-3">
+          <div className="text-center">
+            <div className="text-lg font-bold text-foreground">0</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Threads</div>
+          </div>
+          <div className="text-center border-x">
+            <div className="text-lg font-bold text-foreground">0</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Replies</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-foreground">0</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Points</div>
+          </div>
+        </div>
+
         {/* Wallet Balance Card */}
-        <div className="mt-4 rounded-[var(--radius)] border bg-secondary p-3">
+        <div className="mt-4 rounded-[var(--radius)] border bg-gradient-to-br from-secondary/50 to-transparent p-3">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-muted-foreground">Saldo</div>
@@ -221,7 +241,7 @@ export default function ProfileSidebar({ onClose }) {
               </div>
               <Link
                 href="/account/wallet/deposit"
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-all hover:opacity-90 hover:scale-105"
               >
                 + Deposit
               </Link>
@@ -233,57 +253,57 @@ export default function ProfileSidebar({ onClose }) {
             <div className="text-xs font-semibold uppercase text-muted-foreground px-1">Wallet</div>
             <Link
               href="/account/wallet/send"
-              className="flex items-center justify-between rounded-md border px-3 py-2 transition hover:border-muted-foreground hover:bg-secondary"
+              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
                 Kirim Uang
               </span>
-              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/account/wallet/transactions"
-              className="flex items-center justify-between rounded-md border px-3 py-2 transition hover:border-muted-foreground hover:bg-secondary"
+              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
                 Transaksi Saya
               </span>
-              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/account/wallet/disputes"
-              className="flex items-center justify-between rounded-md border px-3 py-2 transition hover:border-muted-foreground hover:bg-secondary"
+              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 Dispute Center
               </span>
-              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/account/wallet/withdraw"
-              className="flex items-center justify-between rounded-md border px-3 py-2 transition hover:border-muted-foreground hover:bg-secondary"
+              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 Tarik Dana
               </span>
-              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
@@ -292,29 +312,29 @@ export default function ProfileSidebar({ onClose }) {
             <div className="text-xs font-semibold uppercase text-muted-foreground px-1 mt-2">Akun</div>
             <Link
               href="/account"
-              className="flex items-center justify-between rounded-md border px-3 py-2 transition hover:border-muted-foreground hover:bg-secondary"
+              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 Account
               </span>
-              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/threads"
-              className="flex items-center justify-between rounded-md border px-3 py-2 text-foreground transition hover:border-muted-foreground hover:bg-secondary"
+              className="group flex items-center justify-between rounded-md border px-3 py-2 text-foreground transition-all hover:border-primary hover:bg-primary/5"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                 </svg>
                 My Threads
               </span>
-              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
@@ -355,10 +375,10 @@ export default function ProfileSidebar({ onClose }) {
 
             <Link
               href="/ai-chat"
-              className="flex items-center justify-between rounded-md border px-3 py-2 transition hover:border-primary hover:bg-primary/5"
+              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4 text-primary transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
                 </svg>
                 <span className="font-medium">Aleph Assistant</span>
@@ -400,24 +420,24 @@ export default function ProfileSidebar({ onClose }) {
 
             <Link
               href="/documents"
-              className="flex items-center justify-between rounded-md border px-3 py-2 transition hover:border-muted-foreground hover:bg-secondary"
+              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 My Documents
               </span>
-              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/documents/upload"
-              className="flex items-center justify-between rounded-md border border-dashed px-3 py-2 transition hover:border-primary hover:bg-primary/5"
+              className="group flex items-center justify-between rounded-md border border-dashed px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
             >
-              <span className="flex items-center gap-2 text-muted-foreground">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <span className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground transition-colors">
+                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
                 Upload Document
@@ -433,15 +453,15 @@ export default function ProfileSidebar({ onClose }) {
             </div>
             <Link
               href="/reports"
-              className="flex items-center justify-between rounded-md border px-3 py-2 transition hover:border-muted-foreground hover:bg-secondary"
+              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
                 </svg>
                 My Reports
               </span>
-              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
@@ -453,10 +473,15 @@ export default function ProfileSidebar({ onClose }) {
         <div className="shrink-0 p-4 border-t">
           <button
             onClick={handleLogout}
-            className="w-full rounded-md border px-3 py-2 text-left text-sm font-semibold text-destructive transition hover:border-destructive/20 hover:bg-destructive/10"
+            className="w-full rounded-md border border-destructive/20 px-3 py-2 text-left text-sm font-semibold text-destructive transition-all hover:bg-destructive/10 hover:border-destructive/40"
             type="button"
           >
-            Keluar
+            <span className="flex items-center gap-2">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Keluar
+            </span>
           </button>
         </div>
       </div>

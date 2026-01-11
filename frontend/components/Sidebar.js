@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { fetchCategories } from "../lib/categories";
 import { LOCKED_CATEGORIES } from "../lib/constants";
 import { EXTERNAL_LLM_MODELS } from "@/lib/useAIChat";
@@ -12,6 +12,19 @@ export default function Sidebar({ open, onClose }) {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [selectedModel, setSelectedModel] = useState(null);
+  const [isClosing, setIsClosing] = useState(false);
+  const sidebarRef = useRef(null);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
+  // Handle close with animation
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 200); // Match animation duration
+  }, [onClose]);
 
   // Lock body scroll when sidebar is open (like prompts.chat Sheet)
   useEffect(() => {
@@ -32,6 +45,53 @@ export default function Sidebar({ open, onClose }) {
       };
     }
   }, [open]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!open) return;
+    
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, handleClose]);
+
+  // Swipe to close gesture for mobile
+  useEffect(() => {
+    if (!open || !sidebarRef.current) return;
+
+    const sidebar = sidebarRef.current;
+    
+    const handleTouchStart = (e) => {
+      touchStartX.current = e.touches[0].clientX;
+    };
+    
+    const handleTouchMove = (e) => {
+      touchEndX.current = e.touches[0].clientX;
+    };
+    
+    const handleTouchEnd = () => {
+      const swipeDistance = touchStartX.current - touchEndX.current;
+      // If swiped left more than 50px, close sidebar
+      if (swipeDistance > 50) {
+        handleClose();
+      }
+    };
+    
+    sidebar.addEventListener('touchstart', handleTouchStart);
+    sidebar.addEventListener('touchmove', handleTouchMove);
+    sidebar.addEventListener('touchend', handleTouchEnd);
+    
+    return () => {
+      sidebar.removeEventListener('touchstart', handleTouchStart);
+      sidebar.removeEventListener('touchmove', handleTouchMove);
+      sidebar.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [open, handleClose]);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,20 +117,30 @@ export default function Sidebar({ open, onClose }) {
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex h-dvh w-80 flex-col border-r bg-card shadow-xl transition-transform duration-200 md:hidden ${open ? "translate-x-0" : "-translate-x-full"}`}
+        ref={sidebarRef}
+        className={`fixed inset-y-0 left-0 z-40 flex flex h-dvh w-80 flex-col border-r bg-card shadow-xl transition-all duration-300 md:hidden ${
+          open && !isClosing 
+            ? "translate-x-0 opacity-100" 
+            : "-translate-x-full opacity-0"
+        }`}
+        style={{
+          transitionTimingFunction: open && !isClosing 
+            ? 'cubic-bezier(0.16, 1, 0.3, 1)' 
+            : 'cubic-bezier(0.7, 0, 0.84, 0)'
+        }}
         aria-label="Sidebar"
         aria-hidden={!open}
       >
         {/* Sticky header */}
         <div className="sticky top-0 z-10 space-y-3 border-b bg-card px-6 pb-4 pt-5">
           <div className="flex items-center justify-between">
-            <Link href="/" onClick={onClose} className="flex items-center gap-2">
+            <Link href="/" onClick={handleClose} className="flex items-center gap-2">
               <Image src="/logo/logo-icon-only.svg" alt="Alephdraad" width={32} height={32} className="dark:hidden" />
               <Image src="/logo/logo-icon-only-dark.svg" alt="Alephdraad" width={32} height={32} className="hidden dark:block" />
             </Link>
             <button
               className="rounded-[var(--radius)] p-1 text-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              onClick={onClose}
+              onClick={handleClose}
               aria-label="Tutup menu"
               type="button"
             >
@@ -82,15 +152,15 @@ export default function Sidebar({ open, onClose }) {
 
           {/* Quick nav */}
           <nav className="flex gap-2 text-sm font-medium text-foreground">
-            <Link href="/" className="flex-1 rounded-[var(--radius)] border px-3 py-2 text-center hover:border-muted-foreground hover:bg-accent" onClick={onClose}>Home</Link>
-            <Link href="/threads" className="flex-1 rounded-[var(--radius)] border px-3 py-2 text-center hover:border-muted-foreground hover:bg-accent" onClick={onClose}>Threads</Link>
+            <Link href="/" className="flex-1 rounded-[var(--radius)] border px-3 py-2 text-center hover:border-muted-foreground hover:bg-accent transition-all" onClick={handleClose}>Home</Link>
+            <Link href="/threads" className="flex-1 rounded-[var(--radius)] border px-3 py-2 text-center hover:border-muted-foreground hover:bg-accent transition-all" onClick={handleClose}>Threads</Link>
           </nav>
 
           {/* AI Search */}
           <Link
             href="/ai-search"
-            className="flex items-center justify-between rounded-[var(--radius)] border border-primary bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
-            onClick={onClose}
+            className="flex items-center justify-between rounded-[var(--radius)] border border-primary bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90"
+            onClick={handleClose}
             aria-label="AI Search"
           >
             <span className="inline-flex items-center gap-2">
@@ -106,7 +176,7 @@ export default function Sidebar({ open, onClose }) {
           </Link>
 
           {/* AI Studio - Multi-model Chat */}
-          <div className="rounded-[var(--radius)] border bg-gradient-to-br from-card to-secondary p-3">
+          <div className="rounded-[var(--radius)] border bg-gradient-to-br from-card to-secondary p-3 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <div className="h-6 w-6 rounded-md bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -122,12 +192,12 @@ export default function Sidebar({ open, onClose }) {
             {/* Model Picker Toggle */}
             <button
               onClick={() => setShowModelPicker(!showModelPicker)}
-              className="w-full flex items-center justify-between rounded-[var(--radius)] border bg-card px-3 py-2 text-xs transition hover:border-muted-foreground"
+              className="w-full flex items-center justify-between rounded-[var(--radius)] border bg-card px-3 py-2 text-xs transition-all hover:border-muted-foreground"
             >
               <span className="flex items-center gap-2">
                 {selectedModel ? (
                   <>
-                    <span className="h-2 w-2 rounded-full bg-green-500" />
+                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                     <span className="text-foreground font-medium">{selectedModel.name}</span>
                     <span className="text-muted-foreground">• {selectedModel.provider}</span>
                   </>
@@ -138,14 +208,14 @@ export default function Sidebar({ open, onClose }) {
                   </>
                 )}
               </span>
-              <svg className={`h-4 w-4 text-muted-foreground transition-transform ${showModelPicker ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${showModelPicker ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
 
             {/* Model Dropdown */}
             {showModelPicker && (
-              <div className="mt-2 max-h-48 overflow-y-auto rounded-[var(--radius)] border bg-card divide-y divide-border">
+              <div className="mt-2 max-h-48 overflow-y-auto rounded-[var(--radius)] border bg-card divide-y divide-border scrollbar-thin animate-slide-down">
                 {EXTERNAL_LLM_MODELS.map((model) => (
                   <button
                     key={model.id}
@@ -153,7 +223,7 @@ export default function Sidebar({ open, onClose }) {
                       setSelectedModel(model);
                       setShowModelPicker(false);
                     }}
-                    className={`w-full px-3 py-2 text-left text-xs transition hover:bg-accent ${
+                    className={`w-full px-3 py-2 text-left text-xs transition-all hover:bg-accent ${
                       selectedModel?.id === model.id ? 'bg-primary/5' : ''
                     }`}
                   >
@@ -170,10 +240,10 @@ export default function Sidebar({ open, onClose }) {
             {/* Start Chat Button */}
             <Link
               href={selectedModel ? `/ai-studio?model=${selectedModel.id}` : '/ai-studio'}
-              onClick={onClose}
-              className={`mt-2 w-full flex items-center justify-center gap-2 rounded-[var(--radius)] px-3 py-2 text-xs font-medium transition ${
+              onClick={handleClose}
+              className={`mt-2 w-full flex items-center justify-center gap-2 rounded-[var(--radius)] px-3 py-2 text-xs font-medium transition-all ${
                 selectedModel 
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90' 
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 shadow-sm' 
                   : 'bg-secondary text-muted-foreground hover:bg-border'
               }`}
             >
@@ -192,7 +262,7 @@ export default function Sidebar({ open, onClose }) {
             </svg>
             <input
               type="text"
-              className="w-full rounded-[var(--radius)] border bg-card px-10 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="w-full rounded-[var(--radius)] border bg-card px-10 py-2 text-sm text-foreground placeholder:text-muted-foreground transition-all focus:border-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               placeholder="Cari kategori thread…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -202,11 +272,11 @@ export default function Sidebar({ open, onClose }) {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5" style={{ overscrollBehavior: "contain" }}>
+        <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5 scrollbar-thin" style={{ overscrollBehavior: "contain" }}>
           {/* Kategori threads */}
           <section className="rounded-[var(--radius)] border bg-card p-4">
             <div className={`${sectionHeading} mb-3`}>Kategori Threads</div>
-            <nav className="flex flex-col divide-y divide-border text-sm">
+            <nav className="flex flex-col divide-y divide-border text-sm stagger-children">
               {loadingCategories ? (
                 <div className="flex items-center gap-2 px-1 py-2 text-muted-foreground">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" />
@@ -221,8 +291,8 @@ export default function Sidebar({ open, onClose }) {
                     <Link
                       key={cat.slug}
                       href={`/category/${cat.slug}`}
-                      className="flex items-center justify-between px-1 py-3 font-medium text-foreground transition hover:text-primary hover:underline"
-                      onClick={onClose}
+                      className="flex items-center justify-between px-1 py-3 font-medium text-foreground transition-all hover:text-primary hover:translate-x-1"
+                      onClick={handleClose}
                     >
                       <span className="flex items-center gap-2">
                         {cat.name}
@@ -233,7 +303,7 @@ export default function Sidebar({ open, onClose }) {
                           </svg>
                         )}
                       </span>
-                      <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
                     </Link>
@@ -248,8 +318,10 @@ export default function Sidebar({ open, onClose }) {
       {/* Overlay untuk mobile - match prompts.chat Sheet overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
-          onClick={onClose}
+          className={`fixed inset-0 z-30 bg-black/50 backdrop-blur-strong md:hidden transition-opacity duration-300 ${
+            isClosing ? 'opacity-0' : 'opacity-100'
+          }`}
+          onClick={handleClose}
           aria-hidden="true"
         />
       )}
