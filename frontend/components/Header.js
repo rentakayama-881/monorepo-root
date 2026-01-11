@@ -165,7 +165,7 @@ export default function Header() {
         </button>
 
         {/* Logo - Alephdraad */}
-        <Logo variant="horizontal" size={36} />
+        <Logo variant="horizontal" size={36} className="h-6 sm:h-7 md:h-8 w-auto" />
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-0.5 text-sm">
@@ -260,13 +260,13 @@ export default function Header() {
             <>
               <Link
                 href="/login"
-                className="px-3 py-1.5 rounded-[var(--radius)] text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
+                className="px-2 py-1 rounded-[var(--radius)] text-xs sm:text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
               >
                 Sign in
               </Link>
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center rounded-[var(--radius)] bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-md active:scale-95"
+                className="inline-flex items-center justify-center rounded-[var(--radius)] bg-primary px-2 py-1 text-xs sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-md active:scale-95"
               >
                 Register
               </Link>

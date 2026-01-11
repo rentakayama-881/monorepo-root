@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getApiBase } from "../../lib/api";
-import ThreadCard, { ThreadCardList } from "../ui/ThreadCard";
+import ThreadCard from "../ui/ThreadCard";
 
 async function getLatestThreads() {
   const API = getApiBase();
@@ -38,15 +38,15 @@ export default async function LatestThreads() {
       </div>
       
       {threads.length > 0 ? (
-        <ThreadCardList>
+        <div className="space-y-4">
           {threads.map((th) => (
             <ThreadCard
               key={th.id}
               thread={th}
-              variant="list"
+              variant="default"
             />
           ))}
-        </ThreadCardList>
+        </div>
       ) : (
         <div className="rounded-[var(--radius)] border border-dashed bg-card py-12 text-center">
           <svg className="mx-auto h-12 w-12 text-muted-foreground opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

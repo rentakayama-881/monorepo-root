@@ -9,7 +9,6 @@ import Providers from "../components/Providers";
 import { ThemeProvider } from "../lib/ThemeContext";
 import { CommandPaletteProvider } from "../components/CommandPaletteProvider";
 import GlobalKeyboardShortcuts from "../components/GlobalKeyboardShortcuts";
-import BackToTop from "../components/BackToTop";
 
 // Load fonts (prompts.chat style)
 const inter = Inter({
@@ -128,8 +127,7 @@ export default function RootLayout({ children }) {
                   {/* Global keyboard shortcuts handler */}
                   <GlobalKeyboardShortcuts />
                   
-                  {/* Back to top button */}
-                  <BackToTop />
+                  {/* Back to top button - REMOVED as per design requirements */}
                 </SudoProvider>
               </ToastProvider>
             </CommandPaletteProvider>
