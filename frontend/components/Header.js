@@ -136,13 +136,14 @@ export default function Header() {
     "inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius)] hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 transition-shadow duration-200">
       <div className="container flex h-12 items-center gap-4">
         {/* Mobile menu */}
         <button
-          className="flex items-center justify-center -ml-2 md:hidden p-2 rounded-[var(--radius)] hover:bg-accent transition-colors"
+          className="flex items-center justify-center -ml-2 md:hidden p-2 rounded-[var(--radius)] hover:bg-accent transition-all duration-200 focus-ring"
           onClick={() => setSidebarOpen(true)}
           aria-label="Toggle menu"
+          aria-expanded={sidebarOpen}
           type="button"
         >
           <svg
@@ -191,7 +192,7 @@ export default function Header() {
             </button>
 
             {categoriesOpen && (
-              <div className="absolute left-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-[var(--radius)] border bg-popover shadow-lg">
+              <div className="absolute left-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-[var(--radius)] border bg-popover shadow-lg animate-scale-in">
                 <div className="max-h-80 overflow-y-auto py-1">
                   {loadingCategories ? (
                     <div className="px-3 py-2 text-sm text-muted-foreground">Memuat kategori…</div>
@@ -202,7 +203,7 @@ export default function Header() {
                       <Link
                         key={cat.slug}
                         href={`/category/${cat.slug}`}
-                        className="block px-3 py-2 text-sm text-foreground hover:bg-accent"
+                        className="block px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors duration-150"
                         onClick={() => setCategoriesOpen(false)}
                       >
                         {cat.name}
@@ -229,9 +230,10 @@ export default function Header() {
           {isAuthed ? (
             <div className="relative">
               <button
-                className="inline-flex items-center gap-2 rounded-[var(--radius)] px-2 py-1 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="inline-flex items-center gap-2 rounded-[var(--radius)] px-2 py-1 hover:bg-accent transition-all duration-200 hover:shadow-sm focus-ring"
                 onClick={() => setProfileOpen((v) => !v)}
                 aria-label="Akun"
+                aria-expanded={profileOpen}
                 type="button"
               >
                 <Avatar 
@@ -250,13 +252,13 @@ export default function Header() {
             <>
               <Link
                 href="/login"
-                className="px-3 py-1.5 rounded-[var(--radius)] text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="px-3 py-1.5 rounded-[var(--radius)] text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
               >
                 Sign in
               </Link>
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center rounded-[var(--radius)] bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                className="inline-flex items-center justify-center rounded-[var(--radius)] bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-md active:scale-95"
               >
                 Register
               </Link>

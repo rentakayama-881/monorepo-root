@@ -1,12 +1,38 @@
 import { cn } from "@/lib/utils";
+import { cva } from "class-variance-authority";
 
 /**
- * Base skeleton component with pulse animation
+ * Skeleton variants
  */
-export default function Skeleton({ className, ...props }) {
+const skeletonVariants = cva(
+  "rounded-[var(--radius)] bg-secondary relative overflow-hidden",
+  {
+    variants: {
+      variant: {
+        default: "animate-pulse",
+        shimmer: "before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent",
+      },
+      shape: {
+        default: "",
+        circle: "rounded-full",
+        text: "h-4",
+        card: "h-32",
+      },
+    },
+    defaultVariants: {
+      variant: "shimmer",
+      shape: "default",
+    },
+  }
+);
+
+/**
+ * Base skeleton component with shimmer animation
+ */
+export default function Skeleton({ className, variant, shape, ...props }) {
   return (
     <div
-      className={cn("animate-pulse rounded-[var(--radius)] bg-secondary", className)}
+      className={cn(skeletonVariants({ variant, shape }), className)}
       {...props}
     />
   );
@@ -17,7 +43,7 @@ export default function Skeleton({ className, ...props }) {
  */
 export function SkeletonText({ width = "w-full", height = "h-4", className = "" }) {
   return (
-    <div className={cn("bg-muted rounded", width, height, className)} />
+    <Skeleton shape="text" className={cn(width, height, className)} />
   );
 }
 
@@ -26,7 +52,16 @@ export function SkeletonText({ width = "w-full", height = "h-4", className = "" 
  */
 export function SkeletonCircle({ size = "h-10 w-10", className = "" }) {
   return (
-    <div className={cn("bg-muted rounded-full", size, className)} />
+    <Skeleton shape="circle" className={cn(size, className)} />
+  );
+}
+
+/**
+ * Card skeleton
+ */
+export function SkeletonCard({ className = "" }) {
+  return (
+    <Skeleton shape="card" className={cn("w-full", className)} />
   );
 }
 

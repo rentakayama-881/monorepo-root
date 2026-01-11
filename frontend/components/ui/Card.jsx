@@ -1,15 +1,35 @@
 import { cn } from "@/lib/utils";
+import { cva } from "class-variance-authority";
+
+/**
+ * Card variants
+ */
+const cardVariants = cva(
+  "bg-card text-card-foreground flex flex-col gap-6 rounded-[var(--radius)] border py-6 transition-all duration-200",
+  {
+    variants: {
+      variant: {
+        default: "",
+        interactive: "cursor-pointer hover:shadow-soft hover:-translate-y-0.5 hover:border-accent-foreground/20",
+        gradient: "gradient-border hover:shadow-glow-subtle",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+);
 
 /**
  * Card component (prompts.chat style)
  */
-function Card({ className, children, ...props }) {
+function Card({ className, children, variant = "default", onClick, ...props }) {
   return (
     <div
-      className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-[var(--radius)] border py-6",
-        className
-      )}
+      className={cn(cardVariants({ variant }), className)}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       {...props}
     >
       {children}
