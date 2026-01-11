@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * ThreadCard Component - Consistent card for displaying threads
  * Styled like prompts.chat PromptCard with GitHub-level polish
