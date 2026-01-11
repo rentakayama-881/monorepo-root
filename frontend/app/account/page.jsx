@@ -235,7 +235,7 @@ export default function AccountPage() {
         <div className="space-y-6">
           {/* Profile Photo Section */}
           <section className="settings-section">
-            <h3 className="settings-section-title mb-4">Foto Profil</h3>
+            <h3 className="settings-section-title mb-3">Foto Profil</h3>
             <div className="mt-3 flex items-start gap-4">
               <div className="shrink-0">
                 {avatarPreview ? (
@@ -300,7 +300,7 @@ export default function AccountPage() {
 
           {/* Badges Section */}
           <section className="settings-section">
-            <h3 className="settings-section-title mb-4">Badges</h3>
+            <h3 className="settings-section-title mb-3">Badges</h3>
             <div className="mt-3 space-y-3">
               {badges.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Badge hanya di dapatkan dari reputasi & kontribusi, baik internal maupun eksternal platform yang mempunyai legitimasi.</p>
@@ -337,7 +337,7 @@ export default function AccountPage() {
           </section>
 
           <section className="settings-section">
-            <h3 className="settings-section-title mb-4">Email</h3>
+            <h3 className="settings-section-title mb-3">Email</h3>
             <div className="mt-3 space-y-3">
               {me?.email && (
                 <div className="flex items-center rounded-md border border-border bg-muted/50 px-3 py-2">
@@ -361,7 +361,7 @@ export default function AccountPage() {
           </section>
 
           <section className="settings-section">
-            <h3 className="settings-section-title mb-4">Profil</h3>
+            <h3 className="settings-section-title mb-3">Profil</h3>
             <form onSubmit={saveAccount} className="mt-3 space-y-3">
               <Input
                 label="Name"
@@ -441,7 +441,7 @@ export default function AccountPage() {
           </section>
 
           <section className="settings-section">
-            <h3 className="settings-section-title mb-4">Username</h3>
+            <h3 className="settings-section-title mb-3">Username</h3>
             <div className="mt-1 text-sm text-foreground">Saat ini: <b>{username || "(belum ada)"}</b></div>
             <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-3">
               <div className="flex items-center gap-2 text-sm text-amber-600">

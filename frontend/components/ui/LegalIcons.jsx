@@ -360,7 +360,7 @@ export function SectionHeader({ number, title, icon: Icon }) {
  */
 export function CardSection({ children, className = "" }) {
   return (
-    <section className={`mb-6 rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/20 ${className}`}>
+    <section className={`mb-6 rounded-lg border border-border bg-card p-4 transition-all hover:border-primary/20 ${className}`}>
       {children}
     </section>
   );
@@ -381,7 +381,7 @@ export function PageSkeleton() {
       {/* Content skeleton */}
       <div className="space-y-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="rounded-xl border border-border bg-card p-5">
+          <div key={i} className="rounded-lg border border-border bg-card p-4">
             <div className="mb-4 flex items-center gap-3">
               <div className="h-8 w-8 animate-pulse rounded-lg bg-muted/50" />
               <div className="h-6 w-48 animate-pulse rounded-lg bg-muted/50" />

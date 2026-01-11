@@ -111,7 +111,7 @@ export default function ThreadManagementPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Transfer Ownership */}
-        <div className="p-6 rounded-xl border border-border bg-card">
+        <div className="p-6 rounded-lg border border-border bg-card">
           <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <span>🔄</span> Transfer Ownership
           </h2>
@@ -169,7 +169,7 @@ export default function ThreadManagementPage() {
         </div>
 
         {/* Delete Thread */}
-        <div className="p-6 rounded-xl border border-red-200 bg-red-50/30">
+        <div className="p-6 rounded-lg border border-red-200 bg-red-50/30">
           <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <span>🗑️</span> Delete Thread
           </h2>

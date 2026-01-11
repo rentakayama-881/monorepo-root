@@ -1143,7 +1143,7 @@ html {
 
 /* Stats cards */
 .stat-card {
-  @apply flex flex-col items-center p-4 rounded-xl bg-card border border-border;
+  @apply flex flex-col items-center p-4 rounded-lg bg-card border border-border;
 }
 
 .stat-value {
@@ -1156,12 +1156,12 @@ html {
 
 /* Cover image area */
 .cover-image {
-  @apply w-full h-32 md:h-48 bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl;
+  @apply w-full h-32 md:h-48 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg;
 }
 
 /* Settings section */
 .settings-section {
-  @apply p-6 rounded-xl border border-border bg-card space-y-4;
+  @apply p-4 rounded-lg border border-border bg-card space-y-4;
 }
 
 .settings-section-title {
@@ -1170,7 +1170,7 @@ html {
 
 /* Danger zone */
 .danger-zone {
-  @apply p-6 rounded-xl border border-destructive/50 bg-destructive/5;
+  @apply p-4 rounded-lg border border-destructive/50 bg-destructive/5;
 }
 
 /* Back to top button */

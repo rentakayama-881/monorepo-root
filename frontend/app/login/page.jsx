@@ -298,7 +298,7 @@ function LoginForm() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-soft">
+        <div className="rounded-lg border border-border bg-card p-4 shadow-soft">
           <form className="space-y-4" onSubmit={onTOTPSubmit}>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
@@ -361,7 +361,7 @@ function LoginForm() {
         <p className="text-sm text-muted-foreground">Gunakan email dan password Anda untuk melanjutkan.</p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6 shadow-soft">{sessionExpired && (
+      <div className="rounded-lg border border-border bg-card p-4 shadow-soft">{sessionExpired && (
           <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">
             Session Anda telah berakhir. Silakan login kembali.
           </div>

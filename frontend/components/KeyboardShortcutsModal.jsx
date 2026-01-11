@@ -37,7 +37,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
 
       {/* Modal */}
       <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 animate-scale-in">
-        <div className="mx-4 rounded-xl border bg-card shadow-2xl">
+        <div className="mx-4 rounded-lg border bg-card shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between border-b px-6 py-4">
             <h2 className="text-lg font-semibold text-foreground">

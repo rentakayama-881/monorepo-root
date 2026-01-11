@@ -119,7 +119,7 @@ export default function RegisterPage() {
           <p className="text-sm text-muted-foreground">Daftar dengan email, pilih username, dan mulai eksplorasi.</p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-soft">
+        <div className="rounded-lg border border-border bg-card p-4 shadow-soft">
           <form className="space-y-4" onSubmit={onSubmit}>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Email</label>

@@ -159,7 +159,7 @@ export default function AISearchPage() {
       {/* Search Form */}
       <form onSubmit={handleSearch} className="flex gap-2 mb-8">
         <input
-          className="flex-1 border border-border bg-card rounded-xl px-4 py-3 outline-none text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring/20 transition-all shadow-sm"
+          className="flex-1 border border-border bg-card rounded-lg px-4 py-3 outline-none text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring/20 transition-all shadow-sm"
           placeholder="Ketik kata kunci pencarian..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -168,7 +168,7 @@ export default function AISearchPage() {
         <button
           type="submit"
           disabled={!query.trim() || searching || explaining}
-          className="rounded-xl px-6 py-3 bg-primary text-white font-medium disabled:opacity-50 hover:opacity-90 transition-all shadow-sm hover:shadow"
+          className="rounded-lg px-6 py-3 bg-primary text-white font-medium disabled:opacity-50 hover:opacity-90 transition-all shadow-sm hover:shadow"
         >
           {searching ? (
             <span className="flex items-center gap-2">

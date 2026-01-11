@@ -13,7 +13,7 @@ export default function Label({ title, amount, currencyCode, position = "bottom"
         positionClass
       )}
     >
-      <div className="w-full max-w-xs rounded-xl bg-black/70 px-3 py-2 text-white backdrop-blur">
+      <div className="w-full max-w-xs rounded-lg bg-black/70 px-3 py-2 text-white backdrop-blur">
         <p className="text-xs font-medium uppercase tracking-wide text-white/80">
           {title}
         </p>

@@ -173,7 +173,7 @@ export default function WarningsPage() {
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-card rounded-xl max-w-md w-full">
+          <div className="bg-card rounded-lg max-w-md w-full">
             <div className="p-6 border-b border-border">
               <h2 className="text-xl font-semibold text-foreground">Issue Warning</h2>
             </div>

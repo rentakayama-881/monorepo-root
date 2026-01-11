@@ -176,8 +176,8 @@ export default function UserProfilePage() {
       {/* Content area with tab content */}
       <div className="space-y-4">
         {activeTab === "overview" && badges.length > 0 && (
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h3 className="text-sm font-semibold text-foreground mb-4">Badges</h3>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Badges</h3>
             <div className="flex flex-wrap gap-2">
               {badges.map(b => (
                 <BadgeChip key={b.id} badge={b} />
@@ -186,24 +186,8 @@ export default function UserProfilePage() {
           </div>
         )}
         
-        {activeTab === "threads" && (
-          <div className="rounded-xl border border-border bg-card p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              User threads will be displayed here
-            </p>
-          </div>
-        )}
-        
-        {activeTab === "replies" && (
-          <div className="rounded-xl border border-border bg-card p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              User replies will be displayed here
-            </p>
-          </div>
-        )}
-        
         {activeTab === "badges" && (
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="rounded-lg border border-border bg-card p-4">
             {badges.length > 0 ? (
               <div className="flex flex-wrap gap-3">
                 {badges.map(b => (
