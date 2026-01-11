@@ -39,8 +39,10 @@ function isWebAuthnSupported() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">Memuat formulir…</div>}>
-      <LoginForm />
+    <Suspense fallback={<div className="auth-page-bg"><div className="text-sm text-muted-foreground">Memuat formulir…</div></div>}>
+      <div className="auth-page-bg">
+        <LoginForm />
+      </div>
     </Suspense>
   );
 }
@@ -288,7 +290,7 @@ function LoginForm() {
   // TOTP verification form
   if (requiresTOTP) {
     return (
-      <div className="w-full max-w-md mx-auto space-y-6">
+      <div className="w-full max-w-md mx-auto space-y-6 page-enter">
         <div className="text-center space-y-1">
           <h1 className="text-xl font-semibold text-foreground">Verifikasi 2FA</h1>
           <p className="text-sm text-muted-foreground">
@@ -296,7 +298,7 @@ function LoginForm() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-soft">
           <form className="space-y-4" onSubmit={onTOTPSubmit}>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
@@ -353,20 +355,19 @@ function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6">
+    <div className="w-full max-w-md mx-auto space-y-6 page-enter">
       <div className="text-center space-y-1">
         <h1 className="text-xl font-semibold text-foreground">Masuk ke Alephdraad</h1>
         <p className="text-sm text-muted-foreground">Gunakan email dan password Anda untuk melanjutkan.</p>
       </div>
 
-      <div className="rounded-lg border border-border bg-card p-6">
-        {sessionExpired && (
-          <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 px-3 py-2 text-sm text-amber-600">
+      <div className="rounded-xl border border-border bg-card p-6 shadow-soft">{sessionExpired && (
+          <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">
             Session Anda telah berakhir. Silakan login kembali.
           </div>
         )}
         {registeredNotice && (
-          <div className="mb-4 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-2 text-sm text-emerald-600">
+          <div className="mb-4 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400">
             Registrasi berhasil. Silahkan periksa kotak masuk Email, Email verifikasi mungkin akan masuk lebih lama, tunggu sekitar 5-10 menit.
           </div>
         )}

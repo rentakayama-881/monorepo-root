@@ -219,17 +219,23 @@ export default function AccountPage() {
   );
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-xl font-semibold text-foreground">Account</h1>
+    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-foreground">Account Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage your account settings and preferences
+        </p>
+      </div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" /> Loading...
         </div>
       ) : (
-        <div className="space-y-4">
-          <section className="rounded-lg border border-border bg-card p-4">
-            <h3 className="text-sm font-medium text-foreground">Foto Profil</h3>
+        <div className="space-y-6">
+          {/* Profile Photo Section */}
+          <section className="settings-section">
+            <h3 className="settings-section-title mb-4">Foto Profil</h3>
             <div className="mt-3 flex items-start gap-4">
               <div className="shrink-0">
                 {avatarPreview ? (
@@ -293,8 +299,8 @@ export default function AccountPage() {
           </section>
 
           {/* Badges Section */}
-          <section className="rounded-lg border border-border bg-card p-4">
-            <h3 className="text-sm font-medium text-foreground">Badges</h3>
+          <section className="settings-section">
+            <h3 className="settings-section-title mb-4">Badges</h3>
             <div className="mt-3 space-y-3">
               {badges.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Badge hanya di dapatkan dari reputasi & kontribusi, baik internal maupun eksternal platform yang mempunyai legitimasi.</p>
@@ -330,8 +336,8 @@ export default function AccountPage() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-4">
-            <h3 className="text-sm font-medium text-foreground">Email</h3>
+          <section className="settings-section">
+            <h3 className="settings-section-title mb-4">Email</h3>
             <div className="mt-3 space-y-3">
               {me?.email && (
                 <div className="flex items-center rounded-md border border-border bg-muted/50 px-3 py-2">
@@ -354,8 +360,8 @@ export default function AccountPage() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-4">
-            <h3 className="text-sm font-medium text-foreground">Profil</h3>
+          <section className="settings-section">
+            <h3 className="settings-section-title mb-4">Profil</h3>
             <form onSubmit={saveAccount} className="mt-3 space-y-3">
               <Input
                 label="Name"
@@ -434,8 +440,8 @@ export default function AccountPage() {
             </form>
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-4">
-            <h3 className="text-sm font-medium text-foreground">Username</h3>
+          <section className="settings-section">
+            <h3 className="settings-section-title mb-4">Username</h3>
             <div className="mt-1 text-sm text-foreground">Saat ini: <b>{username || "(belum ada)"}</b></div>
             <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-3">
               <div className="flex items-center gap-2 text-sm text-amber-600">

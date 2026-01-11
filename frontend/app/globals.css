@@ -1030,3 +1030,251 @@ html {
   overflow: hidden;
 }
 
+/* ===== Phase 5: Pages & Advanced States Utilities ===== */
+
+/* Page entrance animations */
+.page-enter {
+  animation: page-fade-in 0.3s ease-out;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Section animations */
+.section-enter {
+  animation: section-slide-up 0.4s ease-out;
+}
+
+@keyframes section-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Empty state styling */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  text-align: center;
+}
+
+.empty-state-icon {
+  height: 4rem;
+  width: 4rem;
+  color: oklch(from var(--muted-foreground) l c h / 0.5);
+  margin-bottom: 1rem;
+}
+
+.empty-state-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-description {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  max-width: 28rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Reading progress bar */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--primary);
+  z-index: 100;
+  transition: width 0.1s linear;
+}
+
+/* Filter chips */
+.filter-chip {
+  @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
+         border border-border bg-card hover:bg-accent transition-colors cursor-pointer;
+}
+
+.filter-chip-active {
+  @apply bg-primary text-primary-foreground border-primary;
+}
+
+/* Tab navigation */
+.tab-nav {
+  @apply flex gap-1 border-b border-border;
+}
+
+.tab-item {
+  @apply px-4 py-2 text-sm font-medium text-muted-foreground 
+         hover:text-foreground transition-colors relative cursor-pointer;
+}
+
+.tab-item-active {
+  @apply text-foreground;
+}
+
+.tab-item-active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 1px 1px 0 0;
+}
+
+/* Stats cards */
+.stat-card {
+  @apply flex flex-col items-center p-4 rounded-xl bg-card border border-border;
+}
+
+.stat-value {
+  @apply text-2xl font-bold text-foreground;
+}
+
+.stat-label {
+  @apply text-xs text-muted-foreground uppercase tracking-wide;
+}
+
+/* Cover image area */
+.cover-image {
+  @apply w-full h-32 md:h-48 bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl;
+}
+
+/* Settings section */
+.settings-section {
+  @apply p-6 rounded-xl border border-border bg-card space-y-4;
+}
+
+.settings-section-title {
+  @apply text-sm font-semibold text-foreground uppercase tracking-wide;
+}
+
+/* Danger zone */
+.danger-zone {
+  @apply p-6 rounded-xl border border-destructive/50 bg-destructive/5;
+}
+
+/* Back to top button */
+.back-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.back-to-top:hover {
+  transform: translateY(-2px);
+}
+
+/* Password strength indicator */
+.password-strength {
+  @apply flex gap-1 mt-2;
+}
+
+.password-strength-bar {
+  @apply h-1 flex-1 rounded-full bg-border transition-all;
+}
+
+.password-strength-bar.active {
+  @apply bg-current;
+}
+
+.password-strength-weak {
+  color: var(--destructive);
+}
+
+.password-strength-medium {
+  color: rgb(217 119 6); /* amber-600 */
+}
+
+.password-strength-strong {
+  color: rgb(22 163 74); /* emerald-600 */
+}
+
+/* Login/Register page background */
+.auth-page-bg {
+  @apply min-h-dvh flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 px-4 py-8;
+}
+
+/* Divider with text */
+.divider {
+  @apply relative my-4;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+}
+
+.divider::before {
+  border-top: 1px solid var(--border);
+}
+
+.divider-text {
+  @apply relative flex justify-center text-xs uppercase bg-card px-2 text-muted-foreground;
+}
+
+/* Thinking/loading animation for AI */
+.thinking-dots {
+  @apply inline-flex gap-1;
+}
+
+.thinking-dot {
+  @apply w-2 h-2 rounded-full bg-current animate-pulse;
+  animation-delay: calc(var(--i) * 0.15s);
+}
+
+/* Better card hover effects */
+.card-hover {
+  transition: all 0.2s ease;
+}
+
+.card-hover:hover {
+  box-shadow: 0 2px 8px -2px rgb(0 0 0 / 0.1), 0 4px 16px -4px rgb(0 0 0 / 0.1);
+  transform: translateY(-2px);
+}
+
+/* Skeleton pulse with shimmer */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--muted) 50%,
+    var(--border) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
