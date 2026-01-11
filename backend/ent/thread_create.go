@@ -4,6 +4,7 @@ package ent
 
 import (
 	"backend-gin/ent/category"
+	"backend-gin/ent/tag"
 	"backend-gin/ent/thread"
 	"backend-gin/ent/user"
 	"context"
@@ -130,6 +131,21 @@ func (_c *ThreadCreate) SetUser(v *User) *ThreadCreate {
 // SetCategory sets the "category" edge to the Category entity.
 func (_c *ThreadCreate) SetCategory(v *Category) *ThreadCreate {
 	return _c.SetCategoryID(v.ID)
+}
+
+// AddTagIDs adds the "tags" edge to the Tag entity by IDs.
+func (_c *ThreadCreate) AddTagIDs(ids ...int) *ThreadCreate {
+	_c.mutation.AddTagIDs(ids...)
+	return _c
+}
+
+// AddTags adds the "tags" edges to the Tag entity.
+func (_c *ThreadCreate) AddTags(v ...*Tag) *ThreadCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddTagIDs(ids...)
 }
 
 // Mutation returns the ThreadMutation object of the builder.
@@ -321,6 +337,22 @@ func (_c *ThreadCreate) createSpec() (*Thread, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.CategoryID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.TagsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   thread.TagsTable,
+			Columns: thread.TagsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tag.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

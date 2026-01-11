@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
+import TagSelector from "@/components/ui/TagSelector";
 
 export default function CreateThreadPage() {
   const router = useRouter();
@@ -13,11 +14,34 @@ export default function CreateThreadPage() {
   const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
   const [telegram, setTelegram] = useState("");
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [availableTags, setAvailableTags] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const API = getApiBase();
+
+  // Fetch available tags
+  useEffect(() => {
+    fetch(`${API}/api/tags`)
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(data => {
+        setAvailableTags(Array.isArray(data) ? data : data.tags || []);
+      })
+      .catch(() => {
+        // If tags endpoint doesn't exist yet, use mock data
+        setAvailableTags([
+          { slug: 'service', name: 'Service', description: 'Offering services', color: '#0969da', icon: 'briefcase' },
+          { slug: 'selling', name: 'Selling', description: 'Selling products', color: '#1a7f37', icon: 'tag' },
+          { slug: 'looking', name: 'Looking For', description: 'Looking for help', color: '#8250df', icon: 'search' },
+          { slug: 'hiring', name: 'Hiring', description: 'Job opportunities', color: '#bf3989', icon: 'people' },
+          { slug: 'collaboration', name: 'Collaboration', description: 'Partnership', color: '#1f6feb', icon: 'git-merge' },
+          { slug: 'question', name: 'Question', description: 'Asking questions', color: '#bc4c00', icon: 'question' },
+          { slug: 'discussion', name: 'Discussion', description: 'General discussion', color: '#58a6ff', icon: 'comment-discussion' },
+        ]);
+      });
+  }, [API]);
 
   const inputClass =
     "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
@@ -44,6 +68,7 @@ export default function CreateThreadPage() {
           summary,
           content_type: "text",
           content,
+          tag_slugs: selectedTags.map(t => t.slug),
           meta: {
             telegram,
           },
@@ -93,6 +118,20 @@ export default function CreateThreadPage() {
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             placeholder="Deskripsi singkat / highlight utama thread"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">
+            Tags
+            <span className="ml-2 text-xs font-normal text-[rgb(var(--muted))]">(optional)</span>
+          </label>
+          <TagSelector
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+            availableTags={availableTags}
+            maxTags={3}
+            placeholder="Pilih tags untuk thread..."
           />
         </div>
 

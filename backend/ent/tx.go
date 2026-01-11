@@ -44,6 +44,8 @@ type Tx struct {
 	SudoSession *SudoSessionClient
 	// TOTPPendingToken is the client for interacting with the TOTPPendingToken builders.
 	TOTPPendingToken *TOTPPendingTokenClient
+	// Tag is the client for interacting with the Tag builders.
+	Tag *TagClient
 	// Thread is the client for interacting with the Thread builders.
 	Thread *ThreadClient
 	// User is the client for interacting with the User builders.
@@ -197,6 +199,7 @@ func (tx *Tx) init() {
 	tx.SessionLock = NewSessionLockClient(tx.config)
 	tx.SudoSession = NewSudoSessionClient(tx.config)
 	tx.TOTPPendingToken = NewTOTPPendingTokenClient(tx.config)
+	tx.Tag = NewTagClient(tx.config)
 	tx.Thread = NewThreadClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserBadge = NewUserBadgeClient(tx.config)

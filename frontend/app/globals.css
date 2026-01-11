@@ -27,8 +27,9 @@
   /* ===== Design tokens (LIGHT default) =====
      Pakai format "R, G, B" supaya rgb(var(--x)) -> rgb(R, G, B) */
   :root {
-    /* Typography */
-    font-family: Inter, "Helvetica Neue", system-ui, -apple-system, sans-serif;
+    /* Typography - GitHub system font stack */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    font-size: 14px;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -415,4 +416,72 @@ button {
 /* Strikethrough */
 .markdown-body del {
   color: rgb(var(--muted));
+}
+
+/* ===== GitHub-style Typography ===== */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: rgb(var(--fg));
+}
+
+h1 {
+  font-size: 2em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid rgb(var(--border));
+}
+
+h2 {
+  font-size: 1.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid rgb(var(--border));
+}
+
+h3 {
+  font-size: 1.25em;
+}
+
+h4 {
+  font-size: 1em;
+}
+
+h5 {
+  font-size: 0.875em;
+}
+
+h6 {
+  font-size: 0.85em;
+  color: rgb(var(--muted));
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+/* ===== Utility classes ===== */
+.text-github-sm {
+  font-size: 12px;
+}
+
+.text-github-base {
+  font-size: 14px;
+}
+
+.text-github-lg {
+  font-size: 16px;
+}
+
+.text-github-xl {
+  font-size: 20px;
+}
+
+.text-github-2xl {
+  font-size: 24px;
+}
+
+.text-github-3xl {
+  font-size: 32px;
 }

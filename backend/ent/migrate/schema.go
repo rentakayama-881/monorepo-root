@@ -555,6 +555,43 @@ var (
 			},
 		},
 	}
+	// TagsColumns holds the columns for the "tags" table.
+	TagsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "slug", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "color", Type: field.TypeString, Nullable: true, Default: "#1f6feb"},
+		{Name: "icon", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
+		{Name: "order", Type: field.TypeInt, Default: 0},
+	}
+	// TagsTable holds the schema information for the "tags" table.
+	TagsTable = &schema.Table{
+		Name:       "tags",
+		Columns:    TagsColumns,
+		PrimaryKey: []*schema.Column{TagsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "tag_slug",
+				Unique:  true,
+				Columns: []*schema.Column{TagsColumns[4]},
+			},
+			{
+				Name:    "tag_is_active",
+				Unique:  false,
+				Columns: []*schema.Column{TagsColumns[9]},
+			},
+			{
+				Name:    "tag_order",
+				Unique:  false,
+				Columns: []*schema.Column{TagsColumns[10]},
+			},
+		},
+	}
 	// ThreadsColumns holds the columns for the "threads" table.
 	ThreadsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -708,6 +745,31 @@ var (
 			},
 		},
 	}
+	// TagThreadsColumns holds the columns for the "tag_threads" table.
+	TagThreadsColumns = []*schema.Column{
+		{Name: "tag_id", Type: field.TypeInt},
+		{Name: "thread_id", Type: field.TypeInt},
+	}
+	// TagThreadsTable holds the schema information for the "tag_threads" table.
+	TagThreadsTable = &schema.Table{
+		Name:       "tag_threads",
+		Columns:    TagThreadsColumns,
+		PrimaryKey: []*schema.Column{TagThreadsColumns[0], TagThreadsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "tag_threads_tag_id",
+				Columns:    []*schema.Column{TagThreadsColumns[0]},
+				RefColumns: []*schema.Column{TagsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "tag_threads_thread_id",
+				Columns:    []*schema.Column{TagThreadsColumns[1]},
+				RefColumns: []*schema.Column{ThreadsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AdminsTable,
@@ -726,9 +788,11 @@ var (
 		SessionLocksTable,
 		SudoSessionsTable,
 		TotpPendingTokensTable,
+		TagsTable,
 		ThreadsTable,
 		UsersTable,
 		UserBadgesTable,
+		TagThreadsTable,
 	}
 )
 
@@ -793,6 +857,9 @@ func init() {
 	TotpPendingTokensTable.Annotation = &entsql.Annotation{
 		Table: "totp_pending_tokens",
 	}
+	TagsTable.Annotation = &entsql.Annotation{
+		Table: "tags",
+	}
 	ThreadsTable.ForeignKeys[0].RefTable = CategoriesTable
 	ThreadsTable.ForeignKeys[1].RefTable = UsersTable
 	ThreadsTable.Annotation = &entsql.Annotation{
@@ -808,4 +875,6 @@ func init() {
 	UserBadgesTable.Annotation = &entsql.Annotation{
 		Table: "user_badges",
 	}
+	TagThreadsTable.ForeignKeys[0].RefTable = TagsTable
+	TagThreadsTable.ForeignKeys[1].RefTable = ThreadsTable
 }

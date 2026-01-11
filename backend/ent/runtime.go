@@ -19,6 +19,7 @@ import (
 	"backend-gin/ent/session"
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
+	"backend-gin/ent/tag"
 	"backend-gin/ent/thread"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
@@ -677,6 +678,49 @@ func init() {
 	totppendingtokenDescTokenHash := totppendingtokenFields[1].Descriptor()
 	// totppendingtoken.TokenHashValidator is a validator for the "token_hash" field. It is called by the builders before save.
 	totppendingtoken.TokenHashValidator = totppendingtokenDescTokenHash.Validators[0].(func(string) error)
+	tagMixin := schema.Tag{}.Mixin()
+	tagMixinFields0 := tagMixin[0].Fields()
+	_ = tagMixinFields0
+	tagFields := schema.Tag{}.Fields()
+	_ = tagFields
+	// tagDescCreatedAt is the schema descriptor for created_at field.
+	tagDescCreatedAt := tagMixinFields0[0].Descriptor()
+	// tag.DefaultCreatedAt holds the default value on creation for the created_at field.
+	tag.DefaultCreatedAt = tagDescCreatedAt.Default.(func() time.Time)
+	// tagDescUpdatedAt is the schema descriptor for updated_at field.
+	tagDescUpdatedAt := tagMixinFields0[1].Descriptor()
+	// tag.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	tag.DefaultUpdatedAt = tagDescUpdatedAt.Default.(func() time.Time)
+	// tag.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	tag.UpdateDefaultUpdatedAt = tagDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// tagDescSlug is the schema descriptor for slug field.
+	tagDescSlug := tagFields[0].Descriptor()
+	// tag.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	tag.SlugValidator = tagDescSlug.Validators[0].(func(string) error)
+	// tagDescName is the schema descriptor for name field.
+	tagDescName := tagFields[1].Descriptor()
+	// tag.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	tag.NameValidator = tagDescName.Validators[0].(func(string) error)
+	// tagDescDescription is the schema descriptor for description field.
+	tagDescDescription := tagFields[2].Descriptor()
+	// tag.DefaultDescription holds the default value on creation for the description field.
+	tag.DefaultDescription = tagDescDescription.Default.(string)
+	// tagDescColor is the schema descriptor for color field.
+	tagDescColor := tagFields[3].Descriptor()
+	// tag.DefaultColor holds the default value on creation for the color field.
+	tag.DefaultColor = tagDescColor.Default.(string)
+	// tagDescIcon is the schema descriptor for icon field.
+	tagDescIcon := tagFields[4].Descriptor()
+	// tag.DefaultIcon holds the default value on creation for the icon field.
+	tag.DefaultIcon = tagDescIcon.Default.(string)
+	// tagDescIsActive is the schema descriptor for is_active field.
+	tagDescIsActive := tagFields[5].Descriptor()
+	// tag.DefaultIsActive holds the default value on creation for the is_active field.
+	tag.DefaultIsActive = tagDescIsActive.Default.(bool)
+	// tagDescOrder is the schema descriptor for order field.
+	tagDescOrder := tagFields[6].Descriptor()
+	// tag.DefaultOrder holds the default value on creation for the order field.
+	tag.DefaultOrder = tagDescOrder.Default.(int)
 	threadMixin := schema.Thread{}.Mixin()
 	threadMixinFields0 := threadMixin[0].Fields()
 	_ = threadMixinFields0

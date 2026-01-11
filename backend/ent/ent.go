@@ -18,6 +18,7 @@ import (
 	"backend-gin/ent/session"
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
+	"backend-gin/ent/tag"
 	"backend-gin/ent/thread"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
@@ -107,6 +108,7 @@ func checkColumn(t, c string) error {
 			sessionlock.Table:            sessionlock.ValidColumn,
 			sudosession.Table:            sudosession.ValidColumn,
 			totppendingtoken.Table:       totppendingtoken.ValidColumn,
+			tag.Table:                    tag.ValidColumn,
 			thread.Table:                 thread.ValidColumn,
 			user.Table:                   user.ValidColumn,
 			userbadge.Table:              userbadge.ValidColumn,

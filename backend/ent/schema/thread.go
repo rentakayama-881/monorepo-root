@@ -61,6 +61,8 @@ func (Thread) Edges() []ent.Edge {
 			Field("category_id").
 			Required().
 			Unique(),
+		edge.From("tags", Tag.Type).
+			Ref("threads"),
 	}
 }
 

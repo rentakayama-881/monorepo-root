@@ -52,9 +52,11 @@ type ThreadEdges struct {
 	User *User `json:"user,omitempty"`
 	// Category holds the value of the category edge.
 	Category *Category `json:"category,omitempty"`
+	// Tags holds the value of the tags edge.
+	Tags []*Tag `json:"tags,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -77,6 +79,15 @@ func (e ThreadEdges) CategoryOrErr() (*Category, error) {
 		return nil, &NotFoundError{label: category.Label}
 	}
 	return nil, &NotLoadedError{edge: "category"}
+}
+
+// TagsOrErr returns the Tags value or an error if the edge
+// was not loaded in eager-loading.
+func (e ThreadEdges) TagsOrErr() ([]*Tag, error) {
+	if e.loadedTypes[2] {
+		return e.Tags, nil
+	}
+	return nil, &NotLoadedError{edge: "tags"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -199,6 +210,11 @@ func (_m *Thread) QueryUser() *UserQuery {
 // QueryCategory queries the "category" edge of the Thread entity.
 func (_m *Thread) QueryCategory() *CategoryQuery {
 	return NewThreadClient(_m.config).QueryCategory(_m)
+}
+
+// QueryTags queries the "tags" edge of the Thread entity.
+func (_m *Thread) QueryTags() *TagQuery {
+	return NewThreadClient(_m.config).QueryTags(_m)
 }
 
 // Update returns a builder for updating this Thread.

@@ -54,6 +54,9 @@ type SudoSession func(*sql.Selector)
 // TOTPPendingToken is the predicate function for totppendingtoken builders.
 type TOTPPendingToken func(*sql.Selector)
 
+// Tag is the predicate function for tag builders.
+type Tag func(*sql.Selector)
+
 // Thread is the predicate function for thread builders.
 type Thread func(*sql.Selector)
 
