@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { getApiBase } from "@/lib/api";
 import Link from "next/link";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function AISearchPage() {
   const API_BASE = getApiBase();
@@ -146,17 +147,19 @@ export default function AISearchPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-semibold mb-2 text-foreground">
-        AI Search
-      </h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        Cari thread dengan kata kunci, lalu pilih thread untuk mendapatkan penjelasan AI.
-      </p>
+      <div className="mb-8 text-center section-enter">
+        <h1 className="text-3xl font-bold mb-2 text-foreground">
+          AI Search
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Cari thread dengan kata kunci, lalu pilih thread untuk mendapatkan penjelasan AI.
+        </p>
+      </div>
 
       {/* Search Form */}
-      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+      <form onSubmit={handleSearch} className="flex gap-2 mb-8">
         <input
-          className="flex-1 border border-border bg-card rounded-lg px-4 py-2.5 outline-none text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-ring"
+          className="flex-1 border border-border bg-card rounded-xl px-4 py-3 outline-none text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring/20 transition-all shadow-sm"
           placeholder="Ketik kata kunci pencarian..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -165,9 +168,14 @@ export default function AISearchPage() {
         <button
           type="submit"
           disabled={!query.trim() || searching || explaining}
-          className="rounded-lg px-5 py-2.5 bg-primary text-white font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+          className="rounded-xl px-6 py-3 bg-primary text-white font-medium disabled:opacity-50 hover:opacity-90 transition-all shadow-sm hover:shadow"
         >
-          {searching ? "Mencari..." : "Cari"}
+          {searching ? (
+            <span className="flex items-center gap-2">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Mencari...
+            </span>
+          ) : "Cari"}
         </button>
       </form>
 
@@ -228,12 +236,13 @@ export default function AISearchPage() {
 
               {explaining ? (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                    </svg>
-                    Generating AI explanation...
+                  <div className="flex items-start gap-3">
+                    <div className="thinking-dots flex gap-1 mt-1">
+                      <div className="thinking-dot bg-primary" style={{ '--i': 0 }}></div>
+                      <div className="thinking-dot bg-primary" style={{ '--i': 1 }}></div>
+                      <div className="thinking-dot bg-primary" style={{ '--i': 2 }}></div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">AI sedang berpikir...</p>
                   </div>
                   <div className="space-y-2">
                     <div className="h-4 bg-muted/50 rounded animate-pulse w-full"/>
@@ -330,26 +339,29 @@ export default function AISearchPage() {
         </div>
       )}
 
-      {/* Empty State */}
+      {/* Empty State - No Results */}
       {!selectedThread && !searching && query && threads.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-4xl mb-3">🔍</div>
-          <h3 className="font-medium text-foreground mb-1">Tidak ada hasil</h3>
-          <p className="text-sm text-muted-foreground">
-            Coba kata kunci yang berbeda atau lebih umum
-          </p>
-        </div>
+        <EmptyState
+          variant="search"
+          title="Tidak ada hasil"
+          description="Coba kata kunci yang berbeda atau lebih umum untuk menemukan thread yang relevan."
+        />
       )}
 
-      {/* Initial State */}
+      {/* Initial State - No Search Yet */}
       {!selectedThread && !searching && !query && threads.length === 0 && (
-        <div className="text-center py-12 border border-dashed border-border rounded-lg">
-          <div className="text-4xl mb-3">🔎</div>
-          <h3 className="font-medium text-foreground mb-1">Mulai Pencarian</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Ketik kata kunci untuk mencari thread, lalu pilih thread yang ingin dijelaskan oleh AI.
-          </p>
-        </div>
+        <EmptyState
+          variant="default"
+          icon={
+            <div className="empty-state-icon text-primary/50">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+              </svg>
+            </div>
+          }
+          title="Mulai Pencarian AI"
+          description="Ketik kata kunci untuk mencari thread, lalu pilih thread yang ingin dijelaskan oleh AI."
+        />
       )}
     </div>
   );

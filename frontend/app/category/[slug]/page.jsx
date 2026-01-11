@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { LOCKED_CATEGORIES } from "@/lib/constants";
 import ThreadCard, { ThreadCardSkeleton } from "@/components/ui/ThreadCard";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function CategoryThreadsPage() {
   const params = useParams();
@@ -40,12 +41,17 @@ export default function CategoryThreadsPage() {
             </>
           ) : (
             <>
-              <h1 className="text-xl font-semibold text-foreground">
+              <h1 className="text-2xl font-bold text-foreground">
                 {category?.name || String(params.slug || "").replace(/-/g, " ")}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 {category?.description || "Diskusi dan thread terbaru di kategori ini."}
               </p>
+              {!loading && threads.length > 0 && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {threads.length} thread{threads.length !== 1 ? 's' : ''}
+                </p>
+              )}
             </>
           )}
         </div>
@@ -78,9 +84,24 @@ export default function CategoryThreadsPage() {
           ))}
         </div>
       ) : threads.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-center">
-          <p className="text-sm text-muted-foreground">Belum ada thread di kategori ini.</p>
-        </div>
+        <EmptyState
+          variant="content"
+          title="Belum ada thread di kategori ini"
+          description="Jadilah yang pertama untuk memulai diskusi di kategori ini."
+          action={
+            !LOCKED_CATEGORIES.includes(params.slug) && (
+              <Link
+                href={`/category/${params.slug}/new`}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Buat Thread Pertama
+              </Link>
+            )
+          }
+        />
       ) : (
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           {threads.map((thread, idx) => (

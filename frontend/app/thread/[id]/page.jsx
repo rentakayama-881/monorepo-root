@@ -23,9 +23,53 @@ export default function ThreadDetailPage() {
   const [error, setError] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
   const [repliesKey, setRepliesKey] = useState(0); // Force refresh replies
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [readingProgress, setReadingProgress] = useState(0);
 
   const isAuthed = typeof window !== "undefined" ? !!localStorage.getItem("token") : false;
   const currentUsername = typeof window !== "undefined" ? localStorage.getItem("username") : null;
+
+  // Reading progress and back to top with throttling
+  useEffect(() => {
+    let ticking = false;
+    let lastUpdate = 0;
+    const THROTTLE_MS = 100; // Update at most every 100ms
+    
+    const handleScroll = () => {
+      const now = Date.now();
+      
+      if (!ticking && (now - lastUpdate >= THROTTLE_MS)) {
+        window.requestAnimationFrame(() => {
+          // Back to top visibility
+          setShowBackToTop(window.scrollY > 300);
+          
+          // Reading progress with guard against division by zero
+          const windowHeight = window.innerHeight;
+          const documentHeight = document.documentElement.scrollHeight;
+          const scrollTop = window.scrollY;
+          const trackLength = documentHeight - windowHeight;
+          
+          if (trackLength > 0) {
+            const progress = (scrollTop / trackLength) * 100;
+            setReadingProgress(Math.min(progress, 100));
+          } else {
+            setReadingProgress(0);
+          }
+          
+          lastUpdate = now;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     if (!isAuthed) {
@@ -253,6 +297,24 @@ export default function ThreadDetailPage() {
         />
         </>
       ) : null}
+
+      {/* Reading progress bar */}
+      <div 
+        className="reading-progress" 
+        style={{ width: `${readingProgress}%` }}
+        aria-hidden="true"
+      />
+
+      {/* Back to top button */}
+      <button
+        onClick={scrollToTop}
+        className={`back-to-top ${showBackToTop ? 'visible' : ''} inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 transition-all`}
+        aria-label="Back to top"
+      >
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+        </svg>
+      </button>
     </main>
   );
 }
