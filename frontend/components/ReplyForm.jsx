@@ -6,6 +6,11 @@ import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import { useCreateReply } from "@/lib/useReplies";
 import { getToken } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { cn } from "@/lib/utils";
+
+// Character count thresholds
+const CHAR_WARNING_THRESHOLD = 100;
+const CHAR_CRITICAL_THRESHOLD = 50;
 
 /**
  * ReplyForm component - form for creating/editing replies with markdown support
@@ -208,16 +213,21 @@ export default function ReplyForm({
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-muted-foreground">
-          {remainingChars < 500 && (
-            <span className={remainingChars < 100 ? "text-destructive" : ""}>
-              {remainingChars} karakter tersisa
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs text-muted-foreground flex-1">
+          {!compact && (
+            <span className="hidden sm:inline">
+              Markdown didukung • Ctrl+Enter untuk kirim
+              {remainingChars < 500 && <span> • </span>}
             </span>
           )}
-          {!compact && (
-            <span className="ml-2">
-              Markdown didukung • Ctrl+Enter untuk kirim
+          {remainingChars < 500 && (
+            <span className={cn(
+              "font-medium",
+              remainingChars < CHAR_WARNING_THRESHOLD && "text-warning",
+              remainingChars < CHAR_CRITICAL_THRESHOLD && "text-destructive"
+            )}>
+              {remainingChars} karakter tersisa
             </span>
           )}
         </div>
@@ -229,6 +239,7 @@ export default function ReplyForm({
               variant="secondary"
               onClick={onCancel}
               disabled={loading}
+              size="sm"
             >
               Batal
             </Button>
@@ -238,6 +249,7 @@ export default function ReplyForm({
             variant="primary"
             loading={loading}
             disabled={!canSubmit}
+            size="sm"
           >
             {loading ? "Mengirim..." : "Kirim"}
           </Button>

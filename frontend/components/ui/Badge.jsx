@@ -111,13 +111,41 @@ export function Badge({
   type,
   size = "sm",
   showLabel = false,
-  variant = "icon", // "icon" | "chip" | "inline"
+  variant = "icon", // "icon" | "chip" | "inline" | "pulse"
   className = "",
   ...props
 }) {
   const config = getBadgeConfig(badge, type);
   const sizes = sizeConfig[size] || sizeConfig.sm;
   const IconComponent = BadgeIcons[config.icon] || BadgeIcons.default;
+
+  // Pulse variant (animated for notifications)
+  if (variant === "pulse") {
+    return (
+      <span
+        className={clsx(
+          "inline-flex items-center rounded-full font-medium animate-pulse-subtle",
+          sizes.gap,
+          sizes.text,
+          sizes.padding,
+          className
+        )}
+        style={{
+          backgroundColor: `${config.color}15`,
+          color: config.color,
+        }}
+        title={config.label}
+        {...props}
+      >
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: config.color }}></span>
+          <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: config.color }}></span>
+        </span>
+        <IconComponent className={sizes.icon} />
+        {(showLabel || variant === "pulse") && <span>{config.label}</span>}
+      </span>
+    );
+  }
 
   // Icon-only variant (inline with username)
   if (variant === "icon") {
@@ -184,7 +212,8 @@ export function BadgeChip({ badge, onRemove, size = "sm", className = "" }) {
   return (
     <span
       className={clsx(
-        "inline-flex items-center rounded-full font-medium",
+        "inline-flex items-center rounded-full font-medium transition-all",
+        "hover:shadow-sm",
         sizes.gap,
         sizes.text,
         sizes.padding,
@@ -202,7 +231,7 @@ export function BadgeChip({ badge, onRemove, size = "sm", className = "" }) {
         <button
           type="button"
           onClick={onRemove}
-          className="ml-0.5 hover:opacity-70 transition-opacity"
+          className="ml-1 -mr-1 p-0.5 rounded-full hover:bg-current/10 transition-all active:scale-90"
           aria-label={`Remove ${config.label}`}
         >
           <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">

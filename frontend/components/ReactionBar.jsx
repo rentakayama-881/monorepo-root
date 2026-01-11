@@ -64,13 +64,14 @@ export default function ReactionBar({ threadId, className = "" }) {
             onClick={() => handleReactionClick(type)}
             disabled={isSubmitting}
             className={`
-              group flex items-center gap-1.5 rounded-full border px-3 py-1.5
+              group relative flex items-center gap-1.5 rounded-full border px-3 py-1.5
               text-sm font-medium transition-all duration-200
               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
               disabled:opacity-50 disabled:cursor-not-allowed
+              hover:scale-105 active:scale-95
               ${
                 isActive
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "reaction-active border-primary bg-primary/10 text-primary shadow-sm"
                   : "border-border bg-card text-muted-foreground hover:border-muted-foreground hover:bg-muted/50 hover:text-foreground"
               }
             `}
@@ -78,22 +79,28 @@ export default function ReactionBar({ threadId, className = "" }) {
             aria-label={`${label} (${count})`}
             aria-pressed={isActive}
           >
-            <span className="text-base transition-transform group-hover:scale-110">
+            <span className={`text-base transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
               {emoji}
             </span>
             {count > 0 && (
-              <span className="min-w-[1rem] text-center tabular-nums">
+              <span className="min-w-[1rem] text-center tabular-nums font-semibold">
                 {count > 999 ? `${(count / 1000).toFixed(1)}k` : count}
               </span>
             )}
+            
+            {/* Tooltip */}
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+              {label}
+              <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-popover"></span>
+            </span>
           </button>
         );
       })}
 
       {/* Total count badge */}
       {totalCount > 0 && (
-        <span className="ml-2 text-xs text-muted-foreground">
-          {totalCount} reaksi
+        <span className="ml-1 px-2 py-1 text-xs font-medium text-muted-foreground bg-secondary rounded-full">
+          {totalCount} {totalCount === 1 ? 'reaksi' : 'reaksi'}
         </span>
       )}
     </div>

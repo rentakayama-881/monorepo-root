@@ -77,20 +77,21 @@ function ReplyItem({
 
   return (
     <div
-      className="relative"
+      className="relative animate-fade-in"
       style={{ marginLeft: paddingLeft }}
     >
       {/* Connector line for nested replies */}
       {depth > 0 && (
         <div
-          className="absolute left-0 top-0 bottom-0 w-px bg-border"
+          className="reply-thread-line"
           style={{ left: "-12px" }}
         />
       )}
 
       <div
         className={`
-          rounded-[var(--radius)] border bg-card p-4
+          rounded-[var(--radius)] border bg-card p-4 transition-all
+          hover:border-primary/30 hover:shadow-sm
           ${reply.isDeleted ? "opacity-60" : ""}
         `}
       >
@@ -100,22 +101,31 @@ function ReplyItem({
             src={reply.avatarUrl}
             name={reply.username}
             size="sm"
+            className="ring-2 ring-background"
           />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-sm text-foreground truncate">
+              <span className="font-semibold text-sm text-foreground truncate">
                 {reply.username || "Anonim"}
               </span>
               {depth > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  • Balasan level {depth}
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-secondary text-muted-foreground">
+                  <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M6.122.392a1.75 1.75 0 0 1 1.756 0l5.25 3.045c.54.313.872.89.872 1.514V7.25a.75.75 0 0 1-1.5 0V5.677L7.75 8.432v6.384a1 1 0 0 1-1.502.865L.872 12.563A1.75 1.75 0 0 1 0 11.049V4.951c0-.624.332-1.2.872-1.514L6.122.392zM7.125 1.69l4.63 2.685L7 7.133 2.245 4.375l4.63-2.685a.25.25 0 0 1 .25 0zM1.5 11.049V5.677l4.75 2.755v5.516l-4.625-2.683a.25.25 0 0 1-.125-.216zm11.672-.282a.75.75 0 1 0-1.087-1.034l-2.378 2.5a.75.75 0 0 0 0 1.034l2.378 2.5a.75.75 0 1 0 1.087-1.034L11.999 13.5h3.251a.75.75 0 0 0 0-1.5h-3.251l1.173-1.233z"></path>
+                  </svg>
+                  Balasan
                 </span>
               )}
             </div>
-            <div className="text-xs text-muted-foreground">
-              {formatRelativeTime(reply.createdAt)}
+            <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <time dateTime={reply.createdAt}>
+                {formatRelativeTime(reply.createdAt)}
+              </time>
               {reply.updatedAt && reply.updatedAt !== reply.createdAt && (
-                <span className="ml-1">(diedit)</span>
+                <>
+                  <span>•</span>
+                  <span className="italic">(diedit)</span>
+                </>
               )}
             </div>
           </div>
@@ -124,7 +134,7 @@ function ReplyItem({
         {/* Content */}
         <div className="text-sm">
           {reply.isDeleted ? (
-            <p className="italic text-muted-foreground">
+            <p className="italic text-muted-foreground py-2">
               [Balasan telah dihapus]
             </p>
           ) : (
@@ -134,12 +144,15 @@ function ReplyItem({
 
         {/* Actions */}
         {!reply.isDeleted && (
-          <div className="flex items-center gap-3 mt-3 pt-3 border-t">
+          <div className="flex items-center gap-4 mt-3 pt-3 border-t">
             {canReply && (
               <button
                 onClick={() => setShowReplyForm(!showReplyForm)}
-                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
               >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M6.78 1.97a.75.75 0 010 1.06L3.81 6h6.44A4.75 4.75 0 0115 10.75v2.5a.75.75 0 01-1.5 0v-2.5a3.25 3.25 0 00-3.25-3.25H3.81l2.97 2.97a.75.75 0 11-1.06 1.06L1.47 7.28a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0z"></path>
+                </svg>
                 {showReplyForm ? "Batal" : "Balas"}
               </button>
             )}
@@ -148,17 +161,20 @@ function ReplyItem({
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M11 1.75V3h2.25a.75.75 0 010 1.5H2.75a.75.75 0 010-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75zM4.496 6.675l.66 6.6a.25.25 0 00.249.225h5.19a.25.25 0 00.249-.225l.66-6.6a.75.75 0 011.492.149l-.66 6.6A1.748 1.748 0 0110.595 15h-5.19a1.75 1.75 0 01-1.741-1.575l-.66-6.6a.75.75 0 111.492-.15zM6.5 1.75V3h3V1.75a.25.25 0 00-.25-.25h-2.5a.25.25 0 00-.25.25z"></path>
+                </svg>
                 {isDeleting ? "Menghapus..." : "Hapus"}
               </button>
             )}
           </div>
         )}
 
-        {/* Reply form */}
+        {/* Reply form with smooth animation */}
         {showReplyForm && (
-          <div className="mt-3 pt-3 border-t">
+          <div className="mt-4 pt-4 border-t animate-slide-down">
             <ReplyForm
               threadId={threadId}
               parentReplyId={reply.id}

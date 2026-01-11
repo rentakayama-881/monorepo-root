@@ -952,3 +952,81 @@ html {
     scroll-behavior: auto;
   }
 }
+
+/* ===== Phase 4: Content Display Component Utilities ===== */
+
+/* Thread card animations */
+.thread-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.thread-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgb(0 0 0 / 0.1);
+}
+
+/* Reply threading lines */
+.reply-thread-line {
+  position: absolute;
+  left: 1.25rem; /* 20px - matches spacing-5 */
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+/* Reaction pop animation */
+@keyframes reaction-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.reaction-active {
+  animation: reaction-pop 0.3s ease;
+}
+
+/* Number increment animation */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Code block copy button */
+.code-block-wrapper {
+  position: relative;
+}
+
+.code-copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.code-block-wrapper:hover .code-copy-button {
+  opacity: 1;
+}
+
+/* Image zoom */
+.markdown-image {
+  cursor: zoom-in;
+  transition: transform 0.2s ease;
+}
+
+/* Truncation utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
