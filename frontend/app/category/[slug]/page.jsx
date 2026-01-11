@@ -34,16 +34,16 @@ export default function CategoryThreadsPage() {
           {loading ? (
             <>
               {/* Skeleton for title */}
-              <div className="h-7 w-48 animate-pulse rounded bg-[rgb(var(--border))]" />
+              <div className="h-7 w-48 animate-pulse rounded bg-border" />
               {/* Skeleton for description */}
-              <div className="mt-2 h-4 w-72 animate-pulse rounded bg-[rgb(var(--border))]" />
+              <div className="mt-2 h-4 w-72 animate-pulse rounded bg-border" />
             </>
           ) : (
             <>
-              <h1 className="text-xl font-semibold text-[rgb(var(--fg))]">
+              <h1 className="text-xl font-semibold text-foreground">
                 {category?.name || String(params.slug || "").replace(/-/g, " ")}
               </h1>
-              <p className="mt-1 text-sm text-[rgb(var(--muted))]">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {category?.description || "Diskusi dan thread terbaru di kategori ini."}
               </p>
             </>
@@ -53,7 +53,7 @@ export default function CategoryThreadsPage() {
 {!LOCKED_CATEGORIES.includes(params.slug) ? (
           <Link
             href={`/category/${params.slug}/new`}
-            className="inline-flex items-center gap-2 rounded-md bg-[rgb(var(--brand))] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -61,7 +61,7 @@ export default function CategoryThreadsPage() {
             Buat Thread
           </Link>
         ) : (
-          <div className="inline-flex items-center gap-2 rounded-md bg-[rgb(var(--surface-2))] px-4 py-2 text-sm font-medium text-[rgb(var(--muted))] cursor-not-allowed" title="Kategori ini sementara ditutup untuk thread baru">
+          <div className="inline-flex items-center gap-2 rounded-md bg-muted/50 px-4 py-2 text-sm font-medium text-muted-foreground cursor-not-allowed" title="Kategori ini sementara ditutup untuk thread baru">
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -78,18 +78,18 @@ export default function CategoryThreadsPage() {
           ))}
         </div>
       ) : threads.length === 0 ? (
-        <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-8 text-center">
-          <p className="text-sm text-[rgb(var(--muted))]">Belum ada thread di kategori ini.</p>
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <p className="text-sm text-muted-foreground">Belum ada thread di kategori ini.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
           {threads.map((thread, idx) => (
             <ThreadCard
               key={thread.id}
               thread={thread}
               variant="list"
               showCategory={false}
-              className={idx !== threads.length - 1 ? "border-b border-[rgb(var(--border))]" : ""}
+              className={idx !== threads.length - 1 ? "border-b border-border" : ""}
             />
           ))}
         </div>

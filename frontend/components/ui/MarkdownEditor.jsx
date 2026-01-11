@@ -23,8 +23,8 @@ function ToolbarBtn({ onClick, title, children, disabled, active }) {
       title={title}
       className={`p-1.5 rounded transition-colors ${
         active 
-          ? "bg-[rgb(var(--brand))] text-white" 
-          : "text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--fg))]"
+          ? "bg-primary text-primary-foreground" 
+          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
       } disabled:opacity-40 disabled:cursor-not-allowed`}
     >
       {children}
@@ -34,7 +34,7 @@ function ToolbarBtn({ onClick, title, children, disabled, active }) {
 
 // Separator
 function Sep() {
-  return <div className="w-px h-5 bg-[rgb(var(--border))] mx-1" />;
+  return <div className="w-px h-5 bg-border mx-1" />;
 }
 
 // SVG Icons - GitHub style
@@ -253,16 +253,16 @@ export default function MarkdownEditor({
   ];
 
   return (
-    <div className="rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       {/* Header with tabs */}
-      <div className="flex items-center border-b border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]">
+      <div className="flex items-center border-b border-border bg-muted/50">
         <button
           type="button"
           onClick={() => setTab("write")}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
             tab === "write"
-              ? "border-[rgb(var(--brand))] text-[rgb(var(--fg))]"
-              : "border-transparent text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:border-[rgb(var(--border))]"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
           }`}
         >
           Write
@@ -272,8 +272,8 @@ export default function MarkdownEditor({
           onClick={() => setTab("preview")}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
             tab === "preview"
-              ? "border-[rgb(var(--brand))] text-[rgb(var(--fg))]"
-              : "border-transparent text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:border-[rgb(var(--border))]"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
           }`}
         >
           Preview
@@ -283,7 +283,7 @@ export default function MarkdownEditor({
       {tab === "write" ? (
         <>
           {/* Toolbar */}
-          <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
+          <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-border bg-card">
             {actions.map((a, i) => 
               a === "sep" ? (
                 <Sep key={i} />
@@ -307,7 +307,7 @@ export default function MarkdownEditor({
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             disabled={disabled}
-            className="w-full px-4 py-3 bg-transparent text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:outline-none resize-y font-mono text-sm leading-relaxed"
+            className="w-full px-4 py-3 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none resize-y font-mono text-sm leading-relaxed"
             style={{ minHeight }}
           />
         </>
@@ -321,10 +321,10 @@ export default function MarkdownEditor({
             PreviewComponent ? (
               <PreviewComponent content={value} />
             ) : (
-              <pre className="whitespace-pre-wrap text-sm text-[rgb(var(--fg))] font-mono">{value}</pre>
+              <pre className="whitespace-pre-wrap text-sm text-foreground font-mono">{value}</pre>
             )
           ) : (
-            <p className="text-[rgb(var(--muted))] italic text-sm">
+            <p className="text-muted-foreground italic text-sm">
               Tidak ada konten untuk di-preview
             </p>
           )}
@@ -332,11 +332,11 @@ export default function MarkdownEditor({
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-3 py-2 border-t border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]">
-        <p className="text-xs text-[rgb(var(--muted))]">
-          Markdown didukung • <kbd className="px-1 py-0.5 text-[10px] bg-[rgb(var(--surface))] rounded border border-[rgb(var(--border))]">Ctrl</kbd>+<kbd className="px-1 py-0.5 text-[10px] bg-[rgb(var(--surface))] rounded border border-[rgb(var(--border))]">B</kbd> bold, <kbd className="px-1 py-0.5 text-[10px] bg-[rgb(var(--surface))] rounded border border-[rgb(var(--border))]">Ctrl</kbd>+<kbd className="px-1 py-0.5 text-[10px] bg-[rgb(var(--surface))] rounded border border-[rgb(var(--border))]">I</kbd> italic
+      <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/50">
+        <p className="text-xs text-muted-foreground">
+          Markdown didukung • <kbd className="px-1 py-0.5 text-[10px] bg-background rounded border border-border">Ctrl</kbd>+<kbd className="px-1 py-0.5 text-[10px] bg-background rounded border border-border">B</kbd> bold, <kbd className="px-1 py-0.5 text-[10px] bg-background rounded border border-border">Ctrl</kbd>+<kbd className="px-1 py-0.5 text-[10px] bg-background rounded border border-border">I</kbd> italic
         </p>
-        <span className="text-xs text-[rgb(var(--muted))]">
+        <span className="text-xs text-muted-foreground">
           {value.length} karakter
         </span>
       </div>

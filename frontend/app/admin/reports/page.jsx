@@ -105,16 +105,16 @@ export default function ReportsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">Reports</h1>
+        <h1 className="text-2xl font-bold text-foreground">Reports</h1>
         <div className="flex gap-2">
           {["pending", "reviewing", "resolved", "dismissed"].map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 filter === s
-                  ? "bg-[rgb(var(--brand))] text-white"
-                  : "bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-3))]"
+                  ? "bg-primary text-white"
+                  : "bg-muted/50 text-foreground hover:bg-accent"
               }`}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -131,10 +131,10 @@ export default function ReportsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--brand))]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : reports.length === 0 ? (
-        <div className="text-center py-12 text-[rgb(var(--muted))]">
+        <div className="text-center py-12 text-muted-foreground">
           Tidak ada report dengan status {filter}
         </div>
       ) : (
@@ -142,30 +142,30 @@ export default function ReportsPage() {
           {reports.map((report) => (
             <div
               key={report.id}
-              className="p-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] hover:border-[rgb(var(--brand))]/50 transition-colors cursor-pointer"
+              className="p-4 rounded-lg border border-border bg-card hover:border-primary/50 transition-colors cursor-pointer"
               onClick={() => setSelectedReport(report)}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     {getStatusBadge(report.status)}
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-muted/50 text-foreground">
                       {getContentTypeLabel(report.contentType)}
                     </span>
                     <span className="px-2 py-0.5 rounded-full text-xs bg-orange-100 text-orange-800">
                       {getReasonLabel(report.reason)}
                     </span>
                   </div>
-                  <p className="text-sm text-[rgb(var(--fg))] line-clamp-2 mb-2">
+                  <p className="text-sm text-foreground line-clamp-2 mb-2">
                     {report.description || "Tidak ada deskripsi"}
                   </p>
-                  <div className="flex items-center gap-4 text-xs text-[rgb(var(--muted))]">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span>Reporter: {report.reporterUsername || report.reporterId}</span>
                     <span>Target: {report.targetUsername || report.targetId}</span>
                     <span>{new Date(report.createdAt).toLocaleString("id-ID")}</span>
                   </div>
                 </div>
-                <svg className="w-5 h-5 text-[rgb(var(--muted))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -177,13 +177,13 @@ export default function ReportsPage() {
       {/* Report Detail Modal */}
       {selectedReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-[rgb(var(--surface))] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-[rgb(var(--border))]">
+          <div className="bg-card rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-border">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-[rgb(var(--fg))]">Detail Report</h2>
+                <h2 className="text-xl font-semibold text-foreground">Detail Report</h2>
                 <button
                   onClick={() => setSelectedReport(null)}
-                  className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -195,54 +195,54 @@ export default function ReportsPage() {
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-[rgb(var(--muted))]">Status</label>
+                  <label className="text-xs text-muted-foreground">Status</label>
                   <div className="mt-1">{getStatusBadge(selectedReport.status)}</div>
                 </div>
                 <div>
-                  <label className="text-xs text-[rgb(var(--muted))]">Content Type</label>
-                  <p className="text-sm text-[rgb(var(--fg))]">{getContentTypeLabel(selectedReport.contentType)}</p>
+                  <label className="text-xs text-muted-foreground">Content Type</label>
+                  <p className="text-sm text-foreground">{getContentTypeLabel(selectedReport.contentType)}</p>
                 </div>
                 <div>
-                  <label className="text-xs text-[rgb(var(--muted))]">Reason</label>
-                  <p className="text-sm text-[rgb(var(--fg))]">{getReasonLabel(selectedReport.reason)}</p>
+                  <label className="text-xs text-muted-foreground">Reason</label>
+                  <p className="text-sm text-foreground">{getReasonLabel(selectedReport.reason)}</p>
                 </div>
                 <div>
-                  <label className="text-xs text-[rgb(var(--muted))]">Reported At</label>
-                  <p className="text-sm text-[rgb(var(--fg))]">{new Date(selectedReport.createdAt).toLocaleString("id-ID")}</p>
+                  <label className="text-xs text-muted-foreground">Reported At</label>
+                  <p className="text-sm text-foreground">{new Date(selectedReport.createdAt).toLocaleString("id-ID")}</p>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs text-[rgb(var(--muted))]">Description</label>
-                <p className="text-sm text-[rgb(var(--fg))] mt-1 p-3 bg-[rgb(var(--surface-2))] rounded-lg">
+                <label className="text-xs text-muted-foreground">Description</label>
+                <p className="text-sm text-foreground mt-1 p-3 bg-muted/50 rounded-lg">
                   {selectedReport.description || "Tidak ada deskripsi"}
                 </p>
               </div>
 
               <div>
-                <label className="text-xs text-[rgb(var(--muted))]">Reporter</label>
-                <p className="text-sm text-[rgb(var(--fg))]">
+                <label className="text-xs text-muted-foreground">Reporter</label>
+                <p className="text-sm text-foreground">
                   {selectedReport.reporterUsername} (ID: {selectedReport.reporterId})
                 </p>
               </div>
 
               <div>
-                <label className="text-xs text-[rgb(var(--muted))]">Target User</label>
-                <p className="text-sm text-[rgb(var(--fg))]">
+                <label className="text-xs text-muted-foreground">Target User</label>
+                <p className="text-sm text-foreground">
                   {selectedReport.targetUsername} (ID: {selectedReport.targetId})
                 </p>
               </div>
 
               {selectedReport.contentId && (
                 <div>
-                  <label className="text-xs text-[rgb(var(--muted))]">Content ID</label>
-                  <p className="text-sm text-[rgb(var(--fg))] font-mono">{selectedReport.contentId}</p>
+                  <label className="text-xs text-muted-foreground">Content ID</label>
+                  <p className="text-sm text-foreground font-mono">{selectedReport.contentId}</p>
                 </div>
               )}
 
               {selectedReport.status === "pending" && (
-                <div className="pt-4 border-t border-[rgb(var(--border))]">
-                  <h3 className="text-sm font-medium text-[rgb(var(--fg))] mb-3">Actions</h3>
+                <div className="pt-4 border-t border-border">
+                  <h3 className="text-sm font-medium text-foreground mb-3">Actions</h3>
                   <div className="flex flex-wrap gap-2">
                     <Button
                       variant="secondary"

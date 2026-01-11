@@ -229,7 +229,7 @@ export function BadgeList({ badges = [], maxDisplay = 5, size = "sm", className 
         <BadgeChip key={badge.id || badge.ID || i} badge={badge} size={size} />
       ))}
       {remaining > 0 && (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))]">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-secondary text-muted-foreground">
           +{remaining} lainnya
         </span>
       )}

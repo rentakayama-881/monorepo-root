@@ -212,7 +212,7 @@ export default function AccountPage() {
 
   if (!authed) return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="rounded-lg border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] p-4 text-sm text-[rgb(var(--error))]">
+      <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
         Anda harus login untuk mengelola akun.
       </div>
     </main>
@@ -220,23 +220,23 @@ export default function AccountPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-xl font-semibold text-[rgb(var(--fg))]">Account</h1>
+      <h1 className="mb-6 text-xl font-semibold text-foreground">Account</h1>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-[rgb(var(--muted))]">
-          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[rgb(var(--border))] border-t-[rgb(var(--fg))]" /> Loading...
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" /> Loading...
         </div>
       ) : (
         <div className="space-y-4">
-          <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
-            <h3 className="text-sm font-medium text-[rgb(var(--fg))]">Foto Profil</h3>
+          <section className="rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-medium text-foreground">Foto Profil</h3>
             <div className="mt-3 flex items-start gap-4">
               <div className="shrink-0">
                 {avatarPreview ? (
                   <img
                     src={avatarPreview}
                     alt="Preview"
-                    className="h-16 w-16 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] object-cover"
+                    className="h-16 w-16 rounded-full border border-border bg-muted/50 object-cover"
                   />
                 ) : (
                   <Avatar src={avatarUrl} name={username || me?.full_name || me?.email} size="lg" />
@@ -287,17 +287,17 @@ export default function AccountPage() {
                     </Button>
                   )}
                 </div>
-                <div className="text-xs text-[rgb(var(--muted))]">Gunakan gambar rasio 1:1 untuk hasil terbaik. Max ~2MB (sesuaikan backend).</div>
+                <div className="text-xs text-muted-foreground">Gunakan gambar rasio 1:1 untuk hasil terbaik. Max ~2MB (sesuaikan backend).</div>
               </div>
             </div>
           </section>
 
           {/* Badges Section */}
-          <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
-            <h3 className="text-sm font-medium text-[rgb(var(--fg))]">Badges</h3>
+          <section className="rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-medium text-foreground">Badges</h3>
             <div className="mt-3 space-y-3">
               {badges.length === 0 ? (
-                <p className="text-sm text-[rgb(var(--muted))]">Badge hanya di dapatkan dari reputasi & kontribusi, baik internal maupun eksternal platform yang mempunyai legitimasi.</p>
+                <p className="text-sm text-muted-foreground">Badge hanya di dapatkan dari reputasi & kontribusi, baik internal maupun eksternal platform yang mempunyai legitimasi.</p>
               ) : (
                 <>
                   <div className="flex flex-wrap gap-2">
@@ -306,7 +306,7 @@ export default function AccountPage() {
                     ))}
                   </div>
                   <div className="mt-4">
-                    <label className="text-sm font-medium text-[rgb(var(--fg))]">Primary Badge (tampil di username)</label>
+                    <label className="text-sm font-medium text-foreground">Primary Badge (tampil di username)</label>
                     <div className="mt-2 flex items-center gap-2">
                       <Select
                         value={primaryBadgeId || ""}
@@ -320,25 +320,25 @@ export default function AccountPage() {
                         ))}
                       </Select>
                       {savingBadge && (
-                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[rgb(var(--border))] border-t-[rgb(var(--fg))]" />
+                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" />
                       )}
                     </div>
-                    <p className="mt-1 text-xs text-[rgb(var(--muted))]">Badge yang dipilih akan muncul di samping username Anda.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Badge yang dipilih akan muncul di samping username Anda.</p>
                   </div>
                 </>
               )}
             </div>
           </section>
 
-          <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
-            <h3 className="text-sm font-medium text-[rgb(var(--fg))]">Email</h3>
+          <section className="rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-medium text-foreground">Email</h3>
             <div className="mt-3 space-y-3">
               {me?.email && (
-                <div className="flex items-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-3 py-2">
+                <div className="flex items-center rounded-md border border-border bg-muted/50 px-3 py-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-[rgb(var(--fg))]">{maskEmail(me.email)}</span>
+                    <span className="text-sm text-foreground">{maskEmail(me.email)}</span>
                     {me.is_verified && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(var(--success-bg))] px-2 py-0.5 text-xs font-medium text-[rgb(var(--success))]">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 text-xs font-medium text-emerald-600">
                         <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
@@ -348,14 +348,14 @@ export default function AccountPage() {
                   </div>
                 </div>
               )}
-              <div className="text-xs text-[rgb(var(--muted))]">
+              <div className="text-xs text-muted-foreground">
                 Email Anda digunakan untuk login dan notifikasi penting.
               </div>
             </div>
           </section>
 
-          <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
-            <h3 className="text-sm font-medium text-[rgb(var(--fg))]">Profil</h3>
+          <section className="rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-medium text-foreground">Profil</h3>
             <form onSubmit={saveAccount} className="mt-3 space-y-3">
               <Input
                 label="Name"
@@ -363,10 +363,10 @@ export default function AccountPage() {
                 onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
               />
               <div>
-                <label className="text-sm font-medium text-[rgb(var(--fg))]">Bio</label>
+                <label className="text-sm font-medium text-foreground">Bio</label>
                 <textarea
                   rows={3}
-                  className="mt-1 w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                  className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.bio}
                   onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
                 />
@@ -434,17 +434,17 @@ export default function AccountPage() {
             </form>
           </section>
 
-          <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
-            <h3 className="text-sm font-medium text-[rgb(var(--fg))]">Username</h3>
-            <div className="mt-1 text-sm text-[rgb(var(--fg))]">Saat ini: <b>{username || "(belum ada)"}</b></div>
-            <div className="mt-3 rounded-md border border-[rgb(var(--warning-border))] bg-[rgb(var(--warning-bg))] p-3">
-              <div className="flex items-center gap-2 text-sm text-[rgb(var(--warning))]">
+          <section className="rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-medium text-foreground">Username</h3>
+            <div className="mt-1 text-sm text-foreground">Saat ini: <b>{username || "(belum ada)"}</b></div>
+            <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-3">
+              <div className="flex items-center gap-2 text-sm text-amber-600">
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
                 <span className="font-medium">Fitur Segera Hadir</span>
               </div>
-              <p className="mt-1 text-xs text-[rgb(var(--warning))]/80">
+              <p className="mt-1 text-xs text-amber-600/80">
                 Fitur ganti username akan segera tersedia. Layanan ini berbayar Rp.100.000 dan saldo IDR akan dipotong otomatis.
               </p>
             </div>
@@ -515,21 +515,21 @@ function DeleteAccountSection({ API, router }) {
   }
 
   return (
-    <section className="rounded-lg border-2 border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] p-4">
-      <h3 className="text-sm font-medium text-[rgb(var(--error))] flex items-center gap-2">
+    <section className="rounded-lg border-2 border-destructive/20 bg-destructive/10 p-4">
+      <h3 className="text-sm font-medium text-destructive flex items-center gap-2">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
         </svg>
         Zona Berbahaya
       </h3>
-      <p className="mt-2 text-xs text-[rgb(var(--error))]/80">
+      <p className="mt-2 text-xs text-destructive/80">
         Menghapus akun akan menghapus semua data Anda secara permanen termasuk semua thread yang pernah dibuat. 
         Aksi ini tidak dapat dibatalkan.
       </p>
       
       <div className="mt-4 space-y-3">
         <div>
-          <label className="block text-xs font-medium text-[rgb(var(--error))] mb-1">
+          <label className="block text-xs font-medium text-destructive mb-1">
             Ketik <span className="font-mono font-bold">DELETE</span> untuk konfirmasi
           </label>
           <Input
@@ -555,7 +555,7 @@ function DeleteAccountSection({ API, router }) {
           Hapus Akun Permanen
         </Button>
         
-        <p className="text-xs text-[rgb(var(--muted))] text-center">
+        <p className="text-xs text-muted-foreground text-center">
           Akan diminta verifikasi identitas sebelum menghapus
         </p>
       </div>

@@ -91,23 +91,23 @@ export default function VerifyEmailClient() {
   };
 
   const styles = {
-    pending: "bg-[rgb(var(--warning-bg))] border-[rgb(var(--warning-border))] text-[rgb(var(--warning))]",
-    success: "bg-[rgb(var(--success-bg))] border-[rgb(var(--success-border))] text-[rgb(var(--success))]",
-    error: "bg-[rgb(var(--error-bg))] border-[rgb(var(--error-border))] text-[rgb(var(--error))]",
+    pending: "bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-800 text-amber-600",
+    success: "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-600",
+    error: "bg-destructive/10 border-destructive/20 text-destructive",
   };
 
   const resendStyles = {
     idle: "",
     loading: "",
-    success: "bg-[rgb(var(--success-bg))] border-[rgb(var(--success-border))] text-[rgb(var(--success))]",
-    error: "bg-[rgb(var(--error-bg))] border-[rgb(var(--error-border))] text-[rgb(var(--error))]",
+    success: "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-600",
+    error: "bg-destructive/10 border-destructive/20 text-destructive",
   };
 
   return (
     <div className="w-full max-w-lg mx-auto space-y-4">
       {/* Verification status */}
-      <div className="space-y-3 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
-        <h1 className="text-lg font-semibold text-[rgb(var(--fg))]">Verifikasi Email</h1>
+      <div className="space-y-3 rounded-lg border border-border bg-card p-6">
+        <h1 className="text-lg font-semibold text-foreground">Verifikasi Email</h1>
 
         <div className={`rounded-md border px-4 py-3 text-sm ${styles[status] || styles.pending}`}>
           {message}
@@ -116,7 +116,7 @@ export default function VerifyEmailClient() {
         {status === "success" && (
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--fg))] underline"
+            className="inline-flex items-center gap-2 text-sm font-medium text-foreground underline"
           >
             Lanjut ke halaman login →
           </Link>
@@ -125,12 +125,12 @@ export default function VerifyEmailClient() {
 
       {/* Resend verification form */}
       {status === "error" && (
-        <div className="space-y-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
+        <div className="space-y-4 rounded-lg border border-border bg-card p-6">
           <div>
-            <h2 className="text-base font-semibold text-[rgb(var(--fg))]">
+            <h2 className="text-base font-semibold text-foreground">
               Kirim Ulang Email Verifikasi
             </h2>
-            <p className="mt-1 text-sm text-[rgb(var(--muted))]">
+            <p className="mt-1 text-sm text-muted-foreground">
               Masukkan email Anda untuk mendapatkan link verifikasi baru.
             </p>
           </div>

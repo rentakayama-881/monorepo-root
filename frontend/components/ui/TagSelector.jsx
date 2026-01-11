@@ -103,10 +103,10 @@ export default function TagSelector({
           placeholder={selectedTags.length >= maxTags ? `Max ${maxTags} tags` : placeholder}
           disabled={selectedTags.length >= maxTags}
           className={clsx(
-            "w-full px-3 py-2 text-sm border rounded-md",
-            "bg-[rgb(var(--surface))] border-[rgb(var(--border))]",
-            "text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))]",
-            "focus:border-[rgb(var(--brand))] focus:ring-1 focus:ring-[rgb(var(--brand))]",
+            "w-full px-3 py-2 text-sm border rounded-[var(--radius)]",
+            "bg-card border-border",
+            "text-foreground placeholder:text-muted-foreground",
+            "focus:border-primary focus:ring-1 focus:ring-ring",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             "transition-colors"
           )}
@@ -119,7 +119,7 @@ export default function TagSelector({
             height="12" 
             viewBox="0 0 12 12" 
             fill="none"
-            className="text-[rgb(var(--muted))]"
+            className="text-muted-foreground"
           >
             <path 
               d="M3 4.5L6 7.5L9 4.5" 
@@ -135,8 +135,8 @@ export default function TagSelector({
       {/* Dropdown menu */}
       {isOpen && filteredTags.length > 0 && (
         <div className={clsx(
-          "absolute z-50 w-full mt-1 py-1 rounded-md shadow-lg border",
-          "bg-[rgb(var(--surface))] border-[rgb(var(--border))]",
+          "absolute z-50 w-full mt-1 py-1 rounded-[var(--radius)] shadow-lg border",
+          "bg-card border-border",
           "max-h-60 overflow-y-auto"
         )}>
           {filteredTags.map((tag) => (
@@ -146,7 +146,7 @@ export default function TagSelector({
               onClick={() => toggleTag(tag)}
               className={clsx(
                 "w-full px-3 py-2 text-left text-sm flex items-center gap-2",
-                "hover:bg-[rgb(var(--surface-2))] transition-colors"
+                "hover:bg-accent transition-colors"
               )}
             >
               <div
@@ -154,11 +154,11 @@ export default function TagSelector({
                 style={{ backgroundColor: tag.color }}
               />
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-[rgb(var(--fg))]">
+                <div className="font-medium text-foreground">
                   {tag.name}
                 </div>
                 {tag.description && (
-                  <div className="text-xs text-[rgb(var(--muted))] truncate">
+                  <div className="text-xs text-muted-foreground truncate">
                     {tag.description}
                   </div>
                 )}
@@ -171,16 +171,16 @@ export default function TagSelector({
       {/* Empty state when searching */}
       {isOpen && searchQuery && filteredTags.length === 0 && (
         <div className={clsx(
-          "absolute z-50 w-full mt-1 py-3 px-3 rounded-md shadow-lg border",
-          "bg-[rgb(var(--surface))] border-[rgb(var(--border))]",
-          "text-sm text-[rgb(var(--muted))] text-center"
+          "absolute z-50 w-full mt-1 py-3 px-3 rounded-[var(--radius)] shadow-lg border",
+          "bg-card border-border",
+          "text-sm text-muted-foreground text-center"
         )}>
           No tags found
         </div>
       )}
 
       {/* Helper text */}
-      <p className="mt-1.5 text-xs text-[rgb(var(--muted))]">
+      <p className="mt-1.5 text-xs text-muted-foreground">
         Select up to {maxTags} tags to categorize your thread.
         {selectedTags.length > 0 && ` (${selectedTags.length}/${maxTags} selected)`}
       </p>

@@ -184,7 +184,7 @@ export default function AdminUsersPage() {
   if (loading && users.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--brand))]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -192,10 +192,10 @@ export default function AdminUsersPage() {
   if (authError) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <div className="rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-6 py-4 text-sm text-[rgb(var(--error))]">
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-6 py-4 text-sm text-destructive">
           {authError}
         </div>
-        <p className="text-[rgb(var(--muted))]">Mengalihkan ke halaman login...</p>
+        <p className="text-muted-foreground">Mengalihkan ke halaman login...</p>
       </div>
     );
   }
@@ -203,8 +203,8 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">Users</h1>
-        <p className="mt-1 text-[rgb(var(--muted))]">
+        <h1 className="text-2xl font-bold text-foreground">Users</h1>
+        <p className="mt-1 text-muted-foreground">
           Cari user dan kelola badge mereka
         </p>
       </div>
@@ -225,7 +225,7 @@ export default function AdminUsersPage() {
       {/* Users List */}
       {users.length === 0 ? (
         <Card className="p-12 text-center">
-          <p className="text-[rgb(var(--muted))]">
+          <p className="text-muted-foreground">
             {search ? "User tidak ditemukan" : "Belum ada user"}
           </p>
         </Card>
@@ -238,7 +238,7 @@ export default function AdminUsersPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     {/* Avatar */}
-                    <div className="w-12 h-12 rounded-full bg-[rgb(var(--surface-2))] flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {user.avatar_url ? (
                         <img
                           src={user.avatar_url}
@@ -246,7 +246,7 @@ export default function AdminUsersPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="text-xl text-[rgb(var(--muted))]">
+                        <span className="text-xl text-muted-foreground">
                           {(user.username || user.email)?.[0]?.toUpperCase() ||
                             "?"}
                         </span>
@@ -255,7 +255,7 @@ export default function AdminUsersPage() {
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[rgb(var(--fg))] truncate">
+                        <span className="font-semibold text-foreground truncate">
                           {user.username || "No username"}
                         </span>
                         {/* Primary badge indicator */}
@@ -279,7 +279,7 @@ export default function AdminUsersPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-[rgb(var(--muted))] truncate">
+                      <p className="text-sm text-muted-foreground truncate">
                         {user.email}
                       </p>
 
@@ -289,7 +289,7 @@ export default function AdminUsersPage() {
                           {userBadges.map((badge) => (
                             <span
                               key={badge.ID || badge.id}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))]"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-muted/50 text-muted-foreground"
                             >
                               {badge.icon_url && (
                                 <img
@@ -302,7 +302,7 @@ export default function AdminUsersPage() {
                               <button
                                 type="button"
                                 onClick={() => handleRevoke(user, badge)}
-                                className="ml-1 text-[rgb(var(--error))] hover:opacity-80"
+                                className="ml-1 text-destructive hover:opacity-80"
                                 title="Cabut badge"
                               >
                                 ×
@@ -344,7 +344,7 @@ export default function AdminUsersPage() {
       >
         <form onSubmit={handleAssign} className="space-y-4">
           {assignError && (
-            <div className="rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-4 py-3 text-sm text-[rgb(var(--error))]">
+            <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {assignError}
             </div>
           )}

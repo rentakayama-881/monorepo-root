@@ -182,7 +182,7 @@ export default function AdminBadgesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--brand))]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -191,8 +191,8 @@ export default function AdminBadgesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">Badges</h1>
-          <p className="mt-1 text-[rgb(var(--muted))]">
+          <h1 className="text-2xl font-bold text-foreground">Badges</h1>
+          <p className="mt-1 text-muted-foreground">
             Kelola badge yang dapat diberikan kepada user
           </p>
         </div>
@@ -203,7 +203,7 @@ export default function AdminBadgesPage() {
 
       {badges.length === 0 ? (
         <Card className="p-12 text-center">
-          <p className="text-[rgb(var(--muted))]">Belum ada badge</p>
+          <p className="text-muted-foreground">Belum ada badge</p>
           <Button variant="primary" onClick={openCreateModal} className="mt-4">
             Buat Badge Pertama
           </Button>
@@ -228,14 +228,14 @@ export default function AdminBadgesPage() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-[rgb(var(--fg))] truncate">
+                  <h3 className="font-semibold text-foreground truncate">
                     {badge.name}
                   </h3>
-                  <p className="text-xs text-[rgb(var(--muted))]">
+                  <p className="text-xs text-muted-foreground">
                     {badge.slug}
                   </p>
                   {badge.description && (
-                    <p className="mt-1 text-sm text-[rgb(var(--muted))] line-clamp-2">
+                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
                       {badge.description}
                     </p>
                   )}
@@ -253,7 +253,7 @@ export default function AdminBadgesPage() {
                   variant="secondary"
                   size="sm"
                   onClick={() => handleDelete(badge)}
-                  className="text-[rgb(var(--error))] hover:bg-[rgb(var(--error-bg))]"
+                  className="text-destructive hover:bg-destructive/10"
                 >
                   Hapus
                 </Button>
@@ -271,7 +271,7 @@ export default function AdminBadgesPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-4 py-3 text-sm text-[rgb(var(--error))]">
+            <div className="rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error}
             </div>
           )}
@@ -314,18 +314,18 @@ export default function AdminBadgesPage() {
               onChange={(e) => handleIconUrlChange(e.target.value)}
               required
             />
-            <p className="mt-1 text-xs text-[rgb(var(--muted))]">
-              Upload gambar ke <a href="https://imgbb.com" target="_blank" rel="noopener noreferrer" className="text-[rgb(var(--brand))] underline">imgbb.com</a>, lalu copy "Direct link"
+            <p className="mt-1 text-xs text-muted-foreground">
+              Upload gambar ke <a href="https://imgbb.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">imgbb.com</a>, lalu copy "Direct link"
             </p>
             {formData.icon_url && !iconValid && !iconLoading && (
-              <p className="mt-1 text-xs text-[rgb(var(--error))]">
+              <p className="mt-1 text-xs text-destructive">
                 ⚠️ Gambar tidak dapat dimuat. Pastikan URL valid dan dapat diakses.
               </p>
             )}
           </div>
 
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">
+            <label className="mb-1 block text-sm font-medium text-foreground">
               Warna
             </label>
             <div className="flex items-center gap-3">
@@ -335,7 +335,7 @@ export default function AdminBadgesPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, color: e.target.value })
                 }
-                className="h-10 w-20 cursor-pointer rounded border border-[rgb(var(--border))]"
+                className="h-10 w-20 cursor-pointer rounded border border-border"
               />
               <Input
                 value={formData.color}
@@ -348,11 +348,11 @@ export default function AdminBadgesPage() {
           </div>
 
           {/* Preview */}
-          <div className="rounded-md bg-[rgb(var(--surface-2))] p-4">
-            <p className="text-xs text-[rgb(var(--muted))] mb-2">Preview:</p>
+          <div className="rounded-md bg-muted/50 p-4">
+            <p className="text-xs text-muted-foreground mb-2">Preview:</p>
             <div className="flex items-center gap-2">
               {iconLoading ? (
-                <div className="w-8 h-8 animate-pulse bg-[rgb(var(--border))] rounded"></div>
+                <div className="w-8 h-8 animate-pulse bg-border rounded"></div>
               ) : formData.icon_url && iconValid ? (
                 <img
                   src={formData.icon_url}
@@ -360,7 +360,7 @@ export default function AdminBadgesPage() {
                   className="w-8 h-8 object-contain"
                 />
               ) : (
-                <div className="w-8 h-8 rounded bg-[rgb(var(--border))] flex items-center justify-center text-xs text-[rgb(var(--muted))]">
+                <div className="w-8 h-8 rounded bg-border flex items-center justify-center text-xs text-muted-foreground">
                   ?
                 </div>
               )}

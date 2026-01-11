@@ -6,7 +6,7 @@ import React from "react";
 export default function Spinner({ className = "" }) {
   return (
     <span
-      className={`inline-block h-4 w-4 animate-spin rounded-full border-2 border-[rgb(var(--border))] border-t-[rgb(var(--fg))] ${className}`}
+      className={`inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground ${className}`}
       aria-label="Loading"
     />
   );

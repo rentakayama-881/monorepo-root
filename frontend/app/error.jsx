@@ -14,9 +14,9 @@ export default function Error({ error, reset }) {
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="text-center max-w-md">
         {/* Error icon */}
-        <div className="mx-auto w-16 h-16 rounded-full bg-[rgb(var(--error-bg))] flex items-center justify-center mb-6">
+        <div className="mx-auto w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-6">
           <svg
-            className="w-8 h-8 text-[rgb(var(--error))]"
+            className="w-8 h-8 text-destructive"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -30,11 +30,11 @@ export default function Error({ error, reset }) {
           </svg>
         </div>
 
-        <h2 className="text-xl font-semibold text-[rgb(var(--fg))] mb-2">
+        <h2 className="text-xl font-semibold text-foreground mb-2">
           Terjadi Kesalahan
         </h2>
 
-        <p className="text-[rgb(var(--muted))] mb-6">
+        <p className="text-muted-foreground mb-6">
           Maaf, terjadi kesalahan saat memuat halaman ini. Silakan coba lagi
           atau kembali ke halaman utama.
         </p>
@@ -51,10 +51,10 @@ export default function Error({ error, reset }) {
         {/* Error details (development only) */}
         {process.env.NODE_ENV === "development" && error?.message && (
           <details className="mt-6 text-left">
-            <summary className="text-sm text-[rgb(var(--muted))] cursor-pointer hover:text-[rgb(var(--fg))]">
+            <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground">
               Detail Error (Development)
             </summary>
-            <pre className="mt-2 p-3 bg-[rgb(var(--surface-2))] rounded-md text-xs overflow-auto text-[rgb(var(--error))]">
+            <pre className="mt-2 p-3 bg-muted/50 rounded-md text-xs overflow-auto text-destructive">
               {error.message}
               {error.stack && `\n\n${error.stack}`}
             </pre>

@@ -103,8 +103,8 @@ export default function ReplyForm({
   if (!isLoggedIn) {
     return (
       <div className={`text-center py-4 ${className}`}>
-        <p className="text-sm text-[rgb(var(--muted))]">
-          <a href="/login" className="text-[rgb(var(--brand))] hover:underline">
+        <p className="text-sm text-muted-foreground">
+          <a href="/login" className="text-primary hover:underline">
             Login
           </a>{" "}
           untuk membalas thread ini
@@ -121,7 +121,7 @@ export default function ReplyForm({
           <button
             type="button"
             onClick={() => insertMarkdown("**", "**", "tebal")}
-            className="p-1.5 rounded text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--fg))] transition-colors"
+            className="p-1.5 rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             title="Bold (Ctrl+B)"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
@@ -131,7 +131,7 @@ export default function ReplyForm({
           <button
             type="button"
             onClick={() => insertMarkdown("*", "*", "miring")}
-            className="p-1.5 rounded text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--fg))] transition-colors"
+            className="p-1.5 rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             title="Italic (Ctrl+I)"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
@@ -141,7 +141,7 @@ export default function ReplyForm({
           <button
             type="button"
             onClick={() => insertMarkdown("`", "`", "kode")}
-            className="p-1.5 rounded text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--fg))] transition-colors"
+            className="p-1.5 rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             title="Inline Code"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
@@ -151,7 +151,7 @@ export default function ReplyForm({
           <button
             type="button"
             onClick={() => insertMarkdown("[", "](url)", "teks link")}
-            className="p-1.5 rounded text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--fg))] transition-colors"
+            className="p-1.5 rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             title="Link (Ctrl+K)"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
@@ -167,8 +167,8 @@ export default function ReplyForm({
             onClick={() => setShowPreview(!showPreview)}
             className={`px-2 py-1 text-xs rounded transition-colors ${
               showPreview
-                ? "bg-[rgb(var(--brand))] text-white"
-                : "text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))]"
+                ? "bg-primary text-white"
+                : "text-muted-foreground hover:bg-secondary"
             }`}
           >
             {showPreview ? "Edit" : "Preview"}
@@ -178,11 +178,11 @@ export default function ReplyForm({
 
       {/* Textarea or Preview */}
       {showPreview ? (
-        <div className="min-h-[100px] rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3">
+        <div className="min-h-[100px] rounded-md border bg-card p-3">
           {content.trim() ? (
             <MarkdownPreview content={content} />
           ) : (
-            <p className="text-sm text-[rgb(var(--muted))] italic">
+            <p className="text-sm text-muted-foreground italic">
               Tidak ada konten untuk di-preview
             </p>
           )}
@@ -198,10 +198,10 @@ export default function ReplyForm({
           maxLength={maxLength}
           rows={compact ? 3 : 5}
           className={`
-            w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))]
-            px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))]
+            w-full rounded-md border bg-card
+            px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground
             focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1
-            focus-visible:outline-[rgb(var(--brand))] resize-y min-h-[80px]
+            focus-visible:outline-primary resize-y min-h-[80px]
             disabled:opacity-50 disabled:cursor-not-allowed
           `}
         />
@@ -209,9 +209,9 @@ export default function ReplyForm({
 
       {/* Footer */}
       <div className="flex items-center justify-between">
-        <div className="text-xs text-[rgb(var(--muted))]">
+        <div className="text-xs text-muted-foreground">
           {remainingChars < 500 && (
-            <span className={remainingChars < 100 ? "text-[rgb(var(--error))]" : ""}>
+            <span className={remainingChars < 100 ? "text-destructive" : ""}>
               {remainingChars} karakter tersisa
             </span>
           )}

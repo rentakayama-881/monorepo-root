@@ -1,63 +1,77 @@
-import React from "react";
+"use client";
+
+import { cva } from "class-variance-authority";
 import Link from "next/link";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 
 /**
- * Accessible button component with multiple variants
+ * Button variants using class-variance-authority (prompts.chat style)
+ */
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius)] text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        destructive: "bg-destructive text-white hover:bg-destructive/90",
+        outline: "border bg-background hover:bg-accent hover:text-accent-foreground",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-9 px-4 py-2",
+        sm: "h-8 gap-1.5 px-3 text-xs",
+        lg: "h-10 px-6",
+        icon: "size-9",
+        "icon-sm": "size-8",
+        "icon-lg": "size-10",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+);
+
+/**
+ * Button component with multiple variants and sizes
  * @param {Object} props
- * @param {"button"|"submit"|"reset"} props.type - Button type
- * @param {"primary"|"secondary"|"danger"|"outline"} props.variant - Visual variant
+ * @param {"default"|"destructive"|"outline"|"secondary"|"ghost"|"link"} props.variant
+ * @param {"default"|"sm"|"lg"|"icon"|"icon-sm"|"icon-lg"} props.size
  * @param {boolean} props.loading - Show loading spinner
  * @param {boolean} props.disabled - Disable button
  * @param {string} props.href - If provided, renders as Link
- * @param {string} props.ariaLabel - Accessible label for icon-only buttons
- * @param {React.ReactNode} props.children - Button content
  * @param {string} props.className - Additional CSS classes
  */
 export default function Button({
-  type = "button",
-  variant = "primary",
+  variant = "default",
+  size = "default",
   loading = false,
   disabled = false,
   href,
-  ariaLabel,
-  children,
   className = "",
-  ...rest
+  children,
+  type = "button",
+  ...props
 }) {
-  // Base styles with focus-visible for accessibility
-  const base = clsx(
-    "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium",
-    "transition-colors duration-200",
-    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]",
-    "disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed"
-  );
-  
-  const variants = {
-    primary: "bg-[rgb(var(--brand))] text-white hover:opacity-90",
-    secondary: "border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))] hover:border-[rgb(var(--muted))]",
-    danger: "bg-[rgb(var(--error))] text-white hover:opacity-90",
-    outline: "underline text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
-  };
-
-  const combinedClassName = clsx(base, variants[variant], className);
-
-  // Accessibility: aria-busy for loading state
-  const ariaProps = {
-    "aria-label": ariaLabel,
-    "aria-busy": loading || undefined,
-    "aria-disabled": disabled || loading || undefined,
-  };
+  const isDisabled = disabled || loading;
 
   // If href is provided, render as Link
   if (href) {
     return (
-      <Link 
-        href={href} 
-        className={combinedClassName} 
-        aria-label={ariaLabel}
-        {...rest}
+      <Link
+        href={href}
+        className={cn(buttonVariants({ variant, size }), className)}
+        {...props}
       >
+        {loading && (
+          <span 
+            className="mr-1 inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" 
+            aria-hidden="true"
+          />
+        )}
         {children}
       </Link>
     );
@@ -66,14 +80,13 @@ export default function Button({
   return (
     <button
       type={type}
-      disabled={disabled || loading}
-      className={combinedClassName}
-      {...ariaProps}
-      {...rest}
+      disabled={isDisabled}
+      className={cn(buttonVariants({ variant, size }), className)}
+      {...props}
     >
       {loading && (
         <span 
-          className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" 
+          className="mr-1 inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" 
           aria-hidden="true"
         />
       )}
@@ -81,4 +94,6 @@ export default function Button({
     </button>
   );
 }
+
+export { buttonVariants };
 

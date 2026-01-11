@@ -95,7 +95,7 @@ export default function TransactionsContent() {
   };
 
   return (
-    <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+    <main className="min-h-screen bg-background pt-16">
       <div className="mx-auto max-w-2xl px-4 py-8">
         {/* Success Message */}
         {showSuccess && (
@@ -111,29 +111,29 @@ export default function TransactionsContent() {
 
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">Transaksi Saya</h1>
-            <p className="text-sm text-[rgb(var(--muted))]">
+            <h1 className="text-2xl font-bold text-foreground">Transaksi Saya</h1>
+            <p className="text-sm text-muted-foreground">
               Riwayat transfer dan escrow
             </p>
           </div>
           <Link
             href="/account/wallet/send"
-            className="rounded-lg bg-[rgb(var(--brand))] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
           >
             + Kirim Uang
           </Link>
         </div>
 
         {/* Balance Card */}
-        <div className="mb-6 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
-          <div className="text-sm text-[rgb(var(--muted))]">Saldo Tersedia</div>
-          <div className="text-2xl font-bold text-[rgb(var(--fg))]">
+        <div className="mb-6 rounded-lg border border-border bg-card p-4">
+          <div className="text-sm text-muted-foreground">Saldo Tersedia</div>
+          <div className="text-2xl font-bold text-foreground">
             Rp {wallet.balance.toLocaleString("id-ID")}
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="mb-4 flex gap-2 border-b border-[rgb(var(--border))]">
+        <div className="mb-4 flex gap-2 border-b border-border">
           {[
             { key: "all", label: "Semua" },
             { key: "sent", label: "Terkirim" },
@@ -144,8 +144,8 @@ export default function TransactionsContent() {
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2 text-sm font-medium transition ${
                 activeTab === tab.key
-                  ? "border-b-2 border-[rgb(var(--brand))] text-[rgb(var(--brand))]"
-                  : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab.label}
@@ -156,16 +156,16 @@ export default function TransactionsContent() {
         {/* Transfers List */}
         {loading ? (
           <div className="animate-pulse space-y-3">
-            <div className="h-24 bg-[rgb(var(--border))] rounded-lg" />
-            <div className="h-24 bg-[rgb(var(--border))] rounded-lg" />
-            <div className="h-24 bg-[rgb(var(--border))] rounded-lg" />
+            <div className="h-24 bg-border rounded-lg" />
+            <div className="h-24 bg-border rounded-lg" />
+            <div className="h-24 bg-border rounded-lg" />
           </div>
         ) : transfers.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-[rgb(var(--muted))] mb-4">Belum ada transaksi</div>
+            <div className="text-muted-foreground mb-4">Belum ada transaksi</div>
             <Link
               href="/account/wallet/send"
-              className="text-[rgb(var(--brand))] hover:underline"
+              className="text-primary hover:underline"
             >
               Mulai kirim uang
             </Link>
@@ -176,7 +176,7 @@ export default function TransactionsContent() {
               <Link
                 key={transfer.id}
                 href={`/account/wallet/transactions/${transfer.id}`}
-                className="block rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 transition hover:border-[rgb(var(--muted))]"
+                className="block rounded-lg border border-border bg-card p-4 transition hover:border-muted-foreground"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
@@ -190,25 +190,25 @@ export default function TransactionsContent() {
                       {transfer.receiver?.username?.slice(0, 2).toUpperCase() || "??"}
                     </div>
                     <div>
-                      <div className="font-medium text-[rgb(var(--fg))]">
+                      <div className="font-medium text-foreground">
                         {transfer.sender?.username === transfer.receiver?.username
                           ? transfer.receiver?.username
                           : transfer.sender?.id === transfer.sender_id
                           ? `Ke ${transfer.receiver?.username || "User"}`
                           : `Dari ${transfer.sender?.username || "User"}`}
                       </div>
-                      <div className="text-xs text-[rgb(var(--muted))]">
+                      <div className="text-xs text-muted-foreground">
                         {formatDate(transfer.created_at)}
                       </div>
                       {transfer.description && (
-                        <div className="text-xs text-[rgb(var(--muted))] truncate max-w-48">
+                        <div className="text-xs text-muted-foreground truncate max-w-48">
                           {transfer.description}
                         </div>
                       )}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-semibold text-[rgb(var(--fg))]">
+                    <div className="font-semibold text-foreground">
                       Rp {transfer.amount.toLocaleString("id-ID")}
                     </div>
                     <div className="mt-1">{getStatusBadge(transfer.status)}</div>
@@ -217,11 +217,11 @@ export default function TransactionsContent() {
 
                 {/* Action hint for held transfers */}
                 {transfer.status === "held" && (
-                  <div className="mt-3 flex items-center justify-between border-t border-[rgb(var(--border))] pt-3">
-                    <div className="text-xs text-[rgb(var(--muted))]">
+                  <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                    <div className="text-xs text-muted-foreground">
                       Auto-release: {formatDate(transfer.hold_until)}
                     </div>
-                    <span className="text-xs text-[rgb(var(--brand))]">
+                    <span className="text-xs text-primary">
                       Lihat detail →
                     </span>
                   </div>

@@ -16,27 +16,15 @@ export const metadata = {
 export default function Home() {
   return (
     <div className="relative">
-      {/* Subtle background accent (aman untuk light/dark karena pakai tokens) */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-[-120px] h-[360px] blur-3xl"
-        style={{
-          background:
-            'radial-gradient(600px circle at 50% 0%, rgb(var(--brand) / 0.18), transparent 60%)'
-        }}
-      />
+      <Hero />
 
-      <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <section className="container py-12">
         <div className="flex flex-col gap-14">
-          <Hero />
-
-          <div className="h-px w-full bg-[rgb(var(--border))]" />
-
           <Suspense fallback={<ListSkeleton />}>
             <LatestThreads />
           </Suspense>
 
-          <div className="h-px w-full bg-[rgb(var(--border))]" />
+          <div className="h-px w-full bg-border" />
 
           <Suspense fallback={<GridSkeleton />}>
             <CategoryGrid />

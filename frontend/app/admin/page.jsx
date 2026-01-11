@@ -66,8 +66,8 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">Dashboard</h1>
-        <p className="mt-1 text-[rgb(var(--muted))]">
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <p className="mt-1 text-muted-foreground">
           Selamat datang di Admin Panel
         </p>
       </div>
@@ -75,11 +75,11 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map((stat) => (
           <Link key={stat.href} href={stat.href}>
-            <Card className="p-6 hover:border-[rgb(var(--brand))] transition-colors cursor-pointer">
+            <Card className="p-6 hover:border-primary transition-colors cursor-pointer">
               <div className="flex items-center gap-4">
                 <span className="text-3xl">{stat.icon}</span>
                 <div>
-                  <p className="text-sm text-[rgb(var(--muted))]">
+                  <p className="text-sm text-muted-foreground">
                     {stat.label}
                   </p>
                   <p className={`text-2xl font-bold ${stat.color}`}>
@@ -94,25 +94,25 @@ export default function AdminDashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-[rgb(var(--fg))] mb-4">
+          <h2 className="text-lg font-semibold text-foreground mb-4">
             Quick Actions
           </h2>
           <div className="space-y-2">
             <Link
               href="/admin/badges"
-              className="block rounded-md px-4 py-3 bg-[rgb(var(--surface-2))] hover:bg-[rgb(var(--border))] transition-colors"
+              className="block rounded-lg px-4 py-3 bg-muted/50 hover:bg-accent transition-colors"
             >
               <span className="font-medium">🏆 Manage Badges</span>
-              <p className="text-sm text-[rgb(var(--muted))]">
+              <p className="text-sm text-muted-foreground">
                 Create, edit, or delete badges
               </p>
             </Link>
             <Link
               href="/admin/users"
-              className="block rounded-md px-4 py-3 bg-[rgb(var(--surface-2))] hover:bg-[rgb(var(--border))] transition-colors"
+              className="block rounded-lg px-4 py-3 bg-muted/50 hover:bg-accent transition-colors"
             >
               <span className="font-medium">👥 Manage Users</span>
-              <p className="text-sm text-[rgb(var(--muted))]">
+              <p className="text-sm text-muted-foreground">
                 Assign or revoke badges from users
               </p>
             </Link>
@@ -120,16 +120,16 @@ export default function AdminDashboardPage() {
         </Card>
 
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-[rgb(var(--fg))] mb-4">
+          <h2 className="text-lg font-semibold text-foreground mb-4">
             Info
           </h2>
           <div className="space-y-3 text-sm">
-            <p className="text-[rgb(var(--muted))]">
+            <p className="text-muted-foreground">
               Badge adalah bentuk apresiasi untuk user atas pencapaian mereka.
               Badge ditampilkan di profil user dan satu badge dapat dipilih
               sebagai primary badge yang muncul di sebelah username.
             </p>
-            <p className="text-[rgb(var(--muted))]">
+            <p className="text-muted-foreground">
               Untuk memberikan badge, cari user di menu Users, lalu pilih badge
               yang ingin diberikan.
             </p>

@@ -212,23 +212,23 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
   }
 
   const inputClass =
-    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
+    "w-full rounded-md border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary";
   const primaryButton =
-    "w-full inline-flex justify-center items-center rounded-md bg-[rgb(var(--brand))] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60";
+    "w-full inline-flex justify-center items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md mx-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] shadow-xl">
+      <div className="w-full max-w-md mx-4 rounded-[var(--radius)] border bg-background shadow-xl">
         <div className="p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgb(var(--warning-bg))]">
-              <svg className="h-5 w-5 text-[rgb(var(--warning))]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10">
+              <svg className="h-5 w-5 text-warning" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
               </svg>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-[rgb(var(--fg))]">Konfirmasi Identitas</h3>
-              <p className="text-sm text-[rgb(var(--muted))]">
+              <h3 className="text-lg font-semibold text-foreground">Konfirmasi Identitas</h3>
+              <p className="text-sm text-muted-foreground">
                 {actionDescription || "Aksi ini memerlukan verifikasi ulang"}
               </p>
             </div>
@@ -236,12 +236,12 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
 
           {checking ? (
             <div className="flex items-center justify-center py-8">
-              <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[rgb(var(--brand))] border-t-transparent" />
+              <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[rgb(var(--fg))]">Password</label>
+                <label className="text-sm font-medium text-foreground">Password</label>
                 <input
                   type="password"
                   required
@@ -255,7 +255,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
 
               {requiresTOTP && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-[rgb(var(--fg))]">
+                  <label className="text-sm font-medium text-foreground">
                     {useBackupCode ? "Backup Code" : "Kode 2FA"}
                   </label>
                   <input
@@ -275,7 +275,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
                       setUseBackupCode(!useBackupCode);
                       setTotpCode("");
                     }}
-                    className="text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline"
+                    className="text-xs text-muted-foreground hover:text-foreground hover:underline"
                   >
                     {useBackupCode ? "Gunakan kode authenticator" : "Masukkan kode 2FA atau backup code"}
                   </button>
@@ -283,7 +283,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
               )}
 
               {error && (
-                <div className="text-sm text-[rgb(var(--error))] bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] rounded-md px-3 py-2">
+                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
                   {error}
                 </div>
               )}
@@ -292,7 +292,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="flex-1 inline-flex justify-center items-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm font-semibold text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))]"
+                  className="flex-1 inline-flex justify-center items-center rounded-md border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary"
                 >
                   Batal
                 </button>
@@ -312,7 +312,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
                 </button>
               </div>
 
-              <p className="text-xs text-center text-[rgb(var(--muted))]">
+              <p className="text-xs text-center text-muted-foreground">
                 Tindakan ini memiliki batasan
               </p>
             </form>

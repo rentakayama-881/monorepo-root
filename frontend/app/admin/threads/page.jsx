@@ -97,7 +97,7 @@ export default function ThreadManagementPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-[rgb(var(--fg))] mb-6">Thread Management</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">Thread Management</h1>
 
       {result && (
         <div className={`mb-6 p-3 rounded-lg text-sm ${
@@ -111,17 +111,17 @@ export default function ThreadManagementPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Transfer Ownership */}
-        <div className="p-6 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
-          <h2 className="text-lg font-semibold text-[rgb(var(--fg))] mb-4 flex items-center gap-2">
+        <div className="p-6 rounded-xl border border-border bg-card">
+          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <span>🔄</span> Transfer Ownership
           </h2>
-          <p className="text-sm text-[rgb(var(--muted))] mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             Transfer kepemilikan thread ke user lain. Thread akan berpindah ke user baru.
           </p>
           
           <form onSubmit={handleTransfer} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Thread ID *
               </label>
               <input
@@ -129,13 +129,13 @@ export default function ThreadManagementPage() {
                 value={transferForm.threadId}
                 onChange={(e) => setTransferForm({ ...transferForm, threadId: e.target.value })}
                 placeholder="cth: abc123"
-                className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 New Owner User ID *
               </label>
               <input
@@ -143,20 +143,20 @@ export default function ThreadManagementPage() {
                 value={transferForm.newOwnerId}
                 onChange={(e) => setTransferForm({ ...transferForm, newOwnerId: e.target.value })}
                 placeholder="cth: 42"
-                className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Reason *
               </label>
               <textarea
                 value={transferForm.reason}
                 onChange={(e) => setTransferForm({ ...transferForm, reason: e.target.value })}
                 placeholder="Alasan transfer..."
-                className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 rows={2}
                 required
               />
@@ -170,17 +170,17 @@ export default function ThreadManagementPage() {
 
         {/* Delete Thread */}
         <div className="p-6 rounded-xl border border-red-200 bg-red-50/30">
-          <h2 className="text-lg font-semibold text-[rgb(var(--fg))] mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <span>🗑️</span> Delete Thread
           </h2>
-          <p className="text-sm text-[rgb(var(--muted))] mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             <strong className="text-red-600">PERINGATAN:</strong> Menghapus thread secara permanen. 
             Semua balasan dan reaksi juga akan dihapus. Tindakan ini tidak dapat dibatalkan.
           </p>
           
           <form onSubmit={handleDelete} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Thread ID *
               </label>
               <input
@@ -188,20 +188,20 @@ export default function ThreadManagementPage() {
                 value={deleteForm.threadId}
                 onChange={(e) => setDeleteForm({ ...deleteForm, threadId: e.target.value })}
                 placeholder="cth: abc123"
-                className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Reason *
               </label>
               <textarea
                 value={deleteForm.reason}
                 onChange={(e) => setDeleteForm({ ...deleteForm, reason: e.target.value })}
                 placeholder="Alasan penghapusan..."
-                className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 rows={2}
                 required
               />
@@ -215,9 +215,9 @@ export default function ThreadManagementPage() {
       </div>
 
       {/* Help Section */}
-      <div className="mt-8 p-4 rounded-lg bg-[rgb(var(--surface-2))]">
-        <h3 className="text-sm font-medium text-[rgb(var(--fg))] mb-2">ℹ️ Panduan</h3>
-        <ul className="text-sm text-[rgb(var(--muted))] space-y-1">
+      <div className="mt-8 p-4 rounded-lg bg-muted/50">
+        <h3 className="text-sm font-medium text-foreground mb-2">ℹ️ Panduan</h3>
+        <ul className="text-sm text-muted-foreground space-y-1">
           <li>• Thread ID dapat dilihat di URL thread: /thread/<strong>ID_DISINI</strong></li>
           <li>• User ID dapat dilihat di halaman Users admin panel</li>
           <li>• Transfer ownership biasanya digunakan saat user request atau akun merger</li>

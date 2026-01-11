@@ -10,11 +10,11 @@ import PropTypes from "prop-types";
 export default function Alert({ type = "info", message = "", children, className = "" }) {
   const base = "rounded-md border px-3 py-2 text-sm";
   const typeClass = {
-    error: "border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] text-[rgb(var(--error))]",
-    success: "border-[rgb(var(--success-border))] bg-[rgb(var(--success-bg))] text-[rgb(var(--success))]",
-    warning: "border-[rgb(var(--warning-border))] bg-[rgb(var(--warning-bg))] text-[rgb(var(--warning))]",
-    info: "border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]",
-  }[type] || "border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]";
+    error: "border-destructive/30 bg-destructive/10 text-destructive",
+    success: "border-emerald-600/30 bg-emerald-600/10 text-emerald-600",
+    warning: "border-amber-600/30 bg-amber-600/10 text-amber-600",
+    info: "border-border bg-muted/50 text-foreground",
+  }[type] || "border-border bg-muted/50 text-foreground";
   return (
     <div className={`${base} ${typeClass} ${className}`} role="alert" tabIndex={-1}>
       {message}

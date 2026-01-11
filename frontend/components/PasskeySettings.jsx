@@ -318,15 +318,15 @@ export default function PasskeySettings() {
 
   if (! webAuthnSupported) {
     return (
-      <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
-        <h3 className="text-sm font-medium text-[rgb(var(--fg))] flex items-center gap-2">
+      <section className="rounded-lg border border-border bg-card p-4">
+        <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
           {Icons.passkey}
           Passkeys
         </h3>
-        <div className="mt-3 p-3 rounded-md bg-[rgb(var(--warning-bg))] border border-[rgb(var(--warning-border))]">
+        <div className="mt-3 p-3 rounded-md bg-amber-600/10 border border-amber-600/30">
           <div className="flex items-start gap-2">
-            <span className="text-[rgb(var(--warning))]">{Icons.warning}</span>
-            <p className="text-sm text-[rgb(var(--warning))]">
+            <span className="text-amber-600">{Icons.warning}</span>
+            <p className="text-sm text-amber-600">
               Browser Anda tidak mendukung Passkey/WebAuthn.  Gunakan browser modern seperti Chrome, Firefox, Safari, atau Edge versi terbaru.
             </p>
           </div>
@@ -336,36 +336,36 @@ export default function PasskeySettings() {
   }
 
   return (
-    <section className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
+    <section className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-[rgb(var(--fg))] flex items-center gap-2">
+        <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
           {Icons.passkey}
           Passkeys
         </h3>
-        <span className="text-xs text-[rgb(var(--muted))]">
+        <span className="text-xs text-muted-foreground">
           {passkeys.length} terdaftar
         </span>
       </div>
 
-      <p className="mt-2 text-xs text-[rgb(var(--muted))]">
+      <p className="mt-2 text-xs text-muted-foreground">
         Passkeys memungkinkan Anda login tanpa password menggunakan fingerprint, face ID, atau security key. 
       </p>
 
       {error && (
-        <div className="mt-3 p-2 rounded-md bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] text-sm text-[rgb(var(--error))]">
+        <div className="mt-3 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-sm text-destructive">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="mt-3 p-2 rounded-md bg-[rgb(var(--success-bg))] border border-[rgb(var(--success-border))] text-sm text-[rgb(var(--success))]">
+        <div className="mt-3 p-2 rounded-md bg-emerald-600/10 border border-emerald-600/30 text-sm text-emerald-600">
           {success}
         </div>
       )}
 
       {loading ?  (
-        <div className="mt-4 flex items-center gap-2 text-sm text-[rgb(var(--muted))]">
-          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[rgb(var(--border))] border-t-[rgb(var(--fg))]" />
+        <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" />
           Memuat... 
         </div>
       ) : (
@@ -376,11 +376,11 @@ export default function PasskeySettings() {
               {passkeys.map((pk) => (
                 <div
                   key={pk.id}
-                  className="flex items-center justify-between p-3 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]"
+                  className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/50"
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className="text-[rgb(var(--muted))]"
+                      className="text-muted-foreground"
                       title={getTransportLabel(pk.transports)}
                     >
                       {getTransportIcon(pk. transports)}
@@ -392,13 +392,13 @@ export default function PasskeySettings() {
                             type="text"
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
-                            className="w-32 px-2 py-1 text-sm rounded border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--fg))]"
+                            className="w-32 px-2 py-1 text-sm rounded border border-border bg-card text-foreground"
                             placeholder="Nama baru"
                             autoFocus
                           />
                           <button
                             onClick={() => renamePasskey(pk.id)}
-                            className="text-xs text-[rgb(var(--brand))] hover:underline"
+                            className="text-xs text-primary hover:underline"
                           >
                             Simpan
                           </button>
@@ -407,15 +407,15 @@ export default function PasskeySettings() {
                               setRenaming(null);
                               setNewName("");
                             }}
-                            className="text-xs text-[rgb(var(--muted))] hover:underline"
+                            className="text-xs text-muted-foreground hover:underline"
                           >
                             Batal
                           </button>
                         </div>
                       ) : (
                         <>
-                          <p className="text-sm font-medium text-[rgb(var(--fg))]">{pk.name}</p>
-                          <p className="text-xs text-[rgb(var(--muted))]">
+                          <p className="text-sm font-medium text-foreground">{pk.name}</p>
+                          <p className="text-xs text-muted-foreground">
                             Dibuat: {formatDate(pk. created_at)}
                             {pk.last_used_at && ` • Terakhir:  ${formatDate(pk.last_used_at)}`}
                           </p>
@@ -431,14 +431,14 @@ export default function PasskeySettings() {
                             setRenaming(pk.id);
                             setNewName(pk.name);
                           }}
-                          className="text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline"
+                          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
                         >
                           Ubah nama
                         </button>
                         <button
                           onClick={() => deletePasskey(pk.id)}
                           disabled={deleting === pk.id}
-                          className="text-xs text-[rgb(var(--error))] hover:underline disabled:opacity-50"
+                          className="text-xs text-destructive hover:underline disabled:opacity-50"
                         >
                           {deleting === pk. id ? "Menghapus..." : "Hapus"}
                         </button>
@@ -455,7 +455,7 @@ export default function PasskeySettings() {
             <button
               onClick={registerPasskey}
               disabled={registering}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-[rgb(var(--brand))] text-white hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:opacity-90 disabled:opacity-50"
             >
               {registering ? (
                 <>
@@ -472,7 +472,7 @@ export default function PasskeySettings() {
           </div>
 
           {passkeys.length === 0 && (
-            <p className="mt-3 text-xs text-[rgb(var(--muted))]">
+            <p className="mt-3 text-xs text-muted-foreground">
               Belum ada passkey terdaftar. Tambahkan passkey untuk login lebih aman dan mudah.
             </p>
           )}

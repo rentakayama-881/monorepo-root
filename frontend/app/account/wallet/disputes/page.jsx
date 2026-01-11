@@ -77,11 +77,11 @@ export default function DisputesPage() {
   const displayDisputes = activeTab === "active" ? activeDisputes : resolvedDisputes;
 
   return (
-    <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+    <main className="min-h-screen bg-background pt-16">
         <div className="mx-auto max-w-2xl px-4 py-8">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">Dispute Center</h1>
-            <p className="text-sm text-[rgb(var(--muted))]">
+            <h1 className="text-2xl font-bold text-foreground">Dispute Center</h1>
+            <p className="text-sm text-muted-foreground">
               Kelola sengketa transaksi Anda
             </p>
           </div>
@@ -92,7 +92,7 @@ export default function DisputesPage() {
               <svg className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <div className="text-sm text-[rgb(var(--muted))]">
+              <div className="text-sm text-muted-foreground">
                 <p className="font-medium text-blue-600 mb-1">Proses Dispute</p>
                 <ol className="list-decimal list-inside space-y-1">
                   <li><strong>Negosiasi</strong> - Diskusi dengan pihak lain (24 jam)</li>
@@ -104,13 +104,13 @@ export default function DisputesPage() {
           </div>
 
           {/* Tabs */}
-          <div className="mb-4 flex gap-2 border-b border-[rgb(var(--border))]">
+          <div className="mb-4 flex gap-2 border-b border-border">
             <button
               onClick={() => setActiveTab("active")}
               className={`px-4 py-2 text-sm font-medium transition ${
                 activeTab === "active"
-                  ? "border-b-2 border-[rgb(var(--brand))] text-[rgb(var(--brand))]"
-                  : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Aktif ({activeDisputes.length})
@@ -119,8 +119,8 @@ export default function DisputesPage() {
               onClick={() => setActiveTab("resolved")}
               className={`px-4 py-2 text-sm font-medium transition ${
                 activeTab === "resolved"
-                  ? "border-b-2 border-[rgb(var(--brand))] text-[rgb(var(--brand))]"
-                  : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Selesai ({resolvedDisputes.length})
@@ -129,11 +129,11 @@ export default function DisputesPage() {
 
           {/* Disputes List */}
           {loading ? (
-            <div className="text-center py-12 text-[rgb(var(--muted))]">Memuat...</div>
+            <div className="text-center py-12 text-muted-foreground">Memuat...</div>
           ) : displayDisputes.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-4">🎉</div>
-              <div className="text-[rgb(var(--muted))]">
+              <div className="text-muted-foreground">
                 {activeTab === "active"
                   ? "Tidak ada dispute aktif"
                   : "Belum ada riwayat dispute"}
@@ -145,20 +145,20 @@ export default function DisputesPage() {
                 <Link
                   key={dispute.id}
                   href={`/account/wallet/disputes/${dispute.id}`}
-                  className="block rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 transition hover:border-[rgb(var(--muted))]"
+                  className="block rounded-lg border border-border bg-card p-4 transition hover:border-muted-foreground"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-[rgb(var(--fg))]">
+                        <span className="font-medium text-foreground">
                           Dispute #{dispute.id.slice(0, 8)}
                         </span>
                         {getStatusBadge(dispute.status, dispute.phase)}
                       </div>
-                      <div className="text-sm text-[rgb(var(--muted))] mb-2">
+                      <div className="text-sm text-muted-foreground mb-2">
                         {dispute.reason}
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-[rgb(var(--muted))]">
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span>
                           Rp {dispute.transfer?.amount?.toLocaleString("id-ID") || 0}
                         </span>
@@ -166,18 +166,18 @@ export default function DisputesPage() {
                         <span>{formatDate(dispute.created_at)}</span>
                       </div>
                     </div>
-                    <svg className="h-5 w-5 text-[rgb(var(--muted))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
 
                   {/* Deadline warning */}
                   {dispute.status === "open" && dispute.phase_deadline && (
-                    <div className="mt-3 flex items-center gap-2 border-t border-[rgb(var(--border))] pt-3">
-                      <svg className="h-4 w-4 text-[rgb(var(--warning))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
+                      <svg className="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-xs text-[rgb(var(--warning))]">
+                      <span className="text-xs text-amber-600">
                         Batas waktu: {formatDate(dispute.phase_deadline)}
                       </span>
                     </div>

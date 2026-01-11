@@ -64,9 +64,9 @@ export default function ReportModal({
     return (
       <Modal open={open} onClose={handleClose} title="Laporan Terkirim" size="sm">
         <div className="p-4 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[rgb(var(--success-bg))] flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-600/10 flex items-center justify-center">
             <svg
-              className="w-8 h-8 text-[rgb(var(--success))]"
+              className="w-8 h-8 text-emerald-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -79,10 +79,10 @@ export default function ReportModal({
               />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-[rgb(var(--fg))] mb-2">
+          <h3 className="text-lg font-semibold text-foreground mb-2">
             Terima Kasih!
           </h3>
-          <p className="text-sm text-[rgb(var(--muted))] mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             Laporan Anda telah diterima dan akan ditinjau oleh tim moderasi kami.
           </p>
           <Button variant="primary" onClick={handleClose}>
@@ -103,11 +103,11 @@ export default function ReportModal({
       <form onSubmit={handleSubmit} className="p-4 space-y-4">
         {/* Target info */}
         {targetTitle && (
-          <div className="p-3 rounded-md bg-[rgb(var(--surface-2))] border border-[rgb(var(--border))]">
-            <p className="text-xs text-[rgb(var(--muted))] mb-1">
+          <div className="p-3 rounded-md bg-muted/50 border border-border">
+            <p className="text-xs text-muted-foreground mb-1">
               {targetTypeLabels[targetType]} yang dilaporkan:
             </p>
-            <p className="text-sm text-[rgb(var(--fg))] font-medium truncate">
+            <p className="text-sm text-foreground font-medium truncate">
               {targetTitle}
             </p>
           </div>
@@ -134,19 +134,19 @@ export default function ReportModal({
         />
 
         {/* Character count */}
-        <div className="text-xs text-[rgb(var(--muted))] text-right">
+        <div className="text-xs text-muted-foreground text-right">
           {description.length}/1000 karakter
         </div>
 
         {/* Error message */}
         {error && (
-          <div className="p-3 rounded-md bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] text-sm text-[rgb(var(--error))]">
+          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/30 text-sm text-destructive">
             {error}
           </div>
         )}
 
         {/* Guidelines */}
-        <div className="p-3 rounded-md bg-[rgb(var(--surface-2))] text-xs text-[rgb(var(--muted))]">
+        <div className="p-3 rounded-md bg-muted/50 text-xs text-muted-foreground">
           <p className="font-medium mb-1">Panduan Pelaporan:</p>
           <ul className="list-disc list-inside space-y-0.5">
             <li>Pastikan konten benar-benar melanggar aturan komunitas</li>

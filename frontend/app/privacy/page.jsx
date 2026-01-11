@@ -27,7 +27,7 @@ export const metadata = {
 function ListItem({ children, icon: Icon = CheckIcon }) {
   return (
     <li className="flex items-start gap-2">
-      <span className="mt-0.5 shrink-0 text-[rgb(var(--muted))]">
+      <span className="mt-0.5 shrink-0 text-muted-foreground">
         <Icon className="h-3.5 w-3.5" />
       </span>
       <span className="text-[13px]">{children}</span>
@@ -38,10 +38,10 @@ function ListItem({ children, icon: Icon = CheckIcon }) {
 // Section card with icon header - compact
 function Section({ number, title, icon: Icon, children }) {
   return (
-    <section className="mb-4 overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
-      <div className="border-b border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/30 px-4 py-3">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-[rgb(var(--fg))]">
-          <Icon className="h-4 w-4 text-[rgb(var(--muted))]" />
+    <section className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
+      <div className="border-b border-border bg-muted/30 px-4 py-3">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Icon className="h-4 w-4 text-muted-foreground" />
           <span>{number}. {title}</span>
         </h2>
       </div>
@@ -55,7 +55,7 @@ function Section({ number, title, icon: Icon, children }) {
 // Subsection header
 function SubSection({ title }) {
   return (
-    <h3 className="mb-3 text-sm font-medium text-[rgb(var(--fg))]">{title}</h3>
+    <h3 className="mb-3 text-sm font-medium text-foreground">{title}</h3>
   );
 }
 
@@ -63,9 +63,9 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       {/* Header */}
-      <div className="mb-6 border-b border-[rgb(var(--border))] pb-4">
-        <h1 className="text-lg font-semibold text-[rgb(var(--fg))]">Kebijakan Privasi</h1>
-        <p className="mt-0.5 flex items-center gap-1 text-xs text-[rgb(var(--muted))]">
+      <div className="mb-6 border-b border-border pb-4">
+        <h1 className="text-lg font-semibold text-foreground">Kebijakan Privasi</h1>
+        <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
           <ClockIcon className="h-3 w-3" />
           Terakhir diperbarui: 3 Januari 2026
         </p>
@@ -73,8 +73,8 @@ export default function PrivacyPage() {
 
       <article>
         {/* Intro */}
-        <div className="mb-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3">
-          <p className="text-xs leading-relaxed text-[rgb(var(--muted))]">
+        <div className="mb-4 rounded-lg border border-border bg-card p-3">
+          <p className="text-xs leading-relaxed text-muted-foreground">
             PT AlephDraad Utility Stack ("Kami") berkomitmen untuk melindungi privasi dan data pribadi Anda. 
             Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, menyimpan, dan melindungi 
             informasi Anda saat menggunakan platform AlephDraad.
@@ -84,23 +84,23 @@ export default function PrivacyPage() {
         {/* Data yang Dikumpulkan */}
         <Section number="1" title="Data yang Kami Kumpulkan" icon={DatabaseIcon}>
           <SubSection title="1.1 Data yang Anda Berikan" />
-          <ul className="mb-5 space-y-2.5 text-sm text-[rgb(var(--muted))]">
+          <ul className="mb-5 space-y-2.5 text-sm text-muted-foreground">
             <ListItem icon={UserIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Informasi akun:</strong> nama, alamat email, nama pengguna, kata sandi (terenkripsi)</span>
+              <span><strong className="text-foreground">Informasi akun:</strong> nama, alamat email, nama pengguna, kata sandi (terenkripsi)</span>
             </ListItem>
             <ListItem icon={UserIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Informasi profil:</strong> foto profil, bio, tautan media sosial</span>
+              <span><strong className="text-foreground">Informasi profil:</strong> foto profil, bio, tautan media sosial</span>
             </ListItem>
             <ListItem icon={EditIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Konten yang Anda unggah:</strong> thread, komentar, pesan</span>
+              <span><strong className="text-foreground">Konten yang Anda unggah:</strong> thread, komentar, pesan</span>
             </ListItem>
             <ListItem icon={LockIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Informasi transaksi:</strong> untuk keperluan escrow dan pembayaran</span>
+              <span><strong className="text-foreground">Informasi transaksi:</strong> untuk keperluan escrow dan pembayaran</span>
             </ListItem>
           </ul>
 
           <SubSection title="1.2 Data yang Dikumpulkan Otomatis" />
-          <ul className="space-y-2.5 text-sm text-[rgb(var(--muted))]">
+          <ul className="space-y-2.5 text-sm text-muted-foreground">
             <ListItem icon={GlobeIcon}>Alamat IP dan informasi perangkat</ListItem>
             <ListItem icon={SettingsIcon}>Jenis browser dan sistem operasi</ListItem>
             <ListItem icon={ClockIcon}>Log aktivitas dan waktu akses</ListItem>
@@ -110,8 +110,8 @@ export default function PrivacyPage() {
 
         {/* Penggunaan Data */}
         <Section number="2" title="Penggunaan Data" icon={EyeIcon}>
-          <p className="mb-4 text-sm text-[rgb(var(--muted))]">Kami menggunakan data Anda untuk:</p>
-          <ul className="space-y-2.5 text-sm text-[rgb(var(--muted))]">
+          <p className="mb-4 text-sm text-muted-foreground">Kami menggunakan data Anda untuk:</p>
+          <ul className="space-y-2.5 text-sm text-muted-foreground">
             <ListItem icon={ServerIcon}>Menyediakan, mengoperasikan, dan memelihara layanan Platform</ListItem>
             <ListItem icon={LockIcon}>Memproses transaksi dan mengelola escrow</ListItem>
             <ListItem icon={MailIcon}>Mengirimkan notifikasi terkait akun dan transaksi</ListItem>
@@ -123,7 +123,7 @@ export default function PrivacyPage() {
 
         {/* Penyimpanan Data */}
         <Section number="3" title="Penyimpanan dan Keamanan Data" icon={ServerIcon}>
-          <ul className="space-y-2.5 text-sm text-[rgb(var(--muted))]">
+          <ul className="space-y-2.5 text-sm text-muted-foreground">
             <ListItem icon={GlobeIcon}>Data disimpan di server yang berlokasi di Indonesia dan/atau Singapura</ListItem>
             <ListItem icon={LockIcon}>Enkripsi end-to-end untuk data sensitif (kata sandi, informasi pembayaran)</ListItem>
             <ListItem icon={UserIcon}>Akses data dibatasi hanya untuk personel yang berwenang</ListItem>
@@ -134,67 +134,67 @@ export default function PrivacyPage() {
 
         {/* Pembagian Data */}
         <Section number="4" title="Pembagian Data dengan Pihak Ketiga" icon={GlobeIcon}>
-          <p className="mb-4 text-sm text-[rgb(var(--muted))]">Kami tidak menjual data pribadi Anda. Data dapat dibagikan hanya kepada:</p>
-          <ul className="space-y-2.5 text-sm text-[rgb(var(--muted))]">
+          <p className="mb-4 text-sm text-muted-foreground">Kami tidak menjual data pribadi Anda. Data dapat dibagikan hanya kepada:</p>
+          <ul className="space-y-2.5 text-sm text-muted-foreground">
             <ListItem icon={LockIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Penyedia layanan pembayaran:</strong> untuk memproses transaksi</span>
+              <span><strong className="text-foreground">Penyedia layanan pembayaran:</strong> untuk memproses transaksi</span>
             </ListItem>
             <ListItem icon={ServerIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Penyedia infrastruktur:</strong> hosting, CDN, dan layanan cloud</span>
+              <span><strong className="text-foreground">Penyedia infrastruktur:</strong> hosting, CDN, dan layanan cloud</span>
             </ListItem>
             <ListItem icon={ShieldIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Pihak berwenang:</strong> jika diwajibkan oleh hukum atau perintah pengadilan</span>
+              <span><strong className="text-foreground">Pihak berwenang:</strong> jika diwajibkan oleh hukum atau perintah pengadilan</span>
             </ListItem>
           </ul>
         </Section>
 
         {/* Hak Pengguna */}
         <Section number="5" title="Hak Anda sebagai Subjek Data" icon={UserIcon}>
-          <p className="mb-4 text-sm text-[rgb(var(--muted))]">Sesuai dengan UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi, Anda memiliki hak untuk:</p>
-          <ul className="space-y-2.5 text-sm text-[rgb(var(--muted))]">
+          <p className="mb-4 text-sm text-muted-foreground">Sesuai dengan UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi, Anda memiliki hak untuk:</p>
+          <ul className="space-y-2.5 text-sm text-muted-foreground">
             <ListItem icon={EyeIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Mengakses</strong> data pribadi yang kami simpan tentang Anda</span>
+              <span><strong className="text-foreground">Mengakses</strong> data pribadi yang kami simpan tentang Anda</span>
             </ListItem>
             <ListItem icon={EditIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Memperbaiki</strong> data yang tidak akurat atau tidak lengkap</span>
+              <span><strong className="text-foreground">Memperbaiki</strong> data yang tidak akurat atau tidak lengkap</span>
             </ListItem>
             <ListItem icon={TrashIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Menghapus</strong> data pribadi Anda (dengan batasan tertentu)</span>
+              <span><strong className="text-foreground">Menghapus</strong> data pribadi Anda (dengan batasan tertentu)</span>
             </ListItem>
             <ListItem icon={CheckIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Menarik persetujuan</strong> atas pemrosesan data</span>
+              <span><strong className="text-foreground">Menarik persetujuan</strong> atas pemrosesan data</span>
             </ListItem>
             <ListItem icon={DownloadIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Memindahkan</strong> data ke platform lain (portabilitas data)</span>
+              <span><strong className="text-foreground">Memindahkan</strong> data ke platform lain (portabilitas data)</span>
             </ListItem>
             <ListItem icon={ShieldIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Mengajukan keberatan</strong> atas pemrosesan data tertentu</span>
+              <span><strong className="text-foreground">Mengajukan keberatan</strong> atas pemrosesan data tertentu</span>
             </ListItem>
           </ul>
         </Section>
 
         {/* Cookie */}
         <Section number="6" title="Cookie dan Teknologi Pelacakan" icon={CookieIcon}>
-          <p className="mb-4 text-sm text-[rgb(var(--muted))]">Kami menggunakan cookie untuk:</p>
-          <ul className="mb-4 space-y-2.5 text-sm text-[rgb(var(--muted))]">
+          <p className="mb-4 text-sm text-muted-foreground">Kami menggunakan cookie untuk:</p>
+          <ul className="mb-4 space-y-2.5 text-sm text-muted-foreground">
             <ListItem icon={SettingsIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Cookie esensial:</strong> diperlukan untuk fungsi dasar Platform</span>
+              <span><strong className="text-foreground">Cookie esensial:</strong> diperlukan untuk fungsi dasar Platform</span>
             </ListItem>
             <ListItem icon={LockIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Cookie autentikasi:</strong> menjaga sesi login Anda</span>
+              <span><strong className="text-foreground">Cookie autentikasi:</strong> menjaga sesi login Anda</span>
             </ListItem>
             <ListItem icon={UserIcon}>
-              <span><strong className="text-[rgb(var(--fg))]">Cookie preferensi:</strong> menyimpan pengaturan tampilan</span>
+              <span><strong className="text-foreground">Cookie preferensi:</strong> menyimpan pengaturan tampilan</span>
             </ListItem>
           </ul>
-          <p className="text-sm text-[rgb(var(--muted))]">
+          <p className="text-sm text-muted-foreground">
             Anda dapat mengelola preferensi cookie melalui pengaturan browser Anda.
           </p>
         </Section>
 
         {/* Perubahan Kebijakan */}
         <Section number="7" title="Perubahan Kebijakan Privasi" icon={ClockIcon}>
-          <p className="text-sm text-[rgb(var(--muted))]">
+          <p className="text-sm text-muted-foreground">
             Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Perubahan material akan 
             diberitahukan melalui email atau notifikasi di Platform. Penggunaan Platform setelah perubahan 
             berlaku dianggap sebagai persetujuan atas kebijakan yang diperbarui.
@@ -202,20 +202,20 @@ export default function PrivacyPage() {
         </Section>
 
         {/* Kontak */}
-        <section className="rounded-lg border border-[rgb(var(--border))] bg-gradient-to-br from-[rgb(var(--surface-2))] to-[rgb(var(--surface-1))] p-5">
+        <section className="rounded-lg border border-border bg-gradient-to-br from-muted/50 to-card p-5">
           <div className="flex items-start gap-4">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--fg))]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-foreground">
               <MailIcon className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="mb-1 text-sm font-semibold text-[rgb(var(--fg))]">Hubungi Kami</h2>
-              <p className="text-sm text-[rgb(var(--muted))]">
+              <h2 className="mb-1 text-sm font-semibold text-foreground">Hubungi Kami</h2>
+              <p className="text-sm text-muted-foreground">
                 Untuk pertanyaan terkait privasi dan data pribadi, silakan hubungi:{" "}
-                <a href="mailto:ops@alephdraad.fun" className="font-medium text-[rgb(var(--fg))] hover:underline">
+                <a href="mailto:ops@alephdraad.fun" className="font-medium text-foreground hover:underline">
                   ops@alephdraad.fun
                 </a>
               </p>
-              <p className="mt-2 text-xs text-[rgb(var(--muted))]">
+              <p className="mt-2 text-xs text-muted-foreground">
                 Dasar hukum: Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi
               </p>
             </div>

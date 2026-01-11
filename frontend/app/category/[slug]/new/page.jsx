@@ -6,6 +6,8 @@ import { getApiBase } from "@/lib/api";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import TagSelector from "@/components/ui/TagSelector";
+import Button from "@/components/ui/Button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 
 export default function CreateThreadPage() {
   const router = useRouter();
@@ -42,9 +44,6 @@ export default function CreateThreadPage() {
         ]);
       });
   }, [API]);
-
-  const inputClass =
-    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -88,84 +87,173 @@ export default function CreateThreadPage() {
   };
 
   return (
-    <section className="mx-auto w-full max-w-2xl px-4 py-10">
-      <div className="mb-6">
-        <h2 className="mb-2 text-2xl font-semibold text-[rgb(var(--fg))]">Buat Thread Baru</h2>
-        <div className="text-base text-[rgb(var(--muted))]">
-          Kategori: <span className="font-medium capitalize">{params.slug.replace(/-/g, " ")}</span>
-        </div>
+    <div className="container py-8 md:py-12">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+          Buat Thread Baru
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          Kategori: <span className="font-medium text-foreground capitalize">{params.slug.replace(/-/g, " ")}</span>
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6" autoComplete="off">
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Judul Thread <span className="text-[rgb(var(--error))]">*</span></label>
-          <input
-            required
-            className={inputClass}
-            value={title}
-            maxLength={100}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Masukkan judul yang jelas"
-          />
+      {/* Main Form */}
+      <div className="grid gap-8 lg:grid-cols-3">
+        {/* Left Column - Form */}
+        <div className="lg:col-span-2">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Title */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Judul Thread <span className="text-destructive">*</span>
+              </label>
+              <input
+                required
+                className="flex h-10 w-full rounded-[var(--radius)] border bg-background px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                value={title}
+                maxLength={100}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Masukkan judul yang jelas dan menarik"
+              />
+              <p className="text-xs text-muted-foreground">{title.length}/100 karakter</p>
+            </div>
+
+            {/* Summary */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Ringkasan
+                <span className="ml-2 text-xs font-normal text-muted-foreground">(optional)</span>
+              </label>
+              <textarea
+                className="flex min-h-[100px] w-full rounded-[var(--radius)] border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 resize-y"
+                rows={3}
+                maxLength={300}
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                placeholder="Deskripsi singkat yang akan muncul di preview thread"
+              />
+              <p className="text-xs text-muted-foreground">{summary.length}/300 karakter</p>
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Tags
+                <span className="ml-2 text-xs font-normal text-muted-foreground">(pilih maksimal 3)</span>
+              </label>
+              <TagSelector
+                selectedTags={selectedTags}
+                onTagsChange={setSelectedTags}
+                availableTags={availableTags}
+                maxTags={3}
+                placeholder="Pilih tags untuk thread..."
+              />
+            </div>
+
+            {/* Content */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Konten Thread <span className="text-destructive">*</span>
+              </label>
+              <MarkdownEditor
+                value={content}
+                onChange={setContent}
+                placeholder="Tulis konten thread di sini. Markdown didukung..."
+                minHeight="300px"
+                disabled={loading}
+                preview={MarkdownPreview}
+              />
+            </div>
+
+            {/* Telegram */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Contact Telegram <span className="text-destructive">*</span>
+              </label>
+              <div className="flex items-center">
+                <span className="flex h-10 items-center rounded-l-[var(--radius)] border border-r-0 bg-secondary px-3 text-sm text-muted-foreground">
+                  @
+                </span>
+                <input
+                  required
+                  className="flex h-10 w-full rounded-r-[var(--radius)] border bg-background px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                  value={telegram}
+                  maxLength={50}
+                  onChange={(e) => setTelegram(e.target.value)}
+                  placeholder="username"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Username telegram tanpa simbol @</p>
+            </div>
+
+            {/* Error/Success Messages */}
+            {error && (
+              <div className="rounded-[var(--radius)] border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="rounded-[var(--radius)] border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
+                {success}
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <div className="flex items-center gap-4 pt-4">
+              <Button type="submit" size="lg" disabled={loading} className="min-w-[160px]">
+                {loading ? (
+                  <>
+                    <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Membuat...
+                  </>
+                ) : (
+                  "Buat Thread"
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => router.back()}
+              >
+                Batal
+              </Button>
+            </div>
+          </form>
         </div>
 
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Ringkasan (optional)</label>
-          <textarea
-            className={`${inputClass} min-h-[90px]`}
-            rows={3}
-            maxLength={300}
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            placeholder="Deskripsi singkat / highlight utama thread"
-          />
+        {/* Right Column - Tips */}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-20">
+            <CardHeader>
+              <CardTitle className="text-base">💡 Tips Membuat Thread</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <div>
+                <p className="font-medium text-foreground mb-1">Judul yang Jelas</p>
+                <p>Gunakan judul yang spesifik dan deskriptif agar mudah ditemukan.</p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground mb-1">Ringkasan Menarik</p>
+                <p>Tulis ringkasan yang menjelaskan inti thread dalam 1-2 kalimat.</p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground mb-1">Tags yang Tepat</p>
+                <p>Pilih tags yang sesuai agar thread mudah dikategorikan.</p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground mb-1">Konten Terstruktur</p>
+                <p>Gunakan markdown untuk format yang rapi. Tambahkan heading, list, dan code block jika perlu.</p>
+              </div>
+              <div className="pt-4 border-t">
+                <p className="text-xs">
+                  ⚠️ Pastikan konten thread sesuai dengan <a href="/rules-content" className="text-primary hover:underline">aturan komunitas</a>.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">
-            Tags
-            <span className="ml-2 text-xs font-normal text-[rgb(var(--muted))]">(optional)</span>
-          </label>
-          <TagSelector
-            selectedTags={selectedTags}
-            onTagsChange={setSelectedTags}
-            availableTags={availableTags}
-            maxTags={3}
-            placeholder="Pilih tags untuk thread..."
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Konten Thread <span className="text-[rgb(var(--error))]">*</span></label>
-          <MarkdownEditor
-            value={content}
-            onChange={setContent}
-            placeholder="Silakan menulis..."
-            minHeight="200px"
-            disabled={loading}
-            preview={MarkdownPreview}
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--fg))]">Contact Telegram <span className="text-[rgb(var(--error))]">*</span></label>
-          <input
-            required
-            className={inputClass}
-            value={telegram}
-            maxLength={50}
-            onChange={(e) => setTelegram(e.target.value)}
-            placeholder="username (tanpa @)"
-          />
-        </div>
-
-        {error && <div className="rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-3 py-2 text-sm text-[rgb(var(--error))]">{error}</div>}
-        {success && <div className="rounded-md border border-[rgb(var(--success-border))] bg-[rgb(var(--success-bg))] px-3 py-2 text-sm text-[rgb(var(--success))]">{success}</div>}
-
-        <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center rounded-md bg-[rgb(var(--brand))] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60">
-          {loading ? "Membuat..." : "Buat Thread"}
-        </button>
-      </form>
-    </section>
+      </div>
+    </div>
   );
 }

@@ -24,7 +24,7 @@ export default function Select({
   ...rest
 }) {
   const selectStyles =
-    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))] appearance-none cursor-pointer";
+    "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring appearance-none cursor-pointer";
 
   // Normalize options to { value, label } format
   const normalizedOptions = options.map((opt) =>
@@ -38,13 +38,13 @@ export default function Select({
   return (
     <div className="mb-3">
       {label && (
-        <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">
+        <label className="mb-1 block text-sm font-medium text-foreground">
           {label}
         </label>
       )}
       <div className="relative">
         <select
-          className={`${selectStyles} ${error ? "border-[rgb(var(--error))]" : ""} ${className}`}
+          className={`${selectStyles} ${error ? "border-destructive" : ""} ${className}`}
           aria-invalid={!!error}
           {...rest}
         >
@@ -68,7 +68,7 @@ export default function Select({
         {/* Custom dropdown arrow */}
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
           <svg
-            className="h-4 w-4 text-[rgb(var(--muted))]"
+            className="h-4 w-4 text-muted-foreground"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -82,7 +82,7 @@ export default function Select({
           </svg>
         </div>
       </div>
-      {error && <div className="mt-1 text-xs text-[rgb(var(--error))]">{error}</div>}
+      {error && <div className="mt-1 text-xs text-destructive">{error}</div>}
     </div>
   );
 }

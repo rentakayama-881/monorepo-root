@@ -3,14 +3,40 @@
 @plugin "@tailwindcss/container-queries";
 @plugin "@tailwindcss/typography";
 
-/* ===== Base reset ala Vercel ===== */
+@custom-variant dark (&:is(.dark *));
+
+/* ===== Theme Configuration (prompts.chat style) ===== */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* ===== Base reset ===== */
 @layer base {
   *,
   ::after,
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: var(--border);
   }
 
   *,
@@ -24,104 +50,161 @@
     height: 100%;
   }
 
-  /* ===== Design tokens (LIGHT default) =====
-     Pakai format "R, G, B" supaya rgb(var(--x)) -> rgb(R, G, B) */
+  /* ===== Design tokens (LIGHT default) - prompts.chat oklch style ===== */
   :root {
-    /* Typography - Inter font (same as prompts.chat) */
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    font-size: 14px;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
-
-    /* Tokens (LIGHT) - GitHub Primer accurate */
-    --bg: 246, 248, 250;
-    --fg: 36, 41, 47;
-
-    --muted: 87, 96, 106;
-    --muted-2: 110, 118, 129;
-
-    --surface: 255, 255, 255;
-    --surface-2: 248, 250, 252;
-
-    --border: 208, 215, 222;
-    --ring: 148, 163, 184;
-
-    --brand: 31, 111, 235;
-    --brand-2: 9, 105, 218;
-
-    --skeleton: 208, 215, 222;
-
+    /* Radius token */
+    --radius: 0.625rem;
+    
+    /* Semantic color tokens (oklch format) */
+    --background: oklch(0.985 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.46 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    
     /* Status colors */
-    --success: 22, 163, 74;
-    --success-bg: 240, 253, 244;
-    --success-border: 187, 247, 208;
-
-    --error: 220, 38, 38;
-    --error-bg: 254, 242, 242;
-    --error-border: 254, 202, 202;
-
-    --warning: 202, 138, 4;
-    --warning-bg: 254, 252, 232;
-    --warning-border: 254, 240, 138;
+    --success: oklch(0.65 0.2 145);
+    --warning: oklch(0.75 0.15 85);
+    --error: oklch(0.577 0.245 27.325);
   }
 
-  /* Default scheme LIGHT (ikuti Vercel pattern) */
+  /* Default scheme LIGHT */
   html {
     color-scheme: light;
   }
 
+  .dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    
+    /* Status colors (dark mode) */
+    --success: oklch(0.75 0.2 145);
+    --warning: oklch(0.85 0.15 85);
+    --error: oklch(0.704 0.191 22.216);
+    
+    color-scheme: dark;
+  }
+
   @media (prefers-color-scheme: dark) {
-    :root {
-      /* Tokens (DARK) - GitHub Primer accurate */
+    :root:not(.light) {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --card-foreground: oklch(0.985 0 0);
+      --popover: oklch(0.205 0 0);
+      --popover-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0);
+      --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0);
+      --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+      
+      /* Status colors (dark mode) */
+      --success: oklch(0.75 0.2 145);
+      --warning: oklch(0.85 0.15 85);
+      --error: oklch(0.704 0.191 22.216);
+      
+      color-scheme: dark;
+    }
+  }
+
+  /* ===== Legacy token mappings for backward compatibility ===== */
+  :root {
+    /* Map old RGB tokens to new semantic tokens */
+    --bg: 246, 248, 250;
+    --fg: 36, 41, 47;
+    --surface: 255, 255, 255;
+    --surface-2: 248, 250, 252;
+    --surface-1: 255, 255, 255;
+    --brand: 31, 111, 235;
+    --brand-2: 9, 105, 218;
+    --skeleton: 208, 215, 222;
+    --muted-2: 110, 118, 129;
+    
+    /* Status colors (legacy RGB format) */
+    --success-bg: 240, 253, 244;
+    --success-border: 187, 247, 208;
+    --error-bg: 254, 242, 242;
+    --error-border: 254, 202, 202;
+    --warning-bg: 254, 252, 232;
+    --warning-border: 254, 240, 138;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light) {
+      /* Legacy tokens (dark mode) */
       --bg: 13, 17, 23;
       --fg: 201, 209, 217;
-
-      --muted: 139, 148, 158;
-      --muted-2: 110, 118, 129;
-
       --surface: 22, 27, 34;
       --surface-2: 28, 33, 40;
-
-      --border: 48, 54, 61;
-      --ring: 68, 76, 86;
-
+      --surface-1: 22, 27, 34;
       --brand: 88, 166, 255;
       --brand-2: 121, 192, 255;
-
       --skeleton: 48, 54, 61;
-
-      /* Status colors (dark mode) */
-      --success: 74, 222, 128;
+      --muted-2: 110, 118, 129;
+      
+      /* Status colors (legacy dark mode) */
       --success-bg: 20, 83, 45;
       --success-border: 34, 197, 94;
-
-      --error: 248, 113, 113;
       --error-bg: 127, 29, 29;
       --error-border: 220, 38, 38;
-
-      --warning: 250, 204, 21;
       --warning-bg: 113, 63, 18;
       --warning-border: 202, 138, 4;
-    }
-
-    /* Vercel style: set scheme dark di html */
-    html {
-      color-scheme: dark;
     }
   }
 
   body {
     margin: 0;
     min-height: 100vh;
-    background-color: rgb(var(--bg));
-    color: rgb(var(--fg));
+    background-color: var(--background);
+    color: var(--foreground);
     padding-bottom: env(safe-area-inset-bottom);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
   }
 
   ::selection {
-    background-color: rgba(var(--brand), 0.25);
+    background-color: oklch(0.6 0.15 250 / 0.3);
   }
 
   a {
@@ -130,11 +213,19 @@
   }
 }
 
-/* ===== Focus ring ala Vercel ===== */
-a,
-input,
-button {
-  @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-50 dark:focus-visible:ring-neutral-600 dark:focus-visible:ring-offset-neutral-900;
+/* ===== Container utility (prompts.chat style) ===== */
+@layer utilities {
+  .container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+}
+
+/* ===== Focus ring ===== */
+a:focus-visible,
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 /* iOS lazy image fix (keep) */
@@ -149,7 +240,7 @@ button {
   font-size: 14px;
   line-height: 1.6;
   word-wrap: break-word;
-  color: rgb(var(--fg));
+  color: var(--foreground);
 }
 
 /* Code block container */
@@ -158,9 +249,9 @@ button {
   overflow: auto;
   font-size: 13px;
   line-height: 1.5;
-  background-color: rgb(var(--surface-2));
-  border: 1px solid rgb(var(--border));
-  border-radius: 6px;
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   margin: 16px 0;
 }
 
@@ -175,11 +266,11 @@ button {
   border: 0;
   font-size: 100%;
   white-space: pre;
-  color: rgb(var(--fg));
+  color: var(--foreground);
 }
 
 .markdown-body code {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
 }
 
 /* Inline code */
@@ -188,16 +279,16 @@ button {
   margin: 0;
   font-size: 85%;
   white-space: break-spaces;
-  background-color: rgba(var(--fg), 0.06);
-  border-radius: 6px;
-  color: rgb(var(--fg));
+  background-color: var(--secondary);
+  border-radius: var(--radius);
+  color: var(--foreground);
 }
 
 /* Blockquote */
 .markdown-body blockquote {
   padding: 0 1em;
-  color: rgb(var(--muted));
-  border-left: 0.25em solid rgb(var(--border));
+  color: var(--muted-foreground);
+  border-left: 0.25em solid var(--border);
   margin: 16px 0;
 }
 
@@ -324,7 +415,7 @@ button {
 .markdown-body h4,
 .markdown-body h5,
 .markdown-body h6 {
-  color: rgb(var(--fg));
+  color: var(--foreground);
   font-weight: 600;
   line-height: 1.25;
 }
@@ -336,7 +427,7 @@ button {
 }
 
 .markdown-body li {
-  color: rgb(var(--fg));
+  color: var(--foreground);
 }
 
 .markdown-body li + li {
@@ -361,25 +452,25 @@ button {
 .markdown-body th,
 .markdown-body td {
   padding: 6px 13px;
-  border: 1px solid rgb(var(--border));
+  border: 1px solid var(--border);
 }
 
 .markdown-body th {
   font-weight: 600;
-  background-color: rgb(var(--surface-2));
+  background-color: var(--secondary);
 }
 
 .markdown-body tr {
-  background-color: rgb(var(--surface));
+  background-color: var(--card);
 }
 
 .markdown-body tr:nth-child(2n) {
-  background-color: rgb(var(--surface-2));
+  background-color: var(--secondary);
 }
 
 /* Links */
 .markdown-body a {
-  color: rgb(var(--brand));
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -390,8 +481,8 @@ button {
 /* Images */
 .markdown-body img {
   max-width: 100%;
-  border-radius: 6px;
-  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
 }
 
 /* Horizontal rule */
@@ -399,14 +490,14 @@ button {
   height: 0.25em;
   padding: 0;
   margin: 24px 0;
-  background-color: rgb(var(--border));
+  background-color: var(--border);
   border: 0;
 }
 
 /* Strong and emphasis */
 .markdown-body strong {
   font-weight: 600;
-  color: rgb(var(--fg));
+  color: var(--foreground);
 }
 
 .markdown-body em {
@@ -415,28 +506,28 @@ button {
 
 /* Strikethrough */
 .markdown-body del {
-  color: rgb(var(--muted));
+  color: var(--muted-foreground);
 }
 
-/* ===== GitHub-style Typography ===== */
+/* ===== Typography ===== */
 h1, h2, h3, h4, h5, h6 {
   margin-top: 24px;
   margin-bottom: 16px;
   font-weight: 600;
   line-height: 1.25;
-  color: rgb(var(--fg));
+  color: var(--foreground);
 }
 
 h1 {
   font-size: 2em;
   padding-bottom: 0.3em;
-  border-bottom: 1px solid rgb(var(--border));
+  border-bottom: 1px solid var(--border);
 }
 
 h2 {
   font-size: 1.5em;
   padding-bottom: 0.3em;
-  border-bottom: 1px solid rgb(var(--border));
+  border-bottom: 1px solid var(--border);
 }
 
 h3 {
@@ -453,7 +544,7 @@ h5 {
 
 h6 {
   font-size: 0.85em;
-  color: rgb(var(--muted));
+  color: var(--muted-foreground);
 }
 
 p {

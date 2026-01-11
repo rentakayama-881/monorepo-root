@@ -326,7 +326,7 @@ export function AwardIcon({ className = "h-4 w-4" }) {
 export function ListItem({ 
   children, 
   icon: Icon = ChevronRightIcon,
-  iconColor = "text-[rgb(var(--brand))]",
+  iconColor = "text-primary",
   className = ""
 }) {
   return (
@@ -344,9 +344,9 @@ export function ListItem({
  */
 export function SectionHeader({ number, title, icon: Icon }) {
   return (
-    <h2 className="mb-4 flex items-center gap-3 text-lg font-semibold text-[rgb(var(--fg))]">
+    <h2 className="mb-4 flex items-center gap-3 text-lg font-semibold text-foreground">
       {Icon && (
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <Icon className="h-4 w-4" />
         </span>
       )}
@@ -360,7 +360,7 @@ export function SectionHeader({ number, title, icon: Icon }) {
  */
 export function CardSection({ children, className = "" }) {
   return (
-    <section className={`mb-6 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-5 transition-all hover:border-[rgb(var(--brand))]/20 ${className}`}>
+    <section className={`mb-6 rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/20 ${className}`}>
       {children}
     </section>
   );
@@ -373,23 +373,23 @@ export function PageSkeleton() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header skeleton */}
-      <div className="mb-8 border-b border-[rgb(var(--border))] pb-6">
-        <div className="h-8 w-64 animate-pulse rounded-lg bg-[rgb(var(--surface-2))]" />
-        <div className="mt-2 h-4 w-40 animate-pulse rounded-lg bg-[rgb(var(--surface-2))]" />
+      <div className="mb-8 border-b border-border pb-6">
+        <div className="h-8 w-64 animate-pulse rounded-lg bg-muted/50" />
+        <div className="mt-2 h-4 w-40 animate-pulse rounded-lg bg-muted/50" />
       </div>
 
       {/* Content skeleton */}
       <div className="space-y-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-1))] p-5">
+          <div key={i} className="rounded-xl border border-border bg-card p-5">
             <div className="mb-4 flex items-center gap-3">
-              <div className="h-8 w-8 animate-pulse rounded-lg bg-[rgb(var(--surface-2))]" />
-              <div className="h-6 w-48 animate-pulse rounded-lg bg-[rgb(var(--surface-2))]" />
+              <div className="h-8 w-8 animate-pulse rounded-lg bg-muted/50" />
+              <div className="h-6 w-48 animate-pulse rounded-lg bg-muted/50" />
             </div>
             <div className="space-y-3">
-              <div className="h-4 w-full animate-pulse rounded bg-[rgb(var(--surface-2))]" />
-              <div className="h-4 w-5/6 animate-pulse rounded bg-[rgb(var(--surface-2))]" />
-              <div className="h-4 w-4/6 animate-pulse rounded bg-[rgb(var(--surface-2))]" />
+              <div className="h-4 w-full animate-pulse rounded bg-muted/50" />
+              <div className="h-4 w-5/6 animate-pulse rounded bg-muted/50" />
+              <div className="h-4 w-4/6 animate-pulse rounded bg-muted/50" />
             </div>
           </div>
         ))}

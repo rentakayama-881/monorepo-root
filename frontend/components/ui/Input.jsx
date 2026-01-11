@@ -29,11 +29,11 @@ export default function Input({
   const hintId = `${inputId}-hint`;
 
   const inputStyles = clsx(
-    "w-full rounded-md border bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))]",
-    "placeholder:text-[rgb(var(--muted))]",
-    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]",
+    "w-full rounded-md border bg-card px-3 py-2 text-sm text-foreground",
+    "placeholder:text-muted-foreground",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary",
     "disabled:opacity-50 disabled:cursor-not-allowed",
-    error ? "border-[rgb(var(--error))]" : "border-[rgb(var(--border))]",
+    error ? "border-destructive" : "",
     className
   );
 
@@ -48,10 +48,10 @@ export default function Input({
       {label && (
         <label 
           htmlFor={inputId}
-          className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]"
+          className="mb-1 block text-sm font-medium text-foreground"
         >
           {label}
-          {required && <span className="text-[rgb(var(--error))] ml-1" aria-hidden="true">*</span>}
+          {required && <span className="text-destructive ml-1" aria-hidden="true">*</span>}
         </label>
       )}
       <input
@@ -64,12 +64,12 @@ export default function Input({
         {...rest}
       />
       {hint && !error && (
-        <p id={hintId} className="mt-1 text-xs text-[rgb(var(--muted))]">
+        <p id={hintId} className="mt-1 text-xs text-muted-foreground">
           {hint}
         </p>
       )}
       {error && (
-        <p id={errorId} className="mt-1 text-xs text-[rgb(var(--error))]" role="alert">
+        <p id={errorId} className="mt-1 text-xs text-destructive" role="alert">
           {error}
         </p>
       )}

@@ -20,8 +20,8 @@ export default async function LatestThreads() {
   return (
     <section className="mb-12">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-[rgb(var(--fg))]">Thread Terbaru</h2>
-        <Link href="/threads" className="text-sm font-medium text-[rgb(var(--brand))] hover:underline">
+        <h2 className="text-lg font-semibold text-foreground">Thread Terbaru</h2>
+        <Link href="/threads" className="text-sm font-medium text-primary hover:underline">
           Lihat semua →
         </Link>
       </div>
@@ -37,7 +37,7 @@ export default async function LatestThreads() {
           ))}
         </ThreadCardList>
       ) : (
-        <div className="rounded-lg border border-dashed border-[rgb(var(--border))] bg-[rgb(var(--surface))] py-8 text-center text-sm text-[rgb(var(--muted))]">
+        <div className="rounded-[var(--radius)] border border-dashed bg-card py-8 text-center text-sm text-muted-foreground">
           Belum ada thread terbaru.
         </div>
       )}

@@ -146,17 +146,17 @@ export default function AISearchPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-semibold mb-2 text-[rgb(var(--fg))]">
+      <h1 className="text-2xl font-semibold mb-2 text-foreground">
         AI Search
       </h1>
-      <p className="text-sm text-[rgb(var(--muted))] mb-6">
+      <p className="text-sm text-muted-foreground mb-6">
         Cari thread dengan kata kunci, lalu pilih thread untuk mendapatkan penjelasan AI.
       </p>
 
       {/* Search Form */}
       <form onSubmit={handleSearch} className="flex gap-2 mb-6">
         <input
-          className="flex-1 border border-[rgb(var(--border))] bg-[rgb(var(--surface))] rounded-lg px-4 py-2.5 outline-none text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:ring-1 focus:ring-[rgb(var(--brand))]"
+          className="flex-1 border border-border bg-card rounded-lg px-4 py-2.5 outline-none text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-ring"
           placeholder="Ketik kata kunci pencarian..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -165,7 +165,7 @@ export default function AISearchPage() {
         <button
           type="submit"
           disabled={!query.trim() || searching || explaining}
-          className="rounded-lg px-5 py-2.5 bg-[rgb(var(--brand))] text-white font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+          className="rounded-lg px-5 py-2.5 bg-primary text-white font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
         >
           {searching ? "Mencari..." : "Cari"}
         </button>
@@ -173,7 +173,7 @@ export default function AISearchPage() {
 
       {/* Error Message */}
       {error && (
-        <div className="mb-4 text-sm text-[rgb(var(--error))] border border-[rgb(var(--error))]/30 bg-[rgb(var(--error))]/10 rounded-lg p-3">
+        <div className="mb-4 text-sm text-destructive border border-destructive/30 bg-destructive/10 rounded-lg p-3">
           {error}
         </div>
       )}
@@ -183,7 +183,7 @@ export default function AISearchPage() {
         <div className="space-y-4">
           <button
             onClick={handleBack}
-            className="flex items-center gap-1 text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] transition-colors"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -191,29 +191,29 @@ export default function AISearchPage() {
             Kembali ke hasil pencarian
           </button>
 
-          <div className="border border-[rgb(var(--border))] bg-[rgb(var(--surface))] rounded-lg overflow-hidden">
+          <div className="border border-border bg-card rounded-lg overflow-hidden">
             {/* Thread Header */}
-            <div className="border-b border-[rgb(var(--border))] p-4">
+            <div className="border-b border-border p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-lg text-[rgb(var(--fg))] line-clamp-2">
+                  <h2 className="font-semibold text-lg text-foreground line-clamp-2">
                     {selectedThread.title}
                   </h2>
                   {selectedThread.category && (
-                    <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded-full bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))]">
+                    <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground">
                       {selectedThread.category}
                     </span>
                   )}
                 </div>
                 <Link
                   href={`/thread/${selectedThread.id}`}
-                  className="shrink-0 text-sm text-[rgb(var(--brand))] hover:underline"
+                  className="shrink-0 text-sm text-primary hover:underline"
                 >
                   Buka Thread →
                 </Link>
               </div>
               {selectedThread.summary && (
-                <p className="mt-3 text-sm text-[rgb(var(--muted))] line-clamp-3">
+                <p className="mt-3 text-sm text-muted-foreground line-clamp-3">
                   {selectedThread.summary}
                 </p>
               )}
@@ -223,12 +223,12 @@ export default function AISearchPage() {
             <div className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-lg">🤖</span>
-                <h3 className="font-medium text-[rgb(var(--fg))]">Penjelasan AI</h3>
+                <h3 className="font-medium text-foreground">Penjelasan AI</h3>
               </div>
 
               {explaining ? (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-[rgb(var(--muted))]">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
@@ -236,13 +236,13 @@ export default function AISearchPage() {
                     Generating AI explanation...
                   </div>
                   <div className="space-y-2">
-                    <div className="h-4 bg-[rgb(var(--surface-2))] rounded animate-pulse w-full"/>
-                    <div className="h-4 bg-[rgb(var(--surface-2))] rounded animate-pulse w-5/6"/>
-                    <div className="h-4 bg-[rgb(var(--surface-2))] rounded animate-pulse w-4/6"/>
+                    <div className="h-4 bg-muted/50 rounded animate-pulse w-full"/>
+                    <div className="h-4 bg-muted/50 rounded animate-pulse w-5/6"/>
+                    <div className="h-4 bg-muted/50 rounded animate-pulse w-4/6"/>
                   </div>
                 </div>
               ) : (
-                <div className="prose prose-sm max-w-none text-[rgb(var(--fg))]">
+                <div className="prose prose-sm max-w-none text-foreground">
                   <div className="whitespace-pre-wrap text-sm leading-relaxed">
                     {explanation}
                   </div>
@@ -257,10 +257,10 @@ export default function AISearchPage() {
       {!selectedThread && threads.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-medium text-[rgb(var(--fg))]">
+            <h2 className="font-medium text-foreground">
               Hasil Pencarian
             </h2>
-            <span className="text-sm text-[rgb(var(--muted))]">
+            <span className="text-sm text-muted-foreground">
               {threads.length} thread{hasMore && "+"}
             </span>
           </div>
@@ -269,21 +269,21 @@ export default function AISearchPage() {
             {threads.map((t) => (
               <div
                 key={t.id}
-                className="border border-[rgb(var(--border))] bg-[rgb(var(--surface))] rounded-lg p-4 hover:border-[rgb(var(--brand))]/50 transition-colors"
+                className="border border-border bg-card rounded-lg p-4 hover:border-primary/50 transition-colors"
               >
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-[rgb(var(--fg))] line-clamp-2">
+                    <h3 className="font-medium text-foreground line-clamp-2">
                       {t.title}
                     </h3>
                     {t.summary && (
-                      <p className="mt-1 text-sm text-[rgb(var(--muted))] line-clamp-2">
+                      <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
                         {t.summary}
                       </p>
                     )}
-                    <div className="mt-2 flex items-center gap-3 text-xs text-[rgb(var(--muted))]">
+                    <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                       {t.category && (
-                        <span className="px-2 py-0.5 rounded-full bg-[rgb(var(--surface-2))]">
+                        <span className="px-2 py-0.5 rounded-full bg-muted/50">
                           {t.category}
                         </span>
                       )}
@@ -292,17 +292,17 @@ export default function AISearchPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center gap-3 pt-3 border-t border-[rgb(var(--border))]">
+                <div className="mt-3 flex items-center gap-3 pt-3 border-t border-border">
                   <button
                     onClick={() => handleExplain(t)}
-                    className="flex items-center gap-1.5 text-sm font-medium text-[rgb(var(--brand))] hover:underline"
+                    className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
                   >
                     <span>🤖</span>
                     Jelaskan dengan AI
                   </button>
                   <Link
                     href={`/thread/${t.id}`}
-                    className="text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                    className="text-sm text-muted-foreground hover:text-foreground"
                   >
                     Lihat Thread →
                   </Link>
@@ -315,7 +315,7 @@ export default function AISearchPage() {
           {hasMore && (
             <div ref={loadMoreRef} className="py-4 flex justify-center">
               {loadingMore ? (
-                <div className="flex items-center gap-2 text-sm text-[rgb(var(--muted))]">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
@@ -323,7 +323,7 @@ export default function AISearchPage() {
                   Memuat lebih banyak...
                 </div>
               ) : (
-                <span className="text-sm text-[rgb(var(--muted))]">Scroll untuk memuat lebih banyak</span>
+                <span className="text-sm text-muted-foreground">Scroll untuk memuat lebih banyak</span>
               )}
             </div>
           )}
@@ -334,8 +334,8 @@ export default function AISearchPage() {
       {!selectedThread && !searching && query && threads.length === 0 && (
         <div className="text-center py-12">
           <div className="text-4xl mb-3">🔍</div>
-          <h3 className="font-medium text-[rgb(var(--fg))] mb-1">Tidak ada hasil</h3>
-          <p className="text-sm text-[rgb(var(--muted))]">
+          <h3 className="font-medium text-foreground mb-1">Tidak ada hasil</h3>
+          <p className="text-sm text-muted-foreground">
             Coba kata kunci yang berbeda atau lebih umum
           </p>
         </div>
@@ -343,10 +343,10 @@ export default function AISearchPage() {
 
       {/* Initial State */}
       {!selectedThread && !searching && !query && threads.length === 0 && (
-        <div className="text-center py-12 border border-dashed border-[rgb(var(--border))] rounded-lg">
+        <div className="text-center py-12 border border-dashed border-border rounded-lg">
           <div className="text-4xl mb-3">🔎</div>
-          <h3 className="font-medium text-[rgb(var(--fg))] mb-1">Mulai Pencarian</h3>
-          <p className="text-sm text-[rgb(var(--muted))] max-w-md mx-auto">
+          <h3 className="font-medium text-foreground mb-1">Mulai Pencarian</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
             Ketik kata kunci untuk mencari thread, lalu pilih thread yang ingin dijelaskan oleh AI.
           </p>
         </div>

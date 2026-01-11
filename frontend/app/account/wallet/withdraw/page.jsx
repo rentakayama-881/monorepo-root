@@ -116,8 +116,8 @@ export default function WithdrawPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
-        <div className="mx-auto max-w-md px-4 py-8 text-center text-[rgb(var(--muted))]">
+      <main className="min-h-screen bg-background pt-16">
+        <div className="mx-auto max-w-md px-4 py-8 text-center text-muted-foreground">
           Memuat...
         </div>
       </main>
@@ -125,11 +125,11 @@ export default function WithdrawPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+    <main className="min-h-screen bg-background pt-16">
         <div className="mx-auto max-w-md px-4 py-8">
           <Link
             href="/account/wallet/transactions"
-            className="mb-6 inline-flex items-center gap-2 text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+            className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -137,15 +137,15 @@ export default function WithdrawPage() {
             Kembali
           </Link>
 
-          <h1 className="text-2xl font-bold text-[rgb(var(--fg))] mb-2">Tarik Dana</h1>
-          <p className="text-sm text-[rgb(var(--muted))] mb-6">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Tarik Dana</h1>
+          <p className="text-sm text-muted-foreground mb-6">
             Transfer saldo ke rekening bank Anda
           </p>
 
           {/* Balance Card */}
-          <div className="mb-6 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
-            <div className="text-sm text-[rgb(var(--muted))]">Saldo Tersedia</div>
-            <div className="text-2xl font-bold text-[rgb(var(--fg))]">
+          <div className="mb-6 rounded-lg border border-border bg-card p-4">
+            <div className="text-sm text-muted-foreground">Saldo Tersedia</div>
+            <div className="text-2xl font-bold text-foreground">
               Rp {wallet.balance.toLocaleString("id-ID")}
             </div>
           </div>
@@ -157,8 +157,8 @@ export default function WithdrawPage() {
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition ${
                     step >= s
-                      ? "bg-[rgb(var(--brand))] text-white"
-                      : "bg-[rgb(var(--surface))] text-[rgb(var(--muted))] border border-[rgb(var(--border))]"
+                      ? "bg-primary text-white"
+                      : "bg-card text-muted-foreground border border-border"
                   }`}
                 >
                   {s}
@@ -166,7 +166,7 @@ export default function WithdrawPage() {
                 {s < 3 && (
                   <div
                     className={`h-0.5 w-8 transition ${
-                      step > s ? "bg-[rgb(var(--brand))]" : "bg-[rgb(var(--border))]"
+                      step > s ? "bg-primary" : "bg-border"
                     }`}
                   />
                 )}
@@ -175,25 +175,25 @@ export default function WithdrawPage() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] p-3 text-sm text-[rgb(var(--error))]">
+            <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
               {error}
             </div>
           )}
 
           {/* Step 1: Bank Details */}
           {step === 1 && (
-            <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
-              <h2 className="font-semibold text-[rgb(var(--fg))] mb-4">Informasi Rekening</h2>
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="font-semibold text-foreground mb-4">Informasi Rekening</h2>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Bank
                   </label>
                   <select
                     value={bankCode}
                     onChange={(e) => setBankCode(e.target.value)}
-                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 py-3 focus:outline-none focus:border-[rgb(var(--brand))]"
+                    className="w-full rounded-lg border border-border bg-background px-4 py-3 focus:outline-none focus:border-primary"
                   >
                     <option value="">Pilih bank</option>
                     {BANKS.map((bank) => (
@@ -205,7 +205,7 @@ export default function WithdrawPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Nomor Rekening
                   </label>
                   <input
@@ -214,12 +214,12 @@ export default function WithdrawPage() {
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ""))}
                     placeholder="Masukkan nomor rekening"
-                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 focus:outline-none focus:border-[rgb(var(--brand))]"
+                    className="w-full rounded-lg border border-border bg-transparent px-4 py-3 focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Nama Pemilik Rekening
                   </label>
                   <input
@@ -227,9 +227,9 @@ export default function WithdrawPage() {
                     value={accountName}
                     onChange={(e) => setAccountName(e.target.value.toUpperCase())}
                     placeholder="Masukkan nama sesuai rekening"
-                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 uppercase focus:outline-none focus:border-[rgb(var(--brand))]"
+                    className="w-full rounded-lg border border-border bg-transparent px-4 py-3 uppercase focus:outline-none focus:border-primary"
                   />
-                  <p className="mt-1 text-xs text-[rgb(var(--muted))]">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Pastikan nama sesuai dengan rekening bank
                   </p>
                 </div>
@@ -238,7 +238,7 @@ export default function WithdrawPage() {
               <button
                 onClick={() => setStep(2)}
                 disabled={!isStep1Valid}
-                className="mt-6 w-full rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                className="mt-6 w-full rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 Lanjutkan
               </button>
@@ -247,15 +247,15 @@ export default function WithdrawPage() {
 
           {/* Step 2: Amount */}
           {step === 2 && (
-            <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
-              <h2 className="font-semibold text-[rgb(var(--fg))] mb-4">Jumlah Penarikan</h2>
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="font-semibold text-foreground mb-4">Jumlah Penarikan</h2>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Nominal
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                     Rp
                   </span>
                   <input
@@ -264,10 +264,10 @@ export default function WithdrawPage() {
                     value={amount}
                     onChange={handleAmountChange}
                     placeholder="0"
-                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent py-3 pl-12 pr-4 text-xl font-semibold focus:outline-none focus:border-[rgb(var(--brand))]"
+                    className="w-full rounded-lg border border-border bg-transparent py-3 pl-12 pr-4 text-xl font-semibold focus:outline-none focus:border-primary"
                   />
                 </div>
-                <p className="mt-1 text-xs text-[rgb(var(--muted))]">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Minimum penarikan Rp 50.000
                 </p>
               </div>
@@ -279,7 +279,7 @@ export default function WithdrawPage() {
                     key={val}
                     onClick={() => setAmount(val.toLocaleString("id-ID"))}
                     disabled={val + fee > wallet.balance}
-                    className="rounded-lg border border-[rgb(var(--border))] py-2 text-sm font-medium transition hover:border-[rgb(var(--brand))] hover:text-[rgb(var(--brand))] disabled:opacity-50"
+                    className="rounded-lg border border-border py-2 text-sm font-medium transition hover:border-primary hover:text-primary disabled:opacity-50"
                   >
                     {(val / 1000).toLocaleString("id-ID")}rb
                   </button>
@@ -287,40 +287,40 @@ export default function WithdrawPage() {
               </div>
 
               {/* Summary */}
-              <div className="rounded-lg bg-[rgb(var(--bg))] p-4 space-y-2">
+              <div className="rounded-lg bg-background p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[rgb(var(--muted))]">Jumlah penarikan</span>
-                  <span className="text-[rgb(var(--fg))]">
+                  <span className="text-muted-foreground">Jumlah penarikan</span>
+                  <span className="text-foreground">
                     Rp {parsedAmount.toLocaleString("id-ID")}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[rgb(var(--muted))]">Biaya transfer</span>
-                  <span className="text-[rgb(var(--fg))]">Rp {fee.toLocaleString("id-ID")}</span>
+                  <span className="text-muted-foreground">Biaya transfer</span>
+                  <span className="text-foreground">Rp {fee.toLocaleString("id-ID")}</span>
                 </div>
-                <div className="border-t border-[rgb(var(--border))] pt-2 flex justify-between font-semibold">
-                  <span className="text-[rgb(var(--fg))]">Total dipotong</span>
-                  <span className="text-[rgb(var(--fg))]">
+                <div className="border-t border-border pt-2 flex justify-between font-semibold">
+                  <span className="text-foreground">Total dipotong</span>
+                  <span className="text-foreground">
                     Rp {totalDeduction.toLocaleString("id-ID")}
                   </span>
                 </div>
               </div>
 
               {totalDeduction > wallet.balance && parsedAmount > 0 && (
-                <p className="mt-2 text-sm text-[rgb(var(--error))]">Saldo tidak mencukupi</p>
+                <p className="mt-2 text-sm text-destructive">Saldo tidak mencukupi</p>
               )}
 
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 rounded-lg border border-[rgb(var(--border))] py-3 font-medium transition hover:bg-[rgb(var(--bg))]"
+                  className="flex-1 rounded-lg border border-border py-3 font-medium transition hover:bg-background"
                 >
                   Kembali
                 </button>
                 <button
                   onClick={() => setStep(3)}
                   disabled={!isStep2Valid}
-                  className="flex-1 rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
                   Lanjutkan
                 </button>
@@ -330,35 +330,35 @@ export default function WithdrawPage() {
 
           {/* Step 3: Confirmation */}
           {step === 3 && (
-            <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
-              <h2 className="font-semibold text-[rgb(var(--fg))] mb-4">Konfirmasi Penarikan</h2>
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="font-semibold text-foreground mb-4">Konfirmasi Penarikan</h2>
 
               {/* Summary */}
-              <div className="rounded-lg bg-[rgb(var(--bg))] p-4 mb-4 space-y-3">
+              <div className="rounded-lg bg-background p-4 mb-4 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[rgb(var(--muted))]">Bank</span>
-                  <span className="text-[rgb(var(--fg))] font-medium">
+                  <span className="text-muted-foreground">Bank</span>
+                  <span className="text-foreground font-medium">
                     {BANKS.find((b) => b.code === bankCode)?.name}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[rgb(var(--muted))]">Nomor Rekening</span>
-                  <span className="text-[rgb(var(--fg))] font-medium">{accountNumber}</span>
+                  <span className="text-muted-foreground">Nomor Rekening</span>
+                  <span className="text-foreground font-medium">{accountNumber}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[rgb(var(--muted))]">Nama</span>
-                  <span className="text-[rgb(var(--fg))] font-medium">{accountName}</span>
+                  <span className="text-muted-foreground">Nama</span>
+                  <span className="text-foreground font-medium">{accountName}</span>
                 </div>
-                <div className="border-t border-[rgb(var(--border))] pt-3 flex justify-between">
-                  <span className="text-[rgb(var(--muted))]">Akan diterima</span>
-                  <span className="text-lg font-bold text-[rgb(var(--brand))]">
+                <div className="border-t border-border pt-3 flex justify-between">
+                  <span className="text-muted-foreground">Akan diterima</span>
+                  <span className="text-lg font-bold text-primary">
                     Rp {parsedAmount.toLocaleString("id-ID")}
                   </span>
                 </div>
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Masukkan PIN
                 </label>
                 <input
@@ -368,12 +368,12 @@ export default function WithdrawPage() {
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                   placeholder="••••••"
-                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-[rgb(var(--brand))]"
+                  className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-primary"
                 />
               </div>
 
-              <div className="mb-4 rounded-lg bg-[rgb(var(--warning-bg))] border border-[rgb(var(--warning-border))] p-3">
-                <div className="flex gap-2 text-sm text-[rgb(var(--warning))]">
+              <div className="mb-4 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 p-3">
+                <div className="flex gap-2 text-sm text-amber-600">
                   <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
@@ -387,14 +387,14 @@ export default function WithdrawPage() {
                 <button
                   onClick={() => setStep(2)}
                   disabled={processing}
-                  className="flex-1 rounded-lg border border-[rgb(var(--border))] py-3 font-medium transition hover:bg-[rgb(var(--bg))]"
+                  className="flex-1 rounded-lg border border-border py-3 font-medium transition hover:bg-background"
                 >
                   Kembali
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={processing || pin.length !== 6}
-                  className="flex-1 rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
                   {processing ? "Memproses..." : "Tarik Dana"}
                 </button>

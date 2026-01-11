@@ -58,7 +58,7 @@ export default function AdminLayout({ children }) {
   if (!mounted || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--brand))]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -76,14 +76,14 @@ export default function AdminLayout({ children }) {
   ];
 
   return (
-    <div className="min-h-screen bg-[rgb(var(--bg))]">
+    <div className="min-h-screen bg-background">
       {/* Admin Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-14 border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
+      <header className="fixed top-0 left-0 right-0 z-50 h-14 border-b border-border bg-card">
         <div className="flex h-full items-center justify-between px-4">
           <div className="flex items-center gap-4">
             <Link
               href="/admin"
-              className="text-lg font-semibold text-[rgb(var(--fg))]"
+              className="text-lg font-semibold text-foreground"
             >
               Admin Panel
             </Link>
@@ -93,12 +93,12 @@ export default function AdminLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-sm text-[rgb(var(--muted))]">
+            <span className="text-sm text-muted-foreground">
               {admin?.name}
             </span>
             <button
               onClick={handleLogout}
-              className="text-sm text-[rgb(var(--error))] hover:opacity-80"
+              className="text-sm text-destructive hover:opacity-80"
             >
               Logout
             </button>
@@ -108,7 +108,7 @@ export default function AdminLayout({ children }) {
 
       <div className="flex pt-14">
         {/* Sidebar */}
-        <aside className="fixed left-0 top-14 bottom-0 w-56 border-r border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
+        <aside className="fixed left-0 top-14 bottom-0 w-56 border-r border-border bg-card p-4">
           <nav className="space-y-1">
             {navItems.map((item) => (
               <Link
@@ -116,8 +116,8 @@ export default function AdminLayout({ children }) {
                 href={item.href}
                 className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   pathname === item.href
-                    ? "bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]"
-                    : "text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))]"
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-muted/50"
                 }`}
               >
                 <span>{item.icon}</span>
@@ -129,7 +129,7 @@ export default function AdminLayout({ children }) {
           <div className="absolute bottom-4 left-4 right-4">
             <Link
               href="/"
-              className="flex items-center gap-2 text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >
               ← Kembali ke Website
             </Link>

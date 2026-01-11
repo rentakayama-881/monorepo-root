@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
 
 /**
@@ -22,7 +23,7 @@ export default function Avatar({ src, name, size = "md", className = "" }) {
     md: "h-10 w-10 text-sm",         // 40px - default
     lg: "h-16 w-16 text-lg",         // 64px - untuk cards
     xl: "h-20 w-20 text-xl",         // 80px - untuk profile preview
-    "2xl": "h-64 w-64 text-5xl",     // 256px - untuk profile page (GitHub style)
+    "2xl": "h-64 w-64 text-5xl",     // 256px - untuk profile page
   };
 
   const sizeClass = sizes[size] || sizes.md;
@@ -32,7 +33,11 @@ export default function Avatar({ src, name, size = "md", className = "" }) {
       <img
         src={avatarUrl}
         alt={name || "Avatar"}
-        className={`rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] object-cover ${sizeClass} ${className}`}
+        className={cn(
+          "rounded-full border bg-secondary object-cover",
+          sizeClass,
+          className
+        )}
       />
     );
   }
@@ -40,7 +45,11 @@ export default function Avatar({ src, name, size = "md", className = "" }) {
   // Show initials with colored background
   return (
     <div
-      className={`flex items-center justify-center rounded-full font-semibold text-white select-none ${sizeClass} ${className}`}
+      className={cn(
+        "flex items-center justify-center rounded-full font-semibold text-white select-none",
+        sizeClass,
+        className
+      )}
       style={{ backgroundColor: bgColor }}
       title={name}
     >

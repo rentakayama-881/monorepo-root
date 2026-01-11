@@ -8,12 +8,12 @@ export default function Loading() {
       <div className="flex flex-col items-center gap-4">
         {/* Spinner */}
         <div className="relative">
-          <div className="h-12 w-12 rounded-full border-4 border-[rgb(var(--border))]"></div>
-          <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-t-[rgb(var(--brand))] animate-spin"></div>
+          <div className="h-12 w-12 rounded-full border-4 border-border"></div>
+          <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-t-primary animate-spin"></div>
         </div>
         
         {/* Loading text */}
-        <p className="text-sm text-[rgb(var(--muted))] animate-pulse">
+        <p className="text-sm text-muted-foreground animate-pulse">
           Memuat...
         </p>
       </div>

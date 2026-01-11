@@ -65,23 +65,23 @@ export default function Modal({
 
       {/* Modal content */}
       <div
-        className={`relative w-full ${sizeClasses[size]} rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-xl animate-in fade-in zoom-in-95 duration-200`}
+        className={`relative w-full ${sizeClasses[size]} rounded-[var(--radius)] border bg-card shadow-xl animate-in fade-in zoom-in-95 duration-200`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? "modal-title" : undefined}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between border-b border-[rgb(var(--border))] px-4 py-3">
+          <div className="flex items-center justify-between border-b px-4 py-3">
             <h2
               id="modal-title"
-              className="text-lg font-semibold text-[rgb(var(--fg))]"
+              className="text-lg font-semibold text-foreground"
             >
               {title}
             </h2>
             <button
               onClick={onClose}
-              className="rounded-md p-1 text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--fg))] transition-colors"
+              className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
               aria-label="Tutup modal"
             >
               <svg
@@ -107,7 +107,7 @@ export default function Modal({
           {!title && (
             <button
               onClick={onClose}
-              className="absolute right-3 top-3 rounded-md p-1 text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--fg))] transition-colors"
+              className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
               aria-label="Tutup modal"
             >
               <svg

@@ -145,11 +145,11 @@ export default function SendMoneyPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+    <main className="min-h-screen bg-background pt-16">
         <div className="mx-auto max-w-lg px-4 py-8">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">Kirim Uang</h1>
-            <p className="text-sm text-[rgb(var(--muted))]">
+            <h1 className="text-2xl font-bold text-foreground">Kirim Uang</h1>
+            <p className="text-sm text-muted-foreground">
               Transfer uang ke pengguna lain dengan sistem escrow
             </p>
           </div>
@@ -161,8 +161,8 @@ export default function SendMoneyPage() {
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
                     step >= s
-                      ? "bg-[rgb(var(--brand))] text-white"
-                      : "bg-[rgb(var(--surface-2))] text-[rgb(var(--muted))]"
+                      ? "bg-primary text-white"
+                      : "bg-muted/50 text-muted-foreground"
                   }`}
                 >
                   {s}
@@ -170,7 +170,7 @@ export default function SendMoneyPage() {
                 {s < 3 && (
                   <div
                     className={`h-1 w-16 ${
-                      step > s ? "bg-[rgb(var(--brand))]" : "bg-[rgb(var(--surface-2))]"
+                      step > s ? "bg-primary" : "bg-muted/50"
                     }`}
                   />
                 )}
@@ -179,9 +179,9 @@ export default function SendMoneyPage() {
           </div>
 
           {/* Current Balance */}
-          <div className="mb-6 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
-            <div className="text-sm text-[rgb(var(--muted))]">Saldo Tersedia</div>
-            <div className="text-xl font-bold text-[rgb(var(--fg))]">
+          <div className="mb-6 rounded-lg border border-border bg-card p-4">
+            <div className="text-sm text-muted-foreground">Saldo Tersedia</div>
+            <div className="text-xl font-bold text-foreground">
               Rp {wallet.balance.toLocaleString("id-ID")}
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function SendMoneyPage() {
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Cari Penerima
                 </label>
                 <input
@@ -198,14 +198,14 @@ export default function SendMoneyPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Ketik username (min 3 karakter)"
-                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                  className="w-full rounded-lg border border-border bg-card px-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
 
               {/* Search Results */}
               {searching && (
-                <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 text-center text-[rgb(var(--muted))]">
-                  <svg className="animate-spin h-5 w-5 mx-auto mb-2 text-[rgb(var(--brand))]" fill="none" viewBox="0 0 24 24">
+                <div className="rounded-lg border border-border bg-card p-4 text-center text-muted-foreground">
+                  <svg className="animate-spin h-5 w-5 mx-auto mb-2 text-primary" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -214,8 +214,8 @@ export default function SendMoneyPage() {
               )}
 
               {!searching && searchQuery.length >= 3 && searchResults.length === 0 && (
-                <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 text-center text-[rgb(var(--muted))]">
-                  <svg className="h-8 w-8 mx-auto mb-2 text-[rgb(var(--muted))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="rounded-lg border border-border bg-card p-4 text-center text-muted-foreground">
+                  <svg className="h-8 w-8 mx-auto mb-2 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <p>User tidak ditemukan</p>
@@ -224,18 +224,18 @@ export default function SendMoneyPage() {
               )}
 
               {!searching && searchResults.length > 0 && (
-                <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] divide-y divide-[rgb(var(--border))]">
+                <div className="rounded-lg border border-border bg-card divide-y divide-border">
                   {searchResults.map((user) => (
                     <button
                       key={user.id}
                       onClick={() => handleSelectUser(user)}
-                      className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-[rgb(var(--surface-2))]"
+                      className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-muted/50"
                     >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgb(var(--brand))] text-sm font-semibold text-white">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
                         {user.username.slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <div className="font-medium text-[rgb(var(--fg))]">
+                        <div className="font-medium text-foreground">
                           {user.username}
                         </div>
                       </div>
@@ -250,15 +250,15 @@ export default function SendMoneyPage() {
           {step === 2 && (
             <div className="space-y-4">
               {/* Selected User */}
-              <div className="flex items-center gap-3 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgb(var(--brand))] text-sm font-semibold text-white">
+              <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
                   {selectedUser?.username.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="flex-1">
-                  <div className="font-medium text-[rgb(var(--fg))]">
+                  <div className="font-medium text-foreground">
                     {selectedUser?.username}
                   </div>
-                  <div className="text-xs text-[rgb(var(--muted))]">Penerima</div>
+                  <div className="text-xs text-muted-foreground">Penerima</div>
                 </div>
                 <button
                   onClick={() => {
@@ -266,7 +266,7 @@ export default function SendMoneyPage() {
                     setSearchQuery("");
                     setStep(1);
                   }}
-                  className="text-sm text-[rgb(var(--brand))] hover:underline"
+                  className="text-sm text-primary hover:underline"
                 >
                   Ubah
                 </button>
@@ -274,11 +274,11 @@ export default function SendMoneyPage() {
 
               {/* Amount */}
               <div>
-                <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Jumlah Transfer
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     Rp
                   </span>
                   <input
@@ -286,17 +286,17 @@ export default function SendMoneyPage() {
                     value={amount}
                     onChange={(e) => setAmount(formatCurrency(e.target.value))}
                     placeholder="0"
-                    className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-10 py-3 text-lg font-semibold text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                    className="w-full rounded-lg border border-border bg-card px-10 py-3 text-lg font-semibold text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
               </div>
 
               {/* Hold Period */}
               <div>
-                <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Periode Hold
                 </label>
-                <p className="text-xs text-[rgb(var(--muted))] mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
                   Uang akan di-hold selama periode ini sebelum otomatis dikirim ke penerima. Anda bisa melepaskan lebih awal.
                 </p>
                 <div className="grid grid-cols-2 gap-3">
@@ -305,8 +305,8 @@ export default function SendMoneyPage() {
                     onClick={() => setHoldDays(7)}
                     className={`rounded-lg border p-3 text-center transition ${
                       holdDays === 7
-                        ? "border-[rgb(var(--brand))] bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]"
-                        : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--fg))] hover:border-[rgb(var(--brand))]"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-foreground hover:border-primary"
                     }`}
                   >
                     <div className="text-lg font-bold">7 Hari</div>
@@ -317,8 +317,8 @@ export default function SendMoneyPage() {
                     onClick={() => setHoldDays(30)}
                     className={`rounded-lg border p-3 text-center transition ${
                       holdDays === 30
-                        ? "border-[rgb(var(--brand))] bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]"
-                        : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--fg))] hover:border-[rgb(var(--brand))]"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-foreground hover:border-primary"
                     }`}
                   >
                     <div className="text-lg font-bold">30 Hari</div>
@@ -329,7 +329,7 @@ export default function SendMoneyPage() {
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Deskripsi (Opsional)
                 </label>
                 <textarea
@@ -337,12 +337,12 @@ export default function SendMoneyPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Contoh: Pembayaran untuk jasa desain logo"
                   rows={2}
-                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                  className="w-full rounded-lg border border-border bg-card px-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
 
               {error && (
-                <div className="rounded-lg bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] p-3 text-sm text-[rgb(var(--error))]">
+                <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 text-sm text-destructive">
                   {error}
                 </div>
               )}
@@ -351,14 +351,14 @@ export default function SendMoneyPage() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex-1 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] py-3 font-semibold text-[rgb(var(--fg))] transition hover:bg-[rgb(var(--surface-2))]"
+                  className="flex-1 rounded-lg border border-border bg-card py-3 font-semibold text-foreground transition hover:bg-muted/50"
                 >
                   Kembali
                 </button>
                 <button
                   type="button"
                   onClick={handleAmountNext}
-                  className="flex-1 rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90"
+                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90"
                 >
                   Lanjutkan
                 </button>
@@ -370,24 +370,24 @@ export default function SendMoneyPage() {
           {step === 3 && (
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Summary */}
-              <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 space-y-3">
-                <h3 className="font-semibold text-[rgb(var(--fg))]">Ringkasan Transfer</h3>
+              <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+                <h3 className="font-semibold text-foreground">Ringkasan Transfer</h3>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[rgb(var(--muted))]">Penerima</span>
-                  <span className="font-medium text-[rgb(var(--fg))]">{selectedUser?.username}</span>
+                  <span className="text-muted-foreground">Penerima</span>
+                  <span className="font-medium text-foreground">{selectedUser?.username}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[rgb(var(--muted))]">Jumlah</span>
-                  <span className="font-bold text-lg text-[rgb(var(--fg))]">Rp {amount}</span>
+                  <span className="text-muted-foreground">Jumlah</span>
+                  <span className="font-bold text-lg text-foreground">Rp {amount}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[rgb(var(--muted))]">Periode Hold</span>
-                  <span className="font-medium text-[rgb(var(--fg))]">{holdDays} Hari</span>
+                  <span className="text-muted-foreground">Periode Hold</span>
+                  <span className="font-medium text-foreground">{holdDays} Hari</span>
                 </div>
                 {description && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-[rgb(var(--muted))]">Deskripsi</span>
-                    <span className="font-medium text-[rgb(var(--fg))] text-right max-w-48 truncate">{description}</span>
+                    <span className="text-muted-foreground">Deskripsi</span>
+                    <span className="font-medium text-foreground text-right max-w-48 truncate">{description}</span>
                   </div>
                 )}
               </div>
@@ -401,7 +401,7 @@ export default function SendMoneyPage() {
 
               {/* PIN */}
               <div>
-                <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Masukkan PIN Transaksi
                 </label>
                 <input
@@ -410,12 +410,12 @@ export default function SendMoneyPage() {
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="••••••"
                   maxLength={6}
-                  className="w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 text-center text-2xl tracking-widest text-[rgb(var(--fg))] placeholder-[rgb(var(--muted))] focus:border-[rgb(var(--brand))] focus:outline-none focus:ring-1 focus:ring-[rgb(var(--brand))]"
+                  className="w-full rounded-lg border border-border bg-card px-4 py-3 text-center text-2xl tracking-widest text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
 
               {error && (
-                <div className="rounded-lg bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] p-3 text-sm text-[rgb(var(--error))]">
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
                   {error}
                 </div>
               )}
@@ -424,14 +424,14 @@ export default function SendMoneyPage() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="flex-1 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] py-3 font-semibold text-[rgb(var(--fg))] transition hover:bg-[rgb(var(--surface-2))]"
+                  className="flex-1 rounded-lg border border-border bg-card py-3 font-semibold text-foreground transition hover:bg-muted/50"
                 >
                   Kembali
                 </button>
                 <button
                   type="submit"
                   disabled={loading || pin.length !== 6}
-                  className="flex-1 rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {loading ? "Memproses..." : "Kirim Uang"}
                 </button>

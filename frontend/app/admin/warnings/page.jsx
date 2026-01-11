@@ -100,7 +100,7 @@ export default function WarningsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">User Warnings</h1>
+        <h1 className="text-2xl font-bold text-foreground">User Warnings</h1>
         <Button onClick={() => setShowCreateModal(true)}>
           + Issue Warning
         </Button>
@@ -113,7 +113,7 @@ export default function WarningsPage() {
           placeholder="Cari berdasarkan User ID..."
           value={searchUserId}
           onChange={(e) => setSearchUserId(e.target.value)}
-          className="flex-1 px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]"
+          className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground"
         />
         <Button onClick={fetchWarnings} variant="secondary">
           Search
@@ -128,10 +128,10 @@ export default function WarningsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[rgb(var(--brand))]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : warnings.length === 0 ? (
-        <div className="text-center py-12 text-[rgb(var(--muted))]">
+        <div className="text-center py-12 text-muted-foreground">
           Tidak ada warnings
         </div>
       ) : (
@@ -139,7 +139,7 @@ export default function WarningsPage() {
           {warnings.map((warning) => (
             <div
               key={warning.id}
-              className="p-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]"
+              className="p-4 rounded-lg border border-border bg-card"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -151,15 +151,15 @@ export default function WarningsPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-[rgb(var(--fg))] mb-2">{warning.reason}</p>
-                  <div className="flex items-center gap-4 text-xs text-[rgb(var(--muted))]">
+                  <p className="text-sm text-foreground mb-2">{warning.reason}</p>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span>User ID: {warning.userId}</span>
                     {warning.username && <span>Username: {warning.username}</span>}
                     <span>Issued by: Admin {warning.adminId}</span>
                     <span>{new Date(warning.createdAt).toLocaleString("id-ID")}</span>
                   </div>
                   {warning.contentType && (
-                    <div className="mt-2 text-xs text-[rgb(var(--muted))]">
+                    <div className="mt-2 text-xs text-muted-foreground">
                       Related: {warning.contentType} - {warning.contentId}
                     </div>
                   )}
@@ -173,33 +173,33 @@ export default function WarningsPage() {
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-[rgb(var(--surface))] rounded-xl max-w-md w-full">
-            <div className="p-6 border-b border-[rgb(var(--border))]">
-              <h2 className="text-xl font-semibold text-[rgb(var(--fg))]">Issue Warning</h2>
+          <div className="bg-card rounded-xl max-w-md w-full">
+            <div className="p-6 border-b border-border">
+              <h2 className="text-xl font-semibold text-foreground">Issue Warning</h2>
             </div>
 
             <form onSubmit={handleCreate} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   User ID *
                 </label>
                 <input
                   type="number"
                   value={form.userId}
                   onChange={(e) => setForm({ ...form, userId: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Severity *
                 </label>
                 <select
                   value={form.severity}
                   onChange={(e) => setForm({ ...form, severity: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 >
                   <option value="minor">Minor</option>
                   <option value="moderate">Moderate</option>
@@ -208,13 +208,13 @@ export default function WarningsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Reason *
                 </label>
                 <textarea
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]"
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   rows={3}
                   required
                 />
@@ -222,13 +222,13 @@ export default function WarningsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Content Type
                   </label>
                   <select
                     value={form.contentType}
                     onChange={(e) => setForm({ ...form, contentType: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   >
                     <option value="">-</option>
                     <option value="thread">Thread</option>
@@ -236,14 +236,14 @@ export default function WarningsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Content ID
                   </label>
                   <input
                     type="text"
                     value={form.contentId}
                     onChange={(e) => setForm({ ...form, contentId: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   />
                 </div>
               </div>

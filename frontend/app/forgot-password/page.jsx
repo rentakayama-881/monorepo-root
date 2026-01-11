@@ -11,9 +11,9 @@ export default function ForgotPasswordPage() {
   const [message, setMessage] = useState("");
 
   const inputClass =
-    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
+    "w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
   const primaryButton =
-    "w-full inline-flex justify-center items-center rounded-md bg-[rgb(var(--brand))] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]";
+    "w-full inline-flex justify-center items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -41,24 +41,24 @@ export default function ForgotPasswordPage() {
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center space-y-1">
-        <h1 className="text-xl font-semibold text-[rgb(var(--fg))]">Lupa Password</h1>
-        <p className="text-sm text-[rgb(var(--muted))]">
+        <h1 className="text-xl font-semibold text-foreground">Lupa Password</h1>
+        <p className="text-sm text-muted-foreground">
           Masukkan email Anda untuk menerima tautan reset password.
         </p>
       </div>
 
-      <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
+      <div className="rounded-lg border border-border bg-card p-6">
         {status === "success" ? (
           <div className="space-y-4">
-            <div className="rounded-md border border-[rgb(var(--success-border))] bg-[rgb(var(--success-bg))] px-4 py-3 text-sm text-[rgb(var(--success))]">
+            <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 px-4 py-3 text-sm text-emerald-600">
               {message}
             </div>
-            <p className="text-sm text-[rgb(var(--muted))]">
+            <p className="text-sm text-muted-foreground">
               Cek inbox email Anda. Jika tidak ada, periksa folder spam.
             </p>
             <Link
               href="/login"
-              className="block text-center text-sm font-medium text-[rgb(var(--brand))] hover:underline"
+              className="block text-center text-sm font-medium text-primary hover:underline"
             >
               Kembali ke Login
             </Link>
@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
         ) : (
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-[rgb(var(--fg))]">Email</label>
+              <label className="text-sm font-medium text-foreground">Email</label>
               <input
                 type="email"
                 required
@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             {status === "error" && (
-              <div className="rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-3 py-2 text-sm text-[rgb(var(--error))]">
+              <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {message}
               </div>
             )}
@@ -90,9 +90,9 @@ export default function ForgotPasswordPage() {
         )}
       </div>
 
-      <div className="text-center text-sm text-[rgb(var(--muted))]">
+      <div className="text-center text-sm text-muted-foreground">
         Ingat password Anda?{" "}
-        <Link href="/login" className="font-medium text-[rgb(var(--fg))] underline">
+        <Link href="/login" className="font-medium text-foreground underline">
           Login
         </Link>
       </div>

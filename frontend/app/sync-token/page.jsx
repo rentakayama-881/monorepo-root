@@ -7,7 +7,7 @@ import InnerSyncTokenPage from "./inner";
 export default function SyncTokenPageWrapper() {
   return (
     <Suspense fallback={
-      <div className="min-h-dvh flex items-center justify-center p-6 text-sm text-[rgb(var(--muted))]">
+      <div className="min-h-dvh flex items-center justify-center p-6 text-sm text-muted-foreground">
         Menyimpan token ke browser...
       </div>
     }>

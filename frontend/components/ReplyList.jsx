@@ -83,14 +83,14 @@ function ReplyItem({
       {/* Connector line for nested replies */}
       {depth > 0 && (
         <div
-          className="absolute left-0 top-0 bottom-0 w-px bg-[rgb(var(--border))]"
+          className="absolute left-0 top-0 bottom-0 w-px bg-border"
           style={{ left: "-12px" }}
         />
       )}
 
       <div
         className={`
-          rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4
+          rounded-[var(--radius)] border bg-card p-4
           ${reply.isDeleted ? "opacity-60" : ""}
         `}
       >
@@ -103,16 +103,16 @@ function ReplyItem({
           />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-sm text-[rgb(var(--fg))] truncate">
+              <span className="font-medium text-sm text-foreground truncate">
                 {reply.username || "Anonim"}
               </span>
               {depth > 0 && (
-                <span className="text-xs text-[rgb(var(--muted))]">
+                <span className="text-xs text-muted-foreground">
                   • Balasan level {depth}
                 </span>
               )}
             </div>
-            <div className="text-xs text-[rgb(var(--muted))]">
+            <div className="text-xs text-muted-foreground">
               {formatRelativeTime(reply.createdAt)}
               {reply.updatedAt && reply.updatedAt !== reply.createdAt && (
                 <span className="ml-1">(diedit)</span>
@@ -124,7 +124,7 @@ function ReplyItem({
         {/* Content */}
         <div className="text-sm">
           {reply.isDeleted ? (
-            <p className="italic text-[rgb(var(--muted))]">
+            <p className="italic text-muted-foreground">
               [Balasan telah dihapus]
             </p>
           ) : (
@@ -134,11 +134,11 @@ function ReplyItem({
 
         {/* Actions */}
         {!reply.isDeleted && (
-          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-[rgb(var(--border))]">
+          <div className="flex items-center gap-3 mt-3 pt-3 border-t">
             {canReply && (
               <button
                 onClick={() => setShowReplyForm(!showReplyForm)}
-                className="text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--brand))] transition-colors"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
               >
                 {showReplyForm ? "Batal" : "Balas"}
               </button>
@@ -148,7 +148,7 @@ function ReplyItem({
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--error))] transition-colors disabled:opacity-50"
+                className="text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
               >
                 {isDeleting ? "Menghapus..." : "Hapus"}
               </button>
@@ -158,7 +158,7 @@ function ReplyItem({
 
         {/* Reply form */}
         {showReplyForm && (
-          <div className="mt-3 pt-3 border-t border-[rgb(var(--border))]">
+          <div className="mt-3 pt-3 border-t">
             <ReplyForm
               threadId={threadId}
               parentReplyId={reply.id}
@@ -260,7 +260,7 @@ export default function ReplyList({ threadId, currentUsername, className = "" })
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4"
+            className="rounded-[var(--radius)] border bg-card p-4"
           >
             <div className="flex items-center gap-3 mb-3">
               <Skeleton className="h-8 w-8 rounded-full" />
@@ -280,7 +280,7 @@ export default function ReplyList({ threadId, currentUsername, className = "" })
   if (error) {
     return (
       <div className={`text-center py-8 ${className}`}>
-        <p className="text-[rgb(var(--error))] mb-3">{error}</p>
+        <p className="text-destructive mb-3">{error}</p>
         <Button variant="secondary" onClick={refetch}>
           Coba Lagi
         </Button>
@@ -292,7 +292,7 @@ export default function ReplyList({ threadId, currentUsername, className = "" })
   if (replies.length === 0) {
     return (
       <div className={`text-center py-8 ${className}`}>
-        <p className="text-[rgb(var(--muted))]">
+        <p className="text-muted-foreground">
           Belum ada balasan. Jadilah yang pertama!
         </p>
       </div>
@@ -303,12 +303,12 @@ export default function ReplyList({ threadId, currentUsername, className = "" })
     <div className={`space-y-4 ${className}`}>
       {/* Reply count */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-[rgb(var(--fg))]">
+        <h3 className="text-sm font-medium text-foreground">
           {replies.length} Balasan
         </h3>
         <button
           onClick={refetch}
-          className="text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--brand))] transition-colors"
+          className="text-xs text-muted-foreground hover:text-primary transition-colors"
         >
           Refresh
         </button>

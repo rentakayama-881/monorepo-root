@@ -1,10 +1,24 @@
 import "./globals.css";
+import { Inter, Geist_Mono } from "next/font/google";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 import { ToastProvider } from "../components/ui/Toast";
 import { SudoProvider } from "../components/SudoModal";
 import Providers from "../components/Providers";
+
+// Load fonts (prompts.chat style)
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
 
 const siteName = "Alephdraad";
 const siteDescription = "Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.";
@@ -88,8 +102,8 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" suppressHydrationWarning>
-      <body className="flex min-h-dvh flex-col antialiased bg-[rgb(var(--bg))] text-[rgb(var(--fg))] selection:bg-[rgb(var(--brand))]/30">
+    <html lang="id" suppressHydrationWarning className={`${inter.variable} ${geistMono.variable}`}>
+      <body className="flex min-h-dvh flex-col antialiased bg-background text-foreground">
         <Providers>
           <ToastProvider>
             <SudoProvider>

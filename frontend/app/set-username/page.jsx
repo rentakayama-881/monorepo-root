@@ -92,15 +92,15 @@ export default function SetUsernamePage() {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--surface))] p-6">
-      <h2 className="text-xl font-semibold text-[rgb(var(--fg))]">Lengkapi Username</h2>
-      <p className="text-sm text-[rgb(var(--muted))]">Buat username publik. Cukup satu langkah.</p>
+    <div className="max-w-md mx-auto mt-10 border border-border rounded-lg bg-card p-6">
+      <h2 className="text-xl font-semibold text-foreground">Lengkapi Username</h2>
+      <p className="text-sm text-muted-foreground">Buat username publik. Cukup satu langkah.</p>
 
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
         <div>
-          <label className="text-sm font-medium text-[rgb(var(--fg))]">Username</label>
+          <label className="text-sm font-medium text-foreground">Username</label>
           <div className="relative mt-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]">@</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
             <input
               type="text"
               value={username}
@@ -108,10 +108,10 @@ export default function SetUsernamePage() {
               placeholder="username_kamu"
               required
               maxLength={30}
-              className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] pl-8 pr-10 py-2 text-[rgb(var(--fg))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--brand))]"
+              className="w-full rounded-lg border border-border bg-card pl-8 pr-10 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
             {validation.show && (
-              <span className={`absolute right-3 top-1/2 -translate-y-1/2 ${validation.valid ? "text-[rgb(var(--success))]" : "text-[rgb(var(--error))]"}`}>
+              <span className={`absolute right-3 top-1/2 -translate-y-1/2 ${validation.valid ? "text-emerald-600" : "text-destructive"}`}>
                 {validation.valid ? (
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -127,10 +127,10 @@ export default function SetUsernamePage() {
           
           {/* Hint / Validation Message */}
           <div className="mt-1.5 flex items-center justify-between">
-            <p className={`text-xs ${validation.show ? (validation.valid ? "text-[rgb(var(--success))]" : "text-[rgb(var(--error))]") : "text-[rgb(var(--muted))]"}`}>
+            <p className={`text-xs ${validation.show ? (validation.valid ? "text-emerald-600" : "text-destructive") : "text-muted-foreground"}`}>
               {validation.show ? validation.message : "Huruf kecil, angka, underscore. Min 7 karakter."}
             </p>
-            <span className="text-xs text-[rgb(var(--muted))]">
+            <span className="text-xs text-muted-foreground">
               {username.length}/30
             </span>
           </div>
@@ -139,14 +139,14 @@ export default function SetUsernamePage() {
         <button
           type="submit"
           disabled={loading || !validation.valid}
-          className="w-full px-4 py-2 rounded-md bg-[rgb(var(--brand))] text-white disabled:opacity-50 transition-opacity"
+          className="w-full px-4 py-2 rounded-lg bg-primary text-primary-foreground disabled:opacity-50 transition-opacity"
         >
           {loading ? "Menyimpan..." : "Simpan Username"}
         </button>
       </form>
 
-      {error && <div className="mt-3 text-sm text-[rgb(var(--error))]">{error}</div>}
-      {success && <div className="mt-3 text-sm text-[rgb(var(--success))]">{success}</div>}
+      {error && <div className="mt-3 text-sm text-destructive">{error}</div>}
+      {success && <div className="mt-3 text-sm text-emerald-600">{success}</div>}
     </div>
   );
 }

@@ -39,7 +39,7 @@ function isWebAuthnSupported() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center text-sm text-[rgb(var(--muted))]">Memuat formulir…</div>}>
+    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">Memuat formulir…</div>}>
       <LoginForm />
     </Suspense>
   );
@@ -105,11 +105,11 @@ function LoginForm() {
   }, []);
 
   const inputClass =
-    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))]";
+    "w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
   const primaryButton =
-    "w-full inline-flex justify-center items-center rounded-md bg-[rgb(var(--brand))] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]";
+    "w-full inline-flex justify-center items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
   const secondaryButton =
-    "w-full inline-flex justify-center items-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm font-semibold text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))] disabled:opacity-60";
+    "w-full inline-flex justify-center items-center rounded-md border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted/50 disabled:opacity-60";
 
   // Passkey login handler
   async function onPasskeyLogin() {
@@ -290,16 +290,16 @@ function LoginForm() {
     return (
       <div className="w-full max-w-md mx-auto space-y-6">
         <div className="text-center space-y-1">
-          <h1 className="text-xl font-semibold text-[rgb(var(--fg))]">Verifikasi 2FA</h1>
-          <p className="text-sm text-[rgb(var(--muted))]">
+          <h1 className="text-xl font-semibold text-foreground">Verifikasi 2FA</h1>
+          <p className="text-sm text-muted-foreground">
             Masukkan kode dari aplikasi authenticator Anda
           </p>
         </div>
 
-        <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
+        <div className="rounded-lg border border-border bg-card p-6">
           <form className="space-y-4" onSubmit={onTOTPSubmit}>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-[rgb(var(--fg))]">
+              <label className="text-sm font-medium text-foreground">
                 {useBackupCode ? "Backup Code" : "Kode 6 Digit"}
               </label>
               <input
@@ -315,7 +315,7 @@ function LoginForm() {
                 autoFocus
               />
             </div>
-            {error && <div className="text-sm text-[rgb(var(--error))] bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] rounded-md px-3 py-2">{error}</div>}
+            {error && <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</div>}
             <button type="submit" disabled={loading || totpCode.length < (useBackupCode ? 8 : 6)} className={primaryButton}>
               {loading ? "Memverifikasi..." : "Verifikasi"}
             </button>
@@ -327,7 +327,7 @@ function LoginForm() {
                   setTotpCode("");
                   setError("");
                 }}
-                className="text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline"
+                className="text-sm text-muted-foreground hover:text-foreground hover:underline"
               >
                 {useBackupCode ? "Gunakan kode authenticator" : "Gunakan backup code"}
               </button>
@@ -341,7 +341,7 @@ function LoginForm() {
                   setTotpCode("");
                   setUseBackupCode(false);
                 }}
-                className="text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline"
+                className="text-sm text-muted-foreground hover:text-foreground hover:underline"
               >
                 ← Kembali ke login
               </button>
@@ -355,24 +355,24 @@ function LoginForm() {
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center space-y-1">
-        <h1 className="text-xl font-semibold text-[rgb(var(--fg))]">Masuk ke Alephdraad</h1>
-        <p className="text-sm text-[rgb(var(--muted))]">Gunakan email dan password Anda untuk melanjutkan.</p>
+        <h1 className="text-xl font-semibold text-foreground">Masuk ke Alephdraad</h1>
+        <p className="text-sm text-muted-foreground">Gunakan email dan password Anda untuk melanjutkan.</p>
       </div>
 
-      <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
+      <div className="rounded-lg border border-border bg-card p-6">
         {sessionExpired && (
-          <div className="mb-4 rounded-md border border-[rgb(var(--warning-border))] bg-[rgb(var(--warning-bg))] px-3 py-2 text-sm text-[rgb(var(--warning))]">
+          <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 px-3 py-2 text-sm text-amber-600">
             Session Anda telah berakhir. Silakan login kembali.
           </div>
         )}
         {registeredNotice && (
-          <div className="mb-4 rounded-md border border-[rgb(var(--success-border))] bg-[rgb(var(--success-bg))] px-3 py-2 text-sm text-[rgb(var(--success))]">
+          <div className="mb-4 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-2 text-sm text-emerald-600">
             Registrasi berhasil. Silahkan periksa kotak masuk Email, Email verifikasi mungkin akan masuk lebih lama, tunggu sekitar 5-10 menit.
           </div>
         )}
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[rgb(var(--fg))]">Email</label>
+            <label className="text-sm font-medium text-foreground">Email</label>
             <input
               type="email"
               required
@@ -383,7 +383,7 @@ function LoginForm() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[rgb(var(--fg))]">Password</label>
+            <label className="text-sm font-medium text-foreground">Password</label>
             <input
               type="password"
               required
@@ -394,11 +394,11 @@ function LoginForm() {
             />
           </div>
           <div className="text-right">
-            <Link href="/forgot-password" className="text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:underline">
+            <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
               Lupa password?
             </Link>
           </div>
-          {error && <div className="text-sm text-[rgb(var(--error))] bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] rounded-md px-3 py-2">{error}</div>}
+          {error && <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</div>}
           <button type="submit" disabled={loading} className={primaryButton}>
             {loading ? "Memproses..." : "Masuk"}
           </button>
@@ -409,10 +409,10 @@ function LoginForm() {
           <>
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[rgb(var(--border))]" />
+                <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[rgb(var(--surface))] px-2 text-[rgb(var(--muted))]">atau</span>
+                <span className="bg-card px-2 text-muted-foreground">atau</span>
               </div>
             </div>
 
@@ -424,7 +424,7 @@ function LoginForm() {
             >
               {passkeyLoading ? (
                 <>
-                  <span className="inline-block h-4 w-4 mr-2 animate-spin rounded-full border-2 border-[rgb(var(--fg))] border-t-transparent" />
+                  <span className="inline-block h-4 w-4 mr-2 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
                   Memverifikasi...
                 </>
               ) : (
@@ -440,8 +440,8 @@ function LoginForm() {
         )}
       </div>
 
-      <div className="text-center text-sm text-[rgb(var(--muted))]">
-        Belum punya akun? <Link href="/register" className="font-medium text-[rgb(var(--fg))] underline">Daftar di sini</Link>
+      <div className="text-center text-sm text-muted-foreground">
+        Belum punya akun? <Link href="/register" className="font-medium text-foreground underline">Daftar di sini</Link>
       </div>
     </div>
   );

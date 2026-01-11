@@ -43,7 +43,7 @@ export default function ReactionBar({ threadId, className = "" }) {
         {REACTION_TYPES.map((type) => (
           <div
             key={type}
-            className="h-8 w-14 animate-pulse rounded-full bg-[rgb(var(--surface-2))]"
+            className="h-8 w-14 animate-pulse rounded-full bg-muted/50"
           />
         ))}
       </div>
@@ -66,12 +66,12 @@ export default function ReactionBar({ threadId, className = "" }) {
             className={`
               group flex items-center gap-1.5 rounded-full border px-3 py-1.5
               text-sm font-medium transition-all duration-200
-              focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]
+              focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
               disabled:opacity-50 disabled:cursor-not-allowed
               ${
                 isActive
-                  ? "border-[rgb(var(--brand))] bg-[rgb(var(--brand))]/10 text-[rgb(var(--brand))]"
-                  : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--muted))] hover:border-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--fg))]"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:border-muted-foreground hover:bg-muted/50 hover:text-foreground"
               }
             `}
             title={label}
@@ -92,7 +92,7 @@ export default function ReactionBar({ threadId, className = "" }) {
 
       {/* Total count badge */}
       {totalCount > 0 && (
-        <span className="ml-2 text-xs text-[rgb(var(--muted))]">
+        <span className="ml-2 text-xs text-muted-foreground">
           {totalCount} reaksi
         </span>
       )}

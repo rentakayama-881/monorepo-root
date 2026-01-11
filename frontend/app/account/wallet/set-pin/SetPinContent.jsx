@@ -108,13 +108,13 @@ export default function SetPinContent() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+      <main className="min-h-screen bg-background pt-16">
         <div className="mx-auto max-w-md px-4 py-8">
           <div className="animate-pulse">
-            <div className="h-16 w-16 rounded-full bg-[rgb(var(--border))] mx-auto mb-4" />
-            <div className="h-8 w-48 bg-[rgb(var(--border))] rounded mx-auto mb-2" />
-            <div className="h-4 w-64 bg-[rgb(var(--border))] rounded mx-auto mb-8" />
-            <div className="h-64 bg-[rgb(var(--border))] rounded-lg" />
+            <div className="h-16 w-16 rounded-full bg-border mx-auto mb-4" />
+            <div className="h-8 w-48 bg-border rounded mx-auto mb-2" />
+            <div className="h-4 w-64 bg-border rounded mx-auto mb-8" />
+            <div className="h-64 bg-border rounded-lg" />
           </div>
         </div>
       </main>
@@ -122,11 +122,11 @@ export default function SetPinContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[rgb(var(--bg))] pt-16">
+    <main className="min-h-screen bg-background pt-16">
       <div className="mx-auto max-w-md px-4 py-8">
         <Link
           href="/account"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -135,9 +135,9 @@ export default function SetPinContent() {
         </Link>
 
         <div className="text-center mb-8">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgb(var(--brand))]/10">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <svg
-              className="h-8 w-8 text-[rgb(var(--brand))]]"
+              className="h-8 w-8 text-primary]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -150,28 +150,28 @@ export default function SetPinContent() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">
+          <h1 className="text-2xl font-bold text-foreground">
             {hasPin ? "Ubah PIN" : "Buat PIN Transaksi"}
           </h1>
-          <p className="text-sm text-[rgb(var(--muted))] mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             PIN digunakan untuk mengamankan transaksi keuangan Anda
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-[rgb(var(--error-bg))] border border-[rgb(var(--error-border))] p-3 text-sm text-[rgb(var(--error))]">
+          <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
             {error}
           </div>
         )}
 
-        <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
+        <div className="rounded-lg border border-border bg-card p-6">
           {/* Step indicators */}
           <div className="mb-6 flex justify-center gap-2">
             {(hasPin ? [1, 2, 3] : [1, 2]).map((s) => (
               <div
                 key={s}
                 className={`h-2 w-8 rounded-full transition ${
-                  step >= s ? "bg-[rgb(var(--brand))]" : "bg-[rgb(var(--border))]]"
+                  step >= s ? "bg-primary" : "bg-border"
                 }`}
               />
             ))}
@@ -180,7 +180,7 @@ export default function SetPinContent() {
           {/* Step: Current PIN (only if changing) */}
           {hasPin && step === 1 && (
             <div>
-              <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2 text-center">
+              <label className="block text-sm font-medium text-foreground mb-2 text-center">
                 Masukkan PIN Saat Ini
               </label>
               <input
@@ -190,13 +190,13 @@ export default function SetPinContent() {
                 value={currentPin}
                 onChange={(e) => handlePinChange(e.target.value, setCurrentPin)}
                 placeholder="••••••"
-                className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-[rgb(var(--brand))]"
+                className="w-full rounded-lg border border-border bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-primary"
                 autoFocus
               />
               <button
                 onClick={() => setStep(2)}
                 disabled={currentPin.length !== 6}
-                className="mt-6 w-full rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                className="mt-6 w-full rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 Lanjutkan
               </button>
@@ -206,7 +206,7 @@ export default function SetPinContent() {
           {/* Step: New PIN */}
           {((hasPin && step === 2) || (!hasPin && step === 1)) && (
             <div>
-              <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2 text-center">
+              <label className="block text-sm font-medium text-foreground mb-2 text-center">
                 {hasPin ? "Masukkan PIN Baru" : "Buat PIN 6 Digit"}
               </label>
               <input
@@ -216,17 +216,17 @@ export default function SetPinContent() {
                 value={pin}
                 onChange={(e) => handlePinChange(e.target.value, setPin)}
                 placeholder="••••••"
-                className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-[rgb(var(--brand))]"
+                className="w-full rounded-lg border border-border bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-primary"
                 autoFocus
               />
-              <p className="mt-2 text-xs text-[rgb(var(--muted))] text-center">
+              <p className="mt-2 text-xs text-muted-foreground text-center">
                 Hindari PIN yang mudah ditebak seperti 123456
               </p>
               <div className="mt-6 flex gap-3">
                 {hasPin && (
                   <button
                     onClick={() => setStep(1)}
-                    className="flex-1 rounded-lg border border-[rgb(var(--border))] py-3 font-medium"
+                    className="flex-1 rounded-lg border border-border py-3 font-medium"
                   >
                     Kembali
                   </button>
@@ -234,7 +234,7 @@ export default function SetPinContent() {
                 <button
                   onClick={() => setStep(hasPin ? 3 : 2)}
                   disabled={pin.length !== 6}
-                  className={`${hasPin ? "flex-1" : "w-full"} rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50`}
+                  className={`${hasPin ? "flex-1" : "w-full"} rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50`}
                 >
                   Lanjutkan
                 </button>
@@ -245,7 +245,7 @@ export default function SetPinContent() {
           {/* Step: Confirm PIN */}
           {((hasPin && step === 3) || (!hasPin && step === 2)) && (
             <div>
-              <label className="block text-sm font-medium text-[rgb(var(--fg))] mb-2 text-center">
+              <label className="block text-sm font-medium text-foreground mb-2 text-center">
                 Konfirmasi PIN
               </label>
               <input
@@ -255,23 +255,23 @@ export default function SetPinContent() {
                 value={confirmPin}
                 onChange={(e) => handlePinChange(e.target.value, setConfirmPin)}
                 placeholder="••••••"
-                className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-[rgb(var(--brand))]"
+                className="w-full rounded-lg border border-border bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-primary"
                 autoFocus
               />
               {confirmPin.length === 6 && confirmPin !== pin && (
-                <p className="mt-2 text-sm text-[rgb(var(--error))] text-center">PIN tidak cocok</p>
+                <p className="mt-2 text-sm text-destructive text-center">PIN tidak cocok</p>
               )}
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => setStep(hasPin ? 2 : 1)}
-                  className="flex-1 rounded-lg border border-[rgb(var(--border))] py-3 font-medium"
+                  className="flex-1 rounded-lg border border-border py-3 font-medium"
                 >
                   Kembali
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={processing || confirmPin.length !== 6 || confirmPin !== pin}
-                  className="flex-1 rounded-lg bg-[rgb(var(--brand))] py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
                   {processing ? "Menyimpan..." : "Simpan PIN"}
                 </button>
@@ -286,7 +286,7 @@ export default function SetPinContent() {
             <svg className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
-            <div className="text-sm text-[rgb(var(--muted))]">
+            <div className="text-sm text-muted-foreground">
               <p className="font-medium text-blue-600 mb-1">Tips Keamanan</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>Jangan bagikan PIN Anda kepada siapapun</li>

@@ -17,9 +17,9 @@ export default function AdminError({ error, reset }) {
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="text-center max-w-lg">
-        <div className="mx-auto w-16 h-16 rounded-full bg-[rgb(var(--error-bg))] flex items-center justify-center mb-6">
+        <div className="mx-auto w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-6">
           <svg
-            className="w-8 h-8 text-[rgb(var(--error))]"
+            className="w-8 h-8 text-destructive"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -33,33 +33,33 @@ export default function AdminError({ error, reset }) {
           </svg>
         </div>
 
-        <h2 className="text-xl font-semibold text-[rgb(var(--fg))] mb-2">
+        <h2 className="text-xl font-semibold text-foreground mb-2">
           Error di Admin Panel
         </h2>
 
-        <p className="text-[rgb(var(--muted))] mb-4">
+        <p className="text-muted-foreground mb-4">
           Terjadi kesalahan saat memuat halaman admin.
         </p>
 
         {/* Show error details only in development - hide internal details in production */}
         {isDev ? (
-          <div className="mb-6 p-4 rounded-lg bg-[rgb(var(--surface-2))] text-left overflow-auto max-h-40">
-            <p className="text-sm font-mono text-[rgb(var(--error))] break-all">
+          <div className="mb-6 p-4 rounded-lg bg-muted/50 text-left overflow-auto max-h-40">
+            <p className="text-sm font-mono text-destructive break-all">
               {error?.message || "Unknown error"}
             </p>
             {error?.digest && (
-              <p className="text-xs text-[rgb(var(--muted))] mt-2">
+              <p className="text-xs text-muted-foreground mt-2">
                 Digest: {error.digest}
               </p>
             )}
           </div>
         ) : (
-          <div className="mb-6 p-4 rounded-lg bg-[rgb(var(--surface-2))] text-left">
-            <p className="text-sm text-[rgb(var(--muted))]">
+          <div className="mb-6 p-4 rounded-lg bg-muted/50 text-left">
+            <p className="text-sm text-muted-foreground">
               Silakan coba lagi atau hubungi administrator jika masalah berlanjut.
             </p>
             {error?.digest && (
-              <p className="text-xs text-[rgb(var(--muted))] mt-2">
+              <p className="text-xs text-muted-foreground mt-2">
                 Reference: {error.digest}
               </p>
             )}

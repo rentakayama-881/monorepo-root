@@ -191,23 +191,23 @@ export default function TOTPSettings() {
 
   if (loading) {
     return (
-      <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
+      <div className="rounded-[var(--radius)] border bg-card p-6">
         <div className="flex items-center gap-2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[rgb(var(--muted))] border-t-[rgb(var(--brand))]" />
-          <span className="text-sm text-[rgb(var(--muted))]">Memuat pengaturan 2FA...</span>
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
+          <span className="text-sm text-muted-foreground">Memuat pengaturan 2FA...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 space-y-4">
+    <div className="rounded-[var(--radius)] border bg-card p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-semibold text-[rgb(var(--fg))]">
+          <h3 className="text-base font-semibold text-foreground">
             Autentikasi Dua Faktor (2FA)
           </h3>
-          <p className="text-sm text-[rgb(var(--muted))]">
+          <p className="text-sm text-muted-foreground">
             Tambahkan lapisan keamanan ekstra dengan aplikasi authenticator
           </p>
         </div>
@@ -231,7 +231,7 @@ export default function TOTPSettings() {
       {/* Setup Flow */}
       {!status.enabled && !setupData && (
         <div className="pt-2">
-          <p className="text-sm text-[rgb(var(--muted))] mb-3">
+          <p className="text-sm text-muted-foreground mb-3">
             2FA menggunakan aplikasi seperti Google Authenticator, Authy, atau 1Password untuk menghasilkan kode verifikasi.
           </p>
           <Button onClick={startSetup} disabled={setupLoading}>
@@ -243,8 +243,8 @@ export default function TOTPSettings() {
       {/* QR Code & Setup */}
       {setupData && (
         <div className="space-y-4 pt-2">
-          <div className="p-4 bg-[rgb(var(--bg))] rounded-lg border border-[rgb(var(--border))]">
-            <p className="text-sm text-[rgb(var(--fg))] mb-3">
+          <div className="p-4 bg-background rounded-[var(--radius)] border">
+            <p className="text-sm text-foreground mb-3">
               1. Scan QR code berikut dengan aplikasi authenticator:
             </p>
             <div className="flex justify-center mb-4">
@@ -252,22 +252,22 @@ export default function TOTPSettings() {
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setupData.qr_code_url)}`}
                 alt="TOTP QR Code"
-                className="rounded-lg border border-[rgb(var(--border))]"
+                className="rounded-[var(--radius)] border"
                 width={200}
                 height={200}
               />
             </div>
-            <p className="text-sm text-[rgb(var(--muted))] mb-2">
+            <p className="text-sm text-muted-foreground mb-2">
               Atau masukkan kode ini secara manual:
             </p>
-            <code className="block p-2 bg-[rgb(var(--surface-2))] rounded text-sm font-mono text-[rgb(var(--fg))] break-all select-all">
+            <code className="block p-2 bg-secondary rounded text-sm font-mono text-foreground break-all select-all">
               {setupData.secret}
             </code>
           </div>
 
           <form onSubmit={verifyAndEnable} className="space-y-3">
             <div>
-              <label className="text-sm font-medium text-[rgb(var(--fg))] block mb-1">
+              <label className="text-sm font-medium text-foreground block mb-1">
                 2. Masukkan kode 6 digit dari aplikasi:
               </label>
               <Input
@@ -304,29 +304,29 @@ export default function TOTPSettings() {
       {status.enabled && !showDisable && (
         <div className="space-y-4 pt-2">
           {status.verified_at && (
-            <p className="text-xs text-[rgb(var(--muted))]">
+            <p className="text-xs text-muted-foreground">
               Diaktifkan pada: {new Date(status.verified_at).toLocaleDateString("id-ID", { dateStyle: "long" })}
             </p>
           )}
 
           {/* Backup Codes Section */}
-          <div className="p-4 bg-[rgb(var(--bg))] rounded-lg border border-[rgb(var(--border))]">
+          <div className="p-4 bg-background rounded-[var(--radius)] border">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-medium text-[rgb(var(--fg))]">Backup Codes</h4>
-              <span className="text-xs text-[rgb(var(--muted))]">{backupCount} tersisa</span>
+              <h4 className="text-sm font-medium text-foreground">Backup Codes</h4>
+              <span className="text-xs text-muted-foreground">{backupCount} tersisa</span>
             </div>
-            <p className="text-xs text-[rgb(var(--muted))] mb-3">
+            <p className="text-xs text-muted-foreground mb-3">
               Backup codes dapat digunakan untuk login jika Anda tidak memiliki akses ke aplikasi authenticator.
             </p>
 
             {backupCodes ? (
               <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2 p-3 bg-[rgb(var(--surface-2))] rounded font-mono text-sm">
+                <div className="grid grid-cols-2 gap-2 p-3 bg-secondary rounded font-mono text-sm">
                   {backupCodes.map((code, i) => (
-                    <div key={i} className="text-[rgb(var(--fg))]">{code}</div>
+                    <div key={i} className="text-foreground">{code}</div>
                   ))}
                 </div>
-                <p className="text-xs text-[rgb(var(--warning))]">
+                <p className="text-xs text-warning">
                   ⚠️ Simpan backup codes ini di tempat yang aman. Setiap code hanya dapat digunakan sekali.
                 </p>
                 <Button variant="secondary" size="sm" onClick={copyBackupCodes}>
@@ -360,7 +360,7 @@ export default function TOTPSettings() {
             </p>
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium text-[rgb(var(--fg))] block mb-1">
+                <label className="text-sm font-medium text-foreground block mb-1">
                   Password
                 </label>
                 <Input
@@ -371,7 +371,7 @@ export default function TOTPSettings() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-[rgb(var(--fg))] block mb-1">
+                <label className="text-sm font-medium text-foreground block mb-1">
                   Kode 2FA
                 </label>
                 <Input

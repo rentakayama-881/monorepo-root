@@ -53,7 +53,7 @@ export function TagList({ tags, size = 'sm', maxDisplay = null, className = "" }
         <TagPill key={tag.slug} tag={tag} size={size} />
       ))}
       {remainingCount > 0 && (
-        <span className="text-xs text-[rgb(var(--muted))] ml-1">
+        <span className="text-xs text-muted-foreground ml-1">
           +{remainingCount} more
         </span>
       )}

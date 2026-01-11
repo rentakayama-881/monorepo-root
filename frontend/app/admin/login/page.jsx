@@ -40,18 +40,18 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 pt-20">
       <div className="w-full max-w-sm">
-        <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6">
+        <div className="rounded-lg border border-border bg-card p-6">
           <div className="mb-6 text-center">
-            <h1 className="text-xl font-semibold text-[rgb(var(--fg))]">
+            <h1 className="text-xl font-semibold text-foreground">
               Admin Login
             </h1>
-            <p className="mt-1 text-sm text-[rgb(var(--muted))]">
+            <p className="mt-1 text-sm text-muted-foreground">
               Masuk ke dashboard admin
             </p>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-md border border-[rgb(var(--error-border))] bg-[rgb(var(--error-bg))] px-4 py-3 text-sm text-[rgb(var(--error))]">
+            <div className="mb-4 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error}
             </div>
           )}

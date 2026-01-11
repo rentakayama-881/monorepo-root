@@ -16,22 +16,22 @@ export default function Textarea({
   ...rest
 }) {
   const textareaStyles =
-    "w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2 text-sm text-[rgb(var(--fg))] placeholder:text-[rgb(var(--muted))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[rgb(var(--brand))] resize-y min-h-[80px]";
+    "w-full rounded-md border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary resize-y min-h-[80px]";
 
   return (
     <div className="mb-3">
       {label && (
-        <label className="mb-1 block text-sm font-medium text-[rgb(var(--fg))]">
+        <label className="mb-1 block text-sm font-medium text-foreground">
           {label}
         </label>
       )}
       <textarea
         rows={rows}
-        className={`${textareaStyles} ${error ? "border-[rgb(var(--error))]" : ""} ${className}`}
+        className={`${textareaStyles} ${error ? "border-destructive" : ""} ${className}`}
         aria-invalid={!!error}
         {...rest}
       />
-      {error && <div className="mt-1 text-xs text-[rgb(var(--error))]">{error}</div>}
+      {error && <div className="mt-1 text-xs text-destructive">{error}</div>}
     </div>
   );
 }
