@@ -8,7 +8,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Avatar from "./Avatar";
-import { Badge, UsernameWithBadge } from "./Badge";
 import { TagList } from "./TagPill";
 
 /**
@@ -90,7 +89,7 @@ export default function ThreadCard({
       <Link
         href={`/thread/${id}`}
         className={cn(
-          "flex items-center gap-3 px-3 py-2 rounded-[var(--radius)] transition-colors",
+          "flex items-center gap-2 px-3 py-2 rounded-[var(--radius)] transition-colors",
           "hover:bg-accent",
           className
         )}
@@ -99,14 +98,14 @@ export default function ThreadCard({
           <Avatar
             src={avatar_url}
             name={username}
-            size="xs"
+            className="h-4 w-4"
           />
         )}
         <span className="flex-1 truncate text-sm font-medium text-foreground">
           {title}
         </span>
         {showDate && (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground">
             {formatRelativeTime(created_at)}
           </span>
         )}
@@ -120,25 +119,25 @@ export default function ThreadCard({
       <Link
         href={`/thread/${id}`}
         className={cn(
-          "flex items-start gap-3 p-3 transition-colors border-b",
+          "flex items-start gap-2 p-3 transition-colors border-b last:border-b-0",
           "hover:bg-accent",
           className
         )}
       >
         {/* Avatar */}
         {showAuthor && (
-          <Avatar src={avatar_url} name={username} size="xs" className="mt-0.5" />
+          <Avatar src={avatar_url} name={username} className="h-4 w-4 mt-0.5" />
         )}
         
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Title with tags */}
-          <div className="mb-1">
+          <div className="mb-0.5">
             <h3 className="text-sm font-semibold text-foreground hover:text-primary transition-colors line-clamp-1 inline">
               {title}
             </h3>
             {tags && tags.length > 0 && (
-              <div className="inline-flex ml-2 gap-1">
+              <div className="inline-flex ml-1.5 gap-0.5">
                 <TagList tags={tags} size="xs" maxDisplay={2} />
               </div>
             )}
@@ -146,26 +145,26 @@ export default function ThreadCard({
           
           {/* Summary */}
           {showSummary && summary && (
-            <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
+            <p className="text-xs text-muted-foreground line-clamp-1 mb-1">
               {summary}
             </p>
           )}
           
           {/* Metadata */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             {showAuthor && (
               <Link 
                 href={`/user/${username}`}
                 className="font-medium text-foreground hover:text-primary hover:underline"
                 onClick={(e) => e.stopPropagation()}
               >
-                {username || "Anonim"}
+                @{username || "Anonim"}
               </Link>
             )}
             {showCategory && category && (
               <>
                 <span>•</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs">
+                <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px]">
                   {category.name || category.slug}
                 </span>
               </>
@@ -199,49 +198,44 @@ export default function ThreadCard({
       className={cn(
         "group relative overflow-hidden rounded-[var(--radius)] border transition-colors",
         "bg-card",
-        "hover:border-muted-foreground",
+        "hover:border-foreground/20",
         className
       )}
     >
-      <Link href={`/thread/${id}`} className="block p-4">
-        {/* Header with Category & Stats */}
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <div className="flex-1 min-w-0">
-            {/* Category badge */}
-            {showCategory && category && (
-              <span className="inline-block mb-2 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                {category.name || category.slug}
-              </span>
-            )}
-            {/* Title */}
-            <h3 className="text-sm font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-              {title}
-            </h3>
-          </div>
+      <Link href={`/thread/${id}`} className="block p-3">
+        {/* Header with Title & Category */}
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          {/* Title */}
+          <h3 className="flex-1 text-sm font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+            {title}
+          </h3>
+          {/* Category badge on the right */}
+          {showCategory && category && (
+            <span className="inline-block shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {category.name || category.slug}
+            </span>
+          )}
         </div>
 
         {/* Summary */}
         {showSummary && summary && (
-          <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
             {summary}
           </p>
         )}
 
         {/* Footer - Author & Meta */}
-        <div className="flex items-center justify-between pt-3 border-t">
+        <div className="flex items-center justify-between pt-2 border-t">
           {/* Author */}
           {showAuthor && (
-            <div className="flex items-center gap-2">
-              <Avatar src={avatar_url} name={username} size="sm" />
+            <div className="flex items-center gap-1.5">
+              <Avatar src={avatar_url} name={username} className="h-4 w-4" />
               <div className="min-w-0">
-                <UsernameWithBadge
-                  username={username || "Anonim"}
-                  primaryBadge={primary_badge}
-                  size="xs"
-                  usernameClassName="text-xs font-medium text-foreground"
-                />
+                <div className="text-[11px] font-medium text-foreground">
+                  @{username || "Anonim"}
+                </div>
                 {showDate && (
-                  <div className="text-[10px] text-muted-foreground">
+                  <div className="text-[11px] text-muted-foreground">
                     {formatRelativeTime(created_at)}
                   </div>
                 )}
@@ -250,7 +244,7 @@ export default function ThreadCard({
           )}
 
           {/* Stats */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             {typeof reply_count === "number" && (
               <span className="inline-flex items-center gap-1" title="Balasan">
                 <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -281,8 +275,8 @@ export default function ThreadCard({
 export function ThreadCardSkeleton({ variant = "default" }) {
   if (variant === "compact") {
     return (
-      <div className="flex items-center gap-3 px-3 py-2">
-        <div className="h-6 w-6 rounded-full bg-secondary animate-pulse" />
+      <div className="flex items-center gap-2 px-3 py-2">
+        <div className="h-4 w-4 rounded-full bg-secondary animate-pulse" />
         <div className="flex-1 h-4 rounded bg-secondary animate-pulse" />
         <div className="h-3 w-16 rounded bg-secondary animate-pulse" />
       </div>
@@ -291,11 +285,11 @@ export function ThreadCardSkeleton({ variant = "default" }) {
 
   if (variant === "list") {
     return (
-      <div className="p-4 space-y-3">
+      <div className="p-3 space-y-2">
         <div className="h-5 w-3/4 rounded bg-secondary animate-pulse" />
         <div className="h-4 w-full rounded bg-secondary animate-pulse" />
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-full bg-secondary animate-pulse" />
+        <div className="flex items-center gap-1.5">
+          <div className="h-4 w-4 rounded-full bg-secondary animate-pulse" />
           <div className="h-3 w-24 rounded bg-secondary animate-pulse" />
         </div>
       </div>
@@ -303,14 +297,16 @@ export function ThreadCardSkeleton({ variant = "default" }) {
   }
 
   return (
-    <div className="rounded-[var(--radius)] border p-4 space-y-3">
-      <div className="h-4 w-16 rounded-full bg-secondary animate-pulse" />
-      <div className="h-5 w-3/4 rounded bg-secondary animate-pulse" />
+    <div className="rounded-[var(--radius)] border p-3 space-y-2">
+      <div className="flex items-start justify-between gap-2">
+        <div className="h-5 w-3/4 rounded bg-secondary animate-pulse" />
+        <div className="h-4 w-16 rounded-full bg-secondary animate-pulse" />
+      </div>
       <div className="h-4 w-full rounded bg-secondary animate-pulse" />
       <div className="h-4 w-2/3 rounded bg-secondary animate-pulse" />
-      <div className="flex items-center gap-2 pt-3 border-t">
-        <div className="h-8 w-8 rounded-full bg-secondary animate-pulse" />
-        <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5 pt-2 border-t">
+        <div className="h-4 w-4 rounded-full bg-secondary animate-pulse" />
+        <div className="space-y-1">
           <div className="h-3 w-20 rounded bg-secondary animate-pulse" />
           <div className="h-2 w-16 rounded bg-secondary animate-pulse" />
         </div>
@@ -381,7 +377,7 @@ export function ThreadCardGrid({
 
   return (
     <div className={cn(
-      "grid gap-4",
+      "grid gap-3",
       gridCols[columns] || gridCols[3],
       className
     )}>
