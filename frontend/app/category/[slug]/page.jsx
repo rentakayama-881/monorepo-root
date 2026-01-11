@@ -103,14 +103,13 @@ export default function CategoryThreadsPage() {
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
-          {threads.map((thread, idx) => (
+        <div className="space-y-4">
+          {threads.map((thread) => (
             <ThreadCard
               key={thread.id}
               thread={thread}
-              variant="list"
+              variant="default"
               showCategory={false}
-              className={idx !== threads.length - 1 ? "border-b border-border" : ""}
             />
           ))}
         </div>

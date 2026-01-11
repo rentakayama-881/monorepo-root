@@ -15,10 +15,10 @@ export default function Hero() {
       <div className="container relative z-20">
         <div className="max-w-2xl">
           <h1 className="space-y-0 overflow-visible animate-slide-up">
-            <span className="block text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter leading-none text-balance text-foreground">
+            <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tighter leading-none text-balance text-foreground">
               Bangun komunitas,
             </span>
-            <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl italic font-serif tracking-tight leading-none whitespace-nowrap text-foreground">
+            <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl italic font-serif tracking-tight leading-tight text-foreground">
               bagikan pengetahuan
             </span>
           </h1>
