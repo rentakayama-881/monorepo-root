@@ -614,6 +614,38 @@ p {
   }
 }
 
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
 /* ===== Utility classes ===== */
 .text-github-sm {
   font-size: 12px;
@@ -658,6 +690,14 @@ p {
 
 .animate-pulse-subtle {
   animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
+}
+
+.animate-slide-in-from-right {
+  animation: slide-in-from-right 0.3s ease-out;
 }
 
 /* ===== Gradient Utilities ===== */
@@ -717,4 +757,75 @@ p {
 
 .shadow-glow-subtle {
   box-shadow: 0 0 15px -5px oklch(from var(--primary) l c h / 0.3);
+}
+
+/* ===== Form Components Utilities ===== */
+/* Input focus glow effect */
+.input-glow:focus {
+  box-shadow: 0 0 0 3px var(--ring), 0 0 15px -3px var(--primary);
+}
+
+/* Form spacing */
+.form-group {
+  @apply space-y-2;
+}
+
+.form-section {
+  @apply space-y-4;
+}
+
+/* Floating label container */
+.floating-label-container {
+  position: relative;
+}
+
+.floating-label-container .floating-label {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  transition: all 0.2s ease-out;
+  background-color: var(--card);
+  padding: 0 0.25rem;
+}
+
+.floating-label-container input:focus ~ .floating-label,
+.floating-label-container input:not(:placeholder-shown) ~ .floating-label,
+.floating-label-container textarea:focus ~ .floating-label,
+.floating-label-container textarea:not(:placeholder-shown) ~ .floating-label {
+  top: 0;
+  font-size: 0.75rem;
+  color: var(--primary);
+}
+
+/* Better scrollbar styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--secondary);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}
+
+/* Focus trap for modals */
+.focus-trap {
+  isolation: isolate;
+}
+
+.focus-trap:focus {
+  outline: none;
 }
