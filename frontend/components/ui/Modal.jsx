@@ -117,7 +117,7 @@ export default function Modal({
 
   const modalStyles = clsx(
     "relative w-full bg-card shadow-xl",
-    size === "full" ? "h-full" : "rounded-[var(--radius)] border",
+    size === "full" ? "h-full" : "rounded-lg border",
     sizeClasses[size],
     shouldSlideUp
       ? "animate-slide-up"

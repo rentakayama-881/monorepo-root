@@ -2,15 +2,15 @@ import { cn } from "@/lib/utils";
 import { cva } from "class-variance-authority";
 
 /**
- * Card variants
+ * Card variants - prompts.chat style
  */
 const cardVariants = cva(
-  "bg-card text-card-foreground flex flex-col gap-6 rounded-[var(--radius)] border py-6 transition-all duration-200",
+  "bg-card text-card-foreground flex flex-col rounded-lg border transition-all duration-200",
   {
     variants: {
       variant: {
         default: "",
-        interactive: "cursor-pointer hover:shadow-soft hover:-translate-y-0.5 hover:border-accent-foreground/20",
+        interactive: "cursor-pointer hover:shadow-soft hover:-translate-y-0.5 hover:border-foreground/20",
         gradient: "gradient-border hover:shadow-glow-subtle",
       },
     },
@@ -38,13 +38,13 @@ function Card({ className, children, variant = "default", onClick, ...props }) {
 }
 
 /**
- * CardHeader component
+ * CardHeader component - prompts.chat compact padding
  */
 function CardHeader({ className, children, ...props }) {
   return (
     <div
       className={cn(
-        "grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6",
+        "px-4 py-3",
         className
       )}
       {...props}
@@ -86,23 +86,23 @@ function CardDescription({ className, children, ...props }) {
 }
 
 /**
- * CardContent component
+ * CardContent component - prompts.chat efficient spacing
  */
 function CardContent({ className, children, ...props }) {
   return (
-    <div className={cn("px-6", className)} {...props}>
+    <div className={cn("px-4 py-2", className)} {...props}>
       {children}
     </div>
   );
 }
 
 /**
- * CardFooter component
+ * CardFooter component - prompts.chat style with border-t
  */
 function CardFooter({ className, children, ...props }) {
   return (
     <div
-      className={cn("flex items-center px-6 [.border-t]:pt-6", className)}
+      className={cn("flex items-center px-4 py-3 border-t", className)}
       {...props}
     >
       {children}

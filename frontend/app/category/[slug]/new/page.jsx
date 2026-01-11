@@ -110,7 +110,7 @@ export default function CreateThreadPage() {
               </label>
               <input
                 required
-                className="flex h-10 w-full rounded-[var(--radius)] border bg-background px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                className="flex h-10 w-full rounded-lg border bg-background px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                 value={title}
                 maxLength={100}
                 onChange={(e) => setTitle(e.target.value)}
@@ -126,7 +126,7 @@ export default function CreateThreadPage() {
                 <span className="ml-2 text-xs font-normal text-muted-foreground">(optional)</span>
               </label>
               <textarea
-                className="flex min-h-[100px] w-full rounded-[var(--radius)] border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 resize-y"
+                className="flex min-h-[100px] w-full rounded-lg border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 resize-y"
                 rows={3}
                 maxLength={300}
                 value={summary}
@@ -172,12 +172,12 @@ export default function CreateThreadPage() {
                 Contact Telegram <span className="text-destructive">*</span>
               </label>
               <div className="flex items-center">
-                <span className="flex h-10 items-center rounded-l-[var(--radius)] border border-r-0 bg-secondary px-3 text-sm text-muted-foreground">
+                <span className="flex h-10 items-center rounded-l-lg border border-r-0 bg-secondary px-3 text-sm text-muted-foreground">
                   @
                 </span>
                 <input
                   required
-                  className="flex h-10 w-full rounded-r-[var(--radius)] border bg-background px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                  className="flex h-10 w-full rounded-r-lg border bg-background px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                   value={telegram}
                   maxLength={50}
                   onChange={(e) => setTelegram(e.target.value)}
@@ -189,12 +189,12 @@ export default function CreateThreadPage() {
 
             {/* Error/Success Messages */}
             {error && (
-              <div className="rounded-[var(--radius)] border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                 {error}
               </div>
             )}
             {success && (
-              <div className="rounded-[var(--radius)] border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
+              <div className="rounded-lg border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
                 {success}
               </div>
             )}
