@@ -130,14 +130,14 @@ export default function Header() {
   }, []);
 
   const navItem =
-    "px-2 py-1 rounded-md text-sm text-[rgb(var(--fg))] transition-colors hover:bg-[rgb(var(--surface-2))] font-normal";
+    "px-3 py-1.5 rounded-md text-sm text-[rgb(var(--muted))] transition-colors hover:text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))]";
 
   const iconButton =
-    "inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]";
+    "inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
-      <div className="mx-auto flex h-12 max-w-7xl items-center gap-3 px-4 sm:px-6")>
+    <header className="sticky top-0 z-50 w-full border-b bg-[rgb(var(--surface))]/95 backdrop-blur supports-[backdrop-filter]:bg-[rgb(var(--surface))]/60">
+      <div className="container flex h-12 items-center gap-4">
         {/* Mobile menu */}
         <button
           className="flex items-center justify-center -ml-2 md:hidden p-2 rounded-md hover:bg-[rgb(var(--surface-2))] transition-colors"
@@ -225,11 +225,11 @@ export default function Header() {
         <div className="flex-1" />
 
         {/* Right actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {isAuthed ? (
             <div className="relative">
               <button
-                className="inline-flex items-center gap-1.5 rounded-full p-0.5 hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]"
+                className="inline-flex items-center gap-2 rounded-md px-2 py-1 hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]"
                 onClick={() => setProfileOpen((v) => !v)}
                 aria-label="Akun"
                 type="button"
@@ -239,17 +239,28 @@ export default function Header() {
                   name={userName} 
                   size="xs" 
                 />
+                <span className="hidden sm:inline text-sm font-medium text-[rgb(var(--fg))]">
+                  @{userName}
+                </span>
               </button>
 
               {profileOpen && <ProfileSidebar onClose={() => setProfileOpen(false)} />}
             </div>
           ) : (
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-sm text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand))]"
-            >
-              Sign in
-            </Link>
+            <>
+              <Link
+                href="/login"
+                className="px-3 py-1.5 rounded-md text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:bg-[rgb(var(--surface-2))] transition-colors"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center rounded-md bg-[rgb(var(--brand))] px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
+              >
+                Register
+              </Link>
+            </>
           )}
         </div>
       </div>
