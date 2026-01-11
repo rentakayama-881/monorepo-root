@@ -6,6 +6,10 @@ import ApiStatusBanner from "../components/ApiStatusBanner";
 import { ToastProvider } from "../components/ui/Toast";
 import { SudoProvider } from "../components/SudoModal";
 import Providers from "../components/Providers";
+import { ThemeProvider } from "../lib/ThemeContext";
+import { CommandPaletteProvider } from "../components/CommandPaletteProvider";
+import GlobalKeyboardShortcuts from "../components/GlobalKeyboardShortcuts";
+import BackToTop from "../components/BackToTop";
 
 // Load fonts (prompts.chat style)
 const inter = Inter({
@@ -104,18 +108,33 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning className={`${inter.variable} ${geistMono.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased bg-background text-foreground">
-        <Providers>
-          <ToastProvider>
-            <SudoProvider>
-              <Header />
-              <ApiStatusBanner />
+        {/* Skip to main content link for accessibility */}
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+        
+        <ThemeProvider>
+          <Providers>
+            <CommandPaletteProvider>
+              <ToastProvider>
+                <SudoProvider>
+                  <Header />
+                  <ApiStatusBanner />
 
-              <main className="flex-1">{children}</main>
-              
-              <Footer />
-            </SudoProvider>
-          </ToastProvider>
-        </Providers>
+                  <main id="main-content" className="flex-1">{children}</main>
+                  
+                  <Footer />
+                  
+                  {/* Global keyboard shortcuts handler */}
+                  <GlobalKeyboardShortcuts />
+                  
+                  {/* Back to top button */}
+                  <BackToTop />
+                </SudoProvider>
+              </ToastProvider>
+            </CommandPaletteProvider>
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

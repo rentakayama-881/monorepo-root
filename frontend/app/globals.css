@@ -1278,3 +1278,177 @@ html {
   animation: shimmer 2s infinite;
 }
 
+/* ===== Phase 6: Advanced Features & Final Polish ===== */
+
+/* Skip to main content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 8px 16px;
+  z-index: 100;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Theme transition */
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+}
+
+/* Command palette styles */
+.command-palette-overlay {
+  @apply fixed inset-0 z-50 bg-black/50 backdrop-blur-sm;
+  animation: fade-in 0.15s ease-out;
+}
+
+.command-palette {
+  @apply fixed left-1/2 top-1/4 z-50 w-full max-w-lg -translate-x-1/2 
+         rounded-xl border bg-popover shadow-2xl;
+  animation: command-palette-in 0.15s ease-out;
+}
+
+@keyframes command-palette-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+.command-palette-input {
+  @apply w-full border-b bg-transparent px-4 py-3 text-base 
+         placeholder:text-muted-foreground focus:outline-none;
+}
+
+.command-palette-results {
+  @apply max-h-80 overflow-y-auto p-2;
+}
+
+.command-palette-group {
+  @apply mb-2;
+}
+
+.command-palette-group-title {
+  @apply px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide;
+}
+
+.command-palette-item {
+  @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm 
+         cursor-pointer transition-colors;
+}
+
+.command-palette-item:hover,
+.command-palette-item[data-selected="true"] {
+  @apply bg-accent;
+}
+
+.command-palette-item-icon {
+  @apply h-4 w-4 text-muted-foreground;
+}
+
+.command-palette-shortcut {
+  @apply ml-auto flex gap-1;
+}
+
+.command-palette-shortcut kbd {
+  @apply px-1.5 py-0.5 text-xs rounded bg-muted text-muted-foreground font-mono;
+}
+
+/* Keyboard shortcuts modal */
+.shortcuts-modal {
+  @apply grid gap-4 sm:grid-cols-2;
+}
+
+.shortcuts-group {
+  @apply space-y-2;
+}
+
+.shortcuts-group-title {
+  @apply text-sm font-semibold text-foreground;
+}
+
+.shortcut-item {
+  @apply flex items-center justify-between py-1;
+}
+
+.shortcut-keys {
+  @apply flex gap-1;
+}
+
+.shortcut-keys kbd {
+  @apply px-2 py-1 text-xs rounded bg-muted text-muted-foreground font-mono min-w-[24px] text-center;
+}
+
+/* Success animation */
+@keyframes success-check {
+  0% { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.success-check-icon path {
+  stroke-dasharray: 100;
+  animation: success-check 0.4s ease-out forwards;
+}
+
+/* Number transition */
+.number-transition {
+  display: inline-block;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Press effect */
+.press-effect:active {
+  transform: scale(0.97);
+}
+
+/* Notification badge bounce */
+@keyframes badge-bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.badge-new {
+  animation: badge-bounce 0.3s ease;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border: oklch(0 0 0);
+  }
+  .dark {
+    --border: oklch(1 0 0);
+  }
+}
+
+/* Enhanced focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Screen reader only - hide visually but keep for assistive tech */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+

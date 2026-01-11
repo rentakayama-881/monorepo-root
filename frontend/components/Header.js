@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Sidebar from "./Sidebar";
 import ProfileSidebar from "./ProfileSidebar";
+import ThemeToggle from "./ThemeToggle";
+import CommandPaletteTrigger from "./CommandPaletteTrigger";
 import { Logo } from "./ui/Logo";
 import Avatar from "./ui/Avatar";
 import { fetchCategories } from "../lib/categories";
@@ -225,8 +227,14 @@ export default function Header() {
 
         <div className="flex-1" />
 
+        {/* Command Palette Trigger */}
+        <CommandPaletteTrigger />
+
         {/* Right actions */}
         <div className="flex items-center gap-1">
+          {/* Theme toggle */}
+          <ThemeToggle />
+          
           {isAuthed ? (
             <div className="relative">
               <button
