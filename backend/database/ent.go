@@ -12,7 +12,11 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	_ "github.com/lib/pq"
+	
+	// HAPUS lib/pq, GANTI dengan pgx
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
+	
 	"go.uber.org/zap"
 )
 
@@ -50,11 +54,23 @@ func InitEntDB() {
 			host, user, pass, name, port, sslmode, timezone)
 	}
 
-	// Open SQL connection
-	db, err := sql.Open("postgres", dsn)
+	// ---------------------------------------------------------
+	// FIX UTAMA: Menggunakan PGX dengan SimpleProtocol
+	// ---------------------------------------------------------
+	
+	// 1. Parse config dari DSN string
+	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
-		logger.Fatal("Failed to open database connection", zap.Error(err))
+		logger.Fatal("Failed to parse database config", zap.Error(err))
 	}
+
+	// 2. MATIKAN Prepared Statements (Solusi Error 500/Unnamed Statement)
+	config.PreferSimpleProtocol = true
+
+	// 3. Buka koneksi menggunakan driver pgx stdlib
+	db := stdlib.OpenDB(*config)
+
+	// ---------------------------------------------------------
 
 	// Configure connection pool
 	db.SetMaxIdleConns(10)
@@ -65,7 +81,7 @@ func InitEntDB() {
 	// Assign global SQL handle
 	SQLDB = db
 
-	// Create Ent driver
+	// Create Ent driver (gunakan dialect.Postgres)
 	drv := entsql.OpenDB(dialect.Postgres, db)
 
 	// Create Ent client
@@ -77,7 +93,7 @@ func InitEntDB() {
 		logger.Fatal("Failed to run Ent migrations", zap.Error(err))
 	}
 
-	logger.Info("Ent database initialized successfully")
+	logger.Info("Ent database initialized successfully (PGX Simple Protocol)")
 }
 
 // CloseEntDB closes the Ent client connection
@@ -98,3 +114,4 @@ func GetEntClient() *ent.Client {
 func GetSQLDB() *sql.DB {
 	return SQLDB
 }
+
