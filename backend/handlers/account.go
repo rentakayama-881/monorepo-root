@@ -426,7 +426,7 @@ func callFeatureServiceCleanup(c *gin.Context, userID uint) (*FeatureServiceClea
 
 	if resp.StatusCode != http.StatusOK {
 		if result.BlockingReason != "" {
-			return &result, fmt.Errorf(result.BlockingReason)
+			return &result, fmt.Errorf("%s", result.BlockingReason)
 		}
 		return nil, fmt.Errorf("feature-service cleanup failed")
 	}

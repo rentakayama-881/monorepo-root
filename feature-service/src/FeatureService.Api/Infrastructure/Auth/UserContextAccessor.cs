@@ -44,11 +44,16 @@ public class UserContextAccessor : IUserContextAccessor
         var emailClaim = httpContext.User.FindFirst("email") ?? httpContext.User.FindFirst(ClaimTypes.Email);
         var usernameClaim = httpContext.User.FindFirst("username") ?? httpContext.User.FindFirst(ClaimTypes.Name);
         var avatarClaim = httpContext.User.FindFirst("avatar_url");
+        var totpEnabledClaim = httpContext.User.FindFirst("totp_enabled");
 
         if (userIdClaim == null || !uint.TryParse(userIdClaim.Value, out var userId))
         {
             return null;
         }
+
+        // Parse totp_enabled claim (defaults to false if not present)
+        var totpEnabled = totpEnabledClaim?.Value?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+            || totpEnabledClaim?.Value?.Equals("True", StringComparison.OrdinalIgnoreCase) == true;
 
         return new UserContext
         {
@@ -56,6 +61,7 @@ public class UserContextAccessor : IUserContextAccessor
             Email = emailClaim?.Value ?? string.Empty,
             Username = usernameClaim?.Value ?? string.Empty,
             IsAdmin = IsAdmin,
+            TotpEnabled = totpEnabled,
             AvatarUrl = avatarClaim?.Value
         };
     }

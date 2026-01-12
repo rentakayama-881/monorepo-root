@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using FeatureService.Api.DTOs;
 
 namespace FeatureService.Api.Controllers;
@@ -17,6 +18,64 @@ public abstract class ApiControllerBase : ControllerBase
     }
 
     /// <summary>
+    /// Get the current user ID from JWT claims
+    /// </summary>
+    protected uint GetUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value
+            ?? User.FindFirst("user_id")?.Value;
+
+        return uint.TryParse(userIdClaim, out var id) ? id : 0;
+    }
+
+    /// <summary>
+    /// Get the current username from JWT claims
+    /// </summary>
+    protected string GetUsername()
+    {
+        return User.FindFirst(ClaimTypes.Name)?.Value
+            ?? User.FindFirst("username")?.Value
+            ?? User.FindFirst("preferred_username")?.Value
+            ?? "";
+    }
+
+    /// <summary>
+    /// Check if user has admin role
+    /// </summary>
+    protected bool IsAdmin()
+    {
+        return User.IsInRole("admin") 
+            || User.HasClaim(c => c.Type == "role" && c.Value == "admin")
+            || User.HasClaim(c => c.Type == ClaimTypes.Role && c.Value == "admin");
+    }
+
+    /// <summary>
+    /// Check if user has TOTP (2FA) enabled from JWT claims
+    /// </summary>
+    protected bool HasTwoFactorEnabled()
+    {
+        var totpClaim = User.FindFirst("totp_enabled")?.Value;
+        return totpClaim?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+            || totpClaim?.Equals("True", StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    /// <summary>
+    /// Returns 403 Forbidden if user doesn't have 2FA enabled
+    /// Use this for financial operations that require 2FA
+    /// </summary>
+    protected ObjectResult? RequiresTwoFactorAuth()
+    {
+        if (!HasTwoFactorEnabled())
+        {
+            return ApiError(403, "TWO_FACTOR_REQUIRED", 
+                "Two-factor authentication (2FA) is required for financial operations. " +
+                "Please enable TOTP authenticator in your security settings before proceeding.");
+        }
+        return null;
+    }
+
+    /// <summary>
     /// Create a standardized error response
     /// </summary>
     protected ObjectResult ApiError(int statusCode, string code, string message, List<string>? details = null)
@@ -26,11 +85,63 @@ public abstract class ApiControllerBase : ControllerBase
     }
 
     /// <summary>
-    /// Returns 400 Bad Request with standardized error
+    /// Returns 400 Bad Request with standardized error (code + message)
     /// </summary>
-    protected ObjectResult ApiBadRequest(string message, List<string>? details = null)
+    protected ObjectResult ApiBadRequest(string code, string message, List<string>? details = null)
     {
-        return ApiError(400, ApiErrorCodes.BadRequest, message, details);
+        return ApiError(400, code, message, details);
+    }
+
+    /// <summary>
+    /// Returns 400 Bad Request with standardized error (message only, uses VALIDATION_ERROR code)
+    /// </summary>
+    protected ObjectResult ApiBadRequest(string message)
+    {
+        return ApiError(400, ApiErrorCodes.ValidationError, message);
+    }
+
+    /// <summary>
+    /// Returns 401 Unauthorized with standardized error (code + message)
+    /// </summary>
+    protected ObjectResult ApiUnauthorized(string code, string message)
+    {
+        return ApiError(401, code, message);
+    }
+
+    /// <summary>
+    /// Returns 404 Not Found with standardized error (code + message)
+    /// </summary>
+    protected ObjectResult ApiNotFound(string code, string message)
+    {
+        return ApiError(404, code, message);
+    }
+
+    /// <summary>
+    /// Returns 201 Created with success response
+    /// </summary>
+    protected ObjectResult ApiCreated<T>(T data, string? message = null) where T : class
+    {
+        var response = new ApiResponse<T>(
+            true,
+            data,
+            new ApiMeta(GetRequestId(), DateTime.UtcNow),
+            message
+        );
+        return StatusCode(201, response);
+    }
+
+    /// <summary>
+    /// Returns 200 OK with success response and optional message
+    /// </summary>
+    protected OkObjectResult ApiOk<T>(T data, string? message = null) where T : class
+    {
+        var response = new ApiResponse<T>(
+            true,
+            data,
+            new ApiMeta(GetRequestId(), DateTime.UtcNow),
+            message
+        );
+        return Ok(response);
     }
 
     /// <summary>

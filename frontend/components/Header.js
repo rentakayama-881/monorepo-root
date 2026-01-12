@@ -197,9 +197,9 @@ export default function Header() {
               <div className="absolute left-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-[var(--radius)] border bg-popover shadow-lg animate-scale-in">
                 <div className="max-h-80 overflow-y-auto py-1">
                   {loadingCategories ? (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">Memuat kategori…</div>
+                    <div className="px-3 py-2 text-sm text-muted-foreground">Loading...</div>
                   ) : categories.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">Kategori belum tersedia</div>
+                    <div className="px-3 py-2 text-sm text-muted-foreground">No categories available</div>
                   ) : (
                     categories.map((cat) => (
                       <Link
@@ -217,11 +217,11 @@ export default function Header() {
             )}
           </div>
 
-          <Link href="/about-content" className={navItem}>
-            About
+          <Link href="/ai-studio" className={navItem}>
+            AI Studio
           </Link>
-          <Link href="/rules-content" className={navItem}>
-            Rules
+          <Link href="/chat" className={navItem}>
+            AI Chat
           </Link>
         </nav>
 

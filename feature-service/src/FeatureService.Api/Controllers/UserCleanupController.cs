@@ -91,7 +91,7 @@ public class UserCleanupController : ApiControllerBase
 
         if (!result.Success)
         {
-            return ApiBadRequest(result.Error ?? "Cannot cleanup user data");
+            return ApiBadRequest("CLEANUP_FAILED", result.Error ?? "Cannot cleanup user data");
         }
 
         return Ok(result);

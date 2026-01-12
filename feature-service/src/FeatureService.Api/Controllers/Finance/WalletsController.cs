@@ -87,12 +87,21 @@ public class WalletsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Set PIN for first time
+    /// Set PIN for first time - REQUIRES 2FA ENABLED
     /// </summary>
+    /// <remarks>
+    /// ⚠️ SECURITY WARNING ⚠️
+    /// - Two-Factor Authentication (2FA) MUST be enabled before setting PIN
+    /// - PIN CANNOT be reset - there is NO recovery option
+    /// - If you forget your PIN, you will permanently lose access to financial features
+    /// - Write your PIN on paper and store it in a safe place
+    /// - Do not share your PIN with anyone, including support staff
+    /// </remarks>
     [HttpPost("pin/set")]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
     [ProducesResponseType(typeof(ApiErrorResponse), 401)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 403)]
     public async Task<IActionResult> SetPin([FromBody] SetPinRequest request)
     {
         var user = _userContextAccessor.GetCurrentUser();
@@ -101,10 +110,19 @@ public class WalletsController : ApiControllerBase
             return ApiUnauthorized("User tidak terautentikasi");
         }
 
+        // CRITICAL: Require 2FA before setting PIN
+        var twoFactorCheck = RequiresTwoFactorAuth();
+        if (twoFactorCheck != null) return twoFactorCheck;
+
         try
         {
             await _walletService.SetPinAsync(user.UserId, request.Pin);
-            return Ok(new { message = "PIN berhasil diset" });
+            return Ok(new { 
+                message = "PIN successfully set",
+                warning = "IMPORTANT: Your PIN cannot be reset or recovered. " +
+                          "If you forget your PIN, you will permanently lose access to financial features. " +
+                          "Please write it down and store it securely."
+            });
         }
         catch (InvalidOperationException ex)
         {
@@ -117,7 +135,7 @@ public class WalletsController : ApiControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error setting PIN for user {UserId}", user.UserId);
-            return ApiInternalError("Gagal mengatur PIN");
+            return ApiInternalError("Failed to set PIN");
         }
     }
 

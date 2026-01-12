@@ -21,11 +21,12 @@ const (
 
 // Claims represents JWT claims with enhanced security fields
 type Claims struct {
-	UserID    uint      `json:"user_id"`
-	Email     string    `json:"email"`
-	Username  string    `json:"username,omitempty"`
-	TokenType TokenType `json:"type"`
-	JTI       string    `json:"jti"` // Unique token ID
+	UserID      uint      `json:"user_id"`
+	Email       string    `json:"email"`
+	Username    string    `json:"username,omitempty"`
+	TotpEnabled bool      `json:"totp_enabled"`
+	TokenType   TokenType `json:"type"`
+	JTI         string    `json:"jti"` // Unique token ID
 	jwt.RegisteredClaims
 }
 
@@ -37,14 +38,15 @@ func generateJTI() string {
 }
 
 // GenerateAccessToken creates a short-lived access token (5 minutes)
-func GenerateAccessToken(userID uint, email string, username string) (string, string, error) {
+func GenerateAccessToken(userID uint, email string, username string, totpEnabled bool) (string, string, error) {
 	jti := generateJTI()
 	claims := &Claims{
-		UserID:    userID,
-		Email:     email,
-		Username:  username,
-		TokenType: TokenTypeAccess,
-		JTI:       jti,
+		UserID:      userID,
+		Email:       email,
+		Username:    username,
+		TotpEnabled: totpEnabled,
+		TokenType:   TokenTypeAccess,
+		JTI:         jti,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -56,14 +58,15 @@ func GenerateAccessToken(userID uint, email string, username string) (string, st
 }
 
 // GenerateRefreshToken creates a long-lived refresh token (7 days)
-func GenerateRefreshToken(userID uint, email string, username string) (string, string, error) {
+func GenerateRefreshToken(userID uint, email string, username string, totpEnabled bool) (string, string, error) {
 	jti := generateJTI()
 	claims := &Claims{
-		UserID:    userID,
-		Email:     email,
-		Username:  username,
-		TokenType: TokenTypeRefresh,
-		JTI:       jti,
+		UserID:      userID,
+		Email:       email,
+		Username:    username,
+		TotpEnabled: totpEnabled,
+		TokenType:   TokenTypeRefresh,
+		JTI:         jti,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

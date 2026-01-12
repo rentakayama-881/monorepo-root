@@ -35,7 +35,7 @@ export default function MyThreadsPage() {
 
   const reloadMyThreads = useCallback(async () => {
     const res = await fetchWithAuth(`${API}/threads/me`);
-    if (!res || !res.ok) throw new Error("Gagal memuat threads");
+    if (!res || !res.ok) throw new Error("Failed to load threads");
     const data = await res.json();
     const list = Array.isArray(data) ? data : Array.isArray(data.threads) ? data.threads : Array.isArray(data.items) ? data.items : [];
     list.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
@@ -45,7 +45,7 @@ export default function MyThreadsPage() {
   useEffect(() => {
     if (!authed) {
       setLoading(false);
-      setError("Anda harus login untuk melihat threads Anda.");
+      setError("Please sign in to view your threads.");
       return;
     }
     let cancelled = false;
@@ -74,7 +74,7 @@ export default function MyThreadsPage() {
     (async () => {
       try {
         const res = await fetchWithAuth(`${API}/threads/${th.id}`);
-        if (!res || !res.ok) throw new Error("Gagal memuat detail thread");
+        if (!res || !res.ok) throw new Error("Failed to load thread details");
         const full = await res.json();
 
         const ctype = (full.content_type || "text").toLowerCase();
@@ -140,7 +140,7 @@ export default function MyThreadsPage() {
       });
       if (!r || !r.ok) {
         const txt = r ? await r.text() : "Request failed";
-        throw new Error(txt || "Gagal menyimpan thread");
+        throw new Error(txt || "Failed to save thread");
       }
 
       await reloadMyThreads();
@@ -163,7 +163,7 @@ export default function MyThreadsPage() {
       });
       if (!res || !res.ok) {
         const txt = res ? await res.text() : "Request failed";
-        throw new Error(txt || "Gagal menghapus thread");
+        throw new Error(txt || "Failed to delete thread");
       }
       await reloadMyThreads();
       setOk("Thread berhasil dihapus.");
@@ -191,7 +191,7 @@ export default function MyThreadsPage() {
     return (
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-          {error || "Anda harus login untuk melihat threads Anda."}
+          {error || "Please sign in to view your threads."}
         </div>
       </main>
     );
@@ -422,7 +422,7 @@ export default function MyThreadsPage() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-foreground">Hapus Thread</h2>
-                <p className="text-sm text-muted-foreground">Tindakan ini tidak dapat dibatalkan</p>
+                <p className="text-sm text-muted-foreground">This action cannot be undone</p>
               </div>
             </div>
 
@@ -432,7 +432,7 @@ export default function MyThreadsPage() {
                 Apakah Anda yakin ingin menghapus thread <strong>&quot;{deleteConfirm.title || "(Tanpa Judul)"}&quot;</strong>?
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Thread ini akan dihapus secara permanen dari database dan tidak dapat dikembalikan.
+                This thread will be permanently deleted from the database and cannot be recovered.
               </p>
             </div>
 

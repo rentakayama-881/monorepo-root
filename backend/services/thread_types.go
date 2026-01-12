@@ -10,13 +10,23 @@ type CategoryResponse struct {
 	Description string `json:"description"`
 }
 
+// TagResponse represents a tag in API responses
+type TagResponse struct {
+	ID    uint   `json:"id"`
+	Name  string `json:"name"`
+	Slug  string `json:"slug"`
+	Color string `json:"color,omitempty"`
+}
+
 // ThreadListItem represents a thread in list responses
 type ThreadListItem struct {
 	ID        uint                   `json:"id"`
 	Title     string                 `json:"title"`
 	Summary   string                 `json:"summary"`
 	Username  string                 `json:"username"`
+	AvatarURL string                 `json:"avatar_url,omitempty"`
 	Category  CategoryResponse       `json:"category"`
+	Tags      []TagResponse          `json:"tags,omitempty"`
 	Meta      map[string]interface{} `json:"meta,omitempty"`
 	CreatedAt int64                  `json:"created_at"`
 }

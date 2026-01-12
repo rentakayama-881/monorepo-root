@@ -40,7 +40,7 @@ export function useSubmitReport() {
   const submitReport = useCallback(async (targetType, targetId, reason, description = "") => {
     const token = getToken();
     if (!token) {
-      const err = new Error("Silakan login untuk melaporkan");
+      const err = new Error("Authentication required to submit a report");
       setError(err.message);
       throw err;
     }
@@ -48,14 +48,14 @@ export function useSubmitReport() {
     // Validate reason
     const validReasons = REPORT_REASONS.map((r) => r.value);
     if (!validReasons.includes(reason)) {
-      const err = new Error("Alasan laporan tidak valid");
+      const err = new Error("Invalid report reason");
       setError(err.message);
       throw err;
     }
 
     // Validate target type
     if (!Object.values(REPORT_TARGET_TYPES).includes(targetType)) {
-      const err = new Error("Tipe target tidak valid");
+      const err = new Error("Invalid target type");
       setError(err.message);
       throw err;
     }
@@ -84,7 +84,7 @@ export function useSubmitReport() {
         setSuccess(true);
         return result.data; // { reportId }
       } else {
-        throw new Error(result.message || "Gagal mengirim laporan");
+        throw new Error(result.message || "Failed to submit report");
       }
     } catch (err) {
       logger.error("Submit Report Error:", err.message);
@@ -122,7 +122,7 @@ export function useMyReports(options = {}) {
     async (cursor = null, append = false) => {
       const token = getToken();
       if (!token) {
-        setError("Silakan login untuk melihat laporan Anda");
+        setError("Please sign in to view your reports");
         setLoading(false);
         return;
       }
@@ -151,7 +151,7 @@ export function useMyReports(options = {}) {
           setHasMore(result.meta?.hasMore || false);
           setNextCursor(result.meta?.nextCursor || null);
         } else {
-          throw new Error(result.message || "Gagal memuat laporan");
+          throw new Error(result.message || "Failed to load reports");
         }
       } catch (err) {
         logger.error("Fetch Reports Error:", err.message);

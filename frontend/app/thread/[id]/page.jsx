@@ -23,13 +23,12 @@ export default function ThreadDetailPage() {
   const [error, setError] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
   const [repliesKey, setRepliesKey] = useState(0); // Force refresh replies
-  const [showBackToTop, setShowBackToTop] = useState(false);
   const [readingProgress, setReadingProgress] = useState(0);
 
   const isAuthed = typeof window !== "undefined" ? !!localStorage.getItem("token") : false;
   const currentUsername = typeof window !== "undefined" ? localStorage.getItem("username") : null;
 
-  // Reading progress and back to top with throttling
+  // Reading progress with throttling
   useEffect(() => {
     let ticking = false;
     let lastUpdate = 0;
@@ -40,9 +39,6 @@ export default function ThreadDetailPage() {
       
       if (!ticking && (now - lastUpdate >= THROTTLE_MS)) {
         window.requestAnimationFrame(() => {
-          // Back to top visibility
-          setShowBackToTop(window.scrollY > 300);
-          
           // Reading progress with guard against division by zero
           const windowHeight = window.innerHeight;
           const documentHeight = document.documentElement.scrollHeight;
@@ -67,13 +63,9 @@ export default function ThreadDetailPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   useEffect(() => {
     if (!isAuthed) {
-      setError("Anda harus login untuk melihat thread.");
+      setError("Please sign in to view this thread.");
       setLoading(false);
       return;
     }
@@ -88,7 +80,7 @@ export default function ThreadDetailPage() {
     setLoading(true);
 
     fetch(`${API}/api/threads/${id}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => (res.ok ? res.json() : Promise.reject(new Error("Gagal membaca thread"))))
+      .then(res => (res.ok ? res.json() : Promise.reject(new Error("Failed to load thread"))))
       .then(json => !cancelled && setData(json))
       .catch(err => !cancelled && setError(err.message))
       .finally(() => !cancelled && setLoading(false));
@@ -100,9 +92,9 @@ export default function ThreadDetailPage() {
     return (
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="rounded-lg border border-border bg-card p-6">
-          <p className="text-sm text-foreground">Anda harus login untuk melihat thread.</p>
+          <p className="text-sm text-foreground">Please sign in to view this thread.</p>
           <Link href="/login" className="mt-2 inline-block text-sm font-medium text-primary hover:underline">
-            Masuk sekarang →
+            Sign in now →
           </Link>
         </div>
       </main>
@@ -304,17 +296,6 @@ export default function ThreadDetailPage() {
         style={{ width: `${readingProgress}%` }}
         aria-hidden="true"
       />
-
-      {/* Back to top button */}
-      <button
-        onClick={scrollToTop}
-        className={`back-to-top ${showBackToTop ? 'visible' : ''} inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 transition-all`}
-        aria-label="Back to top"
-      >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-        </svg>
-      </button>
     </main>
   );
 }

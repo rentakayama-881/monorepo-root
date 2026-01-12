@@ -70,7 +70,7 @@ export function useTokenBalance(options = {}) {
           freeTokensRemaining: result.data?.freeTokensRemaining || 0,
         });
       } else {
-        throw new Error(result.message || "Gagal memuat saldo token");
+        throw new Error(result.message || "Failed to load token balance");
       }
     } catch (err) {
       logger.error("Token Balance Error:", err.message);
@@ -132,7 +132,7 @@ export function usePurchaseTokens() {
   const purchaseTokens = useCallback(async (packageId) => {
     const token = getToken();
     if (!token) {
-      throw new Error("Silakan login untuk membeli token");
+      throw new Error("Please sign in to purchase tokens");
     }
 
     setLoading(true);
@@ -149,7 +149,7 @@ export function usePurchaseTokens() {
         setSuccess(true);
         return result.data;
       } else {
-        throw new Error(result.message || "Gagal membeli token");
+        throw new Error(result.message || "Failed to purchase tokens");
       }
     } catch (err) {
       logger.error("Purchase Tokens Error:", err.message);
@@ -197,7 +197,7 @@ export function useChatSessions(options = {}) {
       if (result.success) {
         setSessions(result.data || []);
       } else {
-        throw new Error(result.message || "Gagal memuat sesi chat");
+        throw new Error(result.message || "Failed to load chat sessions");
       }
     } catch (err) {
       logger.error("Chat Sessions Error:", err.message);
@@ -227,7 +227,7 @@ export function useCreateChatSession() {
   const createSession = useCallback(async (serviceType, model = null, title = null) => {
     const token = getToken();
     if (!token) {
-      throw new Error("Silakan login untuk memulai chat");
+      throw new Error("Please sign in to start a chat");
     }
 
     setLoading(true);
@@ -246,7 +246,7 @@ export function useCreateChatSession() {
       if (result.success) {
         return result.data; // { sessionId }
       } else {
-        throw new Error(result.message || "Gagal membuat sesi chat");
+        throw new Error(result.message || "Failed to create chat session");
       }
     } catch (err) {
       logger.error("Create Session Error:", err.message);
@@ -271,7 +271,7 @@ export function useSendMessage() {
   const sendMessage = useCallback(async (sessionId, content) => {
     const token = getToken();
     if (!token) {
-      throw new Error("Silakan login untuk mengirim pesan");
+      throw new Error("Please sign in to send messages");
     }
 
     if (!content || content.trim().length === 0) {
@@ -298,7 +298,7 @@ export function useSendMessage() {
       if (result.success) {
         return result.data; // { messageId, content, tokensUsed, remainingBalance, processingTimeMs }
       } else {
-        throw new Error(result.message || "Gagal mengirim pesan");
+        throw new Error(result.message || "Failed to send message");
       }
     } catch (err) {
       logger.error("Send Message Error:", err.message);
@@ -343,7 +343,7 @@ export function useChatMessages(sessionId, options = {}) {
       if (result.success) {
         setMessages(result.data || []);
       } else {
-        throw new Error(result.message || "Gagal memuat pesan");
+        throw new Error(result.message || "Failed to load messages");
       }
     } catch (err) {
       logger.error("Chat Messages Error:", err.message);

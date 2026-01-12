@@ -32,8 +32,8 @@ export async function fetchJson(path, options = {}) {
     }
 
     if (!res.ok) {
-      // Prioritaskan pesan error dari backend
-      const message = data?.error || data?.message || res.statusText || `Request gagal dengan status ${res.status}`;
+      // Prioritize error message from backend
+      const message = data?.error || data?.message || res.statusText || `Request failed with status ${res.status}`;
       const error = new Error(message);
       error.status = res.status;
       error.code = data?.code;
@@ -42,21 +42,21 @@ export async function fetchJson(path, options = {}) {
 
     return data ?? (await res.json());
   } catch (err) {
-    // Jangan override error message yang sudah ada dari backend
+    // Don't override existing error message from backend
     if (err.message && err.status) {
       throw err;
     }
     
     if (controller.signal.aborted) {
-      throw new Error("Request timeout. Silakan coba lagi.");
+      throw new Error("Request timed out. Please try again.");
     }
     if (err?.name === "AbortError") {
-      throw new Error("Request dibatalkan.");
+      throw new Error("Request was cancelled.");
     }
     
-    // Hanya throw network error jika memang network issue
+    // Only throw network error if it's actually a network issue
     if (err?.name === "TypeError" || err?.message?.includes("fetch")) {
-      throw new Error("Tidak dapat terhubung ke server. Periksa koneksi internet Anda.");
+      throw new Error("Unable to connect to server. Please check your internet connection.");
     }
     
     throw err;

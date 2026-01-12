@@ -111,7 +111,10 @@ try
     
     // Register financial services
     builder.Services.AddScoped<IWalletService, WalletService>();
-    // TransferService will be added in Phase 2 (Finance) - see docs/10-roadmap
+    builder.Services.AddScoped<ITransferService, TransferService>();
+    builder.Services.AddHttpClient<ITransferService, TransferService>();
+    builder.Services.AddScoped<IDisputeService, DisputeService>();
+    builder.Services.AddScoped<IWithdrawalService, WithdrawalService>();
 
     // Register moderation services
     builder.Services.AddScoped<IReportService, ReportService>();

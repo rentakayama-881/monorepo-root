@@ -50,7 +50,7 @@ export default function SetUsernamePage() {
     } catch (_) {}
 
     if (!token) {
-      setError("Anda harus login terlebih dahulu.");
+      setError("Please sign in first.");
       return;
     }
 
@@ -76,9 +76,9 @@ export default function SetUsernamePage() {
         const t = await res.text();
         try {
           const j = JSON.parse(t);
-          throw new Error(j.error || t || "Gagal menyimpan username");
+          throw new Error(j.error || t || "Failed to save username");
         } catch (_) {
-          throw new Error(t || "Gagal menyimpan username");
+          throw new Error(t || "Failed to save username");
         }
       }
 

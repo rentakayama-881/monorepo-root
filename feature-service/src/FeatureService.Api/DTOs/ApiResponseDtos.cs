@@ -6,7 +6,8 @@ namespace FeatureService.Api.DTOs;
 public record ApiResponse<T>(
     bool Success,
     T? Data,
-    ApiMeta Meta
+    ApiMeta Meta,
+    string? Message = null
 ) where T : class;
 
 /// <summary>

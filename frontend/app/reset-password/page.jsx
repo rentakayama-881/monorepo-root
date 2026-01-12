@@ -64,7 +64,7 @@ function ResetPasswordForm() {
       }, 2000);
     } catch (err) {
       setStatus("error");
-      setMessage(err?.message || "Gagal mereset password. Token mungkin sudah kedaluwarsa.");
+      setMessage(err?.message || "Failed to reset password. The token may have expired.");
     } finally {
       setLoading(false);
     }

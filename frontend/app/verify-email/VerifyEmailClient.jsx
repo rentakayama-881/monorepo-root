@@ -39,7 +39,7 @@ export default function VerifyEmailClient() {
         if (cancelled) return;
 
         setStatus("success");
-        setMessage(data.message || "Email berhasil diverifikasi. Silakan login.");
+        setMessage(data.message || "Email verified successfully. You may now sign in.");
       })
       .catch((err) => {
         if (cancelled) return;
@@ -82,10 +82,10 @@ export default function VerifyEmailClient() {
     } catch (err) {
       setResendStatus("error");
       if (err?.code === "RATE001") {
-        setResendMessage("Terlalu banyak permintaan. Silakan tunggu beberapa saat.");
+        setResendMessage("Too many requests. Please wait a moment before trying again.");
         setCooldown(60);
       } else {
-        setResendMessage(err?.message || "Gagal mengirim email verifikasi.");
+        setResendMessage(err?.message || "Failed to send verification email.");
       }
     }
   };

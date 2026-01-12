@@ -7,6 +7,7 @@ import (
 	"backend-gin/dto"
 	"backend-gin/ent"
 	"backend-gin/ent/user"
+	"backend-gin/utils"
 	"backend-gin/validators"
 
 	"go.uber.org/zap"
@@ -57,7 +58,27 @@ func (w *AuthServiceWrapper) RequestVerification(email, ip string) (string, stri
 		// Return empty for non-existent users (security: don't reveal existence)
 		return "", "", nil
 	}
-	return w.ent.createVerificationToken(ctx, u)
+
+	// Check if user is already verified - no need to send another email
+	if u.EmailVerified {
+		w.logger.Debug("User already verified, skipping email", zap.String("email", email))
+		return "", "", nil
+	}
+
+	// Create verification token
+	token, link, err := w.ent.createVerificationToken(ctx, u)
+	if err != nil {
+		w.logger.Error("Failed to create verification token", zap.Error(err), zap.String("email", email))
+		return "", "", err
+	}
+
+	// Queue verification email
+	if err := utils.QueueVerificationEmail(email, token); err != nil {
+		w.logger.Warn("Failed to queue verification email", zap.Error(err), zap.String("email", email))
+		// Don't return error - token was created successfully
+	}
+
+	return token, link, nil
 }
 
 // ConfirmVerification delegates to EntAuthService
@@ -80,10 +101,9 @@ func (w *AuthServiceWrapper) CompleteTOTPLogin(pendingToken, totpCode, ipAddress
 	return w.ent.CompleteTOTPLogin(context.Background(), pendingToken, totpCode, ipAddress, userAgent)
 }
 
-// CompleteTOTPLoginWithBackupCode placeholder - needs EntAuthService implementation
+// CompleteTOTPLoginWithBackupCode delegates to EntAuthService
 func (w *AuthServiceWrapper) CompleteTOTPLoginWithBackupCode(pendingToken, backupCode, ipAddress, userAgent string) (*LoginResponse, error) {
-	// TODO: Implement in EntAuthService
-	return nil, nil
+	return w.ent.CompleteTOTPLoginWithBackupCode(context.Background(), pendingToken, backupCode, ipAddress, userAgent)
 }
 
 // ============================================================================

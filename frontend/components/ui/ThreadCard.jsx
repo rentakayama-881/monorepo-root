@@ -272,17 +272,6 @@ export default function ThreadCard({
           </div>
         </div>
       </Link>
-      
-      {/* Bookmark button - absolute positioned */}
-      <button
-        className="absolute top-3 right-3 p-1.5 rounded-full bg-card border opacity-0 group-hover:opacity-100 transition-all hover:bg-secondary hover:border-primary hover:scale-110"
-        title="Simpan thread"
-        aria-label="Simpan thread"
-      >
-        <svg className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
-        </svg>
-      </button>
     </div>
   );
 }

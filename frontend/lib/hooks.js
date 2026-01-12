@@ -169,5 +169,5 @@ export function useMutation() {
 export function formatApiError(error) {
   if (!error) return "";
   if (typeof error === "string") return error;
-  return error.message || "Terjadi kesalahan. Silakan coba lagi.";
+  return error.message || "An unexpected error occurred. Please try again.";
 }

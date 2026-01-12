@@ -302,6 +302,18 @@ func main() {
 			threads.GET("/me", middleware.AuthMiddleware(), threadHandler.GetMyThreads)
 			threads.PUT("/:id", middleware.AuthMiddleware(), threadHandler.UpdateThread)
 			threads.DELETE("/:id", middleware.AuthMiddleware(), threadHandler.DeleteThread)
+			// Thread tags
+			threads.GET("/:id/tags", handlers.GetThreadTagsHandler)
+			threads.POST("/:id/tags", middleware.AuthMiddleware(), handlers.AddTagsToThreadHandler)
+			threads.DELETE("/:id/tags/:tagSlug", middleware.AuthMiddleware(), handlers.RemoveTagFromThreadHandler)
+		}
+
+		// Tags endpoints
+		tags := api.Group("/tags")
+		{
+			tags.GET("", handlers.GetAllTagsHandler)
+			tags.GET("/:slug", handlers.GetTagBySlugHandler)
+			tags.GET("/:slug/threads", handlers.GetThreadsByTagHandler)
 		}
 
 		// Financial endpoints are handled by the ASP.NET service; omitted here to keep responsibilities separated.

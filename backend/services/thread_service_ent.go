@@ -64,6 +64,7 @@ func (s *EntThreadService) GetLatestThreads(ctx context.Context, limit, offset i
 		Query().
 		WithUser().
 		WithCategory().
+		WithTags().
 		Order(ent.Desc(thread.FieldCreatedAt)).
 		Limit(limit).
 		Offset(offset).
@@ -98,6 +99,7 @@ func (s *EntThreadService) GetThreadsByCategory(ctx context.Context, slug string
 		Where(thread.CategoryIDEQ(cat.ID)).
 		WithUser().
 		WithCategory().
+		WithTags().
 		Order(byPinnedDesc(), ent.Desc(thread.FieldCreatedAt)).
 		Limit(limit).
 		Offset(offset).
@@ -117,6 +119,7 @@ func (s *EntThreadService) GetThreadsByUserID(ctx context.Context, userID int, l
 		Where(thread.UserIDEQ(userID)).
 		WithUser().
 		WithCategory().
+		WithTags().
 		Order(ent.Desc(thread.FieldCreatedAt)).
 		Limit(limit).
 		Offset(offset).
@@ -343,10 +346,12 @@ func (s *EntThreadService) threadsToListItems(threads []*ent.Thread) []ThreadLis
 	result := make([]ThreadListItem, len(threads))
 	for i, t := range threads {
 		username := ""
+		avatarURL := ""
 		if u := t.Edges.User; u != nil {
 			if u.Username != nil {
 				username = *u.Username
 			}
+			avatarURL = u.AvatarURL
 		}
 
 		var cat CategoryResponse
@@ -358,12 +363,28 @@ func (s *EntThreadService) threadsToListItems(threads []*ent.Thread) []ThreadLis
 			}
 		}
 
+		// Build tags slice
+		var tags []TagResponse
+		if t.Edges.Tags != nil {
+			tags = make([]TagResponse, len(t.Edges.Tags))
+			for j, tag := range t.Edges.Tags {
+				tags[j] = TagResponse{
+					ID:    uint(tag.ID),
+					Name:  tag.Name,
+					Slug:  tag.Slug,
+					Color: tag.Color,
+				}
+			}
+		}
+
 		result[i] = ThreadListItem{
 			ID:        uint(t.ID),
 			Title:     t.Title,
 			Summary:   t.Summary,
 			Username:  username,
+			AvatarURL: avatarURL,
 			Category:  cat,
+			Tags:      tags,
 			Meta:      t.Meta,
 			CreatedAt: t.CreatedAt.Unix(),
 		}

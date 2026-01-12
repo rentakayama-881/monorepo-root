@@ -67,7 +67,7 @@ export function useReactions(threadId, options = {}) {
         setTotalCount(result.data?.totalCount || 0);
         setUserReaction(result.data?.userReaction || null);
       } else {
-        throw new Error(result.message || "Gagal memuat reaksi");
+        throw new Error(result.message || "Failed to load reactions");
       }
     } catch (err) {
       logger.error(`Reactions Error [${threadId}]:`, err.message);
@@ -81,7 +81,7 @@ export function useReactions(threadId, options = {}) {
     async (reactionType) => {
       const token = getToken();
       if (!token) {
-        throw new Error("Silakan login untuk memberi reaksi");
+        throw new Error("Please sign in to react");
       }
 
       if (!REACTION_TYPES.includes(reactionType)) {
@@ -118,7 +118,7 @@ export function useReactions(threadId, options = {}) {
         });
 
         if (!result.success) {
-          throw new Error(result.message || "Gagal memberi reaksi");
+          throw new Error(result.message || "Failed to add reaction");
         }
 
         return true;
@@ -139,7 +139,7 @@ export function useReactions(threadId, options = {}) {
   const removeReaction = useCallback(async () => {
     const token = getToken();
     if (!token) {
-      throw new Error("Silakan login untuk menghapus reaksi");
+      throw new Error("Authentication required to remove reaction");
     }
 
     if (!userReaction) return;
@@ -164,7 +164,7 @@ export function useReactions(threadId, options = {}) {
       });
 
       if (!result.success) {
-        throw new Error(result.message || "Gagal menghapus reaksi");
+        throw new Error(result.message || "Failed to remove reaction");
       }
 
       return true;

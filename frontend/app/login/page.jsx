@@ -135,7 +135,7 @@ function LoginForm() {
 
       if (!beginRes.ok) {
         const errData = await beginRes.json();
-        throw new Error(errData.error || "Gagal memulai login dengan passkey");
+        throw new Error(errData.error || "Failed to initiate passkey authentication");
       }
 
       const { options, session_id } = await beginRes.json();
@@ -190,7 +190,7 @@ function LoginForm() {
 
       if (!finishRes.ok) {
         const errData = await finishRes.json();
-        throw new Error(errData.error || "Gagal menyelesaikan login");
+        throw new Error(errData.error || "Failed to complete authentication");
       }
 
       const data = await finishRes.json();

@@ -5,17 +5,22 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import Avatar from "@/components/ui/Avatar";
-import { Badge, BadgeChip, BadgeList } from "@/components/ui/Badge";
+import { Badge, BadgeChip } from "@/components/ui/Badge";
+import { ThreadCard } from "@/components/ui/ThreadCard";
 
 export default function UserProfilePage() {
   const { username } = useParams();
   const [profile, setProfile] = useState(null);
   const [badges, setBadges] = useState([]);
+  const [threads, setThreads] = useState([]);
+  const [replies, setReplies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("threads");
+  const [loadingContent, setLoadingContent] = useState(false);
 
   const API = getApiBase();
 
+  // Load profile and badges
   useEffect(() => {
     setLoading(true);
     Promise.all([
@@ -29,79 +34,101 @@ export default function UserProfilePage() {
       .finally(() => setLoading(false));
   }, [API, username]);
 
+  // Load tab content
+  useEffect(() => {
+    if (!profile) return;
+    
+    const loadTabContent = async () => {
+      setLoadingContent(true);
+      try {
+        if (activeTab === "threads") {
+          const res = await fetch(`${API}/api/user/${username}/threads`);
+          if (res.ok) {
+            const data = await res.json();
+            setThreads(data.threads || []);
+          }
+        } else if (activeTab === "replies") {
+          const res = await fetch(`${API}/api/user/${username}/replies`);
+          if (res.ok) {
+            const data = await res.json();
+            setReplies(data.replies || []);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load content:", err);
+      } finally {
+        setLoadingContent(false);
+      }
+    };
+    
+    loadTabContent();
+  }, [API, username, profile, activeTab]);
+
   if (loading) return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="text-sm text-muted-foreground">Loading profile...</div>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <div className="h-8 w-8 rounded-full border-2 border-muted border-t-primary animate-spin" />
+      </div>
     </div>
   );
   
   if (!profile || profile.error) return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="text-destructive">User not found</div>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="text-center py-12">
+        <div className="text-4xl mb-4">👤</div>
+        <h2 className="text-xl font-semibold text-foreground mb-2">User Not Found</h2>
+        <p className="text-muted-foreground">The user @{username} does not exist or has been removed.</p>
+        <Link href="/" className="inline-block mt-4 text-primary hover:underline">
+          Return to Home
+        </Link>
+      </div>
     </div>
   );
 
-  const hasMeta = profile.pronouns || profile.company || profile.telegram;
-  const hasSocials = Array.isArray(profile.social_accounts) && profile.social_accounts.length > 0;
   const displayName = profile.full_name || profile.username || "";
 
   return (
-    <section className="container py-6">
-      {/* Cover Image */}
-      <div className="cover-image mb-6" />
-      
-      {/* Profile Header - prompts.chat style */}
-      <div className="flex flex-col gap-4 mb-8 -mt-10 relative z-10">
+    <section className="max-w-4xl mx-auto px-4 py-6">
+      {/* Profile Header */}
+      <div className="flex flex-col gap-4 mb-8">
         {/* Avatar + Name row */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-start gap-4">
           <Avatar 
             src={profile.avatar_url} 
             name={displayName} 
             size="lg"
-            className="h-16 w-16 md:h-20 md:w-20 shrink-0"
+            className="h-20 w-20 shrink-0"
           />
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 pt-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl md:text-2xl font-bold truncate text-foreground">
-                {profile.full_name || profile.username || "(No Name)"}
+              <h1 className="text-2xl font-bold text-foreground">
+                {displayName || "(No Name)"}
               </h1>
               {profile.primary_badge && <Badge badge={profile.primary_badge} size="sm" />}
             </div>
-            <p className="text-muted-foreground text-sm flex items-center gap-2 flex-wrap">
-              @{profile.username}
-            </p>
+            <p className="text-muted-foreground">@{profile.username}</p>
+            
+            {/* Join date */}
+            {profile.created_at && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Joined {new Date(profile.created_at * 1000).toLocaleDateString('en-US', { 
+                  month: 'long', 
+                  year: 'numeric' 
+                })}
+              </p>
+            )}
           </div>
         </div>
         
         {/* Bio */}
         {profile.bio && (
-          <p className="text-sm text-foreground leading-relaxed">
+          <p className="text-foreground leading-relaxed border-l-2 border-primary/30 pl-4">
             {profile.bio}
           </p>
         )}
 
-        {/* Stats row - Enhanced with cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="stat-card">
-            <div className="stat-value">{profile.thread_count || 0}</div>
-            <div className="stat-label">Threads</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{profile.reply_count || 0}</div>
-            <div className="stat-label">Replies</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{profile.like_count || 0}</div>
-            <div className="stat-label">Likes</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{badges.length}</div>
-            <div className="stat-label">Badges</div>
-          </div>
-        </div>
-
-        {/* Meta info row */}
-        {(hasMeta || profile.created_at) && (
+        {/* Meta info */}
+        {(profile.company || profile.telegram) && (
           <div className="flex flex-wrap gap-4 text-sm">
             {profile.company && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -124,18 +151,10 @@ export default function UserProfilePage() {
                 <span>{profile.telegram}</span>
               </a>
             )}
-            {profile.created_at && (
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                </svg>
-                <span>Joined {new Date(profile.created_at * 1000).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}</span>
-              </div>
-            )}
           </div>
         )}
         
-        {/* Badges row */}
+        {/* Badges */}
         {badges.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {badges.map(b => (
@@ -145,61 +164,131 @@ export default function UserProfilePage() {
         )}
       </div>
 
-      {/* Tabs - Enhanced with proper state */}
-      <nav className="tab-nav mb-6">
-        <button 
-          onClick={() => setActiveTab("overview")}
-          className={`tab-item ${activeTab === "overview" ? "tab-item-active" : ""}`}
-        >
-          Overview
-        </button>
+      {/* Tabs */}
+      <nav className="flex gap-1 border-b border-border mb-6">
         <button 
           onClick={() => setActiveTab("threads")}
-          className={`tab-item ${activeTab === "threads" ? "tab-item-active" : ""}`}
+          className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            activeTab === "threads" 
+              ? "text-primary" 
+              : "text-muted-foreground hover:text-foreground"
+          }`}
         >
           Threads
+          {activeTab === "threads" && (
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+          )}
         </button>
         <button 
           onClick={() => setActiveTab("replies")}
-          className={`tab-item ${activeTab === "replies" ? "tab-item-active" : ""}`}
+          className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            activeTab === "replies" 
+              ? "text-primary" 
+              : "text-muted-foreground hover:text-foreground"
+          }`}
         >
           Replies
+          {activeTab === "replies" && (
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+          )}
         </button>
         <button 
           onClick={() => setActiveTab("badges")}
-          className={`tab-item ${activeTab === "badges" ? "tab-item-active" : ""}`}
+          className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            activeTab === "badges" 
+              ? "text-primary" 
+              : "text-muted-foreground hover:text-foreground"
+          }`}
         >
           Badges
+          {activeTab === "badges" && (
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+          )}
         </button>
       </nav>
       
-      {/* Content area with tab content */}
-      <div className="space-y-4">
-        {activeTab === "overview" && badges.length > 0 && (
-          <div className="rounded-lg border border-border bg-card p-4">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Badges</h3>
-            <div className="flex flex-wrap gap-2">
-              {badges.map(b => (
-                <BadgeChip key={b.id} badge={b} />
-              ))}
-            </div>
+      {/* Tab Content */}
+      <div className="min-h-[200px]">
+        {loadingContent ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-6 w-6 rounded-full border-2 border-muted border-t-primary animate-spin" />
           </div>
-        )}
-        
-        {activeTab === "badges" && (
-          <div className="rounded-lg border border-border bg-card p-4">
-            {badges.length > 0 ? (
-              <div className="flex flex-wrap gap-3">
-                {badges.map(b => (
-                  <BadgeChip key={b.id} badge={b} />
-                ))}
+        ) : (
+          <>
+            {/* Threads Tab */}
+            {activeTab === "threads" && (
+              <div className="space-y-4">
+                {threads.length > 0 ? (
+                  threads.map(thread => (
+                    <ThreadCard
+                      key={thread.id}
+                      thread={thread}
+                      showAuthor={false}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p>No threads posted yet</p>
+                  </div>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center">
-                No badges earned yet
-              </p>
             )}
-          </div>
+
+            {/* Replies Tab */}
+            {activeTab === "replies" && (
+              <div className="space-y-3">
+                {replies.length > 0 ? (
+                  replies.map(reply => (
+                    <div key={reply.id} className="rounded-lg border border-border bg-card p-4">
+                      <p className="text-sm text-foreground line-clamp-3 mb-2">
+                        {reply.content}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>in</span>
+                        <Link 
+                          href={`/thread/${reply.thread_id}`}
+                          className="text-primary hover:underline truncate max-w-xs"
+                        >
+                          {reply.thread_title || "Thread"}
+                        </Link>
+                        <span>•</span>
+                        <span>{new Date(reply.created_at * 1000).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p>No replies posted yet</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Badges Tab */}
+            {activeTab === "badges" && (
+              <div>
+                {badges.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {badges.map(b => (
+                      <div key={b.id} className="rounded-lg border border-border bg-card p-4 text-center">
+                        <div className="text-3xl mb-2">{b.icon || "🏅"}</div>
+                        <div className="font-medium text-foreground text-sm">{b.name}</div>
+                        {b.description && (
+                          <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            {b.description}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p>No badges earned yet</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>

@@ -55,7 +55,7 @@ export function useReplies(threadId, options = {}) {
           setHasMore(result.meta?.hasMore || false);
           setNextCursor(result.meta?.nextCursor || null);
         } else {
-          throw new Error(result.message || "Gagal memuat balasan");
+          throw new Error(result.message || "Failed to load replies");
         }
       } catch (err) {
         logger.error(`Replies Error [${threadId}]:`, err.message);
@@ -101,7 +101,7 @@ export function useCreateReply() {
   const createReply = useCallback(async (threadId, content, parentReplyId = null) => {
     const token = getToken();
     if (!token) {
-      const err = new Error("Silakan login untuk membalas");
+      const err = new Error("Authentication required to post a reply");
       setError(err.message);
       throw err;
     }
@@ -125,7 +125,7 @@ export function useCreateReply() {
       if (result && result.id) {
         return result; // Return the reply object directly
       } else if (result && result.success === false) {
-        throw new Error(result.message || "Gagal mengirim balasan");
+        throw new Error(result.message || "Failed to submit reply");
       } else {
         return result; // Return whatever we got
       }
@@ -152,7 +152,7 @@ export function useUpdateReply() {
   const updateReply = useCallback(async (threadId, replyId, content) => {
     const token = getToken();
     if (!token) {
-      const err = new Error("Silakan login untuk mengedit balasan");
+      const err = new Error("Authentication required to edit reply");
       setError(err.message);
       throw err;
     }
@@ -174,7 +174,7 @@ export function useUpdateReply() {
       if (result && result.id) {
         return result;
       } else if (result && result.success === false) {
-        throw new Error(result.message || "Gagal mengupdate balasan");
+        throw new Error(result.message || "Failed to update reply");
       } else {
         return result || true;
       }
@@ -201,7 +201,7 @@ export function useDeleteReply() {
   const deleteReply = useCallback(async (threadId, replyId) => {
     const token = getToken();
     if (!token) {
-      const err = new Error("Silakan login untuk menghapus balasan");
+      const err = new Error("Authentication required to delete reply");
       setError(err.message);
       throw err;
     }

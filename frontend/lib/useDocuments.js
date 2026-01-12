@@ -63,7 +63,7 @@ export function useDocumentStats(options = {}) {
           usedPercentage: data.maxSize ? Math.round((data.totalSize / data.maxSize) * 100) : 0,
         });
       } else {
-        throw new Error(result.message || "Gagal memuat statistik dokumen");
+        throw new Error(result.message || "Failed to load document statistics");
       }
     } catch (err) {
       logger.error("Document Stats Error:", err.message);
@@ -116,7 +116,7 @@ export function useDocuments(options = {}) {
       if (result.success) {
         setDocuments(result.data || []);
       } else {
-        throw new Error(result.message || "Gagal memuat dokumen");
+        throw new Error(result.message || "Failed to load documents");
       }
     } catch (err) {
       logger.error("Documents Error:", err.message);
@@ -148,7 +148,7 @@ export function useUploadDocument() {
     async (file, { title, description = "", category = "other", visibility = "private", tags = [] }) => {
       const token = getToken();
       if (!token) {
-        throw new Error("Silakan login untuk mengunggah dokumen");
+        throw new Error("Authentication required to upload document");
       }
 
       // Validate file type
@@ -202,15 +202,15 @@ export function useUploadDocument() {
             } else {
               try {
                 const errorData = JSON.parse(xhr.responseText);
-                reject(new Error(errorData.message || `Upload gagal: ${xhr.status}`));
+                reject(new Error(errorData.message || `Upload failed: ${xhr.status}`));
               } catch {
-                reject(new Error(`Upload gagal: ${xhr.status}`));
+                reject(new Error(`Upload failed: ${xhr.status}`));
               }
             }
           });
 
           xhr.addEventListener("error", () => {
-            reject(new Error("Gagal mengunggah dokumen"));
+            reject(new Error("Failed to upload document"));
           });
 
           xhr.open("POST", `${getFeatureApiBase()}${FEATURE_ENDPOINTS.DOCUMENTS.UPLOAD}`);
@@ -221,7 +221,7 @@ export function useUploadDocument() {
         if (result.success) {
           return result.data;
         } else {
-          throw new Error(result.message || "Gagal mengunggah dokumen");
+          throw new Error(result.message || "Failed to upload document");
         }
       } catch (err) {
         logger.error("Upload Document Error:", err.message);
@@ -249,7 +249,7 @@ export function useDeleteDocument() {
   const deleteDocument = useCallback(async (documentId) => {
     const token = getToken();
     if (!token) {
-      throw new Error("Silakan login untuk menghapus dokumen");
+      throw new Error("Authentication required to delete document");
     }
 
     setLoading(true);

@@ -129,7 +129,7 @@ export async function fetchFeature(path, options = {}) {
     }
 
     if (!res.ok) {
-      const message = data?.message || data?.error || res.statusText || `Request gagal dengan status ${res.status}`;
+      const message = data?.message || data?.error || res.statusText || `Request failed with status ${res.status}`;
       const error = new Error(message);
       error.status = res.status;
       error.code = data?.code;
@@ -144,14 +144,14 @@ export async function fetchFeature(path, options = {}) {
     }
 
     if (controller.signal.aborted) {
-      throw new Error("Request timeout. Silakan coba lagi.");
+      throw new Error("Request timed out. Please try again.");
     }
     if (err?.name === "AbortError") {
-      throw new Error("Request dibatalkan.");
+      throw new Error("Request cancelled.");
     }
 
     if (err?.name === "TypeError" || err?.message?.includes("fetch")) {
-      throw new Error("Tidak dapat terhubung ke Feature Service. Periksa koneksi internet Anda.");
+      throw new Error("Unable to connect to Feature Service. Please check your internet connection.");
     }
 
     throw err;
@@ -181,7 +181,7 @@ export async function fetchFeatureAuth(path, options = {}) {
     // Get valid token (refreshes if needed via Go backend)
     const token = await getValidToken();
     if (!token) {
-      const error = new Error("Sesi telah berakhir. Silakan login kembali.");
+      const error = new Error("Your session has expired. Please sign in again.");
       error.status = 401;
       error.code = "session_expired";
       throw error;
@@ -208,20 +208,20 @@ export async function fetchFeatureAuth(path, options = {}) {
       // Handle auth errors
       if (res.status === 401) {
         clearToken();
-        const error = new Error(data?.message || "Sesi telah berakhir. Silakan login kembali.");
+        const error = new Error(data?.message || "Your session has expired. Please sign in again.");
         error.status = 401;
         error.code = data?.code || "session_expired";
         throw error;
       }
 
       if (res.status === 403) {
-        const error = new Error(data?.message || "Akses ditolak.");
+        const error = new Error(data?.message || "Access denied.");
         error.status = 403;
         error.code = data?.code || "forbidden";
         throw error;
       }
 
-      const message = data?.message || data?.error || res.statusText || `Request gagal dengan status ${res.status}`;
+      const message = data?.message || data?.error || res.statusText || `Request failed with status ${res.status}`;
       const error = new Error(message);
       error.status = res.status;
       error.code = data?.code;
@@ -236,14 +236,14 @@ export async function fetchFeatureAuth(path, options = {}) {
     }
 
     if (controller.signal.aborted) {
-      throw new Error("Request timeout. Silakan coba lagi.");
+      throw new Error("Request timed out. Please try again.");
     }
     if (err?.name === "AbortError") {
-      throw new Error("Request dibatalkan.");
+      throw new Error("Request cancelled.");
     }
 
     if (err?.name === "TypeError" || err?.message?.includes("fetch")) {
-      throw new Error("Tidak dapat terhubung ke Feature Service. Periksa koneksi internet Anda.");
+      throw new Error("Unable to connect to Feature Service. Please check your internet connection.");
     }
 
     throw err;
