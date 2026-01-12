@@ -6,7 +6,7 @@ import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import Avatar from "@/components/ui/Avatar";
 import { Badge, BadgeChip } from "@/components/ui/Badge";
-import { ThreadCard } from "@/components/ui/ThreadCard";
+import ThreadCard from "@/components/ui/ThreadCard";
 
 export default function UserProfilePage() {
   const { username } = useParams();
