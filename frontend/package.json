@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "engines": {
-    "node": "25.2.1"
+    "node": "24.12.0"
   },
   "dependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
