@@ -9,6 +9,7 @@ import Providers from "../components/Providers";
 import { ThemeProvider } from "../lib/ThemeContext";
 import { CommandPaletteProvider } from "../components/CommandPaletteProvider";
 import GlobalKeyboardShortcuts from "../components/GlobalKeyboardShortcuts";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 // Load fonts (prompts.chat style)
 const inter = Inter({
