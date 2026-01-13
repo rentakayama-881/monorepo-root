@@ -217,18 +217,18 @@ export default function ThreadCard({
           )}
         </div>
 
+        {/* Tags */}
+        {tags && tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            <TagList tags={tags} size="xs" maxDisplay={3} />
+          </div>
+        )}
+
         {/* Summary */}
         {showSummary && summary && (
           <p className="text-sm text-muted-foreground line-clamp-2 mb-3 leading-relaxed">
             {summary}
           </p>
-        )}
-
-        {/* Tags */}
-        {tags && tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            <TagList tags={tags} size="xs" maxDisplay={3} />
-          </div>
         )}
 
         {/* Footer - Author & Meta */}

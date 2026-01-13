@@ -64,7 +64,7 @@ export default function TagSelector({
         {selectedTags.map((tag) => (
           <div
             key={tag.slug}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors"
             style={{
               backgroundColor: `${tag.color}10`,
               borderColor: `${tag.color}40`,
@@ -201,6 +201,11 @@ function getIconSVG(iconName) {
     'megaphone': '📢',
     'book': '📖',
     'star': '⭐',
+    'help': '🆘',
+    'need': '🧩',
+    'payment': '💰',
+    'task': '🧾',
+    'jobhunt': '🧭',
   };
   return icons[iconName] || '🏷️';
 }
