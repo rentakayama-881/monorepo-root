@@ -124,7 +124,7 @@ export default function RootLayout({ children }) {
                   <main id="main-content" className="flex-1">{children}</main>
                   
                   <Footer />
-                  
+                  <SpeedInsights />                  
                   {/* Global keyboard shortcuts handler */}
                   <GlobalKeyboardShortcuts />
                   
