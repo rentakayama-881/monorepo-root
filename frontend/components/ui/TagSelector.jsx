@@ -13,7 +13,8 @@ export default function TagSelector({
   availableTags = [],
   maxTags = 5,
   placeholder = "Add tags...",
-  className = ""
+  className = "",
+  enableSearch = true
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,8 +35,9 @@ export default function TagSelector({
 
   // Filter tags based on search query
   const filteredTags = availableTags.filter(tag => {
-    const matchesSearch = tag.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         tag.slug.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = enableSearch ? searchQuery : "";
+    const matchesSearch = tag.name.toLowerCase().includes(query.toLowerCase()) ||
+                         tag.slug.toLowerCase().includes(query.toLowerCase());
     const notSelected = !selectedTags.find(t => t.slug === tag.slug);
     return matchesSearch && notSelected;
   });
@@ -49,7 +51,11 @@ export default function TagSelector({
       // Add tag
       onTagsChange([...selectedTags, tag]);
     }
-    setSearchQuery('');
+    if (enableSearch) {
+      setSearchQuery('');
+    } else {
+      setIsOpen(false);
+    }
   };
 
   // Remove tag
@@ -91,26 +97,51 @@ export default function TagSelector({
 
       {/* Input field */}
       <div className="relative">
-        <input
-          ref={inputRef}
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setIsOpen(true);
-          }}
-          onFocus={() => setIsOpen(true)}
-          placeholder={selectedTags.length >= maxTags ? `Max ${maxTags} tags` : placeholder}
-          disabled={selectedTags.length >= maxTags}
-          className={clsx(
-            "w-full px-3 py-2 text-sm border rounded-[var(--radius)]",
-            "bg-card border-border",
-            "text-foreground placeholder:text-muted-foreground",
-            "focus:border-primary focus:ring-1 focus:ring-ring",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
-            "transition-colors"
-          )}
-        />
+        {enableSearch ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setIsOpen(true);
+            }}
+            onFocus={() => setIsOpen(true)}
+            placeholder={selectedTags.length >= maxTags ? `Max ${maxTags} tags` : placeholder}
+            disabled={selectedTags.length >= maxTags}
+            className={clsx(
+              "w-full px-3 py-2 text-sm border rounded-[var(--radius)]",
+              "bg-card border-border",
+              "text-foreground placeholder:text-muted-foreground",
+              "focus:border-primary focus:ring-1 focus:ring-ring",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              "transition-colors"
+            )}
+          />
+        ) : (
+          <button
+            ref={inputRef}
+            type="button"
+            onClick={() => setIsOpen((prev) => !prev)}
+            disabled={selectedTags.length >= maxTags}
+            className={clsx(
+              "w-full px-3 py-2 text-left text-sm border rounded-[var(--radius)]",
+              "bg-card border-border",
+              "text-foreground placeholder:text-muted-foreground",
+              "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              "transition-colors"
+            )}
+            aria-haspopup="listbox"
+            aria-expanded={isOpen}
+          >
+            <span className={clsx(
+              selectedTags.length >= maxTags ? "text-muted-foreground" : "text-muted-foreground"
+            )}>
+              {selectedTags.length >= maxTags ? `Max ${maxTags} tags` : placeholder}
+            </span>
+          </button>
+        )}
         
         {/* Dropdown indicator */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -169,7 +200,7 @@ export default function TagSelector({
       )}
 
       {/* Empty state when searching */}
-      {isOpen && searchQuery && filteredTags.length === 0 && (
+      {isOpen && (enableSearch ? searchQuery : true) && filteredTags.length === 0 && (
         <div className={clsx(
           "absolute z-50 w-full mt-1 py-3 px-3 rounded-[var(--radius)] shadow-lg border",
           "bg-card border-border",
