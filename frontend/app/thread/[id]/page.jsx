@@ -7,6 +7,7 @@ import { getApiBase } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import ProseMirrorRenderer from "@/components/ui/ProseMirrorRenderer";
+import { TagList } from "@/components/ui/TagPill";
 import ReactionBar from "@/components/ReactionBar";
 import ReplyList from "@/components/ReplyList";
 import ReplyForm from "@/components/ReplyForm";
@@ -159,6 +160,11 @@ export default function ThreadDetailPage() {
                 </span>
               )}
             </div>
+            {Array.isArray(data.tags) && data.tags.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <TagList tags={data.tags} size="sm" />
+              </div>
+            )}
           </div>
 
           {/* Content */}
