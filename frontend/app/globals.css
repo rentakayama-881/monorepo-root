@@ -308,13 +308,6 @@ button:focus-visible {
   background-color: #dafbe1;
 }
 
-/* Dark mode syntax colors */
-@media (prefers-color-scheme: dark) {
-  .markdown-body .hljs-keyword,
-  .markdown-body .hljs-selector-tag {
-    color: #ff7b72;
-  }
-
   .markdown-body .hljs-string,
   .markdown-body .hljs-doctag {
     color: #a5d6ff;
