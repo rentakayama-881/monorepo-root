@@ -142,6 +142,14 @@ export default function MyThreadsPage() {
   async function saveEdit(id) {
     setSaving(true); setOk(""); setError("");
     try {
+      if (!form.title.trim()) {
+        setError("Judul thread wajib diisi.");
+        return;
+      }
+      if (form.title.trim().length < 3) {
+        setError("Judul thread minimal 3 karakter.");
+        return;
+      }
       let contentToSend;
       if (originalType === "text") {
         contentToSend = form.content;
@@ -166,8 +174,17 @@ export default function MyThreadsPage() {
         body: JSON.stringify(body),
       });
       if (!r || !r.ok) {
-        const txt = r ? await r.text() : "Request failed";
-        throw new Error(txt || "Failed to save thread");
+        let message = "Failed to save thread";
+        if (r) {
+          try {
+            const data = await r.json();
+            message = data?.details || data?.error || data?.message || message;
+          } catch (err) {
+            const txt = await r.text();
+            if (txt) message = txt;
+          }
+        }
+        throw new Error(message);
       }
 
       await reloadMyThreads();
