@@ -9,6 +9,7 @@ import Providers from "../components/Providers";
 import { ThemeProvider } from "../lib/ThemeContext";
 import { CommandPaletteProvider } from "../components/CommandPaletteProvider";
 import GlobalKeyboardShortcuts from "../components/GlobalKeyboardShortcuts";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 // Load fonts (prompts.chat style)
 const inter = Inter({
@@ -25,7 +26,7 @@ const geistMono = Geist_Mono({
 
 const siteName = "Alephdraad";
 const siteDescription = "Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.";
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://alephdraad.fun";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.alephdraad.fun";
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
