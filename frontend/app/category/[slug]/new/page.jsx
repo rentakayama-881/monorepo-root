@@ -162,7 +162,7 @@ export default function CreateThreadPage() {
               />
               {!tagsAvailable && (
                 <p className="text-xs text-muted-foreground">
-                  Tags belum tersedia untuk kategori ini, jadi pilihan tags dinonaktifkan sementara.
+                  Tags belum tersedia saat ini, jadi pilihan tags dinonaktifkan sementara.
                 </p>
               )}
             </div>
