@@ -13,6 +13,7 @@ import { maskEmail } from "@/lib/email";
 import TOTPSettings from "@/components/TOTPSettings";
 import PasskeySettings from "@/components/PasskeySettings";
 import { useSudoAction } from "@/components/SudoModal";
+import { normalizeSocialAccounts, buildSocialAccountsPayload } from "@/lib/account";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -55,8 +56,8 @@ export default function AccountPage() {
           company: data.company || "",
           telegram: data.telegram || "",
         });
-        const s = Array.isArray(data.social_accounts) ? data.social_accounts : [];
-        setSocials(s.length ? s : [{ label: "", url: "" }]);
+        const socialList = normalizeSocialAccounts(data.social_accounts);
+        setSocials(socialList.length ? socialList : [{ label: "", url: "" }]);
       })
       .catch(e => setError(e.message))
       .finally(() => !cancelled && setLoading(false));
@@ -180,7 +181,11 @@ export default function AccountPage() {
     setError(""); setOk("");
     try {
       const t = localStorage.getItem("token");
-      const body = { ...form, social_accounts: socials.filter(s => s.label || s.url) };
+      const social_accounts = buildSocialAccountsPayload(socials);
+      const body = {
+        ...form,
+        social_accounts,
+      };
       const r = await fetch(`${API}/account`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
