@@ -217,8 +217,8 @@ export default function UserProfilePage() {
             {pronouns && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.75c2.9 0 5.25-2.35 5.25-5.25S14.9 5.25 12 5.25 6.75 7.6 6.75 10.5 9.1 15.75 12 15.75z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 20.25a7.5 7.5 0 0115 0" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 7.5V6a1.5 1.5 0 011.5-1.5h4.5A1.5 1.5 0 0115.75 6v1.5M4.5 9h15a1.5 1.5 0 011.5 1.5v6.75A1.5 1.5 0 0119.5 18.75h-15A1.5 1.5 0 013 17.25V10.5A1.5 1.5 0 014.5 9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 13.5h4.5" />
                 </svg>
                 <span>{pronouns}</span>
               </div>
