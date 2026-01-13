@@ -5,7 +5,7 @@ import { cva } from "class-variance-authority";
  * Card variants - prompts.chat style
  */
 const cardVariants = cva(
-  "bg-card text-card-foreground flex flex-col rounded-lg border transition-all duration-200",
+  "bg-card text-card-foreground flex flex-col rounded-[var(--radius)] border transition-all duration-200",
   {
     variants: {
       variant: {

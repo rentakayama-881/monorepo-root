@@ -52,7 +52,7 @@ export default function ApiStatusBanner() {
   if (!checked) return null;
 
   return (
-    <div className="fixed top-14 left-0 right-0 z-40 w-full bg-amber-500 text-amber-950 shadow-md">
+    <div className="fixed top-[var(--header-height)] left-0 right-0 z-40 w-full bg-amber-500 text-amber-950 shadow-md">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-center gap-3 text-sm font-medium">
         {/* Animated spinner */}
         <svg
