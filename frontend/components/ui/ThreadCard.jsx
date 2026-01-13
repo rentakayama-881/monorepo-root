@@ -75,7 +75,6 @@ export default function ThreadCard({
     summary,
     username,
     avatar_url,
-    primary_badge,
     category,
     created_at,
     reply_count,
@@ -237,12 +236,12 @@ export default function ThreadCard({
           {showAuthor && (
             <div className="flex items-center gap-2 min-w-0">
               <Avatar src={avatar_url} name={username} className="h-6 w-6 ring-2 ring-background transition-all group-hover:ring-primary/20" />
-              <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
                 <div className="text-xs font-medium text-foreground truncate">
                   @{username || "Anonim"}
                 </div>
                 {showDate && (
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-[11px] text-muted-foreground whitespace-nowrap">
                     {formatRelativeTime(created_at)}
                   </div>
                 )}

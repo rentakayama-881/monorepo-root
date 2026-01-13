@@ -854,27 +854,6 @@ p {
   background-color: var(--muted-foreground);
 }
 
-/* Link underline animation */
-.link-underline {
-  position: relative;
-  display: inline-block;
-}
-
-.link-underline::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: currentColor;
-  transition: width 0.2s ease;
-}
-
-.link-underline:hover::after {
-  width: 100%;
-}
-
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
@@ -926,12 +905,6 @@ html {
 
 .reaction-active {
   animation: reaction-pop 0.3s ease;
-}
-
-/* Number increment animation */
-@keyframes count-up {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Code block copy button */
@@ -1393,4 +1366,3 @@ html {
   white-space: nowrap;
   border-width: 0;
 }
-

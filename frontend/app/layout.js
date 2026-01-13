@@ -9,7 +9,7 @@ import Providers from "../components/Providers";
 import { ThemeProvider } from "../lib/ThemeContext";
 import { CommandPaletteProvider } from "../components/CommandPaletteProvider";
 import GlobalKeyboardShortcuts from "../components/GlobalKeyboardShortcuts";
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Load fonts (prompts.chat style)
 const inter = Inter({
@@ -124,6 +124,7 @@ export default function RootLayout({ children }) {
                   <main id="main-content" className="flex-1">{children}</main>
                   
                   <Footer />
+                  <SpeedInsights />
                   
                   {/* Global keyboard shortcuts handler */}
                   <GlobalKeyboardShortcuts />
