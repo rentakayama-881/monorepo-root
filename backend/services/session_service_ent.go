@@ -246,6 +246,40 @@ func (s *EntSessionService) RefreshSession(ctx context.Context, refreshToken, ip
 			return txErr
 		}
 
+		// If refresh token is still far from expiry, reuse it and only rotate access token
+		if time.Until(sess.ExpiresAt) > RefreshTokenRotationWindow {
+			refreshUsername := ""
+			if u.Username != nil {
+				refreshUsername = *u.Username
+			}
+			totpEnabled := u.TotpEnabled && u.TotpVerified
+			accessToken, _, err := middleware.GenerateAccessToken(uint(u.ID), u.Email, refreshUsername, totpEnabled)
+			if err != nil {
+				txErr = apperrors.ErrInternalServer.WithDetails("Gagal membuat token")
+				return txErr
+			}
+
+			if _, err := tx.Session.
+				UpdateOneID(sess.ID).
+				SetLastUsedAt(time.Now()).
+				SetIPAddress(ipAddress).
+				SetUserAgent(truncateString(userAgent, 512)).
+				Save(ctx); err != nil {
+				logger.Error("Failed to update session usage", zap.Error(err))
+				txErr = apperrors.ErrInternalServer.WithDetails("Gagal memperbarui session")
+				return txErr
+			}
+
+			result = &TokenPair{
+				AccessToken:  accessToken,
+				RefreshToken: refreshToken,
+				ExpiresIn:    300,
+				ExpiresAt:    time.Now().Add(5 * time.Minute),
+				TokenType:    "Bearer",
+			}
+			return nil
+		}
+
 		// Atomic update: Mark current refresh token as used with race condition check
 		// This ensures only ONE concurrent request succeeds in marking the session as used
 		// Other concurrent requests will fail because is_used is already true
