@@ -32,13 +32,38 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func normalizeSocialAccounts(socialAccounts map[string]interface{}) interface{} {
+	if len(socialAccounts) == 0 {
+		return nil
+	}
+	if items, ok := socialAccounts["items"]; ok {
+		return items
+	}
+
+	normalized := make([]map[string]interface{}, 0, len(socialAccounts))
+	for label, value := range socialAccounts {
+		entry := map[string]interface{}{"label": label}
+		switch v := value.(type) {
+		case string:
+			entry["url"] = v
+		default:
+			entry["url"] = fmt.Sprint(value)
+		}
+		normalized = append(normalized, entry)
+	}
+	if len(normalized) == 0 {
+		return nil
+	}
+	return normalized
+}
+
 type UpdateAccountRequest struct {
-	FullName       *string                `json:"full_name"`
-	Bio            *string                `json:"bio"`
-	Pronouns       *string                `json:"pronouns"`
-	Company        *string                `json:"company"`
-	Telegram       *string                `json:"telegram"`
-	SocialAccounts map[string]interface{} `json:"social_accounts"` // arbitrary social accounts map
+	FullName       *string          `json:"full_name"`
+	Bio            *string          `json:"bio"`
+	Pronouns       *string          `json:"pronouns"`
+	Company        *string          `json:"company"`
+	Telegram       *string          `json:"telegram"`
+	SocialAccounts json.RawMessage  `json:"social_accounts"` // allow array or map payloads
 }
 
 type ChangeUsernameRequest struct {
@@ -54,10 +79,7 @@ func GetMyAccountHandler(c *gin.Context) {
 	}
 	user := userIfc.(*ent.User)
 
-	var socials interface{}
-	if len(user.SocialAccounts) > 0 {
-		socials = user.SocialAccounts
-	}
+	socials := normalizeSocialAccounts(user.SocialAccounts)
 	name := ""
 	if user.Username != nil {
 		name = *user.Username
@@ -107,8 +129,26 @@ func UpdateMyAccountHandler(c *gin.Context) {
 	if req.Telegram != nil {
 		upd = upd.SetTelegram(*req.Telegram)
 	}
-	if req.SocialAccounts != nil {
-		upd = upd.SetSocialAccounts(req.SocialAccounts)
+	if len(req.SocialAccounts) > 0 {
+		var socialList []map[string]interface{}
+		var socialMap map[string]interface{}
+
+		if err := json.Unmarshal(req.SocialAccounts, &socialList); err == nil {
+			if len(socialList) == 0 {
+				upd = upd.ClearSocialAccounts()
+			} else {
+				upd = upd.SetSocialAccounts(map[string]interface{}{"items": socialList})
+			}
+		} else if err := json.Unmarshal(req.SocialAccounts, &socialMap); err == nil {
+			if len(socialMap) == 0 {
+				upd = upd.ClearSocialAccounts()
+			} else {
+				upd = upd.SetSocialAccounts(socialMap)
+			}
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "format social account tidak valid"})
+			return
+		}
 	}
 	if _, err := upd.Save(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan"})
@@ -154,10 +194,7 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 // BuildPublicProfileFromEnt builds a public profile response from ent.User
 func BuildPublicProfileFromEnt(c *gin.Context, u *ent.User) gin.H {
 	ctx := c.Request.Context()
-	var socials interface{}
-	if len(u.SocialAccounts) > 0 {
-		socials = u.SocialAccounts
-	}
+	socials := normalizeSocialAccounts(u.SocialAccounts)
 	name := ""
 	if u.Username != nil {
 		name = *u.Username

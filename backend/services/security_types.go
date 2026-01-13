@@ -137,6 +137,9 @@ const (
 	// SessionGracePeriod is the grace period for token refresh after expiry
 	SessionGracePeriod = 30 * time.Second
 
+	// RefreshTokenRotationWindow is how close to expiry we rotate refresh tokens
+	RefreshTokenRotationWindow = 24 * time.Hour
+
 	// IPChangeWindow is the time window to monitor for IP changes
 	IPChangeWindow = 1 * time.Hour
 
