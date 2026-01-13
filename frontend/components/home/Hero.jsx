@@ -25,7 +25,7 @@ export default function Hero() {
 
           <p className="mt-6 text-muted-foreground text-lg max-w-xl animate-slide-up" style={{ animationDelay: '0.1s' }}>
             Ketika reputasi dipertaruhkan, kamu butuh lebih dari sekadar “katanya”.
-            Dibangun oleh kelompok cyber & engineering asal Jawa Timur, kami tidak menggunakan kami membuat, salam.
+            Website ini di bangun dengan emosional, menggunakan kelembutan hati yang paling dalam.
           </p>
 
           {/* Feature badges */}
