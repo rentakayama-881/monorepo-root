@@ -49,6 +49,7 @@ type ThreadDetailResponse struct {
 	CreatedAt   int64                  `json:"created_at"`
 	User        UserInfo               `json:"user"`
 	Category    CategoryResponse       `json:"category"`
+	Tags        []TagResponse          `json:"tags,omitempty"`
 }
 
 // CategoryWithThreadsResponse represents a category with its threads

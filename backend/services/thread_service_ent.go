@@ -7,6 +7,7 @@ import (
 	"backend-gin/database"
 	"backend-gin/ent"
 	"backend-gin/ent/category"
+	"backend-gin/ent/tag"
 	"backend-gin/ent/thread"
 	"backend-gin/ent/user"
 	apperrors "backend-gin/errors"
@@ -139,6 +140,7 @@ func (s *EntThreadService) GetThreadDetail(ctx context.Context, threadID int) (*
 		Where(thread.IDEQ(threadID)).
 		WithUser().
 		WithCategory().
+		WithTags().
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -184,6 +186,14 @@ func (s *EntThreadService) createThreadInternal(ctx context.Context, userID int,
 		metaMap = make(map[string]interface{})
 	}
 
+	var tags []*ent.Tag
+	if len(input.TagSlugs) > 0 {
+		tags, err = s.resolveActiveTagsBySlug(ctx, input.TagSlugs)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Convert content to map[string]interface{}
 	contentMap := make(map[string]interface{})
 	if input.Content != nil {
@@ -211,7 +221,7 @@ func (s *EntThreadService) createThreadInternal(ctx context.Context, userID int,
 	}
 
 	// Create thread
-	t, err := s.client.Thread.
+	create := s.client.Thread.
 		Create().
 		SetCategoryID(cat.ID).
 		SetUserID(userID).
@@ -219,8 +229,13 @@ func (s *EntThreadService) createThreadInternal(ctx context.Context, userID int,
 		SetSummary(input.Summary).
 		SetContentType(input.ContentType).
 		SetContentJSON(contentMap).
-		SetMeta(metaMap).
-		Save(ctx)
+		SetMeta(metaMap)
+
+	if len(tags) > 0 {
+		create.AddTags(tags...)
+	}
+
+	t, err := create.Save(ctx)
 	if err != nil {
 		logger.Error("Failed to create thread", zap.Int("user_id", userID), zap.Error(err))
 		return nil, apperrors.ErrDatabase.WithDetails("Gagal membuat thread")
@@ -232,6 +247,7 @@ func (s *EntThreadService) createThreadInternal(ctx context.Context, userID int,
 		Where(thread.IDEQ(t.ID)).
 		WithUser().
 		WithCategory().
+		WithTags().
 		Only(ctx)
 	if err != nil {
 		logger.Error("Failed to reload thread", zap.Error(err))
@@ -319,6 +335,16 @@ func (s *EntThreadService) updateThreadInternal(ctx context.Context, threadID, u
 		}
 		update.SetMeta(metaMap)
 	}
+	if input.TagSlugs != nil {
+		tags, err := s.resolveActiveTagsBySlug(ctx, *input.TagSlugs)
+		if err != nil {
+			return nil, err
+		}
+		update.ClearTags()
+		if len(tags) > 0 {
+			update.AddTags(tags...)
+		}
+	}
 
 	// Execute update
 	t, err = update.Save(ctx)
@@ -333,6 +359,7 @@ func (s *EntThreadService) updateThreadInternal(ctx context.Context, threadID, u
 		Where(thread.IDEQ(t.ID)).
 		WithUser().
 		WithCategory().
+		WithTags().
 		Only(ctx)
 	if err != nil {
 		return nil, apperrors.ErrDatabase
@@ -416,6 +443,19 @@ func (s *EntThreadService) threadToDetailResponse(t *ent.Thread) *ThreadDetailRe
 		}
 	}
 
+	var tags []TagResponse
+	if t.Edges.Tags != nil {
+		tags = make([]TagResponse, len(t.Edges.Tags))
+		for i, tag := range t.Edges.Tags {
+			tags[i] = TagResponse{
+				ID:    uint(tag.ID),
+				Name:  tag.Name,
+				Slug:  tag.Slug,
+				Color: tag.Color,
+			}
+		}
+	}
+
 	return &ThreadDetailResponse{
 		ID:          uint(t.ID),
 		Title:       t.Title,
@@ -426,7 +466,26 @@ func (s *EntThreadService) threadToDetailResponse(t *ent.Thread) *ThreadDetailRe
 		CreatedAt:   t.CreatedAt.Unix(),
 		User:        userInfo,
 		Category:    cat,
+		Tags:        tags,
 	}
+}
+
+func (s *EntThreadService) resolveActiveTagsBySlug(ctx context.Context, slugs []string) ([]*ent.Tag, error) {
+	if len(slugs) == 0 {
+		return nil, nil
+	}
+	tags, err := s.client.Tag.
+		Query().
+		Where(tag.SlugIn(slugs...), tag.IsActiveEQ(true)).
+		All(ctx)
+	if err != nil {
+		logger.Error("Failed to resolve tags", zap.Error(err))
+		return nil, apperrors.ErrDatabase.WithDetails("gagal memvalidasi tags")
+	}
+	if len(tags) != len(slugs) {
+		return nil, apperrors.ErrInvalidInput.WithDetails("tag tidak ditemukan atau tidak aktif")
+	}
+	return tags, nil
 }
 
 // getThreadsByUsernameInternal returns threads for a specific username using Ent (internal method)

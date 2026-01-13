@@ -128,6 +128,7 @@ func (h *ThreadHandler) CreateThread(c *gin.Context) {
 		ContentType  string      `json:"content_type"`
 		Content      interface{} `json:"content" binding:"required"`
 		Meta         interface{} `json:"meta"`
+		TagSlugs     []string    `json:"tag_slugs"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -143,6 +144,7 @@ func (h *ThreadHandler) CreateThread(c *gin.Context) {
 		ContentType:  req.ContentType,
 		Content:      req.Content,
 		Meta:         req.Meta,
+		TagSlugs:     req.TagSlugs,
 	}
 
 	// Create thread
@@ -180,6 +182,7 @@ func (h *ThreadHandler) UpdateThread(c *gin.Context) {
 		ContentType *string     `json:"content_type"`
 		Content     interface{} `json:"content"`
 		Meta        interface{} `json:"meta"`
+		TagSlugs    *[]string   `json:"tag_slugs"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -195,6 +198,7 @@ func (h *ThreadHandler) UpdateThread(c *gin.Context) {
 		ContentType: req.ContentType,
 		Content:     req.Content,
 		Meta:        req.Meta,
+		TagSlugs:    req.TagSlugs,
 	}
 
 	// Update thread
