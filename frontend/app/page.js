@@ -3,7 +3,6 @@ import Hero from '../components/home/Hero';
 import CategoryGrid from '../components/home/CategoryGrid';
 import LatestThreads from '../components/home/LatestThreads';
 import Skeleton from '../components/ui/Skeleton';
-import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export const metadata = {
   title: 'Beranda',
