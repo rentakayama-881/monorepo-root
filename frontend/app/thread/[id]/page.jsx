@@ -90,8 +90,8 @@ export default function ThreadDetailPage() {
 
   if (!isAuthed) {
     return (
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="rounded-lg border border-border bg-card p-6">
+    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="rounded-lg border border-border bg-card dark:bg-background p-6">
           <p className="text-sm text-foreground">Please sign in to view this thread.</p>
           <Link href="/login" className="mt-2 inline-block text-sm font-medium text-primary hover:underline">
             Sign in now →
@@ -102,7 +102,7 @@ export default function ThreadDetailPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground hover:underline">Home</Link>
@@ -128,7 +128,7 @@ export default function ThreadDetailPage() {
         <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
       ) : data ? (
         <>
-        <article className="rounded-lg border border-border bg-card">
+        <article className="rounded-lg border border-border bg-card dark:bg-background">
           {/* Header */}
           <div className="border-b border-border p-6">
             <h1 className="text-xl font-semibold text-foreground">{data.title}</h1>
@@ -263,7 +263,7 @@ export default function ThreadDetailPage() {
           <h2 className="text-lg font-semibold text-foreground mb-4">Balasan</h2>
           
           {/* Reply Form */}
-          <div className="mb-6 rounded-lg border border-border bg-card p-4">
+          <div className="mb-6 rounded-lg border border-border bg-card dark:bg-background p-4">
             <ReplyForm
               threadId={id}
               onSuccess={() => setRepliesKey((k) => k + 1)}
@@ -372,4 +372,3 @@ function formatRelativeDate(ts) {
     return "";
   }
 }
-

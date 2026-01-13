@@ -915,6 +915,10 @@ html {
   box-shadow: 0 8px 25px -5px rgb(0 0 0 / 0.1);
 }
 
+.dark .thread-card {
+  background-color: var(--background);
+}
+
 /* Reply threading lines */
 .reply-thread-line {
   position: absolute;

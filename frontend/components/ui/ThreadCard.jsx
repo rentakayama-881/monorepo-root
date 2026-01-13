@@ -89,7 +89,7 @@ export default function ThreadCard({
       <Link
         href={`/thread/${id}`}
         className={cn(
-          "flex items-center gap-2 px-3 py-2 rounded-[var(--radius)] transition-colors",
+          "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
           "hover:bg-accent",
           className
         )}
@@ -196,8 +196,8 @@ export default function ThreadCard({
   return (
     <div
       className={cn(
-        "thread-card group relative overflow-hidden rounded-[var(--radius)] border transition-all",
-        "bg-card",
+        "thread-card group relative overflow-hidden rounded-md border transition-all",
+        "bg-card dark:bg-background",
         "hover:border-foreground/20",
         className
       )}
@@ -304,7 +304,7 @@ export function ThreadCardSkeleton({ variant = "default" }) {
   }
 
   return (
-    <div className="rounded-[var(--radius)] border bg-card p-4 space-y-3">
+    <div className="rounded-md border bg-card dark:bg-background p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="h-6 w-3/4 rounded bg-secondary animate-pulse" />
         <div className="h-6 w-20 rounded-full bg-secondary animate-pulse" />
@@ -345,7 +345,7 @@ export function ThreadCardList({
 
   if (!hasChildren) {
     return (
-      <div className="rounded-[var(--radius)] border border-dashed bg-card py-12 text-center">
+      <div className="rounded-md border border-dashed bg-card dark:bg-background py-12 text-center">
         <svg className="mx-auto h-8 w-8 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
         </svg>
@@ -356,7 +356,7 @@ export function ThreadCardList({
 
   return (
     <div className={cn(
-      "overflow-hidden rounded-[var(--radius)] border bg-card divide-y",
+      "overflow-hidden rounded-md border bg-card dark:bg-background divide-y",
       className
     )}>
       {children}
@@ -377,7 +377,7 @@ export function ThreadCardGrid({
 
   if (!hasChildren) {
     return (
-      <div className="rounded-[var(--radius)] border border-dashed bg-card py-12 text-center">
+      <div className="rounded-md border border-dashed bg-card dark:bg-background py-12 text-center">
         <svg className="mx-auto h-8 w-8 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
         </svg>
