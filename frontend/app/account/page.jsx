@@ -55,8 +55,13 @@ export default function AccountPage() {
           company: data.company || "",
           telegram: data.telegram || "",
         });
-        const s = Array.isArray(data.social_accounts) ? data.social_accounts : [];
-        setSocials(s.length ? s : [{ label: "", url: "" }]);
+        const rawSocials = data.social_accounts;
+        const socialList = Array.isArray(rawSocials)
+          ? rawSocials
+          : rawSocials && typeof rawSocials === "object"
+            ? Object.entries(rawSocials).map(([label, url]) => ({ label, url }))
+            : [];
+        setSocials(socialList.length ? socialList : [{ label: "", url: "" }]);
       })
       .catch(e => setError(e.message))
       .finally(() => !cancelled && setLoading(false));
@@ -180,7 +185,18 @@ export default function AccountPage() {
     setError(""); setOk("");
     try {
       const t = localStorage.getItem("token");
-      const body = { ...form, social_accounts: socials.filter(s => s.label || s.url) };
+      const social_accounts = socials.reduce((acc, entry) => {
+        const label = (entry.label || "").trim();
+        const url = (entry.url || "").trim();
+        if (label && url) {
+          acc[label] = url;
+        }
+        return acc;
+      }, {});
+      const body = {
+        ...form,
+        social_accounts,
+      };
       const r = await fetch(`${API}/account`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },

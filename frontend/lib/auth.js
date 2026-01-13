@@ -68,7 +68,12 @@ export function setTokenExpiry(expiresIn) {
 
 export function setTokens(accessToken, refreshToken, expiresIn) {
   setToken(accessToken);
-  setRefreshToken(refreshToken);
+  if (refreshToken) {
+    const current = getRefreshToken();
+    if (refreshToken !== current) {
+      setRefreshToken(refreshToken);
+    }
+  }
   if (expiresIn) {
     setTokenExpiry(expiresIn);
   }
