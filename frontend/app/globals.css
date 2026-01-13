@@ -309,7 +309,7 @@ button:focus-visible {
 
 .markdown-body .hljs-comment,
 .markdown-body .hljs-quote {
-  color: rgb(var(--muted));
+  color: var(--muted-foreground);
   font-style: italic;
 }
 
