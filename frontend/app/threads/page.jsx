@@ -19,6 +19,7 @@ export default function MyThreadsPage() {
   const [ok, setOk] = useState("");
   const [threads, setThreads] = useState([]);
   const [availableTags, setAvailableTags] = useState([]);
+  const [tagsAvailable, setTagsAvailable] = useState(false);
 
   // editor state
   const [editingThread, setEditingThread] = useState(null);
@@ -68,32 +69,15 @@ export default function MyThreadsPage() {
         const resolvedTags = Array.isArray(data) ? data : data.tags || [];
         if (resolvedTags.length > 0) {
           setAvailableTags(resolvedTags);
+          setTagsAvailable(true);
         } else {
-          setAvailableTags([
-            { slug: 'looking', name: 'Looking', description: 'Mencari sesuatu atau peluang', color: '#1f6feb', icon: 'search' },
-            { slug: 'question', name: 'Question', description: 'Pertanyaan atau klarifikasi', color: '#bc4c00', icon: 'question' },
-            { slug: 'discussion', name: 'Discussion', description: 'Diskusi umum', color: '#8250df', icon: 'comment-discussion' },
-            { slug: 'need', name: 'Need', description: 'Butuh bantuan cepat', color: '#cf222e', icon: 'need' },
-            { slug: 'help', name: 'Help', description: 'Minta bantuan atau support', color: '#1a7f37', icon: 'help' },
-            { slug: 'pay-for', name: 'Pay For', description: 'Siap bayar untuk solusi', color: '#bf3989', icon: 'payment' },
-            { slug: 'task-for-money', name: 'Task For Money', description: 'Task berbayar', color: '#8957e5', icon: 'task' },
-            { slug: 'hiring', name: 'Hiring', description: 'Cari kandidat', color: '#0969da', icon: 'people' },
-            { slug: 'jobhunt', name: 'Jobhunt', description: 'Mencari pekerjaan', color: '#0e7490', icon: 'jobhunt' },
-          ]);
+          setAvailableTags([]);
+          setTagsAvailable(false);
         }
       })
       .catch(() => {
-        setAvailableTags([
-          { slug: 'looking', name: 'Looking', description: 'Mencari sesuatu atau peluang', color: '#1f6feb', icon: 'search' },
-          { slug: 'question', name: 'Question', description: 'Pertanyaan atau klarifikasi', color: '#bc4c00', icon: 'question' },
-          { slug: 'discussion', name: 'Discussion', description: 'Diskusi umum', color: '#8250df', icon: 'comment-discussion' },
-          { slug: 'need', name: 'Need', description: 'Butuh bantuan cepat', color: '#cf222e', icon: 'need' },
-          { slug: 'help', name: 'Help', description: 'Minta bantuan atau support', color: '#1a7f37', icon: 'help' },
-          { slug: 'pay-for', name: 'Pay For', description: 'Siap bayar untuk solusi', color: '#bf3989', icon: 'payment' },
-          { slug: 'task-for-money', name: 'Task For Money', description: 'Task berbayar', color: '#8957e5', icon: 'task' },
-          { slug: 'hiring', name: 'Hiring', description: 'Cari kandidat', color: '#0969da', icon: 'people' },
-          { slug: 'jobhunt', name: 'Jobhunt', description: 'Mencari pekerjaan', color: '#0e7490', icon: 'jobhunt' },
-        ]);
+        setAvailableTags([]);
+        setTagsAvailable(false);
       });
   }, [API, authed]);
 
@@ -419,6 +403,11 @@ export default function MyThreadsPage() {
                   placeholder="Pilih tags untuk thread..."
                   enableSearch={false}
                 />
+                {!tagsAvailable && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Tags belum tersedia, jadi pilihan tags dinonaktifkan sementara.
+                  </p>
+                )}
               </div>
 
               <div>
