@@ -400,6 +400,7 @@ func (s *EntThreadService) threadsToListItems(threads []*ent.Thread) []ThreadLis
 					Name:  tag.Name,
 					Slug:  tag.Slug,
 					Color: tag.Color,
+					Icon:  tag.Icon,
 				}
 			}
 		}
@@ -452,6 +453,7 @@ func (s *EntThreadService) threadToDetailResponse(t *ent.Thread) *ThreadDetailRe
 				Name:  tag.Name,
 				Slug:  tag.Slug,
 				Color: tag.Color,
+				Icon:  tag.Icon,
 			}
 		}
 	}
