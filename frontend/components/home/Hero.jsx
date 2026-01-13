@@ -24,7 +24,8 @@ export default function Hero() {
           </h1>
 
           <p className="mt-6 text-muted-foreground text-lg max-w-xl animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            Platform diskusi dan utilitas digital untuk komunitas Indonesia. Temukan thread, kategori, dan fitur yang dirancang untuk kolaborasi.
+            Ketika reputasi dipertaruhkan, kamu butuh lebih dari sekadar “katanya”.
+            Dibangun oleh kelompok cyber & engineering asal Jawa Timur, kami tidak menggunakan kami membuat, salam.
           </p>
 
           {/* Feature badges */}
