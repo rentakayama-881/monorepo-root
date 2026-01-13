@@ -242,7 +242,7 @@ export default function ThreadCard({
                   @{username || "Anonim"}
                 </div>
                 {showDate && (
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-[11px] text-muted-foreground whitespace-nowrap">
                     {formatRelativeTime(created_at)}
                   </div>
                 )}
