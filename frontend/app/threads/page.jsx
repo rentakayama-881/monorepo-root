@@ -7,6 +7,7 @@ import { fetchWithAuth } from "@/lib/tokenRefresh";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import TagSelector from "@/components/ui/TagSelector";
+import { TagList } from "@/components/ui/TagPill";
 
 export default function MyThreadsPage() {
   const API = `${getApiBase()}/api`;
@@ -364,6 +365,11 @@ export default function MyThreadsPage() {
                     <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
                       {th.summary}
                     </p>
+                  )}
+                  {Array.isArray(th.tags) && th.tags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <TagList tags={th.tags} size="xs" maxDisplay={3} />
+                    </div>
                   )}
                 </div>
               </div>
