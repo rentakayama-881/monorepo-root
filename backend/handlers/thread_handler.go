@@ -282,10 +282,14 @@ func (h *ThreadHandler) handleError(c *gin.Context, err error) {
 			zap.String("message", appErr.Message),
 			zap.Int("status", appErr.StatusCode),
 		)
-		c.JSON(appErr.StatusCode, gin.H{
+		response := gin.H{
 			"error": appErr.Message,
 			"code":  appErr.Code,
-		})
+		}
+		if appErr.Details != "" {
+			response["details"] = appErr.Details
+		}
+		c.JSON(appErr.StatusCode, response)
 		return
 	}
 
