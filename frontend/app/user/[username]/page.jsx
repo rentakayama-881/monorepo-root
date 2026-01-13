@@ -8,6 +8,63 @@ import Avatar from "@/components/ui/Avatar";
 import { Badge, BadgeChip } from "@/components/ui/Badge";
 import ThreadCard from "@/components/ui/ThreadCard";
 
+const SOCIAL_ICONS = {
+  instagram: (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M7 3h10a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7a4 4 0 014-4zm0 2a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H7zm5 3.25A4.75 4.75 0 1112 17.75 4.75 4.75 0 0112 8.25zm0 2a2.75 2.75 0 102.75 2.75A2.75 2.75 0 0012 10.25zm5.5-3.5a.75.75 0 11-.75.75.75.75 0 01.75-.75z" />
+    </svg>
+  ),
+  github: (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2C6.475 2 2 6.586 2 12.253c0 4.53 2.865 8.37 6.84 9.725.5.095.68-.222.68-.494 0-.245-.008-.892-.012-1.75-2.782.626-3.369-1.374-3.369-1.374-.454-1.175-1.11-1.488-1.11-1.488-.909-.636.069-.623.069-.623 1.005.072 1.534 1.056 1.534 1.056.893 1.56 2.342 1.11 2.913.848.092-.67.35-1.11.636-1.365-2.22-.262-4.555-1.135-4.555-5.05 0-1.115.39-2.025 1.03-2.738-.104-.264-.447-1.327.097-2.764 0 0 .84-.275 2.75 1.045A9.35 9.35 0 0112 6.65c.85.004 1.706.118 2.505.344 1.91-1.32 2.748-1.045 2.748-1.045.546 1.437.203 2.5.1 2.764.64.713 1.028 1.623 1.028 2.738 0 3.927-2.339 4.785-4.566 5.04.36.318.68.94.68 1.895 0 1.367-.012 2.47-.012 2.807 0 .275.18.595.688.494C19.138 20.62 22 16.783 22 12.253 22 6.586 17.523 2 12 2z" />
+    </svg>
+  ),
+  linkedin: (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.11 1 2.48 1 4.98 2.12 4.98 3.5zM.5 8.5h4v13h-4zM8.5 8.5h3.8v1.8h.1c.53-1 1.83-2.1 3.77-2.1 4.03 0 4.78 2.7 4.78 6.2V21.5h-4v-6.3c0-1.5-.03-3.4-2.1-3.4-2.1 0-2.42 1.7-2.42 3.3v6.4h-4z" />
+    </svg>
+  ),
+  x: (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M18.244 2H21l-6.52 7.451L22 22h-6.758l-5.29-7.014L3.8 22H1l7.013-8.02L2 2h6.758l4.786 6.343L18.244 2zm-1.186 18h1.52L7.012 4H5.438l11.62 16z" />
+    </svg>
+  ),
+  twitter: (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M19.944 7.925c.013.174.013.349.013.523 0 5.326-4.055 11.468-11.468 11.468-2.282 0-4.406-.663-6.19-1.804.316.037.62.05.948.05 1.886 0 3.622-.646 5.007-1.73a4.043 4.043 0 01-3.773-2.799c.25.037.5.062.76.062.362 0 .725-.05 1.063-.137a4.037 4.037 0 01-3.235-3.96v-.05c.538.3 1.162.487 1.823.512a4.034 4.034 0 01-1.798-3.36c0-.75.2-1.435.55-2.035a11.468 11.468 0 008.312 4.219 4.558 4.558 0 01-.1-.925 4.037 4.037 0 014.03-4.03c1.162 0 2.208.487 2.943 1.26a7.985 7.985 0 002.56-.987 4.023 4.023 0 01-1.773 2.222 8.092 8.092 0 002.32-.625 8.681 8.681 0 01-2.01 2.085z" />
+    </svg>
+  ),
+  link: (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6.75h3.75a3 3 0 013 3v3.75a3 3 0 01-3 3H13.5m-3-9H6.75a3 3 0 00-3 3v3.75a3 3 0 003 3H10.5m-4.5-4.5h12" />
+    </svg>
+  ),
+};
+
+function normalizeSocialUrl(url) {
+  if (!url) return "";
+  const rawUrl = typeof url === "string"
+    ? url
+    : (typeof url === "object" && url?.url)
+      ? String(url.url)
+      : String(url);
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  return `https://${trimmed}`;
+}
+
+function detectSocialType(label, url) {
+  const normalizedLabel = (label || "").toLowerCase();
+  const normalizedUrl = (url || "").toLowerCase();
+  if (normalizedLabel.includes("instagram") || normalizedUrl.includes("instagram.com")) return "instagram";
+  if (normalizedLabel === "x" || normalizedUrl.includes("x.com")) return "x";
+  if (normalizedLabel.includes("twitter") || normalizedUrl.includes("twitter.com")) return "twitter";
+  if (normalizedLabel.includes("github") || normalizedUrl.includes("github.com")) return "github";
+  if (normalizedLabel.includes("linkedin") || normalizedUrl.includes("linkedin.com")) return "linkedin";
+  return "link";
+}
+
 export default function UserProfilePage() {
   const { username } = useParams();
   const [profile, setProfile] = useState(null);
@@ -86,6 +143,33 @@ export default function UserProfilePage() {
   );
 
   const displayName = profile.full_name || profile.username || "";
+  const rawSocialAccounts = profile.social_accounts;
+  let socialAccounts = [];
+  if (Array.isArray(rawSocialAccounts)) {
+    socialAccounts = rawSocialAccounts;
+  } else if (rawSocialAccounts && typeof rawSocialAccounts === "object") {
+    if (Array.isArray(rawSocialAccounts.items)) {
+      socialAccounts = rawSocialAccounts.items;
+    } else {
+      socialAccounts = Object.entries(rawSocialAccounts).map(([label, url]) => ({ label, url }));
+    }
+  }
+  const normalizedSocials = socialAccounts
+    .map((account) => {
+      const url = normalizeSocialUrl(account?.url);
+      if (!url) return null;
+      const label = String(account?.label || "").trim();
+      const type = detectSocialType(label, url);
+      const fallbackLabel = type === "link" ? "Website" : `${type.charAt(0).toUpperCase()}${type.slice(1)}`;
+      const displayLabel = label || fallbackLabel;
+      return {
+        url,
+        type,
+        label: displayLabel,
+      };
+    })
+    .filter(Boolean);
+  const pronouns = String(profile.pronouns || "").trim();
 
   return (
     <section className="max-w-4xl mx-auto px-4 py-6">
@@ -128,8 +212,17 @@ export default function UserProfilePage() {
         )}
 
         {/* Meta info */}
-        {(profile.company || profile.telegram) && (
+        {(profile.company || profile.telegram || pronouns || normalizedSocials.length > 0) && (
           <div className="flex flex-wrap gap-4 text-sm">
+            {pronouns && (
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.75c2.9 0 5.25-2.35 5.25-5.25S14.9 5.25 12 5.25 6.75 7.6 6.75 10.5 9.1 15.75 12 15.75z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 20.25a7.5 7.5 0 0115 0" />
+                </svg>
+                <span>{pronouns}</span>
+              </div>
+            )}
             {profile.company && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -151,6 +244,18 @@ export default function UserProfilePage() {
                 <span>{profile.telegram}</span>
               </a>
             )}
+            {normalizedSocials.map((social) => (
+              <a
+                key={`${social.type}-${social.url}`}
+                href={social.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
+              >
+                {SOCIAL_ICONS[social.type] || SOCIAL_ICONS.link}
+                <span>{social.label}</span>
+              </a>
+            ))}
           </div>
         )}
         

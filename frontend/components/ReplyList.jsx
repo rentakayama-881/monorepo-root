@@ -90,7 +90,7 @@ function ReplyItem({
 
       <div
         className={`
-          rounded-[var(--radius)] border bg-card p-4 transition-all
+          rounded-[var(--radius)] border bg-card dark:bg-background p-4 transition-all
           hover:border-primary/30 hover:shadow-sm
           ${reply.isDeleted ? "opacity-60" : ""}
         `}
