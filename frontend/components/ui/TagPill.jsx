@@ -10,17 +10,17 @@ export function TagPill({ tag, size = 'sm', className = "", onClick = null }) {
   const Component = onClick ? 'button' : 'span';
   
   const sizeClasses = {
-    xs: 'px-2 py-0.5 text-xs',
-    sm: 'px-2.5 py-1 text-xs',
-    md: 'px-3 py-1.5 text-sm',
-    lg: 'px-4 py-2 text-sm',
+    xs: 'px-2 py-0.5 text-[11px] leading-4',
+    sm: 'px-2.5 py-1 text-xs leading-4',
+    md: 'px-3 py-1.5 text-sm leading-5',
+    lg: 'px-4 py-2 text-sm leading-5',
   };
 
   return (
     <Component
       onClick={onClick}
       className={clsx(
-        "inline-flex items-center gap-1.5 rounded-full font-medium border transition-colors",
+        "inline-flex items-center gap-1.5 rounded-md font-semibold border transition-colors",
         sizeClasses[size],
         onClick && "cursor-pointer hover:opacity-80",
         className
@@ -74,6 +74,11 @@ function getIconEmoji(iconName) {
     'megaphone': '📢',
     'book': '📖',
     'star': '⭐',
+    'help': '🆘',
+    'need': '🧩',
+    'payment': '💰',
+    'task': '🧾',
+    'jobhunt': '🧭',
   };
   return icons[iconName] || '🏷️';
 }
