@@ -17,6 +17,7 @@ type CreateThreadInput struct {
 	ContentType  string
 	Content      interface{}
 	Meta         interface{}
+	TagSlugs     []string
 }
 
 // UpdateThreadInput represents thread update input
@@ -27,6 +28,7 @@ type UpdateThreadInput struct {
 	ContentType *string
 	Content     interface{}
 	Meta        interface{}
+	TagSlugs    *[]string
 }
 
 // CategorySlugInput represents category slug input
@@ -98,6 +100,15 @@ func (c *CreateThreadInput) Validate() error {
 		}
 	}
 
+	// Normalize tag slugs if provided
+	if len(c.TagSlugs) > 0 {
+		normalized, err := normalizeTagSlugs(c.TagSlugs)
+		if err != nil {
+			return err
+		}
+		c.TagSlugs = normalized
+	}
+
 	return nil
 }
 
@@ -166,6 +177,15 @@ func (u *UpdateThreadInput) Validate() error {
 		}
 	}
 
+	// Normalize tag slugs if provided
+	if u.TagSlugs != nil {
+		normalized, err := normalizeTagSlugs(*u.TagSlugs)
+		if err != nil {
+			return err
+		}
+		*u.TagSlugs = normalized
+	}
+
 	return nil
 }
 
@@ -210,6 +230,32 @@ func validateMeta(meta interface{}) error {
 	}
 
 	return nil
+}
+
+func normalizeTagSlugs(tags []string) ([]string, error) {
+	seen := make(map[string]struct{})
+	normalized := make([]string, 0, len(tags))
+
+	for _, raw := range tags {
+		slug := strings.ToLower(strings.TrimSpace(raw))
+		if slug == "" {
+			continue
+		}
+		if !utils.ValidateNoXSS(slug) {
+			return nil, apperrors.ErrInvalidInput.WithDetails("tag slug mengandung karakter atau pola yang tidak diizinkan")
+		}
+		if _, exists := seen[slug]; exists {
+			continue
+		}
+		seen[slug] = struct{}{}
+		normalized = append(normalized, slug)
+	}
+
+	if len(normalized) > 5 {
+		return nil, apperrors.ErrInvalidInput.WithDetails("maksimal 5 tag per thread")
+	}
+
+	return normalized, nil
 }
 
 // NormalizeMeta normalizes meta fields (applies telegram @ prefix)
