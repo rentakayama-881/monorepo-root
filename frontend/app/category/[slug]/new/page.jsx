@@ -51,6 +51,7 @@ export default function CreateThreadPage() {
     e.preventDefault();
     setError(""); setSuccess("");
     if (!title.trim()) return setError("Judul thread wajib diisi");
+    if (title.trim().length < 3) return setError("Judul thread minimal 3 karakter");
     if (!content.trim()) return setError("Konten thread wajib diisi");
     if (!telegram.trim()) return setError("Contact telegram wajib diisi");
 
@@ -76,8 +77,15 @@ export default function CreateThreadPage() {
         }),
       });
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Gagal membuat thread");
+        let message = "Gagal membuat thread";
+        try {
+          const data = await res.json();
+          message = data?.details || data?.error || data?.message || message;
+        } catch (err) {
+          const txt = await res.text();
+          if (txt) message = txt;
+        }
+        throw new Error(message);
       }
       setSuccess("Thread berhasil dibuat!");
       setTimeout(() => router.push(`/category/${params.slug}`), 1200);
