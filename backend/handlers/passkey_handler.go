@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
@@ -126,7 +127,7 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 	// Parse the raw body to get name and credential
 	var rawRequest struct {
 		Name       string `json:"name"`
-		Credential []byte `json:"credential"`
+		Credential json.RawMessage `json:"credential"`
 	}
 	if err := c.ShouldBindJSON(&rawRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -274,7 +275,7 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	var rawRequest struct {
 		Email      string `json:"email"`
 		SessionID  string `json:"session_id"`
-		Credential []byte `json:"credential"`
+		Credential json.RawMessage `json:"credential"`
 	}
 	if err := c.ShouldBindJSON(&rawRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
