@@ -8,7 +8,7 @@ import Alert from "../../components/ui/Alert";
 import Select from "../../components/ui/Select";
 import { BadgeChip } from "../../components/ui/Badge";
 import Avatar from "../../components/ui/Avatar";
-import { getApiBase } from "@/lib/api";
+import { fetchJsonAuth } from "@/lib/api";
 import { maskEmail } from "@/lib/email";
 import TOTPSettings from "@/components/TOTPSettings";
 import PasskeySettings from "@/components/PasskeySettings";
@@ -16,7 +16,6 @@ import { useSudoAction } from "@/components/SudoModal";
 
 export default function AccountPage() {
   const router = useRouter();
-  const API = `${getApiBase()}/api`;
   const authed = useMemo(() => { try { return !!localStorage.getItem("token"); } catch { return false; } }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,9 +39,7 @@ export default function AccountPage() {
     if (!authed) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
-    const t = localStorage.getItem("token");
-    fetch(`${API}/account/me`, { headers: { Authorization: `Bearer ${t}` }})
-      .then(r => r.ok ? r.json() : Promise.reject(new Error("Gagal memuat akun")))
+    fetchJsonAuth("/api/account/me")
       .then(data => {
         if (cancelled) return;
         setMe(data);
@@ -58,34 +55,30 @@ export default function AccountPage() {
         const s = Array.isArray(data.social_accounts) ? data.social_accounts : [];
         setSocials(s.length ? s : [{ label: "", url: "" }]);
       })
-      .catch(e => setError(e.message))
+      .catch(e => setError(e.message || "Gagal memuat akun"))
       .finally(() => !cancelled && setLoading(false));
     return () => { cancelled = true; };
-  }, [API, authed]);
+  }, [authed]);
 
   // Fetch user badges
   useEffect(() => {
     if (!authed) return;
-    const t = localStorage.getItem("token");
-    fetch(`${API}/account/badges`, { headers: { Authorization: `Bearer ${t}` }})
-      .then(r => r.ok ? r.json() : Promise.reject())
+    fetchJsonAuth("/api/account/badges")
       .then(data => {
         setBadges(data.badges || []);
         setPrimaryBadgeId(data.primary_badge_id || null);
       })
       .catch(() => {});
-  }, [API, authed]);
+  }, [authed]);
 
   async function savePrimaryBadge(badgeId) {
     setError(""); setOk(""); setSavingBadge(true);
     try {
-      const t = localStorage.getItem("token");
-      const r = await fetch(`${API}/account/primary-badge`, {
+      await fetchJsonAuth("/api/account/primary-badge", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ badge_id: badgeId ? Number(badgeId) : null }),
       });
-      if (!r.ok) throw new Error("Gagal menyimpan primary badge");
       setPrimaryBadgeId(badgeId ? Number(badgeId) : null);
       setOk("Primary badge diperbarui.");
     } catch (e) {
@@ -130,19 +123,13 @@ export default function AccountPage() {
     setError(""); setOk(""); setAvatarUploading(true);
     try {
       if (!avatarFile) throw new Error("Pilih file gambar terlebih dahulu");
-      const t = localStorage.getItem("token");
       const fd = new FormData();
       fd.append("file", avatarFile);
-      const r = await fetch(`${API}/account/avatar`, {
+      const resp = await fetchJsonAuth("/api/account/avatar", {
         method: "PUT",
-        headers: { Authorization: `Bearer ${t}` },
         body: fd,
       });
-      const txt = await r.text();
-      if (!r.ok) throw new Error(txt || "Gagal mengunggah avatar");
-      let resp = {};
-      try { resp = JSON.parse(txt); } catch {}
-      const url = resp.avatar_url || avatarUrl || "";
+      const url = resp?.avatar_url || avatarUrl || "";
       if (url) setAvatarUrl(url);
       setOk("Foto profil diperbarui.");
       setAvatarFile(null);
@@ -157,15 +144,9 @@ export default function AccountPage() {
   async function deleteAvatar() {
     setError(""); setOk(""); setAvatarDeleting(true);
     try {
-      const t = localStorage.getItem("token");
-      const r = await fetch(`${API}/account/avatar`, {
+      await fetchJsonAuth("/api/account/avatar", {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${t}` },
       });
-      if (!r.ok) {
-        const txt = await r.text();
-        throw new Error(txt || "Gagal menghapus foto profil");
-      }
       setAvatarUrl("");
       setOk("Foto profil dihapus.");
     } catch (e) {
@@ -179,14 +160,12 @@ export default function AccountPage() {
     e.preventDefault();
     setError(""); setOk("");
     try {
-      const t = localStorage.getItem("token");
       const body = { ...form, social_accounts: socials.filter(s => s.label || s.url) };
-      const r = await fetch(`${API}/account`, {
+      await fetchJsonAuth("/api/account", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!r.ok) throw new Error(await r.text() || "Gagal menyimpan akun");
       setOk("Akun diperbarui.");
     } catch (e) { setError(String(e.message || e)); }
   }
@@ -195,15 +174,11 @@ export default function AccountPage() {
     setError(""); setOk(""); setChgLoading(true);
     try {
       if (!newUsername) throw new Error("Masukkan username baru");
-      const t = localStorage.getItem("token");
-      const r = await fetch(`${API}/account/change-username`, {
+      const data = await fetchJsonAuth("/api/account/change-username", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_username: newUsername }),
       });
-      const txt = await r.text();
-      if (!r.ok) throw new Error(txt || "Gagal mengganti username");
-      const data = JSON.parse(txt);
       setOk(`Username diubah menjadi ${data.new_username}.`);
       setUsername(data.new_username);
       setNewUsername("");
@@ -463,10 +438,10 @@ export default function AccountPage() {
           <PasskeySettings />
 
           {/* Zona Berbahaya - Delete Account */}
-          <DeleteAccountSection API={API} router={router} />
+          <DeleteAccountSection router={router} />
 
-          {error && <Alert type="error" message={error} />}
-          {ok && <Alert type="success" message={ok} />}
+          {error && <Alert variant="error" message={error} />}
+          {ok && <Alert variant="success" message={ok} />}
         </div>
       )}
     </main>
@@ -474,7 +449,7 @@ export default function AccountPage() {
 }
 
 // Separate component for delete account to use sudo hook
-function DeleteAccountSection({ API, router }) {
+function DeleteAccountSection({ router }) {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -489,22 +464,16 @@ function DeleteAccountSection({ API, router }) {
     try {
       // Request sudo mode first
       await executeSudo(async (sudoToken) => {
-        const t = localStorage.getItem("token");
-        const res = await fetch(`${API}/account`, {
+        await fetchJsonAuth("/api/account", {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${t}`,
             "X-Sudo-Token": sudoToken,
           },
           body: JSON.stringify({
             confirmation: deleteConfirmation,
           }),
         });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || "Gagal menghapus akun");
-        }
         // Clean logout
         localStorage.removeItem("token");
         localStorage.removeItem("sudo_token");
@@ -546,7 +515,7 @@ function DeleteAccountSection({ API, router }) {
           />
         </div>
         
-        {deleteError && <Alert type="error" message={deleteError} />}
+        {deleteError && <Alert variant="error" message={deleteError} />}
         
         <Button
           variant="danger"
