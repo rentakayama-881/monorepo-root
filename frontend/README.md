@@ -19,7 +19,7 @@ Next.js 15 application with React 19 and Tailwind CSS 4.
 ## Quick Start
 
 ### Prerequisites
-- Node.js 20+
+- Node.js 24.12+ (24.x)
 - npm 10+
 
 ### Setup
