@@ -345,6 +345,15 @@ func (s *EntSessionService) RefreshSession(ctx context.Context, refreshToken, ip
 			return txErr
 		}
 
+		if _, err := tx.Session.
+			UpdateOneID(sess.ID).
+			SetRevokedAt(time.Now()).
+			SetRevokeReason("Refresh token rotated").
+			Save(ctx); err != nil {
+			txErr = apperrors.ErrInternalServer.WithDetails("Gagal memperbarui session lama")
+			return txErr
+		}
+
 		logger.Info("Session refreshed",
 			zap.Int("user_id", u.ID),
 			zap.Int("old_session_id", sess.ID),
