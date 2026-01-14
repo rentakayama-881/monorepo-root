@@ -26,10 +26,8 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": gin.H{
-					"code":    "ADMIN001",
-					"message": "Token admin diperlukan",
-				},
+				"code":    "ADMIN001",
+				"message": "Token admin diperlukan",
 			})
 			return
 		}
@@ -37,10 +35,8 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		if tokenString == authHeader {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": gin.H{
-					"code":    "ADMIN002",
-					"message": "Format token tidak valid",
-				},
+				"code":    "ADMIN002",
+				"message": "Format token tidak valid",
 			})
 			return
 		}
@@ -54,10 +50,8 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": gin.H{
-					"code":    "ADMIN003",
-					"message": "Token admin tidak valid atau sudah kadaluarsa",
-				},
+				"code":    "ADMIN003",
+				"message": "Token admin tidak valid atau sudah kadaluarsa",
 			})
 			return
 		}
@@ -65,10 +59,8 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": gin.H{
-					"code":    "ADMIN004",
-					"message": "Token claims tidak valid",
-				},
+				"code":    "ADMIN004",
+				"message": "Token claims tidak valid",
 			})
 			return
 		}
@@ -77,10 +69,8 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 		tokenType, _ := claims["type"].(string)
 		if tokenType != "admin" {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": gin.H{
-					"code":    "ADMIN005",
-					"message": "Akses ditolak. Bukan token admin.",
-				},
+				"code":    "ADMIN005",
+				"message": "Akses ditolak. Bukan token admin.",
 			})
 			return
 		}

@@ -36,18 +36,18 @@ func NewPasskeyHandler(passkeyService *services.EntPasskeyService, authService *
 
 func (h *PasskeyHandler) handleError(c *gin.Context, err error) {
 	if appErr, ok := err.(*errors.AppError); ok {
-		c.JSON(appErr.StatusCode, gin.H{"error": appErr.Message})
+		c.JSON(appErr.StatusCode, errors.ErrorResponse(appErr))
 		return
 	}
 	h.logger.Error("Passkey error", zap.Error(err))
-	c.JSON(http.StatusInternalServerError, gin.H{"error": "Akun Anda telah di hapus atau tidak di temukan"})
+	c.JSON(http.StatusInternalServerError, errors.ErrorResponse(errors.ErrInternalServer.WithDetails("Akun Anda telah di hapus atau tidak di temukan")))
 }
 
 // GetStatus returns passkey status for current user
 func (h *PasskeyHandler) GetStatus(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
 		return
 	}
 
@@ -68,7 +68,7 @@ func (h *PasskeyHandler) GetStatus(c *gin.Context) {
 func (h *PasskeyHandler) ListPasskeys(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
 		return
 	}
 
@@ -100,7 +100,7 @@ func (h *PasskeyHandler) ListPasskeys(c *gin.Context) {
 func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
 		return
 	}
 
@@ -121,7 +121,7 @@ func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
 		return
 	}
 
@@ -181,7 +181,7 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 func (h *PasskeyHandler) DeletePasskey(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
 		return
 	}
 
@@ -205,7 +205,7 @@ func (h *PasskeyHandler) DeletePasskey(c *gin.Context) {
 func (h *PasskeyHandler) RenamePasskey(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
 		return
 	}
 

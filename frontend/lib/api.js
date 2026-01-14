@@ -33,10 +33,12 @@ export async function fetchJson(path, options = {}) {
 
     if (!res.ok) {
       // Prioritize error message from backend
-      const message = data?.error || data?.message || res.statusText || `Request failed with status ${res.status}`;
+      const message = data?.message || data?.error || res.statusText || `Request failed with status ${res.status}`;
       const error = new Error(message);
       error.status = res.status;
       error.code = data?.code;
+      error.details = data?.details;
+      error.data = data;
       throw error;
     }
 
@@ -113,35 +115,43 @@ export async function fetchJsonAuth(path, options = {}) {
       if (res.status === 401) {
         // Session invalid - clear and signal session expired
         clearToken();
-        const error = new Error(data?.error || "Sesi telah berakhir. Silakan login kembali.");
+        const error = new Error(data?.message || data?.error || "Sesi telah berakhir. Silakan login kembali.");
         error.status = 401;
         error.code = data?.code || "session_expired";
+        error.details = data?.details;
+        error.data = data;
         throw error;
       }
 
       if (res.status === 403) {
         // Check if account is locked
-        if (data?.code === "account_locked" || data?.error?.includes("terkunci")) {
-          const error = new Error(data?.error || "Akun terkunci. Hubungi admin untuk bantuan.");
+        if (data?.code === "AUTH009" || data?.code === "AUTH012" || data?.message?.includes("terkunci")) {
+          const error = new Error(data?.message || data?.error || "Akun terkunci. Hubungi admin untuk bantuan.");
           error.status = 403;
-          error.code = "account_locked";
+          error.code = data?.code || "account_locked";
           error.lockedAt = data?.locked_at;
           error.expiresAt = data?.expires_at;
           error.reason = data?.reason;
+          error.details = data?.details;
+          error.data = data;
           throw error;
         }
         // Other 403 errors (permission denied, etc)
-        const error = new Error(data?.error || "Akses ditolak.");
+        const error = new Error(data?.message || data?.error || "Akses ditolak.");
         error.status = 403;
         error.code = data?.code || "forbidden";
+        error.details = data?.details;
+        error.data = data;
         throw error;
       }
 
       // Prioritaskan pesan error dari backend
-      const message = data?.error || data?.message || res.statusText || `Request gagal dengan status ${res.status}`;
+      const message = data?.message || data?.error || res.statusText || `Request gagal dengan status ${res.status}`;
       const error = new Error(message);
       error.status = res.status;
       error.code = data?.code;
+      error.details = data?.details;
+      error.data = data;
       throw error;
     }
 
