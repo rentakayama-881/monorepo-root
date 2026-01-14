@@ -468,8 +468,8 @@ export default function AccountPage() {
           {/* Zona Berbahaya - Delete Account */}
           <DeleteAccountSection API={API} router={router} />
 
-          {error && <Alert type="error" message={error} />}
-          {ok && <Alert type="success" message={ok} />}
+          {error && <Alert variant="error" message={error} />}
+          {ok && <Alert variant="success" message={ok} />}
         </div>
       )}
     </main>
@@ -549,7 +549,7 @@ function DeleteAccountSection({ API, router }) {
           />
         </div>
         
-        {deleteError && <Alert type="error" message={deleteError} />}
+        {deleteError && <Alert variant="error" message={deleteError} />}
         
         <Button
           variant="danger"
