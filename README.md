@@ -124,7 +124,7 @@ alephdraad/
 
 ### Prerequisites
 - Go 1.22+
-- Node.js 20+
+- Node.js 24.12+ (24.x)
 - .NET 8.0 SDK
 - PostgreSQL 16+
 - MongoDB 7.0+
