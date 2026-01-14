@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -116,6 +117,14 @@ func discoverableSessionKey(sessionID string) string {
 	return fmt.Sprintf("webauthn:discover:%s", sessionID)
 }
 
+func generateSessionID(prefix string) (string, error) {
+	token := make([]byte, 32)
+	if _, err := rand.Read(token); err != nil {
+		return "", fmt.Errorf("failed to generate session id: %w", err)
+	}
+	return fmt.Sprintf("%s_%x", prefix, token), nil
+}
+
 // EntWebAuthnUser wraps ent.User to implement webauthn.User interface
 type EntWebAuthnUser struct {
 	User     *ent.User
@@ -182,7 +191,7 @@ func entPasskeyToWebAuthnCredential(pk *ent.Passkey) webauthn.Credential {
 }
 
 // BeginRegistration starts the WebAuthn registration process
-func (s *EntPasskeyService) BeginRegistration(ctx context.Context, userID int) (*protocol.CredentialCreation, error) {
+func (s *EntPasskeyService) BeginRegistration(ctx context.Context, userID int) (*protocol.CredentialCreation, string, error) {
 	client := database.GetEntClient()
 
 	// Get user with passkeys
@@ -191,7 +200,7 @@ func (s *EntPasskeyService) BeginRegistration(ctx context.Context, userID int) (
 		WithPasskeys().
 		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("user not found: %w", err)
+		return nil, "", fmt.Errorf("user not found: %w", err)
 	}
 
 	// Create WebAuthn user adapter
@@ -215,18 +224,18 @@ func (s *EntPasskeyService) BeginRegistration(ctx context.Context, userID int) (
 	)
 	if err != nil {
 		s.logger.Error("Failed to begin registration", zap.Error(err))
-		return nil, fmt.Errorf("failed to begin registration: %w", err)
+		return nil, "", fmt.Errorf("failed to begin registration: %w", err)
 	}
 
 	// Store session for verification
 	sessionKey := registrationSessionKey(userID)
 	s.storeSession(sessionKey, session)
 
-	return options, nil
+	return options, sessionID, nil
 }
 
 // FinishRegistration completes the WebAuthn registration process
-func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, name string, response *protocol.ParsedCredentialCreationData) (*ent.Passkey, error) {
+func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, sessionID string, name string, response *protocol.ParsedCredentialCreationData) (*ent.Passkey, error) {
 	client := database.GetEntClient()
 
 	// Get user with passkeys
@@ -295,7 +304,7 @@ func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, 
 }
 
 // BeginLogin starts the WebAuthn login process
-func (s *EntPasskeyService) BeginLogin(ctx context.Context, email string) (*protocol.CredentialAssertion, error) {
+func (s *EntPasskeyService) BeginLogin(ctx context.Context, email string) (*protocol.CredentialAssertion, string, error) {
 	client := database.GetEntClient()
 
 	// Get user with passkeys by email
@@ -305,13 +314,13 @@ func (s *EntPasskeyService) BeginLogin(ctx context.Context, email string) (*prot
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return nil, errors.New("user not found")
+			return nil, "", errors.New("user not found")
 		}
-		return nil, fmt.Errorf("database error: %w", err)
+		return nil, "", fmt.Errorf("database error: %w", err)
 	}
 
 	if len(u.Edges.Passkeys) == 0 {
-		return nil, errors.New("no passkeys registered")
+		return nil, "", errors.New("no passkeys registered")
 	}
 
 	// Create WebAuthn user adapter
@@ -323,14 +332,14 @@ func (s *EntPasskeyService) BeginLogin(ctx context.Context, email string) (*prot
 	options, session, err := s.webauthn.BeginLogin(webAuthnUser)
 	if err != nil {
 		s.logger.Error("Failed to begin login", zap.Error(err))
-		return nil, fmt.Errorf("failed to begin login: %w", err)
+		return nil, "", fmt.Errorf("failed to begin login: %w", err)
 	}
 
 	// Store session for verification
 	sessionKey := loginSessionKey(email)
 	s.storeSession(sessionKey, session)
 
-	return options, nil
+	return options, sessionID, nil
 }
 
 // BeginDiscoverableLogin starts a discoverable (usernameless) login
@@ -349,7 +358,7 @@ func (s *EntPasskeyService) BeginDiscoverableLogin() (*protocol.CredentialAssert
 }
 
 // FinishLogin completes the WebAuthn login process
-func (s *EntPasskeyService) FinishLogin(ctx context.Context, email string, response *protocol.ParsedCredentialAssertionData) (*ent.User, error) {
+func (s *EntPasskeyService) FinishLogin(ctx context.Context, email string, sessionID string, response *protocol.ParsedCredentialAssertionData) (*ent.User, error) {
 	client := database.GetEntClient()
 
 	// Get user with passkeys
