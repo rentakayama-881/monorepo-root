@@ -105,14 +105,15 @@ func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 	}
 
 	ctx := context.Background()
-	options, err := h.passkeyService.BeginRegistration(ctx, int(userID))
+	options, sessionID, err := h.passkeyService.BeginRegistration(ctx, int(userID))
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, dto.PasskeyRegisterBeginResponse{
-		Options: options,
+		Options:   options,
+		SessionID: sessionID,
 	})
 }
 
@@ -127,10 +128,15 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 	// Parse the raw body to get name and credential
 	var rawRequest struct {
 		Name       string          `json:"name"`
+		SessionID  string          `json:"session_id"`
 		Credential json.RawMessage `json:"credential"`
 	}
 	if err := c.ShouldBindJSON(&rawRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	if rawRequest.SessionID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "session_id required"})
 		return
 	}
 	if len(rawRequest.Credential) == 0 {
@@ -157,7 +163,7 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 	}
 
 	ctx := context.Background()
-	passkey, err := h.passkeyService.FinishRegistration(ctx, int(userID), rawRequest.Name, parsedResponse)
+	passkey, err := h.passkeyService.FinishRegistration(ctx, int(userID), rawRequest.SessionID, rawRequest.Name, parsedResponse)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -257,14 +263,15 @@ func (h *PasskeyHandler) BeginLogin(c *gin.Context) {
 
 	if req.Email != "" {
 		// Non-discoverable login with email
-		options, err := h.passkeyService.BeginLogin(ctx, req.Email)
+		options, sessionID, err := h.passkeyService.BeginLogin(ctx, req.Email)
 		if err != nil {
 			h.handleError(c, err)
 			return
 		}
 
 		c.JSON(http.StatusOK, dto.PasskeyLoginBeginResponse{
-			Options: options,
+			Options:   options,
+			SessionID: sessionID,
 		})
 		return
 	}
@@ -318,7 +325,7 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 
 	ctx := context.Background()
 	var entUser *ent.User
-	if rawRequest.SessionID != "" {
+	if rawRequest.SessionID != "" && rawRequest.Email == "" {
 		// Discoverable login
 		u, err := h.passkeyService.FinishDiscoverableLogin(ctx, rawRequest.SessionID, parsedResponse)
 		if err != nil {
@@ -326,16 +333,19 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 			return
 		}
 		entUser = u
-	} else if rawRequest.Email != "" {
+	} else if rawRequest.SessionID != "" && rawRequest.Email != "" {
 		// Non-discoverable login
-		u, err := h.passkeyService.FinishLogin(ctx, rawRequest.Email, parsedResponse)
+		u, err := h.passkeyService.FinishLogin(ctx, rawRequest.Email, rawRequest.SessionID, parsedResponse)
 		if err != nil {
 			h.handleError(c, err)
 			return
 		}
 		entUser = u
+	} else if rawRequest.Email != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "session_id required for email login"})
+		return
 	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email or session_id required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "session_id required"})
 		return
 	}
 
