@@ -44,7 +44,7 @@ export async function refreshAccessToken() {
         }
 
         // Check if account is locked (403 with specific message)
-        if (res.status === 403 && data?.error?.includes("terkunci")) {
+        if (res.status === 403 && (data?.code === "AUTH009" || data?.code === "AUTH012" || data?.message?.includes("terkunci") || data?.error?.includes("terkunci"))) {
           // Account locked - redirect silently
           clearToken();
           if (typeof window !== "undefined") {

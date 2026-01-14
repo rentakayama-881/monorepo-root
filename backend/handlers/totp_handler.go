@@ -30,15 +30,12 @@ func NewTOTPHandler(totpService *services.TOTPServiceWrapper, log *zap.Logger) *
 // handleTOTPError sends error response for TOTP handlers
 func handleTOTPError(c *gin.Context, err error) {
 	if appErr, ok := err.(*apperrors.AppError); ok {
-		c.JSON(appErr.StatusCode, gin.H{
-			"error": appErr.Message,
-			"code":  appErr.Code,
-		})
+		c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
 		return
 	}
 
 	logger.Error("Unhandled error in TOTP handler", zap.Error(err))
-	c.JSON(http.StatusInternalServerError, gin.H{"error": "Terjadi kesalahan internal"})
+	c.JSON(http.StatusInternalServerError, apperrors.ErrorResponse(apperrors.ErrInternalServer))
 }
 
 // GetStatus returns current 2FA status

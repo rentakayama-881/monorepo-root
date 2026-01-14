@@ -133,6 +133,7 @@ export async function fetchFeature(path, options = {}) {
       const error = new Error(message);
       error.status = res.status;
       error.code = data?.code;
+      error.details = data?.details;
       error.data = data;
       throw error;
     }
@@ -208,16 +209,18 @@ export async function fetchFeatureAuth(path, options = {}) {
       // Handle auth errors
       if (res.status === 401) {
         clearToken();
-        const error = new Error(data?.message || "Your session has expired. Please sign in again.");
+        const error = new Error(data?.message || data?.error || "Your session has expired. Please sign in again.");
         error.status = 401;
         error.code = data?.code || "session_expired";
+        error.details = data?.details;
         throw error;
       }
 
       if (res.status === 403) {
-        const error = new Error(data?.message || "Access denied.");
+        const error = new Error(data?.message || data?.error || "Access denied.");
         error.status = 403;
         error.code = data?.code || "forbidden";
+        error.details = data?.details;
         throw error;
       }
 
@@ -225,6 +228,7 @@ export async function fetchFeatureAuth(path, options = {}) {
       const error = new Error(message);
       error.status = res.status;
       error.code = data?.code;
+      error.details = data?.details;
       error.data = data;
       throw error;
     }

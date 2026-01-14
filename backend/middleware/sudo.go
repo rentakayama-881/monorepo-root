@@ -3,6 +3,8 @@ package middleware
 import (
 	"net/http"
 
+	apperrors "backend-gin/errors"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,34 +20,28 @@ func RequireSudo(validator SudoValidator) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetUint("user_id")
 		if userID == 0 {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized",
-			})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
 			return
 		}
 
 		sudoToken := c.GetHeader("X-Sudo-Token")
 		if sudoToken == "" {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":        "Sudo mode diperlukan untuk aksi ini",
-				"require_sudo": true,
-			})
+			response := apperrors.ErrorResponse(apperrors.NewAppError("SUDO_TOKEN_REQUIRED", "Sudo mode diperlukan untuk aksi ini", http.StatusForbidden))
+			response["require_sudo"] = true
+			c.AbortWithStatusJSON(http.StatusForbidden, response)
 			return
 		}
 
 		valid, err := validator.ValidateToken(userID, sudoToken)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error": "Gagal memvalidasi sesi sudo",
-			})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, apperrors.ErrorResponse(apperrors.ErrInternalServer.WithDetails("Gagal memvalidasi sesi sudo")))
 			return
 		}
 
 		if !valid {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":        "Sesi sudo tidak valid atau sudah kadaluarsa",
-				"require_sudo": true,
-			})
+			response := apperrors.ErrorResponse(apperrors.NewAppError("SUDO_SESSION_INVALID", "Sesi sudo tidak valid atau sudah kadaluarsa", http.StatusForbidden))
+			response["require_sudo"] = true
+			c.AbortWithStatusJSON(http.StatusForbidden, response)
 			return
 		}
 

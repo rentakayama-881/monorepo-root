@@ -165,10 +165,8 @@ func (r *EnhancedRateLimiter) Middleware() gin.HandlerFunc {
 		if r.IsBlacklisted(ip) {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
-				"error": gin.H{
-					"code":    "IP_BLOCKED",
-					"message": "IP address telah diblokir sementara",
-				},
+				"code":    "IP_BLOCKED",
+				"message": "IP address telah diblokir sementara",
 			})
 			c.Abort()
 			return
@@ -180,10 +178,8 @@ func (r *EnhancedRateLimiter) Middleware() gin.HandlerFunc {
 				c.Header("Retry-After", "60")
 				c.JSON(http.StatusTooManyRequests, gin.H{
 					"success": false,
-					"error": gin.H{
-						"code":    apperrors.ErrRateLimitExceeded.Code,
-						"message": "Terlalu banyak permintaan. Silakan coba lagi nanti.",
-					},
+					"code":    apperrors.ErrRateLimitExceeded.Code,
+					"message": "Terlalu banyak permintaan. Silakan coba lagi nanti.",
 				})
 				c.Abort()
 				return
@@ -198,10 +194,8 @@ func (r *EnhancedRateLimiter) Middleware() gin.HandlerFunc {
 					c.Header("Retry-After", "60")
 					c.JSON(http.StatusTooManyRequests, gin.H{
 						"success": false,
-						"error": gin.H{
-							"code":    apperrors.ErrRateLimitExceeded.Code,
-							"message": "Terlalu banyak permintaan. Silakan coba lagi nanti.",
-						},
+						"code":    apperrors.ErrRateLimitExceeded.Code,
+						"message": "Terlalu banyak permintaan. Silakan coba lagi nanti.",
 					})
 					c.Abort()
 					return
@@ -228,10 +222,8 @@ func (r *EnhancedRateLimiter) AuthMiddleware() gin.HandlerFunc {
 		if r.IsBlacklisted(ip) {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
-				"error": gin.H{
-					"code":    "IP_BLOCKED",
-					"message": "IP address telah diblokir sementara",
-				},
+				"code":    "IP_BLOCKED",
+				"message": "IP address telah diblokir sementara",
 			})
 			c.Abort()
 			return
@@ -245,10 +237,8 @@ func (r *EnhancedRateLimiter) AuthMiddleware() gin.HandlerFunc {
 			c.Header("Retry-After", "900") // 15 minutes
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"success": false,
-				"error": gin.H{
-					"code":    apperrors.ErrRateLimitExceeded.Code,
-					"message": "Terlalu banyak percobaan login. IP diblokir 15 menit.",
-				},
+				"code":    apperrors.ErrRateLimitExceeded.Code,
+				"message": "Terlalu banyak percobaan login. IP diblokir 15 menit.",
 			})
 			c.Abort()
 			return
@@ -274,10 +264,8 @@ func (r *EnhancedRateLimiter) SearchMiddleware() gin.HandlerFunc {
 			c.Header("Retry-After", "60")
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"success": false,
-				"error": gin.H{
-					"code":    apperrors.ErrRateLimitExceeded.Code,
-					"message": "Terlalu banyak pencarian. Silakan tunggu sebentar.",
-				},
+				"code":    apperrors.ErrRateLimitExceeded.Code,
+				"message": "Terlalu banyak pencarian. Silakan tunggu sebentar.",
 			})
 			c.Abort()
 			return
