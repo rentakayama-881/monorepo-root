@@ -2,29 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getApiBase } from "@/lib/api";
-
-// Helper to convert ArrayBuffer to Base64URL
-function bufferToBase64URL(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-// Helper to convert Base64URL to ArrayBuffer
-function base64URLToBuffer(base64url) {
-  const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
-  const padLen = (4 - (base64.length % 4)) % 4;
-  const padded = base64 + "=".repeat(padLen);
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes. buffer;
-}
+import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn";
 
 // Check if WebAuthn is supported
 function isWebAuthnSupported() {
@@ -176,20 +154,7 @@ export default function PasskeySettings() {
       }
 
       // 4.  Prepare response for server
-      const credentialForServer = {
-        id: credential.id,
-        rawId: bufferToBase64URL(credential. rawId),
-        type: credential.type,
-        response: {
-          attestationObject:  bufferToBase64URL(credential.response.attestationObject),
-          clientDataJSON: bufferToBase64URL(credential.response.clientDataJSON),
-        },
-      };
-
-      // Add transports if available
-      if (credential.response. getTransports) {
-        credentialForServer.response.transports = credential.response.getTransports();
-      }
+      const credentialForServer = serializePublicKeyCredential(credential);
 
       // Prompt for passkey name
       const passkeyName = prompt("Beri nama untuk passkey ini:", "Passkey") || "Passkey";
