@@ -16,16 +16,16 @@ export default function Hero() {
         <div className="max-w-2xl">
           <h1 className="space-y-0 overflow-visible animate-slide-up">
             <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tighter leading-none text-balance text-foreground">
-              Bangun reputasi, Inovasi, dan Implementasikan apa yang Anda pikirkan,
+              Bangun reputasi, inovasi, dan implementasikan apa yang Anda pikirkan,
             </span>
             <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl italic font-serif tracking-tight leading-tight text-foreground">
-              Support by Kelompok Anti-Solana Drainer.
+              support by Kelompok Anti-Solana Drainer.
             </span>
           </h1>
 
           <p className="mt-6 text-muted-foreground text-lg max-w-xl animate-slide-up" style={{ animationDelay: '0.1s' }}>
             Ketika reputasi dipertaruhkan, Anda butuh lebih dari sekadar pengalaman.
-            Pengalaman adalah guru terbaik - Salam.
+            Maju dan berkembanglah bersama kami - Salam.
           </p>
 
           {/* Feature badges */}
