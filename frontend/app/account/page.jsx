@@ -10,6 +10,7 @@ import { BadgeChip } from "../../components/ui/Badge";
 import Avatar from "../../components/ui/Avatar";
 import { getApiBase } from "@/lib/api";
 import { maskEmail } from "@/lib/email";
+import { fetchWithAuth } from "@/lib/tokenRefresh";
 import TOTPSettings from "@/components/TOTPSettings";
 import PasskeySettings from "@/components/PasskeySettings";
 import { useSudoAction } from "@/components/SudoModal";
@@ -40,10 +41,11 @@ export default function AccountPage() {
     if (!authed) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
-    const t = localStorage.getItem("token");
-    fetch(`${API}/account/me`, { headers: { Authorization: `Bearer ${t}` }})
-      .then(r => r.ok ? r.json() : Promise.reject(new Error("Gagal memuat akun")))
-      .then(data => {
+    const loadAccount = async () => {
+      try {
+        const r = await fetchWithAuth(`${API}/account/me`);
+        if (!r.ok) throw new Error("Gagal memuat akun");
+        const data = await r.json();
         if (cancelled) return;
         setMe(data);
         setUsername(data.username || "");
@@ -57,32 +59,39 @@ export default function AccountPage() {
         });
         const s = Array.isArray(data.social_accounts) ? data.social_accounts : [];
         setSocials(s.length ? s : [{ label: "", url: "" }]);
-      })
-      .catch(e => setError(e.message))
-      .finally(() => !cancelled && setLoading(false));
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    loadAccount();
     return () => { cancelled = true; };
   }, [API, authed]);
 
   // Fetch user badges
   useEffect(() => {
     if (!authed) return;
-    const t = localStorage.getItem("token");
-    fetch(`${API}/account/badges`, { headers: { Authorization: `Bearer ${t}` }})
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(data => {
+    const loadBadges = async () => {
+      try {
+        const r = await fetchWithAuth(`${API}/account/badges`);
+        if (!r.ok) return;
+        const data = await r.json();
         setBadges(data.badges || []);
         setPrimaryBadgeId(data.primary_badge_id || null);
-      })
-      .catch(() => {});
+      } catch {
+        // Ignore badge fetch errors
+      }
+    };
+    loadBadges();
   }, [API, authed]);
 
   async function savePrimaryBadge(badgeId) {
     setError(""); setOk(""); setSavingBadge(true);
     try {
-      const t = localStorage.getItem("token");
-      const r = await fetch(`${API}/account/primary-badge`, {
+      const r = await fetchWithAuth(`${API}/account/primary-badge`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ badge_id: badgeId ? Number(badgeId) : null }),
       });
       if (!r.ok) throw new Error("Gagal menyimpan primary badge");
@@ -130,12 +139,10 @@ export default function AccountPage() {
     setError(""); setOk(""); setAvatarUploading(true);
     try {
       if (!avatarFile) throw new Error("Pilih file gambar terlebih dahulu");
-      const t = localStorage.getItem("token");
       const fd = new FormData();
       fd.append("file", avatarFile);
-      const r = await fetch(`${API}/account/avatar`, {
+      const r = await fetchWithAuth(`${API}/account/avatar`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${t}` },
         body: fd,
       });
       const txt = await r.text();
@@ -157,10 +164,8 @@ export default function AccountPage() {
   async function deleteAvatar() {
     setError(""); setOk(""); setAvatarDeleting(true);
     try {
-      const t = localStorage.getItem("token");
-      const r = await fetch(`${API}/account/avatar`, {
+      const r = await fetchWithAuth(`${API}/account/avatar`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${t}` },
       });
       if (!r.ok) {
         const txt = await r.text();
@@ -179,11 +184,10 @@ export default function AccountPage() {
     e.preventDefault();
     setError(""); setOk("");
     try {
-      const t = localStorage.getItem("token");
       const body = { ...form, social_accounts: socials.filter(s => s.label || s.url) };
-      const r = await fetch(`${API}/account`, {
+      const r = await fetchWithAuth(`${API}/account`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error(await r.text() || "Gagal menyimpan akun");
@@ -195,10 +199,9 @@ export default function AccountPage() {
     setError(""); setOk(""); setChgLoading(true);
     try {
       if (!newUsername) throw new Error("Masukkan username baru");
-      const t = localStorage.getItem("token");
-      const r = await fetch(`${API}/account/change-username`, {
+      const r = await fetchWithAuth(`${API}/account/change-username`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_username: newUsername }),
       });
       const txt = await r.text();
