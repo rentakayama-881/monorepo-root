@@ -26,8 +26,7 @@ const geistMono = Geist_Mono({
 
 const siteName = "Alephdraad";
 const siteDescription = "Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.";
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.alephdraad.fun";
-
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://alephdraad.fun";
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
