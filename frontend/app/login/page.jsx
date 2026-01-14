@@ -5,29 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchJson, getApiBase } from "@/lib/api";
 import { setTokens, getToken, TOKEN_KEY, AUTH_CHANGED_EVENT } from "@/lib/auth";
-
-// Helper to convert ArrayBuffer to Base64URL
-function bufferToBase64URL(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-// Helper to convert Base64URL to ArrayBuffer
-function base64URLToBuffer(base64url) {
-  const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
-  const padLen = (4 - (base64.length % 4)) % 4;
-  const padded = base64 + "=".repeat(padLen);
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
+import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn";
 
 // Check if WebAuthn is supported
 function isWebAuthnSupported() {
@@ -162,21 +140,7 @@ function LoginForm() {
       }
 
       // 3. Prepare response for server
-      const credentialForServer = {
-        id: credential.id,
-        rawId: bufferToBase64URL(credential.rawId),
-        type: credential.type,
-        response: {
-          authenticatorData: bufferToBase64URL(credential.response.authenticatorData),
-          clientDataJSON: bufferToBase64URL(credential.response.clientDataJSON),
-          signature: bufferToBase64URL(credential.response.signature),
-        },
-      };
-
-      // Add userHandle if present (for discoverable credentials)
-      if (credential.response.userHandle) {
-        credentialForServer.response.userHandle = bufferToBase64URL(credential.response.userHandle);
-      }
+      const credentialForServer = serializePublicKeyCredential(credential);
 
       // 4. Finish login - send credential to server
       const finishRes = await fetch(`${API}/api/auth/passkeys/login/finish`, {
