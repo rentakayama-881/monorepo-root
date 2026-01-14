@@ -126,10 +126,18 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 
 	// Parse the raw body to get name and credential
 	var rawRequest struct {
-		Name       string `json:"name"`
+		Name       string          `json:"name"`
 		Credential json.RawMessage `json:"credential"`
 	}
 	if err := c.ShouldBindJSON(&rawRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	if len(rawRequest.Credential) == 0 {
+		h.logger.Warn("Passkey registration missing credential payload",
+			zap.String("host", c.Request.Host),
+			zap.String("origin", c.GetHeader("Origin")),
+		)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
@@ -139,7 +147,11 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 		bytes.NewReader(rawRequest.Credential),
 	)
 	if err != nil {
-		h.logger.Error("Failed to parse credential", zap.Error(err))
+		h.logger.Error("Failed to parse registration credential",
+			zap.Error(err),
+			zap.String("host", c.Request.Host),
+			zap.String("origin", c.GetHeader("Origin")),
+		)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid credential format"})
 		return
 	}
@@ -273,11 +285,19 @@ func (h *PasskeyHandler) BeginLogin(c *gin.Context) {
 // FinishLogin completes passkey login
 func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	var rawRequest struct {
-		Email      string `json:"email"`
-		SessionID  string `json:"session_id"`
+		Email      string          `json:"email"`
+		SessionID  string          `json:"session_id"`
 		Credential json.RawMessage `json:"credential"`
 	}
 	if err := c.ShouldBindJSON(&rawRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	if len(rawRequest.Credential) == 0 {
+		h.logger.Warn("Passkey login missing credential payload",
+			zap.String("host", c.Request.Host),
+			zap.String("origin", c.GetHeader("Origin")),
+		)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
@@ -287,7 +307,11 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 		bytes.NewReader(rawRequest.Credential),
 	)
 	if err != nil {
-		h.logger.Error("Failed to parse credential", zap.Error(err))
+		h.logger.Error("Failed to parse login credential",
+			zap.Error(err),
+			zap.String("host", c.Request.Host),
+			zap.String("origin", c.GetHeader("Origin")),
+		)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid credential format"})
 		return
 	}
