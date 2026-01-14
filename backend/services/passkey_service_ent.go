@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"backend-gin/database"
@@ -15,18 +14,15 @@ import (
 
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
 // EntPasskeyService handles WebAuthn/Passkey operations using Ent ORM
 type EntPasskeyService struct {
-	logger   *zap.Logger
-	webauthn *webauthn.WebAuthn
-	// In-memory session store for WebAuthn ceremonies
-	// In production, use Redis or database
-	sessionStore   map[string]*webauthn.SessionData
-	sessionStoreMu sync.RWMutex
-	sessionTTL     time.Duration
+	logger     *zap.Logger
+	webauthn   *webauthn.WebAuthn
+	sessionTTL time.Duration
 }
 
 // NewEntPasskeyService creates a new EntPasskeyService
@@ -71,37 +67,53 @@ func NewEntPasskeyService(logger *zap.Logger, rpID string, rpOrigins []string, r
 	}
 
 	return &EntPasskeyService{
-		logger:       logger,
-		webauthn:     w,
-		sessionStore: make(map[string]*webauthn.SessionData),
-		sessionTTL:   time.Minute * 5,
+		logger:     logger,
+		webauthn:   w,
+		sessionTTL: time.Minute * 5,
 	}, nil
 }
 
 // storeSession stores a WebAuthn session
 func (s *EntPasskeyService) storeSession(key string, session *webauthn.SessionData) {
-	s.sessionStoreMu.Lock()
-	defer s.sessionStoreMu.Unlock()
-	s.sessionStore[key] = session
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-	// Clean up expired sessions periodically
-	go func() {
-		time.Sleep(s.sessionTTL)
-		s.sessionStoreMu.Lock()
-		delete(s.sessionStore, key)
-		s.sessionStoreMu.Unlock()
-	}()
+	if err := CacheSet(ctx, key, session, s.sessionTTL); err != nil {
+		s.logger.Error("Failed to store WebAuthn session", zap.String("key", key), zap.Error(err))
+	}
 }
 
 // getSession retrieves and deletes a WebAuthn session
 func (s *EntPasskeyService) getSession(key string) (*webauthn.SessionData, bool) {
-	s.sessionStoreMu.Lock()
-	defer s.sessionStoreMu.Unlock()
-	session, ok := s.sessionStore[key]
-	if ok {
-		delete(s.sessionStore, key)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var session webauthn.SessionData
+	if err := CacheGet(ctx, key, &session); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, false
+		}
+		s.logger.Error("Failed to retrieve WebAuthn session", zap.String("key", key), zap.Error(err))
+		return nil, false
 	}
-	return session, ok
+
+	if err := CacheDelete(ctx, key); err != nil {
+		s.logger.Warn("Failed to delete WebAuthn session", zap.String("key", key), zap.Error(err))
+	}
+
+	return &session, true
+}
+
+func registrationSessionKey(userID int) string {
+	return fmt.Sprintf("webauthn:reg:%d", userID)
+}
+
+func loginSessionKey(email string) string {
+	return fmt.Sprintf("webauthn:login:%s", email)
+}
+
+func discoverableSessionKey(sessionID string) string {
+	return fmt.Sprintf("webauthn:discover:%s", sessionID)
 }
 
 // EntWebAuthnUser wraps ent.User to implement webauthn.User interface
@@ -207,7 +219,7 @@ func (s *EntPasskeyService) BeginRegistration(ctx context.Context, userID int) (
 	}
 
 	// Store session for verification
-	sessionKey := fmt.Sprintf("reg_%d", userID)
+	sessionKey := registrationSessionKey(userID)
 	s.storeSession(sessionKey, session)
 
 	return options, nil
@@ -233,7 +245,7 @@ func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, 
 	}
 
 	// Get session
-	sessionKey := fmt.Sprintf("reg_%d", userID)
+	sessionKey := registrationSessionKey(userID)
 	session, ok := s.getSession(sessionKey)
 	if !ok {
 		return nil, errors.New("registration session expired or not found")
@@ -315,7 +327,7 @@ func (s *EntPasskeyService) BeginLogin(ctx context.Context, email string) (*prot
 	}
 
 	// Store session for verification
-	sessionKey := fmt.Sprintf("login_%s", email)
+	sessionKey := loginSessionKey(email)
 	s.storeSession(sessionKey, session)
 
 	return options, nil
@@ -331,7 +343,7 @@ func (s *EntPasskeyService) BeginDiscoverableLogin() (*protocol.CredentialAssert
 
 	// Generate a random session ID
 	sessionID := fmt.Sprintf("discover_%d", time.Now().UnixNano())
-	s.storeSession(sessionID, session)
+	s.storeSession(discoverableSessionKey(sessionID), session)
 
 	return options, sessionID, nil
 }
@@ -356,7 +368,7 @@ func (s *EntPasskeyService) FinishLogin(ctx context.Context, email string, respo
 	}
 
 	// Get session
-	sessionKey := fmt.Sprintf("login_%s", email)
+	sessionKey := loginSessionKey(email)
 	session, ok := s.getSession(sessionKey)
 	if !ok {
 		return nil, errors.New("login session expired or not found")
@@ -394,7 +406,7 @@ func (s *EntPasskeyService) FinishDiscoverableLogin(ctx context.Context, session
 	client := database.GetEntClient()
 
 	// Get session
-	session, ok := s.getSession(sessionID)
+	session, ok := s.getSession(discoverableSessionKey(sessionID))
 	if !ok {
 		return nil, errors.New("login session expired or not found")
 	}
