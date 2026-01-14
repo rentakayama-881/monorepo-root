@@ -4,11 +4,11 @@ import "time"
 
 // PasskeyResponse represents a passkey in API responses
 type PasskeyResponse struct {
-	ID          uint       `json:"id"`
-	Name        string     `json:"name"`
-	CreatedAt   time.Time  `json:"created_at"`
-	LastUsedAt  *time.Time `json:"last_used_at,omitempty"`
-	Transports  []string   `json:"transports,omitempty"`
+	ID         uint       `json:"id"`
+	Name       string     `json:"name"`
+	CreatedAt  time.Time  `json:"created_at"`
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+	Transports []string   `json:"transports,omitempty"`
 }
 
 // PasskeyListResponse is the response for listing passkeys
@@ -25,12 +25,14 @@ type PasskeyStatusResponse struct {
 
 // PasskeyRegisterBeginResponse is sent to client to start registration
 type PasskeyRegisterBeginResponse struct {
-	Options interface{} `json:"options"`
+	Options   interface{} `json:"options"`
+	SessionID string      `json:"session_id"`
 }
 
 // PasskeyRegisterFinishRequest is sent from client to complete registration
 type PasskeyRegisterFinishRequest struct {
 	Name       string      `json:"name"`
+	SessionID  string      `json:"session_id"`
 	Credential interface{} `json:"credential"`
 }
 
@@ -42,13 +44,13 @@ type PasskeyLoginBeginRequest struct {
 // PasskeyLoginBeginResponse is sent to client to start login
 type PasskeyLoginBeginResponse struct {
 	Options   interface{} `json:"options"`
-	SessionID string      `json:"session_id,omitempty"` // For discoverable login
+	SessionID string      `json:"session_id,omitempty"` // For login ceremonies
 }
 
 // PasskeyLoginFinishRequest is sent from client to complete login
 type PasskeyLoginFinishRequest struct {
 	Email      string      `json:"email,omitempty"`      // For non-discoverable login
-	SessionID  string      `json:"session_id,omitempty"` // For discoverable login
+	SessionID  string      `json:"session_id,omitempty"` // For login ceremonies
 	Credential interface{} `json:"credential"`
 }
 
