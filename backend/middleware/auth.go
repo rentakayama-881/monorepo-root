@@ -10,6 +10,7 @@ import (
 	"backend-gin/ent/session"
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/user"
+	apperrors "backend-gin/errors"
 	"backend-gin/logger"
 
 	"github.com/gin-gonic/gin"
@@ -22,7 +23,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		// Ambil token dari header Authorization
 		authHeader := c.GetHeader("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			abortWithAppError(c, apperrors.ErrInvalidToken.WithDetails("Token diperlukan"), nil)
 			return
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
@@ -30,13 +31,13 @@ func AuthMiddleware() gin.HandlerFunc {
 		// Parsing dan validasi JWT
 		claims, err := ParseJWT(tokenString)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token tidak valid"})
+			abortWithAppError(c, apperrors.ErrInvalidToken.WithDetails("Token tidak valid"), nil)
 			return
 		}
 
 		// Validate token type - must be access token
 		if claims.TokenType != "" && claims.TokenType != TokenTypeAccess {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token type tidak valid"})
+			abortWithAppError(c, apperrors.ErrInvalidToken.WithDetails("Token type tidak valid"), nil)
 			return
 		}
 
@@ -50,11 +51,11 @@ func AuthMiddleware() gin.HandlerFunc {
 		} else if claims.Email != "" {
 			entUser, err2 = client.User.Query().Where(user.EmailEQ(claims.Email)).Only(c.Request.Context())
 		} else {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token tidak valid"})
+			abortWithAppError(c, apperrors.ErrInvalidToken.WithDetails("Token tidak valid"), nil)
 			return
 		}
 		if err2 != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User tidak ditemukan"})
+			abortWithAppError(c, apperrors.ErrInvalidToken.WithDetails("User tidak ditemukan"), nil)
 			return
 		}
 
@@ -62,9 +63,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		if lock, err := client.SessionLock.Query().Where(sessionlock.UserIDEQ(entUser.ID)).Order(ent.Desc(sessionlock.FieldCreatedAt)).First(c.Request.Context()); err == nil && lock != nil {
 			// Consider locked if unlocked_at is nil and expires_at in future
 			if lock.UnlockedAt == nil && lock.ExpiresAt.After(time.Now()) {
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-					"error":      "Akun terkunci karena aktivitas mencurigakan. Hubungi admin untuk membuka.",
-					"code":       "account_locked",
+				abortWithAppError(c, apperrors.ErrAccountLocked.WithDetails("Akun terkunci karena aktivitas mencurigakan. Hubungi admin untuk membuka."), map[string]interface{}{
 					"locked_at":  lock.LockedAt,
 					"expires_at": lock.ExpiresAt,
 					"reason":     lock.Reason,
@@ -85,7 +84,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			if err == nil && sess != nil {
 				// Validate not revoked and not expired
 				if sess.RevokedAt != nil || sess.ExpiresAt.Before(time.Now()) {
-					c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session tidak valid"})
+					abortWithAppError(c, apperrors.ErrSessionInvalid, nil)
 					return
 				}
 
@@ -130,4 +129,12 @@ func truncateString(s string, max int) string {
 		return s[:max]
 	}
 	return s
+}
+
+func abortWithAppError(c *gin.Context, appErr *apperrors.AppError, extra map[string]interface{}) {
+	response := apperrors.ErrorResponse(appErr)
+	for key, value := range extra {
+		response[key] = value
+	}
+	c.AbortWithStatusJSON(appErr.StatusCode, response)
 }

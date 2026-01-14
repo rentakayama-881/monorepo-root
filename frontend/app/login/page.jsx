@@ -5,29 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchJson, getApiBase } from "@/lib/api";
 import { setTokens, getToken, TOKEN_KEY, AUTH_CHANGED_EVENT } from "@/lib/auth";
-
-// Helper to convert ArrayBuffer to Base64URL
-function bufferToBase64URL(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-// Helper to convert Base64URL to ArrayBuffer
-function base64URLToBuffer(base64url) {
-  const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
-  const padLen = (4 - (base64.length % 4)) % 4;
-  const padded = base64 + "=".repeat(padLen);
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
+import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn";
+import ApiErrorAlert from "@/components/ApiErrorAlert";
 
 // Check if WebAuthn is supported
 function isWebAuthnSupported() {
@@ -53,7 +32,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
 
   // TOTP state
   const [requiresTOTP, setRequiresTOTP] = useState(false);
@@ -116,12 +95,12 @@ function LoginForm() {
   // Passkey login handler
   async function onPasskeyLogin() {
     if (!isWebAuthnSupported()) {
-      setError("Browser Anda tidak mendukung Passkey");
+      setError(new Error("Browser Anda tidak mendukung Passkey"));
       return;
     }
 
     setPasskeyLoading(true);
-    setError("");
+    setError(null);
 
     try {
       const API = getApiBase();
@@ -135,7 +114,10 @@ function LoginForm() {
 
       if (!beginRes.ok) {
         const errData = await beginRes.json();
-        throw new Error(errData.error || "Failed to initiate passkey authentication");
+        const error = new Error(errData.message || errData.error || "Failed to initiate passkey authentication");
+        error.code = errData.code;
+        error.details = errData.details;
+        throw error;
       }
 
       const { options, session_id } = await beginRes.json();
@@ -162,21 +144,7 @@ function LoginForm() {
       }
 
       // 3. Prepare response for server
-      const credentialForServer = {
-        id: credential.id,
-        rawId: bufferToBase64URL(credential.rawId),
-        type: credential.type,
-        response: {
-          authenticatorData: bufferToBase64URL(credential.response.authenticatorData),
-          clientDataJSON: bufferToBase64URL(credential.response.clientDataJSON),
-          signature: bufferToBase64URL(credential.response.signature),
-        },
-      };
-
-      // Add userHandle if present (for discoverable credentials)
-      if (credential.response.userHandle) {
-        credentialForServer.response.userHandle = bufferToBase64URL(credential.response.userHandle);
-      }
+      const credentialForServer = serializePublicKeyCredential(credential);
 
       // 4. Finish login - send credential to server
       const finishRes = await fetch(`${API}/api/auth/passkeys/login/finish`, {
@@ -190,7 +158,10 @@ function LoginForm() {
 
       if (!finishRes.ok) {
         const errData = await finishRes.json();
-        throw new Error(errData.error || "Failed to complete authentication");
+        const error = new Error(errData.message || errData.error || "Failed to complete authentication");
+        error.code = errData.code;
+        error.details = errData.details;
+        throw error;
       }
 
       const data = await finishRes.json();
@@ -207,9 +178,9 @@ function LoginForm() {
       }
     } catch (err) {
       if (err.name === "NotAllowedError") {
-        setError("Login dibatalkan atau tidak diizinkan");
+        setError(new Error("Login dibatalkan atau tidak diizinkan"));
       } else {
-        setError(err.message || "Gagal login dengan passkey");
+        setError(err);
       }
     } finally {
       setPasskeyLoading(false);
@@ -218,7 +189,7 @@ function LoginForm() {
 
   async function onSubmit(e) {
     e.preventDefault();
-    setError("");
+    setError(null);
     setLoading(true);
     try {
       const data = await fetchJson(`/api/auth/login`, {
@@ -246,7 +217,7 @@ function LoginForm() {
       }
 
     } catch (e) {
-      setError(e.message || "Terjadi kesalahan");
+      setError(e);
     } finally {
       setLoading(false);
     }
@@ -254,7 +225,7 @@ function LoginForm() {
 
   async function onTOTPSubmit(e) {
     e.preventDefault();
-    setError("");
+    setError(null);
     setLoading(true);
     try {
       const endpoint = useBackupCode ? "/api/auth/login/backup-code" : "/api/auth/login/totp";
@@ -267,7 +238,10 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Kode tidak valid");
+        const error = new Error(data.message || data.error || "Kode tidak valid");
+        error.code = data.code;
+        error.details = data.details;
+        throw error;
       }
 
       // Success - store tokens
@@ -281,7 +255,7 @@ function LoginForm() {
       }
 
     } catch (e) {
-      setError(e.message || "Terjadi kesalahan");
+      setError(e);
     } finally {
       setLoading(false);
     }
@@ -317,7 +291,7 @@ function LoginForm() {
                 autoFocus
               />
             </div>
-            {error && <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</div>}
+            <ApiErrorAlert error={error} />
             <button type="submit" disabled={loading || totpCode.length < (useBackupCode ? 8 : 6)} className={primaryButton}>
               {loading ? "Memverifikasi..." : "Verifikasi"}
             </button>
@@ -327,7 +301,7 @@ function LoginForm() {
                 onClick={() => {
                   setUseBackupCode(!useBackupCode);
                   setTotpCode("");
-                  setError("");
+                  setError(null);
                 }}
                 className="text-sm text-muted-foreground hover:text-foreground hover:underline"
               >
@@ -399,7 +373,7 @@ function LoginForm() {
               Lupa password?
             </Link>
           </div>
-          {error && <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</div>}
+          <ApiErrorAlert error={error} className="mb-2" />
           <button type="submit" disabled={loading} className={primaryButton}>
             {loading ? "Memproses..." : "Masuk"}
           </button>

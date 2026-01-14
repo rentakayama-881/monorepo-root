@@ -44,15 +44,12 @@ func NewAuthHandler(authService *services.AuthServiceWrapper, sessionService *se
 // handleError sends error response
 func handleError(c *gin.Context, err error) {
 	if appErr, ok := err.(*apperrors.AppError); ok {
-		c.JSON(appErr.StatusCode, gin.H{
-			"error": appErr.Message,
-			"code":  appErr.Code,
-		})
+		c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
 		return
 	}
 
 	logger.Error("Unhandled error", zap.Error(err))
-	c.JSON(http.StatusInternalServerError, gin.H{"error": "Terjadi kesalahan internal"})
+	c.JSON(http.StatusInternalServerError, apperrors.ErrorResponse(apperrors.ErrInternalServer))
 }
 
 // Register handles user registration

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -110,6 +111,83 @@ func buildCORSConfig() cors.Config {
 	return corsConfig
 }
 
+func expandWWWOrigins(origin string) []string {
+	parsed, err := url.Parse(origin)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return []string{origin}
+	}
+
+	host := parsed.Hostname()
+	port := parsed.Port()
+	if host == "" {
+		return []string{origin}
+	}
+
+	variants := []string{origin}
+	addVariant := func(h string) {
+		u := *parsed
+		if port != "" {
+			u.Host = h + ":" + port
+		} else {
+			u.Host = h
+		}
+		variants = append(variants, u.String())
+	}
+
+	if strings.HasPrefix(host, "www.") {
+		bare := strings.TrimPrefix(host, "www.")
+		if bare != "" {
+			addVariant(bare)
+		}
+	} else if len(strings.Split(host, ".")) == 2 {
+		addVariant("www." + host)
+	}
+
+	return variants
+}
+
+func deriveRPOrigins() []string {
+	var rawOrigins []string
+	originsEnv := strings.TrimSpace(os.Getenv("WEBAUTHN_RP_ORIGINS"))
+	if originsEnv != "" {
+		rawOrigins = strings.Split(originsEnv, ",")
+	} else {
+		rpOrigin := strings.TrimSpace(os.Getenv("WEBAUTHN_RP_ORIGIN"))
+		if rpOrigin == "" {
+			rpOrigin = strings.TrimSpace(os.Getenv("FRONTEND_BASE_URL"))
+			if rpOrigin == "" {
+				rpOrigin = "http://localhost:3000"
+			}
+		}
+		rawOrigins = []string{rpOrigin}
+	}
+
+	originSet := map[string]struct{}{}
+	origins := []string{}
+	for _, origin := range rawOrigins {
+		clean := strings.TrimSpace(origin)
+		if clean == "" {
+			continue
+		}
+		for _, candidate := range expandWWWOrigins(clean) {
+			if candidate == "" {
+				continue
+			}
+			if _, exists := originSet[candidate]; exists {
+				continue
+			}
+			originSet[candidate] = struct{}{}
+			origins = append(origins, candidate)
+		}
+	}
+
+	if len(origins) == 0 {
+		return []string{"http://localhost:3000"}
+	}
+
+	return origins
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -162,22 +240,21 @@ func main() {
 	logger.Info("Using Ent ORM for ThreadService")
 
 	// Initialize passkey service with WebAuthn config
-	rpID := os.Getenv("WEBAUTHN_RP_ID")
+	rpID := strings.TrimSpace(os.Getenv("WEBAUTHN_RP_ID"))
+	rpOrigins := deriveRPOrigins()
 	if rpID == "" {
 		rpID = "localhost"
-	}
-	rpOrigin := os.Getenv("WEBAUTHN_RP_ORIGIN")
-	if rpOrigin == "" {
-		rpOrigin = strings.TrimSpace(os.Getenv("FRONTEND_BASE_URL"))
-		if rpOrigin == "" {
-			rpOrigin = "http://localhost:3000"
+		if len(rpOrigins) > 0 {
+			if parsed, err := url.Parse(rpOrigins[0]); err == nil && parsed.Hostname() != "" {
+				rpID = parsed.Hostname()
+			}
 		}
 	}
 	rpName := os.Getenv("WEBAUTHN_RP_NAME")
 	if rpName == "" {
 		rpName = "Alephdraad"
 	}
-	passkeyService, err := services.NewEntPasskeyService(logger.GetLogger(), rpID, rpOrigin, rpName)
+	passkeyService, err := services.NewEntPasskeyService(logger.GetLogger(), rpID, rpOrigins, rpName)
 	if err != nil {
 		logger.Fatal("Failed to initialize passkey service", zap.Error(err))
 	}

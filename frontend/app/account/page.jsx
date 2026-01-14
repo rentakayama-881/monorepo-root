@@ -10,6 +10,7 @@ import { BadgeChip } from "../../components/ui/Badge";
 import Avatar from "../../components/ui/Avatar";
 import { fetchJsonAuth } from "@/lib/api";
 import { maskEmail } from "@/lib/email";
+import { fetchWithAuth } from "@/lib/tokenRefresh";
 import TOTPSettings from "@/components/TOTPSettings";
 import PasskeySettings from "@/components/PasskeySettings";
 import { useSudoAction } from "@/components/SudoModal";

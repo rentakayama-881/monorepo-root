@@ -282,14 +282,7 @@ func (h *ThreadHandler) handleError(c *gin.Context, err error) {
 			zap.String("message", appErr.Message),
 			zap.Int("status", appErr.StatusCode),
 		)
-		response := gin.H{
-			"error": appErr.Message,
-			"code":  appErr.Code,
-		}
-		if appErr.Details != "" {
-			response["details"] = appErr.Details
-		}
-		c.JSON(appErr.StatusCode, response)
+		c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
 		return
 	}
 
@@ -297,8 +290,5 @@ func (h *ThreadHandler) handleError(c *gin.Context, err error) {
 	logger.Error("Unexpected error in thread handler",
 		zap.Error(err),
 	)
-	c.JSON(http.StatusInternalServerError, gin.H{
-		"error": "Terjadi kesalahan internal",
-		"code":  "SRV001",
-	})
+	c.JSON(http.StatusInternalServerError, apperrors.ErrorResponse(apperrors.ErrInternalServer))
 }

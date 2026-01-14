@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"sync"
 	"time"
 
@@ -15,27 +17,24 @@ import (
 
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
 // EntPasskeyService handles WebAuthn/Passkey operations using Ent ORM
 type EntPasskeyService struct {
-	logger   *zap.Logger
-	webauthn *webauthn.WebAuthn
-	// In-memory session store for WebAuthn ceremonies
-	// In production, use Redis or database
-	sessionStore   map[string]*webauthn.SessionData
-	sessionStoreMu sync.RWMutex
-	sessionTTL     time.Duration
+	logger     *zap.Logger
+	webauthn   *webauthn.WebAuthn
+	sessionTTL time.Duration
 }
 
 // NewEntPasskeyService creates a new EntPasskeyService
-func NewEntPasskeyService(logger *zap.Logger, rpID, rpOrigin, rpName string) (*EntPasskeyService, error) {
+func NewEntPasskeyService(logger *zap.Logger, rpID string, rpOrigins []string, rpName string) (*EntPasskeyService, error) {
 	if rpID == "" {
 		rpID = "localhost"
 	}
-	if rpOrigin == "" {
-		rpOrigin = "http://localhost:3000"
+	if len(rpOrigins) == 0 {
+		rpOrigins = []string{"http://localhost:3000"}
 	}
 	if rpName == "" {
 		rpName = "Alephdraad"
@@ -44,7 +43,7 @@ func NewEntPasskeyService(logger *zap.Logger, rpID, rpOrigin, rpName string) (*E
 	wconfig := &webauthn.Config{
 		RPDisplayName: rpName,
 		RPID:          rpID,
-		RPOrigins:     []string{rpOrigin},
+		RPOrigins:     rpOrigins,
 		AuthenticatorSelection: protocol.AuthenticatorSelection{
 			AuthenticatorAttachment: protocol.AuthenticatorAttachment(""),
 			ResidentKey:             protocol.ResidentKeyRequirementPreferred,
@@ -71,37 +70,61 @@ func NewEntPasskeyService(logger *zap.Logger, rpID, rpOrigin, rpName string) (*E
 	}
 
 	return &EntPasskeyService{
-		logger:       logger,
-		webauthn:     w,
-		sessionStore: make(map[string]*webauthn.SessionData),
-		sessionTTL:   time.Minute * 5,
+		logger:     logger,
+		webauthn:   w,
+		sessionTTL: time.Minute * 5,
 	}, nil
 }
 
 // storeSession stores a WebAuthn session
 func (s *EntPasskeyService) storeSession(key string, session *webauthn.SessionData) {
-	s.sessionStoreMu.Lock()
-	defer s.sessionStoreMu.Unlock()
-	s.sessionStore[key] = session
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-	// Clean up expired sessions periodically
-	go func() {
-		time.Sleep(s.sessionTTL)
-		s.sessionStoreMu.Lock()
-		delete(s.sessionStore, key)
-		s.sessionStoreMu.Unlock()
-	}()
+	if err := CacheSet(ctx, key, session, s.sessionTTL); err != nil {
+		s.logger.Error("Failed to store WebAuthn session", zap.String("key", key), zap.Error(err))
+	}
 }
 
 // getSession retrieves and deletes a WebAuthn session
 func (s *EntPasskeyService) getSession(key string) (*webauthn.SessionData, bool) {
-	s.sessionStoreMu.Lock()
-	defer s.sessionStoreMu.Unlock()
-	session, ok := s.sessionStore[key]
-	if ok {
-		delete(s.sessionStore, key)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var session webauthn.SessionData
+	if err := CacheGet(ctx, key, &session); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, false
+		}
+		s.logger.Error("Failed to retrieve WebAuthn session", zap.String("key", key), zap.Error(err))
+		return nil, false
 	}
-	return session, ok
+
+	if err := CacheDelete(ctx, key); err != nil {
+		s.logger.Warn("Failed to delete WebAuthn session", zap.String("key", key), zap.Error(err))
+	}
+
+	return &session, true
+}
+
+func registrationSessionKey(userID int) string {
+	return fmt.Sprintf("webauthn:reg:%d", userID)
+}
+
+func loginSessionKey(email string) string {
+	return fmt.Sprintf("webauthn:login:%s", email)
+}
+
+func discoverableSessionKey(sessionID string) string {
+	return fmt.Sprintf("webauthn:discover:%s", sessionID)
+}
+
+func generateSessionID(prefix string) (string, error) {
+	token := make([]byte, 32)
+	if _, err := rand.Read(token); err != nil {
+		return "", fmt.Errorf("failed to generate session id: %w", err)
+	}
+	return fmt.Sprintf("%s_%x", prefix, token), nil
 }
 
 // EntWebAuthnUser wraps ent.User to implement webauthn.User interface
@@ -170,7 +193,7 @@ func entPasskeyToWebAuthnCredential(pk *ent.Passkey) webauthn.Credential {
 }
 
 // BeginRegistration starts the WebAuthn registration process
-func (s *EntPasskeyService) BeginRegistration(ctx context.Context, userID int) (*protocol.CredentialCreation, error) {
+func (s *EntPasskeyService) BeginRegistration(ctx context.Context, userID int) (*protocol.CredentialCreation, string, error) {
 	client := database.GetEntClient()
 
 	// Get user with passkeys
@@ -179,7 +202,7 @@ func (s *EntPasskeyService) BeginRegistration(ctx context.Context, userID int) (
 		WithPasskeys().
 		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("user not found: %w", err)
+		return nil, "", fmt.Errorf("user not found: %w", err)
 	}
 
 	// Create WebAuthn user adapter
@@ -203,19 +226,21 @@ func (s *EntPasskeyService) BeginRegistration(ctx context.Context, userID int) (
 	)
 	if err != nil {
 		s.logger.Error("Failed to begin registration", zap.Error(err))
-		return nil, fmt.Errorf("failed to begin registration: %w", err)
+		return nil, "", fmt.Errorf("failed to begin registration: %w", err)
 	}
 
 	// Store session for verification
-	sessionKey := fmt.Sprintf("reg_%d", userID)
+	sessionKey := registrationSessionKey(userID)
 	s.storeSession(sessionKey, session)
 
-	return options, nil
+	return options, sessionID, nil
 }
 
 // FinishRegistration completes the WebAuthn registration process
-func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, name string, response *protocol.ParsedCredentialCreationData) (*ent.Passkey, error) {
+func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, sessionID string, name string, response *protocol.ParsedCredentialCreationData) (*ent.Passkey, error) {
 	client := database.GetEntClient()
+	origin, host := originAndHostFromCreation(response)
+	sessionFound := false
 
 	// Get user with passkeys
 	u, err := client.User.Query().
@@ -223,6 +248,13 @@ func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, 
 		WithPasskeys().
 		Only(ctx)
 	if err != nil {
+		s.logger.Error("Passkey registration failed",
+			zap.String("error", err.Error()),
+			zap.Int("user_id", userID),
+			zap.String("origin", origin),
+			zap.String("host", host),
+			zap.Bool("session_found", sessionFound),
+		)
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
@@ -234,14 +266,28 @@ func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, 
 
 	// Get session
 	sessionKey := fmt.Sprintf("reg_%d", userID)
-	session, ok := s.getSession(sessionKey)
-	if !ok {
+	session, sessionFound := s.getSession(sessionKey)
+	if !sessionFound {
+		s.logger.Error("Passkey registration failed",
+			zap.String("error", "registration session expired or not found"),
+			zap.Int("user_id", userID),
+			zap.String("origin", origin),
+			zap.String("host", host),
+			zap.Bool("session_found", sessionFound),
+		)
 		return nil, errors.New("registration session expired or not found")
 	}
 
 	credential, err := s.webauthn.CreateCredential(webAuthnUser, *session, response)
 	if err != nil {
-		s.logger.Error("Failed to create credential", zap.Error(err))
+		s.logger.Error("Failed to create credential",
+			zap.String("error", err.Error()),
+			zap.Int("user_id", userID),
+			zap.String("origin", origin),
+			zap.String("host", host),
+			zap.Bool("session_found", sessionFound),
+			zap.Error(err),
+		)
 		return nil, fmt.Errorf("failed to verify credential: %w", err)
 	}
 
@@ -270,7 +316,14 @@ func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, 
 		SetTransports(transports).
 		Save(ctx)
 	if err != nil {
-		s.logger.Error("Failed to save passkey", zap.Error(err))
+		s.logger.Error("Failed to save passkey",
+			zap.String("error", err.Error()),
+			zap.Int("user_id", userID),
+			zap.String("origin", origin),
+			zap.String("host", host),
+			zap.Bool("session_found", sessionFound),
+			zap.Error(err),
+		)
 		return nil, fmt.Errorf("failed to save passkey: %w", err)
 	}
 
@@ -283,7 +336,7 @@ func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, 
 }
 
 // BeginLogin starts the WebAuthn login process
-func (s *EntPasskeyService) BeginLogin(ctx context.Context, email string) (*protocol.CredentialAssertion, error) {
+func (s *EntPasskeyService) BeginLogin(ctx context.Context, email string) (*protocol.CredentialAssertion, string, error) {
 	client := database.GetEntClient()
 
 	// Get user with passkeys by email
@@ -293,13 +346,13 @@ func (s *EntPasskeyService) BeginLogin(ctx context.Context, email string) (*prot
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return nil, errors.New("user not found")
+			return nil, "", errors.New("user not found")
 		}
-		return nil, fmt.Errorf("database error: %w", err)
+		return nil, "", fmt.Errorf("database error: %w", err)
 	}
 
 	if len(u.Edges.Passkeys) == 0 {
-		return nil, errors.New("no passkeys registered")
+		return nil, "", errors.New("no passkeys registered")
 	}
 
 	// Create WebAuthn user adapter
@@ -311,14 +364,14 @@ func (s *EntPasskeyService) BeginLogin(ctx context.Context, email string) (*prot
 	options, session, err := s.webauthn.BeginLogin(webAuthnUser)
 	if err != nil {
 		s.logger.Error("Failed to begin login", zap.Error(err))
-		return nil, fmt.Errorf("failed to begin login: %w", err)
+		return nil, "", fmt.Errorf("failed to begin login: %w", err)
 	}
 
 	// Store session for verification
-	sessionKey := fmt.Sprintf("login_%s", email)
+	sessionKey := loginSessionKey(email)
 	s.storeSession(sessionKey, session)
 
-	return options, nil
+	return options, sessionID, nil
 }
 
 // BeginDiscoverableLogin starts a discoverable (usernameless) login
@@ -331,14 +384,16 @@ func (s *EntPasskeyService) BeginDiscoverableLogin() (*protocol.CredentialAssert
 
 	// Generate a random session ID
 	sessionID := fmt.Sprintf("discover_%d", time.Now().UnixNano())
-	s.storeSession(sessionID, session)
+	s.storeSession(discoverableSessionKey(sessionID), session)
 
 	return options, sessionID, nil
 }
 
 // FinishLogin completes the WebAuthn login process
-func (s *EntPasskeyService) FinishLogin(ctx context.Context, email string, response *protocol.ParsedCredentialAssertionData) (*ent.User, error) {
+func (s *EntPasskeyService) FinishLogin(ctx context.Context, email string, sessionID string, response *protocol.ParsedCredentialAssertionData) (*ent.User, error) {
 	client := database.GetEntClient()
+	origin, host := originAndHostFromAssertion(response)
+	sessionFound := false
 
 	// Get user with passkeys
 	u, err := client.User.Query().
@@ -346,6 +401,13 @@ func (s *EntPasskeyService) FinishLogin(ctx context.Context, email string, respo
 		WithPasskeys().
 		Only(ctx)
 	if err != nil {
+		s.logger.Error("Passkey login failed",
+			zap.String("error", err.Error()),
+			zap.String("email", email),
+			zap.String("origin", origin),
+			zap.String("host", host),
+			zap.Bool("session_found", sessionFound),
+		)
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
@@ -357,14 +419,28 @@ func (s *EntPasskeyService) FinishLogin(ctx context.Context, email string, respo
 
 	// Get session
 	sessionKey := fmt.Sprintf("login_%s", email)
-	session, ok := s.getSession(sessionKey)
-	if !ok {
+	session, sessionFound := s.getSession(sessionKey)
+	if !sessionFound {
+		s.logger.Error("Passkey login failed",
+			zap.String("error", "login session expired or not found"),
+			zap.String("email", email),
+			zap.String("origin", origin),
+			zap.String("host", host),
+			zap.Bool("session_found", sessionFound),
+		)
 		return nil, errors.New("login session expired or not found")
 	}
 
 	credential, err := s.webauthn.ValidateLogin(webAuthnUser, *session, response)
 	if err != nil {
-		s.logger.Error("Failed to validate login", zap.Error(err))
+		s.logger.Error("Failed to validate login",
+			zap.String("error", err.Error()),
+			zap.String("email", email),
+			zap.String("origin", origin),
+			zap.String("host", host),
+			zap.Bool("session_found", sessionFound),
+			zap.Error(err),
+		)
 		return nil, fmt.Errorf("failed to validate login: %w", err)
 	}
 
@@ -394,7 +470,7 @@ func (s *EntPasskeyService) FinishDiscoverableLogin(ctx context.Context, session
 	client := database.GetEntClient()
 
 	// Get session
-	session, ok := s.getSession(sessionID)
+	session, ok := s.getSession(discoverableSessionKey(sessionID))
 	if !ok {
 		return nil, errors.New("login session expired or not found")
 	}
@@ -617,4 +693,29 @@ func EntPasskeyToTransportsJSON(pk *ent.Passkey) []byte {
 	}
 	data, _ := json.Marshal(pk.Transports)
 	return data
+}
+
+func originAndHostFromCreation(response *protocol.ParsedCredentialCreationData) (string, string) {
+	if response == nil {
+		return "", ""
+	}
+	return originAndHost(response.Response.CollectedClientData.Origin)
+}
+
+func originAndHostFromAssertion(response *protocol.ParsedCredentialAssertionData) (string, string) {
+	if response == nil {
+		return "", ""
+	}
+	return originAndHost(response.Response.CollectedClientData.Origin)
+}
+
+func originAndHost(origin string) (string, string) {
+	if origin == "" {
+		return "", ""
+	}
+	parsed, err := url.Parse(origin)
+	if err != nil {
+		return origin, ""
+	}
+	return origin, parsed.Host
 }
