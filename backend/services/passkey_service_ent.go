@@ -30,12 +30,12 @@ type EntPasskeyService struct {
 }
 
 // NewEntPasskeyService creates a new EntPasskeyService
-func NewEntPasskeyService(logger *zap.Logger, rpID, rpOrigin, rpName string) (*EntPasskeyService, error) {
+func NewEntPasskeyService(logger *zap.Logger, rpID string, rpOrigins []string, rpName string) (*EntPasskeyService, error) {
 	if rpID == "" {
 		rpID = "localhost"
 	}
-	if rpOrigin == "" {
-		rpOrigin = "http://localhost:3000"
+	if len(rpOrigins) == 0 {
+		rpOrigins = []string{"http://localhost:3000"}
 	}
 	if rpName == "" {
 		rpName = "Alephdraad"
@@ -44,7 +44,7 @@ func NewEntPasskeyService(logger *zap.Logger, rpID, rpOrigin, rpName string) (*E
 	wconfig := &webauthn.Config{
 		RPDisplayName: rpName,
 		RPID:          rpID,
-		RPOrigins:     []string{rpOrigin},
+		RPOrigins:     rpOrigins,
 		AuthenticatorSelection: protocol.AuthenticatorSelection{
 			AuthenticatorAttachment: protocol.AuthenticatorAttachment(""),
 			ResidentKey:             protocol.ResidentKeyRequirementPreferred,
