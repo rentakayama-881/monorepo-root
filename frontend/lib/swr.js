@@ -16,8 +16,8 @@ export const swrConfig = {
   revalidateOnFocus: true,
   // Revalidate when browser comes back online
   revalidateOnReconnect: true,
-  // Don't retry on error by default (can override per-hook)
-  shouldRetryOnError: false,
+  // Custom retry logic
+  shouldRetryOnError: true,
   // Keep previous data while revalidating (smooth UX)
   keepPreviousData: true,
   // Dedupe requests within 2 seconds
@@ -27,7 +27,20 @@ export const swrConfig = {
   // Error retry count
   errorRetryCount: 2,
   // Error retry interval
-  errorRetryInterval: 3000,
+  errorRetryInterval: 5000,
+  // Custom error retry logic
+  onErrorRetry: (error, key, config, revalidate, { retryCount }) => {
+    // Don't retry for 404 (resource not found) - it won't magically appear
+    if (error.status === 404) return;
+    // Don't retry for 401/403 (auth issues) - let token refresh handle it
+    if (error.status === 401 || error.status === 403) return;
+    // Don't retry for 400 (bad request)
+    if (error.status === 400) return;
+    // Max 2 retries
+    if (retryCount >= 2) return;
+    // Retry after 5 seconds for other errors (network, 5xx)
+    setTimeout(() => revalidate({ retryCount }), 5000);
+  },
 };
 
 /**

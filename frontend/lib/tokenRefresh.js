@@ -55,14 +55,18 @@ export async function refreshAccessToken() {
           return null;
         }
 
-        // Other refresh failures - clear tokens and redirect to login
-        clearToken();
-        if (typeof window !== "undefined") {
-          // Check if we're not already on login page
-          if (!window.location.pathname.includes("/login")) {
-            window.location.href = "/login?session=expired";
+        // Only clear token and redirect for definitive auth errors (401, 403)
+        // Don't logout for server errors (5xx) or other issues
+        if (res.status === 401 || res.status === 403) {
+          clearToken();
+          if (typeof window !== "undefined") {
+            if (!window.location.pathname.includes("/login")) {
+              window.location.href = "/login?session=expired";
+            }
           }
         }
+        // For other errors (5xx, network), just return null without clearing
+        // Let the user retry or the page handle gracefully
         return null;
       }
 
@@ -70,8 +74,9 @@ export async function refreshAccessToken() {
       setTokens(data.access_token, data.refresh_token, data.expires_in);
       return data.access_token;
     } catch (error) {
-      // Token refresh failed - redirect silently
-      clearToken();
+      // Network error - don't clear tokens, just return null
+      // User can retry when connection is restored
+      console.warn("Token refresh failed (network):", error.message);
       return null;
     } finally {
       refreshPromise = null;
