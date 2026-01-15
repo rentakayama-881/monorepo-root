@@ -263,8 +263,8 @@ func (s *EntPasskeyService) FinishRegistration(ctx context.Context, userID int, 
 		Passkeys: u.Edges.Passkeys,
 	}
 
-	// Get session
-	sessionKey := fmt.Sprintf("reg_%d", userID)
+	// Get session - use consistent session key format
+	sessionKey := registrationSessionKey(userID)
 	session, sessionFound := s.getSession(sessionKey)
 	if !sessionFound {
 		s.logger.Error("Passkey registration failed",
@@ -416,8 +416,8 @@ func (s *EntPasskeyService) FinishLogin(ctx context.Context, email string, sessi
 		Passkeys: u.Edges.Passkeys,
 	}
 
-	// Get session
-	sessionKey := fmt.Sprintf("login_%s", email)
+	// Get session - use consistent session key format
+	sessionKey := loginSessionKey(email)
 	session, sessionFound := s.getSession(sessionKey)
 	if !sessionFound {
 		s.logger.Error("Passkey login failed",

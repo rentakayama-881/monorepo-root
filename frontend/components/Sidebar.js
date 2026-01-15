@@ -4,14 +4,17 @@ import Image from "next/image";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { fetchCategories } from "../lib/categories";
 import { LOCKED_CATEGORIES } from "../lib/constants";
-import { EXTERNAL_LLM_MODELS } from "@/lib/useAIChat";
+
+// Simplified - only 2 models
+const AI_MODELS = [
+  { id: "claude-sonnet-4.5", name: "Claude 4.5", provider: "Anthropic" },
+  { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI" },
+];
 
 export default function Sidebar({ open, onClose }) {
   const [search, setSearch] = useState("");
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  const [showModelPicker, setShowModelPicker] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
   const sidebarRef = useRef(null);
   const touchStartX = useRef(0);
@@ -175,9 +178,9 @@ export default function Sidebar({ open, onClose }) {
             </svg>
           </Link>
 
-          {/* AI Studio - Multi-model Chat */}
+          {/* AI Studio - 2 Model Cards */}
           <div className="rounded-[var(--radius)] border bg-gradient-to-br from-card to-secondary p-3 transition-all">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-3">
               <div className="h-6 w-6 rounded-md bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -185,73 +188,24 @@ export default function Sidebar({ open, onClose }) {
               </div>
               <div>
                 <div className="text-xs font-semibold text-foreground">AI Studio</div>
-                <div className="text-[10px] text-muted-foreground">Premium multi-model chat</div>
+                <div className="text-[10px] text-muted-foreground">Pilih model untuk chat</div>
               </div>
             </div>
             
-            {/* Model Picker Toggle */}
-            <button
-              onClick={() => setShowModelPicker(!showModelPicker)}
-              className="w-full flex items-center justify-between rounded-[var(--radius)] border bg-card px-3 py-2 text-xs transition-all hover:border-muted-foreground"
-            >
-              <span className="flex items-center gap-2">
-                {selectedModel ? (
-                  <>
-                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-foreground font-medium">{selectedModel.name}</span>
-                    <span className="text-muted-foreground">• {selectedModel.provider}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground" />
-                    <span className="text-muted-foreground">Pilih Model AI...</span>
-                  </>
-                )}
-              </span>
-              <svg className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${showModelPicker ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {/* Model Dropdown */}
-            {showModelPicker && (
-              <div className="mt-2 max-h-48 overflow-y-auto rounded-[var(--radius)] border bg-card divide-y divide-border scrollbar-thin animate-slide-down">
-                {EXTERNAL_LLM_MODELS.map((model) => (
-                  <button
-                    key={model.id}
-                    onClick={() => {
-                      setSelectedModel(model);
-                      setShowModelPicker(false);
-                    }}
-                    className={`w-full px-3 py-2 text-left text-xs transition-all hover:bg-accent ${
-                      selectedModel?.id === model.id ? 'bg-primary/5' : ''
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-foreground">{model.name}</span>
-                      <span className="text-muted-foreground">{model.provider}</span>
-                    </div>
-                    <div className="text-muted-foreground mt-0.5">{model.description}</div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Start Chat Button */}
-            <Link
-              href={selectedModel ? `/ai-studio?model=${selectedModel.id}` : '/ai-studio'}
-              onClick={handleClose}
-              className={`mt-2 w-full flex items-center justify-center gap-2 rounded-[var(--radius)] px-3 py-2 text-xs font-medium transition-all ${
-                selectedModel 
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 shadow-sm' 
-                  : 'bg-secondary text-muted-foreground hover:bg-border'
-              }`}
-            >
-              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              {selectedModel ? 'Mulai Chat' : 'Pilih Model Dulu'}
-            </Link>
+            {/* 2 Model Cards */}
+            <div className="grid grid-cols-2 gap-2">
+              {AI_MODELS.map((model) => (
+                <Link
+                  key={model.id}
+                  href={`/ai-studio/chat?model=${model.id}`}
+                  onClick={handleClose}
+                  className="flex flex-col items-center gap-1 rounded-[var(--radius)] border bg-card p-3 text-center transition-all hover:border-primary hover:shadow-sm active:scale-95"
+                >
+                  <span className="text-xs font-semibold text-foreground">{model.name}</span>
+                  <span className="text-[10px] text-muted-foreground">{model.provider}</span>
+                </Link>
+              ))}
+            </div>
           </div>
 
           {/* Search kategori */}

@@ -138,3 +138,22 @@ public record SearchUserResponse(
     string? AvatarUrl,
     bool Exists
 );
+
+// AI Chat Spending DTOs
+public class AiChatSpendRequest
+{
+    [Required(ErrorMessage = "Amount wajib diisi")]
+    [Range(1, long.MaxValue, ErrorMessage = "Amount harus lebih dari 0")]
+    public long Amount { get; set; }
+
+    [Required(ErrorMessage = "Model wajib diisi")]
+    public string Model { get; set; } = string.Empty;
+
+    public string? SessionId { get; set; }
+}
+
+public record AiChatSpendResponse(
+    bool Success,
+    long NewBalance,
+    string Message
+);

@@ -1,18 +1,23 @@
 import { NextResponse } from "next/server";
 
-// LLM Provider configurations
+// LLM Provider configurations with pricing (in IDR per request)
 const LLM_CONFIGS = {
   "claude-sonnet-4.5": {
     provider: "anthropic",
     model: "claude-sonnet-4-20250514",
     endpoint: "https://api.anthropic.com/v1/messages",
+    priceIdr: 500, // Rp 500 per request
   },
   "gpt-4o": {
     provider: "openai",
     model: "gpt-4o",
     endpoint: "https://api.openai.com/v1/chat/completions",
+    priceIdr: 400, // Rp 400 per request
   },
 };
+
+// Feature Service URL
+const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_API_URL || "http://localhost:5000";
 
 export async function POST(request) {
   try {
@@ -22,6 +27,7 @@ export async function POST(request) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    const token = authHeader.replace("Bearer ", "");
     const body = await request.json();
     const { model: modelId, messages } = body;
 
@@ -40,6 +46,30 @@ export async function POST(request) {
       );
     }
 
+    // Step 1: Deduct from wallet via Feature Service
+    const spendResponse = await fetch(`${FEATURE_SERVICE_URL}/api/v1/wallets/ai-chat/spend`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        amount: config.priceIdr,
+        model: modelId,
+      }),
+    });
+
+    if (!spendResponse.ok) {
+      const errorData = await spendResponse.json();
+      return NextResponse.json(
+        { message: errorData.message || "Gagal memproses pembayaran. Pastikan saldo wallet mencukupi." },
+        { status: spendResponse.status }
+      );
+    }
+
+    const spendData = await spendResponse.json();
+
+    // Step 2: Call LLM API
     let response;
     let assistantMessage;
 
@@ -119,6 +149,8 @@ export async function POST(request) {
     return NextResponse.json({
       content: assistantMessage,
       model: modelId,
+      priceIdr: config.priceIdr,
+      walletBalance: spendData.newBalance,
     });
 
   } catch (error) {

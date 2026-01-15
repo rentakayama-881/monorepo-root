@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getToken } from "@/lib/auth";
+import { useWallet } from "@/lib/featureApi";
 
-// Only 2 models - Claude Sonnet 4.5 and GPT-4o
+// Only 2 models - Claude Sonnet 4.5 and GPT-4o (with pricing in IDR)
 const AI_MODELS = [
   { 
     id: "claude-sonnet-4.5", 
     name: "Claude Sonnet 4.5", 
     provider: "Anthropic",
     description: "Advanced reasoning and analysis with exceptional nuance",
+    priceIdr: 500,
     color: "from-orange-500 to-amber-600",
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
@@ -23,6 +26,7 @@ const AI_MODELS = [
     name: "GPT-4o", 
     provider: "OpenAI",
     description: "Most capable multimodal model for complex tasks",
+    priceIdr: 400,
     color: "from-emerald-500 to-teal-600",
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
@@ -36,6 +40,7 @@ export default function AIStudioPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hoveredModel, setHoveredModel] = useState(null);
+  const { wallet, loading: walletLoading } = useWallet();
 
   useEffect(() => {
     const token = getToken();
@@ -51,6 +56,15 @@ export default function AIStudioPage() {
     router.push(`/ai-studio/chat?model=${modelId}`);
   };
 
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -62,11 +76,24 @@ export default function AIStudioPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       {/* Header */}
-      <div className="text-center mb-12">
+      <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-foreground mb-3">AI Studio</h1>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-lg text-muted-foreground mb-4">
           Pilih model AI untuk memulai chat
         </p>
+        {/* Wallet Balance */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary text-sm">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+          <span className="text-muted-foreground">Saldo:</span>
+          <span className="font-semibold text-foreground">
+            {walletLoading ? "..." : formatCurrency(wallet?.balance || 0)}
+          </span>
+          <Link href="/wallet" className="text-primary hover:underline ml-2">
+            Top Up
+          </Link>
+        </div>
       </div>
 
       {/* Model Selection */}
@@ -108,13 +135,20 @@ export default function AIStudioPage() {
                 </span>
               </div>
 
-              <p className="text-muted-foreground mb-6">
+              <p className="text-muted-foreground mb-4">
                 {model.description}
               </p>
 
+              {/* Price */}
+              <div className="mb-4 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-secondary text-sm font-medium">
+                <span className="text-muted-foreground">Rp</span>
+                <span className="text-foreground">{model.priceIdr.toLocaleString("id-ID")}</span>
+                <span className="text-muted-foreground">/ pesan</span>
+              </div>
+
               {/* CTA */}
               <div className={`
-                inline-flex items-center gap-2 font-medium transition-colors
+                flex items-center gap-2 font-medium transition-colors
                 ${hoveredModel === model.id ? "text-primary" : "text-muted-foreground"}
               `}>
                 <span>Mulai Chat</span>
@@ -129,7 +163,7 @@ export default function AIStudioPage() {
 
       {/* Footer note */}
       <p className="mt-12 text-sm text-muted-foreground text-center">
-        Token AI digunakan untuk setiap pesan. <a href="/account/tokens" className="text-primary hover:underline">Beli token</a>
+        Biaya dipotong langsung dari saldo wallet untuk setiap pesan.
       </p>
     </div>
   );

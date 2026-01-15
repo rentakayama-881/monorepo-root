@@ -4,21 +4,24 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "@/lib/auth";
+import { useWallet } from "@/lib/featureApi";
 import logger from "@/lib/logger";
 
-// Model configurations
+// Model configurations with pricing
 const MODELS = {
   "claude-sonnet-4.5": {
     name: "Claude Sonnet 4.5",
     provider: "anthropic",
     endpoint: "https://api.anthropic.com/v1/messages",
     color: "#f59e0b",
+    priceIdr: 500,
   },
   "gpt-4o": {
     name: "GPT-4o",
     provider: "openai", 
     endpoint: "https://api.openai.com/v1/chat/completions",
     color: "#10b981",
+    priceIdr: 400,
   },
 };
 
@@ -32,8 +35,11 @@ function ChatContent() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  
+  const { wallet, loading: walletLoading, refetch: refetchWallet } = useWallet();
 
   useEffect(() => {
     const token = getToken();
@@ -43,6 +49,13 @@ function ChatContent() {
       setIsAuthenticated(true);
     }
   }, [router]);
+
+  // Update local wallet balance from hook
+  useEffect(() => {
+    if (wallet) {
+      setWalletBalance(wallet.balance);
+    }
+  }, [wallet]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -66,7 +79,7 @@ function ChatContent() {
     setIsLoading(true);
 
     try {
-      // Call our backend proxy which handles the external LLM API
+      // Call our backend proxy which handles the external LLM API and wallet deduction
       const token = getToken();
       const response = await fetch("/api/ai/chat", {
         method: "POST",
@@ -86,6 +99,12 @@ function ChatContent() {
       }
 
       const data = await response.json();
+      
+      // Update wallet balance from response
+      if (data.walletBalance !== undefined) {
+        setWalletBalance(data.walletBalance);
+      }
+      
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: data.content || data.message },
@@ -99,6 +118,15 @@ function ChatContent() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(amount);
   };
 
   const handleKeyDown = (e) => {
@@ -135,14 +163,28 @@ function ChatContent() {
               style={{ backgroundColor: model.color }}
             />
             <span className="font-semibold text-foreground">{model.name}</span>
+            <span className="text-xs text-muted-foreground px-2 py-0.5 rounded bg-muted">
+              Rp{model.priceIdr?.toLocaleString("id-ID")}/pesan
+            </span>
           </div>
         </div>
-        <Link
-          href="/ai-studio"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Ganti Model
-        </Link>
+        <div className="flex items-center gap-4">
+          {/* Wallet Balance */}
+          <div className="flex items-center gap-1.5 text-sm">
+            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+            <span className="font-medium text-foreground">
+              {walletLoading ? "..." : formatCurrency(walletBalance ?? wallet?.balance ?? 0)}
+            </span>
+          </div>
+          <Link
+            href="/ai-studio"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Ganti Model
+          </Link>
+        </div>
       </header>
 
       {/* Messages */}

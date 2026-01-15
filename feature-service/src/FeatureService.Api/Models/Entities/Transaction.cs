@@ -52,5 +52,6 @@ public enum TransactionType
     Refund,         // Refund from cancelled/disputed transfer
     Fee,            // Platform fee deduction
     Escrow,         // Money held in escrow
-    EscrowRelease   // Escrow released
+    EscrowRelease,  // Escrow released
+    AiChat          // AI chat usage deduction
 }

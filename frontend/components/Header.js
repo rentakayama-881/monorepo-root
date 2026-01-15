@@ -220,9 +220,6 @@ export default function Header() {
           <Link href="/ai-studio" className={navItem}>
             AI Studio
           </Link>
-          <Link href="/chat" className={navItem}>
-            AI Chat
-          </Link>
         </nav>
 
         <div className="flex-1" />
