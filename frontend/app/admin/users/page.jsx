@@ -353,7 +353,7 @@ export default function AdminUsersPage() {
             label="Pilih Badge"
             placeholder="-- Pilih Badge --"
             options={badges.map((badge) => ({
-              value: String(badge.ID),
+              value: String(badge.id),
               label: badge.name,
             }))}
             value={assignData.badge_id}

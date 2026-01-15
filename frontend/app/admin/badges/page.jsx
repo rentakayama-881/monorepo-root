@@ -139,7 +139,7 @@ export default function AdminBadgesPage() {
 
     try {
       const res = await fetch(
-        `${getApiBase()}/admin/badges${isEdit ? `/${editingBadge.ID}` : ""}`,
+        `${getApiBase()}/admin/badges${isEdit ? `/${editingBadge.id}` : ""}`,
         {
           method: isEdit ? "PUT" : "POST",
           headers: {
@@ -179,7 +179,7 @@ export default function AdminBadgesPage() {
 
     const token = localStorage.getItem("admin_token");
     try {
-      const res = await fetch(`${getApiBase()}/admin/badges/${badge.ID}`, {
+      const res = await fetch(`${getApiBase()}/admin/badges/${badge.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -232,7 +232,7 @@ export default function AdminBadgesPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {badges.map((badge) => (
-            <Card key={badge.ID} className="p-4">
+            <Card key={badge.id} className="p-4">
               <div className="flex items-start gap-3">
                 <div
                   className="w-12 h-12 rounded-lg flex items-center justify-center"
