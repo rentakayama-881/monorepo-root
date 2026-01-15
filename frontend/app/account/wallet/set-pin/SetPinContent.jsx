@@ -85,8 +85,8 @@ export default function SetPinContent() {
       // Use Feature Service for PIN operations
       const endpoint = hasPin ? FEATURE_ENDPOINTS.WALLETS.PIN_CHANGE : FEATURE_ENDPOINTS.WALLETS.PIN_SET;
       const body = hasPin 
-        ? { currentPin: currentPin, newPin: pin }
-        : { pin: pin };
+        ? { currentPin: currentPin, newPin: pin, confirmPin: pin }
+        : { pin: pin, confirmPin: confirmPin };
 
       await fetchFeatureAuth(endpoint, {
         method: "POST",
