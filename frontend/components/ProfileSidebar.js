@@ -69,15 +69,16 @@ export default function ProfileSidebar({ onClose }) {
           avatar_url: data.avatar_url || "",
         });
         
-        // Load wallet balance with automatic token refresh
+        // Load wallet balance from Feature Service
         try {
-          const walletRes = await fetchWithAuth(`${getApiBase()}/api/wallet/balance`);
+          const featureBase = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.alephdraad.fun";
+          const walletRes = await fetchWithAuth(`${featureBase}/api/v1/wallets/me`);
           if (walletRes.ok) {
             const walletData = await walletRes.json();
             if (!cancelled) {
               setWallet({
                 balance: walletData.balance || 0,
-                pin_set: walletData.pin_set || false,
+                pin_set: walletData.pinSet || walletData.pin_set || false,
               });
             }
           }

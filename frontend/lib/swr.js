@@ -116,12 +116,14 @@ export function useUser() {
 
 /**
  * Hook for fetching wallet balance
+ * Uses Feature Service for wallet data
  */
 export function useWallet() {
   const token = getToken();
+  const featureBase = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.alephdraad.fun";
   
   const { data, error, isLoading, mutate } = useSWR(
-    token ? `${getApiBase()}/api/wallet/balance` : null,
+    token ? `${featureBase}/api/v1/wallets/me` : null,
     authFetcher,
     {
       ...swrConfig,
@@ -276,8 +278,9 @@ export function invalidateCache(keyOrKeys) {
  */
 export function invalidateUserData() {
   const base = getApiBase();
+  const featureBase = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.alephdraad.fun";
   globalMutate(`${base}/api/account/me`);
-  globalMutate(`${base}/api/wallet/balance`);
+  globalMutate(`${featureBase}/api/v1/wallets/me`);
   globalMutate(`${base}/api/threads/my`);
   globalMutate(`${base}/api/auth/totp/status`);
   globalMutate(`${base}/api/account/can-delete`);
