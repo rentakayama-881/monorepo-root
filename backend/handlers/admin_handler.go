@@ -404,7 +404,7 @@ func AssignBadgeToUser(c *gin.Context) {
 	}
 
 	// Check user exists using Ent
-	_, err = database.GetEntClient().User.Get(c.Request.Context(), int(userID))
+	targetUser, err := database.GetEntClient().User.Get(c.Request.Context(), int(userID))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{"code": "USER001", "message": "User tidak ditemukan"},
@@ -453,6 +453,21 @@ func AssignBadgeToUser(c *gin.Context) {
 		return
 	}
 
+	// Auto-set as primary badge if user has no primary badge yet
+	primaryBadgeAutoSet := false
+	if targetUser.PrimaryBadgeID == nil || *targetUser.PrimaryBadgeID == 0 {
+		_, err = database.GetEntClient().User.UpdateOneID(int(userID)).
+			SetPrimaryBadgeID(int(req.BadgeID)).
+			Save(c.Request.Context())
+		if err == nil {
+			primaryBadgeAutoSet = true
+			logger.Info("Primary badge auto-set for user",
+				zap.Int("user_id", int(userID)),
+				zap.Int("badge_id", int(req.BadgeID)),
+			)
+		}
+	}
+
 	logger.Info("Badge assigned to user",
 		zap.Int("user_id", int(userID)),
 		zap.Int("badge_id", int(req.BadgeID)),
@@ -461,7 +476,8 @@ func AssignBadgeToUser(c *gin.Context) {
 
 	// Return response using direct values instead of models
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "Badge berhasil diberikan",
+		"message":                "Badge berhasil diberikan",
+		"primary_badge_auto_set": primaryBadgeAutoSet,
 		"user_badge": gin.H{
 			"id":         userBadgeEnt.ID,
 			"user_id":    userBadgeEnt.UserID,

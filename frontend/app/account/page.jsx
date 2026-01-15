@@ -322,14 +322,14 @@ export default function AccountPage() {
                     <label className="text-sm font-medium text-foreground">Primary Badge (tampil di username)</label>
                     <div className="mt-2 flex items-center gap-2">
                       <Select
-                        value={primaryBadgeId || ""}
+                        value={primaryBadgeId ? String(primaryBadgeId) : ""}
                         onChange={(e) => savePrimaryBadge(e.target.value)}
                         disabled={savingBadge}
                         className="flex-1"
                       >
                         <option value="">Tidak ada badge ditampilkan</option>
                         {badges.map((badge) => (
-                          <option key={badge.id} value={badge.id}>{badge.name}</option>
+                          <option key={badge.id} value={String(badge.id)}>{badge.name}</option>
                         ))}
                       </Select>
                       {savingBadge && (
