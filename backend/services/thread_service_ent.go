@@ -63,7 +63,9 @@ func (s *EntThreadService) GetCategories(ctx context.Context) ([]CategoryRespons
 func (s *EntThreadService) GetLatestThreads(ctx context.Context, limit, offset int) ([]ThreadListItem, error) {
 	threads, err := s.client.Thread.
 		Query().
-		WithUser().
+		WithUser(func(q *ent.UserQuery) {
+			q.WithPrimaryBadge()
+		}).
 		WithCategory().
 		WithTags().
 		Order(ent.Desc(thread.FieldCreatedAt)).
@@ -98,7 +100,9 @@ func (s *EntThreadService) GetThreadsByCategory(ctx context.Context, slug string
 	threads, err := s.client.Thread.
 		Query().
 		Where(thread.CategoryIDEQ(cat.ID)).
-		WithUser().
+		WithUser(func(q *ent.UserQuery) {
+			q.WithPrimaryBadge()
+		}).
 		WithCategory().
 		WithTags().
 		Order(byPinnedDesc(), ent.Desc(thread.FieldCreatedAt)).
@@ -118,7 +122,9 @@ func (s *EntThreadService) GetThreadsByUserID(ctx context.Context, userID int, l
 	threads, err := s.client.Thread.
 		Query().
 		Where(thread.UserIDEQ(userID)).
-		WithUser().
+		WithUser(func(q *ent.UserQuery) {
+			q.WithPrimaryBadge()
+		}).
 		WithCategory().
 		WithTags().
 		Order(ent.Desc(thread.FieldCreatedAt)).
@@ -138,7 +144,9 @@ func (s *EntThreadService) GetThreadDetail(ctx context.Context, threadID int) (*
 	t, err := s.client.Thread.
 		Query().
 		Where(thread.IDEQ(threadID)).
-		WithUser().
+		WithUser(func(q *ent.UserQuery) {
+			q.WithPrimaryBadge()
+		}).
 		WithCategory().
 		WithTags().
 		Only(ctx)
@@ -374,11 +382,23 @@ func (s *EntThreadService) threadsToListItems(threads []*ent.Thread) []ThreadLis
 	for i, t := range threads {
 		username := ""
 		avatarURL := ""
+		var primaryBadge *Badge
 		if u := t.Edges.User; u != nil {
 			if u.Username != nil {
 				username = *u.Username
 			}
 			avatarURL = u.AvatarURL
+			// Add primary badge if exists
+			if pb := u.Edges.PrimaryBadge; pb != nil {
+				primaryBadge = &Badge{
+					ID:          uint(pb.ID),
+					Name:        pb.Name,
+					Slug:        pb.Slug,
+					Description: pb.Description,
+					IconType:    pb.IconType,
+					Color:       pb.Color,
+				}
+			}
 		}
 
 		var cat CategoryResponse
@@ -406,15 +426,16 @@ func (s *EntThreadService) threadsToListItems(threads []*ent.Thread) []ThreadLis
 		}
 
 		result[i] = ThreadListItem{
-			ID:        uint(t.ID),
-			Title:     t.Title,
-			Summary:   t.Summary,
-			Username:  username,
-			AvatarURL: avatarURL,
-			Category:  cat,
-			Tags:      tags,
-			Meta:      t.Meta,
-			CreatedAt: t.CreatedAt.Unix(),
+			ID:           uint(t.ID),
+			Title:        t.Title,
+			Summary:      t.Summary,
+			Username:     username,
+			AvatarURL:    avatarURL,
+			PrimaryBadge: primaryBadge,
+			Category:     cat,
+			Tags:         tags,
+			Meta:         t.Meta,
+			CreatedAt:    t.CreatedAt.Unix(),
 		}
 	}
 	return result
@@ -432,6 +453,17 @@ func (s *EntThreadService) threadToDetailResponse(t *ent.Thread) *ThreadDetailRe
 			ID:        uint(u.ID),
 			Username:  username,
 			AvatarURL: u.AvatarURL,
+		}
+		// Add primary badge if exists
+		if pb := u.Edges.PrimaryBadge; pb != nil {
+			userInfo.PrimaryBadge = &Badge{
+				ID:          uint(pb.ID),
+				Name:        pb.Name,
+				Slug:        pb.Slug,
+				Description: pb.Description,
+				IconType:    pb.IconType,
+				Color:       pb.Color,
+			}
 		}
 	}
 

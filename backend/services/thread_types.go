@@ -21,22 +21,24 @@ type TagResponse struct {
 
 // ThreadListItem represents a thread in list responses
 type ThreadListItem struct {
-	ID        uint                   `json:"id"`
-	Title     string                 `json:"title"`
-	Summary   string                 `json:"summary"`
-	Username  string                 `json:"username"`
-	AvatarURL string                 `json:"avatar_url,omitempty"`
-	Category  CategoryResponse       `json:"category"`
-	Tags      []TagResponse          `json:"tags,omitempty"`
-	Meta      map[string]interface{} `json:"meta,omitempty"`
-	CreatedAt int64                  `json:"created_at"`
+	ID           uint                   `json:"id"`
+	Title        string                 `json:"title"`
+	Summary      string                 `json:"summary"`
+	Username     string                 `json:"username"`
+	AvatarURL    string                 `json:"avatar_url,omitempty"`
+	PrimaryBadge *Badge                 `json:"primary_badge,omitempty"`
+	Category     CategoryResponse       `json:"category"`
+	Tags         []TagResponse          `json:"tags,omitempty"`
+	Meta         map[string]interface{} `json:"meta,omitempty"`
+	CreatedAt    int64                  `json:"created_at"`
 }
 
 // UserInfo represents user info in thread responses
 type UserInfo struct {
-	ID        uint   `json:"id"`
-	Username  string `json:"username"`
-	AvatarURL string `json:"avatar_url"`
+	ID           uint   `json:"id"`
+	Username     string `json:"username"`
+	AvatarURL    string `json:"avatar_url"`
+	PrimaryBadge *Badge `json:"primary_badge,omitempty"`
 }
 
 // ThreadDetailResponse represents detailed thread information

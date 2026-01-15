@@ -9,6 +9,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Avatar from "./Avatar";
 import { TagList } from "./TagPill";
+import Badge from "./Badge";
 
 /**
  * Format timestamp to readable date
@@ -155,10 +156,13 @@ export default function ThreadCard({
             {showAuthor && (
               <Link 
                 href={`/user/${username}`}
-                className="font-medium text-foreground hover:text-primary hover:underline"
+                className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary hover:underline"
                 onClick={(e) => e.stopPropagation()}
               >
                 @{username || "Anonim"}
+                {primary_badge && (
+                  <Badge badge={primary_badge} size="xs" />
+                )}
               </Link>
             )}
             {showCategory && category && (
@@ -238,8 +242,11 @@ export default function ThreadCard({
             <div className="flex items-center gap-2 min-w-0">
               <Avatar src={avatar_url} name={username} className="h-6 w-6 ring-2 ring-background transition-all group-hover:ring-primary/20" />
               <div className="flex min-w-0 flex-1 items-center gap-2">
-                <div className="text-xs font-medium text-foreground truncate">
+                <div className="inline-flex items-center gap-1 text-xs font-medium text-foreground truncate">
                   @{username || "Anonim"}
+                  {primary_badge && (
+                    <Badge badge={primary_badge} size="xs" />
+                  )}
                 </div>
                 {showDate && (
                   <div className="text-[11px] text-muted-foreground whitespace-nowrap">

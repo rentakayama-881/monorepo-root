@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Avatar from "@/components/ui/Avatar";
+import Badge from "@/components/ui/Badge";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import Button from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
@@ -108,6 +109,9 @@ function ReplyItem({
               <span className="font-semibold text-sm text-foreground truncate">
                 {reply.username || "Anonim"}
               </span>
+              {reply.primary_badge && (
+                <Badge badge={reply.primary_badge} size="xs" />
+              )}
               {depth > 0 && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-secondary text-muted-foreground">
                   <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor">
