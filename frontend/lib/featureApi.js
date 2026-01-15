@@ -73,11 +73,38 @@ export const FEATURE_ENDPOINTS = {
   // Wallets
   WALLETS: {
     ME: "/api/v1/wallets/me",
-    BALANCE: "/api/v1/wallets/balance",
+    PIN_STATUS: "/api/v1/wallets/pin/status",
     PIN_SET: "/api/v1/wallets/pin/set",
     PIN_CHANGE: "/api/v1/wallets/pin/change",
     PIN_VERIFY: "/api/v1/wallets/pin/verify",
     TRANSACTIONS: "/api/v1/wallets/transactions",
+  },
+
+  // Transfers (Escrow)
+  TRANSFERS: {
+    LIST: "/api/v1/wallets/transfers",
+    CREATE: "/api/v1/wallets/transfers",
+    DETAIL: (id) => `/api/v1/wallets/transfers/${id}`,
+    BY_CODE: (code) => `/api/v1/wallets/transfers/code/${code}`,
+    RELEASE: (id) => `/api/v1/wallets/transfers/${id}/release`,
+    CANCEL: (id) => `/api/v1/wallets/transfers/${id}/cancel`,
+    SEARCH_USER: "/api/v1/wallets/transfers/search-user",
+  },
+
+  // Withdrawals
+  WITHDRAWALS: {
+    LIST: "/api/v1/wallets/withdrawals",
+    CREATE: "/api/v1/wallets/withdrawals",
+    DETAIL: (id) => `/api/v1/wallets/withdrawals/${id}`,
+    CANCEL: (id) => `/api/v1/wallets/withdrawals/${id}/cancel`,
+  },
+
+  // Disputes
+  DISPUTES: {
+    LIST: "/api/v1/wallets/disputes",
+    CREATE: "/api/v1/wallets/disputes",
+    DETAIL: (id) => `/api/v1/wallets/disputes/${id}`,
+    RESPOND: (id) => `/api/v1/wallets/disputes/${id}/respond`,
   },
 
   // Admin Moderation

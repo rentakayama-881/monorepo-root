@@ -1482,7 +1482,7 @@ type BadgeMutation struct {
 	name                 *string
 	slug                 *string
 	description          *string
-	icon_url             *string
+	icon_type            *string
 	color                *string
 	clearedFields        map[string]struct{}
 	user_badges          map[int]struct{}
@@ -1836,40 +1836,40 @@ func (m *BadgeMutation) ResetDescription() {
 	delete(m.clearedFields, badge.FieldDescription)
 }
 
-// SetIconURL sets the "icon_url" field.
-func (m *BadgeMutation) SetIconURL(s string) {
-	m.icon_url = &s
+// SetIconType sets the "icon_type" field.
+func (m *BadgeMutation) SetIconType(s string) {
+	m.icon_type = &s
 }
 
-// IconURL returns the value of the "icon_url" field in the mutation.
-func (m *BadgeMutation) IconURL() (r string, exists bool) {
-	v := m.icon_url
+// IconType returns the value of the "icon_type" field in the mutation.
+func (m *BadgeMutation) IconType() (r string, exists bool) {
+	v := m.icon_type
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldIconURL returns the old "icon_url" field's value of the Badge entity.
+// OldIconType returns the old "icon_type" field's value of the Badge entity.
 // If the Badge object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BadgeMutation) OldIconURL(ctx context.Context) (v string, err error) {
+func (m *BadgeMutation) OldIconType(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldIconURL is only allowed on UpdateOne operations")
+		return v, errors.New("OldIconType is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldIconURL requires an ID field in the mutation")
+		return v, errors.New("OldIconType requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIconURL: %w", err)
+		return v, fmt.Errorf("querying old value for OldIconType: %w", err)
 	}
-	return oldValue.IconURL, nil
+	return oldValue.IconType, nil
 }
 
-// ResetIconURL resets all changes to the "icon_url" field.
-func (m *BadgeMutation) ResetIconURL() {
-	m.icon_url = nil
+// ResetIconType resets all changes to the "icon_type" field.
+func (m *BadgeMutation) ResetIconType() {
+	m.icon_type = nil
 }
 
 // SetColor sets the "color" field.
@@ -2069,8 +2069,8 @@ func (m *BadgeMutation) Fields() []string {
 	if m.description != nil {
 		fields = append(fields, badge.FieldDescription)
 	}
-	if m.icon_url != nil {
-		fields = append(fields, badge.FieldIconURL)
+	if m.icon_type != nil {
+		fields = append(fields, badge.FieldIconType)
 	}
 	if m.color != nil {
 		fields = append(fields, badge.FieldColor)
@@ -2095,8 +2095,8 @@ func (m *BadgeMutation) Field(name string) (ent.Value, bool) {
 		return m.Slug()
 	case badge.FieldDescription:
 		return m.Description()
-	case badge.FieldIconURL:
-		return m.IconURL()
+	case badge.FieldIconType:
+		return m.IconType()
 	case badge.FieldColor:
 		return m.Color()
 	}
@@ -2120,8 +2120,8 @@ func (m *BadgeMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldSlug(ctx)
 	case badge.FieldDescription:
 		return m.OldDescription(ctx)
-	case badge.FieldIconURL:
-		return m.OldIconURL(ctx)
+	case badge.FieldIconType:
+		return m.OldIconType(ctx)
 	case badge.FieldColor:
 		return m.OldColor(ctx)
 	}
@@ -2175,12 +2175,12 @@ func (m *BadgeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDescription(v)
 		return nil
-	case badge.FieldIconURL:
+	case badge.FieldIconType:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetIconURL(v)
+		m.SetIconType(v)
 		return nil
 	case badge.FieldColor:
 		v, ok := value.(string)
@@ -2271,8 +2271,8 @@ func (m *BadgeMutation) ResetField(name string) error {
 	case badge.FieldDescription:
 		m.ResetDescription()
 		return nil
-	case badge.FieldIconURL:
-		m.ResetIconURL()
+	case badge.FieldIconType:
+		m.ResetIconType()
 		return nil
 	case badge.FieldColor:
 		m.ResetColor()

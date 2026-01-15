@@ -140,7 +140,9 @@ public record UserWarningDto(
     string Severity,
     bool Acknowledged,
     DateTime CreatedAt,
-    DateTime? AcknowledgedAt
+    DateTime? AcknowledgedAt,
+    uint? UserId = null,
+    uint? IssuedByAdminId = null
 );
 
 /// <summary>

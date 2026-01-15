@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getApiBase } from "@/lib/api";
+import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
 
@@ -32,26 +32,17 @@ export default function TransactionsContent() {
 
       setLoading(true);
       try {
-        // Load wallet
-        const walletRes = await fetch(`${getApiBase()}/api/wallet/balance`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (walletRes.ok) {
-          setWallet(await walletRes.json());
-        }
+        // Load wallet from Feature Service
+        const walletData = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
+        setWallet({ balance: walletData.balance || 0 });
 
-        // Load transfers
-        let url = `${getApiBase()}/api/transfers?limit=50`;
+        // Load transfers from Feature Service
+        let url = FEATURE_ENDPOINTS.TRANSFERS.LIST + "?limit=50";
         if (activeTab === "sent") url += "&role=sender";
         if (activeTab === "received") url += "&role=receiver";
 
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setTransfers(data.transfers || []);
-        }
+        const transferData = await fetchFeatureAuth(url);
+        setTransfers(transferData.data || transferData.transfers || []);
       } catch (e) {
         logger.error("Failed to load data:", e);
       }

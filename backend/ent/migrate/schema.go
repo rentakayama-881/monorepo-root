@@ -72,7 +72,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "slug", Type: field.TypeString, Unique: true},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
-		{Name: "icon_url", Type: field.TypeString},
+		{Name: "icon_type", Type: field.TypeString, Default: "verified"},
 		{Name: "color", Type: field.TypeString, Default: "#6366f1"},
 	}
 	// BadgesTable holds the schema information for the "badges" table.

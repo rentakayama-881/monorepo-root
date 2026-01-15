@@ -58,12 +58,12 @@ func normalizeSocialAccounts(socialAccounts map[string]interface{}) interface{} 
 }
 
 type UpdateAccountRequest struct {
-	FullName       *string          `json:"full_name"`
-	Bio            *string          `json:"bio"`
-	Pronouns       *string          `json:"pronouns"`
-	Company        *string          `json:"company"`
-	Telegram       *string          `json:"telegram"`
-	SocialAccounts json.RawMessage  `json:"social_accounts"` // allow array or map payloads
+	FullName       *string         `json:"full_name"`
+	Bio            *string         `json:"bio"`
+	Pronouns       *string         `json:"pronouns"`
+	Company        *string         `json:"company"`
+	Telegram       *string         `json:"telegram"`
+	SocialAccounts json.RawMessage `json:"social_accounts"` // allow array or map payloads
 }
 
 type ChangeUsernameRequest struct {
@@ -207,11 +207,11 @@ func BuildPublicProfileFromEnt(c *gin.Context, u *ent.User) gin.H {
 		b, err := database.GetEntClient().Badge.Get(ctx, *u.PrimaryBadgeID)
 		if err == nil && b != nil {
 			primaryBadge = gin.H{
-				"id":       b.ID,
-				"name":     b.Name,
-				"slug":     b.Slug,
-				"icon_url": b.IconURL,
-				"color":    b.Color,
+				"id":        b.ID,
+				"name":      b.Name,
+				"slug":      b.Slug,
+				"icon_type": b.IconType,
+				"color":     b.Color,
 			}
 		}
 	}
@@ -224,11 +224,11 @@ func BuildPublicProfileFromEnt(c *gin.Context, u *ent.User) gin.H {
 	for _, ub := range userBadges {
 		if ub.Edges.Badge != nil {
 			badges = append(badges, gin.H{
-				"id":       ub.Edges.Badge.ID,
-				"name":     ub.Edges.Badge.Name,
-				"slug":     ub.Edges.Badge.Slug,
-				"icon_url": ub.Edges.Badge.IconURL,
-				"color":    ub.Edges.Badge.Color,
+				"id":        ub.Edges.Badge.ID,
+				"name":      ub.Edges.Badge.Name,
+				"slug":      ub.Edges.Badge.Slug,
+				"icon_type": ub.Edges.Badge.IconType,
+				"color":     ub.Edges.Badge.Color,
 			})
 		}
 	}

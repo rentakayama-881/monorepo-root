@@ -104,16 +104,16 @@ func (_u *BadgeUpdate) ClearDescription() *BadgeUpdate {
 	return _u
 }
 
-// SetIconURL sets the "icon_url" field.
-func (_u *BadgeUpdate) SetIconURL(v string) *BadgeUpdate {
-	_u.mutation.SetIconURL(v)
+// SetIconType sets the "icon_type" field.
+func (_u *BadgeUpdate) SetIconType(v string) *BadgeUpdate {
+	_u.mutation.SetIconType(v)
 	return _u
 }
 
-// SetNillableIconURL sets the "icon_url" field if the given value is not nil.
-func (_u *BadgeUpdate) SetNillableIconURL(v *string) *BadgeUpdate {
+// SetNillableIconType sets the "icon_type" field if the given value is not nil.
+func (_u *BadgeUpdate) SetNillableIconType(v *string) *BadgeUpdate {
 	if v != nil {
-		_u.SetIconURL(*v)
+		_u.SetIconType(*v)
 	}
 	return _u
 }
@@ -257,11 +257,6 @@ func (_u *BadgeUpdate) check() error {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Badge.slug": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.IconURL(); ok {
-		if err := badge.IconURLValidator(v); err != nil {
-			return &ValidationError{Name: "icon_url", err: fmt.Errorf(`ent: validator failed for field "Badge.icon_url": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -298,8 +293,8 @@ func (_u *BadgeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(badge.FieldDescription, field.TypeString)
 	}
-	if value, ok := _u.mutation.IconURL(); ok {
-		_spec.SetField(badge.FieldIconURL, field.TypeString, value)
+	if value, ok := _u.mutation.IconType(); ok {
+		_spec.SetField(badge.FieldIconType, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Color(); ok {
 		_spec.SetField(badge.FieldColor, field.TypeString, value)
@@ -488,16 +483,16 @@ func (_u *BadgeUpdateOne) ClearDescription() *BadgeUpdateOne {
 	return _u
 }
 
-// SetIconURL sets the "icon_url" field.
-func (_u *BadgeUpdateOne) SetIconURL(v string) *BadgeUpdateOne {
-	_u.mutation.SetIconURL(v)
+// SetIconType sets the "icon_type" field.
+func (_u *BadgeUpdateOne) SetIconType(v string) *BadgeUpdateOne {
+	_u.mutation.SetIconType(v)
 	return _u
 }
 
-// SetNillableIconURL sets the "icon_url" field if the given value is not nil.
-func (_u *BadgeUpdateOne) SetNillableIconURL(v *string) *BadgeUpdateOne {
+// SetNillableIconType sets the "icon_type" field if the given value is not nil.
+func (_u *BadgeUpdateOne) SetNillableIconType(v *string) *BadgeUpdateOne {
 	if v != nil {
-		_u.SetIconURL(*v)
+		_u.SetIconType(*v)
 	}
 	return _u
 }
@@ -654,11 +649,6 @@ func (_u *BadgeUpdateOne) check() error {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Badge.slug": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.IconURL(); ok {
-		if err := badge.IconURLValidator(v); err != nil {
-			return &ValidationError{Name: "icon_url", err: fmt.Errorf(`ent: validator failed for field "Badge.icon_url": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -712,8 +702,8 @@ func (_u *BadgeUpdateOne) sqlSave(ctx context.Context) (_node *Badge, err error)
 	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(badge.FieldDescription, field.TypeString)
 	}
-	if value, ok := _u.mutation.IconURL(); ok {
-		_spec.SetField(badge.FieldIconURL, field.TypeString, value)
+	if value, ok := _u.mutation.IconType(); ok {
+		_spec.SetField(badge.FieldIconType, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Color(); ok {
 		_spec.SetField(badge.FieldColor, field.TypeString, value)

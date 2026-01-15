@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getApiBase } from "@/lib/api";
+import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
 
@@ -21,13 +21,8 @@ export default function DepositPage() {
       }
 
       try {
-        const res = await fetch(`${getApiBase()}/api/wallet/balance`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setWallet(data);
-        }
+        const walletData = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
+        setWallet({ balance: walletData.balance || 0 });
       } catch (e) {
         logger.error("Failed to load wallet:", e);
       }
@@ -55,31 +50,9 @@ export default function DepositPage() {
       return;
     }
 
-    try {
-      const res = await fetch(`${getApiBase()}/api/wallet/deposit`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ amount: amountNum }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Gagal membuat deposit");
-        setLoading(false);
-        return;
-      }
-
-      // Redirect to payment URL
-      if (data.invoice_url) {
-        window.location.href = data.invoice_url;
-      }
-    } catch (e) {
-      setError("Terjadi kesalahan. Silakan coba lagi.");
-      setLoading(false);
-    }
+    // TODO: Implement deposit endpoint in Feature Service with payment gateway integration
+    setError("Fitur deposit sedang dalam pengembangan. Silakan hubungi admin untuk top-up manual.");
+    setLoading(false);
   };
 
   const formatCurrency = (value) => {

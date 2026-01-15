@@ -374,7 +374,7 @@ export default function ProfileSidebar({ onClose }) {
             </div>
 
             <Link
-              href="/ai-chat"
+              href="/assistant"
               className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
             >
               <span className="flex items-center gap-2">

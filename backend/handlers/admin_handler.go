@@ -113,8 +113,15 @@ type CreateBadgeRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Slug        string `json:"slug" binding:"required"`
 	Description string `json:"description"`
-	IconURL     string `json:"icon_url" binding:"required"`
+	IconType    string `json:"icon_type"`
 	Color       string `json:"color"`
+}
+
+// Valid icon types for badges
+var validIconTypes = map[string]bool{
+	"verified": true, "admin": true, "moderator": true,
+	"contributor": true, "premium": true, "trusted": true,
+	"checkmark": true, "default": true,
 }
 
 func CreateBadge(c *gin.Context) {
@@ -146,12 +153,17 @@ func CreateBadge(c *gin.Context) {
 		color = "#6366f1"
 	}
 
+	iconType := req.IconType
+	if iconType == "" || !validIconTypes[iconType] {
+		iconType = "verified"
+	}
+
 	// Create badge using Ent
 	badgeEnt, err := database.GetEntClient().Badge.Create().
 		SetName(req.Name).
 		SetSlug(req.Slug).
 		SetDescription(req.Description).
-		SetIconURL(req.IconURL).
+		SetIconType(iconType).
 		SetColor(color).
 		Save(c.Request.Context())
 	if err != nil {
@@ -169,7 +181,7 @@ func CreateBadge(c *gin.Context) {
 		Name:        badgeEnt.Name,
 		Slug:        badgeEnt.Slug,
 		Description: badgeEnt.Description,
-		IconURL:     badgeEnt.IconURL,
+		IconType:    badgeEnt.IconType,
 		Color:       badgeEnt.Color,
 	}
 	mappedBadge.ID = uint(badgeEnt.ID)
@@ -199,7 +211,7 @@ func ListBadges(c *gin.Context) {
 			Name:        b.Name,
 			Slug:        b.Slug,
 			Description: b.Description,
-			IconURL:     b.IconURL,
+			IconType:    b.IconType,
 			Color:       b.Color,
 		}
 		mb.ID = uint(b.ID)
@@ -232,7 +244,7 @@ func GetBadge(c *gin.Context) {
 		Name:        badgeEnt.Name,
 		Slug:        badgeEnt.Slug,
 		Description: badgeEnt.Description,
-		IconURL:     badgeEnt.IconURL,
+		IconType:    badgeEnt.IconType,
 		Color:       badgeEnt.Color,
 	}
 	mappedBadge.ID = uint(badgeEnt.ID)
@@ -289,12 +301,17 @@ func UpdateBadge(c *gin.Context) {
 		color = badgeEnt.Color // Keep existing if not provided
 	}
 
+	iconType := req.IconType
+	if iconType == "" || !validIconTypes[iconType] {
+		iconType = badgeEnt.IconType // Keep existing if not provided
+	}
+
 	// Update badge using Ent
 	updatedBadge, err := database.GetEntClient().Badge.UpdateOneID(int(id)).
 		SetName(req.Name).
 		SetSlug(req.Slug).
 		SetDescription(req.Description).
-		SetIconURL(req.IconURL).
+		SetIconType(iconType).
 		SetColor(color).
 		Save(c.Request.Context())
 	if err != nil {
@@ -309,7 +326,7 @@ func UpdateBadge(c *gin.Context) {
 		Name:        updatedBadge.Name,
 		Slug:        updatedBadge.Slug,
 		Description: updatedBadge.Description,
-		IconURL:     updatedBadge.IconURL,
+		IconType:    updatedBadge.IconType,
 		Color:       updatedBadge.Color,
 	}
 	mappedBadge.ID = uint(updatedBadge.ID)
@@ -629,7 +646,7 @@ func AdminListUsers(c *gin.Context) {
 				Name:        u.Edges.PrimaryBadge.Name,
 				Slug:        u.Edges.PrimaryBadge.Slug,
 				Description: u.Edges.PrimaryBadge.Description,
-				IconURL:     u.Edges.PrimaryBadge.IconURL,
+				IconType:    u.Edges.PrimaryBadge.IconType,
 				Color:       u.Edges.PrimaryBadge.Color,
 			}
 			pb.ID = uint(u.Edges.PrimaryBadge.ID)
@@ -651,7 +668,7 @@ func AdminListUsers(c *gin.Context) {
 						Name:        ub.Edges.Badge.Name,
 						Slug:        ub.Edges.Badge.Slug,
 						Description: ub.Edges.Badge.Description,
-						IconURL:     ub.Edges.Badge.IconURL,
+						IconType:    ub.Edges.Badge.IconType,
 						Color:       ub.Edges.Badge.Color,
 					}
 					mb.ID = uint(ub.Edges.Badge.ID)

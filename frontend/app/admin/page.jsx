@@ -6,11 +6,16 @@ import Card from "@/components/ui/Card";
 import logger from "@/lib/logger";
 import { getApiBase } from "@/lib/api";
 
+const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
     totalBadges: 0,
     totalUsers: 0,
-    assignedBadges: 0,
+    pendingReports: 0,
+    activeDeviceBans: 0,
+    warningsToday: 0,
+    hiddenContent: 0,
   });
 
   useEffect(() => {
@@ -18,7 +23,7 @@ export default function AdminDashboardPage() {
       const token = localStorage.getItem("admin_token");
 
       try {
-        // Fetch badges count
+        // Fetch badges count from Go backend
         const badgesRes = await fetch(`${getApiBase()}/admin/badges`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -30,13 +35,33 @@ export default function AdminDashboardPage() {
           }));
         }
 
-        // Fetch users count
+        // Fetch users count from Go backend
         const usersRes = await fetch(`${getApiBase()}/admin/users?limit=1`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (usersRes.ok) {
           const data = await usersRes.json();
           setStats((prev) => ({ ...prev, totalUsers: data.total || 0 }));
+        }
+
+        // Fetch moderation stats from Feature Service
+        if (FEATURE_SERVICE_URL) {
+          const modStatsRes = await fetch(
+            `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/dashboard`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          if (modStatsRes.ok) {
+            const modData = await modStatsRes.json();
+            setStats((prev) => ({
+              ...prev,
+              pendingReports: modData.pendingReports || 0,
+              activeDeviceBans: modData.activeDeviceBans || 0,
+              warningsToday: modData.warningsIssuedToday || 0,
+              hiddenContent: modData.hiddenContentCount || 0,
+            }));
+          }
         }
       } catch (err) {
         logger.error("Failed to fetch stats:", err);
@@ -60,6 +85,34 @@ export default function AdminDashboardPage() {
       href: "/admin/users",
       icon: "👥",
       color: "text-blue-600",
+    },
+    {
+      label: "Pending Reports",
+      value: stats.pendingReports,
+      href: "/admin/reports",
+      icon: "🚨",
+      color: "text-red-600",
+    },
+    {
+      label: "Active Bans",
+      value: stats.activeDeviceBans,
+      href: "/admin/device-bans",
+      icon: "🔒",
+      color: "text-orange-600",
+    },
+    {
+      label: "Warnings Today",
+      value: stats.warningsToday,
+      href: "/admin/warnings",
+      icon: "⚠️",
+      color: "text-yellow-600",
+    },
+    {
+      label: "Hidden Content",
+      value: stats.hiddenContent,
+      href: "/admin/content",
+      icon: "👁️",
+      color: "text-purple-600",
     },
   ];
 

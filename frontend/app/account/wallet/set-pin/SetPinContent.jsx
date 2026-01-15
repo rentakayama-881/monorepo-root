@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getApiBase } from "@/lib/api";
+import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
+import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
 
@@ -21,7 +22,7 @@ export default function SetPinContent() {
   const [currentPin, setCurrentPin] = useState("");
 
   useEffect(() => {
-    async function checkWallet() {
+    async function checkWalletAndTwoFactor() {
       const token = getToken();
       if (!token) {
         router.push("/login");
@@ -29,21 +30,30 @@ export default function SetPinContent() {
       }
 
       try {
-        const res = await fetch(`${getApiBase()}/api/wallet/balance`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setHasPin(data.has_pin);
+        // First check if 2FA is enabled (required for PIN)
+        const totpRes = await fetchJsonAuth("/api/auth/totp/status");
+        if (!totpRes.enabled) {
+          // Redirect to 2FA setup with return URL
+          router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/set-pin" + (redirect ? "?redirect=" + redirect : "")));
+          return;
         }
+
+        // Get PIN status from Feature Service
+        const pinStatus = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.PIN_STATUS);
+        setHasPin(pinStatus.pinSet || false);
       } catch (e) {
         logger.error("Failed to check wallet:", e);
+        // If Feature Service unavailable, show error
+        if (e.status === 403 && e.code === "TWO_FACTOR_REQUIRED") {
+          router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/set-pin"));
+          return;
+        }
       }
       setLoading(false);
     }
 
-    checkWallet();
-  }, [router]);
+    checkWalletAndTwoFactor();
+  }, [router, redirect]);
 
   const handlePinChange = (value, setter) => {
     const cleaned = value.replace(/\D/g, "").slice(0, 6);
@@ -68,40 +78,36 @@ export default function SetPinContent() {
       return;
     }
 
-    const token = getToken();
     setProcessing(true);
     setError("");
 
     try {
-      const body = { new_pin: pin };
-      if (hasPin) {
-        body.old_pin = currentPin;
-      }
+      // Use Feature Service for PIN operations
+      const endpoint = hasPin ? FEATURE_ENDPOINTS.WALLETS.PIN_CHANGE : FEATURE_ENDPOINTS.WALLETS.PIN_SET;
+      const body = hasPin 
+        ? { currentPin: currentPin, newPin: pin }
+        : { pin: pin };
 
-      const res = await fetch(`${getApiBase()}/api/wallet/pin`, {
+      await fetchFeatureAuth(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(body),
       });
 
-      if (res.ok) {
-        // Redirect based on context
-        if (redirect === "withdraw") {
-          router.push("/account/wallet/withdraw");
-        } else if (redirect === "send") {
-          router.push("/account/wallet/send");
-        } else {
-          router.push("/account/wallet/transactions?success=pin");
-        }
+      // Success - redirect based on context
+      if (redirect === "withdraw") {
+        router.push("/account/wallet/withdraw");
+      } else if (redirect === "send") {
+        router.push("/account/wallet/send");
       } else {
-        const data = await res.json();
-        setError(data.error || "Gagal menyimpan PIN");
+        router.push("/account/wallet/transactions?success=pin");
       }
     } catch (e) {
-      setError("Terjadi kesalahan");
+      logger.error("Failed to set PIN:", e);
+      if (e.code === "TWO_FACTOR_REQUIRED") {
+        router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/set-pin"));
+        return;
+      }
+      setError(e.message || "Gagal menyimpan PIN");
     }
     setProcessing(false);
   };

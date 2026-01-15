@@ -37,8 +37,9 @@ func (Badge) Fields() []ent.Field {
 		field.Text("description").
 			Optional().
 			Default(""),
-		field.String("icon_url").
-			NotEmpty(),
+		field.String("icon_type").
+			Default("verified").
+			Comment("Icon type: verified, admin, moderator, contributor, premium, trusted, checkmark"),
 		field.String("color").
 			Default("#6366f1"),
 	}

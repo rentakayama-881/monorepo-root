@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { getApiBase } from "@/lib/api";
+import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
+import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
 
@@ -28,30 +29,21 @@ export default function TransactionDetailPage() {
         return;
       }
 
-      // Fetch current user from API
+      // Fetch current user from Go backend
       try {
-        const userRes = await fetch(`${getApiBase()}/api/user/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          setCurrentUser(userData);
-        }
+        const userData = await fetchJsonAuth("/api/user/me");
+        setCurrentUser(userData);
       } catch (e) {
         logger.error("Failed to load user:", e);
       }
 
+      // Fetch transfer from Feature Service
       try {
-        const res = await fetch(`${getApiBase()}/api/transfers/${transferId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          setTransfer(await res.json());
-        } else {
-          setError("Transfer tidak ditemukan");
-        }
+        const transferData = await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.DETAIL(transferId));
+        setTransfer(transferData.data || transferData);
       } catch (e) {
-        setError("Gagal memuat data");
+        logger.error("Failed to load transfer:", e);
+        setError("Transfer tidak ditemukan");
       }
       setLoading(false);
     }
@@ -72,51 +64,39 @@ export default function TransactionDetailPage() {
       return;
     }
 
-    const token = getToken();
     setProcessing(true);
     setError("");
 
     try {
-      let url = "";
-      let method = "POST";
+      let endpoint = "";
       let body = { pin };
 
       if (pendingAction === "release") {
-        url = `${getApiBase()}/api/transfers/${transferId}/release`;
+        endpoint = FEATURE_ENDPOINTS.TRANSFERS.RELEASE(transferId);
       } else if (pendingAction === "cancel") {
-        url = `${getApiBase()}/api/transfers/${transferId}/cancel`;
+        endpoint = FEATURE_ENDPOINTS.TRANSFERS.CANCEL(transferId);
       } else if (pendingAction === "dispute") {
-        url = `${getApiBase()}/api/disputes`;
-        body = { transfer_id: transferId, reason: "Memerlukan penyelesaian" };
+        endpoint = FEATURE_ENDPOINTS.DISPUTES.CREATE;
+        body = { transferId: transferId, reason: "Memerlukan penyelesaian" };
       }
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+      await fetchFeatureAuth(endpoint, {
+        method: "POST",
         body: JSON.stringify(body),
       });
 
-      if (res.ok) {
-        setShowPinModal(false);
-        // Reload transfer
-        const refreshRes = await fetch(`${getApiBase()}/api/transfers/${transferId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (refreshRes.ok) {
-          setTransfer(await refreshRes.json());
-        }
-        if (pendingAction === "dispute") {
-          router.push("/account/wallet/disputes");
-        }
-      } else {
-        const data = await res.json();
-        setError(data.error || "Gagal memproses");
+      setShowPinModal(false);
+      
+      // Reload transfer
+      const transferData = await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.DETAIL(transferId));
+      setTransfer(transferData.data || transferData);
+      
+      if (pendingAction === "dispute") {
+        router.push("/account/wallet/disputes");
       }
     } catch (e) {
-      setError("Terjadi kesalahan");
+      logger.error("Action failed:", e);
+      setError(e.message || "Gagal memproses");
     }
     setProcessing(false);
   };

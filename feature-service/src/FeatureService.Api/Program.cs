@@ -85,7 +85,7 @@ try
         });
     });
 
-    // Configure JWT Authentication
+    // Configure JWT Authentication with support for both user and admin tokens
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
@@ -98,6 +98,87 @@ try
                 ValidIssuer = string.IsNullOrEmpty(jwtSettings.Issuer) ? null : jwtSettings.Issuer,
                 ValidAudience = string.IsNullOrEmpty(jwtSettings.Audience) ? null : jwtSettings.Audience,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
+            };
+            
+            // Custom token validation to also support admin tokens from Go backend
+            options.Events = new JwtBearerEvents
+            {
+                OnTokenValidated = context =>
+                {
+                    // Check if this is an admin token (from Go backend)
+                    var tokenType = context.Principal?.FindFirst("type")?.Value;
+                    if (tokenType == "admin")
+                    {
+                        var identity = (System.Security.Claims.ClaimsIdentity?)context.Principal?.Identity;
+                        if (identity != null && !context.Principal!.IsInRole("admin"))
+                        {
+                            identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "admin"));
+                        }
+                        
+                        // Map admin_id to NameIdentifier
+                        var adminId = context.Principal?.FindFirst("admin_id")?.Value;
+                        if (!string.IsNullOrEmpty(adminId) && context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) == null)
+                        {
+                            identity?.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, adminId));
+                        }
+                    }
+                    return Task.CompletedTask;
+                },
+                OnAuthenticationFailed = context =>
+                {
+                    // If main validation failed, try with admin secret
+                    var adminSecret = jwtSettings.AdminSecret;
+                    if (string.IsNullOrEmpty(adminSecret))
+                    {
+                        adminSecret = Environment.GetEnvironmentVariable("ADMIN_JWT_SECRET") ?? "";
+                    }
+                    
+                    if (!string.IsNullOrEmpty(adminSecret) && context.Request.Headers.TryGetValue("Authorization", out var authHeader))
+                    {
+                        var headerValue = authHeader.ToString();
+                        if (headerValue.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var token = headerValue.Substring("Bearer ".Length).Trim();
+                            try
+                            {
+                                var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                                var key = Encoding.UTF8.GetBytes(adminSecret);
+                                var validationParameters = new TokenValidationParameters
+                                {
+                                    ValidateIssuerSigningKey = true,
+                                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                                    ValidateIssuer = false,
+                                    ValidateAudience = false,
+                                    ValidateLifetime = true,
+                                    ClockSkew = TimeSpan.FromMinutes(5)
+                                };
+                                
+                                var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
+                                var tokenType = principal.FindFirst("type")?.Value;
+                                
+                                if (tokenType == "admin")
+                                {
+                                    var identity = (System.Security.Claims.ClaimsIdentity?)principal.Identity;
+                                    if (identity != null && !principal.IsInRole("admin"))
+                                    {
+                                        identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "admin"));
+                                    }
+                                    
+                                    var adminId = principal.FindFirst("admin_id")?.Value;
+                                    if (!string.IsNullOrEmpty(adminId) && principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) == null)
+                                    {
+                                        identity?.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, adminId));
+                                    }
+                                    
+                                    context.Principal = principal;
+                                    context.Success();
+                                }
+                            }
+                            catch { /* Ignore if admin token validation also fails */ }
+                        }
+                    }
+                    return Task.CompletedTask;
+                }
             };
         });
 

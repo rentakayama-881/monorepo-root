@@ -85,9 +85,9 @@ func Description(v string) predicate.Badge {
 	return predicate.Badge(sql.FieldEQ(FieldDescription, v))
 }
 
-// IconURL applies equality check predicate on the "icon_url" field. It's identical to IconURLEQ.
-func IconURL(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldEQ(FieldIconURL, v))
+// IconType applies equality check predicate on the "icon_type" field. It's identical to IconTypeEQ.
+func IconType(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldEQ(FieldIconType, v))
 }
 
 // Color applies equality check predicate on the "color" field. It's identical to ColorEQ.
@@ -430,69 +430,69 @@ func DescriptionContainsFold(v string) predicate.Badge {
 	return predicate.Badge(sql.FieldContainsFold(FieldDescription, v))
 }
 
-// IconURLEQ applies the EQ predicate on the "icon_url" field.
-func IconURLEQ(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldEQ(FieldIconURL, v))
+// IconTypeEQ applies the EQ predicate on the "icon_type" field.
+func IconTypeEQ(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldEQ(FieldIconType, v))
 }
 
-// IconURLNEQ applies the NEQ predicate on the "icon_url" field.
-func IconURLNEQ(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldNEQ(FieldIconURL, v))
+// IconTypeNEQ applies the NEQ predicate on the "icon_type" field.
+func IconTypeNEQ(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldNEQ(FieldIconType, v))
 }
 
-// IconURLIn applies the In predicate on the "icon_url" field.
-func IconURLIn(vs ...string) predicate.Badge {
-	return predicate.Badge(sql.FieldIn(FieldIconURL, vs...))
+// IconTypeIn applies the In predicate on the "icon_type" field.
+func IconTypeIn(vs ...string) predicate.Badge {
+	return predicate.Badge(sql.FieldIn(FieldIconType, vs...))
 }
 
-// IconURLNotIn applies the NotIn predicate on the "icon_url" field.
-func IconURLNotIn(vs ...string) predicate.Badge {
-	return predicate.Badge(sql.FieldNotIn(FieldIconURL, vs...))
+// IconTypeNotIn applies the NotIn predicate on the "icon_type" field.
+func IconTypeNotIn(vs ...string) predicate.Badge {
+	return predicate.Badge(sql.FieldNotIn(FieldIconType, vs...))
 }
 
-// IconURLGT applies the GT predicate on the "icon_url" field.
-func IconURLGT(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldGT(FieldIconURL, v))
+// IconTypeGT applies the GT predicate on the "icon_type" field.
+func IconTypeGT(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldGT(FieldIconType, v))
 }
 
-// IconURLGTE applies the GTE predicate on the "icon_url" field.
-func IconURLGTE(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldGTE(FieldIconURL, v))
+// IconTypeGTE applies the GTE predicate on the "icon_type" field.
+func IconTypeGTE(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldGTE(FieldIconType, v))
 }
 
-// IconURLLT applies the LT predicate on the "icon_url" field.
-func IconURLLT(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldLT(FieldIconURL, v))
+// IconTypeLT applies the LT predicate on the "icon_type" field.
+func IconTypeLT(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldLT(FieldIconType, v))
 }
 
-// IconURLLTE applies the LTE predicate on the "icon_url" field.
-func IconURLLTE(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldLTE(FieldIconURL, v))
+// IconTypeLTE applies the LTE predicate on the "icon_type" field.
+func IconTypeLTE(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldLTE(FieldIconType, v))
 }
 
-// IconURLContains applies the Contains predicate on the "icon_url" field.
-func IconURLContains(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldContains(FieldIconURL, v))
+// IconTypeContains applies the Contains predicate on the "icon_type" field.
+func IconTypeContains(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldContains(FieldIconType, v))
 }
 
-// IconURLHasPrefix applies the HasPrefix predicate on the "icon_url" field.
-func IconURLHasPrefix(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldHasPrefix(FieldIconURL, v))
+// IconTypeHasPrefix applies the HasPrefix predicate on the "icon_type" field.
+func IconTypeHasPrefix(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldHasPrefix(FieldIconType, v))
 }
 
-// IconURLHasSuffix applies the HasSuffix predicate on the "icon_url" field.
-func IconURLHasSuffix(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldHasSuffix(FieldIconURL, v))
+// IconTypeHasSuffix applies the HasSuffix predicate on the "icon_type" field.
+func IconTypeHasSuffix(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldHasSuffix(FieldIconType, v))
 }
 
-// IconURLEqualFold applies the EqualFold predicate on the "icon_url" field.
-func IconURLEqualFold(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldEqualFold(FieldIconURL, v))
+// IconTypeEqualFold applies the EqualFold predicate on the "icon_type" field.
+func IconTypeEqualFold(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldEqualFold(FieldIconType, v))
 }
 
-// IconURLContainsFold applies the ContainsFold predicate on the "icon_url" field.
-func IconURLContainsFold(v string) predicate.Badge {
-	return predicate.Badge(sql.FieldContainsFold(FieldIconURL, v))
+// IconTypeContainsFold applies the ContainsFold predicate on the "icon_type" field.
+func IconTypeContainsFold(v string) predicate.Badge {
+	return predicate.Badge(sql.FieldContainsFold(FieldIconType, v))
 }
 
 // ColorEQ applies the EQ predicate on the "color" field.

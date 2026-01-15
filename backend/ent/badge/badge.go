@@ -26,8 +26,8 @@ const (
 	FieldSlug = "slug"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
-	// FieldIconURL holds the string denoting the icon_url field in the database.
-	FieldIconURL = "icon_url"
+	// FieldIconType holds the string denoting the icon_type field in the database.
+	FieldIconType = "icon_type"
 	// FieldColor holds the string denoting the color field in the database.
 	FieldColor = "color"
 	// EdgeUserBadges holds the string denoting the user_badges edge name in mutations.
@@ -61,7 +61,7 @@ var Columns = []string{
 	FieldName,
 	FieldSlug,
 	FieldDescription,
-	FieldIconURL,
+	FieldIconType,
 	FieldColor,
 }
 
@@ -88,8 +88,8 @@ var (
 	SlugValidator func(string) error
 	// DefaultDescription holds the default value on creation for the "description" field.
 	DefaultDescription string
-	// IconURLValidator is a validator for the "icon_url" field. It is called by the builders before save.
-	IconURLValidator func(string) error
+	// DefaultIconType holds the default value on creation for the "icon_type" field.
+	DefaultIconType string
 	// DefaultColor holds the default value on creation for the "color" field.
 	DefaultColor string
 )
@@ -132,9 +132,9 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
-// ByIconURL orders the results by the icon_url field.
-func ByIconURL(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldIconURL, opts...).ToFunc()
+// ByIconType orders the results by the icon_type field.
+func ByIconType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIconType, opts...).ToFunc()
 }
 
 // ByColor orders the results by the color field.

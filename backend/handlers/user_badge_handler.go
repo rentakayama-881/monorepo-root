@@ -87,7 +87,7 @@ func GetUserBadgesPublic(c *gin.Context) {
 				"name":        ub.Edges.Badge.Name,
 				"slug":        ub.Edges.Badge.Slug,
 				"description": ub.Edges.Badge.Description,
-				"icon_url":    ub.Edges.Badge.IconURL,
+				"icon_type":   ub.Edges.Badge.IconType,
 				"color":       ub.Edges.Badge.Color,
 				"granted_at":  ub.GrantedAt,
 			})
@@ -100,11 +100,11 @@ func GetUserBadgesPublic(c *gin.Context) {
 		b, err := database.GetEntClient().Badge.Get(c.Request.Context(), *u.PrimaryBadgeID)
 		if err == nil && b != nil {
 			primaryBadge = &gin.H{
-				"id":       b.ID,
-				"name":     b.Name,
-				"slug":     b.Slug,
-				"icon_url": b.IconURL,
-				"color":    b.Color,
+				"id":        b.ID,
+				"name":      b.Name,
+				"slug":      b.Slug,
+				"icon_type": b.IconType,
+				"color":     b.Color,
 			}
 		}
 	}
@@ -134,7 +134,7 @@ func GetMyBadges(c *gin.Context) {
 				"name":        ub.Edges.Badge.Name,
 				"slug":        ub.Edges.Badge.Slug,
 				"description": ub.Edges.Badge.Description,
-				"icon_url":    ub.Edges.Badge.IconURL,
+				"icon_type":   ub.Edges.Badge.IconType,
 				"color":       ub.Edges.Badge.Color,
 				"granted_at":  ub.GrantedAt,
 			})

@@ -90,9 +90,17 @@ func (_c *BadgeCreate) SetNillableDescription(v *string) *BadgeCreate {
 	return _c
 }
 
-// SetIconURL sets the "icon_url" field.
-func (_c *BadgeCreate) SetIconURL(v string) *BadgeCreate {
-	_c.mutation.SetIconURL(v)
+// SetIconType sets the "icon_type" field.
+func (_c *BadgeCreate) SetIconType(v string) *BadgeCreate {
+	_c.mutation.SetIconType(v)
+	return _c
+}
+
+// SetNillableIconType sets the "icon_type" field if the given value is not nil.
+func (_c *BadgeCreate) SetNillableIconType(v *string) *BadgeCreate {
+	if v != nil {
+		_c.SetIconType(*v)
+	}
 	return _c
 }
 
@@ -187,6 +195,10 @@ func (_c *BadgeCreate) defaults() {
 		v := badge.DefaultDescription
 		_c.mutation.SetDescription(v)
 	}
+	if _, ok := _c.mutation.IconType(); !ok {
+		v := badge.DefaultIconType
+		_c.mutation.SetIconType(v)
+	}
 	if _, ok := _c.mutation.Color(); !ok {
 		v := badge.DefaultColor
 		_c.mutation.SetColor(v)
@@ -217,13 +229,8 @@ func (_c *BadgeCreate) check() error {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Badge.slug": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.IconURL(); !ok {
-		return &ValidationError{Name: "icon_url", err: errors.New(`ent: missing required field "Badge.icon_url"`)}
-	}
-	if v, ok := _c.mutation.IconURL(); ok {
-		if err := badge.IconURLValidator(v); err != nil {
-			return &ValidationError{Name: "icon_url", err: fmt.Errorf(`ent: validator failed for field "Badge.icon_url": %w`, err)}
-		}
+	if _, ok := _c.mutation.IconType(); !ok {
+		return &ValidationError{Name: "icon_type", err: errors.New(`ent: missing required field "Badge.icon_type"`)}
 	}
 	if _, ok := _c.mutation.Color(); !ok {
 		return &ValidationError{Name: "color", err: errors.New(`ent: missing required field "Badge.color"`)}
@@ -278,9 +285,9 @@ func (_c *BadgeCreate) createSpec() (*Badge, *sqlgraph.CreateSpec) {
 		_spec.SetField(badge.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := _c.mutation.IconURL(); ok {
-		_spec.SetField(badge.FieldIconURL, field.TypeString, value)
-		_node.IconURL = value
+	if value, ok := _c.mutation.IconType(); ok {
+		_spec.SetField(badge.FieldIconType, field.TypeString, value)
+		_node.IconType = value
 	}
 	if value, ok := _c.mutation.Color(); ok {
 		_spec.SetField(badge.FieldColor, field.TypeString, value)

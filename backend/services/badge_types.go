@@ -8,7 +8,7 @@ type Badge struct {
 	Name        string    `json:"name"`
 	Slug        string    `json:"slug"`
 	Description string    `json:"description"`
-	IconURL     string    `json:"icon_url"`
+	IconType    string    `json:"icon_type"`
 	Color       string    `json:"color"`
 	CreatedAt   time.Time `json:"created_at,omitempty"`
 	UpdatedAt   time.Time `json:"updated_at,omitempty"`

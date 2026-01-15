@@ -31,7 +31,7 @@ export default function ThreadManagementPage() {
     try {
       const token = localStorage.getItem("admin_token");
       const res = await fetch(
-        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/threads/${transferForm.threadId}/transfer`,
+        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/threads/transfer`,
         {
           method: "POST",
           headers: {
@@ -39,7 +39,8 @@ export default function ThreadManagementPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            newOwnerId: parseInt(transferForm.newOwnerId),
+            threadId: parseInt(transferForm.threadId),
+            newOwnerUserId: parseInt(transferForm.newOwnerId),
             reason: transferForm.reason,
           }),
         }

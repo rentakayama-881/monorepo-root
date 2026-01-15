@@ -21,7 +21,7 @@ export default function AuditLogsPage() {
     setError("");
     try {
       const token = localStorage.getItem("admin_token");
-      let url = `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/audit-logs?page=${page}&pageSize=30`;
+      let url = `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/logs?page=${page}&pageSize=30`;
       if (filter.actionType) url += `&actionType=${filter.actionType}`;
       if (filter.adminId) url += `&adminId=${filter.adminId}`;
       
@@ -33,7 +33,7 @@ export default function AuditLogsPage() {
       });
       if (!res.ok) throw new Error("Gagal memuat audit logs");
       const data = await res.json();
-      setLogs(data.items || []);
+      setLogs(data.logs || []);
       setTotalPages(Math.ceil((data.totalCount || 0) / 30) || 1);
     } catch (e) {
       setError(e.message);

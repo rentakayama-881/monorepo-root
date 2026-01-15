@@ -112,3 +112,13 @@ public record PaginatedAdminActionLogResponse(
     int Page,
     int PageSize
 );
+
+/// <summary>
+/// Paginated warnings response for admin list all
+/// </summary>
+public record PaginatedWarningsResponse(
+    List<UserWarningDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize
+);

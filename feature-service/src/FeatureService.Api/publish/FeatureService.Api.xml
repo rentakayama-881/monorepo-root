@@ -1,0 +1,2089 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FeatureService.Api</name>
+    </assembly>
+    <members>
+        <member name="T:FeatureService.Api.Controllers.AdminModerationController">
+            <summary>
+            Admin moderation endpoints for managing reports, bans, warnings, and content
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.GetDashboardStats">
+            <summary>
+            Get admin dashboard statistics
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.GetPendingReports(System.Int32,System.Int32,System.String)">
+            <summary>
+            Get pending reports for admin review
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.GetReportDetail(System.String)">
+            <summary>
+            Get report details
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.TakeReportAction(System.String,FeatureService.Api.DTOs.TakeReportActionRequest)">
+            <summary>
+            Take action on a report (dismiss, warn, hide, ban)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.GetDeviceBans(System.Int32,System.Int32,System.Nullable{System.Boolean})">
+            <summary>
+            Get all device bans
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.BanDevice(FeatureService.Api.Controllers.BanDeviceRequest)">
+            <summary>
+            Ban a device (permanent ban)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.GetDeviceBanDetail(System.String)">
+            <summary>
+            Get device ban details
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.UnbanDevice(System.String)">
+            <summary>
+            Unban a device
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.CheckDeviceBan(FeatureService.Api.Controllers.CheckDeviceBanRequest)">
+            <summary>
+            Check if a device is banned (for registration/login flow)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.GetUserWarnings(System.UInt32)">
+            <summary>
+            Get all warnings for a user
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.CreateWarning(FeatureService.Api.Controllers.CreateWarningRequest)">
+            <summary>
+            Issue a warning to a user
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.GetWarningDetail(System.String)">
+            <summary>
+            Get warning details
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.HideContent(FeatureService.Api.Controllers.HideContentRequest)">
+            <summary>
+            Hide content (thread or reply)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.UnhideContent(System.String)">
+            <summary>
+            Unhide content
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.GetHiddenContent(System.Int32,System.Int32)">
+            <summary>
+            Get all hidden content
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.TransferThreadOwnership(FeatureService.Api.DTOs.TransferThreadOwnershipRequest)">
+            <summary>
+            Transfer thread ownership to another user
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.DeleteThread(System.UInt32,System.Boolean,System.String)">
+            <summary>
+            Delete a thread (soft or hard delete)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.GetAdminActionLogs(System.Int32,System.Int32,System.String)">
+            <summary>
+            Get admin action audit logs
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Controllers.ApiControllerBase">
+            <summary>
+            Base controller with common helper methods for standardized API responses
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.GetRequestId">
+            <summary>
+            Get the current request ID from the context
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.GetUserId">
+            <summary>
+            Get the current user ID from JWT claims
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.GetUsername">
+            <summary>
+            Get the current username from JWT claims
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.IsAdmin">
+            <summary>
+            Check if user has admin role
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.HasTwoFactorEnabled">
+            <summary>
+            Check if user has TOTP (2FA) enabled from JWT claims
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.RequiresTwoFactorAuth">
+            <summary>
+            Returns 403 Forbidden if user doesn't have 2FA enabled
+            Use this for financial operations that require 2FA
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiError(System.Int32,System.String,System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Create a standardized error response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiBadRequest(System.String,System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Returns 400 Bad Request with standardized error (code + message)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiBadRequest(System.String)">
+            <summary>
+            Returns 400 Bad Request with standardized error (message only, uses VALIDATION_ERROR code)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiUnauthorized(System.String,System.String)">
+            <summary>
+            Returns 401 Unauthorized with standardized error (code + message)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiNotFound(System.String,System.String)">
+            <summary>
+            Returns 404 Not Found with standardized error (code + message)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiCreated``1(``0,System.String)">
+            <summary>
+            Returns 201 Created with success response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiOk``1(``0,System.String)">
+            <summary>
+            Returns 200 OK with success response and optional message
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiUnauthorized(System.String)">
+            <summary>
+            Returns 401 Unauthorized with standardized error
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiForbidden(System.String)">
+            <summary>
+            Returns 403 Forbidden with standardized error
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiNotFound(System.String)">
+            <summary>
+            Returns 404 Not Found with standardized error
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiConflict(System.String)">
+            <summary>
+            Returns 409 Conflict with standardized error
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiPayloadTooLarge(System.String)">
+            <summary>
+            Returns 413 Payload Too Large with standardized error
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiTooManyRequests(System.String)">
+            <summary>
+            Returns 429 Too Many Requests with standardized error
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiInternalError(System.String)">
+            <summary>
+            Returns 500 Internal Server Error with standardized error
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiServiceUnavailable(System.String)">
+            <summary>
+            Returns 503 Service Unavailable with standardized error
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ApiControllerBase.ApiOk``1(``0)">
+            <summary>
+            Wrap success response with metadata
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Controllers.ChatController">
+            <summary>
+            AI Chat endpoints for Hugging Face and External LLM services (paid, per-token)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ChatController.GetBalance">
+            <summary>
+            Get user's token balance
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ChatController.GetTokenPackages">
+            <summary>
+            Get available token packages for purchase
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ChatController.PurchaseTokens(FeatureService.Api.Controllers.PurchaseTokensRequest)">
+            <summary>
+            Purchase tokens (simulated - integration with payment gateway needed)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ChatController.GetUsageHistory(System.Int32,System.String)">
+            <summary>
+            Get token usage history
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ChatController.CreateSession(FeatureService.Api.Controllers.CreateChatSessionRequest)">
+            <summary>
+            Create a new chat session
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ChatController.GetSessions(System.Int32,System.Int32,System.String)">
+            <summary>
+            Get user's chat sessions
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ChatController.GetSessionDetail(System.String)">
+            <summary>
+            Get chat session with messages
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ChatController.SendMessage(System.String,FeatureService.Api.DTOs.SendChatMessageRequest)">
+            <summary>
+            Send a message to a chat session
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ChatController.ArchiveSession(System.String)">
+            <summary>
+            Archive a chat session
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ChatController.DeleteSession(System.String)">
+            <summary>
+            Delete a chat session
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ChatController.GetAvailableModels">
+            <summary>
+            Get available AI models and their pricing
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Controllers.DocumentController">
+            <summary>
+            Document storage endpoints for user profiles (whitepapers, articles, etc.)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.DocumentController.UploadDocument(FeatureService.Api.Controllers.UploadDocumentFormRequest)">
+            <summary>
+            Upload a document to user's profile storage
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.DocumentController.GetMyDocuments(System.Int32,System.Int32,System.String)">
+            <summary>
+            Get user's documents
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.DocumentController.GetDocument(System.String)">
+            <summary>
+            Get a specific document
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.DocumentController.DownloadDocument(System.String)">
+            <summary>
+            Download a document file
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.DocumentController.UpdateDocument(System.String,FeatureService.Api.DTOs.UpdateDocumentRequest)">
+            <summary>
+            Update document metadata
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.DocumentController.DeleteDocument(System.String)">
+            <summary>
+            Delete a document
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.DocumentController.GetStorageQuota">
+            <summary>
+            Get user's storage quota
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.DocumentController.GetUserPublicDocuments(System.UInt32,System.Int32,System.Int32,System.String)">
+            <summary>
+            Get public documents from a specific user's profile
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.DocumentController.GetCategories">
+            <summary>
+            Get available document categories
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Controllers.Finance.DisputesController">
+            <summary>
+            Dispute management for transfer conflicts
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.DisputesController.CreateDispute(FeatureService.Api.DTOs.CreateDisputeRequest)">
+            <summary>
+            Create a new dispute for a transfer
+            </summary>
+            <remarks>
+            Dispute dapat dibuat oleh pengirim atau penerima transfer.
+            Transfer akan ditandai sebagai "Disputed" dan dana akan ditahan
+            sampai dispute diselesaikan oleh admin.
+            </remarks>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.DisputesController.GetDispute(System.String)">
+            <summary>
+            Get dispute details by ID
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.DisputesController.GetDisputes(System.String)">
+            <summary>
+            List user's disputes
+            </summary>
+            <param name="status">Filter by status: Open, UnderReview, WaitingForEvidence, Resolved, Cancelled</param>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.DisputesController.AddMessage(System.String,FeatureService.Api.DTOs.AddDisputeMessageRequest)">
+            <summary>
+            Add a message to dispute conversation
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.DisputesController.AddEvidence(System.String,FeatureService.Api.DTOs.AddDisputeEvidenceRequest)">
+            <summary>
+            Add evidence to dispute
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.DisputesController.CancelDispute(System.String)">
+            <summary>
+            Cancel a dispute (only initiator can cancel)
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Controllers.Finance.TransfersController">
+            <summary>
+            Escrow transfer endpoints - send money safely with hold period
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.TransfersController.CreateTransfer(FeatureService.Api.DTOs.CreateTransferRequest)">
+            <summary>
+            Create a new escrow transfer to another user - REQUIRES 2FA + PIN
+            </summary>
+            <remarks>
+            Transfer menggunakan sistem escrow:
+            - Two-Factor Authentication (2FA) MUST be enabled
+            - PIN verification required for each transfer
+            - Dana ditahan selama hold period (default 24 jam, maksimal 72 jam)
+            - Penerima bisa meng-klaim dana setelah hold period selesai
+            - Pengirim bisa membatalkan sebelum dana diklaim
+            - Fee 2% dipotong saat dana dilepaskan
+            </remarks>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.TransfersController.GetTransfers(System.String,System.String,System.Int32)">
+            <summary>
+            Get transfer history with optional filters
+            </summary>
+            <param name="status">Filter by status: pending, completed, cancelled, expired, disputed</param>
+            <param name="role">Filter by role: sender, receiver, or null for both</param>
+            <param name="limit">Maximum number of results (default 50)</param>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.TransfersController.GetTransferById(System.String)">
+            <summary>
+            Get transfer detail by ID
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.TransfersController.GetTransferByCode(System.String)">
+            <summary>
+            Get transfer by unique code (8-digit)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.TransfersController.ReleaseTransfer(System.String,FeatureService.Api.DTOs.ReleaseTransferRequest)">
+            <summary>
+            Release transfer - receiver claims the funds after hold period
+            </summary>
+            <remarks>
+            Hanya penerima yang bisa melepaskan dana setelah hold period selesai.
+            Fee 2% akan dipotong saat pelepasan.
+            </remarks>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.TransfersController.CancelTransfer(System.String,FeatureService.Api.DTOs.CancelTransferRequest)">
+            <summary>
+            Cancel transfer - sender cancels before completion
+            </summary>
+            <remarks>
+            Pengirim dapat membatalkan transfer yang masih pending atau dalam hold period.
+            Dana akan dikembalikan ke pengirim tanpa potongan fee.
+            </remarks>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.TransfersController.SearchUser(System.String)">
+            <summary>
+            Search for a user to send transfer to
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WalletsController.GetMyWallet">
+            <summary>
+            Get current user's wallet information
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WalletsController.GetPinStatus">
+            <summary>
+            Get PIN status (set/not set, locked/not locked)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WalletsController.SetPin(FeatureService.Api.DTOs.SetPinRequest)">
+            <summary>
+            Set PIN for first time - REQUIRES 2FA ENABLED
+            </summary>
+            <remarks>
+            ⚠️ SECURITY WARNING ⚠️
+            - Two-Factor Authentication (2FA) MUST be enabled before setting PIN
+            - PIN CANNOT be reset - there is NO recovery option
+            - If you forget your PIN, you will permanently lose access to financial features
+            - Write your PIN on paper and store it in a safe place
+            - Do not share your PIN with anyone, including support staff
+            </remarks>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WalletsController.ChangePin(FeatureService.Api.DTOs.ChangePinRequest)">
+            <summary>
+            Change existing PIN
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WalletsController.VerifyPin(FeatureService.Api.DTOs.VerifyPinRequest)">
+            <summary>
+            Verify PIN (for transaction authorization)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WalletsController.GetTransactions(System.Int32,System.Int32)">
+            <summary>
+            Get transaction history with pagination
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WalletsController.RecalculateBalance">
+            <summary>
+            Recalculate balance from ledger (for audit)
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Controllers.Finance.WithdrawalsController">
+            <summary>
+            Withdrawal endpoints for cashing out wallet balance to bank
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WithdrawalsController.CreateWithdrawal(FeatureService.Api.DTOs.CreateWithdrawalRequest)">
+            <summary>
+            Request a new withdrawal to bank account - REQUIRES 2FA + PIN
+            </summary>
+            <remarks>
+            SECURITY: Two-Factor Authentication (2FA) MUST be enabled.
+            Penarikan akan diproses oleh tim dalam 1-3 hari kerja.
+            Fee penarikan: Rp2,500 per transaksi.
+            Minimal: Rp10,000, Maksimal: Rp100,000,000
+            </remarks>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WithdrawalsController.GetWithdrawals(System.String,System.Int32)">
+            <summary>
+            Get withdrawal history
+            </summary>
+            <param name="status">Filter by status: Pending, Processing, Completed, Rejected, Cancelled</param>
+            <param name="limit">Maximum results (default 50)</param>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WithdrawalsController.GetWithdrawal(System.String)">
+            <summary>
+            Get withdrawal detail by ID
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WithdrawalsController.CancelWithdrawal(System.String,FeatureService.Api.DTOs.CancelWithdrawalRequest)">
+            <summary>
+            Cancel a pending withdrawal
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WithdrawalsController.GetSupportedBanks">
+            <summary>
+            Get list of supported banks
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Controllers.HealthController">
+            <summary>
+            Health check endpoints for monitoring and load balancers
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.HealthController.GetHealth">
+            <summary>
+            Basic health check
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.HealthController.GetLiveness">
+            <summary>
+            Liveness probe for Kubernetes
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.HealthController.GetReadiness">
+            <summary>
+            Readiness probe for Kubernetes
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Controllers.ReportController">
+            <summary>
+            Handles user report submission for threads and replies
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ReportController.CreateReport(FeatureService.Api.DTOs.CreateReportRequest)">
+            <summary>
+            Submit a report for a thread or reply
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ReportController.GetReportStatus(System.String)">
+            <summary>
+            Get status of a user's report
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ReportController.GetMyReports(System.Int32,System.Int32)">
+            <summary>
+            Get user's submitted reports
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.ReportController.GetReportReasons">
+            <summary>
+            Get available report reasons
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Controllers.Social.ReactionsController">
+            <summary>
+            Reaction management endpoints for threads
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Social.ReactionsController.AddReaction(System.UInt32,FeatureService.Api.DTOs.CreateReactionRequest)">
+            <summary>
+            Add or update a reaction on a thread
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Social.ReactionsController.RemoveReaction(System.UInt32)">
+            <summary>
+            Remove a reaction from a thread
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.Social.ReactionsController.GetReactionSummary(System.UInt32)">
+            <summary>
+            Get reaction summary for a thread
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Controllers.Social.RepliesController">
+            <summary>
+            Reply management endpoints for threads
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Controllers.UserCleanupController">
+            <summary>
+            User account cleanup endpoints - called by Go backend during account deletion
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.UserCleanupController.ValidateAccountDeletion(System.UInt32)">
+            <summary>
+            Validate if a user can delete their account.
+            Returns blocking reasons (wallet balance > 0, pending transfers, disputes)
+            and warnings (token balance will be lost).
+            Called by Go backend before showing delete confirmation.
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Controllers.UserCleanupController.CleanupUserData(System.UInt32)">
+            <summary>
+            Hard delete all user data from MongoDB.
+            Called by Go backend during account deletion process.
+            Will re-validate before deleting and refuse if conditions not met.
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.AdminDashboardStatsDto">
+            <summary>
+            Admin dashboard statistics
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.AdminDashboardStatsDto.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Admin dashboard statistics
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.TransferThreadOwnershipRequest">
+            <summary>
+            Request to transfer thread ownership (admin)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.TransferThreadOwnershipRequest.#ctor(System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Request to transfer thread ownership (admin)
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.TransferThreadOwnershipResponse">
+            <summary>
+            Response after transferring thread ownership
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.TransferThreadOwnershipResponse.#ctor(System.UInt32,System.UInt32,System.UInt32,System.String)">
+            <summary>
+            Response after transferring thread ownership
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.AdminDeleteThreadRequest">
+            <summary>
+            Request to delete a thread (admin)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.AdminDeleteThreadRequest.#ctor(System.UInt32,System.String,System.Boolean)">
+            <summary>
+            Request to delete a thread (admin)
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.HiddenContentDto">
+            <summary>
+            Hidden content summary for admin
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.HiddenContentDto.#ctor(System.String,System.String,System.String,System.UInt32,System.UInt32,System.String,System.String,System.UInt32,System.Boolean,System.DateTime,System.Object)">
+            <summary>
+            Hidden content summary for admin
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.PaginatedHiddenContentResponse">
+            <summary>
+            Paginated hidden content response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.PaginatedHiddenContentResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.HiddenContentDto},System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Paginated hidden content response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.UnhideContentRequest">
+            <summary>
+            Request to unhide content
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.UnhideContentRequest.#ctor(System.String)">
+            <summary>
+            Request to unhide content
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ThreadOwnershipTransferDto">
+            <summary>
+            Thread ownership transfer history item
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.ThreadOwnershipTransferDto.#ctor(System.String,System.UInt32,System.String,System.UInt32,System.String,System.UInt32,System.String,System.UInt32,System.String,System.DateTime)">
+            <summary>
+            Thread ownership transfer history item
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.AdminActionLogDto">
+            <summary>
+            Admin action log entry
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.AdminActionLogDto.#ctor(System.String,System.UInt32,System.String,System.String,System.String,System.String,System.Object,System.DateTime)">
+            <summary>
+            Admin action log entry
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.PaginatedAdminActionLogResponse">
+            <summary>
+            Paginated admin action log response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.PaginatedAdminActionLogResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.AdminActionLogDto},System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Paginated admin action log response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.TokenBalanceDto">
+            <summary>
+            User's token balance info
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.TokenBalanceDto.#ctor(System.Int64,System.Int64,System.Int64)">
+            <summary>
+            User's token balance info
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.TokenPackageDto">
+            <summary>
+            Available token packages
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.TokenPackageDto.#ctor(System.String,System.String,System.Int32,System.Int32,System.Int32,System.String)">
+            <summary>
+            Available token packages
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.PurchaseTokensRequest">
+            <summary>
+            Request to purchase tokens
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.PurchaseTokensRequest.#ctor(System.String)">
+            <summary>
+            Request to purchase tokens
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.PurchaseTokensResponse">
+            <summary>
+            Response after purchasing tokens
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.PurchaseTokensResponse.#ctor(System.String,System.Int64,System.Int64,System.String)">
+            <summary>
+            Response after purchasing tokens
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.TokenUsageDto">
+            <summary>
+            Token usage history item
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.TokenUsageDto.#ctor(System.String,System.String,System.String,System.Int32,System.Int32,System.Int32,System.DateTime)">
+            <summary>
+            Token usage history item
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.TokenUsageHistoryResponse">
+            <summary>
+            Token usage history response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.TokenUsageHistoryResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.TokenUsageDto},System.Int32,System.String)">
+            <summary>
+            Token usage history response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.TokenPurchaseDto">
+            <summary>
+            Token purchase history item
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.TokenPurchaseDto.#ctor(System.String,System.String,System.Int64,System.Int64,System.DateTime)">
+            <summary>
+            Token purchase history item
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.TokenPurchaseHistoryResponse">
+            <summary>
+            Token purchase history response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.TokenPurchaseHistoryResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.TokenPurchaseDto},System.Int32)">
+            <summary>
+            Token purchase history response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.LlmModelDto">
+            <summary>
+            Available LLM models for selection
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.LlmModelDto.#ctor(System.String,System.String,System.String,System.Int32,System.Int32)">
+            <summary>
+            Available LLM models for selection
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ChatSessionSummaryDto">
+            <summary>
+            Chat session summary
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.ChatSessionSummaryDto.#ctor(System.String,System.String,System.String,System.String,System.Int64,System.Int32,System.Nullable{System.DateTime},System.DateTime)">
+            <summary>
+            Chat session summary
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ChatMessageDto">
+            <summary>
+            Chat message
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.ChatMessageDto.#ctor(System.String,System.String,System.String,System.Int32,System.DateTime)">
+            <summary>
+            Chat message
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ChatSessionDetailDto">
+            <summary>
+            Full chat session with messages
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.ChatSessionDetailDto.#ctor(System.String,System.String,System.String,System.String,System.Int64,System.Collections.Generic.List{FeatureService.Api.DTOs.ChatMessageDto},System.DateTime,System.DateTime)">
+            <summary>
+            Full chat session with messages
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.CreateChatSessionRequest">
+            <summary>
+            Request to create new chat session
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.CreateChatSessionRequest.#ctor(System.String,System.String)">
+            <summary>
+            Request to create new chat session
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.CreateChatSessionResponse">
+            <summary>
+            Response after creating chat session
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.CreateChatSessionResponse.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Response after creating chat session
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.SendChatMessageRequest">
+            <summary>
+            Request to send a chat message
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.SendChatMessageRequest.#ctor(System.String)">
+            <summary>
+            Request to send a chat message
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.SendChatMessageResponse">
+            <summary>
+            Response after sending a chat message
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.SendChatMessageResponse.#ctor(System.String,System.String,System.Int32,System.Int64,System.Int32)">
+            <summary>
+            Response after sending a chat message
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ChatSessionsResponse">
+            <summary>
+            User's chat sessions list
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.ChatSessionsResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.ChatSessionSummaryDto},System.Int32)">
+            <summary>
+            User's chat sessions list
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.AiServiceStatusDto">
+            <summary>
+            AI service health/availability
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.AiServiceStatusDto.#ctor(System.String,System.Boolean,System.String)">
+            <summary>
+            AI service health/availability
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ApiResponse`1">
+            <summary>
+            Standard API response wrapper for successful responses
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.ApiResponse`1.#ctor(System.Boolean,`0,FeatureService.Api.DTOs.ApiMeta,System.String)">
+            <summary>
+            Standard API response wrapper for successful responses
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ApiErrorResponse">
+            <summary>
+            Standard API error response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.ApiErrorResponse.#ctor(System.Boolean,FeatureService.Api.DTOs.ApiError,FeatureService.Api.DTOs.ApiMeta)">
+            <summary>
+            Standard API error response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ApiError">
+            <summary>
+            API error details
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.ApiError.#ctor(System.String,System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            API error details
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ApiMeta">
+            <summary>
+            API response metadata
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.ApiMeta.#ctor(System.String,System.DateTime)">
+            <summary>
+            API response metadata
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ApiErrorCodes">
+            <summary>
+            Standard error codes for consistent API responses
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.UploadDocumentRequest">
+            <summary>
+            Request to upload a document
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.UploadDocumentRequest.#ctor(System.String,System.String,System.Byte[],System.String,System.String,System.String,System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Request to upload a document
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.UploadDocumentResponse">
+            <summary>
+            Response after uploading a document
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.UploadDocumentResponse.#ctor(System.String,System.String,System.String,System.String,System.Int64,System.String,System.String)">
+            <summary>
+            Response after uploading a document
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.DocumentSummaryDto">
+            <summary>
+            Document summary for listing
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.DocumentSummaryDto.#ctor(System.String,System.String,System.String,System.String,System.String,System.Int64,System.String,System.String,System.Collections.Generic.List{System.String},System.Int32,System.DateTime,System.DateTime)">
+            <summary>
+            Document summary for listing
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.DocumentDetailDto">
+            <summary>
+            Full document details
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.DocumentDetailDto.#ctor(System.String,System.UInt32,System.String,System.String,System.String,System.String,System.Int64,System.String,System.String,System.Collections.Generic.List{System.String},System.Int32,System.DateTime,System.DateTime)">
+            <summary>
+            Full document details
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.UpdateDocumentRequest">
+            <summary>
+            Request to update document metadata
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.UpdateDocumentRequest.#ctor(System.String,System.String,System.String,System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Request to update document metadata
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.StorageQuotaDto">
+            <summary>
+            User's document storage quota
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.StorageQuotaDto.#ctor(System.Int64,System.Int64,System.Int32,System.Double)">
+            <summary>
+            User's document storage quota
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.UserDocumentsResponse">
+            <summary>
+            User documents list response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.UserDocumentsResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.DocumentSummaryDto},FeatureService.Api.DTOs.StorageQuotaDto,System.Int32)">
+            <summary>
+            User documents list response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.PublicDocumentsResponse">
+            <summary>
+            Public profile documents response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.PublicDocumentsResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.DocumentSummaryDto},System.Int32)">
+            <summary>
+            Public profile documents response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.PaginatedDocumentsResponse">
+            <summary>
+            Paginated documents response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.PaginatedDocumentsResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.DocumentSummaryDto},System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Paginated documents response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.CreateReportRequest">
+            <summary>
+            Request to create a new report
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.CreateReportRequest.#ctor(System.String,System.String,System.UInt32,System.String,System.String)">
+            <summary>
+            Request to create a new report
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.CreateReportResponse">
+            <summary>
+            Response after creating a report
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.CreateReportResponse.#ctor(System.String,System.String)">
+            <summary>
+            Response after creating a report
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ReportSummaryDto">
+            <summary>
+            Report summary for listing
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.ReportSummaryDto.#ctor(System.String,System.String,System.String,System.UInt32,System.UInt32,System.String,System.UInt32,System.String,System.String,System.String,System.String,System.String,System.DateTime)">
+            <summary>
+            Report summary for listing
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.ReportDetailDto">
+            <summary>
+            Full report details for admin
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.ReportDetailDto.#ctor(System.String,System.String,System.String,System.UInt32,System.UInt32,System.String,System.UInt32,System.String,System.String,System.String,System.String,System.String,System.String,System.Nullable{System.UInt32},System.Nullable{System.DateTime},System.DateTime,System.DateTime,System.Object)">
+            <summary>
+            Full report details for admin
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.TakeReportActionRequest">
+            <summary>
+            Request to take action on a report (admin)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.TakeReportActionRequest.#ctor(System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Request to take action on a report (admin)
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.PaginatedReportsResponse">
+            <summary>
+            Paginated reports response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.PaginatedReportsResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.ReportSummaryDto},System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Paginated reports response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.DeviceBanDto">
+            <summary>
+            Device ban summary
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.DeviceBanDto.#ctor(System.String,System.String,System.UInt32,System.String,System.String,System.Boolean,System.UInt32,System.DateTime,System.Nullable{System.DateTime})">
+            <summary>
+            Device ban summary
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.CheckDeviceBanRequest">
+            <summary>
+            Request to check if device is banned
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.CheckDeviceBanRequest.#ctor(System.String)">
+            <summary>
+            Request to check if device is banned
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.CheckDeviceBanResponse">
+            <summary>
+            Response for device ban check
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.CheckDeviceBanResponse.#ctor(System.Boolean,System.String,System.Nullable{System.DateTime})">
+            <summary>
+            Response for device ban check
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.UnbanDeviceRequest">
+            <summary>
+            Request to unban a device
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.UnbanDeviceRequest.#ctor(System.String)">
+            <summary>
+            Request to unban a device
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.PaginatedDeviceBansResponse">
+            <summary>
+            Paginated device bans response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.PaginatedDeviceBansResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.DeviceBanDto},System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Paginated device bans response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.UserWarningDto">
+            <summary>
+            User warning summary
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.UserWarningDto.#ctor(System.String,System.String,System.String,System.String,System.Boolean,System.DateTime,System.Nullable{System.DateTime})">
+            <summary>
+            User warning summary
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.UserWarningsResponse">
+            <summary>
+            User warnings response
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.UserWarningsResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.UserWarningDto},System.Int32,System.Int32)">
+            <summary>
+            User warnings response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.AcknowledgeWarningRequest">
+            <summary>
+            Request to acknowledge a warning
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.AcknowledgeWarningRequest.#ctor(System.String)">
+            <summary>
+            Request to acknowledge a warning
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Middleware.RateLimitingMiddleware">
+            <summary>
+            Simple in-memory rate limiter for API endpoints
+            Uses sliding window algorithm
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Middleware.RateLimitOptions">
+            <summary>
+            Rate limit configuration options
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Middleware.RateLimitOptions.MaxRequests">
+            <summary>
+            Maximum number of requests allowed in the time window
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Middleware.RateLimitOptions.WindowSeconds">
+            <summary>
+            Time window in seconds
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Middleware.RateLimitingMiddlewareExtensions">
+            <summary>
+            Extension methods for rate limiting middleware
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Middleware.SecurityHeadersMiddleware">
+            <summary>
+            Middleware to add security headers to all responses
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.ThreadOwnershipTransfer">
+            <summary>
+            Tracks thread ownership transfers performed by admin.
+            The actual thread data remains in PostgreSQL (Go backend).
+            This stores the transfer history for audit purposes.
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ThreadOwnershipTransfer.ThreadId">
+            <summary>
+            Thread ID from PostgreSQL
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ThreadOwnershipTransfer.ThreadTitle">
+            <summary>
+            Thread title at time of transfer (snapshot)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ThreadOwnershipTransfer.PreviousOwnerUserId">
+            <summary>
+            Previous owner user ID
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ThreadOwnershipTransfer.PreviousOwnerUsername">
+            <summary>
+            Previous owner username (snapshot)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ThreadOwnershipTransfer.NewOwnerUserId">
+            <summary>
+            New owner user ID
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ThreadOwnershipTransfer.NewOwnerUsername">
+            <summary>
+            New owner username (snapshot)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ThreadOwnershipTransfer.TransferredByAdminId">
+            <summary>
+            Admin who performed the transfer
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ThreadOwnershipTransfer.Reason">
+            <summary>
+            Reason for the transfer
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.AdminActionLog">
+            <summary>
+            Admin action log for audit trail.
+            Tracks all moderation actions taken by admins.
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.AdminActionLog.AdminId">
+            <summary>
+            Admin user ID who performed the action
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.AdminActionLog.AdminEmail">
+            <summary>
+            Admin email (snapshot)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.AdminActionLog.ActionType">
+            <summary>
+            Type of action: report_action, thread_transfer, thread_delete, ban_device, unban_device, hide_content, unhide_content, warning
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.AdminActionLog.TargetType">
+            <summary>
+            Type of target: report, thread, device, content, user
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.AdminActionLog.TargetId">
+            <summary>
+            ID of the target
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.AdminActionLog.ActionDetails">
+            <summary>
+            Additional action details (JSON object)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.AdminActionLog.IpAddress">
+            <summary>
+            IP address of the admin
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.AdminActionLog.UserAgent">
+            <summary>
+            User agent of the admin
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.AdminActionType">
+            <summary>
+            Admin action types
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.AdminActionTargetType">
+            <summary>
+            Admin action target types
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.ChatSession">
+            <summary>
+            Represents an AI chat session.
+            Stores conversation history for context.
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatSession.UserId">
+            <summary>
+            User ID
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatSession.ServiceType">
+            <summary>
+            Chat service type: huggingface, external_llm
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatSession.Model">
+            <summary>
+            Model used (for external LLM)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatSession.Title">
+            <summary>
+            Session title (auto-generated from first message)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatSession.TotalTokensUsed">
+            <summary>
+            Total tokens used in this session
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatSession.MessageCount">
+            <summary>
+            Message count
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatSession.LastMessageAt">
+            <summary>
+            Last message timestamp
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatSession.IsArchived">
+            <summary>
+            Whether the session is archived
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.ChatMessage">
+            <summary>
+            Represents a single message in a chat session.
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatMessage.SessionId">
+            <summary>
+            Chat session ID
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatMessage.UserId">
+            <summary>
+            User ID
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatMessage.Role">
+            <summary>
+            Message role: user, assistant, system
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatMessage.Content">
+            <summary>
+            Message content
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatMessage.TokensUsed">
+            <summary>
+            Tokens used for this message
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.ChatMessage.ProcessingTimeMs">
+            <summary>
+            Processing time in milliseconds
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.ChatServiceType">
+            <summary>
+            Chat service types
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.MessageRole">
+            <summary>
+            Message roles
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.ExternalLlmModels">
+            <summary>
+            Available external LLM models (from n8n provider)
+            </summary>
+        </member>
+        <member name="F:FeatureService.Api.Models.Entities.ExternalLlmModels.AllIds">
+            <summary>
+            All model IDs as strings
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.LlmModel">
+            <summary>
+            LLM model definition
+            </summary>
+            <param name="Id">Model identifier</param>
+            <param name="Name">Display name</param>
+            <param name="Description">Short description</param>
+            <param name="InputTokenCost">Cost per 1000 input tokens</param>
+            <param name="OutputTokenCost">Cost per 1000 output tokens</param>
+        </member>
+        <member name="M:FeatureService.Api.Models.Entities.LlmModel.#ctor(System.String,System.String,System.String,System.Int32,System.Int32)">
+            <summary>
+            LLM model definition
+            </summary>
+            <param name="Id">Model identifier</param>
+            <param name="Name">Display name</param>
+            <param name="Description">Short description</param>
+            <param name="InputTokenCost">Cost per 1000 input tokens</param>
+            <param name="OutputTokenCost">Cost per 1000 output tokens</param>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.LlmModel.Id">
+            <summary>Model identifier</summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.LlmModel.Name">
+            <summary>Display name</summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.LlmModel.Description">
+            <summary>Short description</summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.LlmModel.InputTokenCost">
+            <summary>Cost per 1000 input tokens</summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.LlmModel.OutputTokenCost">
+            <summary>Cost per 1000 output tokens</summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.DeviceBan">
+            <summary>
+            Represents a permanently banned device.
+            Banned devices cannot create accounts or access the platform.
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.DeviceFingerprint">
+            <summary>
+            Device fingerprint hash for identification
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.UserAgent">
+            <summary>
+            User agent string at time of ban
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.IpAddress">
+            <summary>
+            IP address at time of ban (for reference, not for banning)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.UserId">
+            <summary>
+            User ID that was banned (last associated user)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.Username">
+            <summary>
+            Username at time of ban
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.Reason">
+            <summary>
+            Reason for the device ban
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.ReportId">
+            <summary>
+            Report ID that led to this ban (if applicable)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.IsActive">
+            <summary>
+            Whether the ban is currently active
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.BannedByAdminId">
+            <summary>
+            Admin who issued the ban
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.UnbannedByAdminId">
+            <summary>
+            Admin who lifted the ban (if unbanned)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.UnbannedAt">
+            <summary>
+            Timestamp when the ban was lifted
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.DeviceBan.UnbanReason">
+            <summary>
+            Reason for unban
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.Dispute">
+            <summary>
+            Dispute for transfer conflicts - when sender or receiver disagrees
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.Document">
+            <summary>
+            Represents a document stored in user's profile.
+            Documents are standalone files like white papers, articles, research papers.
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.UserId">
+            <summary>
+            User ID who owns this document
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.FileName">
+            <summary>
+            Original filename
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.Title">
+            <summary>
+            Display title for the document
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.Description">
+            <summary>
+            Optional description
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.FileType">
+            <summary>
+            File type: pdf, docx
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.MimeType">
+            <summary>
+            MIME type
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.FileSize">
+            <summary>
+            File size in bytes
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.StoragePath">
+            <summary>
+            Storage path/key in object storage (Supabase)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.PublicUrl">
+            <summary>
+            Public URL for download
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.Visibility">
+            <summary>
+            Visibility: public or private
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.Category">
+            <summary>
+            Document category: whitepaper, article, research, other
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.Tags">
+            <summary>
+            Tags for organization
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.DownloadCount">
+            <summary>
+            Download count
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.IsDeleted">
+            <summary>
+            Whether the document is soft deleted
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Document.FileData">
+            <summary>
+            File data stored in MongoDB (for simplicity, use GridFS or external storage in production)
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.DocumentVisibility">
+            <summary>
+            Document visibility options
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.DocumentCategory">
+            <summary>
+            Document categories
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.DocumentFileType">
+            <summary>
+            Allowed file types
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.HiddenContent">
+            <summary>
+            Tracks hidden content (threads or replies that are hidden by admin but not deleted).
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.HiddenContent.ContentType">
+            <summary>
+            Type of content: "thread" or "reply"
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.HiddenContent.ContentId">
+            <summary>
+            ID of the hidden content
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.HiddenContent.ThreadId">
+            <summary>
+            Thread ID (for replies, this is the parent thread)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.HiddenContent.UserId">
+            <summary>
+            Original author user ID
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.HiddenContent.Reason">
+            <summary>
+            Reason for hiding
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.HiddenContent.ReportId">
+            <summary>
+            Report ID that led to this (if applicable)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.HiddenContent.HiddenByAdminId">
+            <summary>
+            Admin who hid the content
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.HiddenContent.IsActive">
+            <summary>
+            Whether content is currently hidden (can be unhidden)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.HiddenContent.UnhiddenByAdminId">
+            <summary>
+            Admin who unhid the content (if applicable)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.HiddenContent.UnhiddenAt">
+            <summary>
+            Timestamp when unhidden
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Reaction.ThreadId">
+            <summary>
+            Thread ID for easier querying (copied from target if target is thread, or from reply's threadId)
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.Reply">
+            <summary>
+            Reply to a thread (GitHub-style comment system)
+            </summary>
+        </member>
+        <member name="F:FeatureService.Api.Models.Entities.Reply.MaxNestingDepth">
+            <summary>
+            Maximum nesting depth for replies
+            </summary>
+        </member>
+        <member name="F:FeatureService.Api.Models.Entities.Reply.MaxContentLength">
+            <summary>
+            Maximum content length
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.Report">
+            <summary>
+            Represents a user report for threads or replies.
+            Reports are reviewed by admins who can take moderation actions.
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.TargetType">
+            <summary>
+            Type of content being reported: "thread" or "reply"
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.TargetId">
+            <summary>
+            ID of the reported content (ThreadId as uint or ReplyId as string)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.ThreadId">
+            <summary>
+            Thread ID for context (for replies, this is the parent thread)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.ReportedUserId">
+            <summary>
+            User ID of the person being reported (content owner)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.ReporterUserId">
+            <summary>
+            User ID of the reporter
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.Reason">
+            <summary>
+            Report reason: harassment, spam, inappropriate, hate_speech, misinformation, other
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.Description">
+            <summary>
+            Additional description provided by the reporter
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.Status">
+            <summary>
+            Report status: pending, reviewing, resolved, dismissed
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.ActionTaken">
+            <summary>
+            Action taken by admin: none, warning, hide, delete, ban_user, ban_device
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.AdminNotes">
+            <summary>
+            Admin notes for internal reference
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.ReviewedByAdminId">
+            <summary>
+            Admin user ID who reviewed this report
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.Report.ReviewedAt">
+            <summary>
+            Timestamp when the report was reviewed
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.ReportTargetType">
+            <summary>
+            Report target types
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.ReportReason">
+            <summary>
+            Report reasons
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.ReportStatus">
+            <summary>
+            Report statuses
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.ReportAction">
+            <summary>
+            Admin actions on reports
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.TokenBalance">
+            <summary>
+            Represents a user's AI token balance.
+            Tokens are purchased with wallet balance and used for AI chat services.
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenBalance.UserId">
+            <summary>
+            User ID
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenBalance.Balance">
+            <summary>
+            Current token balance
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenBalance.TotalPurchased">
+            <summary>
+            Total tokens ever purchased
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenBalance.TotalUsed">
+            <summary>
+            Total tokens ever used
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.TokenPurchase">
+            <summary>
+            Represents a token purchase transaction
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPurchase.UserId">
+            <summary>
+            User ID
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPurchase.PackageId">
+            <summary>
+            Package purchased
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPurchase.AmountPaid">
+            <summary>
+            Amount paid in IDR
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPurchase.TokensReceived">
+            <summary>
+            Tokens received
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPurchase.WalletTransactionId">
+            <summary>
+            Wallet transaction ID reference
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.TokenUsage">
+            <summary>
+            Represents a token usage record for AI services
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenUsage.UserId">
+            <summary>
+            User ID
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenUsage.Service">
+            <summary>
+            Service used: huggingface, external_llm
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenUsage.Model">
+            <summary>
+            Model used (for external LLM)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenUsage.ChatSessionId">
+            <summary>
+            Chat session ID
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenUsage.InputTokens">
+            <summary>
+            Input tokens consumed
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenUsage.OutputTokens">
+            <summary>
+            Output tokens consumed
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenUsage.TotalTokens">
+            <summary>
+            Total tokens consumed
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.TokenPackages">
+            <summary>
+            Token package definitions
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.TokenPackage">
+            <summary>
+            Token package definition
+            </summary>
+            <param name="Id">Package identifier</param>
+            <param name="Name">Display name</param>
+            <param name="TokenAmount">Base tokens included</param>
+            <param name="PriceIdr">Price in IDR</param>
+            <param name="BonusTokens">Bonus tokens included</param>
+            <param name="Description">Package description</param>
+        </member>
+        <member name="M:FeatureService.Api.Models.Entities.TokenPackage.#ctor(System.String,System.String,System.Int32,System.Int32,System.Int32,System.String)">
+            <summary>
+            Token package definition
+            </summary>
+            <param name="Id">Package identifier</param>
+            <param name="Name">Display name</param>
+            <param name="TokenAmount">Base tokens included</param>
+            <param name="PriceIdr">Price in IDR</param>
+            <param name="BonusTokens">Bonus tokens included</param>
+            <param name="Description">Package description</param>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPackage.Id">
+            <summary>Package identifier</summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPackage.Name">
+            <summary>Display name</summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPackage.TokenAmount">
+            <summary>Base tokens included</summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPackage.PriceIdr">
+            <summary>Price in IDR</summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPackage.BonusTokens">
+            <summary>Bonus tokens included</summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPackage.Description">
+            <summary>Package description</summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TokenPackage.AllPackages">
+            <summary>
+            All available packages (alias for TokenPackages.All)
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.TransactionLedger">
+            <summary>
+            Immutable transaction ledger for double-entry bookkeeping.
+            Every transaction creates TWO ledger entries (debit and credit).
+            This ensures full auditability and balance verification.
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.UserId">
+            <summary>
+            UserID this ledger entry belongs to
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.EntryType">
+            <summary>
+            Type of transaction entry (debit or credit)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.Amount">
+            <summary>
+            Amount in IDR (always positive)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.BalanceAfter">
+            <summary>
+            Running balance after this transaction (for quick validation)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.TransactionType">
+            <summary>
+            Transaction type (deposit, transfer_in, transfer_out, withdrawal, fee, etc.)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.ReferenceId">
+            <summary>
+            Reference ID to link related ledger entries (e.g., both sides of a transfer)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.ExternalReference">
+            <summary>
+            External reference (e.g., payment gateway transaction ID)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.CounterpartyUserId">
+            <summary>
+            Counterparty UserID (for transfers)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.Description">
+            <summary>
+            Description/notes for this transaction
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.Metadata">
+            <summary>
+            Additional metadata (JSON)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.CreatedAt">
+            <summary>
+            Timestamp when this entry was created (immutable)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.TransactionLedger.Status">
+            <summary>
+            Status for tracking settlement/confirmation
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.UserWallet">
+            <summary>
+            Represents a user's wallet with their balance and PIN status.
+            This is a mutable aggregate derived from the immutable TransactionLedger.
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWallet.UserId">
+            <summary>
+            UserID from the Go backend (PostgreSQL User table)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWallet.Balance">
+            <summary>
+            Current balance in IDR (smallest unit - Rupiah)
+            This is calculated from the ledger entries
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWallet.PinHash">
+            <summary>
+            Hashed PIN using PBKDF2 with 310,000 iterations
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWallet.PinSet">
+            <summary>
+            Indicates whether the user has set up their PIN
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWallet.FailedPinAttempts">
+            <summary>
+            Number of failed PIN verification attempts (for rate limiting)
+            Max 4 attempts before lock
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWallet.PinLockedUntil">
+            <summary>
+            Timestamp when PIN was locked due to too many failed attempts (4 attempts = 4 hours lock)
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.UserWarning">
+            <summary>
+            Represents a warning issued to a user by admin.
+            Warnings accumulate and can lead to bans.
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWarning.UserId">
+            <summary>
+            User ID receiving the warning
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWarning.ReportId">
+            <summary>
+            Report ID that led to this warning (if applicable)
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWarning.Reason">
+            <summary>
+            Warning reason
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWarning.Message">
+            <summary>
+            Detailed message shown to the user
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWarning.Severity">
+            <summary>
+            Warning severity: minor, moderate, severe
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWarning.IssuedByAdminId">
+            <summary>
+            Admin who issued the warning
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWarning.Acknowledged">
+            <summary>
+            Whether the user has acknowledged this warning
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Models.Entities.UserWarning.AcknowledgedAt">
+            <summary>
+            Timestamp when user acknowledged the warning
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.WarningSeverity">
+            <summary>
+            Warning severity levels
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Models.Entities.Withdrawal">
+            <summary>
+            Withdrawal request for cashing out wallet balance to bank account
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Services.IUserCleanupService.ValidateAccountDeletionAsync(System.UInt32)">
+            <summary>
+            Validate if user can delete their account.
+            Returns (canDelete, blockingReasons, warnings)
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Services.IUserCleanupService.CleanupUserDataAsync(System.UInt32)">
+            <summary>
+            Hard delete all user data from MongoDB.
+            Should only be called after Go backend has validated and is ready to delete.
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Services.WalletService.RecalculateBalanceFromLedgerAsync(System.UInt32)">
+            <summary>
+            Recalculates balance from ledger entries for audit purposes.
+            This should match the stored balance if system is working correctly.
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Services.WalletService.HashPin(System.String)">
+            <summary>
+            Hashes PIN using PBKDF2 with 310,000 iterations and SHA256
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.Services.WalletService.VerifyPinHash(System.String,System.String)">
+            <summary>
+            Verifies PIN against stored hash using constant-time comparison
+            </summary>
+        </member>
+    </members>
+</doc>

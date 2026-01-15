@@ -85,16 +85,25 @@ function getBadgeConfig(badge, type) {
   }
   
   if (badge) {
-    // Map slug to preset if available
-    const slug = badge.slug || badge.icon_type || "";
-    if (BadgePresets[slug]) {
-      return { ...BadgePresets[slug], label: badge.name || BadgePresets[slug].label };
+    // Use icon_type from API response (new system)
+    const iconType = badge.icon_type || badge.slug || "";
+    if (BadgePresets[iconType]) {
+      return { ...BadgePresets[iconType], label: badge.name || BadgePresets[iconType].label };
     }
     
-    // Custom badge from database
+    // Check if BadgeIcons has this icon
+    if (BadgeIcons[iconType]) {
+      return {
+        color: badge.color || "#6366f1",
+        icon: iconType,
+        label: badge.name || "Badge",
+      };
+    }
+    
+    // Custom badge from database with fallback
     return {
       color: badge.color || "#6366f1",
-      icon: slug || "default",
+      icon: iconType || "default",
       label: badge.name || "Badge",
     };
   }

@@ -13,6 +13,7 @@ public interface IUserWarningService
     Task<UserWarningDto?> GetWarningByIdAsync(string warningId);
     Task AcknowledgeWarningAsync(string warningId, uint userId);
     Task<int> GetUnacknowledgedCountAsync(uint userId);
+    Task<PaginatedWarningsResponse> GetAllWarningsAsync(int page, int pageSize, uint? userId = null);
 }
 
 public class UserWarningService : IUserWarningService
@@ -120,5 +121,35 @@ public class UserWarningService : IUserWarningService
         var count = await _context.UserWarnings
             .CountDocumentsAsync(w => w.UserId == userId && !w.Acknowledged);
         return (int)count;
+    }
+
+    public async Task<PaginatedWarningsResponse> GetAllWarningsAsync(int page, int pageSize, uint? userId = null)
+    {
+        var filter = userId.HasValue 
+            ? Builders<UserWarning>.Filter.Eq(w => w.UserId, userId.Value)
+            : Builders<UserWarning>.Filter.Empty;
+
+        var totalCount = await _context.UserWarnings.CountDocumentsAsync(filter);
+        
+        var warnings = await _context.UserWarnings
+            .Find(filter)
+            .SortByDescending(w => w.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Limit(pageSize)
+            .ToListAsync();
+
+        var items = warnings.Select(w => new UserWarningDto(
+            w.Id,
+            w.Reason,
+            w.Message,
+            w.Severity,
+            w.Acknowledged,
+            w.CreatedAt,
+            w.AcknowledgedAt,
+            w.UserId,
+            w.IssuedByAdminId
+        )).ToList();
+
+        return new PaginatedWarningsResponse(items, (int)totalCount, page, pageSize);
     }
 }

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getApiBase } from "@/lib/api";
+import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
 
@@ -22,13 +22,8 @@ export default function DisputesPage() {
 
       setLoading(true);
       try {
-        const res = await fetch(`${getApiBase()}/api/disputes`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setDisputes(data.disputes || []);
-        }
+        const data = await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.LIST);
+        setDisputes(data.data?.disputes || data.disputes || []);
       } catch (e) {
         logger.error("Failed to load disputes:", e);
       }

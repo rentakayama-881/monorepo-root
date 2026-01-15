@@ -108,10 +108,10 @@ func init() {
 	badgeDescDescription := badgeFields[2].Descriptor()
 	// badge.DefaultDescription holds the default value on creation for the description field.
 	badge.DefaultDescription = badgeDescDescription.Default.(string)
-	// badgeDescIconURL is the schema descriptor for icon_url field.
-	badgeDescIconURL := badgeFields[3].Descriptor()
-	// badge.IconURLValidator is a validator for the "icon_url" field. It is called by the builders before save.
-	badge.IconURLValidator = badgeDescIconURL.Validators[0].(func(string) error)
+	// badgeDescIconType is the schema descriptor for icon_type field.
+	badgeDescIconType := badgeFields[3].Descriptor()
+	// badge.DefaultIconType holds the default value on creation for the icon_type field.
+	badge.DefaultIconType = badgeDescIconType.Default.(string)
 	// badgeDescColor is the schema descriptor for color field.
 	badgeDescColor := badgeFields[4].Descriptor()
 	// badge.DefaultColor holds the default value on creation for the color field.

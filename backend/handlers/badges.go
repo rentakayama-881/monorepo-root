@@ -47,7 +47,7 @@ func GetUserBadgesHandler(c *gin.Context) {
 				"name":        badge.Name,
 				"slug":        badge.Slug,
 				"description": badge.Description,
-				"icon_url":    badge.IconURL,
+				"icon_type":   badge.IconType,
 				"color":       badge.Color,
 				"granted_at":  ub.GrantedAt.Unix(),
 				"reason":      ub.Reason,

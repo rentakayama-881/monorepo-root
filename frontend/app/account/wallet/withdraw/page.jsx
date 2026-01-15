@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getApiBase } from "@/lib/api";
+import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
 
@@ -41,18 +41,16 @@ export default function WithdrawPage() {
       }
 
       try {
-        const res = await fetch(`${getApiBase()}/api/wallet/balance`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setWallet(data);
-          if (!data.has_pin) {
-            router.push("/account/wallet/set-pin?redirect=withdraw");
-          }
+        const walletData = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
+        setWallet({ balance: walletData.balance || 0, has_pin: walletData.pinSet || false });
+        if (!walletData.pinSet) {
+          router.push("/account/wallet/set-pin?redirect=withdraw");
         }
       } catch (e) {
         logger.error("Failed to load wallet:", e);
+        if (e.code === "TWO_FACTOR_REQUIRED") {
+          router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/withdraw"));
+        }
       }
       setLoading(false);
     }
@@ -82,34 +80,29 @@ export default function WithdrawPage() {
       return;
     }
 
-    const token = getToken();
     setProcessing(true);
     setError("");
 
     try {
-      const res = await fetch(`${getApiBase()}/api/withdrawals`, {
+      await fetchFeatureAuth(FEATURE_ENDPOINTS.WITHDRAWALS.CREATE, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({
           amount: parsedAmount,
-          bank_code: bankCode,
-          account_number: accountNumber,
-          account_name: accountName,
+          bankCode: bankCode,
+          accountNumber: accountNumber,
+          accountName: accountName,
           pin,
         }),
       });
 
-      if (res.ok) {
-        router.push("/account/wallet/withdraw/success");
-      } else {
-        const data = await res.json();
-        setError(data.error || "Gagal memproses penarikan");
-      }
+      router.push("/account/wallet/withdraw/success");
     } catch (e) {
-      setError("Terjadi kesalahan");
+      logger.error("Withdrawal failed:", e);
+      if (e.code === "TWO_FACTOR_REQUIRED") {
+        router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/withdraw"));
+        return;
+      }
+      setError(e.message || "Gagal memproses penarikan");
     }
     setProcessing(false);
   };

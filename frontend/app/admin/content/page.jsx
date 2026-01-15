@@ -72,20 +72,19 @@ export default function HiddenContentPage() {
     }
   };
 
-  const handleUnhide = async (contentType, contentId) => {
+  const handleUnhide = async (hiddenContentId) => {
     if (!confirm("Yakin ingin menampilkan kembali konten ini?")) return;
     setActionLoading(true);
     try {
       const token = localStorage.getItem("admin_token");
       const res = await fetch(
-        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/content/unhide`,
+        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/content/unhide/${hiddenContentId}`,
         {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ contentType, contentId }),
         }
       );
       if (!res.ok) throw new Error("Gagal menampilkan konten");
@@ -159,7 +158,7 @@ export default function HiddenContentPage() {
                     <Button
                       size="sm"
                       variant="secondary"
-                      onClick={() => handleUnhide(content.contentType, content.contentId)}
+                      onClick={() => handleUnhide(content.id)}
                       disabled={actionLoading}
                     >
                       Unhide

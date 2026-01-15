@@ -29,8 +29,8 @@ type Badge struct {
 	Slug string `json:"slug,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
-	// IconURL holds the value of the "icon_url" field.
-	IconURL string `json:"icon_url,omitempty"`
+	// Icon type: verified, admin, moderator, contributor, premium, trusted, checkmark
+	IconType string `json:"icon_type,omitempty"`
 	// Color holds the value of the "color" field.
 	Color string `json:"color,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -75,7 +75,7 @@ func (*Badge) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case badge.FieldID:
 			values[i] = new(sql.NullInt64)
-		case badge.FieldName, badge.FieldSlug, badge.FieldDescription, badge.FieldIconURL, badge.FieldColor:
+		case badge.FieldName, badge.FieldSlug, badge.FieldDescription, badge.FieldIconType, badge.FieldColor:
 			values[i] = new(sql.NullString)
 		case badge.FieldCreatedAt, badge.FieldUpdatedAt, badge.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -137,11 +137,11 @@ func (_m *Badge) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Description = value.String
 			}
-		case badge.FieldIconURL:
+		case badge.FieldIconType:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field icon_url", values[i])
+				return fmt.Errorf("unexpected type %T for field icon_type", values[i])
 			} else if value.Valid {
-				_m.IconURL = value.String
+				_m.IconType = value.String
 			}
 		case badge.FieldColor:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -215,8 +215,8 @@ func (_m *Badge) String() string {
 	builder.WriteString("description=")
 	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
-	builder.WriteString("icon_url=")
-	builder.WriteString(_m.IconURL)
+	builder.WriteString("icon_type=")
+	builder.WriteString(_m.IconType)
 	builder.WriteString(", ")
 	builder.WriteString("color=")
 	builder.WriteString(_m.Color)

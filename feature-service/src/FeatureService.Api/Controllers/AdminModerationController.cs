@@ -233,6 +233,21 @@ public class AdminModerationController : ControllerBase
     #region User Warnings
 
     /// <summary>
+    /// Get all warnings (paginated, optionally filtered by userId)
+    /// </summary>
+    [HttpGet("warnings")]
+    [ProducesResponseType(typeof(PaginatedWarningsResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllWarnings(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] uint? userId = null)
+    {
+        pageSize = Math.Min(pageSize, 100);
+        var result = await _warningService.GetAllWarningsAsync(page, pageSize, userId);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Get all warnings for a user
     /// </summary>
     [HttpGet("warnings/user/{userId}")]

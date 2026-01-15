@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getApiBase } from "@/lib/api";
+import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
 
@@ -31,20 +31,23 @@ export default function SendMoneyPage() {
       }
 
       try {
-        const res = await fetch(`${getApiBase()}/api/wallet/balance`, {
-          headers: { Authorization: `Bearer ${token}` },
+        // Get wallet and PIN status from Feature Service
+        const walletData = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
+        setWallet({ 
+          balance: walletData.balance || 0, 
+          has_pin: walletData.pinSet || false 
         });
-        if (res.ok) {
-          const data = await res.json();
-          setWallet(data);
-          
-          // If PIN not set, redirect to set PIN page
-          if (!data.has_pin) {
-            router.push("/account/wallet/set-pin?redirect=/account/wallet/send");
-          }
+        
+        // If PIN not set, redirect to set PIN page
+        if (!walletData.pinSet) {
+          router.push("/account/wallet/set-pin?redirect=send");
         }
       } catch (e) {
         logger.error("Failed to load wallet:", e);
+        // Check for 2FA requirement
+        if (e.code === "TWO_FACTOR_REQUIRED") {
+          router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/send"));
+        }
       }
     }
     loadWallet();
@@ -55,16 +58,11 @@ export default function SendMoneyPage() {
     const timer = setTimeout(async () => {
       if (searchQuery.length >= 3) {
         setSearching(true);
-        const token = getToken();
         try {
-          const res = await fetch(
-            `${getApiBase()}/api/transfers/search-user?username=${encodeURIComponent(searchQuery)}`,
-            { headers: { Authorization: `Bearer ${token}` } }
+          const data = await fetchFeatureAuth(
+            FEATURE_ENDPOINTS.TRANSFERS.SEARCH_USER + `?username=${encodeURIComponent(searchQuery)}`
           );
-          if (res.ok) {
-            const data = await res.json();
-            setSearchResults(data.users || []);
-          }
+          setSearchResults(data.data?.users || data.users || []);
         } catch (e) {
           logger.error("Search failed:", e);
         } finally {
@@ -104,36 +102,29 @@ export default function SendMoneyPage() {
     setError("");
     setLoading(true);
 
-    const token = getToken();
     const amountNum = parseInt(amount.replace(/\D/g, ""), 10);
 
     try {
-      const res = await fetch(`${getApiBase()}/api/transfers`, {
+      await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.CREATE, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
-          receiver_username: selectedUser.username,
+          receiverUsername: selectedUser.username,
           amount: amountNum,
-          hold_days: holdDays,
+          holdHours: holdDays * 24, // Feature Service uses hours
           description,
           pin,
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Gagal mengirim uang");
-        setLoading(false);
-        return;
-      }
-
       // Success - redirect to transactions page
       router.push("/account/wallet/transactions?success=transfer");
     } catch (e) {
-      setError("Terjadi kesalahan. Silakan coba lagi.");
+      logger.error("Transfer failed:", e);
+      if (e.code === "TWO_FACTOR_REQUIRED") {
+        router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/send"));
+        return;
+      }
+      setError(e.message || "Gagal mengirim uang");
       setLoading(false);
     }
   };
