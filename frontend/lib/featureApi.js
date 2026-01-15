@@ -3,6 +3,7 @@
  * For ASP.NET Core backend (MongoDB) - handles replies, reactions, reports, AI chat, etc.
  */
 
+import { useState, useEffect, useCallback } from "react";
 import { getValidToken } from "./tokenRefresh";
 import { clearToken } from "./auth";
 
@@ -281,4 +282,161 @@ export async function fetchFeatureAuth(path, options = {}) {
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+// ==================== Wallet Hooks ====================
+
+/**
+ * Hook to fetch wallet info
+ */
+export function useWallet() {
+  const [wallet, setWallet] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchWallet = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
+      setWallet(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWallet();
+  }, [fetchWallet]);
+
+  return { wallet, loading, error, refetch: fetchWallet };
+}
+
+/**
+ * Hook to fetch wallet transactions
+ */
+export function useWalletTransactions({ page = 1, pageSize = 20, type } = {}) {
+  const [transactions, setTransactions] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchTransactions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let url = FEATURE_ENDPOINTS.WALLETS.TRANSACTIONS + "?page=" + page + "&pageSize=" + pageSize;
+      if (type) url += "&type=" + type;
+      const data = await featureFetch(url);
+      setTransactions(data.items || []);
+      setTotalCount(data.totalCount || 0);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, type]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+
+  return { transactions, totalCount, loading, error, refetch: fetchTransactions };
+}
+
+/**
+ * Hook to fetch transfers (escrow)
+ */
+export function useTransfers({ page = 1, pageSize = 20, status } = {}) {
+  const [transfers, setTransfers] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchTransfers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let url = FEATURE_ENDPOINTS.TRANSFERS.LIST + "?page=" + page + "&pageSize=" + pageSize;
+      if (status) url += "&status=" + status;
+      const data = await featureFetch(url);
+      setTransfers(data.items || []);
+      setTotalCount(data.totalCount || 0);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, status]);
+
+  useEffect(() => {
+    fetchTransfers();
+  }, [fetchTransfers]);
+
+  return { transfers, totalCount, loading, error, refetch: fetchTransfers };
+}
+/**
+ * Hook to fetch withdrawals
+ */
+export function useWithdrawals({ page = 1, pageSize = 20, status } = {}) {
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchWithdrawals = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let url = FEATURE_ENDPOINTS.WITHDRAWALS.LIST + "?page=" + page + "&pageSize=" + pageSize;
+      if (status) url += "&status=" + status;
+      const data = await featureFetch(url);
+      setWithdrawals(data.items || []);
+      setTotalCount(data.totalCount || 0);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, status]);
+
+  useEffect(() => {
+    fetchWithdrawals();
+  }, [fetchWithdrawals]);
+
+  return { withdrawals, totalCount, loading, error, refetch: fetchWithdrawals };
+}
+
+/**
+ * Hook to fetch disputes
+ */
+export function useDisputes({ page = 1, pageSize = 20, status } = {}) {
+  const [disputes, setDisputes] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchDisputes = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let url = FEATURE_ENDPOINTS.DISPUTES.LIST + "?page=" + page + "&pageSize=" + pageSize;
+      if (status) url += "&status=" + status;
+      const data = await featureFetch(url);
+      setDisputes(data.items || []);
+      setTotalCount(data.totalCount || 0);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, status]);
+
+  useEffect(() => {
+    fetchDisputes();
+  }, [fetchDisputes]);
+
+  return { disputes, totalCount, loading, error, refetch: fetchDisputes };
 }
