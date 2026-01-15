@@ -5,8 +5,6 @@ import { getApiBase } from "../lib/api";
 import { clearToken, getToken, getRefreshToken } from "@/lib/auth";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
 import { maskEmail } from "@/lib/email";
-import { useTokenBalance } from "@/lib/useAIChat";
-import { useDocumentStats, formatFileSize } from "@/lib/useDocuments";
 import Avatar from "@/components/ui/Avatar";
 
 export default function ProfileSidebar({ onClose }) {
@@ -32,12 +30,6 @@ export default function ProfileSidebar({ onClose }) {
       window.scrollTo(0, scrollY);
     };
   }, []);
-
-  // AI Token balance
-  const { balance: tokenBalance, loading: tokenLoading } = useTokenBalance({ skip: false });
-  
-  // Document stats
-  const { stats: docStats, loading: docStatsLoading } = useDocumentStats({ skip: false });
 
   useEffect(() => {
     let cancelled = false;
@@ -348,31 +340,26 @@ export default function ProfileSidebar({ onClose }) {
               AI Hub
             </div>
             
-            {/* AI Token Balance Mini Card */}
-            <div className="rounded-md border border-primary/30 bg-gradient-to-r from-primary/5 to-transparent px-3 py-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                    <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 6v6l4 2" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">AI Credits</div>
-                    <div className="text-sm font-bold text-foreground">
-                      {tokenLoading ? "..." : tokenBalance.tokens.toLocaleString()}
-                    </div>
-                  </div>
+            {/* AI Studio Link - uses wallet balance */}
+            <Link
+              href="/ai-studio"
+              className="group flex items-center justify-between rounded-md border border-primary/30 bg-gradient-to-r from-primary/5 to-transparent px-3 py-2 transition-all hover:border-primary"
+            >
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                  </svg>
                 </div>
-                <Link
-                  href="/ai-chat/tokens"
-                  className="text-[10px] font-medium text-primary hover:underline"
-                >
-                  Top Up
-                </Link>
+                <div>
+                  <div className="text-sm font-medium text-foreground">AI Studio</div>
+                  <div className="text-[10px] text-muted-foreground">Chat dengan Claude & GPT-4o</div>
+                </div>
               </div>
-            </div>
+              <svg className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
 
             <Link
               href="/assistant"
@@ -387,38 +374,7 @@ export default function ProfileSidebar({ onClose }) {
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">FREE</span>
             </Link>
 
-            {/* DocVault Section */}
-            <div className="text-xs font-semibold uppercase text-muted-foreground px-1 mt-3 flex items-center gap-1.5">
-              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
-              </svg>
-              DocVault
-            </div>
-            
-            {/* Storage Usage Mini Card */}
-            <div className="rounded-md border bg-secondary px-3 py-2">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Storage</span>
-                <span className="text-[10px] text-muted-foreground">
-                  {docStatsLoading ? "..." : `${formatFileSize(docStats.totalSize)} / ${formatFileSize(docStats.maxSize)}`}
-                </span>
-              </div>
-              <div className="h-1.5 w-full rounded-full bg-border overflow-hidden">
-                <div 
-                  className="h-full rounded-full bg-primary transition-all duration-300"
-                  style={{ width: `${docStatsLoading ? 0 : docStats.usedPercentage}%` }}
-                />
-              </div>
-              <div className="flex items-center justify-between mt-1.5">
-                <span className="text-[10px] text-muted-foreground">
-                  {docStatsLoading ? "..." : `${docStats.totalDocuments} files`}
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  {docStatsLoading ? "..." : `${docStats.usedPercentage}%`}
-                </span>
-              </div>
-            </div>
-
+            {/* Documents Link */}
             <Link
               href="/documents"
               className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
@@ -427,12 +383,13 @@ export default function ProfileSidebar({ onClose }) {
                 <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                My Documents
+                <span className="font-medium">Documents</span>
               </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              <svg className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
+
             <Link
               href="/documents/upload"
               className="group flex items-center justify-between rounded-md border border-dashed px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"

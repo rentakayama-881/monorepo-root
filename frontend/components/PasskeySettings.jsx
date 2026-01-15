@@ -125,7 +125,8 @@ export default function PasskeySettings() {
         const errData = await beginRes.json();
         throw new Error(errData.error || "Gagal memulai registrasi");
       }
-      const { options } = await beginRes.json();
+      const beginData = await beginRes.json();
+      const { options, session_id: sessionId } = beginData;
 
       // 2. Convert options for WebAuthn API
       const publicKeyOptions = options.publicKey;
@@ -159,7 +160,7 @@ export default function PasskeySettings() {
       // Prompt for passkey name
       const passkeyName = prompt("Beri nama untuk passkey ini:", "Passkey") || "Passkey";
 
-      // 5. Finish registration - send credential to server
+      // 5. Finish registration - send credential to server with session_id
       const finishRes = await fetch(`${API}/register/finish`, {
         method: "POST",
         headers: {
@@ -168,6 +169,7 @@ export default function PasskeySettings() {
         },
         body: JSON.stringify({
           name: passkeyName,
+          session_id: sessionId,
           credential: credentialForServer,
         }),
       });

@@ -96,7 +96,11 @@ export default function AccountPage() {
       });
       if (!r.ok) throw new Error("Gagal menyimpan primary badge");
       setPrimaryBadgeId(badgeId ? Number(badgeId) : null);
-      setOk("Primary badge diperbarui.");
+      setOk("Primary badge diperbarui. Halaman akan direfresh...");
+      // Auto refresh after 1.5 seconds to show updated badge
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (e) {
       setError(String(e.message || e));
     } finally {
