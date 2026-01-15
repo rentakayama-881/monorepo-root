@@ -2,6 +2,7 @@
 
 import { useState, useEffect, createContext, useContext, useCallback } from "react";
 import { getApiBase } from "@/lib/api";
+import { getValidToken } from "@/lib/tokenRefresh";
 
 // Sudo Context for global state management
 const SudoContext = createContext(null);
@@ -99,7 +100,8 @@ export function SudoProvider({ children }) {
   // Fetch sudo status (to check if TOTP required)
   const fetchSudoStatus = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = await getValidToken();
+      if (!token) return null;
       const res = await fetch(`${getApiBase()}/api/auth/sudo/status`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -176,7 +178,12 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        setLoading(false);
+        return;
+      }
       const body = {
         password,
       };

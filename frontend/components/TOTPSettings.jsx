@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getApiBase } from "@/lib/api";
+import { getValidToken } from "@/lib/tokenRefresh";
 import Button from "./ui/Button";
 import Input from "./ui/Input";
 import Alert from "./ui/Alert";
@@ -29,18 +30,18 @@ export default function TOTPSettings() {
   const [backupCount, setBackupCount] = useState(0);
   const [backupLoading, setBackupLoading] = useState(false);
 
-  const getToken = () => localStorage.getItem("token");
-
   // Fetch TOTP status
-  useEffect(() => {
-    fetchStatus();
-  }, []);
-
-  async function fetchStatus() {
+  const fetchStatus = useCallback(async () => {
     setLoading(true);
     try {
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        setLoading(false);
+        return;
+      }
       const res = await fetch(`${API}/auth/totp/status`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Gagal memuat status 2FA");
       const data = await res.json();
@@ -49,7 +50,7 @@ export default function TOTPSettings() {
       // If enabled, also fetch backup code count
       if (data.enabled) {
         const countRes = await fetch(`${API}/auth/totp/backup-codes/count`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (countRes.ok) {
           const countData = await countRes.json();
@@ -61,16 +62,26 @@ export default function TOTPSettings() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [API]);
+
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
 
   // Start TOTP setup
   async function startSetup() {
     setError("");
     setSetupLoading(true);
     try {
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        setSetupLoading(false);
+        return;
+      }
       const res = await fetch(`${API}/auth/totp/setup`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         const data = await res.json();
@@ -96,10 +107,16 @@ export default function TOTPSettings() {
     setError("");
     setSetupLoading(true);
     try {
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        setSetupLoading(false);
+        return;
+      }
       const res = await fetch(`${API}/auth/totp/verify`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${getToken()}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ code: setupCode }),
@@ -133,10 +150,16 @@ export default function TOTPSettings() {
     setError("");
     setDisableLoading(true);
     try {
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        setDisableLoading(false);
+        return;
+      }
       const res = await fetch(`${API}/auth/totp/disable`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${getToken()}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ password: disablePassword, code: disableCode }),
@@ -163,9 +186,15 @@ export default function TOTPSettings() {
     setError("");
     setBackupLoading(true);
     try {
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        setBackupLoading(false);
+        return;
+      }
       const res = await fetch(`${API}/auth/totp/backup-codes`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         const data = await res.json();

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { getApiBase } from "@/lib/api";
+import { getValidToken } from "@/lib/tokenRefresh";
 
 // Regex untuk validasi username: huruf kecil, angka, underscore. Min 7, max 30
 const usernameRegex = /^[a-z0-9_]{7,30}$/;
@@ -44,16 +45,6 @@ export default function SetUsernamePage() {
     setError("");
     setSuccess("");
 
-    let token = "";
-    try {
-      token = localStorage.getItem("token") || "";
-    } catch (_) {}
-
-    if (!token) {
-      setError("Please sign in first.");
-      return;
-    }
-
     const trimmed = username.trim().toLowerCase();
     
     if (!validation.valid) {
@@ -63,6 +54,13 @@ export default function SetUsernamePage() {
 
     setLoading(true);
     try {
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch(`${getApiBase()}/api/auth/username`, {
         method: "POST",
         headers: {

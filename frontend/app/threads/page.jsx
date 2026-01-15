@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
+import { getToken } from "@/lib/auth";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import TagSelector from "@/components/ui/TagSelector";
@@ -12,7 +13,7 @@ import { TagList } from "@/components/ui/TagPill";
 export default function MyThreadsPage() {
   const API = `${getApiBase()}/api`;
   const authed = useMemo(() => {
-    try { return !!localStorage.getItem("token"); } catch { return false; }
+    try { return !!getToken(); } catch { return false; }
   }, []);
 
   const [loading, setLoading] = useState(true);

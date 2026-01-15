@@ -9,8 +9,9 @@ import Select from "../../components/ui/Select";
 import { BadgeChip } from "../../components/ui/Badge";
 import Avatar from "../../components/ui/Avatar";
 import { getApiBase } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import { maskEmail } from "@/lib/email";
-import { fetchWithAuth } from "@/lib/tokenRefresh";
+import { fetchWithAuth, getValidToken } from "@/lib/tokenRefresh";
 import TOTPSettings from "@/components/TOTPSettings";
 import PasskeySettings from "@/components/PasskeySettings";
 import { useSudoAction } from "@/components/SudoModal";
@@ -18,7 +19,7 @@ import { useSudoAction } from "@/components/SudoModal";
 export default function AccountPage() {
   const router = useRouter();
   const API = `${getApiBase()}/api`;
-  const authed = useMemo(() => { try { return !!localStorage.getItem("token"); } catch { return false; } }, []);
+  const authed = useMemo(() => { try { return !!getToken(); } catch { return false; } }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
@@ -496,7 +497,10 @@ function DeleteAccountSection({ API, router }) {
     try {
       // Request sudo mode first
       await executeSudo(async (sudoToken) => {
-        const t = localStorage.getItem("token");
+        const t = await getValidToken();
+        if (!t) {
+          throw new Error("Sesi telah berakhir. Silakan login kembali.");
+        }
         const res = await fetch(`${API}/account`, {
           method: "DELETE",
           headers: {

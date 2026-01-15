@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
+import { fetchWithAuth } from "@/lib/tokenRefresh";
+import { getToken } from "@/lib/auth";
 import { Badge } from "@/components/ui/Badge";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import ProseMirrorRenderer from "@/components/ui/ProseMirrorRenderer";
@@ -26,7 +28,7 @@ export default function ThreadDetailPage() {
   const [repliesKey, setRepliesKey] = useState(0); // Force refresh replies
   const [readingProgress, setReadingProgress] = useState(0);
 
-  const isAuthed = typeof window !== "undefined" ? !!localStorage.getItem("token") : false;
+  const isAuthed = typeof window !== "undefined" ? !!getToken() : false;
   const currentUsername = typeof window !== "undefined" ? localStorage.getItem("username") : null;
 
   // Reading progress with throttling
@@ -76,11 +78,11 @@ export default function ThreadDetailPage() {
     }
 
     let cancelled = false;
-    const token = localStorage.getItem("token");
 
     setLoading(true);
 
-    fetch(`${API}/api/threads/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+    // Use fetchWithAuth for automatic token refresh
+    fetchWithAuth(`${API}/api/threads/${id}`)
       .then(res => (res.ok ? res.json() : Promise.reject(new Error("Failed to load thread"))))
       .then(json => !cancelled && setData(json))
       .catch(err => !cancelled && setError(err.message))

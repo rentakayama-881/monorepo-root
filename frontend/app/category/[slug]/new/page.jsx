@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { getApiBase } from "@/lib/api";
+import { getApiBase, fetchJsonAuth } from "@/lib/api";
+import { getValidToken, refreshAccessToken } from "@/lib/tokenRefresh";
+import { getToken, isTokenExpired } from "@/lib/auth";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import TagSelector from "@/components/ui/TagSelector";
 import Button from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+
+// Autosave key for localStorage
+const DRAFT_KEY_PREFIX = "thread_draft_";
 
 export default function CreateThreadPage() {
   const router = useRouter();
@@ -22,8 +27,113 @@ export default function CreateThreadPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const autosaveTimerRef = useRef(null);
+  const tokenRefreshIntervalRef = useRef(null);
 
   const API = getApiBase();
+  const draftKey = `${DRAFT_KEY_PREFIX}${params.slug}`;
+
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.title) setTitle(draft.title);
+        if (draft.summary) setSummary(draft.summary);
+        if (draft.content) setContent(draft.content);
+        if (draft.telegram) setTelegram(draft.telegram);
+        if (draft.selectedTags) setSelectedTags(draft.selectedTags);
+        if (draft.savedAt) setLastSaved(new Date(draft.savedAt));
+        setDraftRestored(true);
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [draftKey]);
+
+  // Autosave draft to localStorage
+  const saveDraft = useCallback(() => {
+    try {
+      const draft = {
+        title,
+        summary,
+        content,
+        telegram,
+        selectedTags,
+        savedAt: new Date().toISOString(),
+      };
+      // Only save if there's actual content
+      if (title.trim() || content.trim() || summary.trim()) {
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+        setLastSaved(new Date());
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [title, summary, content, telegram, selectedTags, draftKey]);
+
+  // Autosave every 10 seconds when content changes
+  useEffect(() => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+    autosaveTimerRef.current = setTimeout(() => {
+      saveDraft();
+    }, 10000);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [title, summary, content, telegram, selectedTags, saveDraft]);
+
+  // Also save on window unload/beforeunload
+  useEffect(() => {
+    const handleUnload = () => saveDraft();
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, [saveDraft]);
+
+  // Clear draft after successful submission
+  const clearDraft = useCallback(() => {
+    try {
+      localStorage.removeItem(draftKey);
+      setLastSaved(null);
+    } catch {
+      // Ignore
+    }
+  }, [draftKey]);
+
+  // Proactive token refresh - keep session alive while user is typing
+  useEffect(() => {
+    // Check and refresh token every 2 minutes while on this page
+    const checkAndRefreshToken = async () => {
+      const token = getToken();
+      if (token && isTokenExpired()) {
+        try {
+          await refreshAccessToken();
+        } catch {
+          // Token refresh failed - will handle on submit
+        }
+      }
+    };
+
+    // Initial check
+    checkAndRefreshToken();
+
+    // Set up interval - check every 2 minutes
+    tokenRefreshIntervalRef.current = setInterval(checkAndRefreshToken, 2 * 60 * 1000);
+
+    return () => {
+      if (tokenRefreshIntervalRef.current) {
+        clearInterval(tokenRefreshIntervalRef.current);
+      }
+    };
+  }, []);
 
   // Fetch available tags
   useEffect(() => {
@@ -55,9 +165,18 @@ export default function CreateThreadPage() {
     if (!content.trim()) return setError("Konten thread wajib diisi");
     if (!telegram.trim()) return setError("Contact telegram wajib diisi");
 
+    // Save draft before attempting submit (in case of failure)
+    saveDraft();
+
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      // Use getValidToken to ensure token is fresh before submitting
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali. Draft Anda telah disimpan.");
+        return;
+      }
+
       const res = await fetch(`${API}/api/threads`, {
         method: "POST",
         headers: {
@@ -76,17 +195,55 @@ export default function CreateThreadPage() {
           },
         }),
       });
+
       if (!res.ok) {
         let message = "Gagal membuat thread";
         try {
           const data = await res.json();
-          message = data?.details || data?.error || data?.message || message;
+          // Handle token/session errors specifically
+          if (res.status === 401) {
+            // Try refresh token once more
+            const newToken = await refreshAccessToken();
+            if (newToken) {
+              // Retry the request with new token
+              const retryRes = await fetch(`${API}/api/threads`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${newToken}`,
+                },
+                body: JSON.stringify({
+                  category_slug: params.slug,
+                  title,
+                  summary,
+                  content_type: "text",
+                  content,
+                  tag_slugs: tagsAvailable ? selectedTags.map(t => t.slug) : [],
+                  meta: {
+                    telegram,
+                  },
+                }),
+              });
+              if (retryRes.ok) {
+                clearDraft();
+                setSuccess("Thread berhasil dibuat!");
+                setTimeout(() => router.push(`/category/${params.slug}`), 1200);
+                return;
+              }
+            }
+            message = "Sesi telah berakhir. Draft Anda telah disimpan. Silakan refresh halaman dan login kembali.";
+          } else {
+            message = data?.details || data?.error || data?.message || message;
+          }
         } catch (err) {
           const txt = await res.text();
           if (txt) message = txt;
         }
         throw new Error(message);
       }
+
+      // Success - clear draft
+      clearDraft();
       setSuccess("Thread berhasil dibuat!");
       setTimeout(() => router.push(`/category/${params.slug}`), 1200);
     } catch (e) {
@@ -98,6 +255,33 @@ export default function CreateThreadPage() {
 
   return (
     <div className="container py-8 md:py-12">
+      {/* Draft Restored Notification */}
+      {draftRestored && (
+        <div className="mb-4 rounded-lg border border-blue-500/50 bg-blue-500/10 px-4 py-3 text-sm text-blue-600 dark:text-blue-400 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Draft sebelumnya telah dipulihkan. Konten Anda aman.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              clearDraft();
+              setTitle("");
+              setSummary("");
+              setContent("");
+              setTelegram("");
+              setSelectedTags([]);
+              setDraftRestored(false);
+            }}
+            className="text-xs underline hover:no-underline"
+          >
+            Hapus draft
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
@@ -215,7 +399,7 @@ export default function CreateThreadPage() {
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Submit Button with Autosave Status */}
             <div className="flex items-center gap-4 pt-4">
               <Button type="submit" size="lg" disabled={loading} className="min-w-[160px]">
                 {loading ? (
@@ -234,6 +418,15 @@ export default function CreateThreadPage() {
               >
                 Batal
               </Button>
+              {/* Autosave indicator */}
+              {lastSaved && (
+                <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
+                  <svg className="h-3 w-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Draft tersimpan {lastSaved.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
             </div>
           </form>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getApiBase } from "@/lib/api";
+import { getValidToken } from "@/lib/tokenRefresh";
 import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn";
 
 // Check if WebAuthn is supported
@@ -81,7 +82,12 @@ export default function PasskeySettings() {
 
   const fetchPasskeys = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        setLoading(false);
+        return;
+      }
       const res = await fetch(API, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -111,7 +117,12 @@ export default function PasskeySettings() {
     setSuccess("");
 
     try {
-      const token = localStorage.getItem("token");
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        setRegistering(false);
+        return;
+      }
 
       // 1. Begin registration - get options from server
       const beginRes = await fetch(`${API}/register/begin`, {
@@ -204,10 +215,15 @@ export default function PasskeySettings() {
     setSuccess("");
 
     try {
-      const token = localStorage. getItem("token");
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        setDeleting(null);
+        return;
+      }
       const res = await fetch(`${API}/${id}`, {
         method: "DELETE",
-        headers: { Authorization:  `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         const errData = await res.json();
@@ -232,7 +248,11 @@ export default function PasskeySettings() {
     setSuccess("");
 
     try {
-      const token = localStorage.getItem("token");
+      const token = await getValidToken();
+      if (!token) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        return;
+      }
       const res = await fetch(`${API}/${id}/name`, {
         method: "PUT",
         headers: {
