@@ -7,6 +7,7 @@ import Input from "../../components/ui/Input";
 import Alert from "../../components/ui/Alert";
 import Select from "../../components/ui/Select";
 import { BadgeChip } from "../../components/ui/Badge";
+import { useToast } from "../../components/ui/Toast";
 import Avatar from "../../components/ui/Avatar";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
@@ -18,6 +19,7 @@ import { useSudoAction } from "@/components/SudoModal";
 
 export default function AccountPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const API = `${getApiBase()}/api`;
   const authed = useMemo(() => { try { return !!getToken(); } catch { return false; } }, []);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,9 @@ export default function AccountPage() {
   const [avatarDeleting, setAvatarDeleting] = useState(false);
   const [badges, setBadges] = useState([]);
   const [primaryBadgeId, setPrimaryBadgeId] = useState(null);
+  const [pendingBadgeId, setPendingBadgeId] = useState(null); // For controlled selection before save
   const [savingBadge, setSavingBadge] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     if (!authed) { setLoading(false); return; }
@@ -79,7 +83,9 @@ export default function AccountPage() {
         if (!r.ok) return;
         const data = await r.json();
         setBadges(data.badges || []);
-        setPrimaryBadgeId(data.primary_badge_id || null);
+        const currentPrimaryId = data.primary_badge_id || null;
+        setPrimaryBadgeId(currentPrimaryId);
+        setPendingBadgeId(currentPrimaryId); // Initialize pending to current
       } catch {
         // Ignore badge fetch errors
       }
@@ -87,9 +93,16 @@ export default function AccountPage() {
     loadBadges();
   }, [API, authed]);
 
-  async function savePrimaryBadge(badgeId) {
-    setError(""); setOk(""); setSavingBadge(true);
+  async function savePrimaryBadge() {
+    // Only save if there's a change
+    if (pendingBadgeId === primaryBadgeId) {
+      toast.info("Tidak ada perubahan", "Badge yang dipilih sama dengan sebelumnya.");
+      return;
+    }
+    
+    setSavingBadge(true);
     try {
+      const badgeId = pendingBadgeId;
       const r = await fetchWithAuth(`${API}/account/primary-badge`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -97,13 +110,11 @@ export default function AccountPage() {
       });
       if (!r.ok) throw new Error("Gagal menyimpan primary badge");
       setPrimaryBadgeId(badgeId ? Number(badgeId) : null);
-      setOk("Primary badge diperbarui. Halaman akan direfresh...");
-      // Auto refresh after 1.5 seconds to show updated badge
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      toast.success("Berhasil", "Badge berhasil diperbarui.");
     } catch (e) {
-      setError(String(e.message || e));
+      // Revert pending to original on error
+      setPendingBadgeId(primaryBadgeId);
+      toast.error("Gagal", String(e.message || "Terjadi kesalahan saat menyimpan badge."));
     } finally {
       setSavingBadge(false);
     }
@@ -187,7 +198,7 @@ export default function AccountPage() {
 
   async function saveAccount(e) {
     e.preventDefault();
-    setError(""); setOk("");
+    setSavingProfile(true);
     try {
       const body = { ...form, social_accounts: socials.filter(s => s.label || s.url) };
       const r = await fetchWithAuth(`${API}/account`, {
@@ -196,8 +207,12 @@ export default function AccountPage() {
         body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error(await r.text() || "Gagal menyimpan akun");
-      setOk("Akun diperbarui.");
-    } catch (e) { setError(String(e.message || e)); }
+      toast.success("Berhasil", "Profil berhasil diperbarui.");
+    } catch (e) { 
+      toast.error("Gagal", String(e.message || "Terjadi kesalahan saat menyimpan profil."));
+    } finally {
+      setSavingProfile(false);
+    }
   }
 
   async function changeUsername() {
@@ -321,23 +336,37 @@ export default function AccountPage() {
                   </div>
                   <div className="mt-4">
                     <label className="text-sm font-medium text-foreground">Primary Badge (tampil di username)</label>
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-2">
                       <Select
-                        value={primaryBadgeId ? String(primaryBadgeId) : ""}
-                        onChange={(e) => savePrimaryBadge(e.target.value)}
+                        value={pendingBadgeId ? String(pendingBadgeId) : ""}
+                        onChange={(e) => setPendingBadgeId(e.target.value ? Number(e.target.value) : null)}
                         disabled={savingBadge}
-                        className="flex-1"
+                        className="w-full"
                       >
                         <option value="">Tidak ada badge ditampilkan</option>
                         {badges.map((badge) => (
                           <option key={badge.id} value={String(badge.id)}>{badge.name}</option>
                         ))}
                       </Select>
-                      {savingBadge && (
-                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" />
-                      )}
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">Badge yang dipilih akan muncul di samping username Anda.</p>
+                    <div className="mt-4">
+                      <Button
+                        type="button"
+                        onClick={savePrimaryBadge}
+                        disabled={savingBadge || pendingBadgeId === primaryBadgeId}
+                        loading={savingBadge}
+                      >
+                        {savingBadge ? (
+                          <>
+                            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white mr-2" />
+                            Menyimpan...
+                          </>
+                        ) : (
+                          "Simpan Perubahan"
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </>
               )}
@@ -443,7 +472,9 @@ export default function AccountPage() {
                 </div>
               </div>
               <div className="pt-2">
-                <Button type="submit">Simpan</Button>
+                <Button type="submit" disabled={savingProfile} loading={savingProfile}>
+                  {savingProfile ? "Menyimpan..." : "Simpan"}
+                </Button>
               </div>
             </form>
           </section>
@@ -472,9 +503,6 @@ export default function AccountPage() {
 
           {/* Zona Berbahaya - Delete Account */}
           <DeleteAccountSection API={API} router={router} />
-
-          {error && <Alert variant="error" message={error} />}
-          {ok && <Alert variant="success" message={ok} />}
         </div>
       )}
     </main>
