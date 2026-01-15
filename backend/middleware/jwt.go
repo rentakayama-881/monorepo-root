@@ -8,7 +8,7 @@ import (
 
 	"backend-gin/config"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // TokenType represents the type of JWT token

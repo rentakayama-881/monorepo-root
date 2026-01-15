@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"sync"
 	"time"
 
 	"backend-gin/database"
@@ -233,7 +232,7 @@ func (s *EntPasskeyService) BeginRegistration(ctx context.Context, userID int) (
 	sessionKey := registrationSessionKey(userID)
 	s.storeSession(sessionKey, session)
 
-	return options, sessionID, nil
+	return options, sessionKey, nil
 }
 
 // FinishRegistration completes the WebAuthn registration process
@@ -371,7 +370,7 @@ func (s *EntPasskeyService) BeginLogin(ctx context.Context, email string) (*prot
 	sessionKey := loginSessionKey(email)
 	s.storeSession(sessionKey, session)
 
-	return options, sessionID, nil
+	return options, sessionKey, nil
 }
 
 // BeginDiscoverableLogin starts a discoverable (usernameless) login
