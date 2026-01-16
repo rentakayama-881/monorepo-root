@@ -338,10 +338,19 @@ func UpdateBadge(c *gin.Context) {
 }
 
 func DeleteBadge(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
+	id, err := strconv. ParseInt(c. Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": gin.H{"code": "VAL001", "message": "ID badge tidak valid"},
+			"error":  gin.H{"code": "VAL001", "message": "ID badge tidak valid"},
+		})
+		return
+	}
+
+	// Check if badge exists first
+	_, err = database.GetEntClient().Badge.Get(c.Request.Context(), int(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": gin. H{"code": "BADGE002", "message": "Badge tidak ditemukan"},
 		})
 		return
 	}
@@ -349,7 +358,7 @@ func DeleteBadge(c *gin.Context) {
 	// Check if badge is assigned to any user (not revoked)
 	count, err := database.GetEntClient().UserBadge.Query().
 		Where(
-			userbadge.BadgeIDEQ(int(id)),
+			userbadge. BadgeIDEQ(int(id)),
 			userbadge.RevokedAtIsNil(),
 		).
 		Count(c.Request.Context())
@@ -362,7 +371,28 @@ func DeleteBadge(c *gin.Context) {
 
 	if count > 0 {
 		c.JSON(http.StatusConflict, gin.H{
-			"error": gin.H{"code": "BADGE003", "message": "Badge masih digunakan oleh user. Cabut semua badge terlebih dahulu."},
+			"error": gin.H{"code":  "BADGE003", "message": "Badge masih digunakan oleh user.  Cabut semua badge terlebih dahulu."},
+		})
+		return
+	}
+
+	// Clear primary_badge_id from users who have this as primary badge
+	_, err = database.GetEntClient().User.Update().
+		Where(user. PrimaryBadgeIDEQ(int(id))).
+		ClearPrimaryBadgeID().
+		Save(c.Request.Context())
+	if err != nil {
+		// Log but don't fail - this is cleanup
+		logger.Warn("Failed to clear primary badge from users", zap.Error(err))
+	}
+
+	// Delete all user_badges records (including revoked ones) to satisfy foreign key constraint
+	_, err = database.GetEntClient().UserBadge.Delete().
+		Where(userbadge.BadgeIDEQ(int(id))).
+		Exec(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": gin.H{"code": "SRV001", "message": "Gagal menghapus riwayat badge"},
 		})
 		return
 	}
@@ -371,10 +401,12 @@ func DeleteBadge(c *gin.Context) {
 	err = database.GetEntClient().Badge.DeleteOneID(int(id)).Exec(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": gin.H{"code": "SRV001", "message": "Gagal menghapus badge"},
+			"error":  gin.H{"code": "SRV001", "message":  "Gagal menghapus badge"},
 		})
 		return
 	}
+
+	logger.Info("Badge deleted", zap.Int64("badge_id", id))
 
 	c.JSON(http.StatusOK, gin.H{"message": "Badge berhasil dihapus"})
 }
