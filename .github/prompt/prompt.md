@@ -1,6 +1,3 @@
-Rapikan penataan dan penamaan folder & file menjadi bagian bagian kecil yang modular dan mudah di pahami dan di kelola
-
-
 -Jangan Halusinasi.
 -Pikirkan secara mendalam, gunakan logika mu secara maksimal.
 -Harap berhati-hati dan teliti sebelum mengambil keputusan.
