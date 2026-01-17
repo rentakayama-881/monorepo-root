@@ -7,7 +7,6 @@ import Input from "../../components/ui/Input";
 import Alert from "../../components/ui/Alert";
 import Select from "../../components/ui/Select";
 import { BadgeChip } from "../../components/ui/Badge";
-import { useToast } from "../../components/ui/Toast";
 import Avatar from "../../components/ui/Avatar";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
@@ -19,14 +18,13 @@ import { useSudoAction } from "@/components/SudoModal";
 
 export default function AccountPage() {
   const router = useRouter();
-  const { toast } = useToast();
   const API = `${getApiBase()}/api`;
   const authed = useMemo(() => { try { return !!getToken(); } catch { return false; } }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [me, setMe] = useState(null);
-  const [socials, setSocials] = useState([{ label: "", url:  "" }]);
+  const [socials, setSocials] = useState([{ label: "", url: "" }]);
   const [form, setForm] = useState({ full_name: "", bio: "", pronouns: "", company: "", telegram: "" });
   const [username, setUsername] = useState("");
   const [newUsername, setNewUsername] = useState("");
@@ -38,9 +36,7 @@ export default function AccountPage() {
   const [avatarDeleting, setAvatarDeleting] = useState(false);
   const [badges, setBadges] = useState([]);
   const [primaryBadgeId, setPrimaryBadgeId] = useState(null);
-  const [pendingBadgeId, setPendingBadgeId] = useState(null); // For controlled selection before save
   const [savingBadge, setSavingBadge] = useState(false);
-  const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     if (!authed) { setLoading(false); return; }
@@ -57,13 +53,13 @@ export default function AccountPage() {
         setAvatarUrl(data.avatar_url || "");
         setForm({
           full_name: data.full_name || "",
-          bio:  data.bio || "",
-          pronouns:  data.pronouns || "",
-          company:  data.company || "",
+          bio: data.bio || "",
+          pronouns: data.pronouns || "",
+          company: data.company || "",
           telegram: data.telegram || "",
         });
-        const s = Array.isArray(data.social_accounts) ? data.social_accounts :  [];
-        setSocials(s.length ? s : [{ label: "", url:  "" }]);
+        const s = Array.isArray(data.social_accounts) ? data.social_accounts : [];
+        setSocials(s.length ? s : [{ label: "", url: "" }]);
       } catch (e) {
         setError(e.message);
       } finally {
@@ -76,18 +72,14 @@ export default function AccountPage() {
 
   // Fetch user badges
   useEffect(() => {
-    if (! authed) return;
+    if (!authed) return;
     const loadBadges = async () => {
       try {
         const r = await fetchWithAuth(`${API}/account/badges`);
-        if (!r. ok) return;
+        if (!r.ok) return;
         const data = await r.json();
-        const fetchedBadges = data.badges || [];
-        setBadges(fetchedBadges);
-        // primary_badge_id bisa null atau integer
-        const currentPrimaryId = data.primary_badge_id != null ? Number(data.primary_badge_id) : null;
-        setPrimaryBadgeId(currentPrimaryId);
-        setPendingBadgeId(currentPrimaryId); // Initialize pending to current
+        setBadges(data.badges || []);
+        setPrimaryBadgeId(data.primary_badge_id || null);
       } catch {
         // Ignore badge fetch errors
       }
@@ -95,54 +87,36 @@ export default function AccountPage() {
     loadBadges();
   }, [API, authed]);
 
-  async function savePrimaryBadge() {
-    // Konversi ke number untuk perbandingan yang konsisten
-    const pendingNum = pendingBadgeId != null ? Number(pendingBadgeId) : null;
-    const primaryNum = primaryBadgeId != null ?  Number(primaryBadgeId) : null;
-    
-    // Only save if there's a change
-    if (pendingNum === primaryNum) {
-      toast.info("Tidak ada perubahan", "Badge yang dipilih sama dengan sebelumnya.");
-      return;
-    }
-    
-    setSavingBadge(true);
+  async function savePrimaryBadge(badgeId) {
+    setError(""); setOk(""); setSavingBadge(true);
     try {
       const r = await fetchWithAuth(`${API}/account/primary-badge`, {
-        method:  "PUT",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON. stringify({ badge_id: pendingNum }),
+        body: JSON.stringify({ badge_id: badgeId ? Number(badgeId) : null }),
       });
-      if (!r.ok) {
-        const errData = await r. json().catch(() => ({}));
-        throw new Error(errData.error?. message || "Gagal menyimpan primary badge");
-      }
-      setPrimaryBadgeId(pendingNum);
-      toast.success("Berhasil", "Badge berhasil diperbarui.");
+      if (!r.ok) throw new Error("Gagal menyimpan primary badge");
+      setPrimaryBadgeId(badgeId ? Number(badgeId) : null);
+      setOk("Primary badge diperbarui. Halaman akan direfresh...");
+      // Auto refresh after 1.5 seconds to show updated badge
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (e) {
-      // Revert pending to original on error
-      setPendingBadgeId(primaryNum);
-      toast.error("Gagal", String(e. message || "Terjadi kesalahan saat menyimpan badge."));
+      setError(String(e.message || e));
     } finally {
       setSavingBadge(false);
     }
   }
 
-  // Handler untuk perubahan badge selection
-  function handleBadgeChange(e) {
-    const val = e.target. value;
-    // Konversi ke number atau null
-    setPendingBadgeId(val === "" ? null : Number(val));
-  }
-
   function updateSocial(i, key, val) {
     setSocials(prev => {
       const copy = [...prev];
-      copy[i] = { ...copy[i], [key]:  val };
+      copy[i] = { ...copy[i], [key]: val };
       return copy;
     });
   }
-  function addSocial() { setSocials(prev => [... prev, { label:  "", url: "" }]); }
+  function addSocial() { setSocials(prev => [...prev, { label: "", url: "" }]); }
   function removeSocial(i) { setSocials(prev => prev.filter((_, idx) => idx !== i)); }
 
   function onAvatarFileChange(e) {
@@ -150,8 +124,8 @@ export default function AccountPage() {
     const file = e.target.files && e.target.files[0];
     if (file) {
       // Validate extension
-      const ext = file.name. toLowerCase().split('.').pop();
-      if (!['jpg', 'jpeg', 'png']. includes(ext)) {
+      const ext = file.name.toLowerCase().split('.').pop();
+      if (!['jpg', 'jpeg', 'png'].includes(ext)) {
         setError("Format gambar harus JPG atau PNG");
         e.target.value = "";
         return;
@@ -169,12 +143,12 @@ export default function AccountPage() {
   async function uploadAvatar() {
     setError(""); setOk(""); setAvatarUploading(true);
     try {
-      if (! avatarFile) throw new Error("Pilih file gambar terlebih dahulu");
+      if (!avatarFile) throw new Error("Pilih file gambar terlebih dahulu");
       const fd = new FormData();
       fd.append("file", avatarFile);
       const r = await fetchWithAuth(`${API}/account/avatar`, {
         method: "PUT",
-        body:  fd,
+        body: fd,
       });
       const txt = await r.text();
       if (!r.ok) throw new Error(txt || "Gagal mengunggah avatar");
@@ -205,7 +179,7 @@ export default function AccountPage() {
       setAvatarUrl("");
       setOk("Foto profil dihapus.");
     } catch (e) {
-      setError(String(e. message || e));
+      setError(String(e.message || e));
     } finally {
       setAvatarDeleting(false);
     }
@@ -213,52 +187,41 @@ export default function AccountPage() {
 
   async function saveAccount(e) {
     e.preventDefault();
-    setSavingProfile(true);
+    setError(""); setOk("");
     try {
-      const body = { ...form, social_accounts: socials. filter(s => s. label || s.url) };
+      const body = { ...form, social_accounts: socials.filter(s => s.label || s.url) };
       const r = await fetchWithAuth(`${API}/account`, {
-        method:  "PUT",
-        headers:  { "Content-Type": "application/json" },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error(await r.text() || "Gagal menyimpan akun");
-      toast.success("Berhasil", "Profil berhasil diperbarui.");
-    } catch (e) { 
-      toast.error("Gagal", String(e.message || "Terjadi kesalahan saat menyimpan profil."));
-    } finally {
-      setSavingProfile(false);
-    }
+      setOk("Akun diperbarui.");
+    } catch (e) { setError(String(e.message || e)); }
   }
 
   async function changeUsername() {
     setError(""); setOk(""); setChgLoading(true);
     try {
-      if (! newUsername) throw new Error("Masukkan username baru");
+      if (!newUsername) throw new Error("Masukkan username baru");
       const r = await fetchWithAuth(`${API}/account/change-username`, {
         method: "POST",
-        headers:  { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_username: newUsername }),
       });
-      const txt = await r. text();
+      const txt = await r.text();
       if (!r.ok) throw new Error(txt || "Gagal mengganti username");
       const data = JSON.parse(txt);
-      setOk(`Username diubah menjadi ${data.new_username}. `);
+      setOk(`Username diubah menjadi ${data.new_username}.`);
       setUsername(data.new_username);
       setNewUsername("");
     } catch (e) { setError(String(e.message || e)); } finally { setChgLoading(false); }
   }
 
-  // Cek apakah badge pending berbeda dari primary (untuk enable/disable button)
-  const isBadgeChanged = useMemo(() => {
-    const pendingNum = pendingBadgeId != null ? Number(pendingBadgeId) : null;
-    const primaryNum = primaryBadgeId != null ? Number(primaryBadgeId) : null;
-    return pendingNum !== primaryNum;
-  }, [pendingBadgeId, primaryBadgeId]);
-
-  if (! authed) return (
+  if (!authed) return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-        Anda harus login untuk mengelola akun. 
+        Anda harus login untuk mengelola akun.
       </div>
     </main>
   );
@@ -272,7 +235,7 @@ export default function AccountPage() {
         </p>
       </div>
 
-      {loading ?  (
+      {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" /> Loading...
         </div>
@@ -283,7 +246,7 @@ export default function AccountPage() {
             <h3 className="settings-section-title mb-3">Foto Profil</h3>
             <div className="mt-3 flex items-start gap-4">
               <div className="shrink-0">
-                {avatarPreview ?  (
+                {avatarPreview ? (
                   <img
                     src={avatarPreview}
                     alt="Preview"
@@ -306,7 +269,7 @@ export default function AccountPage() {
                       loading={avatarDeleting}
                     >
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-. 346 9m-4.788 0L9. 26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-. 165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-. 397m-12 .562c.34-. 059.68-.114 1.022-. 165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-. 916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v. 916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                       </svg>
                       Hapus Foto
                     </Button>
@@ -314,7 +277,7 @@ export default function AccountPage() {
                 )}
                 <Input
                   type="file"
-                  accept=".jpg,.jpeg,. png"
+                  accept=".jpg,.jpeg,.png"
                   onChange={onAvatarFileChange}
                   label=""
                   className="block w-full text-sm"
@@ -323,7 +286,7 @@ export default function AccountPage() {
                   <Button
                     type="button"
                     onClick={uploadAvatar}
-                    disabled={avatarUploading || ! avatarFile}
+                    disabled={avatarUploading || !avatarFile}
                     loading={avatarUploading}
                   >
                     Simpan Foto
@@ -338,12 +301,12 @@ export default function AccountPage() {
                     </Button>
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground">Gunakan gambar rasio 1:1 untuk hasil terbaik.  Max ~2MB (sesuaikan backend).</div>
+                <div className="text-xs text-muted-foreground">Gunakan gambar rasio 1:1 untuk hasil terbaik. Max ~2MB (sesuaikan backend).</div>
               </div>
             </div>
           </section>
 
-          {/* Badges Section - DIPERBAIKI */}
+          {/* Badges Section */}
           <section className="settings-section">
             <h3 className="settings-section-title mb-3">Badges</h3>
             <div className="mt-3 space-y-3">
@@ -351,50 +314,30 @@ export default function AccountPage() {
                 <p className="text-sm text-muted-foreground">Badge hanya di dapatkan dari reputasi & kontribusi, baik internal maupun eksternal platform yang mempunyai legitimasi.</p>
               ) : (
                 <>
-                  {/* Tampilkan semua badge yang dimiliki */}
                   <div className="flex flex-wrap gap-2">
                     {badges.map((badge) => (
                       <BadgeChip key={badge.id} badge={badge} />
                     ))}
                   </div>
-                  
-                  {/* Dropdown untuk memilih primary badge */}
                   <div className="mt-4">
-                    <label htmlFor="primary-badge-select" className="text-sm font-medium text-foreground">
-                      Primary Badge (tampil di username)
-                    </label>
-                    <div className="mt-2">
-                      {/* Gunakan native select langsung untuk menghindari masalah komponen */}
-                      <select
-                        id="primary-badge-select"
-                        value={pendingBadgeId != null ? String(pendingBadgeId) : ""}
-                        onChange={handleBadgeChange}
+                    <label className="text-sm font-medium text-foreground">Primary Badge (tampil di username)</label>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Select
+                        value={primaryBadgeId ? String(primaryBadgeId) : ""}
+                        onChange={(e) => savePrimaryBadge(e.target.value)}
                         disabled={savingBadge}
-                        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1"
                       >
                         <option value="">Tidak ada badge ditampilkan</option>
                         {badges.map((badge) => (
-                          <option key={badge.id} value={String(badge.id)}>
-                            {badge.name}
-                          </option>
+                          <option key={badge.id} value={String(badge.id)}>{badge.name}</option>
                         ))}
-                      </select>
+                      </Select>
+                      {savingBadge && (
+                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" />
+                      )}
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Badge yang dipilih akan muncul di samping username Anda. 
-                    </p>
-                    
-                    {/* Tombol simpan */}
-                    <div className="mt-4">
-                      <Button
-                        type="button"
-                        onClick={savePrimaryBadge}
-                        disabled={savingBadge || ! isBadgeChanged}
-                        loading={savingBadge}
-                      >
-                        {savingBadge ? "Menyimpan..." : "Simpan Perubahan"}
-                      </Button>
-                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">Badge yang dipilih akan muncul di samping username Anda.</p>
                   </div>
                 </>
               )}
@@ -437,21 +380,21 @@ export default function AccountPage() {
                 <label className="text-sm font-medium text-foreground">Bio</label>
                 <textarea
                   rows={3}
-                  className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder: text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.bio}
-                  onChange={e => setForm(f => ({ ...f, bio: e. target.value }))}
+                  onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Input
                   label="Pronouns"
                   value={form.pronouns}
-                  onChange={e => setForm(f => ({ ...f, pronouns: e.target. value }))}
+                  onChange={e => setForm(f => ({ ...f, pronouns: e.target.value }))}
                 />
                 <Input
                   label="Company"
                   value={form.company}
-                  onChange={e => setForm(f => ({ ... f, company: e.target.value }))}
+                  onChange={e => setForm(f => ({ ...f, company: e.target.value }))}
                 />
               </div>
               <Input
@@ -474,7 +417,7 @@ export default function AccountPage() {
                       <Input
                         placeholder="https://..."
                         value={s.url || ""}
-                        onChange={e => updateSocial(i, "url", e. target.value)}
+                        onChange={e => updateSocial(i, "url", e.target.value)}
                         className=""
                       />
                       <div className="col-span-2 text-right">
@@ -500,25 +443,23 @@ export default function AccountPage() {
                 </div>
               </div>
               <div className="pt-2">
-                <Button type="submit" disabled={savingProfile} loading={savingProfile}>
-                  {savingProfile ? "Menyimpan..." : "Simpan"}
-                </Button>
+                <Button type="submit">Simpan</Button>
               </div>
             </form>
           </section>
 
           <section className="settings-section">
             <h3 className="settings-section-title mb-3">Username</h3>
-            <div className="mt-1 text-sm text-foreground">Saat ini:  <b>{username || "(belum ada)"}</b></div>
+            <div className="mt-1 text-sm text-foreground">Saat ini: <b>{username || "(belum ada)"}</b></div>
             <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-3">
               <div className="flex items-center gap-2 text-sm text-amber-600">
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3. 75m9-. 75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-. 008z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
                 <span className="font-medium">Fitur Segera Hadir</span>
               </div>
               <p className="mt-1 text-xs text-amber-600/80">
-                Fitur ganti username akan segera tersedia. Layanan ini berbayar Rp. 100.000 dan saldo IDR akan dipotong otomatis. 
+                Fitur ganti username akan segera tersedia. Layanan ini berbayar Rp.100.000 dan saldo IDR akan dipotong otomatis.
               </p>
             </div>
           </section>
@@ -531,6 +472,9 @@ export default function AccountPage() {
 
           {/* Zona Berbahaya - Delete Account */}
           <DeleteAccountSection API={API} router={router} />
+
+          {error && <Alert variant="error" message={error} />}
+          {ok && <Alert variant="success" message={ok} />}
         </div>
       )}
     </main>
@@ -555,10 +499,10 @@ function DeleteAccountSection({ API, router }) {
       await executeSudo(async (sudoToken) => {
         const t = await getValidToken();
         if (!t) {
-          throw new Error("Sesi telah berakhir.  Silakan login kembali.");
+          throw new Error("Sesi telah berakhir. Silakan login kembali.");
         }
         const res = await fetch(`${API}/account`, {
-          method:  "DELETE",
+          method: "DELETE",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${t}`,
@@ -568,7 +512,7 @@ function DeleteAccountSection({ API, router }) {
             confirmation: deleteConfirmation,
           }),
         });
-        const data = await res. json();
+        const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || "Gagal menghapus akun");
         }
@@ -591,7 +535,7 @@ function DeleteAccountSection({ API, router }) {
     <section className="rounded-lg border-2 border-destructive/20 bg-destructive/10 p-4">
       <h3 className="text-sm font-medium text-destructive flex items-center gap-2">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-. 866 1.5. 217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15. 75h. 007v. 008H12v-.008z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
         </svg>
         Zona Berbahaya
       </h3>
@@ -609,7 +553,7 @@ function DeleteAccountSection({ API, router }) {
             type="text"
             placeholder="DELETE"
             value={deleteConfirmation}
-            onChange={e => setDeleteConfirmation(e. target.value)}
+            onChange={e => setDeleteConfirmation(e.target.value)}
           />
         </div>
         
@@ -623,7 +567,7 @@ function DeleteAccountSection({ API, router }) {
           onClick={handleDelete}
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9. 26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-. 165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-. 397m-12 .562c.34-. 059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-. 916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v. 916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
           </svg>
           Hapus Akun Permanen
         </Button>

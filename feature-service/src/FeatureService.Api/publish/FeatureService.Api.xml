@@ -54,6 +54,11 @@
             Check if a device is banned (for registration/login flow)
             </summary>
         </member>
+        <member name="M:FeatureService.Api.Controllers.AdminModerationController.GetAllWarnings(System.Int32,System.Int32,System.Nullable{System.UInt32})">
+            <summary>
+            Get all warnings (paginated, optionally filtered by userId)
+            </summary>
+        </member>
         <member name="M:FeatureService.Api.Controllers.AdminModerationController.GetUserWarnings(System.UInt32)">
             <summary>
             Get all warnings for a user
@@ -469,6 +474,11 @@
             Recalculate balance from ledger (for audit)
             </summary>
         </member>
+        <member name="M:FeatureService.Api.Controllers.Finance.WalletsController.SpendForAiChat(FeatureService.Api.DTOs.AiChatSpendRequest)">
+            <summary>
+            Deduct wallet balance for AI chat usage
+            </summary>
+        </member>
         <member name="T:FeatureService.Api.Controllers.Finance.WithdrawalsController">
             <summary>
             Withdrawal endpoints for cashing out wallet balance to bank
@@ -695,6 +705,16 @@
         <member name="M:FeatureService.Api.DTOs.PaginatedAdminActionLogResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.AdminActionLogDto},System.Int32,System.Int32,System.Int32)">
             <summary>
             Paginated admin action log response
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.DTOs.PaginatedWarningsResponse">
+            <summary>
+            Paginated warnings response for admin list all
+            </summary>
+        </member>
+        <member name="M:FeatureService.Api.DTOs.PaginatedWarningsResponse.#ctor(System.Collections.Generic.List{FeatureService.Api.DTOs.UserWarningDto},System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Paginated warnings response for admin list all
             </summary>
         </member>
         <member name="T:FeatureService.Api.DTOs.TokenBalanceDto">
@@ -1127,7 +1147,7 @@
             User warning summary
             </summary>
         </member>
-        <member name="M:FeatureService.Api.DTOs.UserWarningDto.#ctor(System.String,System.String,System.String,System.String,System.Boolean,System.DateTime,System.Nullable{System.DateTime})">
+        <member name="M:FeatureService.Api.DTOs.UserWarningDto.#ctor(System.String,System.String,System.String,System.String,System.Boolean,System.DateTime,System.Nullable{System.DateTime},System.Nullable{System.UInt32},System.Nullable{System.UInt32})">
             <summary>
             User warning summary
             </summary>
@@ -1150,6 +1170,16 @@
         <member name="M:FeatureService.Api.DTOs.AcknowledgeWarningRequest.#ctor(System.String)">
             <summary>
             Request to acknowledge a warning
+            </summary>
+        </member>
+        <member name="T:FeatureService.Api.Infrastructure.Auth.AdminJwtAuthHandler">
+            <summary>
+            Custom authentication handler that validates admin JWT tokens from Go backend
+            </summary>
+        </member>
+        <member name="P:FeatureService.Api.Infrastructure.Auth.JwtSettings.AdminSecret">
+            <summary>
+            Separate secret for admin JWT tokens (from Go backend)
             </summary>
         </member>
         <member name="T:FeatureService.Api.Middleware.RateLimitingMiddleware">
