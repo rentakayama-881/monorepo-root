@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { getValidToken } from "@/lib/tokenRefresh";
 import Button from "./ui/Button";
 import Input from "./ui/Input";
 import Alert from "./ui/Alert";
 
-export default function TOTPSettings() {
+function TOTPSettingsContent() {
   const API = `${getApiBase()}/api`;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const setup2fa = searchParams.get("setup2fa");
+  const redirectUrl = searchParams.get("redirect");
+
   const [status, setStatus] = useState({ enabled: false, verified_at: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -67,6 +73,13 @@ export default function TOTPSettings() {
   useEffect(() => {
     fetchStatus();
   }, [fetchStatus]);
+
+  // Auto-start setup if setup2fa query param is present and 2FA not enabled
+  useEffect(() => {
+    if (setup2fa === "true" && !loading && !status.enabled && !setupData) {
+      startSetup();
+    }
+  }, [setup2fa, loading, status.enabled, setupData]);
 
   // Start TOTP setup
   async function startSetup() {
@@ -132,6 +145,13 @@ export default function TOTPSettings() {
 
       // Automatically generate backup codes after enabling
       generateBackupCodes();
+
+      // If there's a redirect URL, redirect after success
+      if (redirectUrl) {
+        setTimeout(() => {
+          router.push(redirectUrl);
+        }, 2000);
+      }
     } catch (e) {
       setError(e.message);
     } finally {
@@ -231,6 +251,25 @@ export default function TOTPSettings() {
 
   return (
     <div className="rounded-[var(--radius)] border bg-card p-6 space-y-4">
+      {/* Show info banner if redirected for 2FA setup */}
+      {setup2fa === "true" && !status.enabled && (
+        <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                2FA Diperlukan
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                Untuk menggunakan fitur wallet (kirim uang, tarik saldo, set PIN), Anda harus mengaktifkan 2FA terlebih dahulu.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold text-foreground">
@@ -439,5 +478,26 @@ export default function TOTPSettings() {
         </form>
       )}
     </div>
+  );
+}
+
+// Loading fallback for Suspense
+function TOTPSettingsLoading() {
+  return (
+    <div className="rounded-[var(--radius)] border bg-card p-6">
+      <div className="flex items-center gap-2">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
+        <span className="text-sm text-muted-foreground">Memuat pengaturan 2FA...</span>
+      </div>
+    </div>
+  );
+}
+
+// Export with Suspense wrapper to handle useSearchParams
+export default function TOTPSettings() {
+  return (
+    <Suspense fallback={<TOTPSettingsLoading />}>
+      <TOTPSettingsContent />
+    </Suspense>
   );
 }
