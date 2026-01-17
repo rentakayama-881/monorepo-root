@@ -17,7 +17,7 @@ const LLM_CONFIGS = {
 };
 
 // Feature Service URL
-const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_API_URL || "http://localhost:5000";
+const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.alephdraad.fun";
 
 export async function POST(request) {
   try {
