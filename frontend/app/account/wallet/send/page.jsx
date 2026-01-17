@@ -59,12 +59,23 @@ export default function SendMoneyPage() {
       if (searchQuery.length >= 3) {
         setSearching(true);
         try {
-          const data = await fetchFeatureAuth(
+          const response = await fetchFeatureAuth(
             FEATURE_ENDPOINTS.TRANSFERS.SEARCH_USER + `?username=${encodeURIComponent(searchQuery)}`
           );
-          setSearchResults(data.data?.users || data.users || []);
+          // Response is { data: { userId, username, avatarUrl, exists } }
+          const userData = response.data;
+          if (userData && userData.exists) {
+            setSearchResults([{
+              id: userData.userId,
+              username: userData.username,
+              avatar_url: userData.avatarUrl
+            }]);
+          } else {
+            setSearchResults([]);
+          }
         } catch (e) {
           logger.error("Search failed:", e);
+          setSearchResults([]);
         } finally {
           setSearching(false);
         }
