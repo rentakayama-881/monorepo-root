@@ -268,8 +268,9 @@ export default function TransactionDetailPage() {
     );
   }
 
-  const isSender = currentUser?.id === transfer.senderId;
-  const isReceiver = currentUser?.id === transfer.receiverId;
+  // Use Number() conversion for safe comparison (handle string/number type mismatch)
+  const isSender = Number(currentUser?.id) === Number(transfer.senderId);
+  const isReceiver = Number(currentUser?.id) === Number(transfer.receiverId);
   const status = normalizeStatus(transfer.status);
   
   // Calculate hold period info
