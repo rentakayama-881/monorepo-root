@@ -12,7 +12,7 @@ export default function TransactionsContent() {
   const [activeTab, setActiveTab] = useState("all");
   const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [wallet, setWallet] = useState({ balance: 0 });
+  const [wallet, setWallet] = useState({ balance: 0, userId: null });
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function TransactionsContent() {
       try {
         // Load wallet from Feature Service
         const walletData = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
-        setWallet({ balance: walletData.balance || 0 });
+        setWallet({ balance: walletData.balance || 0, userId: walletData.userId || walletData.user_id || null });
 
         // Load transfers from Feature Service
         let url = FEATURE_ENDPOINTS.TRANSFERS.LIST + "?limit=50";
@@ -177,8 +177,10 @@ export default function TransactionsContent() {
         ) : (
           <div className="space-y-3">
             {transfers.map((transfer) => {
-              const isSent = transfer.senderId === transfer.senderId; // Will be compared with current user later
-              const otherUsername = isSent ? transfer.receiverUsername : transfer.senderUsername;
+              // Determine if current user is sender or receiver
+              const isSender = wallet.userId && transfer.senderId === wallet.userId;
+              const isReceiver = wallet.userId && transfer.receiverId === wallet.userId;
+              const otherUsername = isSender ? transfer.receiverUsername : transfer.senderUsername;
               const status = normalizeStatus(transfer.status);
               
               return (
@@ -198,14 +200,14 @@ export default function TransactionsContent() {
                             : "bg-gray-500/10 text-gray-600"
                         }`}
                       >
-                        {(otherUsername || transfer.receiverUsername || "?")?.slice(0, 2).toUpperCase()}
+                        {(otherUsername || "?")?.slice(0, 2).toUpperCase()}
                       </div>
                       <div>
                         <div className="font-medium text-foreground">
-                          {transfer.receiverUsername
-                            ? `Ke @${transfer.receiverUsername}`
-                            : transfer.senderUsername
-                            ? `Dari @${transfer.senderUsername}`
+                          {isSender
+                            ? `Ke @${transfer.receiverUsername || "Unknown"}`
+                            : isReceiver
+                            ? `Dari @${transfer.senderUsername || "Unknown"}`
                             : "Transfer"}
                         </div>
                         <div className="text-xs text-muted-foreground">

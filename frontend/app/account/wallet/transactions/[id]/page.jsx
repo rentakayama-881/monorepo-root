@@ -16,10 +16,14 @@ export default function TransactionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showNoPinModal, setShowNoPinModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
+  const [wallet, setWallet] = useState(null);
 
   useEffect(() => {
     async function loadData() {
@@ -37,6 +41,14 @@ export default function TransactionDetailPage() {
         logger.error("Failed to load user:", e);
       }
 
+      // Fetch wallet to check PIN status
+      try {
+        const walletData = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
+        setWallet(walletData);
+      } catch (e) {
+        logger.error("Failed to load wallet:", e);
+      }
+
       // Fetch transfer from Feature Service
       try {
         const transferData = await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.DETAIL(transferId));
@@ -51,14 +63,60 @@ export default function TransactionDetailPage() {
     loadData();
   }, [router, transferId]);
 
+  // Check if user has PIN set
+  const hasPinSet = wallet?.pinSet || wallet?.pin_set || false;
+
+  // Handle action - check PIN requirement
   const handleAction = (action) => {
     setPendingAction(action);
+    setError("");
+    setActionSuccess("");
+
+    // Dispute doesn't require PIN
+    if (action === "dispute") {
+      setShowConfirmModal(true);
+      return;
+    }
+
+    // Release and Cancel require PIN
+    if (!hasPinSet) {
+      setShowNoPinModal(true);
+      return;
+    }
+
     setShowPinModal(true);
     setPin("");
-    setError("");
   };
 
-  const confirmAction = async () => {
+  // Confirm action without PIN (dispute)
+  const confirmActionWithoutPin = async () => {
+    setProcessing(true);
+    setError("");
+
+    try {
+      const endpoint = FEATURE_ENDPOINTS.DISPUTES.CREATE;
+      const body = { transferId: transferId, reason: "Memerlukan penyelesaian oleh tim mediasi" };
+
+      await fetchFeatureAuth(endpoint, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      setShowConfirmModal(false);
+      setActionSuccess("Permintaan mediasi berhasil dikirim. Tim kami akan menghubungi Anda.");
+      
+      // Reload transfer
+      const transferData = await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.DETAIL(transferId));
+      setTransfer(transferData.data || transferData);
+    } catch (e) {
+      logger.error("Dispute action failed:", e);
+      setError(e.message || "Gagal membuat permintaan mediasi");
+    }
+    setProcessing(false);
+  };
+
+  // Confirm action with PIN (release/cancel)
+  const confirmActionWithPin = async () => {
     if (pin.length !== 6) {
       setError("PIN harus 6 digit");
       return;
@@ -75,9 +133,7 @@ export default function TransactionDetailPage() {
         endpoint = FEATURE_ENDPOINTS.TRANSFERS.RELEASE(transferId);
       } else if (pendingAction === "cancel") {
         endpoint = FEATURE_ENDPOINTS.TRANSFERS.CANCEL(transferId);
-      } else if (pendingAction === "dispute") {
-        endpoint = FEATURE_ENDPOINTS.DISPUTES.CREATE;
-        body = { transferId: transferId, reason: "Memerlukan penyelesaian" };
+        body.reason = "Dibatalkan oleh pengirim";
       }
 
       await fetchFeatureAuth(endpoint, {
@@ -86,17 +142,18 @@ export default function TransactionDetailPage() {
       });
 
       setShowPinModal(false);
+      setActionSuccess(
+        pendingAction === "release" 
+          ? "Dana berhasil dilepaskan ke penerima!" 
+          : "Transaksi berhasil dibatalkan, dana dikembalikan."
+      );
       
       // Reload transfer
       const transferData = await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.DETAIL(transferId));
       setTransfer(transferData.data || transferData);
-      
-      if (pendingAction === "dispute") {
-        router.push("/account/wallet/disputes");
-      }
     } catch (e) {
       logger.error("Action failed:", e);
-      setError(e.message || "Gagal memproses");
+      setError(e.message || "Gagal memproses. Pastikan PIN benar.");
     }
     setProcessing(false);
   };
@@ -304,11 +361,23 @@ export default function TransactionDetailPage() {
                             : " Dana akan segera masuk ke saldo Anda."
                           }
                           <br /><br />
-                          <strong>Tidak dapat memenuhi pesanan?</strong> Anda dapat menolak penerimaan dan dana akan dikembalikan ke pengirim.
+                          <strong>Ada kendala dalam transaksi?</strong> Anda dapat meminta bantuan tim mediasi kami.
                         </>
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {actionSuccess && (
+              <div className="mx-6 mb-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-4">
+                <div className="flex items-center gap-2 text-emerald-600">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="font-medium">{actionSuccess}</span>
                 </div>
               </div>
             )}
@@ -333,12 +402,15 @@ export default function TransactionDetailPage() {
                   </>
                 )}
                 {isReceiver && (
-                  <button
-                    onClick={() => handleAction("cancel")}
-                    className="w-full rounded-lg border border-amber-500/50 py-3 font-semibold text-amber-600 transition hover:bg-amber-500/10"
-                  >
-                    Tolak Penerimaan (Kembalikan ke Pengirim)
-                  </button>
+                  <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-4 text-sm text-muted-foreground">
+                    <p className="mb-2">
+                      <strong className="text-foreground">Info untuk Penerima:</strong>
+                    </p>
+                    <p>
+                      Sebagai penerima, dana akan otomatis masuk ke saldo Anda setelah periode penahanan berakhir. 
+                      Jika ada kendala dengan transaksi ini, Anda dapat meminta bantuan tim mediasi.
+                    </p>
+                  </div>
                 )}
                 <button
                   onClick={() => handleAction("dispute")}
@@ -363,7 +435,7 @@ export default function TransactionDetailPage() {
           </div>
         </div>
 
-        {/* PIN Modal */}
+        {/* PIN Modal for release/cancel */}
         {showPinModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="w-full max-w-sm rounded-lg bg-card p-6">
@@ -373,7 +445,6 @@ export default function TransactionDetailPage() {
               <p className="text-sm text-muted-foreground mb-4">
                 {pendingAction === "release" && "Masukkan PIN untuk melepaskan dana ke penerima"}
                 {pendingAction === "cancel" && "Masukkan PIN untuk membatalkan dan mengembalikan dana"}
-                {pendingAction === "dispute" && "Masukkan PIN untuk meminta bantuan tim mediasi"}
               </p>
 
               <input
@@ -390,19 +461,102 @@ export default function TransactionDetailPage() {
 
               <div className="mt-6 flex gap-3">
                 <button
-                  onClick={() => setShowPinModal(false)}
+                  onClick={() => { setShowPinModal(false); setError(""); }}
                   disabled={processing}
                   className="flex-1 rounded-lg border border-border py-2 font-medium transition hover:bg-card"
                 >
                   Batal
                 </button>
                 <button
-                  onClick={confirmAction}
+                  onClick={confirmActionWithPin}
                   disabled={processing || pin.length !== 6}
                   className="flex-1 rounded-lg bg-primary py-2 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
                   {processing ? "Memproses..." : "Konfirmasi"}
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Confirm Modal for dispute (no PIN required) */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-sm rounded-lg bg-card p-6">
+              <h3 className="text-lg font-bold text-foreground mb-4">
+                Minta Bantuan Tim Mediasi
+              </h3>
+              <div className="text-sm text-muted-foreground mb-4 space-y-2">
+                <p>
+                  Anda akan meminta bantuan tim mediasi untuk menyelesaikan kendala dalam transaksi ini.
+                </p>
+                <p>
+                  Tim kami akan meninjau kasus Anda dan menghubungi kedua belah pihak untuk mencari solusi terbaik.
+                </p>
+              </div>
+
+              {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowConfirmModal(false); setError(""); }}
+                  disabled={processing}
+                  className="flex-1 rounded-lg border border-border py-2 font-medium transition hover:bg-card"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={confirmActionWithoutPin}
+                  disabled={processing}
+                  className="flex-1 rounded-lg bg-blue-600 py-2 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                >
+                  {processing ? "Memproses..." : "Kirim Permintaan"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No PIN Setup Modal */}
+        {showNoPinModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-sm rounded-lg bg-card p-6">
+              <div className="flex justify-center mb-4">
+                <div className="rounded-full bg-amber-500/10 p-3">
+                  <svg className="h-8 w-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-6V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2 text-center">
+                PIN Belum Diatur
+              </h3>
+              <div className="text-sm text-muted-foreground mb-6 text-center space-y-2">
+                <p>
+                  Untuk melakukan aksi ini, Anda harus membuat PIN keamanan terlebih dahulu.
+                </p>
+                <p className="text-xs">
+                  Silakan buat PIN dengan cara:
+                </p>
+                <ol className="text-xs text-left list-decimal list-inside space-y-1">
+                  <li>Aktifkan autentikasi keamanan (2FA) di halaman pengaturan akun</li>
+                  <li>Kemudian klik tombol <strong>Kirim Uang</strong> atau <strong>Tarik Saldo</strong> untuk mengatur PIN</li>
+                </ol>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowNoPinModal(false)}
+                  className="flex-1 rounded-lg border border-border py-2 font-medium transition hover:bg-card"
+                >
+                  Tutup
+                </button>
+                <Link
+                  href="/account?setup2fa=true"
+                  className="flex-1 rounded-lg bg-primary py-2 font-semibold text-white text-center transition hover:opacity-90"
+                >
+                  Atur Keamanan
+                </Link>
               </div>
             </div>
           </div>
