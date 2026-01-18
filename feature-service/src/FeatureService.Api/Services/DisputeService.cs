@@ -9,6 +9,7 @@ public interface IDisputeService
 {
     Task<CreateDisputeResponse> CreateDisputeAsync(uint userId, CreateDisputeRequest request);
     Task<DisputeDto?> GetDisputeAsync(string disputeId, uint userId);
+    Task<DisputeDto?> GetDisputeForAdminAsync(string disputeId);
     Task<List<DisputeSummaryDto>> GetUserDisputesAsync(uint userId, DisputeStatus? status = null);
     Task<(bool success, string? error)> AddMessageAsync(string disputeId, uint userId, string username, string content, bool isAdmin = false);
     Task<(bool success, string? error)> AddEvidenceAsync(string disputeId, uint userId, AddDisputeEvidenceRequest evidence);
@@ -18,6 +19,7 @@ public interface IDisputeService
     Task<List<DisputeSummaryDto>> GetAllDisputesAsync(DisputeStatus? status = null, int limit = 50);
     Task<(bool success, string? error)> ResolveDisputeAsync(string disputeId, uint adminId, string adminUsername, ResolveDisputeRequest request);
     Task<(bool success, string? error)> UpdateStatusAsync(string disputeId, uint adminId, DisputeStatus newStatus);
+    Task<(bool success, string? error)> ContinueTransactionAsync(string disputeId, uint adminId, string adminUsername, string? note);
 }
 
 public class DisputeService : IDisputeService
@@ -405,6 +407,77 @@ public class DisputeService : IDisputeService
             .Set(d => d.UpdatedAt, DateTime.UtcNow);
 
         await _disputes.UpdateOneAsync(d => d.Id == disputeId, update);
+
+        return (true, null);
+    }
+
+    public async Task<DisputeDto?> GetDisputeForAdminAsync(string disputeId)
+    {
+        var dispute = await _disputes.Find(d => d.Id == disputeId).FirstOrDefaultAsync();
+        if (dispute == null)
+            return null;
+
+        return MapToDto(dispute);
+    }
+
+    public async Task<(bool success, string? error)> ContinueTransactionAsync(
+        string disputeId, uint adminId, string adminUsername, string? note)
+    {
+        var dispute = await _disputes.Find(d => d.Id == disputeId).FirstOrDefaultAsync();
+        if (dispute == null)
+            return (false, "Dispute tidak ditemukan");
+
+        if (dispute.Status == DisputeStatus.Resolved)
+            return (false, "Dispute sudah resolved");
+
+        if (dispute.Status == DisputeStatus.Cancelled)
+            return (false, "Dispute sudah dibatalkan");
+
+        // Get the transfer
+        var transfer = await _transfers.Find(t => t.Id == dispute.TransferId).FirstOrDefaultAsync();
+        if (transfer == null)
+            return (false, "Transfer tidak ditemukan");
+
+        // Add admin message about continuation
+        var message = new DisputeMessage
+        {
+            SenderId = adminId,
+            SenderUsername = adminUsername,
+            IsAdmin = true,
+            Content = $"[KEPUTUSAN ADMIN] Transaksi dilanjutkan. {note ?? "Dispute ditutup, transaksi mengikuti hold time normal."}",
+            SentAt = DateTime.UtcNow
+        };
+
+        // Create resolution with NoAction (funds not moved yet, will follow hold time)
+        var resolution = new DisputeResolution
+        {
+            Type = ResolutionType.NoAction,
+            RefundToSender = 0,
+            ReleaseToReceiver = 0,
+            Note = note ?? "Transaksi dilanjutkan sesuai hold time normal"
+        };
+
+        var update = Builders<Dispute>.Update
+            .Set(d => d.Status, DisputeStatus.Resolved)
+            .Set(d => d.Resolution, resolution)
+            .Set(d => d.ResolvedById, adminId)
+            .Set(d => d.ResolvedByUsername, adminUsername)
+            .Set(d => d.ResolvedAt, DateTime.UtcNow)
+            .Set(d => d.UpdatedAt, DateTime.UtcNow)
+            .Push(d => d.Messages, message);
+
+        await _disputes.UpdateOneAsync(d => d.Id == disputeId, update);
+
+        // Restore transfer to Pending status (will follow hold time)
+        var transferUpdate = Builders<Transfer>.Update
+            .Set(t => t.Status, TransferStatus.Pending)
+            .Set(t => t.UpdatedAt, DateTime.UtcNow);
+        await _transfers.UpdateOneAsync(t => t.Id == dispute.TransferId, transferUpdate);
+
+        _logger.LogInformation(
+            "Dispute continued: {DisputeId} by admin {AdminId}, transfer restored to Pending",
+            disputeId, adminId
+        );
 
         return (true, null);
     }

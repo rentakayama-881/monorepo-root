@@ -67,6 +67,7 @@ export default function AdminLayout({ children }) {
     { href: "/admin", label: "Dashboard", icon: "🏠" },
     { href: "/admin/badges", label: "Badges", icon: "🏆" },
     { href: "/admin/users", label: "Users", icon: "👥" },
+    { href: "/admin/disputes", label: "Disputes", icon: "⚖️" },
     { href: "/admin/reports", label: "Reports", icon: "🚨" },
     { href: "/admin/device-bans", label: "Device Bans", icon: "🔒" },
     { href: "/admin/warnings", label: "Warnings", icon: "⚠️" },

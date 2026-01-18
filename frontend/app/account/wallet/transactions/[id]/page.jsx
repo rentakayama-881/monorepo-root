@@ -124,17 +124,23 @@ export default function TransactionDetailPage() {
         category: disputeCategory
       };
 
-      await fetchFeatureAuth(endpoint, {
+      const result = await fetchFeatureAuth(endpoint, {
         method: "POST",
         body: JSON.stringify(body),
       });
 
       setShowConfirmModal(false);
-      setActionSuccess("Permintaan mediasi berhasil dikirim. Tim kami akan menghubungi Anda.");
       
-      // Reload transfer
-      const transferData = await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.DETAIL(transferId));
-      setTransfer(transferData.data || transferData);
+      // Redirect to dispute center
+      const disputeData = result.data || result;
+      if (disputeData?.disputeId) {
+        router.push(`/account/disputes/${disputeData.disputeId}`);
+      } else {
+        setActionSuccess("Permintaan mediasi berhasil dikirim. Tim kami akan menghubungi Anda.");
+        // Reload transfer
+        const transferData = await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.DETAIL(transferId));
+        setTransfer(transferData.data || transferData);
+      }
     } catch (e) {
       logger.error("Dispute action failed:", e);
       setError(e.message || "Gagal membuat permintaan mediasi");
