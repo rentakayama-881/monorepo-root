@@ -100,34 +100,11 @@ try
                 ValidateIssuer = false, // Go backend doesn't set issuer
                 ValidateAudience = false, // Go backend doesn't set audience
                 ValidateLifetime = true,
-                ValidateIssuerSigningKey = false, // Disable signature key validation for 'kid' issue
-                RequireSignedTokens = false, // Allow tokens without signature validation
+                ValidateIssuerSigningKey = true,
+                RequireSignedTokens = true,
                 IssuerSigningKey = signingKey,
-                SignatureValidator = (token, parameters) =>
-                {
-                    // Parse the token without validating signature
-                    var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-                    var jwtToken = handler.ReadJwtToken(token);
-                    
-                    // Manually verify the signature using HMAC-SHA256
-                    var parts = token.Split('.');
-                    if (parts.Length == 3)
-                    {
-                        var headerPayload = parts[0] + "." + parts[1];
-                        var signature = parts[2];
-                        
-                        using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(jwtSettings.Secret));
-                        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(headerPayload));
-                        var computedSignature = Microsoft.IdentityModel.Tokens.Base64UrlEncoder.Encode(computedHash);
-                        
-                        if (computedSignature != signature)
-                        {
-                            throw new SecurityTokenInvalidSignatureException("Signature validation failed");
-                        }
-                    }
-                    
-                    return jwtToken;
-                }
+                // ClockSkew to handle time differences
+                ClockSkew = TimeSpan.FromMinutes(5)
             };
             
             // Custom token validation to also support admin tokens from Go backend
