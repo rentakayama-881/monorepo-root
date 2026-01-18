@@ -86,6 +86,12 @@ next-env.d.ts
 tmp/
 temp/
 
+# ----- Sensitive config files -----
+temp_appsettings.json
+**/appsettings.*.json
+!**/appsettings.Development.json.example
+!**/appsettings.Production.json.example
+
 # ----- Debug files -----
 debug-*.sh
 *.debug
