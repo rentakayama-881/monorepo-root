@@ -107,7 +107,13 @@ func (q *EmailQueue) worker(id int) {
 func (q *EmailQueue) processJob(workerID int, job EmailJob) {
 	var err error
 	queueDuration := time.Since(job.CreatedAt)
-	log.Printf("[EmailQueue] Worker %d: Processing job for %s (queued for %v)", workerID, job.Recipient, queueDuration)
+	
+	// Log queue duration - helps identify delays
+	if queueDuration > 5*time.Second {
+		log.Printf("[EmailQueue] WARNING: Worker %d: Job for %s was queued for %v (longer than expected)", workerID, job.Recipient, queueDuration)
+	} else {
+		log.Printf("[EmailQueue] Worker %d: Processing job for %s (queued for %v)", workerID, job.Recipient, queueDuration)
+	}
 
 	for attempt := 0; attempt <= q.maxRetries; attempt++ {
 		if attempt > 0 {
@@ -128,15 +134,17 @@ func (q *EmailQueue) processJob(workerID int, job EmailJob) {
 		sendDuration := time.Since(startTime)
 
 		if err == nil {
-			log.Printf("[EmailQueue] Worker %d: Successfully sent email to %s (API call took %v)", workerID, job.Recipient, sendDuration)
+			totalDuration := time.Since(job.CreatedAt)
+			log.Printf("[EmailQueue] Worker %d: ✓ Successfully sent email to %s (API call: %v, Total: %v)", workerID, job.Recipient, sendDuration, totalDuration)
 			return
 		}
 
-		log.Printf("[EmailQueue] Worker %d: Failed to send email to %s: %v (took %v)", workerID, job.Recipient, err, sendDuration)
+		log.Printf("[EmailQueue] Worker %d: ✗ Failed to send email to %s: %v (took %v)", workerID, job.Recipient, err, sendDuration)
 	}
 
 	// All retries exhausted
-	log.Printf("[EmailQueue] Worker %d: All retries exhausted for %s", workerID, job.Recipient)
+	totalDuration := time.Since(job.CreatedAt)
+	log.Printf("[EmailQueue] Worker %d: ✗✗ All retries exhausted for %s (total time: %v)", workerID, job.Recipient, totalDuration)
 	// TODO: Add dead letter queue or alerting here
 }
 

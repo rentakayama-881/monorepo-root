@@ -57,10 +57,37 @@ This document lists all required and optional environment variables for the Alep
 
 ### Email (Resend)
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `RESEND_API_KEY` | Resend API key | `re_xxxxx` |
-| `RESEND_FROM_EMAIL` | Sender email | `noreply@alephdraad.fun` |
+| Variable | Description | Example | Required |
+|----------|-------------|---------|----------|
+| `RESEND_API_KEY` | Resend API key | `re_xxxxx` | Yes (for production) |
+| `RESEND_FROM_EMAIL` | Sender email address (must be verified in Resend) | `noreply@alephdraad.fun` | Yes (for production) |
+| `RESEND_FROM_NAME` | Sender display name (shown in email client) | `Alephdraad` | No (defaults to "Alephdraad") |
+
+#### Email Configuration Best Practices
+
+1. **Domain Verification**: Ensure your sending domain is verified in Resend dashboard
+2. **Sender Name**: Always set `RESEND_FROM_NAME` to maintain consistent branding and improve deliverability
+3. **Email Format**: System automatically formats emails as "Display Name <email@domain.com>"
+4. **Development Mode**: If `RESEND_API_KEY` is not set, emails are logged to console instead of being sent
+5. **Queue System**: Emails are sent asynchronously using a worker queue (3 workers by default)
+6. **Monitoring**: Check logs for queue delays > 5 seconds as they indicate potential issues
+
+#### Common Issues and Solutions
+
+**Issue**: Emails delayed or missing profile picture
+- **Solution**: Set `RESEND_FROM_NAME` environment variable
+- **Reason**: Without sender name, email clients may not properly display sender information
+
+**Issue**: Emails going to spam
+- **Solution**: 
+  1. Verify your domain in Resend dashboard
+  2. Set up SPF, DKIM, and DMARC records
+  3. Use a professional sender name with `RESEND_FROM_NAME`
+  4. Avoid using default Resend test email in production
+
+**Issue**: Email queue delays
+- **Solution**: Check logs for warnings about queue duration > 5s
+- **Reason**: May indicate high load or Resend API issues
 
 ### Supabase Storage
 

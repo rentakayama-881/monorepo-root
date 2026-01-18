@@ -12,6 +12,7 @@ import (
 func SendVerificationEmail(recipientEmail, verificationToken string) error {
 	apiKey := os.Getenv("RESEND_API_KEY")
 	fromEmail := os.Getenv("RESEND_FROM_EMAIL")
+	fromName := os.Getenv("RESEND_FROM_NAME")
 
 	// Fallback to dev mode if no API key configured
 	if apiKey == "" {
@@ -20,10 +21,18 @@ func SendVerificationEmail(recipientEmail, verificationToken string) error {
 		return nil
 	}
 
+	// Default sender name if not configured
+	if fromName == "" {
+		fromName = "Alephdraad"
+	}
+
 	// Default sender email if not configured
 	if fromEmail == "" {
 		fromEmail = "onboarding@resend.dev" // Resend's test email
 	}
+
+	// Format sender with display name: "Display Name <email@domain.com>"
+	formattedFrom := fmt.Sprintf("%s <%s>", fromName, fromEmail)
 
 	// Build verification link
 	frontend := os.Getenv("FRONTEND_BASE_URL")
@@ -38,10 +47,11 @@ func SendVerificationEmail(recipientEmail, verificationToken string) error {
 	// Create Resend client
 	client := resend.NewClient(apiKey)
 
-	// Send email
+	// Send email with proper sender name and reply-to
 	params := &resend.SendEmailRequest{
-		From:    fromEmail,
+		From:    formattedFrom,
 		To:      []string{recipientEmail},
+		ReplyTo: fromEmail, // Allow replies to the sender email
 		Subject: "Verifikasi Email Anda",
 		Html:    htmlBody,
 	}
@@ -52,7 +62,7 @@ func SendVerificationEmail(recipientEmail, verificationToken string) error {
 		return fmt.Errorf("gagal mengirim email verifikasi")
 	}
 
-	log.Printf("Verification email sent to %s (ID: %s)", recipientEmail, sent.Id)
+	log.Printf("Verification email sent to %s (ID: %s, From: %s)", recipientEmail, sent.Id, formattedFrom)
 	return nil
 }
 
@@ -142,6 +152,7 @@ func buildVerificationEmailHTML(verificationLink string) string {
 func SendPasswordResetEmail(recipientEmail, resetToken string) error {
 	apiKey := os.Getenv("RESEND_API_KEY")
 	fromEmail := os.Getenv("RESEND_FROM_EMAIL")
+	fromName := os.Getenv("RESEND_FROM_NAME")
 
 	frontend := os.Getenv("FRONTEND_BASE_URL")
 	if frontend == "" {
@@ -156,16 +167,25 @@ func SendPasswordResetEmail(recipientEmail, resetToken string) error {
 		return nil
 	}
 
+	// Default sender name if not configured
+	if fromName == "" {
+		fromName = "Alephdraad"
+	}
+
 	if fromEmail == "" {
 		fromEmail = "onboarding@resend.dev"
 	}
+
+	// Format sender with display name
+	formattedFrom := fmt.Sprintf("%s <%s>", fromName, fromEmail)
 
 	htmlBody := buildPasswordResetEmailHTML(resetLink)
 
 	client := resend.NewClient(apiKey)
 	params := &resend.SendEmailRequest{
-		From:    fromEmail,
+		From:    formattedFrom,
 		To:      []string{recipientEmail},
+		ReplyTo: fromEmail,
 		Subject: "Reset Password - Alephdraad",
 		Html:    htmlBody,
 	}
@@ -176,7 +196,7 @@ func SendPasswordResetEmail(recipientEmail, resetToken string) error {
 		return fmt.Errorf("gagal mengirim email reset password")
 	}
 
-	log.Printf("Password reset email sent to %s (ID: %s)", recipientEmail, sent.Id)
+	log.Printf("Password reset email sent to %s (ID: %s, From: %s)", recipientEmail, sent.Id, formattedFrom)
 	return nil
 }
 
