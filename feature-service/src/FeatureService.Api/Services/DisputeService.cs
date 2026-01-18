@@ -15,6 +15,9 @@ public interface IDisputeService
     Task<(bool success, string? error)> AddEvidenceAsync(string disputeId, uint userId, AddDisputeEvidenceRequest evidence);
     Task<(bool success, string? error)> CancelDisputeAsync(string disputeId, uint userId);
     
+    // Mutual agreement - refund only (release requires admin approval)
+    Task<(bool success, string? error)> MutualRefundAsync(string disputeId, uint userId);
+    
     // Admin functions
     Task<List<DisputeSummaryDto>> GetAllDisputesAsync(DisputeStatus? status = null, int limit = 50);
     Task<(bool success, string? error)> ResolveDisputeAsync(string disputeId, uint adminId, string adminUsername, ResolveDisputeRequest request);
@@ -479,6 +482,64 @@ public class DisputeService : IDisputeService
             disputeId, adminId
         );
 
+        return (true, null);
+    }
+
+    public async Task<(bool success, string? error)> MutualRefundAsync(string disputeId, uint userId)
+    {
+        var dispute = await _disputes.Find(d => d.Id == disputeId).FirstOrDefaultAsync();
+        if (dispute == null)
+            return (false, "Dispute tidak ditemukan");
+
+        // Only parties can do mutual refund
+        if (dispute.InitiatorId != userId && dispute.RespondentId != userId)
+            return (false, "Anda tidak memiliki akses ke dispute ini");
+
+        if (dispute.Status != DisputeStatus.Open)
+            return (false, "Dispute sudah ditutup");
+
+        // Get transfer
+        var transfer = await _transfers.Find(t => t.Id == dispute.TransferId).FirstOrDefaultAsync();
+        if (transfer == null)
+            return (false, "Transfer tidak ditemukan");
+
+        // Refund to sender
+        await _walletService.AddBalanceAsync(
+            transfer.SenderId,
+            transfer.Amount,
+            $"Refund mutual dari dispute #{disputeId.Substring(0, 8)}",
+            TransactionType.Refund,
+            transfer.Id,
+            "dispute"
+        );
+
+        // Update transfer status
+        var transferUpdate = Builders<Transfer>.Update
+            .Set(t => t.Status, TransferStatus.Cancelled)
+            .Set(t => t.CancelReason, "Mutual refund dari dispute")
+            .Set(t => t.CancelledAt, DateTime.UtcNow)
+            .Set(t => t.UpdatedAt, DateTime.UtcNow);
+        await _transfers.UpdateOneAsync(t => t.Id == transfer.Id, transferUpdate);
+
+        // Resolve dispute
+        var resolution = new DisputeResolution
+        {
+            Type = ResolutionType.RefundToBuyer,
+            RefundToSender = true,
+            ReleaseToReceiver = false,
+            Note = "Kedua pihak setuju untuk refund",
+            ResolvedAt = DateTime.UtcNow,
+            ResolvedBy = "mutual_agreement"
+        };
+
+        var disputeUpdate = Builders<Dispute>.Update
+            .Set(d => d.Status, DisputeStatus.Resolved)
+            .Set(d => d.Resolution, resolution)
+            .Set(d => d.ResolvedAt, DateTime.UtcNow)
+            .Set(d => d.UpdatedAt, DateTime.UtcNow);
+        await _disputes.UpdateOneAsync(d => d.Id == disputeId, disputeUpdate);
+
+        _logger.LogInformation("Mutual refund completed for dispute {DisputeId} by user {UserId}", disputeId, userId);
         return (true, null);
     }
 

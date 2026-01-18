@@ -202,4 +202,36 @@ public class DisputesController : ApiControllerBase
             return ApiError(500, "INTERNAL_ERROR", "Terjadi kesalahan saat membatalkan dispute");
         }
     }
+
+    /// <summary>
+    /// Mutual agreement to refund to sender (both parties can initiate)
+    /// </summary>
+    /// <remarks>
+    /// Kedua pihak (pengirim atau penerima) dapat menyetujui refund ke pengirim.
+    /// Dana akan dikembalikan ke pengirim tanpa potongan fee.
+    /// Dispute akan ditandai sebagai Resolved.
+    /// </remarks>
+    [HttpPost("{disputeId}/mutual-refund")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> MutualRefund(string disputeId)
+    {
+        var userId = GetUserId();
+        if (userId == 0)
+            return ApiUnauthorized("UNAUTHORIZED", "User tidak terautentikasi");
+
+        try
+        {
+            var (success, error) = await _disputeService.MutualRefundAsync(disputeId, userId);
+            if (!success)
+                return ApiBadRequest("REFUND_FAILED", error ?? "Gagal melakukan refund");
+
+            return ApiOk(new { refunded = true }, "Dana berhasil dikembalikan ke pengirim");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error mutual refund for dispute {DisputeId}", disputeId);
+            return ApiError(500, "INTERNAL_ERROR", "Terjadi kesalahan");
+        }
+    }
 }
