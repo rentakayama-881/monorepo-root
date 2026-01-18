@@ -524,12 +524,10 @@ public class DisputeService : IDisputeService
         // Resolve dispute
         var resolution = new DisputeResolution
         {
-            Type = ResolutionType.RefundToBuyer,
-            RefundToSender = true,
-            ReleaseToReceiver = false,
-            Note = "Kedua pihak setuju untuk refund",
-            ResolvedAt = DateTime.UtcNow,
-            ResolvedBy = "mutual_agreement"
+            Type = ResolutionType.FullRefundToSender,
+            RefundToSender = transfer.Amount,
+            ReleaseToReceiver = 0,
+            Note = "Kedua pihak setuju untuk refund"
         };
 
         var disputeUpdate = Builders<Dispute>.Update
