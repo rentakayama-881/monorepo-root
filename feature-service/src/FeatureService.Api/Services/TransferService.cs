@@ -465,8 +465,10 @@ public class TransferService : ITransferService
         t.Code,
         t.SenderId,
         t.SenderUsername,
+        null, // SenderAvatarUrl - can be fetched separately if needed
         t.ReceiverId,
         t.ReceiverUsername,
+        null, // ReceiverAvatarUrl - can be fetched separately if needed
         t.Amount,
         t.Message,
         t.Status.ToString(),
