@@ -85,6 +85,9 @@ try
         });
     });
 
+    // Enable PII logging for debugging JWT issues (remove in production)
+    Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
+
     // Create the signing key once for reuse
     var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
     {
@@ -95,8 +98,9 @@ try
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-            // Use the older JwtSecurityTokenHandler instead of JsonWebTokenHandler
-            options.UseSecurityTokenValidators = true;
+            // Don't use the older validator - use the default JsonWebTokenHandler
+            // but configure it properly
+            options.UseSecurityTokenValidators = false;
             
             options.TokenValidationParameters = new TokenValidationParameters
             {
@@ -106,12 +110,8 @@ try
                 ValidateIssuerSigningKey = true,
                 RequireSignedTokens = true,
                 IssuerSigningKey = signingKey,
-                // Allow tokens without kid header by using key resolver
-                IssuerSigningKeyResolver = (token, securityToken, kid, parameters) =>
-                {
-                    // Always return our key regardless of kid value
-                    return new[] { signingKey };
-                },
+                IssuerSigningKeys = new[] { signingKey }, // Provide as collection too
+                TryAllIssuerSigningKeys = true, // Try all keys regardless of kid
                 // ClockSkew to handle time differences
                 ClockSkew = TimeSpan.FromMinutes(5)
             };
