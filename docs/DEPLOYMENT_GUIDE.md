@@ -41,7 +41,7 @@ git pull
 
 # 3. Build binary baru
 cd backend
-/usr/local/go/bin/go build -o go-app .
+/usr/local/go/bin/go build -o app .
 
 # 4. Restart service (perlu password sudo)
 sudo systemctl restart backend
@@ -53,7 +53,7 @@ sudo systemctl status backend
 ### Command Singkat (One-liner)
 
 ```bash
-ssh deploy@72.62.124.23 "cd ~/monorepo-root && git pull && cd backend && /usr/local/go/bin/go build -o go-app . && sudo systemctl restart backend"
+ssh deploy@72.62.124.23 "cd ~/monorepo-root && git pull && cd backend && /usr/local/go/bin/go build -o app . && sudo systemctl restart backend"
 ```
 
 ### Lokasi Penting
@@ -61,7 +61,7 @@ ssh deploy@72.62.124.23 "cd ~/monorepo-root && git pull && cd backend && /usr/lo
 | Item | Path |
 |------|------|
 | Source code | `/home/deploy/monorepo-root/backend/` |
-| Binary | `/home/deploy/monorepo-root/backend/go-app` |
+| Binary | `/home/deploy/monorepo-root/backend/app` |
 | Service file | `/etc/systemd/system/backend.service` |
 | Logs | `sudo journalctl -u backend -f` |
 
