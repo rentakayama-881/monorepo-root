@@ -274,12 +274,12 @@ export default function AdminDisputeDetailPage() {
             <h3 className="font-medium text-foreground mb-2">Pihak Terlibat</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Pembeli:</span>
-                <span className="font-medium text-foreground">@{dispute.initiatorUsername}</span>
+                <span className="text-muted-foreground">Pembeli (Pengirim):</span>
+                <span className="font-medium text-foreground">@{dispute.senderUsername || dispute.initiatorUsername}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Penjual:</span>
-                <span className="font-medium text-foreground">@{dispute.respondentUsername}</span>
+                <span className="text-muted-foreground">Penjual (Penerima):</span>
+                <span className="font-medium text-foreground">@{dispute.receiverUsername || dispute.respondentUsername}</span>
               </div>
             </div>
 
@@ -398,7 +398,11 @@ export default function AdminDisputeDetailPage() {
 
               {dispute.messages?.map((msg) => {
                 const isAdmin = msg.isAdmin;
-                const isBuyer = msg.senderUsername === dispute.initiatorUsername;
+                // Use senderUsername (transfer sender = pembeli) for role determination
+                const buyerUsername = dispute.senderUsername || dispute.initiatorUsername;
+                const sellerUsername = dispute.receiverUsername || dispute.respondentUsername;
+                const isBuyer = msg.senderUsername === buyerUsername;
+                const isSeller = msg.senderUsername === sellerUsername;
 
                 return (
                   <div key={msg.id} className={`flex ${isAdmin ? "justify-center" : isBuyer ? "justify-start" : "justify-end"}`}>

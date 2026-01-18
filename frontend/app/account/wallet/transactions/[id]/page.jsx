@@ -449,8 +449,7 @@ export default function TransactionDetailPage() {
                         <strong className="text-foreground">Info untuk Penerima:</strong>
                       </p>
                       <p>
-                        Sebagai penerima, dana akan otomatis masuk ke saldo Anda setelah periode penahanan berakhir. 
-                        Jika ada kendala dengan transaksi ini, Anda dapat meminta bantuan tim mediasi.
+                        Sebagai penerima, dana akan otomatis masuk ke saldo Anda setelah periode penahanan berakhir.
                       </p>
                     </div>
                     <button
@@ -461,12 +460,15 @@ export default function TransactionDetailPage() {
                     </button>
                   </>
                 )}
-                <button
-                  onClick={() => handleAction("dispute")}
-                  className="w-full rounded-lg border border-blue-500/30 py-3 font-semibold text-blue-600 transition hover:bg-blue-500/10"
-                >
-                  Minta Bantuan Tim Mediasi
-                </button>
+                {/* Only sender can open dispute/mediation */}
+                {isSender && (
+                  <button
+                    onClick={() => handleAction("dispute")}
+                    className="w-full rounded-lg border border-blue-500/30 py-3 font-semibold text-blue-600 transition hover:bg-blue-500/10"
+                  >
+                    Minta Bantuan Tim Mediasi
+                  </button>
+                )}
               </div>
             )}
 

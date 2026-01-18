@@ -75,9 +75,10 @@ public class DisputeService : IDisputeService
         if (transfer == null)
             return new CreateDisputeResponse(false, null, "Transfer tidak ditemukan");
 
-        // Validate user is party to transfer
-        if (transfer.SenderId != userId && transfer.ReceiverId != userId)
-            return new CreateDisputeResponse(false, null, "Anda bukan pihak dalam transfer ini");
+        // ONLY SENDER (pembeli/pembayar) can open dispute
+        // Receiver cannot open dispute - they should defend themselves if sender opens one
+        if (transfer.SenderId != userId)
+            return new CreateDisputeResponse(false, null, "Hanya pengirim dana yang dapat membuka mediasi");
 
         // Check transfer status - can only dispute pending or released transfers
         if (transfer.Status != TransferStatus.Pending && transfer.Status != TransferStatus.Released)
@@ -88,12 +89,11 @@ public class DisputeService : IDisputeService
         if (existingDispute != null)
             return new CreateDisputeResponse(false, null, "Dispute sudah ada untuk transfer ini");
 
-        // Determine initiator and respondent
-        bool isSender = transfer.SenderId == userId;
-        var initiatorId = userId;
-        var initiatorUsername = isSender ? transfer.SenderUsername : transfer.ReceiverUsername;
-        var respondentId = isSender ? transfer.ReceiverId : transfer.SenderId;
-        var respondentUsername = isSender ? transfer.ReceiverUsername : transfer.SenderUsername;
+        // Sender is always initiator, receiver is always respondent
+        var initiatorId = transfer.SenderId;
+        var initiatorUsername = transfer.SenderUsername;
+        var respondentId = transfer.ReceiverId;
+        var respondentUsername = transfer.ReceiverUsername;
 
         var dispute = new Dispute
         {
@@ -102,6 +102,11 @@ public class DisputeService : IDisputeService
             InitiatorUsername = initiatorUsername,
             RespondentId = respondentId,
             RespondentUsername = respondentUsername,
+            // Always store original transfer sender/receiver
+            SenderId = transfer.SenderId,
+            SenderUsername = transfer.SenderUsername,
+            ReceiverId = transfer.ReceiverId,
+            ReceiverUsername = transfer.ReceiverUsername,
             Reason = request.Reason,
             Category = request.Category,
             Status = DisputeStatus.Open,
@@ -491,8 +496,9 @@ public class DisputeService : IDisputeService
         if (dispute == null)
             return (false, "Dispute tidak ditemukan");
 
-        // Only respondent (receiver/the one with escrowed funds) can agree to refund
-        if (dispute.RespondentId != userId)
+        // Only RECEIVER (penerima/penjual, the one with escrowed funds) can agree to refund
+        // Use ReceiverId from the dispute, NOT RespondentId
+        if (dispute.ReceiverId != userId)
             return (false, "Hanya penerima yang dapat menyetujui refund");
 
         if (dispute.Status != DisputeStatus.Open)
@@ -552,6 +558,10 @@ public class DisputeService : IDisputeService
         d.InitiatorUsername,
         d.RespondentId,
         d.RespondentUsername,
+        d.SenderId,
+        d.SenderUsername,
+        d.ReceiverId,
+        d.ReceiverUsername,
         d.Reason,
         d.Category.ToString(),
         d.Status.ToString(),

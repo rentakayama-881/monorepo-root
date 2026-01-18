@@ -58,6 +58,11 @@ public record DisputeDto(
     string InitiatorUsername,
     uint RespondentId,
     string RespondentUsername,
+    // Transfer party info - who is sender/receiver
+    uint SenderId,
+    string SenderUsername,
+    uint ReceiverId,
+    string ReceiverUsername,
     string Reason,
     string Category,
     string Status,

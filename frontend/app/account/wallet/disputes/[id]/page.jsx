@@ -202,7 +202,10 @@ export default function DisputeDetailPage() {
   }
 
   const phaseInfo = getPhaseInfo(dispute.phase);
-  const isSender = currentUser?.id === dispute.initiatorId || currentUser?.username === dispute.initiatorUsername;
+  // Use senderId/receiverId from transfer, NOT initiatorId
+  // This ensures logic is based on who SENT money, not who opened dispute
+  const isSender = currentUser?.id === dispute.senderId || currentUser?.username === dispute.senderUsername;
+  const isReceiver = currentUser?.id === dispute.receiverId || currentUser?.username === dispute.receiverUsername;
   const isOpen = dispute.status?.toLowerCase() === "open";
 
   return (
@@ -407,19 +410,19 @@ export default function DisputeDetailPage() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Jumlah</span>
                     <span className="font-medium text-foreground">
-                      Rp {dispute.transfer?.amount?.toLocaleString("id-ID") || 0}
+                      Rp {dispute.amount?.toLocaleString("id-ID") || 0}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Pengirim</span>
+                    <span className="text-muted-foreground">Pembeli (Pengirim Dana)</span>
                     <span className="font-medium text-foreground">
-                      {dispute.transfer?.sender?.username || "User"}
+                      @{dispute.senderUsername}{isSender && " (Anda)"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Penerima</span>
+                    <span className="text-muted-foreground">Penjual (Penerima Dana)</span>
                     <span className="font-medium text-foreground">
-                      {dispute.transfer?.receiver?.username || "User"}
+                      @{dispute.receiverUsername}{isReceiver && " (Anda)"}
                     </span>
                   </div>
                 </div>
@@ -430,8 +433,8 @@ export default function DisputeDetailPage() {
                 <div className="rounded-lg border border-border bg-card p-4">
                   <h3 className="font-semibold text-foreground mb-4">Aksi</h3>
                   <div className="space-y-3">
-                    {/* Refund - Only respondent (receiver) can agree */}
-                    {!isSender ? (
+                    {/* Refund - Only receiver (penjual) can agree to refund */}
+                    {isReceiver ? (
                       <button
                         onClick={() => handleMutualAction("refund")}
                         disabled={processing}
@@ -447,15 +450,15 @@ export default function DisputeDetailPage() {
                     )}
 
                     {/* Info for receiver about defense */}
-                    {!isSender && (
+                    {isReceiver && (
                       <div className="text-xs text-muted-foreground bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
                         <p className="font-medium text-blue-600 mb-1">Info</p>
                         <p>Jika Anda ingin melanjutkan transaksi, sampaikan pembelaan Anda di chat. Admin akan memutuskan berdasarkan diskusi.</p>
                       </div>
                     )}
 
-                    {/* Escalate */}
-                    {dispute.phase !== "admin_review" && (
+                    {/* Escalate - only for sender (who opened dispute) */}
+                    {isSender && dispute.phase !== "admin_review" && (
                       <button
                         onClick={escalateDispute}
                         disabled={processing}

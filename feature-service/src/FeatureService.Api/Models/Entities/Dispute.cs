@@ -27,6 +27,19 @@ public class Dispute
     [BsonElement("respondentUsername")]
     public string RespondentUsername { get; set; } = null!;
 
+    // Transfer party info - always track original sender/receiver
+    [BsonElement("senderId")]
+    public uint SenderId { get; set; }
+
+    [BsonElement("senderUsername")]
+    public string SenderUsername { get; set; } = null!;
+
+    [BsonElement("receiverId")]
+    public uint ReceiverId { get; set; }
+
+    [BsonElement("receiverUsername")]
+    public string ReceiverUsername { get; set; } = null!;
+
     [BsonElement("reason")]
     public string Reason { get; set; } = null!;
 
