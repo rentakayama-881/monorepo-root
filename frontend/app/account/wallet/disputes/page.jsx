@@ -36,6 +36,7 @@ export default function DisputesPage() {
   }, [router]);
 
   const getStatusBadge = (status, phase) => {
+    const normalizedStatus = status?.toLowerCase() || "open";
     const phaseStyles = {
       negotiation: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
       evidence: "bg-orange-500/10 text-orange-600 border-orange-500/30",
@@ -51,16 +52,18 @@ export default function DisputesPage() {
       evidence: "Bukti",
       admin_review: "Admin Review",
     };
-    const label = status === "open" ? phaseLabels[phase] || "Open" : status === "resolved" ? "Selesai" : "Ditutup";
+    const label = normalizedStatus === "open" ? phaseLabels[phase] || "Aktif" : normalizedStatus === "resolved" ? "Selesai" : "Ditutup";
     return (
-      <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${statusStyles[status] || statusStyles.open}`}>
+      <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${statusStyles[normalizedStatus] || statusStyles.open}`}>
         {label}
       </span>
     );
   };
 
   const formatDate = (dateStr) => {
+    if (!dateStr) return "Tanggal tidak tersedia";
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "Tanggal tidak valid";
     return date.toLocaleDateString("id-ID", {
       day: "numeric",
       month: "short",
@@ -68,8 +71,9 @@ export default function DisputesPage() {
     });
   };
 
-  const activeDisputes = disputes.filter((d) => d.status === "open");
-  const resolvedDisputes = disputes.filter((d) => d.status !== "open");
+  // Filter uses case-insensitive comparison
+  const activeDisputes = disputes.filter((d) => d.status?.toLowerCase() === "open");
+  const resolvedDisputes = disputes.filter((d) => d.status?.toLowerCase() !== "open");
 
   const displayDisputes = activeTab === "active" ? activeDisputes : resolvedDisputes;
 
@@ -157,10 +161,10 @@ export default function DisputesPage() {
                       </div>
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span>
-                          Rp {dispute.transfer?.amount?.toLocaleString("id-ID") || 0}
+                          Rp {dispute.amount?.toLocaleString("id-ID") || 0}
                         </span>
                         <span>•</span>
-                        <span>{formatDate(dispute.created_at)}</span>
+                        <span>{formatDate(dispute.createdAt)}</span>
                       </div>
                     </div>
                     <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,13 +173,13 @@ export default function DisputesPage() {
                   </div>
 
                   {/* Deadline warning */}
-                  {dispute.status === "open" && dispute.phase_deadline && (
+                  {dispute.status?.toLowerCase() === "open" && dispute.phaseDeadline && (
                     <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
                       <svg className="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span className="text-xs text-amber-600">
-                        Batas waktu: {formatDate(dispute.phase_deadline)}
+                        Batas waktu: {formatDate(dispute.phaseDeadline)}
                       </span>
                     </div>
                   )}
