@@ -7,6 +7,15 @@ import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
 
+// Dispute categories matching backend
+const DISPUTE_CATEGORIES = [
+  { value: "ItemNotReceived", label: "Barang/Jasa Tidak Diterima" },
+  { value: "ItemNotAsDescribed", label: "Barang/Jasa Tidak Sesuai Deskripsi" },
+  { value: "Fraud", label: "Dugaan Penipuan" },
+  { value: "SellerNotResponding", label: "Penjual Tidak Merespons" },
+  { value: "Other", label: "Alasan Lainnya" },
+];
+
 export default function TransactionDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -24,6 +33,8 @@ export default function TransactionDetailPage() {
   const [actionSuccess, setActionSuccess] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [wallet, setWallet] = useState(null);
+  const [disputeCategory, setDisputeCategory] = useState("");
+  const [disputeReason, setDisputeReason] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -72,8 +83,10 @@ export default function TransactionDetailPage() {
     setError("");
     setActionSuccess("");
 
-    // Dispute doesn't require PIN
+    // Dispute doesn't require PIN but needs category and reason
     if (action === "dispute") {
+      setDisputeCategory("");
+      setDisputeReason("");
       setShowConfirmModal(true);
       return;
     }
@@ -90,12 +103,26 @@ export default function TransactionDetailPage() {
 
   // Confirm action without PIN (dispute)
   const confirmActionWithoutPin = async () => {
+    // Validate dispute form
+    if (!disputeCategory) {
+      setError("Pilih kategori masalah");
+      return;
+    }
+    if (!disputeReason || disputeReason.length < 20) {
+      setError("Jelaskan masalah minimal 20 karakter");
+      return;
+    }
+
     setProcessing(true);
     setError("");
 
     try {
       const endpoint = FEATURE_ENDPOINTS.DISPUTES.CREATE;
-      const body = { transferId: transferId, reason: "Memerlukan penyelesaian oleh tim mediasi" };
+      const body = { 
+        transferId: transferId, 
+        reason: disputeReason,
+        category: disputeCategory
+      };
 
       await fetchFeatureAuth(endpoint, {
         method: "POST",
@@ -481,18 +508,51 @@ export default function TransactionDetailPage() {
 
         {/* Confirm Modal for dispute (no PIN required) */}
         {showConfirmModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-sm rounded-lg bg-card p-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+            <div className="w-full max-w-md rounded-lg bg-card p-6 my-8">
               <h3 className="text-lg font-bold text-foreground mb-4">
                 Minta Bantuan Tim Mediasi
               </h3>
-              <div className="text-sm text-muted-foreground mb-4 space-y-2">
+              <div className="text-sm text-muted-foreground mb-4">
                 <p>
-                  Anda akan meminta bantuan tim mediasi untuk menyelesaikan kendala dalam transaksi ini.
+                  Jelaskan masalah yang Anda alami agar tim kami dapat membantu menyelesaikannya.
                 </p>
-                <p>
-                  Tim kami akan meninjau kasus Anda dan menghubungi kedua belah pihak untuk mencari solusi terbaik.
-                </p>
+              </div>
+
+              {/* Category Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Kategori Masalah <span className="text-destructive">*</span>
+                </label>
+                <select
+                  value={disputeCategory}
+                  onChange={(e) => setDisputeCategory(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-foreground focus:outline-none focus:border-primary"
+                >
+                  <option value="">-- Pilih Kategori --</option>
+                  {DISPUTE_CATEGORIES.map((cat) => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Reason Textarea */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Jelaskan Masalah <span className="text-destructive">*</span>
+                </label>
+                <textarea
+                  value={disputeReason}
+                  onChange={(e) => setDisputeReason(e.target.value)}
+                  placeholder="Jelaskan masalah yang Anda alami secara detail (minimal 20 karakter)..."
+                  rows={4}
+                  className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-foreground focus:outline-none focus:border-primary resize-none"
+                />
+                <div className="text-xs text-muted-foreground mt-1">
+                  {disputeReason.length}/20 karakter minimum
+                </div>
               </div>
 
               {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
@@ -507,7 +567,7 @@ export default function TransactionDetailPage() {
                 </button>
                 <button
                   onClick={confirmActionWithoutPin}
-                  disabled={processing}
+                  disabled={processing || !disputeCategory || disputeReason.length < 20}
                   className="flex-1 rounded-lg bg-blue-600 py-2 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
                   {processing ? "Memproses..." : "Kirim Permintaan"}
