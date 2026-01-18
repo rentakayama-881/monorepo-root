@@ -491,9 +491,9 @@ public class DisputeService : IDisputeService
         if (dispute == null)
             return (false, "Dispute tidak ditemukan");
 
-        // Only parties can do mutual refund
-        if (dispute.InitiatorId != userId && dispute.RespondentId != userId)
-            return (false, "Anda tidak memiliki akses ke dispute ini");
+        // Only respondent (receiver/the one with escrowed funds) can agree to refund
+        if (dispute.RespondentId != userId)
+            return (false, "Hanya penerima yang dapat menyetujui refund");
 
         if (dispute.Status != DisputeStatus.Open)
             return (false, "Dispute sudah ditutup");

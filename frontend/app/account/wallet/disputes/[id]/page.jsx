@@ -430,16 +430,23 @@ export default function DisputeDetailPage() {
                 <div className="rounded-lg border border-border bg-card p-4">
                   <h3 className="font-semibold text-foreground mb-4">Aksi</h3>
                   <div className="space-y-3">
-                    {/* Refund - Both parties can agree */}
-                    <button
-                      onClick={() => handleMutualAction("refund")}
-                      disabled={processing}
-                      className="w-full rounded-lg border border-border py-2 text-sm font-medium transition hover:bg-background disabled:opacity-50"
-                    >
-                      Setuju Refund ke Pengirim
-                    </button>
+                    {/* Refund - Only respondent (receiver) can agree */}
+                    {!isSender ? (
+                      <button
+                        onClick={() => handleMutualAction("refund")}
+                        disabled={processing}
+                        className="w-full rounded-lg border border-border py-2 text-sm font-medium transition hover:bg-background disabled:opacity-50"
+                      >
+                        Setuju Refund ke Pengirim
+                      </button>
+                    ) : (
+                      <div className="text-xs text-muted-foreground bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3">
+                        <p className="font-medium text-yellow-600 mb-1">Menunggu Respon</p>
+                        <p>Anda telah membuka dispute. Tunggu respon dari penerima atau eskalasi ke admin jika diperlukan.</p>
+                      </div>
+                    )}
 
-                    {/* Info for receiver */}
+                    {/* Info for receiver about defense */}
                     {!isSender && (
                       <div className="text-xs text-muted-foreground bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
                         <p className="font-medium text-blue-600 mb-1">Info</p>
