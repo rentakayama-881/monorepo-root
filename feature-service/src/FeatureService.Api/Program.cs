@@ -86,7 +86,10 @@ try
     });
 
     // Create the signing key once for reuse
-    var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret));
+    var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
+    {
+        KeyId = "default" // Set a default KeyId so tokens without kid can still be validated
+    };
 
     // Configure JWT Authentication with support for both user and admin tokens
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -103,6 +106,12 @@ try
                 ValidateIssuerSigningKey = true,
                 RequireSignedTokens = true,
                 IssuerSigningKey = signingKey,
+                // Allow tokens without kid header by using key resolver
+                IssuerSigningKeyResolver = (token, securityToken, kid, parameters) =>
+                {
+                    // Always return our key regardless of kid value
+                    return new[] { signingKey };
+                },
                 // ClockSkew to handle time differences
                 ClockSkew = TimeSpan.FromMinutes(5)
             };
