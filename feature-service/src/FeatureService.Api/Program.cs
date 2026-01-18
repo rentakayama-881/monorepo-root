@@ -87,20 +87,20 @@ try
 
     // Enable PII logging for debugging JWT issues (remove in production)
     Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
+    Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact = true;
 
     // Create the signing key once for reuse
     var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
     {
-        KeyId = "default" // Set a default KeyId so tokens without kid can still be validated
+        KeyId = "go-backend" // Set a KeyId
     };
 
     // Configure JWT Authentication with support for both user and admin tokens
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-            // Don't use the older validator - use the default JsonWebTokenHandler
-            // but configure it properly
-            options.UseSecurityTokenValidators = false;
+            // Use the older JwtSecurityTokenHandler which handles missing kid better
+            options.UseSecurityTokenValidators = true;
             
             options.TokenValidationParameters = new TokenValidationParameters
             {
@@ -109,9 +109,30 @@ try
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
                 RequireSignedTokens = true,
-                IssuerSigningKey = signingKey,
-                IssuerSigningKeys = new[] { signingKey }, // Provide as collection too
-                TryAllIssuerSigningKeys = true, // Try all keys regardless of kid
+                // Use a custom signature validator that bypasses kid matching
+                SignatureValidator = (token, parameters) =>
+                {
+                    var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                    var jwtToken = handler.ReadJwtToken(token);
+                    
+                    // Manually compute and verify HMAC-SHA256 signature
+                    var parts = token.Split('.');
+                    if (parts.Length != 3)
+                        throw new SecurityTokenInvalidSignatureException("Invalid token format");
+                    
+                    var headerAndPayload = $"{parts[0]}.{parts[1]}";
+                    var tokenSignature = parts[2];
+                    
+                    using var hmac = new System.Security.Cryptography.HMACSHA256(
+                        Encoding.UTF8.GetBytes(jwtSettings.Secret));
+                    var hash = hmac.ComputeHash(Encoding.ASCII.GetBytes(headerAndPayload));
+                    var computedSignature = Base64UrlEncoder.Encode(hash);
+                    
+                    if (!string.Equals(computedSignature, tokenSignature, StringComparison.Ordinal))
+                        throw new SecurityTokenInvalidSignatureException("Signature mismatch");
+                    
+                    return jwtToken;
+                },
                 // ClockSkew to handle time differences
                 ClockSkew = TimeSpan.FromMinutes(5)
             };
