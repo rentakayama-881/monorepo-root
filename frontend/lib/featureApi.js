@@ -108,6 +108,8 @@ export const FEATURE_ENDPOINTS = {
     CREATE: "/api/v1/disputes",
     DETAIL: (id) => `/api/v1/disputes/${id}`,
     RESPOND: (id) => `/api/v1/disputes/${id}/respond`,
+    MESSAGES: (id) => `/api/v1/disputes/${id}/messages`,
+    EVIDENCE: (id) => `/api/v1/disputes/${id}/evidence`,
   },
 
   // Admin Moderation

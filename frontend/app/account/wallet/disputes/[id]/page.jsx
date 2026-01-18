@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { getApiBase } from "@/lib/api";
+import { fetchFeatureAuth, getFeatureApiBase, FEATURE_ENDPOINTS } from "@/lib/featureApi";
+import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
 
@@ -37,28 +38,18 @@ export default function DisputeDetailPage() {
 
       // Fetch current user from API
       try {
-        const userRes = await fetch(`${getApiBase()}/api/user/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          setCurrentUser(userData);
-        }
+        const userData = await fetchJsonAuth("/api/user/me");
+        setCurrentUser(userData);
       } catch (e) {
         logger.error("Failed to load user:", e);
       }
 
       try {
-        const res = await fetch(`${getApiBase()}/api/disputes/${disputeId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          setDispute(await res.json());
-        } else {
-          setError("Dispute tidak ditemukan");
-        }
+        const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.DETAIL(disputeId));
+        setDispute(response?.data || response);
       } catch (e) {
-        setError("Gagal memuat data");
+        logger.error("Failed to load dispute:", e);
+        setError("Dispute tidak ditemukan");
       }
       setLoading(false);
     }
@@ -71,12 +62,11 @@ export default function DisputeDetailPage() {
   }, [dispute?.messages]);
 
   const refreshDispute = async () => {
-    const token = getToken();
-    const res = await fetch(`${getApiBase()}/api/disputes/${disputeId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
-      setDispute(await res.json());
+    try {
+      const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.DETAIL(disputeId));
+      setDispute(response?.data || response);
+    } catch (e) {
+      logger.error("Failed to refresh dispute:", e);
     }
   };
 
@@ -85,22 +75,15 @@ export default function DisputeDetailPage() {
     if (!message.trim()) return;
 
     setSendingMessage(true);
-    const token = getToken();
 
     try {
-      const res = await fetch(`${getApiBase()}/api/disputes/${disputeId}/messages`, {
+      await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.MESSAGES(disputeId), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ message: message.trim() }),
+        body: JSON.stringify({ content: message.trim() }),
       });
 
-      if (res.ok) {
-        setMessage("");
-        await refreshDispute();
-      }
+      setMessage("");
+      await refreshDispute();
     } catch (e) {
       logger.error("Failed to send message:", e);
     }
@@ -112,27 +95,20 @@ export default function DisputeDetailPage() {
     if (!evidenceDescription.trim()) return;
 
     setProcessing(true);
-    const token = getToken();
 
     try {
-      const res = await fetch(`${getApiBase()}/api/disputes/${disputeId}/evidence`, {
+      await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.EVIDENCE(disputeId), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({
           description: evidenceDescription.trim(),
-          file_url: evidenceUrl.trim() || null,
+          fileUrl: evidenceUrl.trim() || null,
         }),
       });
 
-      if (res.ok) {
-        setEvidenceDescription("");
-        setEvidenceUrl("");
-        setShowEvidenceForm(false);
-        await refreshDispute();
-      }
+      setEvidenceDescription("");
+      setEvidenceUrl("");
+      setShowEvidenceForm(false);
+      await refreshDispute();
     } catch (e) {
       logger.error("Failed to add evidence:", e);
     }
@@ -141,49 +117,30 @@ export default function DisputeDetailPage() {
 
   const handleMutualAction = async (action) => {
     setProcessing(true);
-    const token = getToken();
 
     try {
-      const url =
-        action === "release"
-          ? `${getApiBase()}/api/disputes/${disputeId}/mutual-release`
-          : `${getApiBase()}/api/disputes/${disputeId}/mutual-refund`;
+      const endpoint = action === "release"
+        ? `/api/v1/disputes/${disputeId}/mutual-release`
+        : `/api/v1/disputes/${disputeId}/mutual-refund`;
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        await refreshDispute();
-      } else {
-        const data = await res.json();
-        setError(data.error || "Gagal memproses");
-      }
+      await fetchFeatureAuth(endpoint, { method: "POST" });
+      await refreshDispute();
     } catch (e) {
-      setError("Terjadi kesalahan");
+      setError(e.message || "Terjadi kesalahan");
     }
     setProcessing(false);
   };
 
   const escalateDispute = async () => {
     setProcessing(true);
-    const token = getToken();
 
     try {
-      const url =
-        dispute.phase === "negotiation"
-          ? `${getApiBase()}/api/disputes/${disputeId}/escalate-evidence`
-          : `${getApiBase()}/api/disputes/${disputeId}/escalate-admin`;
+      const endpoint = dispute.phase === "negotiation"
+        ? `/api/v1/disputes/${disputeId}/escalate-evidence`
+        : `/api/v1/disputes/${disputeId}/escalate-admin`;
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        await refreshDispute();
-      }
+      await fetchFeatureAuth(endpoint, { method: "POST" });
+      await refreshDispute();
     } catch (e) {
       logger.error("Failed to escalate:", e);
     }
@@ -245,8 +202,8 @@ export default function DisputeDetailPage() {
   }
 
   const phaseInfo = getPhaseInfo(dispute.phase);
-  const isSender = currentUser?.id === dispute.transfer?.sender_id;
-  const isOpen = dispute.status === "open";
+  const isSender = currentUser?.id === dispute.initiatorId || currentUser?.username === dispute.initiatorUsername;
+  const isOpen = dispute.status?.toLowerCase() === "open";
 
   return (
     <main className="min-h-screen bg-background pt-16">
@@ -279,9 +236,9 @@ export default function DisputeDetailPage() {
                   <div className="text-sm text-muted-foreground">
                     {phaseInfo.description}
                   </div>
-                  {dispute.phase_deadline && (
+                  {dispute.phaseDeadline && (
                     <div className="mt-2 text-xs text-muted-foreground">
-                      Batas waktu: {formatDate(dispute.phase_deadline)}
+                      Batas waktu: {formatDate(dispute.phaseDeadline)}
                     </div>
                   )}
                 </div>
@@ -301,23 +258,23 @@ export default function DisputeDetailPage() {
                     dispute.messages?.map((msg) => (
                       <div
                         key={msg.id}
-                        className={`flex ${msg.user_id === currentUser?.id ? "justify-end" : "justify-start"}`}
+                        className={`flex ${msg.senderId === currentUser?.id || msg.senderUsername === currentUser?.username ? "justify-end" : "justify-start"}`}
                       >
                         <div
                           className={`max-w-xs rounded-lg p-3 ${
-                            msg.is_admin
+                            msg.isAdmin
                               ? "bg-purple-500/10 border border-purple-500/30"
-                              : msg.user_id === currentUser?.id
+                              : msg.senderId === currentUser?.id || msg.senderUsername === currentUser?.username
                               ? "bg-primary text-white"
                               : "bg-background border border-border"
                           }`}
                         >
                           <div className="text-xs font-medium mb-1">
-                            {msg.is_admin ? "Admin" : msg.user?.username || "User"}
+                            {msg.isAdmin ? "Admin" : msg.senderUsername || "User"}
                           </div>
-                          <div className="text-sm">{msg.message}</div>
-                          <div className={`text-xs mt-1 ${msg.user_id === currentUser?.id ? "text-white/70" : "text-muted-foreground"}`}>
-                            {formatDate(msg.created_at)}
+                          <div className="text-sm">{msg.content || msg.message}</div>
+                          <div className={`text-xs mt-1 ${msg.senderId === currentUser?.id || msg.senderUsername === currentUser?.username ? "text-white/70" : "text-muted-foreground"}`}>
+                            {formatDate(msg.createdAt || msg.created_at)}
                           </div>
                         </div>
                       </div>
