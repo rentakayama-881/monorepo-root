@@ -125,11 +125,15 @@ try
                     
                     using var hmac = new System.Security.Cryptography.HMACSHA256(
                         Encoding.UTF8.GetBytes(jwtSettings.Secret));
-                    var hash = hmac.ComputeHash(Encoding.ASCII.GetBytes(headerAndPayload));
+                    var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(headerAndPayload));
                     var computedSignature = Base64UrlEncoder.Encode(hash);
                     
+                    // Log for debugging
+                    Console.WriteLine($"[JWT DEBUG] Token sig: {tokenSignature.Substring(0, Math.Min(20, tokenSignature.Length))}...");
+                    Console.WriteLine($"[JWT DEBUG] Computed:  {computedSignature.Substring(0, Math.Min(20, computedSignature.Length))}...");
+                    
                     if (!string.Equals(computedSignature, tokenSignature, StringComparison.Ordinal))
-                        throw new SecurityTokenInvalidSignatureException("Signature mismatch");
+                        throw new SecurityTokenInvalidSignatureException($"Signature mismatch: expected {computedSignature.Substring(0, 20)}... got {tokenSignature.Substring(0, 20)}...");
                     
                     return jwtToken;
                 },
