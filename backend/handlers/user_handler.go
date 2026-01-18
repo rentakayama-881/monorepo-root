@@ -34,6 +34,7 @@ func (h *UserHandler) GetUserInfo(c *gin.Context) {
 		name = *user.Username
 	}
 	c.JSON(http.StatusOK, gin.H{
+		"id":         user.ID,
 		"email":      user.Email,
 		"name":       name,
 		"username":   name,
