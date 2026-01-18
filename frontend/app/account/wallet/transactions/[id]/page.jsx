@@ -101,7 +101,20 @@ export default function TransactionDetailPage() {
     setProcessing(false);
   };
 
+  // Normalize backend status to frontend expected status
+  const normalizeStatus = (status) => {
+    const statusMap = {
+      "Pending": "held",
+      "Released": "released",
+      "Cancelled": "cancelled",
+      "Disputed": "disputed",
+      "Expired": "released",
+    };
+    return statusMap[status] || status?.toLowerCase() || "held";
+  };
+
   const getStatusBadge = (status) => {
+    const normalized = normalizeStatus(status);
     const styles = {
       held: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
       released: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
@@ -110,15 +123,15 @@ export default function TransactionDetailPage() {
       cancelled: "bg-gray-500/10 text-gray-600 border-gray-500/30",
     };
     const labels = {
-      held: "Ditahan",
-      released: "Terkirim",
+      held: "Dana Ditahan",
+      released: "Selesai",
       refunded: "Dikembalikan",
-      disputed: "Dispute",
+      disputed: "Dalam Mediasi",
       cancelled: "Dibatalkan",
     };
     return (
-      <span className={`rounded-full border px-3 py-1 text-sm font-medium ${styles[status] || styles.held}`}>
-        {labels[status] || status}
+      <span className={`rounded-full border px-3 py-1 text-sm font-medium ${styles[normalized] || styles.held}`}>
+        {labels[normalized] || status}
       </span>
     );
   };
@@ -157,8 +170,21 @@ export default function TransactionDetailPage() {
     );
   }
 
-  const isSender = currentUser?.id === transfer.sender_id;
-  const isReceiver = currentUser?.id === transfer.receiver_id;
+  const isSender = currentUser?.id === transfer.senderId;
+  const isReceiver = currentUser?.id === transfer.receiverId;
+  const status = normalizeStatus(transfer.status);
+  
+  // Calculate hold period info
+  const getHoldInfo = () => {
+    if (!transfer.holdUntil) return null;
+    const holdUntil = new Date(transfer.holdUntil);
+    const createdAt = new Date(transfer.createdAt);
+    const now = new Date();
+    const daysRemaining = Math.ceil((holdUntil - now) / (1000 * 60 * 60 * 24));
+    const totalDays = Math.ceil((holdUntil - createdAt) / (1000 * 60 * 60 * 24));
+    return { daysRemaining: Math.max(0, daysRemaining), totalDays, holdUntil };
+  };
+  const holdInfo = getHoldInfo();
 
   return (
     <main className="min-h-screen bg-background pt-16">
@@ -177,10 +203,13 @@ export default function TransactionDetailPage() {
             {/* Header */}
             <div className="border-b border-border p-6 text-center">
               <div className="text-sm text-muted-foreground mb-1">
-                {isSender ? "Anda mengirim" : "Anda menerima"}
+                {isSender ? "Anda mengirim ke" : "Anda menerima dari"}
+                <span className="font-medium text-foreground ml-1">
+                  @{isSender ? transfer.receiverUsername : transfer.senderUsername}
+                </span>
               </div>
               <div className="text-3xl font-bold text-foreground mb-3">
-                Rp {transfer.amount.toLocaleString("id-ID")}
+                Rp {transfer.amount?.toLocaleString("id-ID") || 0}
               </div>
               {getStatusBadge(transfer.status)}
             </div>
@@ -188,62 +217,96 @@ export default function TransactionDetailPage() {
             {/* Details */}
             <div className="p-6 space-y-4">
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Dari</span>
+                <span className="text-muted-foreground">Pengirim</span>
                 <span className="font-medium text-foreground">
-                  {transfer.sender?.username || "Unknown"}
+                  @{transfer.senderUsername || "Unknown"}
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Kepada</span>
+                <span className="text-muted-foreground">Penerima</span>
                 <span className="font-medium text-foreground">
-                  {transfer.receiver?.username || "Unknown"}
+                  @{transfer.receiverUsername || "Unknown"}
                 </span>
               </div>
-              {transfer.description && (
+              {transfer.message && (
                 <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Deskripsi</span>
+                  <span className="text-muted-foreground">Catatan</span>
                   <span className="font-medium text-foreground text-right max-w-xs">
-                    {transfer.description}
+                    {transfer.message}
                   </span>
                 </div>
               )}
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Dibuat</span>
-                <span className="font-medium text-foreground">
-                  {formatDate(transfer.created_at)}
+                <span className="text-muted-foreground">Kode Transfer</span>
+                <span className="font-mono text-foreground">
+                  {transfer.code}
                 </span>
               </div>
-              {transfer.status === "held" && (
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-muted-foreground">Tanggal Dibuat</span>
+                <span className="font-medium text-foreground">
+                  {formatDate(transfer.createdAt)}
+                </span>
+              </div>
+              {status === "held" && holdInfo && (
                 <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Auto-release</span>
+                  <span className="text-muted-foreground">Pelepasan Otomatis</span>
                   <span className="font-medium text-foreground">
-                    {formatDate(transfer.hold_until)}
+                    {formatDate(transfer.holdUntil)}
                   </span>
                 </div>
               )}
-              {transfer.released_at && (
+              {transfer.releasedAt && (
                 <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Dirilis</span>
+                  <span className="text-muted-foreground">Tanggal Selesai</span>
                   <span className="font-medium text-primary">
-                    {formatDate(transfer.released_at)}
+                    {formatDate(transfer.releasedAt)}
+                  </span>
+                </div>
+              )}
+              {transfer.cancelledAt && (
+                <div className="flex justify-between py-2 border-b border-border">
+                  <span className="text-muted-foreground">Tanggal Dibatalkan</span>
+                  <span className="font-medium text-red-500">
+                    {formatDate(transfer.cancelledAt)}
                   </span>
                 </div>
               )}
             </div>
 
-            {/* Status Explanation */}
-            {transfer.status === "held" && (
+            {/* Status Explanation for Held */}
+            {status === "held" && holdInfo && (
               <div className="mx-6 mb-6 rounded-lg bg-amber-600/10 border border-amber-600/30 p-4">
                 <div className="flex gap-3">
                   <svg className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
-                    <div className="font-medium text-amber-600 mb-1">Dana Ditahan</div>
+                    <div className="font-medium text-amber-600 mb-1">Dana Dalam Perlindungan Escrow</div>
                     <div className="text-sm text-muted-foreground">
-                      {isSender
-                        ? "Dana sedang ditahan. Anda dapat membatalkan untuk mengembalikan dana, atau menunggu penerima merilisnya."
-                        : "Dana ditahan untuk keamanan. Anda dapat merilisnya sekarang atau tunggu sampai auto-release."}
+                      {isSender ? (
+                        <>
+                          Dana Anda ditahan sementara untuk melindungi transaksi. 
+                          {holdInfo.daysRemaining > 0 
+                            ? ` Dana akan otomatis dikirim ke penerima dalam ${holdInfo.daysRemaining} hari.`
+                            : " Dana akan segera dikirim ke penerima."
+                          }
+                          <br /><br />
+                          <strong>Sudah menerima barang/jasa?</strong> Anda dapat melepaskan dana lebih awal.
+                          <br />
+                          <strong>Ada masalah?</strong> Anda dapat membatalkan transaksi atau meminta bantuan tim kami.
+                        </>
+                      ) : (
+                        <>
+                          Dana sedang ditahan dalam sistem escrow untuk keamanan kedua belah pihak.
+                          {holdInfo.daysRemaining > 0 
+                            ? ` Dana akan otomatis masuk ke saldo Anda dalam ${holdInfo.daysRemaining} hari.`
+                            : " Dana akan segera masuk ke saldo Anda."
+                          }
+                          <br /><br />
+                          <strong>Tidak dapat memenuhi pesanan?</strong> Anda dapat menolak penerimaan dan dana akan dikembalikan ke pengirim.
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -251,41 +314,49 @@ export default function TransactionDetailPage() {
             )}
 
             {/* Actions for held transfers */}
-            {transfer.status === "held" && (
+            {status === "held" && (
               <div className="p-6 border-t border-border space-y-3">
+                {isSender && (
+                  <>
+                    <button
+                      onClick={() => handleAction("release")}
+                      className="w-full rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90"
+                    >
+                      Lepaskan Dana Lebih Awal
+                    </button>
+                    <button
+                      onClick={() => handleAction("cancel")}
+                      className="w-full rounded-lg border border-border py-3 font-semibold text-foreground transition hover:bg-card"
+                    >
+                      Batalkan & Kembalikan Dana
+                    </button>
+                  </>
+                )}
                 {isReceiver && (
                   <button
-                    onClick={() => handleAction("release")}
-                    className="w-full rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90"
-                  >
-                    Terima Dana
-                  </button>
-                )}
-                {isSender && (
-                  <button
                     onClick={() => handleAction("cancel")}
-                    className="w-full rounded-lg border border-border py-3 font-semibold text-foreground transition hover:bg-card"
+                    className="w-full rounded-lg border border-amber-500/50 py-3 font-semibold text-amber-600 transition hover:bg-amber-500/10"
                   >
-                    Batalkan & Kembalikan Dana
+                    Tolak Penerimaan (Kembalikan ke Pengirim)
                   </button>
                 )}
                 <button
                   onClick={() => handleAction("dispute")}
-                  className="w-full rounded-lg border border-destructive/30 py-3 font-semibold text-destructive transition hover:bg-destructive/10"
+                  className="w-full rounded-lg border border-blue-500/30 py-3 font-semibold text-blue-600 transition hover:bg-blue-500/10"
                 >
-                  Ajukan Dispute
+                  Minta Bantuan Tim Mediasi
                 </button>
               </div>
             )}
 
             {/* Link to dispute if disputed */}
-            {transfer.status === "disputed" && transfer.dispute_id && (
+            {status === "disputed" && transfer.disputeId && (
               <div className="p-6 border-t border-border">
                 <Link
-                  href={`/account/wallet/disputes/${transfer.dispute_id}`}
-                  className="block w-full rounded-lg bg-destructive/10 border border-destructive/30 py-3 text-center font-semibold text-destructive transition hover:opacity-80"
+                  href={`/account/wallet/disputes/${transfer.disputeId}`}
+                  className="block w-full rounded-lg bg-blue-500/10 border border-blue-500/30 py-3 text-center font-semibold text-blue-600 transition hover:opacity-80"
                 >
-                  Lihat Detail Dispute
+                  Lihat Detail Mediasi
                 </Link>
               </div>
             )}
@@ -300,9 +371,9 @@ export default function TransactionDetailPage() {
                 Konfirmasi dengan PIN
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                {pendingAction === "release" && "Masukkan PIN untuk menerima dana"}
-                {pendingAction === "cancel" && "Masukkan PIN untuk membatalkan transfer"}
-                {pendingAction === "dispute" && "Masukkan PIN untuk mengajukan dispute"}
+                {pendingAction === "release" && "Masukkan PIN untuk melepaskan dana ke penerima"}
+                {pendingAction === "cancel" && "Masukkan PIN untuk membatalkan dan mengembalikan dana"}
+                {pendingAction === "dispute" && "Masukkan PIN untuk meminta bantuan tim mediasi"}
               </p>
 
               <input

@@ -52,7 +52,20 @@ export default function TransactionsContent() {
     loadData();
   }, [router, activeTab]);
 
+  // Normalize backend status to frontend expected status
+  const normalizeStatus = (status) => {
+    const statusMap = {
+      "Pending": "held",
+      "Released": "released",
+      "Cancelled": "cancelled",
+      "Disputed": "disputed",
+      "Expired": "released",
+    };
+    return statusMap[status] || status?.toLowerCase() || "held";
+  };
+
   const getStatusBadge = (status) => {
+    const normalized = normalizeStatus(status);
     const styles = {
       held: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
       released: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
@@ -64,12 +77,12 @@ export default function TransactionsContent() {
       held: "Ditahan",
       released: "Terkirim",
       refunded: "Dikembalikan",
-      disputed: "Dispute",
+      disputed: "Sengketa",
       cancelled: "Dibatalkan",
     };
     return (
-      <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${styles[status] || styles.held}`}>
-        {labels[status] || status}
+      <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${styles[normalized] || styles.held}`}>
+        {labels[normalized] || status}
       </span>
     );
   };
@@ -163,62 +176,70 @@ export default function TransactionsContent() {
           </div>
         ) : (
           <div className="space-y-3">
-            {transfers.map((transfer) => (
-              <Link
-                key={transfer.id}
-                href={`/account/wallet/transactions/${transfer.id}`}
-                className="block rounded-lg border border-border bg-card p-4 transition hover:border-muted-foreground"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold ${
-                        transfer.sender?.id === transfer.sender_id
-                          ? "bg-red-500/10 text-red-600"
-                          : "bg-emerald-500/10 text-emerald-600"
-                      }`}
-                    >
-                      {transfer.receiver?.username?.slice(0, 2).toUpperCase() || "??"}
-                    </div>
-                    <div>
-                      <div className="font-medium text-foreground">
-                        {transfer.sender?.username === transfer.receiver?.username
-                          ? transfer.receiver?.username
-                          : transfer.sender?.id === transfer.sender_id
-                          ? `Ke ${transfer.receiver?.username || "User"}`
-                          : `Dari ${transfer.sender?.username || "User"}`}
+            {transfers.map((transfer) => {
+              const isSent = transfer.senderId === transfer.senderId; // Will be compared with current user later
+              const otherUsername = isSent ? transfer.receiverUsername : transfer.senderUsername;
+              const status = normalizeStatus(transfer.status);
+              
+              return (
+                <Link
+                  key={transfer.id}
+                  href={`/account/wallet/transactions/${transfer.id}`}
+                  className="block rounded-lg border border-border bg-card p-4 transition hover:border-muted-foreground"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold ${
+                          status === "held"
+                            ? "bg-yellow-500/10 text-yellow-600"
+                            : status === "released"
+                            ? "bg-emerald-500/10 text-emerald-600"
+                            : "bg-gray-500/10 text-gray-600"
+                        }`}
+                      >
+                        {(otherUsername || transfer.receiverUsername || "?")?.slice(0, 2).toUpperCase()}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatDate(transfer.created_at)}
-                      </div>
-                      {transfer.description && (
-                        <div className="text-xs text-muted-foreground truncate max-w-48">
-                          {transfer.description}
+                      <div>
+                        <div className="font-medium text-foreground">
+                          {transfer.receiverUsername
+                            ? `Ke @${transfer.receiverUsername}`
+                            : transfer.senderUsername
+                            ? `Dari @${transfer.senderUsername}`
+                            : "Transfer"}
                         </div>
-                      )}
+                        <div className="text-xs text-muted-foreground">
+                          {formatDate(transfer.createdAt)}
+                        </div>
+                        {transfer.message && (
+                          <div className="text-xs text-muted-foreground truncate max-w-48">
+                            {transfer.message}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-foreground">
+                        Rp {transfer.amount?.toLocaleString("id-ID") || 0}
+                      </div>
+                      <div className="mt-1">{getStatusBadge(transfer.status)}</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-foreground">
-                      Rp {transfer.amount.toLocaleString("id-ID")}
-                    </div>
-                    <div className="mt-1">{getStatusBadge(transfer.status)}</div>
-                  </div>
-                </div>
 
-                {/* Action hint for held transfers */}
-                {transfer.status === "held" && (
-                  <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-                    <div className="text-xs text-muted-foreground">
-                      Auto-release: {formatDate(transfer.hold_until)}
+                  {/* Action hint for held/pending transfers */}
+                  {status === "held" && transfer.holdUntil && (
+                    <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                      <div className="text-xs text-muted-foreground">
+                        Auto-release: {formatDate(transfer.holdUntil)}
+                      </div>
+                      <span className="text-xs text-primary">
+                        Lihat detail →
+                      </span>
                     </div>
-                    <span className="text-xs text-primary">
-                      Lihat detail →
-                    </span>
-                  </div>
-                )}
-              </Link>
-            ))}
+                  )}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
