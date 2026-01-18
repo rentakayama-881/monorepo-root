@@ -22,10 +22,12 @@ export default function DisputesPage() {
 
       setLoading(true);
       try {
-        const data = await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.LIST);
-        setDisputes(data.data?.disputes || data.disputes || []);
+        const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.LIST);
+        // Response: { success, data: [...], message, meta }
+        setDisputes(response?.data || []);
       } catch (e) {
         logger.error("Failed to load disputes:", e);
+        setDisputes([]);
       }
       setLoading(false);
     }
