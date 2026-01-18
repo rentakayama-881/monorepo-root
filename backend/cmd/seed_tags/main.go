@@ -48,7 +48,7 @@ func main() {
 		},
 		{
 			Slug:        "looking",
-			Name:        "Looking For",
+			Name:        "Looking for",
 			Description: "Looking for services, products, or help",
 			Color:       "#8250df", // GitHub purple
 			Icon:        "search",
