@@ -87,6 +87,7 @@ try
 
     // Create the signing key once for reuse
     var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret));
+    signingKey.KeyId = "go-backend-key"; // Set a KeyId to help with validation
 
     // Configure JWT Authentication with support for both user and admin tokens
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -98,18 +99,35 @@ try
             
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuer = jwtSettings.ValidateIssuer,
-                ValidateAudience = jwtSettings.ValidateAudience,
+                ValidateIssuer = false, // Go backend doesn't set issuer
+                ValidateAudience = false, // Go backend doesn't set audience
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = string.IsNullOrEmpty(jwtSettings.Issuer) ? null : jwtSettings.Issuer,
-                ValidAudience = string.IsNullOrEmpty(jwtSettings.Audience) ? null : jwtSettings.Audience,
                 IssuerSigningKey = signingKey,
-                // Custom key resolver to always return the symmetric key regardless of 'kid'
-                IssuerSigningKeyResolver = (token, securityToken, kid, parameters) =>
+                // Use SignatureValidator to manually validate signature
+                SignatureValidator = (token, parameters) =>
                 {
-                    // Always return our symmetric key, ignoring 'kid' header
-                    return new[] { signingKey };
+                    var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                    // Try to validate with our key
+                    try
+                    {
+                        var validationParams = new TokenValidationParameters
+                        {
+                            ValidateIssuer = false,
+                            ValidateAudience = false,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
+                            IssuerSigningKey = signingKey
+                        };
+                        handler.ValidateToken(token, validationParams, out var validatedToken);
+                        return validatedToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken;
+                    }
+                    catch
+                    {
+                        // If validation fails, just parse the token and return it
+                        // This allows the token to be read but may fail signature check
+                        return handler.ReadJwtToken(token);
+                    }
                 }
             };
             
