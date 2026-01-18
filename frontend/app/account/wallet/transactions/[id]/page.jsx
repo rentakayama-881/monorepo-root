@@ -429,17 +429,20 @@ export default function TransactionDetailPage() {
               <div className="p-6 border-t border-border space-y-3">
                 {isSender && (
                   <>
+                    <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-4 text-sm text-muted-foreground">
+                      <p className="mb-2">
+                        <strong className="text-foreground">Info untuk Pengirim:</strong>
+                      </p>
+                      <p>
+                        Sudah menerima barang/jasa? Anda dapat melepaskan dana lebih awal.<br/>
+                        Ada masalah? Anda dapat meminta bantuan tim mediasi.
+                      </p>
+                    </div>
                     <button
                       onClick={() => handleAction("release")}
                       className="w-full rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90"
                     >
                       Lepaskan Dana Lebih Awal
-                    </button>
-                    <button
-                      onClick={() => handleAction("cancel")}
-                      className="w-full rounded-lg border border-border py-3 font-semibold text-foreground transition hover:bg-card"
-                    >
-                      Batalkan & Kembalikan Dana
                     </button>
                   </>
                 )}
