@@ -103,10 +103,10 @@ export const FEATURE_ENDPOINTS = {
 
   // Disputes
   DISPUTES: {
-    LIST: "/api/v1/wallets/disputes",
-    CREATE: "/api/v1/wallets/disputes",
-    DETAIL: (id) => `/api/v1/wallets/disputes/${id}`,
-    RESPOND: (id) => `/api/v1/wallets/disputes/${id}/respond`,
+    LIST: "/api/v1/disputes",
+    CREATE: "/api/v1/disputes",
+    DETAIL: (id) => `/api/v1/disputes/${id}`,
+    RESPOND: (id) => `/api/v1/disputes/${id}/respond`,
   },
 
   // Admin Moderation
