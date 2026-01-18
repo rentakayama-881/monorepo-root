@@ -85,10 +85,17 @@ try
         });
     });
 
+    // Create the signing key once for reuse
+    var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret));
+
     // Configure JWT Authentication with support for both user and admin tokens
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
+            // Use the older JwtSecurityTokenHandler instead of JsonWebTokenHandler
+            // This is more compatible with tokens that don't have 'kid' header
+            options.UseSecurityTokenValidators = true;
+            
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = jwtSettings.ValidateIssuer,
@@ -97,7 +104,13 @@ try
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = string.IsNullOrEmpty(jwtSettings.Issuer) ? null : jwtSettings.Issuer,
                 ValidAudience = string.IsNullOrEmpty(jwtSettings.Audience) ? null : jwtSettings.Audience,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
+                IssuerSigningKey = signingKey,
+                // Custom key resolver to always return the symmetric key regardless of 'kid'
+                IssuerSigningKeyResolver = (token, securityToken, kid, parameters) =>
+                {
+                    // Always return our symmetric key, ignoring 'kid' header
+                    return new[] { signingKey };
+                }
             };
             
             // Custom token validation to also support admin tokens from Go backend
