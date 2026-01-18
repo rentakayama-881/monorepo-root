@@ -107,7 +107,7 @@ try
                 ValidateIssuer = false, // Go backend doesn't set issuer
                 ValidateAudience = false, // Go backend doesn't set audience
                 ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
+                ValidateIssuerSigningKey = false, // We use custom SignatureValidator
                 RequireSignedTokens = true,
                 // Use a custom signature validator that bypasses kid matching
                 SignatureValidator = (token, parameters) =>
@@ -129,6 +129,7 @@ try
                     var computedSignature = Base64UrlEncoder.Encode(hash);
                     
                     // Log for debugging
+                    Console.WriteLine($"[JWT DEBUG] Secret len: {jwtSettings.Secret.Length}, first 10: {jwtSettings.Secret.Substring(0, Math.Min(10, jwtSettings.Secret.Length))}");
                     Console.WriteLine($"[JWT DEBUG] Token sig: {tokenSignature.Substring(0, Math.Min(20, tokenSignature.Length))}...");
                     Console.WriteLine($"[JWT DEBUG] Computed:  {computedSignature.Substring(0, Math.Min(20, computedSignature.Length))}...");
                     

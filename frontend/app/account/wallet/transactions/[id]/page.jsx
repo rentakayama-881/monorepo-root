@@ -550,8 +550,8 @@ export default function TransactionDetailPage() {
                   rows={4}
                   className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-foreground focus:outline-none focus:border-primary resize-none"
                 />
-                <div className="text-xs text-muted-foreground mt-1">
-                  {disputeReason.length}/20 karakter minimum
+                <div className={`text-xs mt-1 ${disputeReason.length >= 20 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                  {disputeReason.length}/20 karakter minimum {disputeReason.length >= 20 ? '✓' : ''}
                 </div>
               </div>
 
