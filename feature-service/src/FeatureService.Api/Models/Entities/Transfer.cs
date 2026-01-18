@@ -62,6 +62,7 @@ public enum TransferStatus
     Pending,    // Waiting for receiver to release
     Released,   // Completed successfully
     Cancelled,  // Cancelled by sender
+    Rejected,   // Rejected by receiver (refund to sender)
     Disputed,   // Under dispute
     Expired     // Auto-released after hold period
 }

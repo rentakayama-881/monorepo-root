@@ -13,6 +13,7 @@ public interface ITransferService
     Task<TransferDto?> GetTransferByCodeAsync(string code, uint userId);
     Task<(bool success, string? error)> ReleaseTransferAsync(string transferId, uint userId, string pin);
     Task<(bool success, string? error)> CancelTransferAsync(string transferId, uint userId, string pin, string reason);
+    Task<(bool success, string? error)> RejectTransferAsync(string transferId, uint receiverId, string pin, string reason);
     Task<SearchUserResponse> SearchUserAsync(string username);
     Task AutoReleaseExpiredTransfersAsync();
 }
@@ -124,8 +125,8 @@ public class TransferService : ITransferService
             throw new InvalidOperationException($"Saldo tidak cukup. Saldo: Rp {senderWallet.Balance:N0}, Dibutuhkan: Rp {request.Amount:N0}");
         }
 
-        // Calculate hold period
-        var holdHours = request.HoldHours > 0 ? Math.Min(request.HoldHours, 72) : DefaultHoldHours;
+        // Calculate hold period (max 30 days = 720 hours)
+        var holdHours = request.HoldHours > 0 ? Math.Min(request.HoldHours, 720) : DefaultHoldHours;
         var holdUntil = DateTime.UtcNow.AddHours(holdHours);
 
         // Generate unique 8-digit code
@@ -342,6 +343,52 @@ public class TransferService : ITransferService
 
         _logger.LogInformation(
             "Transfer cancelled: {TransferId}, refunded {Amount} to sender",
+            transferId, transfer.Amount
+        );
+
+        return (true, null);
+    }
+
+    public async Task<(bool success, string? error)> RejectTransferAsync(string transferId, uint receiverId, string pin, string reason)
+    {
+        var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        
+        if (transfer == null)
+            return (false, "Transfer tidak ditemukan");
+
+        // Only receiver can reject
+        if (transfer.ReceiverId != receiverId)
+            return (false, "Anda tidak berhak menolak transfer ini");
+
+        if (transfer.Status != TransferStatus.Pending && transfer.Status != TransferStatus.Disputed)
+            return (false, $"Transfer sudah {transfer.Status}");
+
+        // Verify receiver's PIN
+        var pinResult = await _walletService.VerifyPinAsync(receiverId, pin);
+        if (!pinResult.Valid)
+            return (false, pinResult.Message);
+
+        // Refund to sender (full amount, no fee for rejection)
+        await _walletService.AddBalanceAsync(
+            transfer.SenderId,
+            transfer.Amount,
+            $"Penolakan transfer dari @{transfer.ReceiverUsername}",
+            TransactionType.Refund,
+            transfer.Id,
+            "transfer"
+        );
+
+        // Update transfer status
+        var update = Builders<Transfer>.Update
+            .Set(t => t.Status, TransferStatus.Rejected)
+            .Set(t => t.CancelledAt, DateTime.UtcNow)
+            .Set(t => t.CancelReason, reason)
+            .Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+        await _transfers.UpdateOneAsync(t => t.Id == transferId, update);
+
+        _logger.LogInformation(
+            "Transfer rejected by receiver: {TransferId}, refunded {Amount} to sender",
             transferId, transfer.Amount
         );
 

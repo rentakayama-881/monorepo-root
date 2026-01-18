@@ -90,6 +90,7 @@ export const FEATURE_ENDPOINTS = {
     BY_CODE: (code) => `/api/v1/wallets/transfers/code/${code}`,
     RELEASE: (id) => `/api/v1/wallets/transfers/${id}/release`,
     CANCEL: (id) => `/api/v1/wallets/transfers/${id}/cancel`,
+    REJECT: (id) => `/api/v1/wallets/transfers/${id}/reject`,
     SEARCH_USER: "/api/v1/wallets/transfers/search-user",
   },
 

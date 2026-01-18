@@ -167,6 +167,9 @@ export default function TransactionDetailPage() {
       } else if (pendingAction === "cancel") {
         endpoint = FEATURE_ENDPOINTS.TRANSFERS.CANCEL(transferId);
         body.reason = "Dibatalkan oleh pengirim";
+      } else if (pendingAction === "reject") {
+        endpoint = FEATURE_ENDPOINTS.TRANSFERS.REJECT(transferId);
+        body.reason = "Ditolak oleh penerima";
       }
 
       await fetchFeatureAuth(endpoint, {
@@ -178,6 +181,8 @@ export default function TransactionDetailPage() {
       setActionSuccess(
         pendingAction === "release" 
           ? "Dana berhasil dilepaskan ke penerima!" 
+          : pendingAction === "reject"
+          ? "Transfer ditolak, dana dikembalikan ke pengirim."
           : "Transaksi berhasil dibatalkan, dana dikembalikan."
       );
       
@@ -197,6 +202,7 @@ export default function TransactionDetailPage() {
       "Pending": "held",
       "Released": "released",
       "Cancelled": "cancelled",
+      "Rejected": "rejected",
       "Disputed": "disputed",
       "Expired": "released",
     };
@@ -211,6 +217,7 @@ export default function TransactionDetailPage() {
       refunded: "bg-blue-500/10 text-blue-600 border-blue-500/30",
       disputed: "bg-red-500/10 text-red-600 border-red-500/30",
       cancelled: "bg-gray-500/10 text-gray-600 border-gray-500/30",
+      rejected: "bg-orange-500/10 text-orange-600 border-orange-500/30",
     };
     const labels = {
       held: "Dana Ditahan",
@@ -218,6 +225,7 @@ export default function TransactionDetailPage() {
       refunded: "Dikembalikan",
       disputed: "Dalam Mediasi",
       cancelled: "Dibatalkan",
+      rejected: "Ditolak Penerima",
     };
     return (
       <span className={`rounded-full border px-3 py-1 text-sm font-medium ${styles[normalized] || styles.held}`}>
@@ -435,15 +443,23 @@ export default function TransactionDetailPage() {
                   </>
                 )}
                 {isReceiver && (
-                  <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-4 text-sm text-muted-foreground">
-                    <p className="mb-2">
-                      <strong className="text-foreground">Info untuk Penerima:</strong>
-                    </p>
-                    <p>
-                      Sebagai penerima, dana akan otomatis masuk ke saldo Anda setelah periode penahanan berakhir. 
-                      Jika ada kendala dengan transaksi ini, Anda dapat meminta bantuan tim mediasi.
-                    </p>
-                  </div>
+                  <>
+                    <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-4 text-sm text-muted-foreground">
+                      <p className="mb-2">
+                        <strong className="text-foreground">Info untuk Penerima:</strong>
+                      </p>
+                      <p>
+                        Sebagai penerima, dana akan otomatis masuk ke saldo Anda setelah periode penahanan berakhir. 
+                        Jika ada kendala dengan transaksi ini, Anda dapat meminta bantuan tim mediasi.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleAction("reject")}
+                      className="w-full rounded-lg border border-orange-500/30 py-3 font-semibold text-orange-600 transition hover:bg-orange-500/10"
+                    >
+                      Tolak Transfer & Kembalikan ke Pengirim
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => handleAction("dispute")}
@@ -478,6 +494,7 @@ export default function TransactionDetailPage() {
               <p className="text-sm text-muted-foreground mb-4">
                 {pendingAction === "release" && "Masukkan PIN untuk melepaskan dana ke penerima"}
                 {pendingAction === "cancel" && "Masukkan PIN untuk membatalkan dan mengembalikan dana"}
+                {pendingAction === "reject" && "Masukkan PIN untuk menolak transfer dan mengembalikan dana ke pengirim"}
               </p>
 
               <input

@@ -24,10 +24,12 @@ export default function DisputesListPage() {
 
   const loadDisputes = async () => {
     try {
-      const data = await fetchFeatureAuth("/api/v1/disputes");
-      setDisputes(data.data || []);
+      const response = await fetchFeatureAuth("/api/v1/disputes");
+      // Response structure: { success, data, message, meta }
+      setDisputes(response?.data || []);
     } catch (e) {
       logger.error("Failed to load disputes:", e);
+      setDisputes([]);
     }
     setLoading(false);
   };

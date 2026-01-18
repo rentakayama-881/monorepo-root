@@ -235,6 +235,38 @@ public class TransfersController : ApiControllerBase
     }
 
     /// <summary>
+    /// Reject transfer - receiver rejects and refunds to sender
+    /// </summary>
+    /// <remarks>
+    /// Penerima dapat menolak transfer yang masih pending atau dalam dispute.
+    /// Dana akan dikembalikan ke pengirim tanpa potongan fee.
+    /// Ini memungkinkan kedua pihak setuju untuk membatalkan transaksi dengan cepat.
+    /// </remarks>
+    [HttpPost("{id}/reject")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RejectTransfer(string id, [FromBody] CancelTransferRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == 0)
+            return ApiUnauthorized("UNAUTHORIZED", "User tidak terautentikasi");
+
+        try
+        {
+            var (success, error) = await _transferService.RejectTransferAsync(id, userId, request.Pin, request.Reason ?? "Ditolak oleh penerima");
+            if (!success)
+                return ApiBadRequest("REJECT_FAILED", error ?? "Gagal menolak transfer");
+
+            return ApiOk(new { rejected = true }, "Transfer berhasil ditolak, dana dikembalikan ke pengirim");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rejecting transfer {TransferId} for user {UserId}", id, userId);
+            return ApiError(500, "INTERNAL_ERROR", "Terjadi kesalahan saat menolak transfer");
+        }
+    }
+
+    /// <summary>
     /// Search for a user to send transfer to
     /// </summary>
     [HttpGet("search-user")]
