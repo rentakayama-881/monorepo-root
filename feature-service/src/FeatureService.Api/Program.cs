@@ -87,14 +87,12 @@ try
 
     // Create the signing key once for reuse
     var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret));
-    signingKey.KeyId = "go-backend-key"; // Set a KeyId to help with validation
 
     // Configure JWT Authentication with support for both user and admin tokens
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
             // Use the older JwtSecurityTokenHandler instead of JsonWebTokenHandler
-            // This is more compatible with tokens that don't have 'kid' header
             options.UseSecurityTokenValidators = true;
             
             options.TokenValidationParameters = new TokenValidationParameters
@@ -102,32 +100,33 @@ try
                 ValidateIssuer = false, // Go backend doesn't set issuer
                 ValidateAudience = false, // Go backend doesn't set audience
                 ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
+                ValidateIssuerSigningKey = false, // Disable signature key validation for 'kid' issue
+                RequireSignedTokens = false, // Allow tokens without signature validation
                 IssuerSigningKey = signingKey,
-                // Use SignatureValidator to manually validate signature
                 SignatureValidator = (token, parameters) =>
                 {
+                    // Parse the token without validating signature
                     var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-                    // Try to validate with our key
-                    try
+                    var jwtToken = handler.ReadJwtToken(token);
+                    
+                    // Manually verify the signature using HMAC-SHA256
+                    var parts = token.Split('.');
+                    if (parts.Length == 3)
                     {
-                        var validationParams = new TokenValidationParameters
+                        var headerPayload = parts[0] + "." + parts[1];
+                        var signature = parts[2];
+                        
+                        using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(jwtSettings.Secret));
+                        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(headerPayload));
+                        var computedSignature = Microsoft.IdentityModel.Tokens.Base64UrlEncoder.Encode(computedHash);
+                        
+                        if (computedSignature != signature)
                         {
-                            ValidateIssuer = false,
-                            ValidateAudience = false,
-                            ValidateLifetime = true,
-                            ValidateIssuerSigningKey = true,
-                            IssuerSigningKey = signingKey
-                        };
-                        handler.ValidateToken(token, validationParams, out var validatedToken);
-                        return validatedToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken;
+                            throw new SecurityTokenInvalidSignatureException("Signature validation failed");
+                        }
                     }
-                    catch
-                    {
-                        // If validation fails, just parse the token and return it
-                        // This allows the token to be read but may fail signature check
-                        return handler.ReadJwtToken(token);
-                    }
+                    
+                    return jwtToken;
                 }
             };
             
