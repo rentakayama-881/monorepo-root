@@ -251,19 +251,21 @@ public class TransferService : ITransferService
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
 
-        // Only receiver can release
-        if (transfer.ReceiverId != userId)
-            return (false, "Anda tidak berhak melepaskan transfer ini");
+        // CRITICAL: Only SENDER can release funds early!
+        // This is to prevent fraud - receiver must wait for hold period
+        // or sender manually releases after satisfied with goods/services
+        if (transfer.SenderId != userId)
+            return (false, "Hanya pengirim yang dapat melepaskan dana");
 
         if (transfer.Status != TransferStatus.Pending)
             return (false, $"Transfer sudah {transfer.Status}");
 
-        // Verify receiver's PIN
+        // Verify SENDER's PIN (only sender can release)
         var pinResult = await _walletService.VerifyPinAsync(userId, pin);
         if (!pinResult.Valid)
             return (false, pinResult.Message);
 
-        // Calculate fee (2% from receiver)
+        // Calculate fee (2% from transfer amount)
         var fee = (long)(transfer.Amount * TransferFeePercent);
         var amountAfterFee = transfer.Amount - fee;
 
