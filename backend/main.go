@@ -368,6 +368,12 @@ func main() {
 			user.GET("/:username/badges", handlers.GetUserBadgesHandler)
 		}
 
+		// Internal API for service-to-service calls
+		users := api.Group("/users")
+		{
+			users.GET("/:id/public", userHandler.GetPublicUserProfileByID)
+		}
+
 		threads := api.Group("/threads")
 		{
 			threads.GET("/categories", threadHandler.GetCategories)

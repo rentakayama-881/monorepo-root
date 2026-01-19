@@ -219,7 +219,7 @@ public class TransferService : ITransferService
     public async Task<TransferDto?> GetTransferByIdAsync(string transferId, uint userId)
     {
         var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
-        
+
         if (transfer == null)
             return null;
 
@@ -233,7 +233,7 @@ public class TransferService : ITransferService
     public async Task<TransferDto?> GetTransferByCodeAsync(string code, uint userId)
     {
         var transfer = await _transfers.Find(t => t.Code == code).FirstOrDefaultAsync();
-        
+
         if (transfer == null)
             return null;
 
@@ -247,7 +247,7 @@ public class TransferService : ITransferService
     public async Task<(bool success, string? error)> ReleaseTransferAsync(string transferId, uint userId, string pin)
     {
         var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
-        
+
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
 
@@ -308,7 +308,7 @@ public class TransferService : ITransferService
     public async Task<(bool success, string? error)> CancelTransferAsync(string transferId, uint userId, string pin, string reason)
     {
         var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
-        
+
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
 
@@ -354,7 +354,7 @@ public class TransferService : ITransferService
     public async Task<(bool success, string? error)> RejectTransferAsync(string transferId, uint receiverId, string pin, string reason)
     {
         var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
-        
+
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
 
@@ -403,7 +403,7 @@ public class TransferService : ITransferService
         {
             var backendUrl = _configuration["Backend:ApiUrl"] ?? "http://localhost:8080";
             var response = await _httpClient.GetAsync($"{backendUrl}/api/user/{username}");
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 return new SearchUserResponse(0, username, null, false);
@@ -483,13 +483,32 @@ public class TransferService : ITransferService
     {
         try
         {
-            var backendUrl = _configuration["Backend:ApiUrl"] ?? "http://localhost:8080";
-            // This would ideally be an internal API call
-            // For now, return a placeholder
-            return $"user_{userId}";
+            var backendUrl = _configuration["Backend:ApiUrl"] ?? "https://api.alephdraad.fun";
+            var response = await _httpClient.GetAsync($"{backendUrl}/api/users/{userId}/public");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                
+                // Try to get username from response
+                if (doc.RootElement.TryGetProperty("username", out var usernameElement))
+                {
+                    var username = usernameElement.GetString();
+                    if (!string.IsNullOrEmpty(username))
+                    {
+                        return username;
+                    }
+                }
+            }
+            
+            _logger.LogWarning("Failed to get username for user {UserId}: {StatusCode}", 
+                userId, response.StatusCode);
+            return null;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error fetching username for user {UserId}", userId);
             return null;
         }
     }

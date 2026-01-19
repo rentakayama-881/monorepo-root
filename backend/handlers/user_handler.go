@@ -54,3 +54,31 @@ func (h *UserHandler) GetPublicUserProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, BuildPublicProfileFromEnt(c, u))
 }
+
+// GetPublicUserProfileByID returns public profile by user ID (for internal service calls)
+func (h *UserHandler) GetPublicUserProfileByID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	u, err := h.userService.GetUserByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user tidak ditemukan"})
+		return
+	}
+
+	// Return minimal public info
+	username := ""
+	if u.Username != nil {
+		username = *u.Username
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":         u.ID,
+		"username":   username,
+		"avatar_url": u.AvatarURL,
+	})
+}
