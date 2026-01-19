@@ -63,6 +63,12 @@ public class MongoDbContext
 
     #endregion
 
+    #region PQC Security Collections
+
+    public IMongoCollection<UserPqcKey> UserPqcKeys => _database.GetCollection<UserPqcKey>("user_pqc_keys");
+
+    #endregion
+
     private void CreateIndexes()
     {
         // Reply indexes
@@ -176,6 +182,18 @@ public class MongoDbContext
         {
             new CreateIndexModel<ChatMessage>(Builders<ChatMessage>.IndexKeys.Ascending(m => m.SessionId)),
             new CreateIndexModel<ChatMessage>(Builders<ChatMessage>.IndexKeys.Ascending(m => m.CreatedAt))
+        });
+
+        // PQC Key indexes
+        UserPqcKeys.Indexes.CreateMany(new[]
+        {
+            new CreateIndexModel<UserPqcKey>(Builders<UserPqcKey>.IndexKeys.Ascending(k => k.UserId)),
+            new CreateIndexModel<UserPqcKey>(Builders<UserPqcKey>.IndexKeys.Ascending(k => k.KeyId),
+                new CreateIndexOptions { Unique = true }),
+            new CreateIndexModel<UserPqcKey>(Builders<UserPqcKey>.IndexKeys.Ascending(k => k.PublicKeyHash)),
+            new CreateIndexModel<UserPqcKey>(Builders<UserPqcKey>.IndexKeys
+                .Ascending(k => k.UserId)
+                .Ascending(k => k.IsActive))
         });
     }
 }

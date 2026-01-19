@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Services;
 using FeatureService.Api.Models.Entities;
+using FeatureService.Api.Attributes;
 
 namespace FeatureService.Api.Controllers.Finance;
 
 /// <summary>
-/// Escrow transfer endpoints - send money safely with hold period
+/// Escrow transfer endpoints - send money safely with hold period.
+/// All financial operations require PQC digital signature verification.
 /// </summary>
 [ApiController]
 [Route("api/v1/wallets/transfers")]
@@ -16,31 +18,46 @@ namespace FeatureService.Api.Controllers.Finance;
 public class TransfersController : ApiControllerBase
 {
     private readonly ITransferService _transferService;
+    private readonly ISecureTransferService _secureTransferService;
     private readonly ILogger<TransfersController> _logger;
 
-    public TransfersController(ITransferService transferService, ILogger<TransfersController> logger)
+    public TransfersController(
+        ITransferService transferService,
+        ISecureTransferService secureTransferService,
+        ILogger<TransfersController> logger)
     {
         _transferService = transferService;
+        _secureTransferService = secureTransferService;
         _logger = logger;
     }
 
     /// <summary>
-    /// Create a new escrow transfer to another user - REQUIRES 2FA + PIN
+    /// Create a new escrow transfer to another user - REQUIRES 2FA + PIN + PQC Signature
     /// </summary>
     /// <remarks>
-    /// Transfer menggunakan sistem escrow:
+    /// Transfer menggunakan sistem escrow dengan keamanan tingkat militer:
     /// - Two-Factor Authentication (2FA) MUST be enabled
     /// - PIN verification required for each transfer
+    /// - Post-Quantum Cryptography (PQC) digital signature required
+    /// - Idempotency via Redis Sentinel to prevent duplicate transactions
+    /// - Immutable audit trail for compliance
     /// - Dana ditahan selama hold period (default 24 jam, maksimal 72 jam)
     /// - Penerima bisa meng-klaim dana setelah hold period selesai
     /// - Pengirim bisa membatalkan sebelum dana diklaim
     /// - Fee 2% dipotong saat dana dilepaskan
+    ///
+    /// Required Headers:
+    /// - X-PQC-Signature: Base64-encoded Dilithium3 signature
+    /// - X-PQC-Key-Id: User's registered PQC key ID
+    /// - X-PQC-Timestamp: ISO 8601 timestamp (max 5 minutes old)
+    /// - X-Idempotency-Key: Optional unique key for request deduplication
     /// </remarks>
     [HttpPost]
+    [RequiresPqcSignature]
     [ProducesResponseType(typeof(ApiResponse<CreateTransferResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateTransfer([FromBody] CreateTransferRequest request)
     {
         if (!ModelState.IsValid)
@@ -56,7 +73,12 @@ public class TransfersController : ApiControllerBase
 
         try
         {
-            var result = await _transferService.CreateTransferAsync(userId, request);
+            var idempotencyKey = Request.Headers["X-Idempotency-Key"].FirstOrDefault();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers.UserAgent.ToString();
+
+            var result = await _secureTransferService.CreateTransferAsync(
+                userId, request, idempotencyKey, ipAddress, userAgent);
             return ApiCreated(result, "Transfer created successfully");
         }
         catch (ArgumentException ex)
@@ -173,15 +195,18 @@ public class TransfersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Release transfer - receiver claims the funds after hold period
+    /// Release transfer - receiver claims the funds after hold period - REQUIRES PQC Signature
     /// </summary>
     /// <remarks>
     /// Hanya penerima yang bisa melepaskan dana setelah hold period selesai.
     /// Fee 2% akan dipotong saat pelepasan.
+    /// PQC digital signature diperlukan untuk verifikasi.
     /// </remarks>
     [HttpPost("{id}/release")]
+    [RequiresPqcSignature]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ReleaseTransfer(string id, [FromBody] ReleaseTransferRequest request)
     {
         var userId = GetUserId();
@@ -190,7 +215,12 @@ public class TransfersController : ApiControllerBase
 
         try
         {
-            var (success, error) = await _transferService.ReleaseTransferAsync(id, userId, request.Pin);
+            var idempotencyKey = Request.Headers["X-Idempotency-Key"].FirstOrDefault();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers.UserAgent.ToString();
+
+            var (success, error) = await _secureTransferService.ReleaseTransferAsync(
+                id, userId, request.Pin, idempotencyKey, ipAddress, userAgent);
             if (!success)
                 return ApiBadRequest("RELEASE_FAILED", error ?? "Gagal melepaskan dana");
 
@@ -204,15 +234,18 @@ public class TransfersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Cancel transfer - sender cancels before completion
+    /// Cancel transfer - sender cancels before completion - REQUIRES PQC Signature
     /// </summary>
     /// <remarks>
     /// Pengirim dapat membatalkan transfer yang masih pending atau dalam hold period.
     /// Dana akan dikembalikan ke pengirim tanpa potongan fee.
+    /// PQC digital signature diperlukan untuk verifikasi.
     /// </remarks>
     [HttpPost("{id}/cancel")]
+    [RequiresPqcSignature]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CancelTransfer(string id, [FromBody] CancelTransferRequest request)
     {
         var userId = GetUserId();
@@ -221,7 +254,13 @@ public class TransfersController : ApiControllerBase
 
         try
         {
-            var (success, error) = await _transferService.CancelTransferAsync(id, userId, request.Pin, request.Reason ?? "Dibatalkan oleh pengirim");
+            var idempotencyKey = Request.Headers["X-Idempotency-Key"].FirstOrDefault();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers.UserAgent.ToString();
+
+            var (success, error) = await _secureTransferService.CancelTransferAsync(
+                id, userId, request.Pin, request.Reason ?? "Dibatalkan oleh pengirim",
+                idempotencyKey, ipAddress, userAgent);
             if (!success)
                 return ApiBadRequest("CANCEL_FAILED", error ?? "Gagal membatalkan transfer");
 
@@ -235,16 +274,19 @@ public class TransfersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Reject transfer - receiver rejects and refunds to sender
+    /// Reject transfer - receiver rejects and refunds to sender - REQUIRES PQC Signature
     /// </summary>
     /// <remarks>
     /// Penerima dapat menolak transfer yang masih pending atau dalam dispute.
     /// Dana akan dikembalikan ke pengirim tanpa potongan fee.
     /// Ini memungkinkan kedua pihak setuju untuk membatalkan transaksi dengan cepat.
+    /// PQC digital signature diperlukan untuk verifikasi.
     /// </remarks>
     [HttpPost("{id}/reject")]
+    [RequiresPqcSignature]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RejectTransfer(string id, [FromBody] CancelTransferRequest request)
     {
         var userId = GetUserId();
@@ -253,7 +295,13 @@ public class TransfersController : ApiControllerBase
 
         try
         {
-            var (success, error) = await _transferService.RejectTransferAsync(id, userId, request.Pin, request.Reason ?? "Ditolak oleh penerima");
+            var idempotencyKey = Request.Headers["X-Idempotency-Key"].FirstOrDefault();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers.UserAgent.ToString();
+
+            var (success, error) = await _secureTransferService.RejectTransferAsync(
+                id, userId, request.Pin, request.Reason ?? "Ditolak oleh penerima",
+                idempotencyKey, ipAddress, userAgent);
             if (!success)
                 return ApiBadRequest("REJECT_FAILED", error ?? "Gagal menolak transfer");
 

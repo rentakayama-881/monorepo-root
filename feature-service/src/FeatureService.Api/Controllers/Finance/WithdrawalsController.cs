@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Services;
 using FeatureService.Api.Models.Entities;
+using FeatureService.Api.Attributes;
 
 namespace FeatureService.Api.Controllers.Finance;
 
 /// <summary>
-/// Withdrawal endpoints for cashing out wallet balance to bank
+/// Withdrawal endpoints for cashing out wallet balance to bank.
+/// All financial operations require PQC digital signature verification.
 /// </summary>
 [ApiController]
 [Route("api/v1/wallets/withdrawals")]
@@ -16,26 +18,45 @@ namespace FeatureService.Api.Controllers.Finance;
 public class WithdrawalsController : ApiControllerBase
 {
     private readonly IWithdrawalService _withdrawalService;
+    private readonly ISecureWithdrawalService _secureWithdrawalService;
     private readonly ILogger<WithdrawalsController> _logger;
 
-    public WithdrawalsController(IWithdrawalService withdrawalService, ILogger<WithdrawalsController> logger)
+    public WithdrawalsController(
+        IWithdrawalService withdrawalService,
+        ISecureWithdrawalService secureWithdrawalService,
+        ILogger<WithdrawalsController> logger)
     {
         _withdrawalService = withdrawalService;
+        _secureWithdrawalService = secureWithdrawalService;
         _logger = logger;
     }
 
     /// <summary>
-    /// Request a new withdrawal to bank account - REQUIRES 2FA + PIN
+    /// Request a new withdrawal to bank account - REQUIRES 2FA + PIN + PQC Signature
     /// </summary>
     /// <remarks>
-    /// SECURITY: Two-Factor Authentication (2FA) MUST be enabled.
+    /// SECURITY: Keamanan tingkat militer dengan:
+    /// - Two-Factor Authentication (2FA) MUST be enabled
+    /// - PIN verification required
+    /// - Post-Quantum Cryptography (PQC) digital signature required
+    /// - Idempotency via Redis Sentinel to prevent duplicate transactions
+    /// - Immutable audit trail for compliance
+    ///
     /// Penarikan akan diproses oleh tim dalam 1-3 hari kerja.
     /// Fee penarikan: Rp2,500 per transaksi.
     /// Minimal: Rp10,000, Maksimal: Rp100,000,000
+    ///
+    /// Required Headers:
+    /// - X-PQC-Signature: Base64-encoded Dilithium3 signature
+    /// - X-PQC-Key-Id: User's registered PQC key ID
+    /// - X-PQC-Timestamp: ISO 8601 timestamp (max 5 minutes old)
+    /// - X-Idempotency-Key: Optional unique key for request deduplication
     /// </remarks>
     [HttpPost]
+    [RequiresPqcSignature]
     [ProducesResponseType(typeof(ApiResponse<CreateWithdrawalResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateWithdrawal([FromBody] CreateWithdrawalRequest request)
     {
@@ -54,7 +75,12 @@ public class WithdrawalsController : ApiControllerBase
 
         try
         {
-            var result = await _withdrawalService.CreateWithdrawalAsync(userId, username, request);
+            var idempotencyKey = Request.Headers["X-Idempotency-Key"].FirstOrDefault();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers.UserAgent.ToString();
+
+            var result = await _secureWithdrawalService.CreateWithdrawalAsync(
+                userId, username, request, idempotencyKey, ipAddress, userAgent);
             if (!result.Success)
                 return ApiBadRequest("WITHDRAWAL_FAILED", result.Error ?? "Failed to create withdrawal");
 
@@ -126,11 +152,17 @@ public class WithdrawalsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Cancel a pending withdrawal
+    /// Cancel a pending withdrawal - REQUIRES PQC Signature
     /// </summary>
+    /// <remarks>
+    /// PQC digital signature diperlukan untuk verifikasi pembatalan.
+    /// Dana akan dikembalikan ke wallet (termasuk fee).
+    /// </remarks>
     [HttpPost("{id}/cancel")]
+    [RequiresPqcSignature]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CancelWithdrawal(string id, [FromBody] CancelWithdrawalRequest request)
     {
         var userId = GetUserId();
@@ -139,7 +171,12 @@ public class WithdrawalsController : ApiControllerBase
 
         try
         {
-            var (success, error) = await _withdrawalService.CancelWithdrawalAsync(id, userId, request.Pin);
+            var idempotencyKey = Request.Headers["X-Idempotency-Key"].FirstOrDefault();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers.UserAgent.ToString();
+
+            var (success, error) = await _secureWithdrawalService.CancelWithdrawalAsync(
+                id, userId, request.Pin, idempotencyKey, ipAddress, userAgent);
             if (!success)
                 return ApiBadRequest("CANCEL_FAILED", error ?? "Gagal membatalkan penarikan");
 

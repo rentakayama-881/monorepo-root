@@ -13,6 +13,47 @@ services:
     networks:
       - feature-network
 
+  redis-master:
+    image: redis:7.2-alpine
+    container_name: feature-redis-master
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispass123}
+    volumes:
+      - redis_master_data:/data
+    networks:
+      - feature-network
+
+  redis-replica:
+    image: redis:7.2-alpine
+    container_name: feature-redis-replica
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes --replicaof redis-master 6379 --masterauth ${REDIS_PASSWORD:-redispass123} --requirepass ${REDIS_PASSWORD:-redispass123}
+    volumes:
+      - redis_replica_data:/data
+    depends_on:
+      - redis-master
+    networks:
+      - feature-network
+
+  redis-sentinel:
+    image: redis:7.2-alpine
+    container_name: feature-redis-sentinel
+    ports:
+      - "26379:26379"
+    command: >
+      sh -c 'echo "sentinel monitor mymaster redis-master 6379 1" > /tmp/sentinel.conf &&
+             echo "sentinel auth-pass mymaster ${REDIS_PASSWORD:-redispass123}" >> /tmp/sentinel.conf &&
+             echo "sentinel down-after-milliseconds mymaster 5000" >> /tmp/sentinel.conf &&
+             echo "sentinel failover-timeout mymaster 60000" >> /tmp/sentinel.conf &&
+             redis-sentinel /tmp/sentinel.conf'
+    depends_on:
+      - redis-master
+      - redis-replica
+    networks:
+      - feature-network
+
   feature-api:
     build:
       context: .
@@ -28,13 +69,20 @@ services:
       JWT__ISSUER: "api.alephdraad.fun"
       JWT__AUDIENCE: "alephdraad-clients"
       CORS__ALLOWEDORIGINS__0: "https://alephdraad.fun"
+      REDIS__SENTINELENDPOINTS__0: "redis-sentinel:26379"
+      REDIS__SERVICENAME: "mymaster"
+      REDIS__PASSWORD: "${REDIS_PASSWORD:-redispass123}"
+      SECURITY__MASTERENCRYPTIONKEY: "${MASTER_ENCRYPTION_KEY}"
     depends_on:
       - mongodb
+      - redis-sentinel
     networks:
       - feature-network
 
 volumes:
   mongodb_data:
+  redis_master_data:
+  redis_replica_data:
 
 networks:
   feature-network:

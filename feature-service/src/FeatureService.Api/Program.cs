@@ -5,8 +5,14 @@ using Microsoft.OpenApi.Models;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Serilog;
+using StackExchange.Redis;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Infrastructure.Auth;
+using FeatureService.Api.Infrastructure.Redis;
+using FeatureService.Api.Infrastructure.PQC;
+using FeatureService.Api.Infrastructure.Idempotency;
+using FeatureService.Api.Infrastructure.Audit;
+using FeatureService.Api.Infrastructure.Security;
 using FeatureService.Api.Services;
 using FeatureService.Api.Middleware;
 
@@ -27,7 +33,7 @@ try
     // Configure MongoDB settings
     var mongoSettings = new MongoDbSettings();
     builder.Configuration.GetSection("MongoDB").Bind(mongoSettings);
-    
+
     // Override with environment variables if present
     if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MONGODB__CONNECTIONSTRING")))
     {
@@ -44,7 +50,7 @@ try
     // Configure JWT settings
     var jwtSettings = new JwtSettings();
     builder.Configuration.GetSection("Jwt").Bind(jwtSettings);
-    
+
     // Override with environment variables if present
     if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT__SECRET")))
     {
@@ -101,7 +107,7 @@ try
         {
             // Use the older JwtSecurityTokenHandler which handles missing kid better
             options.UseSecurityTokenValidators = true;
-            
+
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = false, // Go backend doesn't set issuer
@@ -114,34 +120,34 @@ try
                 {
                     var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
                     var jwtToken = handler.ReadJwtToken(token);
-                    
+
                     // Manually compute and verify HMAC-SHA256 signature
                     var parts = token.Split('.');
                     if (parts.Length != 3)
                         throw new SecurityTokenInvalidSignatureException("Invalid token format");
-                    
+
                     var headerAndPayload = $"{parts[0]}.{parts[1]}";
                     var tokenSignature = parts[2];
-                    
+
                     using var hmac = new System.Security.Cryptography.HMACSHA256(
                         Encoding.UTF8.GetBytes(jwtSettings.Secret));
                     var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(headerAndPayload));
                     var computedSignature = Base64UrlEncoder.Encode(hash);
-                    
+
                     // Log for debugging
                     Console.WriteLine($"[JWT DEBUG] Secret len: {jwtSettings.Secret.Length}, first 10: {jwtSettings.Secret.Substring(0, Math.Min(10, jwtSettings.Secret.Length))}");
                     Console.WriteLine($"[JWT DEBUG] Token sig: {tokenSignature.Substring(0, Math.Min(20, tokenSignature.Length))}...");
                     Console.WriteLine($"[JWT DEBUG] Computed:  {computedSignature.Substring(0, Math.Min(20, computedSignature.Length))}...");
-                    
+
                     if (!string.Equals(computedSignature, tokenSignature, StringComparison.Ordinal))
                         throw new SecurityTokenInvalidSignatureException($"Signature mismatch: expected {computedSignature.Substring(0, 20)}... got {tokenSignature.Substring(0, 20)}...");
-                    
+
                     return jwtToken;
                 },
                 // ClockSkew to handle time differences
                 ClockSkew = TimeSpan.FromMinutes(5)
             };
-            
+
             // Custom token validation to also support admin tokens from Go backend
             options.Events = new JwtBearerEvents
             {
@@ -156,7 +162,7 @@ try
                         {
                             identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "admin"));
                         }
-                        
+
                         // Map admin_id to NameIdentifier
                         var adminId = context.Principal?.FindFirst("admin_id")?.Value;
                         if (!string.IsNullOrEmpty(adminId) && context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) == null)
@@ -174,7 +180,7 @@ try
                     {
                         adminSecret = Environment.GetEnvironmentVariable("ADMIN_JWT_SECRET") ?? "";
                     }
-                    
+
                     if (!string.IsNullOrEmpty(adminSecret) && context.Request.Headers.TryGetValue("Authorization", out var authHeader))
                     {
                         var headerValue = authHeader.ToString();
@@ -194,10 +200,10 @@ try
                                     ValidateLifetime = true,
                                     ClockSkew = TimeSpan.FromMinutes(5)
                                 };
-                                
+
                                 var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
                                 var tokenType = principal.FindFirst("type")?.Value;
-                                
+
                                 if (tokenType == "admin")
                                 {
                                     var identity = (System.Security.Claims.ClaimsIdentity?)principal.Identity;
@@ -205,13 +211,13 @@ try
                                     {
                                         identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "admin"));
                                     }
-                                    
+
                                     var adminId = principal.FindFirst("admin_id")?.Value;
                                     if (!string.IsNullOrEmpty(adminId) && principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) == null)
                                     {
                                         identity?.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, adminId));
                                     }
-                                    
+
                                     context.Principal = principal;
                                     context.Success();
                                 }
@@ -231,13 +237,64 @@ try
     builder.Services.AddScoped<IUserContextAccessor, UserContextAccessor>();
     builder.Services.AddScoped<IReplyService, ReplyService>();
     builder.Services.AddScoped<IReactionService, ReactionService>();
-    
+
     // Register financial services
     builder.Services.AddScoped<IWalletService, WalletService>();
     builder.Services.AddScoped<ITransferService, TransferService>();
     builder.Services.AddHttpClient<ITransferService, TransferService>();
     builder.Services.AddScoped<IDisputeService, DisputeService>();
     builder.Services.AddScoped<IWithdrawalService, WithdrawalService>();
+
+    // Configure Redis Sentinel for idempotency
+    var redisSettings = new RedisSettings();
+    builder.Configuration.GetSection("Redis").Bind(redisSettings);
+
+    // Override with environment variables if present
+    if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS__SERVICENAME")))
+    {
+        redisSettings.ServiceName = Environment.GetEnvironmentVariable("REDIS__SERVICENAME")!;
+    }
+    if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS__PASSWORD")))
+    {
+        redisSettings.Password = Environment.GetEnvironmentVariable("REDIS__PASSWORD")!;
+    }
+
+    builder.Services.AddSingleton(redisSettings);
+    builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    {
+        var settings = sp.GetRequiredService<RedisSettings>();
+        var logger = sp.GetRequiredService<ILogger<Program>>();
+        return RedisConnectionFactory.CreateConnection(settings, logger);
+    });
+
+    // Register Post-Quantum Cryptography service
+    builder.Services.AddSingleton<IPostQuantumCryptoService, PostQuantumCryptoService>();
+
+    // Register Idempotency service (Redis-based)
+    builder.Services.AddScoped<IIdempotencyService, RedisIdempotencyService>();
+
+    // Register Audit Trail service
+    builder.Services.AddScoped<IAuditTrailService, AuditTrailService>();
+
+    // Register At-Rest Encryption service
+    var encryptionKey = builder.Configuration["Security:MasterEncryptionKey"]
+        ?? Environment.GetEnvironmentVariable("SECURITY__MASTERENCRYPTIONKEY");
+
+    if (string.IsNullOrEmpty(encryptionKey))
+    {
+        Log.Warning("MasterEncryptionKey not configured. Using auto-generated key (not suitable for production).");
+    }
+
+    builder.Services.AddSingleton<IAtRestEncryptionService>(sp =>
+    {
+        var config = sp.GetRequiredService<IConfiguration>();
+        var logger = sp.GetRequiredService<ILogger<AtRestEncryptionService>>();
+        return new AtRestEncryptionService(config, logger);
+    });
+
+    // Register Secure Transfer and Withdrawal services (with idempotency and audit)
+    builder.Services.AddScoped<ISecureTransferService, SecureTransferService>();
+    builder.Services.AddScoped<ISecureWithdrawalService, SecureWithdrawalService>();
 
     // Register moderation services
     builder.Services.AddScoped<IReportService, ReportService>();
@@ -264,7 +321,7 @@ try
     {
         client.Timeout = TimeSpan.FromMinutes(2);
     });
-    
+
     builder.Services.AddHttpClient<IExternalLlmService, ExternalLlmService>(client =>
     {
         client.Timeout = TimeSpan.FromMinutes(3);
@@ -377,6 +434,10 @@ try
 
     app.UseAuthentication();
     app.UseAuthorization();
+
+    // PQC Signature validation for financial endpoints
+    // Must be after Authentication so user context is available
+    app.UsePqcSignatureValidation();
 
     app.MapControllers();
     app.MapHealthChecks("/health");
