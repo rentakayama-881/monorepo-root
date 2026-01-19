@@ -485,12 +485,12 @@ public class TransferService : ITransferService
         {
             var backendUrl = _configuration["Backend:ApiUrl"] ?? "https://api.alephdraad.fun";
             var response = await _httpClient.GetAsync($"{backendUrl}/api/users/{userId}/public");
-            
+
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
                 using var doc = System.Text.Json.JsonDocument.Parse(json);
-                
+
                 // Try to get username from response
                 if (doc.RootElement.TryGetProperty("username", out var usernameElement))
                 {
@@ -501,8 +501,8 @@ public class TransferService : ITransferService
                     }
                 }
             }
-            
-            _logger.LogWarning("Failed to get username for user {UserId}: {StatusCode}", 
+
+            _logger.LogWarning("Failed to get username for user {UserId}: {StatusCode}",
                 userId, response.StatusCode);
             return null;
         }
