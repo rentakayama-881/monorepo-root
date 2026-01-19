@@ -18,7 +18,7 @@ public static class RedisConnectionFactory
         ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        
+
         var options = new ConfigurationOptions
         {
             DefaultDatabase = settings.DefaultDatabase,
@@ -31,17 +31,25 @@ public static class RedisConnectionFactory
             ReconnectRetryPolicy = new ExponentialRetry(5000)
         };
 
-        // Add Sentinel endpoints
-        if (settings.SentinelEndpoints.Length > 0)
+        // Check if direct connection is configured (production single-node)
+        if (!string.IsNullOrEmpty(settings.DirectEndpoint))
+        {
+            options.EndPoints.Add(settings.DirectEndpoint);
+            logger.LogInformation(
+                "Using direct Redis connection to {Endpoint}",
+                settings.DirectEndpoint);
+        }
+        // Add Sentinel endpoints if configured (multi-node HA setup)
+        else if (settings.SentinelEndpoints.Length > 0 && !string.IsNullOrEmpty(settings.ServiceName))
         {
             options.ServiceName = settings.ServiceName;
             options.CommandMap = CommandMap.Sentinel;
-            
+
             foreach (var endpoint in settings.SentinelEndpoints)
             {
                 options.EndPoints.Add(endpoint);
             }
-            
+
             logger.LogInformation(
                 "Configuring Redis Sentinel connection. ServiceName: {ServiceName}, Endpoints: {Endpoints}",
                 settings.ServiceName, string.Join(", ", settings.SentinelEndpoints));
@@ -50,7 +58,7 @@ public static class RedisConnectionFactory
         {
             // Fallback to direct connection for development
             options.EndPoints.Add("127.0.0.1:6379");
-            logger.LogWarning("No Sentinel endpoints configured. Using direct Redis connection to localhost:6379");
+            logger.LogWarning("No Redis endpoints configured. Using direct connection to localhost:6379");
         }
 
         // Add password if configured
@@ -62,11 +70,11 @@ public static class RedisConnectionFactory
         try
         {
             var multiplexer = ConnectionMultiplexer.Connect(options);
-            
+
             // Subscribe to connection events for logging
             multiplexer.ConnectionFailed += (sender, e) =>
             {
-                logger.LogError(e.Exception, 
+                logger.LogError(e.Exception,
                     "Redis connection failed. Endpoint: {Endpoint}, FailureType: {FailureType}",
                     e.EndPoint, e.FailureType);
             };
@@ -95,7 +103,7 @@ public static class RedisConnectionFactory
             throw;
         }
     }
-    
+
     /// <summary>
     /// Create Redis connection untuk development (no Sentinel).
     /// </summary>
@@ -109,11 +117,11 @@ public static class RedisConnectionFactory
         try
         {
             var multiplexer = ConnectionMultiplexer.Connect(connectionString);
-            
+
             logger.LogInformation(
                 "Direct Redis connection established. Configuration: {Config}",
                 multiplexer.Configuration);
-            
+
             return multiplexer;
         }
         catch (RedisConnectionException ex)
