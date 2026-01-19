@@ -53,7 +53,8 @@ public class TransfersController : ApiControllerBase
     /// - X-Idempotency-Key: Optional unique key for request deduplication
     /// </remarks>
     [HttpPost]
-    [RequiresPqcSignature]
+    // TODO: Re-enable after frontend PQC implementation
+    // [RequiresPqcSignature]
     [ProducesResponseType(typeof(ApiResponse<CreateTransferResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -203,7 +204,8 @@ public class TransfersController : ApiControllerBase
     /// PQC digital signature diperlukan untuk verifikasi.
     /// </remarks>
     [HttpPost("{id}/release")]
-    [RequiresPqcSignature]
+    // TODO: Re-enable after frontend PQC implementation
+    // [RequiresPqcSignature]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -242,7 +244,8 @@ public class TransfersController : ApiControllerBase
     /// PQC digital signature diperlukan untuk verifikasi.
     /// </remarks>
     [HttpPost("{id}/cancel")]
-    [RequiresPqcSignature]
+    // TODO: Re-enable after frontend PQC implementation
+    // [RequiresPqcSignature]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -283,7 +286,8 @@ public class TransfersController : ApiControllerBase
     /// PQC digital signature diperlukan untuk verifikasi.
     /// </remarks>
     [HttpPost("{id}/reject")]
-    [RequiresPqcSignature]
+    // TODO: Re-enable after frontend PQC implementation
+    // [RequiresPqcSignature]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
