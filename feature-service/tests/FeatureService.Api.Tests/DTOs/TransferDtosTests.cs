@@ -95,12 +95,13 @@ public class TransferDtosTests
     [Fact]
     public void TransferStatus_HasExpectedValues()
     {
-        // Assert all expected statuses exist
+        // Assert all expected statuses exist with correct enum values
         Assert.Equal(0, (int)TransferStatus.Pending);
         Assert.Equal(1, (int)TransferStatus.Released);
         Assert.Equal(2, (int)TransferStatus.Cancelled);
-        Assert.Equal(3, (int)TransferStatus.Disputed);
-        Assert.Equal(4, (int)TransferStatus.Expired);
+        Assert.Equal(3, (int)TransferStatus.Rejected);
+        Assert.Equal(4, (int)TransferStatus.Disputed);
+        Assert.Equal(5, (int)TransferStatus.Expired);
     }
 
     private static List<ValidationResult> ValidateModel(object model)

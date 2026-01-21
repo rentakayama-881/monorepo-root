@@ -81,7 +81,7 @@ public class PqcKeysController : ApiControllerBase
 
         if (existingKey != null)
         {
-            return ApiBadRequest("KEY_EXISTS", 
+            return ApiBadRequest("KEY_EXISTS",
                 "You already have an active PQC key. Revoke it first before registering a new one.");
         }
 
@@ -218,7 +218,7 @@ public class PqcKeysController : ApiControllerBase
             "PQC key revoked. UserId: {UserId}, KeyId: {KeyId}, Reason: {Reason}",
             userId, key.KeyId, request.Reason);
 
-        return ApiOk<object>(null, "PQC key revoked successfully");
+        return ApiOk(new { revoked = true, keyId = key.KeyId }, "PQC key revoked successfully");
     }
 
     /// <summary>
@@ -247,7 +247,7 @@ public class PqcKeysController : ApiControllerBase
 
         return ApiOk(response, "Key pair generated. Store the private key securely on your device!");
         #else
-        return ApiError(403, "NOT_AVAILABLE", 
+        return ApiError(403, "NOT_AVAILABLE",
             "Key generation is not available in production. Generate keys on your device.");
         #endif
     }

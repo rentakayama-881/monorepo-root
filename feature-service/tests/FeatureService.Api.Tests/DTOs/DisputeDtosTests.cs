@@ -82,6 +82,10 @@ public class DisputeDtosTests
             InitiatorUsername: "buyer",
             RespondentId: 2,
             RespondentUsername: "seller",
+            SenderId: 1,
+            SenderUsername: "buyer",
+            ReceiverId: 2,
+            ReceiverUsername: "seller",
             Reason: "Item tidak diterima",
             Category: "ItemNotReceived",
             Status: "Open",
@@ -97,6 +101,8 @@ public class DisputeDtosTests
         // Assert
         Assert.Equal("buyer", dto.InitiatorUsername);
         Assert.Equal("seller", dto.RespondentUsername);
+        Assert.Equal("buyer", dto.SenderUsername);
+        Assert.Equal("seller", dto.ReceiverUsername);
         Assert.Equal("ItemNotReceived", dto.Category);
         Assert.Equal("Open", dto.Status);
         Assert.Equal(100000, dto.Amount);

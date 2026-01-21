@@ -270,11 +270,22 @@ try
     // Register Post-Quantum Cryptography service
     builder.Services.AddSingleton<IPostQuantumCryptoService, PostQuantumCryptoService>();
 
+    // Register Hybrid Post-Quantum Cryptography service (PQC + Classical)
+    // Combines CRYSTALS-Dilithium3+Ed25519 for signatures and CRYSTALS-Kyber768+ECDH for key encapsulation
+    builder.Services.AddSingleton<IHybridCryptoService, HybridCryptoService>();
+
     // Register Idempotency service (Redis-based)
     builder.Services.AddScoped<IIdempotencyService, RedisIdempotencyService>();
 
     // Register Audit Trail service
     builder.Services.AddScoped<IAuditTrailService, AuditTrailService>();
+
+    // Register Key Derivation service (HKDF - RFC 5869)
+    builder.Services.AddSingleton<IKeyDerivationService, KeyDerivationService>();
+
+    // Register Key Management service (HSM-ready abstraction, software implementation)
+    // For production with high security requirements, replace with HSM-backed implementation
+    builder.Services.AddSingleton<IKeyManagementService, SoftwareKeyManagementService>();
 
     // Register At-Rest Encryption service
     var encryptionKey = builder.Configuration["Security:MasterEncryptionKey"]

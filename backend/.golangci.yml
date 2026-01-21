@@ -1,0 +1,205 @@
+# =============================================================================
+# Alephdraad - Go Linting Configuration
+# =============================================================================
+# Enterprise-grade linting following Google, Uber, and Stripe Go standards
+#
+# Standards Applied:
+# - Google Go Style Guide
+# - Uber Go Style Guide
+# - Effective Go
+# - Go Code Review Comments
+#
+# Security Focus:
+# - SQL injection detection
+# - Cryptographic misuse detection
+# - Error handling enforcement
+# - Race condition detection
+# =============================================================================
+
+run:
+  timeout: 5m
+  go: "1.24"
+  tests: true
+
+  # Skip generated code (Ent ORM)
+  skip-dirs:
+    - ent
+    - vendor
+
+  # Skip generated files
+  skip-files:
+    - ".*_gen\\.go$"
+    - ".*_generated\\.go$"
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  sort-results: true
+
+linters:
+  enable:
+    # Default linters
+    - errcheck       # Check for unchecked errors
+    - gosimple       # Simplify code
+    - govet          # Go vet checks
+    - ineffassign    # Detect unused assignments
+    - staticcheck    # Static analysis
+    - unused         # Find unused code
+
+    # Security linters (like Stripe/GitHub)
+    - gosec          # Security-focused linter
+    - bodyclose      # Check HTTP response body close
+    - noctx          # Require context.Context in HTTP
+
+    # Code quality linters
+    - gofmt          # Format checking
+    - goimports      # Import ordering
+    - misspell       # Spelling mistakes
+    - unconvert      # Unnecessary type conversions
+    - unparam        # Unused function parameters
+    - nakedret       # Naked returns in long functions
+    - prealloc       # Slice preallocation suggestions
+    - exportloopref  # Export loop variable reference
+
+    # Error handling (critical for production)
+    - errorlint      # Error wrapping and comparison
+    - wrapcheck      # Error wrapping enforcement
+
+    # Performance linters
+    - copyloopvar    # Loop variable copy issues
+    - intrange       # Integer range issues
+
+    # Documentation
+    - godot          # Check comment periods
+
+  disable:
+    - typecheck      # Handled by go build
+    - depguard       # Too restrictive for initial setup
+    - funlen         # Function length - use judgment
+    - gochecknoglobals  # Globals are sometimes necessary
+    - gomnd          # Magic numbers - too noisy
+    - wsl            # Whitespace linter - too opinionated
+    - nlreturn       # Newline before return - too opinionated
+    - exhaustive     # Enum exhaustiveness - too strict initially
+    - tagliatelle    # JSON tag style - flexible
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - io.Copy
+      - io.WriteString
+      - (io.Closer).Close
+      - (*os.File).Close
+      - (net/http.ResponseWriter).Write
+
+  govet:
+    enable:
+      - shadow
+      - fieldalignment
+    settings:
+      shadow:
+        strict: true
+
+  gosec:
+    severity: medium
+    confidence: medium
+    excludes:
+      - G104  # Audit errors not checked (handled by errcheck)
+      - G304  # File path from variable (controlled in our case)
+    config:
+      global:
+        nosec: true
+        show-ignored: false
+        audit: enabled
+
+  staticcheck:
+    checks:
+      - all
+      - "-SA1019"  # Deprecated usage (we handle intentionally)
+
+  goimports:
+    local-prefixes: backend-gin
+
+  misspell:
+    locale: US
+
+  nakedret:
+    max-func-lines: 30
+
+  prealloc:
+    simple: true
+    for-loops: true
+
+  errorlint:
+    errorf: true
+    asserts: true
+    comparison: true
+
+  wrapcheck:
+    ignoreSigs:
+      - .Errorf(
+      - errors.New(
+      - errors.Unwrap(
+      - errors.Join(
+      - .Wrap(
+      - .Wrapf(
+      - .WithMessage(
+      - .WithMessagef(
+      - .WithStack(
+    ignorePackageGlobs:
+      - github.com/gin-gonic/gin
+      - entgo.io/ent/*
+
+  godot:
+    scope: declarations
+    capital: false
+
+issues:
+  exclude-use-default: true
+  max-issues-per-linter: 50
+  max-same-issues: 10
+
+  exclude-rules:
+    # Exclude some linters from running on tests
+    - path: _test\.go
+      linters:
+        - gosec
+        - wrapcheck
+        - errcheck
+        - bodyclose
+
+    # Exclude generated Ent files
+    - path: ent/
+      linters:
+        - all
+
+    # Allow globals in config package
+    - path: config/
+      linters:
+        - gochecknoglobals
+
+    # Allow naked returns in short functions
+    - path: handlers/
+      linters:
+        - nakedret
+      text: "naked return"
+
+    # Exclude TODO comments from being flagged
+    - source: "TODO"
+      linters:
+        - godox
+
+severity:
+  default-severity: warning
+  case-sensitive: false
+  rules:
+    - linters:
+        - gosec
+      severity: error
+    - linters:
+        - errorlint
+      severity: error

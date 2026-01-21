@@ -8,7 +8,7 @@ Panduan deployment untuk AlephDraad setelah melakukan perubahan kode.
 |---------|-----|-------------|-----|
 | Go Backend (Gin) | 72.62.124.23 | `ssh deploy@72.62.124.23` | https://api.alephdraad.fun |
 | Feature Service (ASP.NET) | 203.175.11.84 | `ssh asp@203.175.11.84` | https://feature.alephdraad.fun |
-| Frontend (Next.js) | Vercel | Auto-deploy | https://www.alephdraad.my.id |
+| Frontend (Next.js) | Vercel | Auto-deploy | https://www.alephdraad.fun |
 
 ---
 
