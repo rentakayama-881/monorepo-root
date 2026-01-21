@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Alert from "../../components/ui/Alert";
@@ -16,8 +16,11 @@ import TOTPSettings from "@/components/TOTPSettings";
 import PasskeySettings from "@/components/PasskeySettings";
 import { useSudoAction } from "@/components/SudoModal";
 
-export default function AccountPage() {
+function AccountPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const setup2fa = searchParams.get("setup2fa");
+  const redirectAfter2fa = searchParams.get("redirect");
   const API = `${getApiBase()}/api`;
   const authed = useMemo(() => { try { return !!getToken(); } catch { return false; } }, []);
   const [loading, setLoading] = useState(true);
@@ -228,6 +231,26 @@ export default function AccountPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Alert banner when redirected for 2FA setup */}
+      {setup2fa === "true" && (
+        <div className="mb-6 rounded-lg border border-amber-500 bg-amber-50 dark:bg-amber-950 p-4">
+          <div className="flex items-start gap-3">
+            <svg className="w-6 h-6 text-amber-600 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <div>
+              <p className="font-semibold text-amber-800 dark:text-amber-200">
+                2FA Diperlukan untuk Fitur Wallet
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                Untuk menggunakan fitur kirim uang, tarik saldo, dan set PIN, Anda harus mengaktifkan 2FA terlebih dahulu.
+                Scroll ke bawah ke bagian &quot;Keamanan&quot; dan klik tombol &quot;Aktifkan 2FA&quot;.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">Account Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -490,10 +513,10 @@ function DeleteAccountSection({ API, router }) {
 
   async function handleDelete() {
     if (deleteConfirmation !== "DELETE") return;
-    
+
     setDeleteError("");
     setDeleteLoading(true);
-    
+
     try {
       // Request sudo mode first
       await executeSudo(async (sudoToken) => {
@@ -540,10 +563,10 @@ function DeleteAccountSection({ API, router }) {
         Zona Berbahaya
       </h3>
       <p className="mt-2 text-xs text-destructive/80">
-        Menghapus akun akan menghapus semua data Anda secara permanen termasuk semua thread yang pernah dibuat. 
+        Menghapus akun akan menghapus semua data Anda secara permanen termasuk semua thread yang pernah dibuat.
         Aksi ini tidak dapat dibatalkan.
       </p>
-      
+
       <div className="mt-4 space-y-3">
         <div>
           <label className="block text-xs font-medium text-destructive mb-1">
@@ -556,9 +579,9 @@ function DeleteAccountSection({ API, router }) {
             onChange={e => setDeleteConfirmation(e.target.value)}
           />
         </div>
-        
+
         {deleteError && <Alert variant="error" message={deleteError} />}
-        
+
         <Button
           variant="danger"
           className="w-full disabled:opacity-50"
@@ -571,11 +594,25 @@ function DeleteAccountSection({ API, router }) {
           </svg>
           Hapus Akun Permanen
         </Button>
-        
+
         <p className="text-xs text-muted-foreground text-center">
           Akan diminta verifikasi identitas sebelum menghapus
         </p>
       </div>
     </section>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense fallback={
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" /> Loading...
+        </div>
+      </main>
+    }>
+      <AccountPageContent />
+    </Suspense>
   );
 }

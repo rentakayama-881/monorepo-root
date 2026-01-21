@@ -74,12 +74,8 @@ function TOTPSettingsContent() {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Auto-start setup if setup2fa query param is present and 2FA not enabled
-  useEffect(() => {
-    if (setup2fa === "true" && !loading && !status.enabled && !setupData) {
-      startSetup();
-    }
-  }, [setup2fa, loading, status.enabled, setupData]);
+  // NOTE: Don't auto-start setup - let user click "Aktifkan 2FA" button
+  // The info banner will inform user why they need to enable 2FA
 
   // Start TOTP setup
   async function startSetup() {

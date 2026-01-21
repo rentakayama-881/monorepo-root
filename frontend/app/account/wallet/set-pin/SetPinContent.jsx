@@ -5,6 +5,7 @@ import Link from "next/link";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { getValidToken } from "@/lib/tokenRefresh";
 import logger from "@/lib/logger";
 
 export default function SetPinContent() {
@@ -23,7 +24,8 @@ export default function SetPinContent() {
 
   useEffect(() => {
     async function checkWalletAndTwoFactor() {
-      const token = getToken();
+      // Use getValidToken to ensure we have a fresh token
+      const token = await getValidToken();
       if (!token) {
         router.push("/login");
         return;
@@ -82,10 +84,14 @@ export default function SetPinContent() {
     setError("");
 
     try {
-      // Use Feature Service for PIN operations
-      const endpoint = hasPin ? FEATURE_ENDPOINTS.WALLETS.PIN_CHANGE : FEATURE_ENDPOINTS.WALLETS.PIN_SET;
-      const body = hasPin 
-        ? { currentPin: currentPin, newPin: pin, confirmPin: pin }
+      // Get fresh token before API call to prevent token expiry issues
+      const freshToken = await getValidToken();
+      if (!freshToken) {
+        setError("Sesi telah berakhir. Silakan login kembali.");
+        router.push("/login");
+        return;
+      }
+
         : { pin: pin, confirmPin: confirmPin };
 
       await fetchFeatureAuth(endpoint, {
@@ -296,8 +302,8 @@ export default function SetPinContent() {
               <div className="text-sm">
                 <p className="font-semibold text-destructive mb-1">⚠️ Peringatan Penting</p>
                 <p className="text-muted-foreground">
-                  <strong>PIN tidak dapat di-reset atau dipulihkan.</strong> Jika Anda lupa PIN, 
-                  Anda tidak akan bisa melakukan transaksi dan harus menghubungi admin untuk bantuan. 
+                  <strong>PIN tidak dapat di-reset atau dipulihkan.</strong> Jika Anda lupa PIN,
+                  Anda tidak akan bisa melakukan transaksi dan harus menghubungi admin untuk bantuan.
                   Pastikan Anda mengingat PIN yang Anda buat.
                 </p>
               </div>
