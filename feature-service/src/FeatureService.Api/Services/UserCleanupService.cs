@@ -11,7 +11,7 @@ public interface IUserCleanupService
     /// Returns (canDelete, blockingReasons, warnings)
     /// </summary>
     Task<UserDeleteValidationResult> ValidateAccountDeletionAsync(uint userId);
-    
+
     /// <summary>
     /// Hard delete all user data from MongoDB.
     /// Should only be called after Go backend has validated and is ready to delete.
@@ -28,7 +28,8 @@ public record UserDeleteValidationResult(
     int PendingTransfersAsSender,
     int PendingTransfersAsReceiver,
     int DisputedTransfers,
-    int PendingTransactions
+    int PendingTransactions,
+    int PendingWithdrawals
 );
 
 public record UserCleanupResult(
@@ -56,6 +57,7 @@ public class UserCleanupService : IUserCleanupService
     private readonly MongoDbContext _context;
     private readonly IMongoCollection<Transfer> _transfers;
     private readonly IMongoCollection<TransactionLedger> _ledger;
+    private readonly IMongoCollection<Withdrawal> _withdrawals;
     private readonly ILogger<UserCleanupService> _logger;
 
     public UserCleanupService(MongoDbContext context, ILogger<UserCleanupService> logger)
@@ -63,6 +65,7 @@ public class UserCleanupService : IUserCleanupService
         _context = context;
         _transfers = context.GetCollection<Transfer>("transfers");
         _ledger = context.GetCollection<TransactionLedger>("transaction_ledger");
+        _withdrawals = context.Withdrawals;
         _logger = logger;
     }
 
@@ -75,7 +78,7 @@ public class UserCleanupService : IUserCleanupService
         var wallet = await _context.Wallets
             .Find(w => w.UserId == userId)
             .FirstOrDefaultAsync();
-        
+
         long walletBalance = wallet?.Balance ?? 0;
         if (walletBalance > 0)
         {
@@ -86,7 +89,7 @@ public class UserCleanupService : IUserCleanupService
         var tokenBalance = await _context.TokenBalances
             .Find(t => t.UserId == userId)
             .FirstOrDefaultAsync();
-        
+
         long tokenBal = tokenBalance?.Balance ?? 0;
         if (tokenBal > 0)
         {
@@ -94,38 +97,48 @@ public class UserCleanupService : IUserCleanupService
         }
 
         // 3. Check pending transfers (as sender - money is held)
-        var pendingAsSender = await _transfers.CountDocumentsAsync(t => 
-            t.SenderId == userId && 
+        var pendingAsSender = await _transfers.CountDocumentsAsync(t =>
+            t.SenderId == userId &&
             (t.Status == TransferStatus.Pending || t.Status == TransferStatus.Disputed));
-        
+
         if (pendingAsSender > 0)
         {
             blockingReasons.Add($"Ada {pendingAsSender} transfer tertunda sebagai pengirim. Tunggu hingga selesai atau selesaikan dispute.");
         }
 
         // 4. Check pending transfers (as receiver - waiting to receive)
-        var pendingAsReceiver = await _transfers.CountDocumentsAsync(t => 
-            t.ReceiverId == userId && 
+        var pendingAsReceiver = await _transfers.CountDocumentsAsync(t =>
+            t.ReceiverId == userId &&
             (t.Status == TransferStatus.Pending || t.Status == TransferStatus.Disputed));
-        
+
         if (pendingAsReceiver > 0)
         {
             blockingReasons.Add($"Ada {pendingAsReceiver} transfer tertunda sebagai penerima. Terima atau selesaikan dispute terlebih dahulu.");
         }
 
         // 5. Check disputed transfers specifically
-        var disputedCount = await _transfers.CountDocumentsAsync(t => 
-            (t.SenderId == userId || t.ReceiverId == userId) && 
+        var disputedCount = await _transfers.CountDocumentsAsync(t =>
+            (t.SenderId == userId || t.ReceiverId == userId) &&
             t.Status == TransferStatus.Disputed);
 
         // 6. Check pending transactions in ledger
-        var pendingLedger = await _ledger.CountDocumentsAsync(l => 
-            l.UserId == (int)userId && 
+        var pendingLedger = await _ledger.CountDocumentsAsync(l =>
+            l.UserId == (int)userId &&
             l.Status == TransactionStatus.Pending);
-        
+
         if (pendingLedger > 0)
         {
             blockingReasons.Add($"Ada {pendingLedger} transaksi pending yang harus diselesaikan.");
+        }
+
+        // 7. Check pending withdrawals (critical - money is being processed)
+        var pendingWithdrawals = await _withdrawals.CountDocumentsAsync(w =>
+            w.UserId == userId &&
+            (w.Status == WithdrawalStatus.Pending || w.Status == WithdrawalStatus.Processing));
+
+        if (pendingWithdrawals > 0)
+        {
+            blockingReasons.Add($"Ada {pendingWithdrawals} penarikan dana yang sedang diproses. Tunggu hingga selesai.");
         }
 
         return new UserDeleteValidationResult(
@@ -137,7 +150,8 @@ public class UserCleanupService : IUserCleanupService
             PendingTransfersAsSender: (int)pendingAsSender,
             PendingTransfersAsReceiver: (int)pendingAsReceiver,
             DisputedTransfers: (int)disputedCount,
-            PendingTransactions: (int)pendingLedger
+            PendingTransactions: (int)pendingLedger,
+            PendingWithdrawals: (int)pendingWithdrawals
         );
     }
 
@@ -178,10 +192,10 @@ public class UserCleanupService : IUserCleanupService
                 .Find(s => s.UserId == userId)
                 .Project(s => s.Id)
                 .ToListAsync();
-            
+
             if (chatSessions.Count > 0)
             {
-                var messagesResult = await _context.ChatMessages.DeleteManyAsync(m => 
+                var messagesResult = await _context.ChatMessages.DeleteManyAsync(m =>
                     chatSessions.Contains(m.SessionId));
                 stats.ChatMessagesDeleted = (int)messagesResult.DeletedCount;
             }

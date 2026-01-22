@@ -11,7 +11,7 @@ public class MongoDbContext
     {
         var client = new MongoClient(settings.ConnectionString);
         _database = client.GetDatabase(settings.DatabaseName);
-        
+
         CreateIndexes();
     }
 
@@ -53,6 +53,7 @@ public class MongoDbContext
     public IMongoCollection<TokenBalance> TokenBalances => _database.GetCollection<TokenBalance>("token_balances");
     public IMongoCollection<TokenPurchase> TokenPurchases => _database.GetCollection<TokenPurchase>("token_purchases");
     public IMongoCollection<TokenUsage> TokenUsages => _database.GetCollection<TokenUsage>("token_usages");
+    public IMongoCollection<Withdrawal> Withdrawals => _database.GetCollection<Withdrawal>("withdrawals");
 
     #endregion
 

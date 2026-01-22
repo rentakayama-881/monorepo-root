@@ -342,13 +342,14 @@ type DeleteAccountRequest struct {
 
 // FeatureServiceValidationResult represents the response from Feature-Service validation
 type FeatureServiceValidationResult struct {
-	CanDelete         bool     `json:"canDelete"`
-	BlockingReasons   []string `json:"blockingReasons"`
-	Warnings          []string `json:"warnings"`
-	WalletBalance     int64    `json:"walletBalance"`
-	TokenBalance      int64    `json:"tokenBalance"`
-	PendingTransfers  int      `json:"pendingTransfers"`
-	DisputedTransfers int      `json:"disputedTransfers"`
+	CanDelete          bool     `json:"canDelete"`
+	BlockingReasons    []string `json:"blockingReasons"`
+	Warnings           []string `json:"warnings"`
+	WalletBalance      int64    `json:"walletBalance"`
+	TokenBalance       int64    `json:"tokenBalance"`
+	PendingTransfers   int      `json:"pendingTransfers"`
+	DisputedTransfers  int      `json:"disputedTransfers"`
+	PendingWithdrawals int      `json:"pendingWithdrawals"`
 }
 
 // FeatureServiceCleanupResult represents the response from Feature-Service cleanup
@@ -385,13 +386,14 @@ func CanDeleteAccountHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"can_delete":         result.CanDelete,
-		"blocking_reasons":   result.BlockingReasons,
-		"warnings":           result.Warnings,
-		"wallet_balance":     result.WalletBalance,
-		"token_balance":      result.TokenBalance,
-		"pending_transfers":  result.PendingTransfers,
-		"disputed_transfers": result.DisputedTransfers,
+		"can_delete":          result.CanDelete,
+		"blocking_reasons":    result.BlockingReasons,
+		"warnings":            result.Warnings,
+		"wallet_balance":      result.WalletBalance,
+		"token_balance":       result.TokenBalance,
+		"pending_transfers":   result.PendingTransfers,
+		"disputed_transfers":  result.DisputedTransfers,
+		"pending_withdrawals": result.PendingWithdrawals,
 	})
 }
 
@@ -541,7 +543,7 @@ func DeleteAccountHandler(c *gin.Context) {
 	var tableExists bool
 	err = db.QueryRowContext(ctx, `
 		SELECT EXISTS (
-			SELECT 1 FROM information_schema.tables 
+			SELECT 1 FROM information_schema.tables
 			WHERE table_schema = 'public' AND table_name = 'thread_chunks'
 		)
 	`).Scan(&tableExists)
@@ -551,7 +553,7 @@ func DeleteAccountHandler(c *gin.Context) {
 
 	if tableExists {
 		if _, err := db.ExecContext(ctx, `
-			DELETE FROM thread_chunks 
+			DELETE FROM thread_chunks
 			WHERE thread_id IN (SELECT id FROM threads WHERE user_id = $1)
 		`, user.ID); err != nil {
 			_ = tx.Rollback()
