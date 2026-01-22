@@ -139,13 +139,13 @@ jobs:
             # Create backup
             BACKUP_DIR="/home/deploy/backups/$(date +%Y%m%d_%H%M%S)"
             mkdir -p $BACKUP_DIR
-            if [ -f /home/deploy/alephdraad/backend/app ]; then
-              cp /home/deploy/alephdraad/backend/app $BACKUP_DIR/app.backup
+            if [ -f /home/deploy/monorepo-root/backend/app ]; then
+              cp /home/deploy/monorepo-root/backend/app $BACKUP_DIR/app.backup
               echo "✅ Backup created: $BACKUP_DIR"
             fi
 
             # Pull latest code
-            cd /home/deploy/alephdraad
+            cd /home/deploy/monorepo-root
             git fetch origin main
             git reset --hard origin/main
 
@@ -167,7 +167,7 @@ jobs:
               if [ $i -eq 30 ]; then
                 echo "❌ Health check failed after 30 seconds"
                 echo "🔄 Rolling back..."
-                cp $BACKUP_DIR/app.backup /home/deploy/alephdraad/backend/app
+                cp $BACKUP_DIR/app.backup /home/deploy/monorepo-root/backend/app
                 sudo systemctl restart backend.service
                 exit 1
               fi
@@ -231,19 +231,19 @@ jobs:
             # Create backup
             BACKUP_DIR="/home/asp/backups/$(date +%Y%m%d_%H%M%S)"
             mkdir -p $BACKUP_DIR
-            if [ -d /home/asp/alephdraad/feature-service/publish ]; then
-              cp -r /home/asp/alephdraad/feature-service/publish $BACKUP_DIR/
+            if [ -d /home/asp/monorepo-root/feature-service/publish ]; then
+              cp -r /home/asp/monorepo-root/feature-service/publish $BACKUP_DIR/
               echo "✅ Backup created: $BACKUP_DIR"
             fi
 
             # Pull latest code
-            cd /home/asp/alephdraad
+            cd /home/asp/monorepo-root
             git fetch origin main
             git reset --hard origin/main
 
             # Build
             cd feature-service/src/FeatureService.Api
-            dotnet publish -c Release -o /home/asp/alephdraad/feature-service/publish --self-contained false
+            dotnet publish -c Release -o /home/asp/monorepo-root/feature-service/publish --self-contained false
 
             # Graceful restart
             echo "🔄 Restarting service..."
@@ -259,8 +259,8 @@ jobs:
               if [ $i -eq 60 ]; then
                 echo "❌ Health check failed after 60 seconds"
                 echo "🔄 Rolling back..."
-                rm -rf /home/asp/alephdraad/feature-service/publish
-                cp -r $BACKUP_DIR/publish /home/asp/alephdraad/feature-service/
+                rm -rf /home/asp/monorepo-root/feature-service/publish
+                cp -r $BACKUP_DIR/publish /home/asp/monorepo-root/feature-service/
                 sudo systemctl restart featureservice.service
                 exit 1
               fi

@@ -21,16 +21,6 @@ run:
   go: "1.24"
   tests: true
 
-  # Skip generated code (Ent ORM)
-  skip-dirs:
-    - ent
-    - vendor
-
-  # Skip generated files
-  skip-files:
-    - ".*_gen\\.go$"
-    - ".*_generated\\.go$"
-
 output:
   formats:
     - format: colored-line-number
@@ -161,6 +151,12 @@ issues:
   exclude-use-default: true
   max-issues-per-linter: 50
   max-same-issues: 10
+  exclude-dirs:
+    - ent
+    - vendor
+  exclude-files:
+    - ".*_gen\\.go$"
+    - ".*_generated\\.go$"
 
   exclude-rules:
     # Exclude some linters from running on tests
