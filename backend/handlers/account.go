@@ -372,15 +372,18 @@ func CanDeleteAccountHandler(c *gin.Context) {
 	// Call Feature-Service to check validation
 	result, err := callFeatureServiceValidation(c, uint(user.ID))
 	if err != nil {
-		// If Feature-Service is unavailable, assume can delete (only PostgreSQL data)
+		// STRICT MODE: If Feature-Service is unavailable, block deletion for safety
+		// This prevents users with wallet balance or pending transactions from deleting
 		c.JSON(http.StatusOK, gin.H{
-			"can_delete":         true,
-			"blocking_reasons":   []string{},
-			"warnings":           []string{"Tidak dapat memverifikasi saldo wallet (layanan tidak tersedia)"},
-			"wallet_balance":     0,
-			"token_balance":      0,
-			"pending_transfers":  0,
-			"disputed_transfers": 0,
+			"can_delete":          false,
+			"blocking_reasons":    []string{"Layanan verifikasi wallet tidak tersedia. Coba lagi nanti."},
+			"warnings":            []string{},
+			"wallet_balance":      0,
+			"token_balance":       0,
+			"pending_transfers":   0,
+			"disputed_transfers":  0,
+			"pending_withdrawals": 0,
+			"service_unavailable": true,
 		})
 		return
 	}
@@ -498,21 +501,29 @@ func DeleteAccountHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// Step 1: Validate with Feature-Service (check wallet balance, pending transfers, disputes)
+	// STRICT MODE: Feature-Service MUST be available and validation MUST pass
 	validation, err := callFeatureServiceValidation(c, uint(user.ID))
-	if err == nil && validation != nil {
-		// Feature-Service available, check blocking reasons
-		if !validation.CanDelete && len(validation.BlockingReasons) > 0 {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error":              "Tidak dapat menghapus akun",
-				"blocking_reasons":   validation.BlockingReasons,
-				"wallet_balance":     validation.WalletBalance,
-				"pending_transfers":  validation.PendingTransfers,
-				"disputed_transfers": validation.DisputedTransfers,
-			})
-			return
-		}
+	if err != nil {
+		// Feature-Service unavailable - BLOCK deletion for financial safety
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":               "Layanan verifikasi wallet tidak tersedia. Tidak dapat memproses penghapusan akun.",
+			"service_unavailable": true,
+		})
+		return
 	}
-	// If Feature-Service unavailable, continue with PostgreSQL deletion only (no wallet data)
+
+	if validation != nil && !validation.CanDelete {
+		// Validation failed - user has blocking conditions
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":               "Tidak dapat menghapus akun",
+			"blocking_reasons":    validation.BlockingReasons,
+			"wallet_balance":      validation.WalletBalance,
+			"pending_transfers":   validation.PendingTransfers,
+			"disputed_transfers":  validation.DisputedTransfers,
+			"pending_withdrawals": validation.PendingWithdrawals,
+		})
+		return
+	}
 
 	// Step 2: Call Feature-Service cleanup (hard delete MongoDB data)
 	_, cleanupErr := callFeatureServiceCleanup(c, uint(user.ID))
