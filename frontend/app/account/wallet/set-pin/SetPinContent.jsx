@@ -94,8 +94,8 @@ export default function SetPinContent() {
 
       // Determine endpoint and body based on whether user is changing or setting PIN
       const endpoint = hasPin
-        ? FEATURE_ENDPOINTS.WALLETS.CHANGE_PIN
-        : FEATURE_ENDPOINTS.WALLETS.SET_PIN;
+        ? FEATURE_ENDPOINTS.WALLETS.PIN_CHANGE
+        : FEATURE_ENDPOINTS.WALLETS.PIN_SET;
 
       const body = hasPin
         ? { currentPin: currentPin, newPin: pin, confirmNewPin: confirmPin }
