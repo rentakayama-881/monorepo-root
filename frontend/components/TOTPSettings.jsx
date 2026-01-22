@@ -134,7 +134,7 @@ function TOTPSettingsContent() {
         const data = await res.json();
         throw new Error(data.error || "Kode tidak valid");
       }
-      setSuccess("2FA berhasil diaktifkan! Jangan lupa simpan backup codes.");
+      setSuccess("2FA berhasil diaktifkan! Jangan lupa simpan backup codes di bawah.");
       setSetupData(null);
       setSetupCode("");
       fetchStatus();
@@ -142,12 +142,9 @@ function TOTPSettingsContent() {
       // Automatically generate backup codes after enabling
       generateBackupCodes();
 
-      // If there's a redirect URL, redirect after success
-      if (redirectUrl) {
-        setTimeout(() => {
-          router.push(redirectUrl);
-        }, 2000);
-      }
+      // NOTE: Do NOT auto-redirect after 2FA setup
+      // User should stay on this page to save backup codes
+      // User will manually navigate back to wallet/send when ready
     } catch (e) {
       setError(e.message);
     } finally {
