@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -54,7 +55,7 @@ func cohereEmbed(text, inputType string) ([]float32, error) {
 		InputType: inputType,
 	})
 
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(reqBody))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", endpoint, bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("new request: %w", err)
 	}

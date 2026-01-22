@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,7 +43,7 @@ func CohereRerank(query string, docs []string, topN int) ([]int, error) {
 		TopN:      topN,
 	})
 
-	req, err := http.NewRequest("POST", "https://api.cohere.ai/v1/rerank", bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", "https://api.cohere.ai/v1/rerank", bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}

@@ -61,7 +61,6 @@ linters:
     - unparam        # Unused function parameters
     - nakedret       # Naked returns in long functions
     - prealloc       # Slice preallocation suggestions
-    - exportloopref  # Export loop variable reference
 
     # Error handling (critical for production)
     - errorlint      # Error wrapping and comparison
@@ -71,8 +70,8 @@ linters:
     - copyloopvar    # Loop variable copy issues
     - intrange       # Integer range issues
 
-    # Documentation
-    - godot          # Check comment periods
+    # Note: godot disabled - too noisy for initial setup
+    # - godot          # Check comment periods
 
   disable:
     - typecheck      # Handled by go build

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -59,7 +60,7 @@ func (s *SupabaseStorage) UploadFile(file multipart.File, filename string, conte
 	uploadURL := fmt.Sprintf("%s/storage/v1/object/%s/%s", s.URL, s.Bucket, uniqueName)
 
 	// Create request
-	req, err := http.NewRequest("POST", uploadURL, bytes.NewReader(fileBytes))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", uploadURL, bytes.NewReader(fileBytes))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -109,7 +110,7 @@ func (s *SupabaseStorage) DeleteFile(filename string) error {
 		"prefixes": []string{filename},
 	})
 
-	req, err := http.NewRequest("DELETE", deleteURL, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(context.Background(), "DELETE", deleteURL, bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}

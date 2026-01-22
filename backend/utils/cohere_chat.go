@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -58,7 +59,7 @@ func CohereAnswer(model, prompt string, contexts []string) (string, error) {
 		Temperature: 0.0,
 	})
 
-	req, err := http.NewRequest("POST", "https://api.cohere.ai/v1/chat", bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", "https://api.cohere.ai/v1/chat", bytes.NewBuffer(body))
 	if err != nil {
 		return "", err
 	}
