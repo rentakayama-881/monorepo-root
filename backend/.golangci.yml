@@ -68,7 +68,7 @@ linters:
     - depguard       # Too restrictive for initial setup
     - funlen         # Function length - use judgment
     - gochecknoglobals  # Globals are sometimes necessary
-    - gomnd          # Magic numbers - too noisy
+    # gomnd deprecated in v1.62 - removed
     - wsl            # Whitespace linter - too opinionated
     - nlreturn       # Newline before return - too opinionated
     - exhaustive     # Enum exhaustiveness - too strict initially
