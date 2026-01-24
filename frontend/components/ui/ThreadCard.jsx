@@ -311,11 +311,12 @@ return (
               <span className="font-medium">{view_count}</span>
             </span>
           )}
-        </div>
-      </div>
-    </Link>
-  </div>
-);
+         </div>
+       </div>
+      </Link>
+    </div>
+  );
+}
 
 /**
  * ThreadCardSkeleton - Loading state for ThreadCard
