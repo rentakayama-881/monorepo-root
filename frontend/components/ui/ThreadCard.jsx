@@ -206,9 +206,9 @@ return (
       className
     )}
   >
-    <Link href={`/thread/${id}`} className="block p-3">
+    <Link href={`/thread/${id}`} className="block px-3 pb-3 pt-1.5">
       {/* Header with Title & Category */}
-      <div className="flex items-start justify-between gap-3 mb-1.5">
+      <div className="flex items-start justify-between gap-3 mb-1">
         {/* Title */}
         <h3 className="flex-1 text-[13px] font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
           {title}
