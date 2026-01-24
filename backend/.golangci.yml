@@ -16,12 +16,18 @@
 # - Race condition detection
 # =============================================================================
 
-version: 2
+version: "2"
 
 run:
   timeout: 5m
   go: "1.24"
   tests: true
+  skip-dirs:
+    - ent
+    - vendor
+  skip-files:
+    - ".*_gen\\.go$"
+    - ".*_generated\\.go$"
 
 output:
   formats:
@@ -30,7 +36,6 @@ output:
       print-linter-name: true
       print-issued-lines: true
       colors: true
-  sort-results: true
 
 linters:
   enable:
@@ -74,166 +79,163 @@ linters:
     - exhaustive     # Enum exhaustiveness - too strict initially
     - tagliatelle    # JSON tag style - flexible
 
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-    exclude-functions:
-      - io.Copy
-      - io.WriteString
-      - (io.Closer).Close
-      - (*os.File).Close
-      - (net/http.ResponseWriter).Write
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+      exclude-functions:
+        - io.Copy
+        - io.WriteString
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (net/http.ResponseWriter).Write
 
-  govet:
-    enable:
-      - shadow
-      - fieldalignment
-    settings:
-      shadow:
-        strict: true
+    govet:
+      enable:
+        - shadow
+        - fieldalignment
+      settings:
+        shadow:
+          strict: true
 
-  gosec:
-    severity: medium
-    confidence: medium
-    excludes:
-      - G104  # Audit errors not checked (handled by errcheck)
-      - G304  # File path from variable (controlled in our case)
-    config:
-      global:
-        nosec: true
-        show-ignored: false
-        audit: enabled
+    gosec:
+      severity: medium
+      confidence: medium
+      excludes:
+        - G104  # Audit errors not checked (handled by errcheck)
+        - G304  # File path from variable (controlled in our case)
+      config:
+        global:
+          nosec: true
+          show-ignored: false
+          audit: enabled
 
-  staticcheck:
-    checks:
-      - all
-      - "-SA1019"  # Deprecated usage (we handle intentionally)
+    staticcheck:
+      checks:
+        - all
+        - "-SA1019"  # Deprecated usage (we handle intentionally)
 
-  misspell:
-    locale: US
+    misspell:
+      locale: US
 
-  nakedret:
-    max-func-lines: 30
+    nakedret:
+      max-func-lines: 30
 
-  prealloc:
-    simple: true
-    for-loops: true
+    prealloc:
+      simple: true
+      for-loops: true
 
-  errorlint:
-    errorf: true
-    asserts: true
-    comparison: true
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
 
-  wrapcheck:
-    ignoreSigs:
-      - .Errorf(
-      - errors.New(
-      - errors.Unwrap(
-      - errors.Join(
-      - .Wrap(
-      - .Wrapf(
-      - .WithMessage(
-      - .WithMessagef(
-      - .WithStack(
-    ignorePackageGlobs:
-      - github.com/gin-gonic/gin
-      - entgo.io/ent/*
+    wrapcheck:
+      ignoreSigs:
+        - .Errorf(
+        - errors.New(
+        - errors.Unwrap(
+        - errors.Join(
+        - .Wrap(
+        - .Wrapf(
+        - .WithMessage(
+        - .WithMessagef(
+        - .WithStack(
+      ignorePackageGlobs:
+        - github.com/gin-gonic/gin
+        - entgo.io/ent/*
 
-  godot:
-    scope: declarations
-    capital: false
+    godot:
+      scope: declarations
+      capital: false
+
+  exclusions:
+    paths:
+      - ent  # Exclude generated Ent files
+      - vendor  # Exclude vendor directory
+    rules:
+      # Exclude some linters from running on tests
+      - path: _test\.go
+        linters:
+          - gosec
+          - wrapcheck
+          - errcheck
+          - bodyclose
+
+      # Exclude generated Ent files
+      - path: ent/
+        linters:
+          - all
+
+      # Allow globals in config package
+      - path: config/
+        linters:
+          - gochecknoglobals
+
+      # Allow naked returns in short functions
+      - path: handlers/
+        linters:
+          - nakedret
+        text: "naked return"
+
+      # Exclude TODO comments from being flagged
+      - source: "TODO"
+        linters:
+          - godox
+
+      # ==========================================================
+      # AI/RAG Features - Experimental, belum production-ready
+      # Includes: Cohere AI, vector search, RAG pipeline
+      # ==========================================================
+      - path: utils/cohere.*\.go
+        linters:
+          - wrapcheck
+          - gosec
+          - errcheck
+
+      - path: utils/pgvector\.go
+        linters:
+          - wrapcheck
+          - errcheck
+
+      - path: utils/chunker\.go
+        linters:
+          - wrapcheck
+
+      - path: handlers/rag\.go
+        linters:
+          - wrapcheck
+          - gosec
+          - errcheck
+
+      # ==========================================================
+      # External Storage Integration (Supabase)
+      # ==========================================================
+      - path: utils/supabase_storage\.go
+        linters:
+          - wrapcheck
+          - gosec
+          - errcheck
+
+      # ==========================================================
+      # Feature-Service Integration (Deposit/Payment/Wallet)
+      # Fitur masih dalam development
+      # ==========================================================
+      - path: handlers/account\.go
+        linters:
+          - wrapcheck
+
+      # ==========================================================
+      # Auth/Redis services - internal error propagation
+      # ==========================================================
+      - path: services/auth_service.*\.go
+        linters:
+          - wrapcheck
+
+      - path: services/redis_service\.go
+        linters:
+          - wrapcheck
 
 issues:
-  exclude-use-default: true
   max-issues-per-linter: 50
   max-same-issues: 10
-  exclude-dirs:
-    - ent
-    - vendor
-  exclude-files:
-    - ".*_gen\\.go$"
-    - ".*_generated\\.go$"
-
-  exclude-rules:
-    # Exclude some linters from running on tests
-    - path: _test\.go
-      linters:
-        - gosec
-        - wrapcheck
-        - errcheck
-        - bodyclose
-
-    # Exclude generated Ent files
-    - path: ent/
-      linters:
-        - all
-
-    # Allow globals in config package
-    - path: config/
-      linters:
-        - gochecknoglobals
-
-    # Allow naked returns in short functions
-    - path: handlers/
-      linters:
-        - nakedret
-      text: "naked return"
-
-    # Exclude TODO comments from being flagged
-    - source: "TODO"
-      linters:
-        - godox
-
-    # ==========================================================
-    # AI/RAG Features - Experimental, belum production-ready
-    # Includes: Cohere AI, vector search, RAG pipeline
-    # ==========================================================
-    - path: utils/cohere.*\.go
-      linters:
-        - wrapcheck
-        - gosec
-        - errcheck
-
-    - path: utils/pgvector\.go
-      linters:
-        - wrapcheck
-        - errcheck
-
-    - path: utils/chunker\.go
-      linters:
-        - wrapcheck
-
-    - path: handlers/rag\.go
-      linters:
-        - wrapcheck
-        - gosec
-        - errcheck
-
-    # ==========================================================
-    # External Storage Integration (Supabase)
-    # ==========================================================
-    - path: utils/supabase_storage\.go
-      linters:
-        - wrapcheck
-        - gosec
-        - errcheck
-
-    # ==========================================================
-    # Feature-Service Integration (Deposit/Payment/Wallet)
-    # Fitur masih dalam development
-    # ==========================================================
-    - path: handlers/account\.go
-      linters:
-        - wrapcheck
-
-    # ==========================================================
-    # Auth/Redis services - internal error propagation
-    # ==========================================================
-    - path: services/auth_service.*\.go
-      linters:
-        - wrapcheck
-
-    - path: services/redis_service\.go
-      linters:
-        - wrapcheck
