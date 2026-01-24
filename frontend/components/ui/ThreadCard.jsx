@@ -206,7 +206,7 @@ return (
       className
     )}
   >
-    <Link href={`/thread/${id}`} className="block px-3 pb-3 pt-1.5">
+    <Link href={`/thread/${id}`} className="block px-2 pb-2 pt-1">
       {/* Header with Title & Category */}
       <div className="flex items-start justify-between gap-3 mb-1">
         {/* Title */}
