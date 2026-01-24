@@ -244,10 +244,9 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.62
+          version: v2.8
           working-directory: backend
           args: --timeout=5m
-          env: GOLANGCI_LINT_RUNNER_GO_VERSION: "1.24"
 
       - name: Check go mod tidy
         run: |

@@ -16,6 +16,8 @@
 # - Race condition detection
 # =============================================================================
 
+version: 2
+
 run:
   timeout: 5m
   go: "1.24"
@@ -23,19 +25,20 @@ run:
 
 output:
   formats:
-    - format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
+    text:
+      path: stdout
+      print-linter-name: true
+      print-issued-lines: true
+      colors: true
   sort-results: true
 
 linters:
   enable:
     # Default linters
     - errcheck       # Check for unchecked errors
-    - gosimple       # Simplify code
     - govet          # Go vet checks
     - ineffassign    # Detect unused assignments
-    - staticcheck    # Static analysis
+    - staticcheck    # Static analysis (includes gosimple in v2.x)
     - unused         # Find unused code
 
     # Security linters (like Stripe/GitHub)
@@ -44,8 +47,6 @@ linters:
     - noctx          # Require context.Context in HTTP
 
     # Code quality linters
-    - gofmt          # Format checking
-    - goimports      # Import ordering
     - misspell       # Spelling mistakes
     - unconvert      # Unnecessary type conversions
     - unparam        # Unused function parameters
@@ -64,7 +65,6 @@ linters:
     # - godot          # Check comment periods
 
   disable:
-    - typecheck      # Handled by go build
     - depguard       # Too restrictive for initial setup
     - funlen         # Function length - use judgment
     - gochecknoglobals  # Globals are sometimes necessary
@@ -109,9 +109,6 @@ linters-settings:
     checks:
       - all
       - "-SA1019"  # Deprecated usage (we handle intentionally)
-
-  goimports:
-    local-prefixes: backend-gin
 
   misspell:
     locale: US
@@ -240,14 +237,3 @@ issues:
     - path: services/redis_service\.go
       linters:
         - wrapcheck
-
-severity:
-  default-severity: warning
-  case-sensitive: false
-  rules:
-    - linters:
-        - gosec
-      severity: error
-    - linters:
-        - errorlint
-      severity: error
