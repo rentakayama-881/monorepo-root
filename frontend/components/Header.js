@@ -216,10 +216,6 @@ export default function Header() {
               </div>
             )}
           </div>
-
-          <Link href="/ai-studio" className={navItem}>
-            AI Studio
-          </Link>
         </nav>
 
         <div className="flex-1" />
