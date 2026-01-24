@@ -237,5 +237,6 @@ linters:
           - wrapcheck
 
 issues:
+  # Limit the number of issues reported per linter to avoid overwhelming output
   max-issues-per-linter: 50
   max-same-issues: 10
