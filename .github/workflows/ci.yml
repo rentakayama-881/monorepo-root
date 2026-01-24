@@ -247,7 +247,7 @@ jobs:
           version: v1.62
           working-directory: backend
           args: --timeout=5m
-          env : GOLANGCI_LINT_RUNNER_GO_VERSION: "1.24"
+          env: GOLANGCI_LINT_RUNNER_GO_VERSION: "1.24"
 
       - name: Check go mod tidy
         run: |
