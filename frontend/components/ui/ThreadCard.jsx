@@ -197,7 +197,6 @@ export default function ThreadCard({
   }
 
   // Default variant - full card
-// Default variant - full card (fees-like spacing & typography)
 return (
   <div
     className={cn(
@@ -208,7 +207,7 @@ return (
   >
     <Link href={`/thread/${id}`} className="block px-3 pb-3 pt-2">
       {/* Header with Title & Category */}
-      <div className="flex items-baseline justify-between gap-3 mb-1">
+      <div className="flex items-baseline justify-between gap-0.5 mb-0.2">
         {/* Title */}
         <h3 className="flex-1 text-[13px] font-semibold leading-[1.1] text-foreground line-clamp-2 group-hover:text-primary transition-colors">
           {title}
