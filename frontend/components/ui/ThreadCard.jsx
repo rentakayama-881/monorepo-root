@@ -208,15 +208,15 @@ return (
   >
     <Link href={`/thread/${id}`} className="block px-2 pb-2 pt-1">
       {/* Header with Title & Category */}
-      <div className="flex items-start justify-between gap-3 mb-1">
+      <div className="flex items-baseline justify-between gap-3 mb-1">
         {/* Title */}
-        <h3 className="flex-1 text-[13px] font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+        <h3 className="flex-1 text-[13px] font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors">
           {title}
         </h3>
 
         {/* Category badge on the right */}
         {showCategory && category && (
-          <span className="inline-block shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+          <span className="inline-block shrink-0 mt-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
             {category.name || category.slug}
           </span>
         )}
