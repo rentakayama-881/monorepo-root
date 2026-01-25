@@ -61,15 +61,24 @@ export function Logo({
   const dimensions = getDimensions();
 
   const LogoImage = ({ isDark }) => (
+  <span
+    className={className}
+    style={{
+      display: 'inline-block',
+      height: `${size}px`,
+      width: variant === 'horizontal' ? `${size * 4}px` : `${size}px`,
+    }}
+  >
     <Image
       src={getLogoSrc(isDark)}
       alt="Alephdraad"
       width={dimensions.width}
       height={dimensions.height}
-      className={className}
       priority
+      className="h-full w-full object-contain"
     />
-  );
+  </span>
+);
 
   // Render based on theme mode
   const renderLogo = () => {
