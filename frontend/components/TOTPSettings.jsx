@@ -34,7 +34,6 @@ function TOTPSettingsContent() {
   // Backup codes state
   const [backupCodes, setBackupCodes] = useState(null);
   const [backupCount, setBackupCount] = useState(0);
-  const [backupLoading, setBackupLoading] = useState(false);
 
   // Fetch TOTP status
   const fetchStatus = useCallback(async () => {
@@ -134,13 +133,21 @@ function TOTPSettingsContent() {
         const data = await res.json();
         throw new Error(data.error || "Kode tidak valid");
       }
-      setSuccess("2FA berhasil diaktifkan! Jangan lupa simpan backup codes di bawah.");
+      const data = await res.json();
+
+      // Get backup codes from response (only shown once!)
+      if (data.backup_codes && data.backup_codes.length > 0) {
+        setBackupCodes(data.backup_codes);
+        setBackupCount(data.backup_codes.length);
+      }
+
+      setSuccess("2FA berhasil diaktifkan! PENTING: Simpan backup codes di bawah sekarang. Codes ini HANYA ditampilkan sekali!");
       setSetupData(null);
       setSetupCode("");
       fetchStatus();
 
-      // Automatically generate backup codes after enabling
-      generateBackupCodes();
+      // NOTE: Backup codes are now returned from verify endpoint
+      // No need to call generateBackupCodes() separately
 
       // NOTE: Do NOT auto-redirect after 2FA setup
       // User should stay on this page to save backup codes
@@ -194,34 +201,9 @@ function TOTPSettingsContent() {
     }
   }
 
-  // Generate backup codes
-  async function generateBackupCodes() {
-    setError("");
-    setBackupLoading(true);
-    try {
-      const token = await getValidToken();
-      if (!token) {
-        setError("Sesi telah berakhir. Silakan login kembali.");
-        setBackupLoading(false);
-        return;
-      }
-      const res = await fetch(`${API}/auth/totp/backup-codes`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Gagal membuat backup codes");
-      }
-      const data = await res.json();
-      setBackupCodes(data.codes);
-      setBackupCount(data.codes.length);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBackupLoading(false);
-    }
-  }
+  // NOTE: generateBackupCodes removed - backup codes are now only generated during TOTP enable
+  // and returned in the verify response. This is more secure as it prevents attackers
+  // from regenerating codes if they gain access to a logged-in session.
 
   // Copy backup codes to clipboard
   function copyBackupCodes() {
@@ -387,22 +369,18 @@ function TOTPSettingsContent() {
                     <div key={i} className="text-foreground">{code}</div>
                   ))}
                 </div>
-                <p className="text-xs text-warning">
-                  ⚠️ Simpan backup codes ini di tempat yang aman. Setiap code hanya dapat digunakan sekali.
+                <p className="text-xs text-destructive font-medium">
+                  ⚠️ PENTING: Simpan backup codes ini SEKARANG! Codes ini HANYA ditampilkan sekali dan tidak dapat dilihat lagi.
                 </p>
                 <Button variant="secondary" size="sm" onClick={copyBackupCodes}>
                   Salin ke Clipboard
                 </Button>
               </div>
             ) : (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={generateBackupCodes}
-                disabled={backupLoading}
-              >
-                {backupLoading ? "Membuat..." : "Generate Backup Codes Baru"}
-              </Button>
+              <p className="text-xs text-muted-foreground">
+                Backup codes hanya ditampilkan saat pertama kali mengaktifkan 2FA.
+                Jika Anda kehilangan backup codes, nonaktifkan dan aktifkan kembali 2FA untuk mendapatkan codes baru.
+              </p>
             )}
           </div>
 

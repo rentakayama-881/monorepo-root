@@ -161,6 +161,21 @@ func (s *EntSecurityAuditService) LogAccountDeleted(ctx context.Context, userID 
 	s.LogEvent(ctx, EventAccountDeleted, &userID, email, ip, userAgent, "Account permanently deleted", "critical", true)
 }
 
+// LogRegister logs successful user registration
+func (s *EntSecurityAuditService) LogRegister(ctx context.Context, userID int, email, ip, userAgent string) {
+	s.LogEvent(ctx, EventRegister, &userID, email, ip, userAgent, "New user registered", "info", true)
+}
+
+// LogLogout logs user logout
+func (s *EntSecurityAuditService) LogLogout(ctx context.Context, userID int, email, ip, userAgent string) {
+	s.LogEvent(ctx, EventLogout, &userID, email, ip, userAgent, "", "info", true)
+}
+
+// LogLogoutAll logs logout from all devices
+func (s *EntSecurityAuditService) LogLogoutAll(ctx context.Context, userID int, email, ip, userAgent string) {
+	s.LogEvent(ctx, EventLogoutAll, &userID, email, ip, userAgent, "Logout from all devices", "warning", true)
+}
+
 // GetRecentEvents retrieves recent security events for a user
 func (s *EntSecurityAuditService) GetRecentEvents(ctx context.Context, userID int, limit int) ([]*ent.SecurityEvent, error) {
 	client := database.GetEntClient()

@@ -165,7 +165,8 @@ func (w *TOTPServiceWrapper) GenerateSetup(userID uint) (*dto.TOTPSetupResponse,
 }
 
 // VerifyAndEnable delegates to EntTOTPService
-func (w *TOTPServiceWrapper) VerifyAndEnable(userID uint, code string) error {
+// Returns backup codes that should be shown to user ONLY ONCE
+func (w *TOTPServiceWrapper) VerifyAndEnable(userID uint, code string) ([]string, error) {
 	return w.ent.VerifyAndEnable(context.Background(), int(userID), code)
 }
 

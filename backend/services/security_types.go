@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -97,6 +98,9 @@ const (
 const (
 	EventLoginSuccess    = "login_success"
 	EventLoginFailed     = "login_failed"
+	EventLogout          = "logout"
+	EventLogoutAll       = "logout_all"
+	EventRegister        = "register"
 	EventAccountLocked   = "account_locked"
 	EventBruteForce      = "brute_force_detected"
 	EventTOTPFailed      = "totp_failed"
@@ -237,6 +241,7 @@ type SecurityAuditInterface interface {
 	LogTOTPFailedForEnt(user *ent.User, ip, userAgent string, attemptsRemaining int)
 	LogTOTPSuccessForEnt(user *ent.User, ip, userAgent string)
 	LogTokenReuseForEnt(user *ent.User, ip, userAgent string)
+	LogRegister(ctx context.Context, userID int, email, ip, userAgent string)
 }
 
 // LoginTrackerInterface defines login tracking operations

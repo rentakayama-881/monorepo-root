@@ -76,6 +76,7 @@ func (h *TOTPHandler) Setup(c *gin.Context) {
 
 // Verify verifies a TOTP code and enables 2FA
 // POST /api/auth/totp/verify
+// Returns backup codes that should be shown to user ONLY ONCE
 func (h *TOTPHandler) Verify(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -89,14 +90,16 @@ func (h *TOTPHandler) Verify(c *gin.Context) {
 		return
 	}
 
-	if err := h.totpService.VerifyAndEnable(userID.(uint), req.Code); err != nil {
+	backupCodes, err := h.totpService.VerifyAndEnable(userID.(uint), req.Code)
+	if err != nil {
 		handleTOTPError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "2FA berhasil diaktifkan",
-		"enabled": true,
+		"message":      "2FA berhasil diaktifkan",
+		"enabled":      true,
+		"backup_codes": backupCodes,
 	})
 }
 

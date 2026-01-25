@@ -311,10 +311,10 @@ func main() {
 			{
 				totp.GET("/status", totpHandler.GetStatus)
 				totp.POST("/setup", totpHandler.Setup)
-				totp.POST("/verify", totpHandler.Verify)
+				totp.POST("/verify", totpHandler.Verify) // Returns backup codes on first enable
 				totp.POST("/verify-code", totpHandler.VerifyCode)
 				totp.POST("/disable", totpHandler.Disable)
-				totp.POST("/backup-codes", totpHandler.GenerateBackupCodes)
+				// NOTE: POST /backup-codes removed for security - backup codes only generated during TOTP enable
 				totp.GET("/backup-codes/count", totpHandler.GetBackupCodeCount)
 			}
 

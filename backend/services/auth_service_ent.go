@@ -222,6 +222,11 @@ func (s *EntAuthService) Register(ctx context.Context, input validators.Register
 		logger.Warn("Failed to queue verification email", zap.Error(err), zap.String("email", email))
 	}
 
+	// Log successful registration
+	if securityAudit != nil {
+		securityAudit.LogRegister(ctx, createdUser.ID, email, "", "")
+	}
+
 	logger.Info("User registered successfully",
 		zap.Int("user_id", createdUser.ID),
 		zap.String("email", email))

@@ -80,26 +80,27 @@ func (s *EntTOTPService) GenerateSetup(ctx context.Context, userID int) (*dto.TO
 	}, nil
 }
 
-// VerifyAndEnable verifies a TOTP code and enables 2FA for the user
-func (s *EntTOTPService) VerifyAndEnable(ctx context.Context, userID int, code string) error {
+// VerifyAndEnable verifies a TOTP code, enables 2FA, and generates backup codes
+// Returns backup codes that should be shown to user ONLY ONCE
+func (s *EntTOTPService) VerifyAndEnable(ctx context.Context, userID int, code string) ([]string, error) {
 	u, err := s.client.User.Get(ctx, userID)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return errors.ErrUserNotFound
+			return nil, errors.ErrUserNotFound
 		}
-		return errors.ErrDatabase
+		return nil, errors.ErrDatabase
 	}
 
 	// Must have a secret set
 	if u.TotpSecret == nil || *u.TotpSecret == "" {
-		return errors.NewAppError("TOTP_NOT_SETUP", "2FA belum diatur. Mulai setup terlebih dahulu.", 400)
+		return nil, errors.NewAppError("TOTP_NOT_SETUP", "2FA belum diatur. Mulai setup terlebih dahulu.", 400)
 	}
 
 	// Verify the code
 	valid := totp.Validate(code, *u.TotpSecret)
 	if !valid {
 		s.logger.Warn("invalid TOTP code during enable", zap.Int("user_id", userID))
-		return errors.NewAppError("TOTP_INVALID_CODE", "Kode tidak valid. Pastikan waktu di perangkat Anda sinkron.", 400)
+		return nil, errors.NewAppError("TOTP_INVALID_CODE", "Kode tidak valid. Pastikan waktu di perangkat Anda sinkron.", 400)
 	}
 
 	// Enable TOTP
@@ -112,11 +113,19 @@ func (s *EntTOTPService) VerifyAndEnable(ctx context.Context, userID int, code s
 		Save(ctx)
 	if err != nil {
 		s.logger.Error("failed to enable TOTP", zap.Error(err), zap.Int("user_id", userID))
-		return errors.ErrInternalServer
+		return nil, errors.ErrInternalServer
 	}
 
-	s.logger.Info("TOTP enabled successfully", zap.Int("user_id", userID), zap.String("email", u.Email))
-	return nil
+	// Generate backup codes (only generated once during enable)
+	backupCodes, err := s.generateBackupCodesInternal(ctx, userID)
+	if err != nil {
+		s.logger.Error("failed to generate backup codes during TOTP enable", zap.Error(err), zap.Int("user_id", userID))
+		// TOTP is already enabled, so we continue but log the error
+		// User can contact support if they need backup codes
+	}
+
+	s.logger.Info("TOTP enabled successfully with backup codes", zap.Int("user_id", userID), zap.String("email", u.Email))
+	return backupCodes, nil
 }
 
 // Verify checks if a TOTP code is valid for the user
@@ -193,20 +202,16 @@ func (s *EntTOTPService) Disable(ctx context.Context, userID int, password, code
 	return nil
 }
 
-// GenerateBackupCodes generates new backup codes for the user
-func (s *EntTOTPService) GenerateBackupCodes(ctx context.Context, userID int) ([]string, error) {
-	u, err := s.client.User.Get(ctx, userID)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, errors.ErrUserNotFound
-		}
-		return nil, errors.ErrDatabase
-	}
+// normalizeBackupCode removes dashes, spaces and uppercases the code
+func normalizeBackupCode(code string) string {
+	code = strings.TrimSpace(code)
+	code = strings.ReplaceAll(code, "-", "")
+	code = strings.ReplaceAll(code, " ", "")
+	return strings.ToUpper(code)
+}
 
-	if !u.TotpEnabled {
-		return nil, errors.NewAppError("TOTP_NOT_ENABLED", "2FA harus aktif untuk membuat backup codes.", 400)
-	}
-
+// generateBackupCodesInternal generates backup codes (internal use only)
+func (s *EntTOTPService) generateBackupCodesInternal(ctx context.Context, userID int) ([]string, error) {
 	// Delete existing backup codes
 	_, _ = s.client.BackupCode.
 		Delete().
@@ -219,8 +224,9 @@ func (s *EntTOTPService) GenerateBackupCodes(ctx context.Context, userID int) ([
 		code := generateBackupCode()
 		codes[i] = code
 
-		// Hash for storage
-		hash := sha256.Sum256([]byte(code))
+		// IMPORTANT: Normalize code BEFORE hashing to match verification
+		normalizedCode := normalizeBackupCode(code)
+		hash := sha256.Sum256([]byte(normalizedCode))
 		codeHash := hex.EncodeToString(hash[:])
 
 		_, err := s.client.BackupCode.
@@ -239,15 +245,19 @@ func (s *EntTOTPService) GenerateBackupCodes(ctx context.Context, userID int) ([
 	return codes, nil
 }
 
+// GenerateBackupCodes is DEPRECATED - backup codes are now only generated during TOTP enable
+// This function is kept for backward compatibility but returns an error
+func (s *EntTOTPService) GenerateBackupCodes(ctx context.Context, userID int) ([]string, error) {
+	return nil, errors.NewAppError("BACKUP_CODES_NOT_REGENERATABLE", "Backup codes hanya dibuat saat mengaktifkan 2FA. Untuk mendapatkan backup codes baru, nonaktifkan dan aktifkan kembali 2FA.", 400)
+}
+
 // VerifyBackupCode verifies and consumes a backup code
 func (s *EntTOTPService) VerifyBackupCode(ctx context.Context, userID int, code string) (bool, error) {
-	code = strings.TrimSpace(code)
-	code = strings.ReplaceAll(code, "-", "")
-	code = strings.ReplaceAll(code, " ", "")
-	code = strings.ToUpper(code)
+	// Normalize the input code
+	normalizedCode := normalizeBackupCode(code)
 
-	// Hash the code
-	hash := sha256.Sum256([]byte(code))
+	// Hash the normalized code
+	hash := sha256.Sum256([]byte(normalizedCode))
 	codeHash := hex.EncodeToString(hash[:])
 
 	// Find unused backup code
