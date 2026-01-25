@@ -1,57 +1,65 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="grad-dark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#24292f"/>
-      <stop offset="100%" stop-color="#57606a"/>
+    <!-- SAME gradient palette -->
+    <linearGradient id="grad-silver" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#6366f1"/>
     </linearGradient>
 
-    <filter id="firmDeepShadow" x="-100%" y="-100%" width="300%" height="300%">
-      
-      <feGaussianBlur in="SourceAlpha" stdDeviation="0.8" result="blurSharp"/>
-      <feOffset in="blurSharp" dx="0" dy="2" result="offsetSharp"/>
-      <feFlood flood-color="#000000" flood-opacity="0.7" result="colorSharp"/>
+    <!-- Light-mode tuned shadow: same colors, lower opacity + slightly softer -->
+    <filter id="firmDeepShadowLight" x="-100%" y="-100%" width="300%" height="300%">
+
+      <!-- anchor (black) reduced -->
+      <feGaussianBlur in="SourceAlpha" stdDeviation="0.7" result="blurSharp"/>
+      <feOffset in="blurSharp" dx="0" dy="1.5" result="offsetSharp"/>
+      <feFlood flood-color="#000000" flood-opacity="0.22" result="colorSharp"/>
       <feComposite in="colorSharp" in2="offsetSharp" operator="in" result="shadowAnchor"/>
 
-      <feGaussianBlur in="SourceAlpha" stdDeviation="3.5" result="blurSoft"/>
-      <feOffset in="blurSoft" dx="0" dy="4" result="offsetSoft"/>
-      <feFlood flood-color="#000000" flood-opacity="0.3" result="colorSoft"/>
+      <!-- ambient (indigo) reduced -->
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.6" result="blurSoft"/>
+      <feOffset in="blurSoft" dx="0" dy="2.6" result="offsetSoft"/>
+      <feFlood flood-color="#6366f1" flood-opacity="0.18" result="colorSoft"/>
       <feComposite in="colorSoft" in2="offsetSoft" operator="in" result="shadowAmbient"/>
 
       <feMerge>
-        <feMergeNode in="shadowAmbient"/> <feMergeNode in="shadowAnchor"/>  <feMergeNode in="SourceGraphic"/> </feMerge>
+        <feMergeNode in="shadowAmbient"/>
+        <feMergeNode in="shadowAnchor"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
   </defs>
 
-  <g filter="url(#firmDeepShadow)">
-    
-    <circle cx="32" cy="32" r="22" fill="none" stroke="url(#grad-dark)" stroke-width="2.5"/>
+  <g filter="url(#firmDeepShadowLight)">
 
-    <circle cx="32" cy="32" r="14" fill="none" stroke="#57606a" stroke-width="1" opacity="0.5"/>
+    <circle cx="32" cy="32" r="22" fill="none" stroke="url(#grad-silver)" stroke-width="2.5"/>
+
+    <circle cx="32" cy="32" r="14" fill="none" stroke="#8b949e" stroke-width="1" opacity="0.35"/>
 
     <polygon
       points="32,14 46,23 46,41 32,50 18,41 18,23"
       fill="none"
-      stroke="#24292f"
+      stroke="#0d1117"
       stroke-width="2"
-      opacity="1"
+      opacity="0.9"
     />
 
     <g transform="translate(32, 31)">
-      <g stroke="#24292f" stroke-width="3" stroke-linecap="round" fill="none">
+      <!-- In light mode: base stroke becomes dark for readability, highlight stays same -->
+      <g stroke="#0d1117" stroke-width="3" stroke-linecap="round" fill="none">
         <path d="M-6,-9 L6,9" />
         <path d="M-2,-9 C-2,-6 2,-3 5,-2" />
         <path d="M2,9 C2,6 -2,3 -5,2" />
       </g>
-      <g stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" fill="none">
+      <g stroke="#f0f6fc" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.9">
         <path d="M-6,-9 L6,9" />
         <path d="M-2,-9 C-2,-6 2,-3 5,-2" />
         <path d="M2,9 C2,6 -2,3 -5,2" />
       </g>
     </g>
 
-    <circle cx="32" cy="16" r="2.5" fill="#24292f"/> 
-    <circle cx="44" cy="40" r="2.5" fill="#57606a"/>
-    <circle cx="20" cy="40" r="2.5" fill="#57606a"/>
+    <!-- nodes: same colors -->
+    <circle cx="32" cy="16" r="2.5" fill="#0d1117"/>
+    <circle cx="44" cy="40" r="2.5" fill="#8b949e"/>
+    <circle cx="20" cy="40" r="2.5" fill="#8b949e"/>
   </g>
 </svg>
-
