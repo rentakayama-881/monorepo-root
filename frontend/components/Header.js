@@ -139,7 +139,7 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 transition-shadow duration-200">
-      <div className="container flex h-12 items-center gap-4">
+      <div className="container flex h-12 items-center">
         {/* Mobile menu */}
         <button
           className="flex items-center justify-center -ml-2 md:hidden p-2 rounded-[var(--radius)] hover:bg-accent transition-all duration-200 focus-ring"
@@ -165,9 +165,7 @@ export default function Header() {
         </button>
 
         {/* Logo - Alephdraad */}
-        <div className="-ml-2 sm: -ml-0">
-        <Logo variant="horizontal" size={40} className="shrink-0 drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_6px_20px_rgba(99,102,241,0.22)]"/>
-        </div>
+        <Logo variant="horizontal" size={40} className="shrink-0 -ml-1 md:ml-0 drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_6px_20px_rgba(99,102,241,0.22)]"/>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-0.5 text-sm">
