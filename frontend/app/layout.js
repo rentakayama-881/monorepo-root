@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Aref_Ruqaa } from "next/font/google";
+import { Inter, Geist_Mono, Aref_Ruqaa } from "next/font/google";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
@@ -10,6 +10,13 @@ import { ThemeProvider } from "../lib/ThemeContext";
 import { CommandPaletteProvider } from "../components/CommandPaletteProvider";
 import GlobalKeyboardShortcuts from "../components/GlobalKeyboardShortcuts";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+
+const arefRuqaa = Aref_Ruqaa({
+  weight: ["400", "700"],
+  subsets: ["arabic", "latin"],
+  variable: "--font-aref-ruqaa", // Kita buat variable CSS-nya
+  display: "swap",
+});
 
 // Load fonts (prompts.chat style)
 const inter = Inter({
@@ -105,7 +112,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" suppressHydrationWarning className={`${inter.variable} ${geistMono.variable}`}>
+    <html lang="id" suppressHydrationWarning className={`${inter.variable} ${geistMono.variable} ${arefRuqaa.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased bg-background text-foreground">
         {/* Skip to main content link for accessibility */}
         <a href="#main-content" className="skip-link">
