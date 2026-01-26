@@ -166,8 +166,7 @@ export default function Header() {
 
         {/* Logo - Alephdraad */}
         <div className="-ml-2 sm: -ml-0"
-        <Logo variant="horizontal" size={40} className="shrink-0 drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_6px_20px_rgba(99,102,241,0.22)]"
-  />
+        <Logo variant="horizontal" size={40} className="shrink-0 drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_6px_20px_rgba(99,102,241,0.22)]"/>
         </div>
 
         {/* Desktop nav */}
