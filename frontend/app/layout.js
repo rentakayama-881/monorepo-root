@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Inter, Geist_Mono } from "next/font/google";
+import { Aref_Ruqaa } from "next/font/google";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
