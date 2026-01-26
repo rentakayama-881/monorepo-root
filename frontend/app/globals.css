@@ -52,68 +52,192 @@
 
   /* ===== Design tokens (LIGHT default) - prompts.chat oklch style ===== */
   :root {
-    /* Radius token - sharper, more defined borders */
-    --radius: 0.5rem;
-    --header-height: 3rem;
-    
-    /* Semantic color tokens (oklch format) */
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.5854 0.2041 277.12);
-    --input: oklch(0.5854 0.2041 277.12);
-    --ring: oklch(0.708 0 0);
-    
-    /* Status colors */
-    --success: oklch(0.65 0.2 145);
-    --warning: oklch(0.75 0.15 85);
-    --error: oklch(0.577 0.245 27.325);
+  /* Radius token */
+  --radius: 0.5rem;
+  --header-height: 3rem;
+
+  /* =========================
+     Brand Palette (V4)
+     ========================= */
+
+  /* Silver-2 (set #1: neutral-cool) */
+  --color-silver-2-50: oklch(96.05% 0.003 17.21);
+  --color-silver-2-100: oklch(91.86% 0.008 7.30);
+  --color-silver-2-200: oklch(83.52% 0.016 12.49);
+  --color-silver-2-300: oklch(75.14% 0.022 14.01);
+  --color-silver-2-400: oklch(66.44% 0.032 12.73);
+  --color-silver-2-500: oklch(57.51% 0.042 12.37);
+  --color-silver-2-600: oklch(49.11% 0.034 13.23);
+  --color-silver-2-700: oklch(40.34% 0.026 14.76);
+  --color-silver-2-800: oklch(30.94% 0.021 13.54);
+  --color-silver-2-900: oklch(20.92% 0.011 8.44);
+  --color-silver-2-950: oklch(17.80% 0.007 17.80);
+
+  /* Silver (set #2: sesuai V3 JSON) */
+  --color-silver-50: oklch(96.16% 0.002 67.80);
+  --color-silver-100: oklch(92.17% 0.005 34.31);
+  --color-silver-200: oklch(84.38% 0.009 44.88);
+  --color-silver-300: oklch(76.15% 0.012 37.41);
+  --color-silver-400: oklch(67.76% 0.018 36.51);
+  --color-silver-500: oklch(59.33% 0.023 40.45);
+  --color-silver-600: oklch(50.48% 0.019 36.50);
+  --color-silver-700: oklch(41.44% 0.014 37.36);
+  --color-silver-800: oklch(31.96% 0.011 44.65);
+  --color-silver-900: oklch(21.33% 0.007 34.30);
+  --color-silver-950: oklch(17.96% 0.004 48.50);
+
+  /* Fuchsia Plum */
+  --color-fuchsia-plum-50: oklch(95.56% 0.017 339.93);
+  --color-fuchsia-plum-100: oklch(91.01% 0.034 341.06);
+  --color-fuchsia-plum-200: oklch(82.19% 0.071 341.72);
+  --color-fuchsia-plum-300: oklch(73.27% 0.111 342.88);
+  --color-fuchsia-plum-400: oklch(64.98% 0.149 344.12);
+  --color-fuchsia-plum-500: oklch(57.45% 0.181 346.47);
+  --color-fuchsia-plum-600: oklch(48.96% 0.152 346.14);
+  --color-fuchsia-plum-700: oklch(40.05% 0.121 346.32);
+  --color-fuchsia-plum-800: oklch(30.67% 0.089 345.66);
+  --color-fuchsia-plum-900: oklch(20.49% 0.048 345.21);
+  --color-fuchsia-plum-950: oklch(17.33% 0.037 344.06);
+
+  /* Space Indigo */
+  --color-space-indigo-50: oklch(95.41% 0.009 286.22);
+  --color-space-indigo-100: oklch(90.70% 0.019 282.74);
+  --color-space-indigo-200: oklch(81.20% 0.039 282.25);
+  --color-space-indigo-300: oklch(71.48% 0.061 281.53);
+  --color-space-indigo-400: oklch(61.54% 0.085 280.45);
+  --color-space-indigo-500: oklch(51.42% 0.108 279.35);
+  --color-space-indigo-600: oklch(44% 0.092 278.83);
+  --color-space-indigo-700: oklch(36.28% 0.072 279.05);
+  --color-space-indigo-800: oklch(28.11% 0.051 279.43);
+  --color-space-indigo-900: oklch(19.32% 0.028 280.26);
+  --color-space-indigo-950: oklch(16.45% 0.021 283.86);
+
+  /* Deep Mocha */
+  --color-deep-mocha-50: oklch(96.02% 0.003 39.48);
+  --color-deep-mocha-100: oklch(92.02% 0.007 28.83);
+  --color-deep-mocha-200: oklch(84.09% 0.013 35.73);
+  --color-deep-mocha-300: oklch(75.77% 0.021 33.37);
+  --color-deep-mocha-400: oklch(67.26% 0.029 32.29);
+  --color-deep-mocha-500: oklch(58.72% 0.037 34.37);
+  --color-deep-mocha-600: oklch(49.98% 0.031 32.38);
+  --color-deep-mocha-700: oklch(41.06% 0.024 33.46);
+  --color-deep-mocha-800: oklch(31.63% 0.017 35.72);
+  --color-deep-mocha-900: oklch(21.15% 0.010 29.07);
+  --color-deep-mocha-950: oklch(17.76% 0.007 34.31);
+
+  /* =========================
+     Semantic tokens (LIGHT)
+     (tidak merusak logika komponen kamu)
+     ========================= */
+  --background: oklch(1 0 0); /* tetap clean putih */
+  --foreground: var(--color-space-indigo-950);
+
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+
+  /* Brand actions */
+  --primary: var(--color-space-indigo-700);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Surfaces */
+  --secondary: var(--color-silver-50);
+  --secondary-foreground: var(--color-space-indigo-950);
+
+  --muted: var(--color-silver-50);
+  --muted-foreground: var(--color-space-indigo-700);
+
+  /* Accent = fuchsia plum (branding highlight) */
+  --accent: var(--color-fuchsia-plum-50);
+  --accent-foreground: var(--color-space-indigo-950);
+
+  /* Destructive tetap merah (punya kamu sudah benar) */
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(1 0 0);
+
+  /* Borders / inputs: pakai silver agar tidak “ungu neon” seperti sebelumnya */
+  --border: var(--color-silver-200);
+  --input: var(--color-silver-200);
+
+  /* Focus ring: space-indigo agar identitas konsisten */
+  --ring: var(--color-space-indigo-400);
+
+  /* Status colors (keep) */
+  --success: oklch(0.65 0.2 145);
+  --warning: oklch(0.75 0.15 85);
+  --error: oklch(0.577 0.245 27.325);
+
+  /* ===== Legacy token mappings (biar hljs & bagian lama aman) ===== */
+  --bg: 255, 255, 255;
+  --fg: 40, 42, 72;          /* Space Indigo #282A48 */
+  --surface: 255, 255, 255;
+  --surface-2: 246, 248, 250;
+
+  /* Brand: pakai Space Indigo supaya konsisten */
+  --brand: 40, 42, 72;       /* #282A48 */
+  --brand-2: 196, 78, 151;   /* Fuchsia Plum #C44E97 */
+
+  --skeleton: 208, 215, 222;
+  --muted-2: 110, 118, 129;
+
+  --success-bg: 240, 253, 244;
+  --success-border: 187, 247, 208;
+  --error-bg: 254, 242, 242;
+  --error-border: 254, 202, 202;
+  --warning-bg: 254, 252, 232;
+  --warning-border: 254, 240, 138;
   }
+
 
   /* Default scheme LIGHT */
   html {
-    color-scheme: light;
-  }
+  color-scheme: light;
+}
 
-  .dark {
-    --background: oklch(0.13 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.18 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.19 0 0);
-    --popover-foreground: oklch(0.95 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.21 0 0);
-    --secondary-foreground: oklch(0.95 0 0);
-    --muted: oklch(0.2 0 0);
-    --muted-foreground: oklch(0.65 0 0);
-    --accent: oklch(0.2 0 0);
-    --accent-foreground: oklch(0.95 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(0.5854 0.2041 277.12);
-    --input: oklch(0.5854 0.2041 277.12);
-    --ring: oklch(0.5 0 0);
-    
-    /* Status colors (dark mode) */
-    --success: oklch(0.75 0.2 145);
-    --warning: oklch(0.85 0.15 85);
-    --error: oklch(0.704 0.191 22.216);
-    
-    color-scheme: dark;
-  }
+.dark {
+  /* =========================
+     Semantic tokens (DARK)
+     ========================= */
+  --background: var(--color-space-indigo-950);
+  --foreground: var(--color-silver-50);
+
+  --card: var(--color-space-indigo-900);
+  --card-foreground: var(--foreground);
+
+  --popover: var(--color-space-indigo-900);
+  --popover-foreground: var(--foreground);
+
+  /* Di dark mode: primary jadi terang agar tombol kontras */
+  --primary: var(--color-space-indigo-200);
+  --primary-foreground: var(--color-space-indigo-950);
+
+  --secondary: var(--color-space-indigo-900);
+  --secondary-foreground: var(--foreground);
+
+  --muted: var(--color-space-indigo-900);
+  --muted-foreground: var(--color-silver-300);
+
+  /* Accent hover/spotlight tetap punya “plum” */
+  --accent: var(--color-space-indigo-800);
+  --accent-foreground: var(--foreground);
+
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(1 0 0);
+
+  --border: var(--color-space-indigo-800);
+  --input: var(--color-space-indigo-800);
+
+  --ring: var(--color-fuchsia-plum-400);
+
+  /* Status colors (dark mode keep) */
+  --success: oklch(0.75 0.2 145);
+  --warning: oklch(0.85 0.15 85);
+  --error: oklch(0.704 0.191 22.216);
+
+  color-scheme: dark;
+}
 
   /* ===== Legacy token mappings for backward compatibility ===== */
   :root {
