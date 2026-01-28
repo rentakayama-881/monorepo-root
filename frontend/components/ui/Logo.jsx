@@ -98,7 +98,7 @@ export function Logo({
 
           <g transform="translate(40, 39)">
             {/* Biarkan putih untuk kontras maksimum (ikon tetap terbaca di light/dark) */}
-            <g stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" fill="none">
+            <g stroke="#745d58" strokeWidth="2.5" strokeLinecap="round" fill="none">
               <path d="M-8,-12 L8,12" />
               <path d="M-3,-12 C-3,-8 3,-4 7,-2" />
               <path d="M3,12 C3,8 -3,4 -7,2" />
