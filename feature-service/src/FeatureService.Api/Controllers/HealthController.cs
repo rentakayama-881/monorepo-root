@@ -1,4 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
+using StackExchange.Redis;
+using FeatureService.Api.Infrastructure.MongoDB;
 
 namespace FeatureService.Api.Controllers;
 
@@ -10,6 +13,20 @@ namespace FeatureService.Api.Controllers;
 [Produces("application/json")]
 public class HealthController : ControllerBase
 {
+    private readonly MongoDbContext _mongoDbContext;
+    private readonly IConnectionMultiplexer _redis;
+    private readonly ILogger<HealthController> _logger;
+
+    public HealthController(
+        MongoDbContext mongoDbContext,
+        IConnectionMultiplexer redis,
+        ILogger<HealthController> logger)
+    {
+        _mongoDbContext = mongoDbContext;
+        _redis = redis;
+        _logger = logger;
+    }
+
     /// <summary>
     /// Basic health check
     /// </summary>
@@ -41,10 +58,57 @@ public class HealthController : ControllerBase
     [HttpGet("ready")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-    public IActionResult GetReadiness()
+    public async Task<IActionResult> GetReadiness()
     {
-        // TODO: Add actual readiness checks (MongoDB connection, etc.)
-        return Ok(new { status = "ready" });
+        var mongoHealthy = await CheckMongoAsync();
+        var redisHealthy = await CheckRedisAsync();
+
+        var status = mongoHealthy && redisHealthy ? "ready" : "not_ready";
+        var response = new
+        {
+            status,
+            checks = new
+            {
+                mongodb = mongoHealthy ? "healthy" : "unhealthy",
+                redis = redisHealthy ? "healthy" : "unhealthy"
+            }
+        };
+
+        if (mongoHealthy && redisHealthy)
+        {
+            return Ok(response);
+        }
+
+        return StatusCode(StatusCodes.Status503ServiceUnavailable, response);
+    }
+
+    private async Task<bool> CheckMongoAsync()
+    {
+        try
+        {
+            var command = new BsonDocument("ping", 1);
+            await _mongoDbContext.Database.RunCommandAsync<BsonDocument>(command);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "MongoDB readiness check failed");
+            return false;
+        }
+    }
+
+    private Task<bool> CheckRedisAsync()
+    {
+        try
+        {
+            _redis.GetDatabase().Ping();
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Redis readiness check failed");
+            return Task.FromResult(false);
+        }
     }
 }
 
