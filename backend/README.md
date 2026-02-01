@@ -169,6 +169,7 @@ backend/
 
 ```env
 # Server
+BIND_ADDR=127.0.0.1
 PORT=8080
 GIN_MODE=release
 

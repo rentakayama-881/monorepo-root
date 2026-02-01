@@ -6,6 +6,15 @@ namespace FeatureService.Api.Infrastructure.Redis;
 public class RedisSettings
 {
     /// <summary>
+    /// Full Redis connection string.
+    /// Supports:
+    /// - StackExchange.Redis style: "host:port,password=...,ssl=true,abortConnect=false"
+    /// - URI style: "rediss://user:pass@host:port/0"
+    /// If set, this takes precedence over DirectEndpoint/SentinelEndpoints.
+    /// </summary>
+    public string ConnectionString { get; set; } = string.Empty;
+
+    /// <summary>
     /// Direct Redis endpoint (host:port) untuk single-node setup.
     /// Jika diset, akan bypass Sentinel configuration.
     /// </summary>
@@ -22,9 +31,26 @@ public class RedisSettings
     public string ServiceName { get; set; } = "mymaster";
 
     /// <summary>
+    /// Redis ACL username (optional).
+    /// </summary>
+    public string User { get; set; } = string.Empty;
+
+    /// <summary>
     /// Password untuk Redis authentication
     /// </summary>
     public string Password { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Require TLS when connecting to non-local endpoints.
+    /// Recommended for production managed Redis.
+    /// </summary>
+    public bool RequireTls { get; set; } = true;
+
+    /// <summary>
+    /// Optional override for TLS SNI/hostname validation.
+    /// If empty and TLS is enabled, the first DNS endpoint host will be used.
+    /// </summary>
+    public string SslHost { get; set; } = string.Empty;
 
     /// <summary>
     /// Database index (0-15)

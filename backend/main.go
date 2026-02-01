@@ -453,9 +453,17 @@ func main() {
 		port = "8080"
 	}
 
-	logger.Info("Server backend berjalan di port "+port, zap.String("port", port))
+	// Bind address for the HTTP server.
+	// Best practice: default to loopback so the app is only reachable via Nginx/reverse-proxy.
+	bindAddr := strings.TrimSpace(os.Getenv("BIND_ADDR"))
+	if bindAddr == "" {
+		bindAddr = "127.0.0.1"
+	}
 
-	if err := router.Run("0.0.0.0:" + port); err != nil {
+	listenAddr := bindAddr + ":" + port
+	logger.Info("Server backend berjalan", zap.String("addr", listenAddr))
+
+	if err := router.Run(listenAddr); err != nil {
 		log.Fatal("Failed to start server: ", err)
 	}
 }

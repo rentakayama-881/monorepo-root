@@ -123,6 +123,11 @@ JWT configuration must match the Gin backend:
 | `JWT__SECRET` | JWT signing secret (required) | - |
 | `JWT__ISSUER` | JWT issuer | `api.alephdraad.fun` |
 | `JWT__AUDIENCE` | JWT audience | `alephdraad-clients` |
+| `REDIS__CONNECTIONSTRING` | Redis connection string/URL (recommended: `rediss://...`) | - |
+| `REDIS__REQUIRETLS` | Require TLS for non-local Redis endpoints | `true` |
+| `REDIS__SSLHOST` | Optional TLS SNI/hostname override | - |
+| `REDIS__USER` | Optional Redis ACL username | - |
+| `REDIS__PASSWORD` | Optional Redis password (if not in connection string) | - |
 | `CORS__ALLOWEDORIGINS__0` | Allowed CORS origin | `https://alephdraad.fun` |
 | `ASPNETCORE_URLS` | Service URLs | `http://127.0.0.1:5000` |
 

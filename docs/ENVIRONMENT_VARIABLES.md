@@ -31,6 +31,7 @@ This document lists all required and optional environment variables for the Alep
 
 | Variable | Description | Default |
 |----------|-------------|---------|
+| `BIND_ADDR` | Bind address for the HTTP server (keep `127.0.0.1` behind Nginx) | `127.0.0.1` |
 | `PORT` | Server port | `8080` |
 | `GIN_MODE` | Gin framework mode | `release` |
 | `LOG_LEVEL` | Logging level | `info` |
@@ -146,10 +147,12 @@ This document lists all required and optional environment variables for the Alep
 |----------|-------------|---------|
 | `ASPNETCORE_ENVIRONMENT` | Environment name | `Production` |
 | `ASPNETCORE_URLS` | Binding URLs | `http://+:5000` |
-| `MongoDB__ConnectionString` | MongoDB connection string | - |
-| `MongoDB__DatabaseName` | MongoDB database name | `feature_service_db` |
-| `Jwt__Secret` | JWT secret (must match Go backend) | - |
-| `Jwt__AdminSecret` | Admin JWT secret (must match Go backend) | - |
+| `MONGODB__CONNECTIONSTRING` | MongoDB connection string | - |
+| `MONGODB__DATABASENAME` | MongoDB database name | `feature_service_db` |
+| `JWT__SECRET` | JWT secret (must match Go backend) | - |
+| `ADMIN_JWT_SECRET` | Admin JWT secret (must match Go backend) | - |
+| `REDIS__CONNECTIONSTRING` | Redis connection string/URL (recommended: `rediss://...`) | - |
+| `REDIS__REQUIRETLS` | Require TLS for non-local Redis endpoints | `true` |
 
 ---
 

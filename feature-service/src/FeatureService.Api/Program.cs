@@ -91,9 +91,28 @@ try
         });
     });
 
-    // Enable PII logging for debugging JWT issues (remove in production)
-    Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
-    Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact = true;
+    // Best practice: don't log PII / full security artifacts in production.
+    // Allow explicitly enabling via env var for incident debugging.
+    var enableJwtPiiLogging =
+        builder.Environment.IsDevelopment()
+        || string.Equals(
+            Environment.GetEnvironmentVariable("ENABLE_JWT_PII_LOGGING"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+
+    Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = enableJwtPiiLogging;
+    Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact = enableJwtPiiLogging;
+    if (enableJwtPiiLogging && !builder.Environment.IsDevelopment())
+    {
+        Log.Warning("ENABLE_JWT_PII_LOGGING is enabled outside Development. Disable after debugging.");
+    }
+
+    var enableJwtDebug =
+        builder.Environment.IsDevelopment()
+        || string.Equals(
+            Environment.GetEnvironmentVariable("ENABLE_JWT_DEBUG"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
 
     // Create the signing key once for reuse
     var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
@@ -134,10 +153,13 @@ try
                     var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(headerAndPayload));
                     var computedSignature = Base64UrlEncoder.Encode(hash);
 
-                    // Log for debugging
-                    Console.WriteLine($"[JWT DEBUG] Secret len: {jwtSettings.Secret.Length}, first 10: {jwtSettings.Secret.Substring(0, Math.Min(10, jwtSettings.Secret.Length))}");
-                    Console.WriteLine($"[JWT DEBUG] Token sig: {tokenSignature.Substring(0, Math.Min(20, tokenSignature.Length))}...");
-                    Console.WriteLine($"[JWT DEBUG] Computed:  {computedSignature.Substring(0, Math.Min(20, computedSignature.Length))}...");
+                    if (enableJwtDebug)
+                    {
+                        // Avoid logging the secret or full token in any environment.
+                        Log.Debug("[JWT DEBUG] Secret length: {SecretLen}", jwtSettings.Secret.Length);
+                        Log.Debug("[JWT DEBUG] Token sig prefix: {SigPrefix}", tokenSignature.Substring(0, Math.Min(20, tokenSignature.Length)));
+                        Log.Debug("[JWT DEBUG] Computed prefix: {SigPrefix}", computedSignature.Substring(0, Math.Min(20, computedSignature.Length)));
+                    }
 
                     if (!string.Equals(computedSignature, tokenSignature, StringComparison.Ordinal))
                         throw new SecurityTokenInvalidSignatureException($"Signature mismatch: expected {computedSignature.Substring(0, 20)}... got {tokenSignature.Substring(0, 20)}...");
@@ -252,13 +274,52 @@ try
     builder.Configuration.GetSection("Redis").Bind(redisSettings);
 
     // Override with environment variables if present
+    // NOTE: We use uppercase env vars in deployment (.env via systemd EnvironmentFile),
+    // so read them explicitly instead of relying on the default config binder.
+    var envRedisConnectionString =
+        Environment.GetEnvironmentVariable("REDIS__CONNECTIONSTRING")
+        ?? Environment.GetEnvironmentVariable("REDIS__URL")
+        ?? Environment.GetEnvironmentVariable("REDIS_URL");
+    if (!string.IsNullOrEmpty(envRedisConnectionString))
+    {
+        redisSettings.ConnectionString = envRedisConnectionString!;
+    }
+
+    if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS__DIRECTENDPOINT")))
+    {
+        redisSettings.DirectEndpoint = Environment.GetEnvironmentVariable("REDIS__DIRECTENDPOINT")!;
+    }
+
+    var envRedisSentinels = Environment.GetEnvironmentVariable("REDIS__SENTINELENDPOINTS");
+    if (!string.IsNullOrEmpty(envRedisSentinels))
+    {
+        redisSettings.SentinelEndpoints = envRedisSentinels!
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+
     if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS__SERVICENAME")))
     {
         redisSettings.ServiceName = Environment.GetEnvironmentVariable("REDIS__SERVICENAME")!;
     }
+    var envRedisUser =
+        Environment.GetEnvironmentVariable("REDIS__USER")
+        ?? Environment.GetEnvironmentVariable("REDIS__USERNAME");
+    if (!string.IsNullOrEmpty(envRedisUser))
+    {
+        redisSettings.User = envRedisUser!;
+    }
     if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS__PASSWORD")))
     {
         redisSettings.Password = Environment.GetEnvironmentVariable("REDIS__PASSWORD")!;
+    }
+    var envRequireTls = Environment.GetEnvironmentVariable("REDIS__REQUIRETLS");
+    if (!string.IsNullOrEmpty(envRequireTls) && bool.TryParse(envRequireTls, out var requireTls))
+    {
+        redisSettings.RequireTls = requireTls;
+    }
+    if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS__SSLHOST")))
+    {
+        redisSettings.SslHost = Environment.GetEnvironmentVariable("REDIS__SSLHOST")!;
     }
 
     builder.Services.AddSingleton(redisSettings);
