@@ -7,7 +7,7 @@ import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn"
 
 // Check if WebAuthn is supported
 function isWebAuthnSupported() {
-  return ! !(
+  return typeof window !== "undefined" && !!(
     window.PublicKeyCredential &&
     typeof window.PublicKeyCredential === "function"
   );
@@ -30,7 +30,7 @@ const Icons = {
   // USB security key
   usb: (
     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15. 75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
       <circle cx="16.5" cy="7.5" r="1.5" fill="currentColor" />
     </svg>
   ),
@@ -38,7 +38,7 @@ const Icons = {
   nfc: (
     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path strokeLinecap="round" strokeLinejoin="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0" />
-      <circle cx="12" cy="18" r="1. 5" fill="currentColor" />
+      <circle cx="12" cy="18" r="1.5" fill="currentColor" />
     </svg>
   ),
   // Bluetooth
@@ -50,13 +50,13 @@ const Icons = {
   // Default/unknown - lock icon
   default: (
     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16. 5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
     </svg>
   ),
   // Warning icon
   warning: (
     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h. 01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-. 77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
     </svg>
   ),
   // Plus icon
@@ -93,7 +93,7 @@ export default function PasskeySettings() {
       });
       if (!res.ok) throw new Error("Gagal memuat passkeys");
       const data = await res.json();
-      setPasskeys(data. passkeys || []);
+      setPasskeys(data.passkeys || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -120,7 +120,6 @@ export default function PasskeySettings() {
       const token = await getValidToken();
       if (!token) {
         setError("Sesi telah berakhir. Silakan login kembali.");
-        setRegistering(false);
         return;
       }
 
@@ -145,13 +144,13 @@ export default function PasskeySettings() {
       // Convert challenge from base64url to ArrayBuffer
       publicKeyOptions.challenge = base64URLToBuffer(publicKeyOptions.challenge);
 
-      // Convert user. id from base64url to ArrayBuffer
+      // Convert user.id from base64url to ArrayBuffer
       publicKeyOptions.user.id = base64URLToBuffer(publicKeyOptions.user.id);
 
       // Convert excludeCredentials if present
-      if (publicKeyOptions. excludeCredentials) {
+      if (publicKeyOptions.excludeCredentials) {
         publicKeyOptions.excludeCredentials = publicKeyOptions.excludeCredentials.map((cred) => ({
-          ... cred,
+          ...cred,
           id: base64URLToBuffer(cred.id),
         }));
       }
@@ -187,7 +186,7 @@ export default function PasskeySettings() {
 
       if (!finishRes.ok) {
         const errData = await finishRes.json();
-        throw new Error(errData. error || "Gagal menyelesaikan registrasi");
+        throw new Error(errData.error || "Gagal menyelesaikan registrasi");
       }
 
       setSuccess("Passkey berhasil didaftarkan!");
@@ -259,10 +258,10 @@ export default function PasskeySettings() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: newName. trim() }),
+        body: JSON.stringify({ name: newName.trim() }),
       });
       if (!res.ok) {
-        const errData = await res. json();
+        const errData = await res.json();
         throw new Error(errData.error || "Gagal mengubah nama");
       }
       setSuccess("Nama passkey berhasil diubah");
@@ -296,14 +295,14 @@ export default function PasskeySettings() {
 
   function getTransportLabel(transports) {
     if (!transports || transports.length === 0) return "Unknown";
-    if (transports. includes("internal")) return "Built-in Authenticator";
+    if (transports.includes("internal")) return "Built-in Authenticator";
     if (transports.includes("usb")) return "USB Security Key";
     if (transports.includes("nfc")) return "NFC";
     if (transports.includes("ble")) return "Bluetooth";
     return "Passkey";
   }
 
-  if (! webAuthnSupported) {
+  if (!webAuthnSupported) {
     return (
       <section className="rounded-lg border border-border bg-card p-4">
         <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -314,7 +313,7 @@ export default function PasskeySettings() {
           <div className="flex items-start gap-2">
             <span className="text-amber-600">{Icons.warning}</span>
             <p className="text-sm text-amber-600">
-              Browser Anda tidak mendukung Passkey/WebAuthn.  Gunakan browser modern seperti Chrome, Firefox, Safari, atau Edge versi terbaru.
+              Browser Anda tidak mendukung Passkey/WebAuthn. Gunakan browser modern seperti Chrome, Firefox, Safari, atau Edge versi terbaru.
             </p>
           </div>
         </div>
@@ -353,7 +352,7 @@ export default function PasskeySettings() {
       {loading ?  (
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" />
-          Memuat... 
+          Memuat...
         </div>
       ) : (
         <>
@@ -370,7 +369,7 @@ export default function PasskeySettings() {
                       className="text-muted-foreground"
                       title={getTransportLabel(pk.transports)}
                     >
-                      {getTransportIcon(pk. transports)}
+                      {getTransportIcon(pk.transports)}
                     </span>
                     <div>
                       {renaming === pk.id ? (
@@ -403,7 +402,7 @@ export default function PasskeySettings() {
                         <>
                           <p className="text-sm font-medium text-foreground">{pk.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            Dibuat: {formatDate(pk. created_at)}
+                            Dibuat: {formatDate(pk.created_at)}
                             {pk.last_used_at && ` • Terakhir:  ${formatDate(pk.last_used_at)}`}
                           </p>
                         </>
@@ -427,7 +426,7 @@ export default function PasskeySettings() {
                           disabled={deleting === pk.id}
                           className="text-xs text-destructive hover:underline disabled:opacity-50"
                         >
-                          {deleting === pk. id ? "Menghapus..." : "Hapus"}
+                          {deleting === pk.id ? "Menghapus..." : "Hapus"}
                         </button>
                       </>
                     )}
