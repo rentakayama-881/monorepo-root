@@ -39,9 +39,7 @@ public record ResolveDisputeRequest(
     [Required]
     ResolutionType Type,
     
-    /// <summary>
-    /// Percentage to refund to sender (0-100). Used when Type is Split.
-    /// </summary>
+    // Percentage to refund to sender (0-100). Used when Type is Split.
     int? SenderPercent,
     
     string? Note

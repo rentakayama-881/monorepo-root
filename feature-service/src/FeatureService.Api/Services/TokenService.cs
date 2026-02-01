@@ -84,20 +84,22 @@ public class TokenService : ITokenService
             throw new ArgumentException("Invalid package ID");
         }
 
-        // Check wallet balance
-        var wallet = await _walletService.GetOrCreateWalletAsync(userId);
-        if (wallet.Balance < package.PriceIdr)
-        {
-            throw new InvalidOperationException($"Insufficient wallet balance. Required: {FormatCurrency(package.PriceIdr)}, Available: {FormatCurrency(wallet.Balance)}");
-        }
+        var purchaseId = $"tpu_{Ulid.NewUlid()}";
 
-        // Deduct from wallet
-        // TODO: Create proper wallet transaction
-        // For now, we'll directly update the wallet balance
-        var walletUpdate = Builders<UserWallet>.Update
-            .Inc(w => w.Balance, -package.PriceIdr)
-            .Set(w => w.UpdatedAt, DateTime.UtcNow);
-        await _context.Wallets.UpdateOneAsync(w => w.UserId == userId, walletUpdate);
+        // Deduct from wallet (creates transaction + ledger)
+        var (success, error, walletTransactionId) = await _walletService.DeductBalanceAsync(
+            userId,
+            package.PriceIdr,
+            $"Pembelian token: {package.Name}",
+            TransactionType.TokenPurchase,
+            purchaseId,
+            "token_purchase"
+        );
+
+        if (!success)
+        {
+            throw new InvalidOperationException(error ?? "Gagal memproses pembelian token");
+        }
 
         // Add tokens to balance
         var tokenBalance = await GetOrCreateBalanceAsync(userId);
@@ -110,12 +112,12 @@ public class TokenService : ITokenService
         // Record purchase
         var purchase = new TokenPurchase
         {
-            Id = $"tpu_{Ulid.NewUlid()}",
+            Id = purchaseId,
             UserId = userId,
             PackageId = packageId,
             AmountPaid = package.PriceIdr,
             TokensReceived = package.TokenAmount,
-            WalletTransactionId = null, // TODO: Link to wallet transaction
+            WalletTransactionId = walletTransactionId,
             CreatedAt = DateTime.UtcNow
         };
         await _context.TokenPurchases.InsertOneAsync(purchase);

@@ -64,18 +64,9 @@ public interface IIdempotencyService
 /// Hasil dari TryAcquire operation
 /// </summary>
 public record IdempotencyResult(
-    /// <summary>
-    /// True jika lock berhasil diakuisisi
-    /// </summary>
     bool Acquired,
     
-    /// <summary>
-    /// True jika operasi sudah pernah diproses sebelumnya
-    /// </summary>
     bool AlreadyProcessed,
     
-    /// <summary>
-    /// JSON hasil tersimpan jika AlreadyProcessed = true
-    /// </summary>
     string? StoredResultJson
 );

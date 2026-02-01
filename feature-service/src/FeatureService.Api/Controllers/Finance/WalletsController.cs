@@ -323,7 +323,7 @@ public class WalletsController : ApiControllerBase
                 return ApiBadRequest($"Saldo tidak mencukupi. Diperlukan: Rp{request.Amount:N0}, Saldo: Rp{wallet.Balance:N0}");
             }
 
-            var (success, error) = await _walletService.DeductBalanceAsync(
+            var (success, error, _) = await _walletService.DeductBalanceAsync(
                 user.UserId,
                 request.Amount,
                 $"AI Chat - {request.Model}",

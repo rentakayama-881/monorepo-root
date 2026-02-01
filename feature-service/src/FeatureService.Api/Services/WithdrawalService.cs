@@ -1,3 +1,4 @@
+using MongoDB.Bson;
 using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
@@ -123,19 +124,28 @@ public class WithdrawalService : IWithdrawalService
             return new CreateWithdrawalResponse(false, null, null, 
                 "Anda memiliki penarikan yang sedang diproses. Harap tunggu hingga selesai.");
 
+        // Generate IDs before deduction so we can link transactions
+        var withdrawalId = ObjectId.GenerateNewId().ToString();
+        var reference = GenerateReference();
+
         // Deduct from wallet
-        await _walletService.DeductBalanceAsync(
+        var (success, error, _) = await _walletService.DeductBalanceAsync(
             userId,
             totalDeduction,
             $"Penarikan ke {bankInfo.ShortName} ***{request.AccountNumber[^4..]}",
-            TransactionType.Withdrawal
+            TransactionType.Withdrawal,
+            withdrawalId,
+            "withdrawal"
         );
 
-        // Generate unique reference
-        var reference = GenerateReference();
+        if (!success)
+        {
+            return new CreateWithdrawalResponse(false, null, null, error ?? "Gagal memproses penarikan");
+        }
 
         var withdrawal = new Withdrawal
         {
+            Id = withdrawalId,
             UserId = userId,
             Username = username,
             Amount = request.Amount,
@@ -219,7 +229,7 @@ public class WithdrawalService : IWithdrawalService
 
         // Refund full amount (including fee)
         var totalRefund = withdrawal.Amount + withdrawal.Fee;
-        await _walletService.AddBalanceAsync(
+        _ = await _walletService.AddBalanceAsync(
             userId,
             totalRefund,
             $"Pembatalan penarikan {withdrawal.Reference}",
@@ -301,7 +311,7 @@ public class WithdrawalService : IWithdrawalService
 
             // Refund full amount
             var totalRefund = withdrawal.Amount + withdrawal.Fee;
-            await _walletService.AddBalanceAsync(
+            _ = await _walletService.AddBalanceAsync(
                 withdrawal.UserId,
                 totalRefund,
                 $"Penolakan penarikan: {request.RejectionReason}",

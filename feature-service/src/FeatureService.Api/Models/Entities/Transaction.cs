@@ -53,5 +53,6 @@ public enum TransactionType
     Fee,            // Platform fee deduction
     Escrow,         // Money held in escrow
     EscrowRelease,  // Escrow released
-    AiChat          // AI chat usage deduction
+    AiChat,         // AI chat usage deduction
+    TokenPurchase   // Purchase AI tokens using wallet balance
 }

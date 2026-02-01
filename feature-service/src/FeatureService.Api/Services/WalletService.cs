@@ -14,8 +14,8 @@ public interface IWalletService
     Task<bool> ChangePinAsync(uint userId, string currentPin, string newPin);
     Task<VerifyPinResponse> VerifyPinAsync(uint userId, string pin);
     Task<PinStatusResponse> GetPinStatusAsync(uint userId);
-    Task<(bool success, string? error)> DeductBalanceAsync(uint userId, long amount, string description, TransactionType type, string? referenceId = null, string? referenceType = null);
-    Task AddBalanceAsync(uint userId, long amount, string description, TransactionType type, string? referenceId = null, string? referenceType = null);
+    Task<(bool success, string? error, string? transactionId)> DeductBalanceAsync(uint userId, long amount, string description, TransactionType type, string? referenceId = null, string? referenceType = null);
+    Task<string> AddBalanceAsync(uint userId, long amount, string description, TransactionType type, string? referenceId = null, string? referenceType = null);
     Task<List<Transaction>> GetTransactionsAsync(uint userId, int page = 1, int pageSize = 20);
     Task<int> GetTransactionCountAsync(uint userId);
     Task<long> RecalculateBalanceFromLedgerAsync(uint userId);
@@ -244,7 +244,7 @@ public class WalletService : IWalletService
         );
     }
 
-    public async Task<(bool success, string? error)> DeductBalanceAsync(
+    public async Task<(bool success, string? error, string? transactionId)> DeductBalanceAsync(
         uint userId, 
         long amount, 
         string description,
@@ -256,7 +256,7 @@ public class WalletService : IWalletService
 
         if (wallet.Balance < amount)
         {
-            return (false, "Saldo tidak mencukupi");
+            return (false, "Saldo tidak mencukupi", null);
         }
 
         var balanceBefore = wallet.Balance;
@@ -286,13 +286,24 @@ public class WalletService : IWalletService
 
         await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
 
+        await TryInsertLedgerEntryAsync(
+            userId,
+            LedgerEntryType.Debit,
+            amount,
+            balanceAfter,
+            type,
+            referenceId ?? transaction.Id,
+            referenceType,
+            transaction.Id,
+            description);
+
         _logger.LogInformation("Deducted {Amount} from user {UserId}. Balance: {Before} -> {After}", 
             amount, userId, balanceBefore, balanceAfter);
 
-        return (true, null);
+        return (true, null, transaction.Id);
     }
 
-    public async Task AddBalanceAsync(
+    public async Task<string> AddBalanceAsync(
         uint userId, 
         long amount, 
         string description,
@@ -329,8 +340,21 @@ public class WalletService : IWalletService
 
         await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
 
+        await TryInsertLedgerEntryAsync(
+            userId,
+            LedgerEntryType.Credit,
+            amount,
+            balanceAfter,
+            type,
+            referenceId ?? transaction.Id,
+            referenceType,
+            transaction.Id,
+            description);
+
         _logger.LogInformation("Added {Amount} to user {UserId}. Balance: {Before} -> {After}", 
             amount, userId, balanceBefore, balanceAfter);
+
+        return transaction.Id;
     }
 
     public async Task<List<Transaction>> GetTransactionsAsync(uint userId, int page = 1, int pageSize = 20)
@@ -463,6 +487,65 @@ public class WalletService : IWalletService
         }
 
         await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
+    }
+
+    private async Task TryInsertLedgerEntryAsync(
+        uint userId,
+        LedgerEntryType entryType,
+        long amount,
+        long balanceAfter,
+        TransactionType type,
+        string referenceId,
+        string? referenceType,
+        string transactionId,
+        string description)
+    {
+        try
+        {
+            var metadata = new Dictionary<string, string>
+            {
+                ["transaction_id"] = transactionId
+            };
+
+            if (!string.IsNullOrEmpty(referenceType))
+            {
+                metadata["reference_type"] = referenceType;
+            }
+
+            var ledgerEntry = new TransactionLedger
+            {
+                UserId = (int)userId,
+                EntryType = entryType,
+                Amount = amount,
+                BalanceAfter = balanceAfter,
+                TransactionType = MapLedgerTransactionType(type),
+                ReferenceId = referenceId,
+                ExternalReference = referenceType,
+                Description = description,
+                Metadata = metadata,
+                CreatedAt = DateTime.UtcNow,
+                Status = TransactionStatus.Completed
+            };
+
+            await _ledger.InsertOneAsync(ledgerEntry);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to write transaction ledger for user {UserId}", userId);
+        }
+    }
+
+    private static string MapLedgerTransactionType(TransactionType type)
+    {
+        return type switch
+        {
+            TransactionType.TransferIn => "transfer_in",
+            TransactionType.TransferOut => "transfer_out",
+            TransactionType.EscrowRelease => "escrow_release",
+            TransactionType.AiChat => "ai_chat",
+            TransactionType.TokenPurchase => "token_purchase",
+            _ => type.ToString().ToLowerInvariant()
+        };
     }
 
     /// <summary>

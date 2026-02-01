@@ -240,6 +240,8 @@ try
 
     // Register financial services
     builder.Services.AddScoped<IWalletService, WalletService>();
+    builder.Services.AddScoped<IDepositService, DepositService>();
+    builder.Services.AddScoped<ILedgerBackfillService, LedgerBackfillService>();
     builder.Services.AddScoped<ITransferService, TransferService>();
     builder.Services.AddHttpClient<ITransferService, TransferService>();
     builder.Services.AddScoped<IDisputeService, DisputeService>();

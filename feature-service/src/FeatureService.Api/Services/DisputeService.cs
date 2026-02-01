@@ -344,7 +344,7 @@ public class DisputeService : IDisputeService
         // Execute fund transfers
         if (refundToSender > 0)
         {
-            await _walletService.AddBalanceAsync(
+            _ = await _walletService.AddBalanceAsync(
                 transfer.SenderId,
                 refundToSender,
                 $"Refund dari dispute #{disputeId[^6..]}",
@@ -356,7 +356,7 @@ public class DisputeService : IDisputeService
 
         if (releaseToReceiver > 0)
         {
-            await _walletService.AddBalanceAsync(
+            _ = await _walletService.AddBalanceAsync(
                 transfer.ReceiverId,
                 releaseToReceiver,
                 $"Pelepasan dari dispute #{disputeId[^6..]}",
@@ -510,7 +510,7 @@ public class DisputeService : IDisputeService
             return (false, "Transfer tidak ditemukan");
 
         // Refund to sender
-        await _walletService.AddBalanceAsync(
+        _ = await _walletService.AddBalanceAsync(
             transfer.SenderId,
             transfer.Amount,
             $"Refund mutual dari dispute #{disputeId.Substring(0, 8)}",

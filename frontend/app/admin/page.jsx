@@ -17,12 +17,31 @@ export default function AdminDashboardPage() {
     warningsToday: 0,
     hiddenContent: 0,
   });
+  const [pendingDeposits, setPendingDeposits] = useState([]);
+  const [depositLoading, setDepositLoading] = useState(false);
+  const [depositError, setDepositError] = useState("");
 
   useEffect(() => {
     const fetchStats = async () => {
       const token = localStorage.getItem("admin_token");
 
       try {
+        if (FEATURE_SERVICE_URL) {
+          setDepositLoading(true);
+          setDepositError("");
+          const depositsRes = await fetch(
+            `${FEATURE_SERVICE_URL}/api/v1/admin/deposits/pending?limit=20`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          if (depositsRes.ok) {
+            const depositsData = await depositsRes.json();
+            setPendingDeposits(depositsData?.data || depositsData || []);
+          }
+          setDepositLoading(false);
+        }
+
         // Fetch badges count from Go backend
         const badgesRes = await fetch(`${getApiBase()}/admin/badges`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -65,11 +84,68 @@ export default function AdminDashboardPage() {
         }
       } catch (err) {
         logger.error("Failed to fetch stats:", err);
+        setDepositError("Gagal memuat deposit pending");
+        setDepositLoading(false);
       }
     };
 
     fetchStats();
   }, []);
+
+  const handleApproveDeposit = async (depositId) => {
+    const token = localStorage.getItem("admin_token");
+    try {
+      const res = await fetch(
+        `${FEATURE_SERVICE_URL}/api/v1/admin/deposits/${depositId}/approve`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.message || "Gagal approve deposit");
+      }
+      setPendingDeposits((prev) => prev.filter((d) => d.id !== depositId));
+    } catch (err) {
+      logger.error("Approve deposit failed:", err);
+      alert(err?.message || "Gagal approve deposit");
+    }
+  };
+
+  const handleRejectDeposit = async (depositId) => {
+    const reason = window.prompt("Alasan penolakan deposit:");
+    if (!reason || reason.trim().length < 3) {
+      alert("Alasan penolakan wajib diisi.");
+      return;
+    }
+
+    const token = localStorage.getItem("admin_token");
+    try {
+      const res = await fetch(
+        `${FEATURE_SERVICE_URL}/api/v1/admin/deposits/${depositId}/reject`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ reason: reason.trim() }),
+        }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.message || "Gagal reject deposit");
+      }
+      setPendingDeposits((prev) => prev.filter((d) => d.id !== depositId));
+    } catch (err) {
+      logger.error("Reject deposit failed:", err);
+      alert(err?.message || "Gagal reject deposit");
+    }
+  };
 
   const statCards = [
     {
@@ -189,6 +265,75 @@ export default function AdminDashboardPage() {
           </div>
         </Card>
       </div>
+
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4">
+          Pending Deposits (QRIS)
+        </h2>
+        {!FEATURE_SERVICE_URL && (
+          <p className="text-sm text-muted-foreground">
+            Feature Service URL belum dikonfigurasi.
+          </p>
+        )}
+        {depositLoading && (
+          <p className="text-sm text-muted-foreground">Memuat deposit pending...</p>
+        )}
+        {depositError && (
+          <p className="text-sm text-destructive">{depositError}</p>
+        )}
+        {!depositLoading && !depositError && pendingDeposits.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Tidak ada deposit pending.
+          </p>
+        )}
+        {!depositLoading && pendingDeposits.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted-foreground">
+                  <th className="py-2 pr-4">User</th>
+                  <th className="py-2 pr-4">Amount</th>
+                  <th className="py-2 pr-4">Method</th>
+                  <th className="py-2 pr-4">Txn ID</th>
+                  <th className="py-2 pr-4">Created</th>
+                  <th className="py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingDeposits.map((deposit) => (
+                  <tr key={deposit.id} className="border-t border-border">
+                    <td className="py-3 pr-4">
+                      {deposit.username || `User ${deposit.userId}`}
+                    </td>
+                    <td className="py-3 pr-4">
+                      Rp {Number(deposit.amount).toLocaleString("id-ID")}
+                    </td>
+                    <td className="py-3 pr-4">{deposit.method}</td>
+                    <td className="py-3 pr-4">{deposit.externalTransactionId}</td>
+                    <td className="py-3 pr-4">
+                      {new Date(deposit.createdAt).toLocaleString("id-ID")}
+                    </td>
+                    <td className="py-3 flex gap-2">
+                      <button
+                        onClick={() => handleApproveDeposit(deposit.id)}
+                        className="rounded-md bg-emerald-600 px-3 py-1 text-white hover:bg-emerald-700"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleRejectDeposit(deposit.id)}
+                        className="rounded-md bg-rose-600 px-3 py-1 text-white hover:bg-rose-700"
+                      >
+                        Reject
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

@@ -80,6 +80,7 @@ export const FEATURE_ENDPOINTS = {
     PIN_VERIFY: "/api/v1/wallets/pin/verify",
     TRANSACTIONS: "/api/v1/wallets/transactions",
     AI_CHAT_SPEND: "/api/v1/wallets/ai-chat/spend",
+    DEPOSITS: "/api/v1/wallets/deposits",
   },
 
   // Transfers (Escrow)

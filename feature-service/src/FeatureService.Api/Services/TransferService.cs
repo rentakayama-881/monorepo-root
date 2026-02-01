@@ -150,7 +150,7 @@ public class TransferService : ITransferService
         };
 
         // Deduct from sender's wallet (hold the funds)
-        var (deductSuccess, deductError) = await _walletService.DeductBalanceAsync(
+        var (deductSuccess, deductError, _) = await _walletService.DeductBalanceAsync(
             senderId,
             request.Amount,
             $"Transfer ke @{receiver.Username}",
@@ -270,7 +270,7 @@ public class TransferService : ITransferService
         var amountAfterFee = transfer.Amount - fee;
 
         // Add to receiver's wallet (minus fee)
-        await _walletService.AddBalanceAsync(
+        _ = await _walletService.AddBalanceAsync(
             transfer.ReceiverId,
             amountAfterFee,
             $"Transfer dari @{transfer.SenderUsername}",
@@ -325,7 +325,7 @@ public class TransferService : ITransferService
             return (false, pinResult.Message);
 
         // Refund to sender
-        await _walletService.AddBalanceAsync(
+        _ = await _walletService.AddBalanceAsync(
             transfer.SenderId,
             transfer.Amount,
             $"Pembatalan transfer ke @{transfer.ReceiverUsername}",
@@ -371,7 +371,7 @@ public class TransferService : ITransferService
             return (false, pinResult.Message);
 
         // Refund to sender (full amount, no fee for rejection)
-        await _walletService.AddBalanceAsync(
+        _ = await _walletService.AddBalanceAsync(
             transfer.SenderId,
             transfer.Amount,
             $"Penolakan transfer dari @{transfer.ReceiverUsername}",
@@ -445,7 +445,7 @@ public class TransferService : ITransferService
                 var amountAfterFee = transfer.Amount - fee;
 
                 // Add to receiver
-                await _walletService.AddBalanceAsync(
+                _ = await _walletService.AddBalanceAsync(
                     transfer.ReceiverId,
                     amountAfterFee,
                     $"Auto-release transfer dari @{transfer.SenderUsername}",
