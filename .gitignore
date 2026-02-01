@@ -23,6 +23,12 @@
 **/*.so
 **/*.dylib
 
+# .NET build outputs
+**/bin/
+**/obj/
+**/publish/
+**/publish_out/
+
 # Go binaries (backend)
 backend/app
 backend/server

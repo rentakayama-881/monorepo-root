@@ -1,0 +1,19 @@
+[Unit]
+Description=Alephdraad Feature Service (.NET 8)
+After=network.target
+
+[Service]
+Type=simple
+User=alephdraad
+Group=alephdraad
+WorkingDirectory=/opt/alephdraad/feature-service
+EnvironmentFile=/opt/alephdraad/feature-service/.env
+ExecStart=/usr/bin/dotnet /opt/alephdraad/feature-service/FeatureService.Api.dll
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=feature-service
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

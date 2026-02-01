@@ -1,0 +1,17 @@
+[Unit]
+Description=Alephdraad Go Backend (Gin)
+After=network.target
+
+[Service]
+Type=simple
+User=alephdraad
+Group=alephdraad
+WorkingDirectory=/opt/alephdraad/backend
+EnvironmentFile=/opt/alephdraad/backend/.env
+ExecStart=/opt/alephdraad/backend/app
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
