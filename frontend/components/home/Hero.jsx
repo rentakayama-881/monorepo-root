@@ -16,10 +16,10 @@ export default function Hero() {
         <div className="max-w-2xl">
           <h1 className="space-y-0 overflow-visible animate-slide-up">
             <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tighter leading-none text-balance text-foreground">
-              Bangun reputasi, inovasi, dan implementasikan apa yang Anda pikirkan,
+              Этот сайт является пространством для реализации идей и инноваций специалистов в области Threat Intelligence,
             </span>
             <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl italic font-serif tracking-tight leading-tight text-foreground">
-              support by Kelompok Anti-Solana Drainer.
+              Мы запрещаем любые атаки на территорию Индонезии и всех стран бывшего Советского Союза.
             </span>
           </h1>
 
