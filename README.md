@@ -26,8 +26,7 @@ A modern Indonesian community platform with enterprise-grade security and real-t
 │   ▪ Users & Profiles    │   │   ▪ Wallet & PIN System               │
 │   ▪ Threads & Tags      │   │   ▪ P2P Transfers                     │
 │   ▪ Admin & Moderation  │   │   ▪ Bank Withdrawals                  │
-│   ▪ RAG/AI Pipeline     │   │   ▪ Dispute Resolution                │
-│                         │   │   ▪ AI Chat (HuggingFace)             │
+│                         │   │   ▪ Dispute Resolution                │
 │   PostgreSQL (Neon)     │   │   MongoDB Atlas                       │
 └─────────────────────────┘   └───────────────────────────────────────┘
 ```
@@ -241,7 +240,6 @@ MONGODB_URI=mongodb+srv://...
 JWT_SECRET=same-as-backend
 JWT_ISSUER=alephdraad
 JWT_AUDIENCE=alephdraad-users
-HUGGINGFACE_API_KEY=your-key
 ```
 
 ---

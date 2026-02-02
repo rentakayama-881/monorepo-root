@@ -81,7 +81,7 @@
            │                 │   │              │  │                 │
            │  Users, Threads │   │  Sessions    │  │  Replies,       │
            │  Sessions, Auth │   │  Rate Limits │  │  Wallets,       │
-           │  Categories     │   │  WebAuthn    │  │  AI Chat        │
+           │  Categories     │   │  WebAuthn    │  │  Transfers      │
            └─────────────────┘   └──────────────┘  └─────────────────┘
 ```
 
@@ -153,14 +153,6 @@
 | Transaction History | `feature-service/.../WalletsController.cs` | ✅ |
 | Dispute Resolution | `feature-service/.../DisputesController.cs` | ✅ |
 
-#### 🤖 AI Features
-| Fitur | Lokasi | Status |
-|-------|--------|--------|
-| AI Chat Sessions | `feature-service/.../ChatController.cs` | ✅ |
-| Token Balance/Purchase | `feature-service/.../TokenService.cs` | ✅ |
-| HuggingFace Integration | `feature-service/.../HuggingFaceService.cs` | ✅ |
-| RAG Search (Qdrant) | `backend/handlers/rag.go` | ✅ |
-
 #### 🛡️ Admin Panel
 | Fitur | Lokasi | Status |
 |-------|--------|--------|
@@ -184,7 +176,6 @@
 | Fitur | Status | Lokasi | Catatan |
 |-------|--------|--------|---------|
 | Document Storage | ⚠️ Partial | `DocumentService.cs` | Saat ini di MongoDB, seharusnya Supabase/S3 |
-| Token-Wallet Integration | ⚠️ TODO | `TokenService.cs` | `TODO: Integrate with wallet` |
 | E2E Tests | ❌ Missing | - | Tidak ada Playwright/Cypress |
 | Frontend Unit Tests | ❌ Missing | - | Tidak ada test files |
 
@@ -326,7 +317,6 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 - [x] P2P transfer dengan escrow
 - [x] Bank withdrawal system
 - [x] Dispute resolution
-- [x] AI chat dengan token system
 - [x] Admin panel
 - [x] Device banning
 - [x] Audit logging
@@ -336,7 +326,6 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 ### ⚠️ Perlu Perbaikan
 
 - [ ] Document storage → migrate ke Supabase/S3
-- [ ] Token-wallet integration
 - [ ] Frontend testing
 - [ ] Increase backend test coverage
 - [ ] E2E testing
@@ -385,7 +374,6 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 1. **🔐 Post-Quantum Cryptography** - Satu-satunya yang sudah implementasi
 2. **💰 Built-in Escrow System** - Tidak perlu integrasi pihak ketiga
 3. **🇮🇩 Localized for Indonesia** - Bahasa, mata uang, bank lokal
-4. **🤖 Integrated AI Chat** - Tidak perlu langganan terpisah
 5. **📱 Passwordless Ready** - WebAuthn/Passkeys support
 
 ---
