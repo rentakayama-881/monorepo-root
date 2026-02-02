@@ -76,15 +76,6 @@ export default function NotFound() {
                 <span>Threads</span>
               </div>
             </Link>
-            <Link href="/ai-search" className="group rounded-lg border border-border p-3 transition-all hover:border-primary hover:bg-primary/5">
-              <div className="flex items-center gap-2 font-medium text-foreground group-hover:text-primary">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.35-4.35" />
-                </svg>
-                <span>AI Search</span>
-              </div>
-            </Link>
             <Link href="/about-content" className="group rounded-lg border border-border p-3 transition-all hover:border-primary hover:bg-primary/5">
               <div className="flex items-center gap-2 font-medium text-foreground group-hover:text-primary">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

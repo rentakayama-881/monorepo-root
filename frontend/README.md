@@ -71,7 +71,6 @@ frontend/
 │   │   └── [username]/
 │   │
 │   ├── admin/                # Admin panel
-│   ├── ai-studio/            # AI features
 │   └── ...
 │
 ├── components/               # Reusable components

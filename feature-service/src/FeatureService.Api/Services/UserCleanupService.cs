@@ -24,7 +24,6 @@ public record UserDeleteValidationResult(
     List<string> BlockingReasons,
     List<string> Warnings,
     long WalletBalance,
-    long TokenBalance,
     int PendingTransfersAsSender,
     int PendingTransfersAsReceiver,
     int DisputedTransfers,
@@ -42,12 +41,7 @@ public record UserCleanupStats(
     int RepliesDeleted,
     int ReactionsDeleted,
     int ReportsClosed,
-    int ChatSessionsDeleted,
-    int ChatMessagesDeleted,
     int DocumentsDeleted,
-    int TokenBalancesDeleted,
-    int TokenPurchasesDeleted,
-    int TokenUsagesDeleted,
     int WalletsDeleted,
     int TransactionsDeleted
 );
@@ -85,18 +79,7 @@ public class UserCleanupService : IUserCleanupService
             blockingReasons.Add($"Saldo wallet masih Rp {walletBalance:N0}. Harap tarik saldo terlebih dahulu.");
         }
 
-        // 2. Check token balance (warning only)
-        var tokenBalance = await _context.TokenBalances
-            .Find(t => t.UserId == userId)
-            .FirstOrDefaultAsync();
-
-        long tokenBal = tokenBalance?.Balance ?? 0;
-        if (tokenBal > 0)
-        {
-            warnings.Add($"Anda memiliki {tokenBal:N0} token AI yang akan hilang.");
-        }
-
-        // 3. Check pending transfers (as sender - money is held)
+        // 2. Check pending transfers (as sender - money is held)
         var pendingAsSender = await _transfers.CountDocumentsAsync(t =>
             t.SenderId == userId &&
             (t.Status == TransferStatus.Pending || t.Status == TransferStatus.Disputed));
@@ -106,7 +89,7 @@ public class UserCleanupService : IUserCleanupService
             blockingReasons.Add($"Ada {pendingAsSender} transfer tertunda sebagai pengirim. Tunggu hingga selesai atau selesaikan dispute.");
         }
 
-        // 4. Check pending transfers (as receiver - waiting to receive)
+        // 3. Check pending transfers (as receiver - waiting to receive)
         var pendingAsReceiver = await _transfers.CountDocumentsAsync(t =>
             t.ReceiverId == userId &&
             (t.Status == TransferStatus.Pending || t.Status == TransferStatus.Disputed));
@@ -116,12 +99,12 @@ public class UserCleanupService : IUserCleanupService
             blockingReasons.Add($"Ada {pendingAsReceiver} transfer tertunda sebagai penerima. Terima atau selesaikan dispute terlebih dahulu.");
         }
 
-        // 5. Check disputed transfers specifically
+        // 4. Check disputed transfers specifically
         var disputedCount = await _transfers.CountDocumentsAsync(t =>
             (t.SenderId == userId || t.ReceiverId == userId) &&
             t.Status == TransferStatus.Disputed);
 
-        // 6. Check pending transactions in ledger
+        // 5. Check pending transactions in ledger
         var pendingLedger = await _ledger.CountDocumentsAsync(l =>
             l.UserId == (int)userId &&
             l.Status == TransactionStatus.Pending);
@@ -131,7 +114,7 @@ public class UserCleanupService : IUserCleanupService
             blockingReasons.Add($"Ada {pendingLedger} transaksi pending yang harus diselesaikan.");
         }
 
-        // 7. Check pending withdrawals (critical - money is being processed)
+        // 6. Check pending withdrawals (critical - money is being processed)
         var pendingWithdrawals = await _withdrawals.CountDocumentsAsync(w =>
             w.UserId == userId &&
             (w.Status == WithdrawalStatus.Pending || w.Status == WithdrawalStatus.Processing));
@@ -146,7 +129,6 @@ public class UserCleanupService : IUserCleanupService
             BlockingReasons: blockingReasons,
             Warnings: warnings,
             WalletBalance: walletBalance,
-            TokenBalance: tokenBal,
             PendingTransfersAsSender: (int)pendingAsSender,
             PendingTransfersAsReceiver: (int)pendingAsReceiver,
             DisputedTransfers: (int)disputedCount,
@@ -168,7 +150,7 @@ public class UserCleanupService : IUserCleanupService
                 return new UserCleanupResult(
                     Success: false,
                     Error: string.Join("; ", validation.BlockingReasons),
-                    Stats: new UserCleanupStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                    Stats: new UserCleanupStats(0, 0, 0, 0, 0, 0)
                 );
             }
 
@@ -187,55 +169,26 @@ public class UserCleanupService : IUserCleanupService
             var reportsResult = await _context.Reports.DeleteManyAsync(r => r.ReporterUserId == userId);
             stats.ReportsClosed = (int)reportsResult.DeletedCount;
 
-            // 4. Get all chat sessions for this user first, then delete messages
-            var chatSessions = await _context.ChatSessions
-                .Find(s => s.UserId == userId)
-                .Project(s => s.Id)
-                .ToListAsync();
-
-            if (chatSessions.Count > 0)
-            {
-                var messagesResult = await _context.ChatMessages.DeleteManyAsync(m =>
-                    chatSessions.Contains(m.SessionId));
-                stats.ChatMessagesDeleted = (int)messagesResult.DeletedCount;
-            }
-
-            // 5. Delete chat sessions
-            var sessionsResult = await _context.ChatSessions.DeleteManyAsync(s => s.UserId == userId);
-            stats.ChatSessionsDeleted = (int)sessionsResult.DeletedCount;
-
-            // 6. Delete documents
+            // 4. Delete documents
             var docsResult = await _context.Documents.DeleteManyAsync(d => d.UserId == userId);
             stats.DocumentsDeleted = (int)docsResult.DeletedCount;
 
-            // 7. Delete token balances
-            var tokenBalResult = await _context.TokenBalances.DeleteManyAsync(t => t.UserId == userId);
-            stats.TokenBalancesDeleted = (int)tokenBalResult.DeletedCount;
-
-            // 8. Delete token purchases
-            var tokenPurchResult = await _context.TokenPurchases.DeleteManyAsync(t => t.UserId == userId);
-            stats.TokenPurchasesDeleted = (int)tokenPurchResult.DeletedCount;
-
-            // 9. Delete token usages
-            var tokenUsageResult = await _context.TokenUsages.DeleteManyAsync(t => t.UserId == userId);
-            stats.TokenUsagesDeleted = (int)tokenUsageResult.DeletedCount;
-
-            // 10. Delete wallets
+            // 5. Delete wallets
             var walletResult = await _context.Wallets.DeleteManyAsync(w => w.UserId == userId);
             stats.WalletsDeleted = (int)walletResult.DeletedCount;
 
-            // 11. Delete transactions
+            // 6. Delete transactions
             var transactionsColl = _context.GetCollection<Transaction>("transactions");
             var txResult = await transactionsColl.DeleteManyAsync(t => t.UserId == userId);
             stats.TransactionsDeleted = (int)txResult.DeletedCount;
 
-            // 12. Delete transaction ledger entries
+            // 7. Delete transaction ledger entries
             await _ledger.DeleteManyAsync(l => l.UserId == (int)userId);
 
-            // 13. Delete user warnings (where user is the target)
+            // 8. Delete user warnings (where user is the target)
             await _context.UserWarnings.DeleteManyAsync(w => w.UserId == userId);
 
-            // 14. Delete device bans for this user
+            // 9. Delete device bans for this user
             await _context.DeviceBans.DeleteManyAsync(d => d.UserId == userId);
 
             _logger.LogInformation("Cleanup completed for user {UserId}: {@Stats}", userId, stats.Build());
@@ -252,7 +205,7 @@ public class UserCleanupService : IUserCleanupService
             return new UserCleanupResult(
                 Success: false,
                 Error: "Internal error during cleanup. Please contact support.",
-                Stats: new UserCleanupStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                Stats: new UserCleanupStats(0, 0, 0, 0, 0, 0)
             );
         }
     }
@@ -264,12 +217,7 @@ internal class UserCleanupStatsBuilder
     public int RepliesDeleted { get; set; }
     public int ReactionsDeleted { get; set; }
     public int ReportsClosed { get; set; }
-    public int ChatSessionsDeleted { get; set; }
-    public int ChatMessagesDeleted { get; set; }
     public int DocumentsDeleted { get; set; }
-    public int TokenBalancesDeleted { get; set; }
-    public int TokenPurchasesDeleted { get; set; }
-    public int TokenUsagesDeleted { get; set; }
     public int WalletsDeleted { get; set; }
     public int TransactionsDeleted { get; set; }
 
@@ -277,12 +225,7 @@ internal class UserCleanupStatsBuilder
         RepliesDeleted,
         ReactionsDeleted,
         ReportsClosed,
-        ChatSessionsDeleted,
-        ChatMessagesDeleted,
         DocumentsDeleted,
-        TokenBalancesDeleted,
-        TokenPurchasesDeleted,
-        TokenUsagesDeleted,
         WalletsDeleted,
         TransactionsDeleted
     );

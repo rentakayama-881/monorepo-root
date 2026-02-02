@@ -43,12 +43,12 @@ Alephdraad menggunakan **Microservices Architecture** dengan tiga layer utama:
 │  ├─ User Management       │       │  │  ├─ Replies                │
 │  ├─ Thread/Forum          │       │  │  ├─ Reactions              │
 │  ├─ Admin Panel           │       │  │  └─ Reports                │
-│  ├─ RAG/AI Pipeline       │       │  ├─ Finance Module            │
+│                           │       │  ├─ Finance Module            │
 │  └─ Session Management    │       │  │  ├─ Wallets                │
 │                           │       │  │  ├─ Transfers (P2P)        │
 │  Database: PostgreSQL     │       │  │  ├─ Withdrawals            │
 │  Cache: Redis             │       │  │  └─ Disputes               │
-│                           │       │  ├─ AI Chat Service           │
+│                           │       │                               │
 │  VPS: 72.62.124.23        │       │  └─ Document Storage          │
 └───────────────────────────┘       │                               │
                                     │  Database: MongoDB             │
@@ -143,7 +143,6 @@ frontend/
 │   ├── (auth)/             # Auth-related pages (login, register)
 │   ├── account/            # User account settings
 │   ├── admin/              # Admin dashboard
-│   ├── ai-studio/          # AI Chat interface
 │   ├── thread/[slug]/      # Dynamic thread pages
 │   ├── user/[username]/    # User profile pages
 │   ├── api/                # API routes (BFF pattern)
@@ -266,7 +265,6 @@ feature-service/
         │   │   ├── TransfersController.cs
         │   │   ├── WithdrawalsController.cs
         │   │   └── DisputesController.cs
-        │   ├── ChatController.cs   # AI Chat
         │   ├── DocumentController.cs
         │   └── ReportController.cs
         │
@@ -275,7 +273,6 @@ feature-service/
         │   ├── TransferService.cs
         │   ├── ReplyService.cs
         │   ├── ReactionService.cs
-        │   ├── ChatService.cs
         │   └── ...
         │
         ├── Models/
@@ -549,7 +546,7 @@ CREATE TABLE session_locks (
 {
   "_id": "txn_01HXYZ...",
   "userId": 123,
-  "type": "Transfer",  // Deposit, Withdrawal, Transfer, AiChat
+  "type": "Transfer",  // Deposit, Withdrawal, Transfer
   "amount": 100000,
   "balanceBefore": 50000000,
   "balanceAfter": 49900000,
@@ -741,7 +738,6 @@ POST   /api/v1/wallets/pin/set               # Set PIN (requires 2FA)
 POST   /api/v1/wallets/pin/change            # Change PIN
 POST   /api/v1/wallets/pin/verify            # Verify PIN
 GET    /api/v1/wallets/transactions          # Transaction history
-POST   /api/v1/wallets/ai-chat/spend         # Deduct for AI usage
 
 Transfer Endpoints:
 GET    /api/v1/wallets/transfers             # List transfers

@@ -45,14 +45,14 @@ public class Transaction
 
 public enum TransactionType
 {
-    Deposit,        // Top-up from external payment
-    Withdrawal,     // Cash out to bank
-    TransferIn,     // Received from another user
-    TransferOut,    // Sent to another user
-    Refund,         // Refund from cancelled/disputed transfer
-    Fee,            // Platform fee deduction
-    Escrow,         // Money held in escrow
-    EscrowRelease,  // Escrow released
-    AiChat,         // AI chat usage deduction
-    TokenPurchase   // Purchase AI tokens using wallet balance
+    Deposit = 0,       // Top-up from external payment
+    Withdrawal = 1,    // Cash out to bank
+    TransferIn = 2,    // Received from another user
+    TransferOut = 3,   // Sent to another user
+    Refund = 4,        // Refund from cancelled/disputed transfer
+    Fee = 5,           // Platform fee deduction
+    Escrow = 6,        // Money held in escrow
+    EscrowRelease = 7, // Escrow released
+    Reserved8 = 8,     // Reserved (legacy data)
+    Reserved9 = 9      // Reserved (legacy data)
 }

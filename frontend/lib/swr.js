@@ -242,7 +242,6 @@ export function useCanDeleteAccount() {
     blockingReasons: data?.blocking_reasons || [],
     warnings: data?.warnings || [],
     walletBalance: data?.wallet_balance || 0,
-    tokenBalance: data?.token_balance || 0,
     isLoading,
     error,
     mutate,

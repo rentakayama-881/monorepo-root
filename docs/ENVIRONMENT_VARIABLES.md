@@ -98,16 +98,6 @@ This document lists all required and optional environment variables for the Alep
 | `SUPABASE_SERVICE_KEY` | Supabase service role key | `eyJ...` |
 | `SUPABASE_BUCKET` | Storage bucket name | `avatars` |
 
-### AI Services (Cohere)
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `COHERE_API_KEY` | Cohere API key | `xxx` |
-| `COHERE_ENDPOINT` | Cohere endpoint | `https://api.cohere.ai` |
-| `COHERE_MODEL` | Chat model | `command-r-plus` |
-| `COHERE_CHAT_MODEL` | Chat model (alias) | `command-r-plus` |
-| `COHERE_RERANK_MODEL` | Rerank model | `rerank-english-v2.0` |
-
 ### Feature Service Integration
 
 | Variable | Description | Default |
@@ -165,14 +155,6 @@ This document lists all required and optional environment variables for the Alep
 | `NEXT_PUBLIC_API_BASE_URL` | Go backend API URL | `https://api.alephdraad.fun` |
 | `NEXT_PUBLIC_FEATURE_SERVICE_URL` | Feature Service URL | `https://feature.alephdraad.fun` |
 | `NEXT_PUBLIC_SITE_URL` | Frontend site URL | `https://alephdraad.fun` |
-
-### API Keys (Server-side only)
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `ANTHROPIC_API_KEY` | Anthropic Claude API key | `sk-ant-xxx` |
-| `OPENAI_API_KEY` | OpenAI API key | `sk-xxx` |
-| `HUGGINGFACE_API_KEY` | HuggingFace API key | `hf_xxx` |
 
 ### Optional
 

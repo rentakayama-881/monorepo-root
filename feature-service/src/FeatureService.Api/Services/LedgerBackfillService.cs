@@ -123,8 +123,6 @@ public class LedgerBackfillService : ILedgerBackfillService
             TransactionType.TransferIn => "transfer_in",
             TransactionType.TransferOut => "transfer_out",
             TransactionType.EscrowRelease => "escrow_release",
-            TransactionType.AiChat => "ai_chat",
-            TransactionType.TokenPurchase => "token_purchase",
             _ => type.ToString().ToLowerInvariant()
         };
     }

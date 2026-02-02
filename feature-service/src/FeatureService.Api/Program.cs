@@ -382,25 +382,6 @@ try
     // Register document storage service
     builder.Services.AddScoped<IDocumentService, DocumentService>();
 
-    // Register token/wallet service for AI
-    builder.Services.AddScoped<ITokenService, TokenService>();
-
-    // Register AI chat services
-    builder.Services.AddScoped<IChatService, ChatService>();
-    builder.Services.AddScoped<IHuggingFaceService, HuggingFaceService>();
-    builder.Services.AddScoped<IExternalLlmService, ExternalLlmService>();
-
-    // Configure HttpClient for external APIs
-    builder.Services.AddHttpClient<IHuggingFaceService, HuggingFaceService>(client =>
-    {
-        client.Timeout = TimeSpan.FromMinutes(2);
-    });
-
-    builder.Services.AddHttpClient<IExternalLlmService, ExternalLlmService>(client =>
-    {
-        client.Timeout = TimeSpan.FromMinutes(3);
-    });
-
     builder.Services.AddHttpClient<IAdminModerationService, AdminModerationService>(client =>
     {
         client.Timeout = TimeSpan.FromSeconds(30);
