@@ -1,6 +1,6 @@
 /**
  * Feature Service API Client
- * For ASP.NET Core backend (MongoDB) - handles replies, reactions, reports, AI chat, etc.
+ * For ASP.NET Core backend (MongoDB) - handles replies, reactions, reports, etc.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -56,21 +56,6 @@ export const FEATURE_ENDPOINTS = {
     CATEGORIES: "/api/v1/documents/categories",
   },
 
-  // AI Chat
-  AI: {
-    TOKEN_BALANCE: "/api/v1/chat/tokens/balance",
-    TOKEN_PACKAGES: "/api/v1/chat/tokens/packages",
-    TOKEN_PURCHASE: "/api/v1/chat/tokens/purchase",
-    TOKEN_USAGE: "/api/v1/chat/tokens/usage",
-    SESSIONS: "/api/v1/chat/sessions",
-    SESSION_DETAIL: (id) => `/api/v1/chat/sessions/${id}`,
-    SESSION_MESSAGES: (id) => `/api/v1/chat/sessions/${id}/messages`,
-    SEND_MESSAGE: (id) => `/api/v1/chat/sessions/${id}/messages`,
-    ARCHIVE_SESSION: (id) => `/api/v1/chat/sessions/${id}/archive`,
-    DELETE_SESSION: (id) => `/api/v1/chat/sessions/${id}`,
-    SERVICE_STATUS: "/api/v1/chat/service-status",
-  },
-
   // Wallets
   WALLETS: {
     ME: "/api/v1/wallets/me",
@@ -79,7 +64,6 @@ export const FEATURE_ENDPOINTS = {
     PIN_CHANGE: "/api/v1/wallets/pin/change",
     PIN_VERIFY: "/api/v1/wallets/pin/verify",
     TRANSACTIONS: "/api/v1/wallets/transactions",
-    AI_CHAT_SPEND: "/api/v1/wallets/ai-chat/spend",
     DEPOSITS: "/api/v1/wallets/deposits",
   },
 
