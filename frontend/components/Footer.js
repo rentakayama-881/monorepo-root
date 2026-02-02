@@ -7,7 +7,6 @@ const footerSections = [
     title: "Platform",
     links: [
       { href: "", label: "Community & Services" },
-      { href: "/ai-search", label: "AI Search" },
       { href: "/fees", label: "Biaya Layanan" },
       { href: "/changelog", label: "Changelog" },
     ],
