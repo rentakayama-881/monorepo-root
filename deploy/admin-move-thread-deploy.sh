@@ -49,13 +49,30 @@ systemctl restart alephdraad-backend
 systemctl restart feature-service
 systemctl is-active alephdraad-backend feature-service
 
-echo "[deploy] health checks"
-curl -fsS http://127.0.0.1:8080/api/health >/dev/null && echo "OK: backend /api/health"
-curl -fsS http://127.0.0.1:5000/api/v1/health >/dev/null && echo "OK: feature-service /api/v1/health"
+wait_for_url() {
+  local url="$1"
+  local label="$2"
+  local attempts="${3:-30}"
+
+  for _ in $(seq 1 "$attempts"); do
+    if curl -fsS "$url" >/dev/null; then
+      echo "OK: $label"
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "ERROR: healthcheck failed: $label ($url)" >&2
+  curl -sS -i "$url" || true
+  return 1
+}
+
+echo "[deploy] health checks (retry up to 30s)"
+wait_for_url "http://127.0.0.1:8080/api/health" "backend /api/health"
+wait_for_url "http://127.0.0.1:5000/api/v1/health" "feature-service /api/v1/health"
 
 echo "[deploy] done"
 echo
 echo "Rollback (manual):"
 echo "  cp -a /opt/alephdraad/backend/app.bak.$TS /opt/alephdraad/backend/app && systemctl restart alephdraad-backend"
 echo "  cp -a /opt/alephdraad/feature-service/FeatureService.Api.dll.bak.$TS /opt/alephdraad/feature-service/FeatureService.Api.dll && systemctl restart feature-service"
-

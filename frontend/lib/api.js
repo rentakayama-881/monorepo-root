@@ -2,7 +2,38 @@ import { getValidToken } from "./tokenRefresh";
 import { clearToken } from "./auth";
 
 export function getApiBase() {
-  return process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+  // Support multiple env var names used across deployments/docs.
+  // Prefer explicit API base; fall back to documented backend URL; then a safe default.
+  const envBase =
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_API_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_BASE_URL ||
+    "";
+
+  let base = String(envBase || "").trim();
+
+  // If the env points to HTTP while the app is served over HTTPS, upgrade to HTTPS.
+  // This avoids mixed-content blocks and auth header stripping on redirects.
+  if (typeof window !== "undefined" && window.location?.protocol === "https:" && base.startsWith("http://")) {
+    base = `https://${base.slice("http://".length)}`;
+  }
+
+  // If no env is set in production, default to the known API subdomain for the main site.
+  // Keeps local dev behavior unchanged.
+  if (!base && typeof window !== "undefined") {
+    const host = window.location?.hostname || "";
+    if (host === "alephdraad.fun" || host === "www.alephdraad.fun" || (host.endsWith(".alephdraad.fun") && host !== "api.alephdraad.fun")) {
+      base = "https://api.alephdraad.fun";
+    }
+  }
+
+  if (!base) {
+    base = "http://localhost:8080";
+  }
+
+  // Normalize trailing slashes.
+  return base.replace(/\/+$/, "");
 }
 
 export async function fetchJson(path, options = {}) {
