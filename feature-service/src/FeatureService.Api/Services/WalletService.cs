@@ -535,18 +535,16 @@ public class WalletService : IWalletService
         }
     }
 
-    private static string MapLedgerTransactionType(TransactionType type)
-    {
-        return type switch
-        {
-            TransactionType.TransferIn => "transfer_in",
-            TransactionType.TransferOut => "transfer_out",
-            TransactionType.EscrowRelease => "escrow_release",
-            TransactionType.AiChat => "ai_chat",
-            TransactionType.TokenPurchase => "token_purchase",
-            _ => type.ToString().ToLowerInvariant()
-        };
-    }
+	    private static string MapLedgerTransactionType(TransactionType type)
+	    {
+	        return type switch
+	        {
+	            TransactionType.TransferIn => "transfer_in",
+	            TransactionType.TransferOut => "transfer_out",
+	            TransactionType.EscrowRelease => "escrow_release",
+	            _ => type.ToString().ToLowerInvariant()
+	        };
+	    }
 
     /// <summary>
     /// Hashes PIN using PBKDF2 with 310,000 iterations and SHA256

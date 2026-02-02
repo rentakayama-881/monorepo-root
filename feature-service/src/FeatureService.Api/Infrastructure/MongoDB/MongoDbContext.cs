@@ -47,20 +47,10 @@ public class MongoDbContext
 
     #endregion
 
-    #region Token/Wallet Collections
+    #region Wallet Collections
 
     public IMongoCollection<UserWallet> Wallets => _database.GetCollection<UserWallet>("wallets");
-    public IMongoCollection<TokenBalance> TokenBalances => _database.GetCollection<TokenBalance>("token_balances");
-    public IMongoCollection<TokenPurchase> TokenPurchases => _database.GetCollection<TokenPurchase>("token_purchases");
-    public IMongoCollection<TokenUsage> TokenUsages => _database.GetCollection<TokenUsage>("token_usages");
     public IMongoCollection<Withdrawal> Withdrawals => _database.GetCollection<Withdrawal>("withdrawals");
-
-    #endregion
-
-    #region AI Chat Collections
-
-    public IMongoCollection<ChatSession> ChatSessions => _database.GetCollection<ChatSession>("chat_sessions");
-    public IMongoCollection<ChatMessage> ChatMessages => _database.GetCollection<ChatMessage>("chat_messages");
 
     #endregion
 
@@ -148,41 +138,6 @@ public class MongoDbContext
             new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(d => d.Category)),
             new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Descending(d => d.CreatedAt)),
             new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Text(d => d.Title).Text(d => d.Description))
-        });
-
-        // Token balance indexes
-        TokenBalances.Indexes.CreateOne(new CreateIndexModel<TokenBalance>(
-            Builders<TokenBalance>.IndexKeys.Ascending(t => t.UserId),
-            new CreateIndexOptions { Unique = true }));
-
-        // Token purchase indexes
-        TokenPurchases.Indexes.CreateMany(new[]
-        {
-            new CreateIndexModel<TokenPurchase>(Builders<TokenPurchase>.IndexKeys.Ascending(t => t.UserId)),
-            new CreateIndexModel<TokenPurchase>(Builders<TokenPurchase>.IndexKeys.Descending(t => t.CreatedAt))
-        });
-
-        // Token usage indexes
-        TokenUsages.Indexes.CreateMany(new[]
-        {
-            new CreateIndexModel<TokenUsage>(Builders<TokenUsage>.IndexKeys.Ascending(t => t.UserId)),
-            new CreateIndexModel<TokenUsage>(Builders<TokenUsage>.IndexKeys.Ascending(t => t.ChatSessionId)),
-            new CreateIndexModel<TokenUsage>(Builders<TokenUsage>.IndexKeys.Descending(t => t.CreatedAt))
-        });
-
-        // Chat session indexes
-        ChatSessions.Indexes.CreateMany(new[]
-        {
-            new CreateIndexModel<ChatSession>(Builders<ChatSession>.IndexKeys.Ascending(c => c.UserId)),
-            new CreateIndexModel<ChatSession>(Builders<ChatSession>.IndexKeys.Ascending(c => c.ServiceType)),
-            new CreateIndexModel<ChatSession>(Builders<ChatSession>.IndexKeys.Descending(c => c.LastMessageAt))
-        });
-
-        // Chat message indexes
-        ChatMessages.Indexes.CreateMany(new[]
-        {
-            new CreateIndexModel<ChatMessage>(Builders<ChatMessage>.IndexKeys.Ascending(m => m.SessionId)),
-            new CreateIndexModel<ChatMessage>(Builders<ChatMessage>.IndexKeys.Ascending(m => m.CreatedAt))
         });
 
         // PQC Key indexes

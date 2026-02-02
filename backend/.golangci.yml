@@ -184,31 +184,6 @@ linters:
           - godox
 
       # ==========================================================
-      # AI/RAG Features - Experimental, belum production-ready
-      # Includes: Cohere AI, vector search, RAG pipeline
-      # ==========================================================
-      - path: utils/cohere.*\.go
-        linters:
-          - wrapcheck
-          - gosec
-          - errcheck
-
-      - path: utils/pgvector\.go
-        linters:
-          - wrapcheck
-          - errcheck
-
-      - path: utils/chunker\.go
-        linters:
-          - wrapcheck
-
-      - path: handlers/rag\.go
-        linters:
-          - wrapcheck
-          - gosec
-          - errcheck
-
-      # ==========================================================
       # External Storage Integration (Supabase)
       # ==========================================================
       - path: utils/supabase_storage\.go

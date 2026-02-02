@@ -31,7 +31,6 @@ public class UserCleanupController : ApiControllerBase
     /// <summary>
     /// Validate if a user can delete their account.
     /// Returns blocking reasons (wallet balance > 0, pending transfers, disputes)
-    /// and warnings (token balance will be lost).
     /// Called by Go backend before showing delete confirmation.
     /// </summary>
     [HttpGet("{userId}/can-delete")]

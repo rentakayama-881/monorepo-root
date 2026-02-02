@@ -607,7 +607,7 @@ func (s *EntThreadService) ListThreadsByUsername(ctx context.Context, username s
 	return s.getThreadsByUsernameInternal(ctx, username, 100, 0)
 }
 
-// DeleteThread deletes a thread and its related thread_chunks (hard delete)
+// DeleteThread deletes a thread (hard delete)
 // Only the thread owner can delete their thread
 func (s *EntThreadService) DeleteThread(ctx context.Context, userID uint, threadID uint) error {
 	// Get the thread to verify ownership
@@ -631,28 +631,6 @@ func (s *EntThreadService) DeleteThread(ctx context.Context, userID uint, thread
 			zap.Int("owner_id", t.UserID),
 		)
 		return apperrors.ErrThreadOwnership
-	}
-
-	// Delete thread_chunks first (RAG index) - only if table exists
-	db := database.GetSQLDB()
-	var tableExists bool
-	err = db.QueryRowContext(ctx, `
-		SELECT EXISTS (
-			SELECT 1 FROM information_schema.tables 
-			WHERE table_schema = 'public' AND table_name = 'thread_chunks'
-		)
-	`).Scan(&tableExists)
-	if err != nil {
-		logger.Warn("Failed to check thread_chunks table existence", zap.Error(err))
-		tableExists = false
-	}
-
-	if tableExists {
-		_, err = db.ExecContext(ctx, `DELETE FROM thread_chunks WHERE thread_id = $1`, threadID)
-		if err != nil {
-			logger.Error("Failed to delete thread_chunks", zap.Error(err), zap.Uint("thread_id", threadID))
-			// Continue anyway - not critical
-		}
 	}
 
 	// Delete the thread
