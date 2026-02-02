@@ -390,8 +390,28 @@ public class AdminModerationController : ControllerBase
 
         try
         {
-            var result = await _moderationService.TransferThreadOwnershipAsync(adminId, request);
+            var authHeader = Request.Headers.Authorization.ToString();
+            var requestId = Request.Headers["X-Request-Id"].ToString();
+
+            var result = await _moderationService.TransferThreadOwnershipAsync(adminId, request, authHeader, requestId);
             return Ok(result);
+        }
+        catch (UpstreamApiException ex)
+        {
+            _logger.LogWarning(ex, "Upstream error transferring thread ownership for thread {ThreadId}", request.ThreadId);
+
+            var contentType = ex.ContentType;
+            if (string.IsNullOrWhiteSpace(contentType))
+            {
+                contentType = ex.Body.TrimStart().StartsWith("{", StringComparison.Ordinal) ? "application/json" : "text/plain";
+            }
+
+            return new ContentResult
+            {
+                StatusCode = ex.StatusCode,
+                Content = ex.Body,
+                ContentType = contentType
+            };
         }
         catch (Exception ex)
         {

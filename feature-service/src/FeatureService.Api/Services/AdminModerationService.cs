@@ -1,3 +1,7 @@
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using MongoDB.Driver;
 using MongoDB.Bson;
 using FeatureService.Api.Infrastructure.MongoDB;
@@ -16,7 +20,7 @@ public interface IAdminModerationService
     Task<string> LogAdminActionAsync(uint adminId, string? adminEmail, string actionType, string targetType, string targetId, object? actionDetails, string? ipAddress, string? userAgent);
     Task<PaginatedAdminActionLogResponse> GetAdminActionLogsAsync(int page, int pageSize, string? actionType);
     // Thread management (these call Go backend via HTTP)
-    Task<TransferThreadOwnershipResponse> TransferThreadOwnershipAsync(uint adminId, TransferThreadOwnershipRequest request);
+    Task<TransferThreadOwnershipResponse> TransferThreadOwnershipAsync(uint adminId, TransferThreadOwnershipRequest request, string? authorizationHeader, string? requestId);
     Task DeleteThreadAsync(uint adminId, AdminDeleteThreadRequest request);
 }
 
@@ -243,41 +247,59 @@ public class AdminModerationService : IAdminModerationService
         return new PaginatedAdminActionLogResponse(dtos, (int)totalCount, page, pageSize);
     }
 
-    public async Task<TransferThreadOwnershipResponse> TransferThreadOwnershipAsync(uint adminId, TransferThreadOwnershipRequest request)
+    public async Task<TransferThreadOwnershipResponse> TransferThreadOwnershipAsync(uint adminId, TransferThreadOwnershipRequest request, string? authorizationHeader, string? requestId)
     {
-        // Call Go backend to transfer thread ownership
-        var goBackendUrl = _configuration["GoBackend:BaseUrl"] ?? "http://localhost:8080";
-        
-        var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{goBackendUrl}/admin/internal/threads/{request.ThreadId}/transfer");
+        // Call Go backend to transfer/move thread (single-writer lives in Go backend)
+        var goBackendUrl = (_configuration["GoBackend:BaseUrl"] ?? "http://127.0.0.1:8080").TrimEnd('/');
+
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{goBackendUrl}/admin/threads/{request.ThreadId}/move");
         httpRequest.Content = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(new { newOwnerUserId = request.NewOwnerUserId }),
-            System.Text.Encoding.UTF8,
-            "application/json"
-        );
-        
-        // Add internal API key for service-to-service auth
-        httpRequest.Headers.Add("X-Internal-Api-Key", _configuration["GoBackend:InternalApiKey"]);
+            JsonSerializer.Serialize(new Dictionary<string, object?>
+            {
+                ["new_owner_user_id"] = request.NewOwnerUserId,
+                ["new_category_id"] = null, // feature-service endpoint doesn't expose category move (yet)
+                ["reason"] = request.Reason ?? string.Empty,
+                ["dry_run"] = false
+            }),
+            Encoding.UTF8,
+            "application/json");
+
+        if (!string.IsNullOrWhiteSpace(authorizationHeader))
+        {
+            httpRequest.Headers.TryAddWithoutValidation("Authorization", authorizationHeader);
+        }
+
+        if (!string.IsNullOrWhiteSpace(requestId))
+        {
+            httpRequest.Headers.TryAddWithoutValidation("X-Request-Id", requestId);
+        }
 
         var response = await _httpClient.SendAsync(httpRequest);
         
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
-            throw new Exception($"Failed to transfer thread ownership: {error}");
+            throw new UpstreamApiException((int)response.StatusCode, error, response.Content.Headers.ContentType?.ToString());
         }
 
-        var result = await response.Content.ReadFromJsonAsync<GoTransferResponse>();
+        var goResult = await response.Content.ReadFromJsonAsync<GoAdminMoveThreadEnvelope>();
+        if (goResult?.Data == null)
+        {
+            throw new UpstreamApiException(500, "{\"code\":\"SRV001\",\"message\":\"Invalid response from Go backend\"}", "application/json");
+        }
+
+        var previousOwnerUserId = goResult.Data.OldOwner?.Id ?? 0;
 
         // Record transfer in MongoDB for audit
         var transfer = new ThreadOwnershipTransfer
         {
             Id = $"trf_{Ulid.NewUlid()}",
             ThreadId = request.ThreadId,
-            ThreadTitle = result?.ThreadTitle,
-            PreviousOwnerUserId = result?.PreviousOwnerUserId ?? 0,
-            PreviousOwnerUsername = result?.PreviousOwnerUsername,
+            ThreadTitle = null,
+            PreviousOwnerUserId = previousOwnerUserId,
+            PreviousOwnerUsername = goResult.Data.OldOwner?.Username,
             NewOwnerUserId = request.NewOwnerUserId,
-            NewOwnerUsername = result?.NewOwnerUsername,
+            NewOwnerUsername = goResult.Data.NewOwner?.Username,
             TransferredByAdminId = adminId,
             Reason = request.Reason,
             CreatedAt = DateTime.UtcNow
@@ -296,7 +318,7 @@ public class AdminModerationService : IAdminModerationService
             request.ThreadId,
             transfer.PreviousOwnerUserId,
             request.NewOwnerUserId,
-            "Thread ownership transferred successfully"
+            goResult.Message ?? "Thread ownership transferred successfully"
         );
     }
 
@@ -334,11 +356,50 @@ public class AdminModerationService : IAdminModerationService
     }
 }
 
-// Response from Go backend
-internal class GoTransferResponse
+public sealed class UpstreamApiException : Exception
 {
-    public string? ThreadTitle { get; set; }
-    public uint PreviousOwnerUserId { get; set; }
-    public string? PreviousOwnerUsername { get; set; }
-    public string? NewOwnerUsername { get; set; }
+    public int StatusCode { get; }
+    public string Body { get; }
+    public string? ContentType { get; }
+
+    public UpstreamApiException(int statusCode, string body, string? contentType = null, Exception? inner = null)
+        : base($"Upstream API error ({statusCode})", inner)
+    {
+        StatusCode = statusCode;
+        Body = body ?? string.Empty;
+        ContentType = contentType;
+    }
+}
+
+internal sealed class GoAdminMoveThreadEnvelope
+{
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("data")]
+    public GoAdminMoveThreadData? Data { get; set; }
+}
+
+internal sealed class GoAdminMoveThreadData
+{
+    [JsonPropertyName("thread_id")]
+    public uint ThreadId { get; set; }
+
+    [JsonPropertyName("old_owner")]
+    public GoAdminMoveThreadUserSnapshot? OldOwner { get; set; }
+
+    [JsonPropertyName("new_owner")]
+    public GoAdminMoveThreadUserSnapshot? NewOwner { get; set; }
+
+    [JsonPropertyName("request_id")]
+    public string? RequestId { get; set; }
+}
+
+internal sealed class GoAdminMoveThreadUserSnapshot
+{
+    [JsonPropertyName("id")]
+    public uint Id { get; set; }
+
+    [JsonPropertyName("username")]
+    public string? Username { get; set; }
 }

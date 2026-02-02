@@ -440,6 +440,10 @@ func main() {
 			adminProtected.POST("/users/:userId/badges", handlers.AssignBadgeToUser)
 			adminProtected.DELETE("/users/:userId/badges/:badgeId", handlers.RevokeBadgeFromUser)
 
+			// Thread management (admin only)
+			adminProtected.GET("/categories", handlers.AdminListCategories)
+			adminProtected.POST("/threads/:id/move", handlers.AdminMoveThread)
+
 			// RAG indexing (admin only)
 			adminProtected.POST("/rag/index-chunk", handlers.IndexChunkHandler)
 			adminProtected.POST("/rag/index-long", handlers.IndexLongHandler)
