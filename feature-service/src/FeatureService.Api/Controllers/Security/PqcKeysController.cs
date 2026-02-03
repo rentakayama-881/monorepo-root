@@ -8,6 +8,7 @@ using FeatureService.Api.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
+using Org.BouncyCastle.Pqc.Crypto.Crystals.Dilithium;
 
 namespace FeatureService.Api.Controllers.Security;
 
@@ -59,9 +60,10 @@ public class PqcKeysController : ApiControllerBase
 
         // Validate public key format
         byte[] publicKeyBytes;
+        var publicKeyBase64 = request.PublicKeyBase64.Trim();
         try
         {
-            publicKeyBytes = Convert.FromBase64String(request.PublicKeyBase64);
+            publicKeyBytes = Convert.FromBase64String(publicKeyBase64);
         }
         catch (FormatException)
         {
@@ -72,6 +74,18 @@ public class PqcKeysController : ApiControllerBase
         if (publicKeyBytes.Length < 1900)
         {
             return ApiBadRequest("INVALID_KEY_SIZE", "Public key size is too small for Dilithium3");
+        }
+
+        // Validate that key can be parsed as Dilithium3
+        try
+        {
+#pragma warning disable CS0618
+            _ = new DilithiumPublicKeyParameters(DilithiumParameters.Dilithium3, publicKeyBytes);
+#pragma warning restore CS0618
+        }
+        catch (Exception)
+        {
+            return ApiBadRequest("INVALID_KEY", "Public key is not a valid Dilithium3 key");
         }
 
         // Check if user already has an active key
@@ -95,7 +109,7 @@ public class PqcKeysController : ApiControllerBase
             UserId = userId,
             Username = GetUsername(),
             KeyId = keyId,
-            PublicKeyBase64 = request.PublicKeyBase64,
+            PublicKeyBase64 = publicKeyBase64,
             Algorithm = "Dilithium3",
             PublicKeyHash = publicKeyHash,
             DeviceFingerprint = request.DeviceFingerprint,

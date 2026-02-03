@@ -1,6 +1,7 @@
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Services;
 using FeatureService.Api.Infrastructure.Auth;
+using FeatureService.Api.Attributes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -98,6 +99,7 @@ public class WalletsController : ApiControllerBase
     /// - Do not share your PIN with anyone, including support staff
     /// </remarks>
     [HttpPost("pin/set")]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
     [ProducesResponseType(typeof(ApiErrorResponse), 401)]
@@ -143,6 +145,7 @@ public class WalletsController : ApiControllerBase
     /// Change existing PIN
     /// </summary>
     [HttpPost("pin/change")]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
     [ProducesResponseType(typeof(ApiErrorResponse), 401)]
@@ -182,6 +185,7 @@ public class WalletsController : ApiControllerBase
     /// Verify PIN (for transaction authorization)
     /// </summary>
     [HttpPost("pin/verify")]
+    [RequiresPqcSignature]
     [ProducesResponseType(typeof(VerifyPinResponse), 200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 401)]
     public async Task<IActionResult> VerifyPin([FromBody] VerifyPinRequest request)

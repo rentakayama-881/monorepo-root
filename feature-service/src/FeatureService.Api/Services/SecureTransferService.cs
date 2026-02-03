@@ -86,7 +86,7 @@ public class SecureTransferService : ISecureTransferService
         string? ipAddress = null,
         string? userAgent = null)
     {
-        var key = idempotencyKey ?? _idempotencyService.GenerateKey("transfer");
+        var key = BuildUserScopedIdempotencyKey("transfer", senderId, idempotencyKey);
         var senderUsername = $"user_{senderId}";
 
         // Try to acquire idempotency lock
@@ -206,7 +206,7 @@ public class SecureTransferService : ISecureTransferService
         string? ipAddress = null,
         string? userAgent = null)
     {
-        var key = idempotencyKey ?? _idempotencyService.GenerateKey("release");
+        var key = BuildUserScopedIdempotencyKey("release", userId, idempotencyKey);
 
         var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
         var username = transfer?.ReceiverUsername ?? $"user_{userId}";
@@ -283,7 +283,7 @@ public class SecureTransferService : ISecureTransferService
         string? ipAddress = null,
         string? userAgent = null)
     {
-        var key = idempotencyKey ?? _idempotencyService.GenerateKey("cancel");
+        var key = BuildUserScopedIdempotencyKey("cancel", userId, idempotencyKey);
 
         var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
         var username = transfer?.SenderUsername ?? $"user_{userId}";
@@ -362,7 +362,7 @@ public class SecureTransferService : ISecureTransferService
         string? ipAddress = null,
         string? userAgent = null)
     {
-        var key = idempotencyKey ?? _idempotencyService.GenerateKey("reject");
+        var key = BuildUserScopedIdempotencyKey("reject", receiverId, idempotencyKey);
 
         var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
         var username = transfer?.ReceiverUsername ?? $"user_{receiverId}";
@@ -434,4 +434,10 @@ public class SecureTransferService : ISecureTransferService
     }
 
     private record OperationResult(bool Success, string? Error);
+
+    private string BuildUserScopedIdempotencyKey(string operation, uint userId, string? providedKey)
+    {
+        var rawKey = (providedKey ?? _idempotencyService.GenerateKey(operation)).Trim();
+        return $"{operation}:{userId}:{rawKey}";
+    }
 }

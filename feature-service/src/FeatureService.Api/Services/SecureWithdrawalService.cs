@@ -79,7 +79,7 @@ public class SecureWithdrawalService : ISecureWithdrawalService
         string? ipAddress = null,
         string? userAgent = null)
     {
-        var key = idempotencyKey ?? _idempotencyService.GenerateKey("withdrawal");
+        var key = BuildUserScopedIdempotencyKey("withdrawal", userId, idempotencyKey);
 
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
 
@@ -202,7 +202,7 @@ public class SecureWithdrawalService : ISecureWithdrawalService
         string? ipAddress = null,
         string? userAgent = null)
     {
-        var key = idempotencyKey ?? _idempotencyService.GenerateKey("wd_cancel");
+        var key = BuildUserScopedIdempotencyKey("wd_cancel", userId, idempotencyKey);
 
         var withdrawal = await _withdrawals.Find(w => w.Id == withdrawalId).FirstOrDefaultAsync();
         var username = withdrawal?.Username ?? $"user_{userId}";
@@ -281,7 +281,7 @@ public class SecureWithdrawalService : ISecureWithdrawalService
         string? ipAddress = null,
         string? userAgent = null)
     {
-        var key = idempotencyKey ?? _idempotencyService.GenerateKey("wd_process");
+        var key = BuildUserScopedIdempotencyKey("wd_process", adminId, idempotencyKey);
 
         var withdrawal = await _withdrawals.Find(w => w.Id == withdrawalId).FirstOrDefaultAsync();
 
@@ -360,4 +360,10 @@ public class SecureWithdrawalService : ISecureWithdrawalService
     }
 
     private record OperationResult(bool Success, string? Error);
+
+    private string BuildUserScopedIdempotencyKey(string operation, uint userId, string? providedKey)
+    {
+        var rawKey = (providedKey ?? _idempotencyService.GenerateKey(operation)).Trim();
+        return $"{operation}:{userId}:{rawKey}";
+    }
 }

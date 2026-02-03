@@ -53,8 +53,7 @@ public class WithdrawalsController : ApiControllerBase
     /// - X-Idempotency-Key: Optional unique key for request deduplication
     /// </remarks>
     [HttpPost]
-    // TODO: Re-enable after frontend PQC implementation
-    // [RequiresPqcSignature]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(ApiResponse<CreateWithdrawalResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -160,8 +159,7 @@ public class WithdrawalsController : ApiControllerBase
     /// Dana akan dikembalikan ke wallet (termasuk fee).
     /// </remarks>
     [HttpPost("{id}/cancel")]
-    // TODO: Re-enable after frontend PQC implementation
-    // [RequiresPqcSignature]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]

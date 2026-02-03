@@ -36,6 +36,7 @@ public class TransferService : ITransferService
     // Fee configuration - 2% for transfers
     private const decimal TransferFeePercent = 0.02m;
     private const int DefaultHoldHours = 24;
+    private const int MaxHoldHours = 72;
 
     public TransferService(
         MongoDbContext dbContext,
@@ -125,18 +126,15 @@ public class TransferService : ITransferService
             throw new InvalidOperationException($"Saldo tidak cukup. Saldo: Rp {senderWallet.Balance:N0}, Dibutuhkan: Rp {request.Amount:N0}");
         }
 
-        // Calculate hold period (max 30 days = 720 hours)
-        var holdHours = request.HoldHours > 0 ? Math.Min(request.HoldHours, 720) : DefaultHoldHours;
+        // Calculate hold period (default 24h, max 72h)
+        var holdHours = request.HoldHours > 0 ? Math.Min(request.HoldHours, MaxHoldHours) : DefaultHoldHours;
         var holdUntil = DateTime.UtcNow.AddHours(holdHours);
 
-        // Generate unique 8-digit code
-        var code = await GenerateUniqueCodeAsync();
-
-        // Create transfer record
+        // Create transfer record (Code assigned just before insert; may retry on duplicate)
         var transfer = new Transfer
         {
             Id = $"trf_{Ulid.NewUlid()}",
-            Code = code,
+            Code = string.Empty,
             SenderId = senderId,
             SenderUsername = senderUsername ?? $"user_{senderId}",
             ReceiverId = receiver.UserId,
@@ -164,8 +162,53 @@ public class TransferService : ITransferService
             throw new InvalidOperationException(deductError ?? "Gagal memproses transfer");
         }
 
-        // Save transfer
-        await _transfers.InsertOneAsync(transfer);
+        // Save transfer (retry on duplicate code)
+        try
+        {
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                transfer.Code = await GenerateUniqueCodeAsync();
+                try
+                {
+                    await _transfers.InsertOneAsync(transfer);
+                    break;
+                }
+                catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+                {
+                    if (attempt == 2)
+                    {
+                        throw;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to insert transfer {TransferId} after wallet deduction; attempting refund", transfer.Id);
+
+            try
+            {
+                _ = await _walletService.AddBalanceAsync(
+                    senderId,
+                    request.Amount,
+                    $"Refund: gagal membuat transfer ke @{receiver.Username}",
+                    TransactionType.Refund,
+                    transfer.Id,
+                    "transfer"
+                );
+            }
+            catch (Exception refundEx)
+            {
+                _logger.LogCritical(
+                    refundEx,
+                    "CRITICAL: Failed to refund after transfer insert failure. TransferId: {TransferId}, UserId: {UserId}, Amount: {Amount}",
+                    transfer.Id,
+                    senderId,
+                    request.Amount);
+            }
+
+            throw;
+        }
 
         _logger.LogInformation(
             "Transfer created: {TransferId} from {SenderId} to {ReceiverId} amount {Amount}",
@@ -251,33 +294,95 @@ public class TransferService : ITransferService
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
 
-        // CRITICAL: Only SENDER can release funds early!
-        // This is to prevent fraud - receiver must wait for hold period
-        // or sender manually releases after satisfied with goods/services
-        if (transfer.SenderId != userId)
-            return (false, "Hanya pengirim yang dapat melepaskan dana");
+        var isSender = transfer.SenderId == userId;
+        var isReceiver = transfer.ReceiverId == userId;
+
+        if (!isSender && !isReceiver)
+            return (false, "Anda tidak berhak memproses transfer ini");
 
         if (transfer.Status != TransferStatus.Pending)
             return (false, $"Transfer sudah {transfer.Status}");
 
-        // Verify SENDER's PIN (only sender can release)
+        // Escrow rules:
+        // - Before holdUntil: only sender can release early
+        // - After holdUntil: receiver can claim (release)
+        var now = DateTime.UtcNow;
+        var holdUntil = transfer.HoldUntil ?? now;
+        var holdExpired = holdUntil <= now;
+
+        if (holdExpired)
+        {
+            if (!isReceiver)
+                return (false, "Hold period sudah selesai; hanya penerima yang dapat klaim dana");
+        }
+        else
+        {
+            if (!isSender)
+                return (false, $"Hold period belum selesai hingga {holdUntil:O}");
+        }
+
+        // Verify actor's PIN (sender for early release, receiver for claim)
         var pinResult = await _walletService.VerifyPinAsync(userId, pin);
         if (!pinResult.Valid)
             return (false, pinResult.Message);
+
+        // Update transfer status first to prevent double-credit (server-side)
+        var updateFilter = Builders<Transfer>.Filter.And(
+            Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
+            Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Pending));
+
+        var statusUpdate = Builders<Transfer>.Update
+            .Set(t => t.Status, TransferStatus.Released)
+            .Set(t => t.ReleasedAt, now)
+            .Set(t => t.UpdatedAt, now);
+
+        var updateResult = await _transfers.UpdateOneAsync(updateFilter, statusUpdate);
+        if (updateResult.ModifiedCount == 0)
+            return (false, "Transfer sudah diproses oleh request lain");
 
         // Calculate fee (2% from transfer amount)
         var fee = (long)(transfer.Amount * TransferFeePercent);
         var amountAfterFee = transfer.Amount - fee;
 
         // Add to receiver's wallet (minus fee)
-        _ = await _walletService.AddBalanceAsync(
-            transfer.ReceiverId,
-            amountAfterFee,
-            $"Transfer dari @{transfer.SenderUsername}",
-            TransactionType.TransferIn,
-            transfer.Id,
-            "transfer"
-        );
+        try
+        {
+            _ = await _walletService.AddBalanceAsync(
+                transfer.ReceiverId,
+                amountAfterFee,
+                $"Transfer dari @{transfer.SenderUsername}",
+                TransactionType.TransferIn,
+                transfer.Id,
+                "transfer"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to credit receiver for released transfer {TransferId}. Attempting status rollback.", transferId);
+
+            try
+            {
+                var rollback = Builders<Transfer>.Update
+                    .Set(t => t.Status, TransferStatus.Pending)
+                    .Unset(t => t.ReleasedAt)
+                    .Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+                await _transfers.UpdateOneAsync(
+                    Builders<Transfer>.Filter.And(
+                        Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
+                        Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Released)),
+                    rollback);
+            }
+            catch (Exception rollbackEx)
+            {
+                _logger.LogCritical(
+                    rollbackEx,
+                    "CRITICAL: Failed to rollback transfer status after credit failure. TransferId: {TransferId}",
+                    transferId);
+            }
+
+            return (false, "Gagal melepaskan dana. Silakan coba lagi atau hubungi support.");
+        }
 
         // Record fee (if fee > 0)
         if (fee > 0)
@@ -288,14 +393,6 @@ public class TransferService : ITransferService
                 fee, transfer.Id
             );
         }
-
-        // Update transfer status
-        var update = Builders<Transfer>.Update
-            .Set(t => t.Status, TransferStatus.Released)
-            .Set(t => t.ReleasedAt, DateTime.UtcNow)
-            .Set(t => t.UpdatedAt, DateTime.UtcNow);
-
-        await _transfers.UpdateOneAsync(t => t.Id == transferId, update);
 
         _logger.LogInformation(
             "Transfer released: {TransferId}, amount {Amount}, fee {Fee}",
@@ -319,29 +416,71 @@ public class TransferService : ITransferService
         if (transfer.Status != TransferStatus.Pending)
             return (false, $"Transfer sudah {transfer.Status}");
 
+        // Prevent sender from cancelling after hold period ended (anti-fraud)
+        var now = DateTime.UtcNow;
+        if (transfer.HoldUntil.HasValue && transfer.HoldUntil.Value <= now)
+            return (false, "Hold period sudah selesai; transfer tidak bisa dibatalkan oleh pengirim");
+
         // Verify sender's PIN
         var pinResult = await _walletService.VerifyPinAsync(userId, pin);
         if (!pinResult.Valid)
             return (false, pinResult.Message);
 
-        // Refund to sender
-        _ = await _walletService.AddBalanceAsync(
-            transfer.SenderId,
-            transfer.Amount,
-            $"Pembatalan transfer ke @{transfer.ReceiverUsername}",
-            TransactionType.Refund,
-            transfer.Id,
-            "transfer"
-        );
+        // Update status first to prevent double refund
+        var updateFilter = Builders<Transfer>.Filter.And(
+            Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
+            Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Pending));
 
-        // Update transfer status
-        var update = Builders<Transfer>.Update
+        var statusUpdate = Builders<Transfer>.Update
             .Set(t => t.Status, TransferStatus.Cancelled)
-            .Set(t => t.CancelledAt, DateTime.UtcNow)
+            .Set(t => t.CancelledAt, now)
             .Set(t => t.CancelReason, reason)
-            .Set(t => t.UpdatedAt, DateTime.UtcNow);
+            .Set(t => t.UpdatedAt, now);
 
-        await _transfers.UpdateOneAsync(t => t.Id == transferId, update);
+        var updateResult = await _transfers.UpdateOneAsync(updateFilter, statusUpdate);
+        if (updateResult.ModifiedCount == 0)
+            return (false, "Transfer sudah diproses oleh request lain");
+
+        // Refund to sender
+        try
+        {
+            _ = await _walletService.AddBalanceAsync(
+                transfer.SenderId,
+                transfer.Amount,
+                $"Pembatalan transfer ke @{transfer.ReceiverUsername}",
+                TransactionType.Refund,
+                transfer.Id,
+                "transfer"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refund sender for cancelled transfer {TransferId}. Attempting status rollback.", transferId);
+
+            try
+            {
+                var rollback = Builders<Transfer>.Update
+                    .Set(t => t.Status, TransferStatus.Pending)
+                    .Unset(t => t.CancelledAt)
+                    .Unset(t => t.CancelReason)
+                    .Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+                await _transfers.UpdateOneAsync(
+                    Builders<Transfer>.Filter.And(
+                        Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
+                        Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Cancelled)),
+                    rollback);
+            }
+            catch (Exception rollbackEx)
+            {
+                _logger.LogCritical(
+                    rollbackEx,
+                    "CRITICAL: Failed to rollback transfer status after refund failure. TransferId: {TransferId}",
+                    transferId);
+            }
+
+            return (false, "Gagal mengembalikan dana. Silakan coba lagi atau hubungi support.");
+        }
 
         _logger.LogInformation(
             "Transfer cancelled: {TransferId}, refunded {Amount} to sender",
@@ -370,24 +509,63 @@ public class TransferService : ITransferService
         if (!pinResult.Valid)
             return (false, pinResult.Message);
 
-        // Refund to sender (full amount, no fee for rejection)
-        _ = await _walletService.AddBalanceAsync(
-            transfer.SenderId,
-            transfer.Amount,
-            $"Penolakan transfer dari @{transfer.ReceiverUsername}",
-            TransactionType.Refund,
-            transfer.Id,
-            "transfer"
-        );
+        var now = DateTime.UtcNow;
 
-        // Update transfer status
-        var update = Builders<Transfer>.Update
+        // Update status first to prevent double refund
+        var updateFilter = Builders<Transfer>.Filter.And(
+            Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
+            Builders<Transfer>.Filter.In(t => t.Status, new[] { TransferStatus.Pending, TransferStatus.Disputed }));
+
+        var statusUpdate = Builders<Transfer>.Update
             .Set(t => t.Status, TransferStatus.Rejected)
-            .Set(t => t.CancelledAt, DateTime.UtcNow)
+            .Set(t => t.CancelledAt, now)
             .Set(t => t.CancelReason, reason)
-            .Set(t => t.UpdatedAt, DateTime.UtcNow);
+            .Set(t => t.UpdatedAt, now);
 
-        await _transfers.UpdateOneAsync(t => t.Id == transferId, update);
+        var updateResult = await _transfers.UpdateOneAsync(updateFilter, statusUpdate);
+        if (updateResult.ModifiedCount == 0)
+            return (false, "Transfer sudah diproses oleh request lain");
+
+        // Refund to sender (full amount, no fee for rejection)
+        try
+        {
+            _ = await _walletService.AddBalanceAsync(
+                transfer.SenderId,
+                transfer.Amount,
+                $"Penolakan transfer dari @{transfer.ReceiverUsername}",
+                TransactionType.Refund,
+                transfer.Id,
+                "transfer"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refund sender for rejected transfer {TransferId}. Attempting status rollback.", transferId);
+
+            try
+            {
+                var rollback = Builders<Transfer>.Update
+                    .Set(t => t.Status, TransferStatus.Pending)
+                    .Unset(t => t.CancelledAt)
+                    .Unset(t => t.CancelReason)
+                    .Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+                await _transfers.UpdateOneAsync(
+                    Builders<Transfer>.Filter.And(
+                        Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
+                        Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Rejected)),
+                    rollback);
+            }
+            catch (Exception rollbackEx)
+            {
+                _logger.LogCritical(
+                    rollbackEx,
+                    "CRITICAL: Failed to rollback transfer status after refund failure. TransferId: {TransferId}",
+                    transferId);
+            }
+
+            return (false, "Gagal memproses penolakan. Silakan coba lagi atau hubungi support.");
+        }
 
         _logger.LogInformation(
             "Transfer rejected by receiver: {TransferId}, refunded {Amount} to sender",
@@ -440,27 +618,68 @@ public class TransferService : ITransferService
         {
             try
             {
+                var now = DateTime.UtcNow;
+
+                // Mark as released first to ensure exactly-once crediting
+                var updateFilter = Builders<Transfer>.Filter.And(
+                    Builders<Transfer>.Filter.Eq(t => t.Id, transfer.Id),
+                    Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Pending),
+                    Builders<Transfer>.Filter.Lt(t => t.HoldUntil, now));
+
+                var statusUpdate = Builders<Transfer>.Update
+                    .Set(t => t.Status, TransferStatus.Released)
+                    .Set(t => t.ReleasedAt, now)
+                    .Set(t => t.UpdatedAt, now);
+
+                var updateResult = await _transfers.UpdateOneAsync(updateFilter, statusUpdate);
+                if (updateResult.ModifiedCount == 0)
+                {
+                    continue;
+                }
+
                 // Calculate fee
                 var fee = (long)(transfer.Amount * TransferFeePercent);
                 var amountAfterFee = transfer.Amount - fee;
 
                 // Add to receiver
-                _ = await _walletService.AddBalanceAsync(
-                    transfer.ReceiverId,
-                    amountAfterFee,
-                    $"Auto-release transfer dari @{transfer.SenderUsername}",
-                    TransactionType.TransferIn,
-                    transfer.Id,
-                    "transfer"
-                );
+                try
+                {
+                    _ = await _walletService.AddBalanceAsync(
+                        transfer.ReceiverId,
+                        amountAfterFee,
+                        $"Auto-release transfer dari @{transfer.SenderUsername}",
+                        TransactionType.TransferIn,
+                        transfer.Id,
+                        "transfer"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to credit receiver for auto-released transfer {TransferId}. Attempting status rollback.", transfer.Id);
 
-                // Update status
-                var update = Builders<Transfer>.Update
-                    .Set(t => t.Status, TransferStatus.Released)
-                    .Set(t => t.ReleasedAt, DateTime.UtcNow)
-                    .Set(t => t.UpdatedAt, DateTime.UtcNow);
+                    try
+                    {
+                        var rollback = Builders<Transfer>.Update
+                            .Set(t => t.Status, TransferStatus.Pending)
+                            .Unset(t => t.ReleasedAt)
+                            .Set(t => t.UpdatedAt, DateTime.UtcNow);
 
-                await _transfers.UpdateOneAsync(t => t.Id == transfer.Id, update);
+                        await _transfers.UpdateOneAsync(
+                            Builders<Transfer>.Filter.And(
+                                Builders<Transfer>.Filter.Eq(t => t.Id, transfer.Id),
+                                Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Released)),
+                            rollback);
+                    }
+                    catch (Exception rollbackEx)
+                    {
+                        _logger.LogCritical(
+                            rollbackEx,
+                            "CRITICAL: Failed to rollback transfer status after auto-release credit failure. TransferId: {TransferId}",
+                            transfer.Id);
+                    }
+
+                    continue;
+                }
 
                 _logger.LogInformation(
                     "Auto-released transfer: {TransferId}, amount {Amount}",

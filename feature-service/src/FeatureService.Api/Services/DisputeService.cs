@@ -80,14 +80,29 @@ public class DisputeService : IDisputeService
         if (transfer.SenderId != userId)
             return new CreateDisputeResponse(false, null, "Hanya pengirim dana yang dapat membuka mediasi");
 
-        // Check transfer status - can only dispute pending or released transfers
-        if (transfer.Status != TransferStatus.Pending && transfer.Status != TransferStatus.Released)
-            return new CreateDisputeResponse(false, null, "Transfer dalam status yang tidak bisa didisputkan");
+        // Only allow disputes while funds are still in escrow (Pending).
+        // Allowing disputes after release would require clawback logic (not implemented here).
+        if (transfer.Status != TransferStatus.Pending)
+            return new CreateDisputeResponse(false, null, "Dispute hanya bisa dibuat untuk transfer yang masih pending");
 
         // Check if dispute already exists
         var existingDispute = await _disputes.Find(d => d.TransferId == request.TransferId).FirstOrDefaultAsync();
         if (existingDispute != null)
             return new CreateDisputeResponse(false, null, "Dispute sudah ada untuk transfer ini");
+
+        // Update transfer status to Disputed first (acts as a concurrency lock)
+        var now = DateTime.UtcNow;
+        var transferUpdateFilter = Builders<Transfer>.Filter.And(
+            Builders<Transfer>.Filter.Eq(t => t.Id, request.TransferId),
+            Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Pending));
+
+        var transferUpdate = Builders<Transfer>.Update
+            .Set(t => t.Status, TransferStatus.Disputed)
+            .Set(t => t.UpdatedAt, now);
+
+        var transferUpdateResult = await _transfers.UpdateOneAsync(transferUpdateFilter, transferUpdate);
+        if (transferUpdateResult.ModifiedCount == 0)
+            return new CreateDisputeResponse(false, null, "Transfer sudah diproses oleh request lain");
 
         // Sender is always initiator, receiver is always respondent
         var initiatorId = transfer.SenderId;
@@ -113,17 +128,40 @@ public class DisputeService : IDisputeService
             Amount = transfer.Amount,
             Evidence = new List<DisputeEvidence>(),
             Messages = new List<DisputeMessage>(),
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            CreatedAt = now,
+            UpdatedAt = now
         };
 
-        await _disputes.InsertOneAsync(dispute);
+        try
+        {
+            await _disputes.InsertOneAsync(dispute);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to insert dispute for transfer {TransferId}. Attempting transfer status rollback.", request.TransferId);
 
-        // Update transfer status to Disputed
-        var transferUpdate = Builders<Transfer>.Update
-            .Set(t => t.Status, TransferStatus.Disputed)
-            .Set(t => t.UpdatedAt, DateTime.UtcNow);
-        await _transfers.UpdateOneAsync(t => t.Id == request.TransferId, transferUpdate);
+            try
+            {
+                var rollback = Builders<Transfer>.Update
+                    .Set(t => t.Status, TransferStatus.Pending)
+                    .Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+                await _transfers.UpdateOneAsync(
+                    Builders<Transfer>.Filter.And(
+                        Builders<Transfer>.Filter.Eq(t => t.Id, request.TransferId),
+                        Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Disputed)),
+                    rollback);
+            }
+            catch (Exception rollbackEx)
+            {
+                _logger.LogCritical(
+                    rollbackEx,
+                    "CRITICAL: Failed to rollback transfer status after dispute insert failure. TransferId: {TransferId}",
+                    request.TransferId);
+            }
+
+            throw;
+        }
 
         _logger.LogInformation(
             "Dispute created: {DisputeId} for transfer {TransferId} by user {UserId}",
@@ -310,6 +348,14 @@ public class DisputeService : IDisputeService
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
 
+        // Safety: do not resolve disputes for transfers that were already released previously.
+        // That would require clawback / negative-balance handling (not implemented here).
+        if (transfer.ReleasedAt.HasValue || transfer.Status == TransferStatus.Released)
+            return (false, "Transfer sudah direlease; penyelesaian dispute memerlukan proses clawback (hubungi admin)");
+
+        if (transfer.Status != TransferStatus.Disputed)
+            return (false, "Transfer tidak dalam status Disputed");
+
         // Calculate resolution amounts
         long refundToSender = 0;
         long releaseToReceiver = 0;
@@ -341,29 +387,95 @@ public class DisputeService : IDisputeService
                 break;
         }
 
+        var now = DateTime.UtcNow;
+
+        // Update transfer status first to ensure exactly-once settlement
+        var transferFilter = Builders<Transfer>.Filter.And(
+            Builders<Transfer>.Filter.Eq(t => t.Id, transfer.Id),
+            Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Disputed));
+
+        UpdateDefinition<Transfer> transferUpdate;
+        if (refundToSender > 0 && releaseToReceiver == 0)
+        {
+            transferUpdate = Builders<Transfer>.Update
+                .Set(t => t.Status, TransferStatus.Cancelled)
+                .Set(t => t.CancelReason, "Dispute resolved: refund to sender")
+                .Set(t => t.CancelledAt, now)
+                .Set(t => t.UpdatedAt, now);
+        }
+        else if (releaseToReceiver > 0)
+        {
+            transferUpdate = Builders<Transfer>.Update
+                .Set(t => t.Status, TransferStatus.Released)
+                .Set(t => t.ReleasedAt, now)
+                .Set(t => t.UpdatedAt, now);
+        }
+        else
+        {
+            // NoAction: restore to pending, normal hold rules apply
+            transferUpdate = Builders<Transfer>.Update
+                .Set(t => t.Status, TransferStatus.Pending)
+                .Set(t => t.UpdatedAt, now);
+        }
+
+        var transferUpdateResult = await _transfers.UpdateOneAsync(transferFilter, transferUpdate);
+        if (transferUpdateResult.ModifiedCount == 0)
+            return (false, "Transfer sudah diproses oleh request lain");
+
         // Execute fund transfers
+        var senderCredited = false;
+        var receiverCredited = false;
         if (refundToSender > 0)
         {
-            _ = await _walletService.AddBalanceAsync(
-                transfer.SenderId,
-                refundToSender,
-                $"Refund dari dispute #{disputeId[^6..]}",
-                TransactionType.Refund,
-                disputeId,
-                "dispute"
-            );
+            try
+            {
+                _ = await _walletService.AddBalanceAsync(
+                    transfer.SenderId,
+                    refundToSender,
+                    $"Refund dari dispute #{disputeId[^6..]}",
+                    TransactionType.Refund,
+                    disputeId,
+                    "dispute"
+                );
+                senderCredited = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to credit sender for dispute resolution {DisputeId}", disputeId);
+                return (false, "Gagal memproses refund. Hubungi admin/support.");
+            }
         }
 
         if (releaseToReceiver > 0)
         {
-            _ = await _walletService.AddBalanceAsync(
-                transfer.ReceiverId,
-                releaseToReceiver,
-                $"Pelepasan dari dispute #{disputeId[^6..]}",
-                TransactionType.EscrowRelease,
-                disputeId,
-                "dispute"
-            );
+            try
+            {
+                _ = await _walletService.AddBalanceAsync(
+                    transfer.ReceiverId,
+                    releaseToReceiver,
+                    $"Pelepasan dari dispute #{disputeId[^6..]}",
+                    TransactionType.EscrowRelease,
+                    disputeId,
+                    "dispute"
+                );
+                receiverCredited = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to credit receiver for dispute resolution {DisputeId}", disputeId);
+
+                // Partial settlement is critical and requires manual reconciliation.
+                if (senderCredited)
+                {
+                    _logger.LogCritical(
+                        "CRITICAL: Partial dispute settlement. DisputeId: {DisputeId}, SenderCredited: {SenderCredited}, ReceiverCredited: {ReceiverCredited}",
+                        disputeId,
+                        senderCredited,
+                        receiverCredited);
+                }
+
+                return (false, "Gagal memproses pelepasan dana. Hubungi admin/support.");
+            }
         }
 
         var resolution = new DisputeResolution
@@ -379,17 +491,10 @@ public class DisputeService : IDisputeService
             .Set(d => d.Resolution, resolution)
             .Set(d => d.ResolvedById, adminId)
             .Set(d => d.ResolvedByUsername, adminUsername)
-            .Set(d => d.ResolvedAt, DateTime.UtcNow)
-            .Set(d => d.UpdatedAt, DateTime.UtcNow);
+            .Set(d => d.ResolvedAt, now)
+            .Set(d => d.UpdatedAt, now);
 
         await _disputes.UpdateOneAsync(d => d.Id == disputeId, update);
-
-        // Mark transfer as resolved (use Released status)
-        var transferUpdate = Builders<Transfer>.Update
-            .Set(t => t.Status, TransferStatus.Released)
-            .Set(t => t.ReleasedAt, DateTime.UtcNow)
-            .Set(t => t.UpdatedAt, DateTime.UtcNow);
-        await _transfers.UpdateOneAsync(t => t.Id == dispute.TransferId, transferUpdate);
 
         _logger.LogInformation(
             "Dispute resolved: {DisputeId} by admin {AdminId}, type: {Type}, sender: {RefundToSender}, receiver: {ReleaseToReceiver}",
@@ -509,23 +614,69 @@ public class DisputeService : IDisputeService
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
 
-        // Refund to sender
-        _ = await _walletService.AddBalanceAsync(
-            transfer.SenderId,
-            transfer.Amount,
-            $"Refund mutual dari dispute #{disputeId.Substring(0, 8)}",
-            TransactionType.Refund,
-            transfer.Id,
-            "dispute"
-        );
+        // Safety: do not allow refund if funds were already released previously.
+        if (transfer.ReleasedAt.HasValue || transfer.Status == TransferStatus.Released)
+            return (false, "Transfer sudah direlease; refund mutual memerlukan proses clawback (hubungi admin)");
 
-        // Update transfer status
+        if (transfer.Status != TransferStatus.Disputed)
+            return (false, "Transfer tidak dalam status Disputed");
+
+        // Update transfer status first to enforce exactly-once refund
+        var now = DateTime.UtcNow;
+        var transferUpdateFilter = Builders<Transfer>.Filter.And(
+            Builders<Transfer>.Filter.Eq(t => t.Id, transfer.Id),
+            Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Disputed));
+
         var transferUpdate = Builders<Transfer>.Update
             .Set(t => t.Status, TransferStatus.Cancelled)
             .Set(t => t.CancelReason, "Mutual refund dari dispute")
-            .Set(t => t.CancelledAt, DateTime.UtcNow)
-            .Set(t => t.UpdatedAt, DateTime.UtcNow);
-        await _transfers.UpdateOneAsync(t => t.Id == transfer.Id, transferUpdate);
+            .Set(t => t.CancelledAt, now)
+            .Set(t => t.UpdatedAt, now);
+
+        var transferUpdateResult = await _transfers.UpdateOneAsync(transferUpdateFilter, transferUpdate);
+        if (transferUpdateResult.ModifiedCount == 0)
+            return (false, "Transfer sudah diproses oleh request lain");
+
+        // Refund to sender
+        try
+        {
+            _ = await _walletService.AddBalanceAsync(
+                transfer.SenderId,
+                transfer.Amount,
+                $"Refund mutual dari dispute #{disputeId.Substring(0, 8)}",
+                TransactionType.Refund,
+                transfer.Id,
+                "dispute"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refund sender for mutual refund dispute {DisputeId}. Attempting transfer status rollback.", disputeId);
+
+            try
+            {
+                var rollback = Builders<Transfer>.Update
+                    .Set(t => t.Status, TransferStatus.Disputed)
+                    .Unset(t => t.CancelledAt)
+                    .Unset(t => t.CancelReason)
+                    .Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+                await _transfers.UpdateOneAsync(
+                    Builders<Transfer>.Filter.And(
+                        Builders<Transfer>.Filter.Eq(t => t.Id, transfer.Id),
+                        Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Cancelled)),
+                    rollback);
+            }
+            catch (Exception rollbackEx)
+            {
+                _logger.LogCritical(
+                    rollbackEx,
+                    "CRITICAL: Failed to rollback transfer status after mutual refund failure. TransferId: {TransferId}",
+                    transfer.Id);
+            }
+
+            return (false, "Gagal mengembalikan dana. Silakan coba lagi atau hubungi support.");
+        }
 
         // Resolve dispute
         var resolution = new DisputeResolution
@@ -536,12 +687,17 @@ public class DisputeService : IDisputeService
             Note = "Kedua pihak setuju untuk refund"
         };
 
+        var disputeUpdateFilter = Builders<Dispute>.Filter.And(
+            Builders<Dispute>.Filter.Eq(d => d.Id, disputeId),
+            Builders<Dispute>.Filter.Eq(d => d.Status, DisputeStatus.Open));
+
         var disputeUpdate = Builders<Dispute>.Update
             .Set(d => d.Status, DisputeStatus.Resolved)
             .Set(d => d.Resolution, resolution)
-            .Set(d => d.ResolvedAt, DateTime.UtcNow)
-            .Set(d => d.UpdatedAt, DateTime.UtcNow);
-        await _disputes.UpdateOneAsync(d => d.Id == disputeId, disputeUpdate);
+            .Set(d => d.ResolvedAt, now)
+            .Set(d => d.UpdatedAt, now);
+
+        await _disputes.UpdateOneAsync(disputeUpdateFilter, disputeUpdate);
 
         _logger.LogInformation("Mutual refund completed for dispute {DisputeId} by user {UserId}", disputeId, userId);
         return (true, null);

@@ -39,10 +39,10 @@ public class UserPqcKey
     public string PublicKeyBase64 { get; set; } = string.Empty;
 
     /// <summary>
-    /// Algorithm yang digunakan (ML-DSA-65)
+    /// Algorithm yang digunakan (Dilithium3 / ML-DSA-65 class)
     /// </summary>
     [BsonElement("algorithm")]
-    public string Algorithm { get; set; } = "ML-DSA-65";
+    public string Algorithm { get; set; } = "Dilithium3";
 
     /// <summary>
     /// SHA-256 hash dari public key untuk quick lookup

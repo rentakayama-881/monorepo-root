@@ -252,55 +252,19 @@ public class WalletService : IWalletService
         string? referenceId = null,
         string? referenceType = null)
     {
-        var wallet = await GetOrCreateWalletAsync(userId);
-
-        if (wallet.Balance < amount)
+        if (amount <= 0)
         {
-            return (false, "Saldo tidak mencukupi", null);
+            return (false, "Jumlah tidak valid", null);
         }
 
-        var balanceBefore = wallet.Balance;
-        var balanceAfter = balanceBefore - amount;
+        // Ensure wallet exists before attempting atomic operations
+        await GetOrCreateWalletAsync(userId);
 
-        // Create transaction record
-        var transaction = new Transaction
-        {
-            Id = $"txn_{Ulid.NewUlid()}",
-            UserId = userId,
-            Type = type,
-            Amount = -amount, // Negative for debit
-            BalanceBefore = balanceBefore,
-            BalanceAfter = balanceAfter,
-            Description = description,
-            ReferenceId = referenceId,
-            ReferenceType = referenceType,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        await _transactions.InsertOneAsync(transaction);
-
-        // Update wallet balance
-        var update = Builders<UserWallet>.Update
-            .Set(w => w.Balance, balanceAfter)
-            .Set(w => w.UpdatedAt, DateTime.UtcNow);
-
-        await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
-
-        await TryInsertLedgerEntryAsync(
-            userId,
-            LedgerEntryType.Debit,
-            amount,
-            balanceAfter,
-            type,
-            referenceId ?? transaction.Id,
-            referenceType,
-            transaction.Id,
-            description);
-
-        _logger.LogInformation("Deducted {Amount} from user {UserId}. Balance: {Before} -> {After}", 
-            amount, userId, balanceBefore, balanceAfter);
-
-        return (true, null, transaction.Id);
+        return await TryWithMongoTransactionAsync(
+            session => DeductBalanceInternalAsync(
+                session, userId, amount, description, type, referenceId, referenceType, bestEffortAudit: false),
+            () => DeductBalanceInternalAsync(
+                session: null, userId, amount, description, type, referenceId, referenceType, bestEffortAudit: true));
     }
 
     public async Task<string> AddBalanceAsync(
@@ -311,50 +275,19 @@ public class WalletService : IWalletService
         string? referenceId = null,
         string? referenceType = null)
     {
-        var wallet = await GetOrCreateWalletAsync(userId);
-
-        var balanceBefore = wallet.Balance;
-        var balanceAfter = balanceBefore + amount;
-
-        // Create transaction record
-        var transaction = new Transaction
+        if (amount <= 0)
         {
-            Id = $"txn_{Ulid.NewUlid()}",
-            UserId = userId,
-            Type = type,
-            Amount = amount, // Positive for credit
-            BalanceBefore = balanceBefore,
-            BalanceAfter = balanceAfter,
-            Description = description,
-            ReferenceId = referenceId,
-            ReferenceType = referenceType,
-            CreatedAt = DateTime.UtcNow
-        };
+            throw new ArgumentException("Jumlah tidak valid", nameof(amount));
+        }
 
-        await _transactions.InsertOneAsync(transaction);
+        // Ensure wallet exists before attempting atomic operations
+        await GetOrCreateWalletAsync(userId);
 
-        // Update wallet balance
-        var update = Builders<UserWallet>.Update
-            .Set(w => w.Balance, balanceAfter)
-            .Set(w => w.UpdatedAt, DateTime.UtcNow);
-
-        await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
-
-        await TryInsertLedgerEntryAsync(
-            userId,
-            LedgerEntryType.Credit,
-            amount,
-            balanceAfter,
-            type,
-            referenceId ?? transaction.Id,
-            referenceType,
-            transaction.Id,
-            description);
-
-        _logger.LogInformation("Added {Amount} to user {UserId}. Balance: {Before} -> {After}", 
-            amount, userId, balanceBefore, balanceAfter);
-
-        return transaction.Id;
+        return await TryWithMongoTransactionAsync(
+            session => AddBalanceInternalAsync(
+                session, userId, amount, description, type, referenceId, referenceType, bestEffortAudit: false),
+            () => AddBalanceInternalAsync(
+                session: null, userId, amount, description, type, referenceId, referenceType, bestEffortAudit: true));
     }
 
     public async Task<List<Transaction>> GetTransactionsAsync(uint userId, int page = 1, int pageSize = 20)
@@ -420,6 +353,273 @@ public class WalletService : IWalletService
     }
 
     // === Private Helper Methods ===
+
+    private async Task<T> TryWithMongoTransactionAsync<T>(
+        Func<IClientSessionHandle, Task<T>> transactional,
+        Func<Task<T>> fallback)
+    {
+        try
+        {
+            using var session = await _wallets.Database.Client.StartSessionAsync();
+            session.StartTransaction();
+
+            try
+            {
+                var result = await transactional(session);
+                await session.CommitTransactionAsync();
+                return result;
+            }
+            catch
+            {
+                await session.AbortTransactionAsync();
+                throw;
+            }
+        }
+        catch (MongoCommandException ex) when (IsTransactionsNotSupported(ex))
+        {
+            _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates");
+            return await fallback();
+        }
+    }
+
+    private static bool IsTransactionsNotSupported(MongoCommandException ex)
+    {
+        // Standalone MongoDB: "Transaction numbers are only allowed on a replica set member or mongos"
+        return ex.Message.Contains("Transaction numbers are only allowed", StringComparison.OrdinalIgnoreCase)
+            || ex.Message.Contains("replica set member", StringComparison.OrdinalIgnoreCase)
+            || ex.Message.Contains("not supported", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task<(bool success, string? error, string? transactionId)> DeductBalanceInternalAsync(
+        IClientSessionHandle? session,
+        uint userId,
+        long amount,
+        string description,
+        TransactionType type,
+        string? referenceId,
+        string? referenceType,
+        bool bestEffortAudit)
+    {
+        var now = DateTime.UtcNow;
+
+        var filter = Builders<UserWallet>.Filter.And(
+            Builders<UserWallet>.Filter.Eq(w => w.UserId, userId),
+            Builders<UserWallet>.Filter.Gte(w => w.Balance, amount));
+
+        var update = Builders<UserWallet>.Update
+            .Inc(w => w.Balance, -amount)
+            .Set(w => w.UpdatedAt, now);
+
+        var options = new FindOneAndUpdateOptions<UserWallet, UserWallet>
+        {
+            ReturnDocument = ReturnDocument.Before
+        };
+
+        var walletBefore = session == null
+            ? await _wallets.FindOneAndUpdateAsync(filter, update, options)
+            : await _wallets.FindOneAndUpdateAsync(session, filter, update, options);
+
+        if (walletBefore == null)
+        {
+            return (false, "Saldo tidak mencukupi", null);
+        }
+
+        var balanceBefore = walletBefore.Balance;
+        var balanceAfter = balanceBefore - amount;
+
+        var transaction = new Transaction
+        {
+            Id = $"txn_{Ulid.NewUlid()}",
+            UserId = userId,
+            Type = type,
+            Amount = -amount,
+            BalanceBefore = balanceBefore,
+            BalanceAfter = balanceAfter,
+            Description = description,
+            ReferenceId = referenceId,
+            ReferenceType = referenceType,
+            CreatedAt = now
+        };
+
+        try
+        {
+            if (session == null)
+            {
+                await _transactions.InsertOneAsync(transaction);
+            }
+            else
+            {
+                await _transactions.InsertOneAsync(session, transaction);
+            }
+
+            await InsertLedgerEntryAsync(
+                session,
+                userId,
+                LedgerEntryType.Debit,
+                amount,
+                balanceAfter,
+                type,
+                referenceId ?? transaction.Id,
+                referenceType,
+                transaction.Id,
+                description,
+                bestEffortAudit);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to write transaction records for user {UserId}", userId);
+
+            // If we are not inside a Mongo transaction, try to compensate the balance update.
+            if (session == null)
+            {
+                try
+                {
+                    var compensationUpdate = Builders<UserWallet>.Update
+                        .Inc(w => w.Balance, amount)
+                        .Set(w => w.UpdatedAt, DateTime.UtcNow);
+
+                    await _wallets.UpdateOneAsync(
+                        Builders<UserWallet>.Filter.Eq(w => w.UserId, userId),
+                        compensationUpdate);
+                }
+                catch (Exception compensationEx)
+                {
+                    _logger.LogCritical(
+                        compensationEx,
+                        "CRITICAL: Failed to compensate wallet balance after audit write failure. UserId: {UserId}, Amount: {Amount}",
+                        userId,
+                        amount);
+                }
+            }
+
+            throw;
+        }
+
+        _logger.LogInformation(
+            "Deducted {Amount} from user {UserId}. Balance: {Before} -> {After}",
+            amount,
+            userId,
+            balanceBefore,
+            balanceAfter);
+
+        return (true, null, transaction.Id);
+    }
+
+    private async Task<string> AddBalanceInternalAsync(
+        IClientSessionHandle? session,
+        uint userId,
+        long amount,
+        string description,
+        TransactionType type,
+        string? referenceId,
+        string? referenceType,
+        bool bestEffortAudit)
+    {
+        var now = DateTime.UtcNow;
+
+        var filter = Builders<UserWallet>.Filter.Eq(w => w.UserId, userId);
+        var update = Builders<UserWallet>.Update
+            .Inc(w => w.Balance, amount)
+            .Set(w => w.UpdatedAt, now);
+
+        var options = new FindOneAndUpdateOptions<UserWallet, UserWallet>
+        {
+            ReturnDocument = ReturnDocument.Before
+        };
+
+        var walletBefore = session == null
+            ? await _wallets.FindOneAndUpdateAsync(filter, update, options)
+            : await _wallets.FindOneAndUpdateAsync(session, filter, update, options);
+
+        if (walletBefore == null)
+        {
+            throw new InvalidOperationException("Wallet tidak ditemukan");
+        }
+
+        var balanceBefore = walletBefore.Balance;
+        checked
+        {
+            _ = balanceBefore + amount;
+        }
+
+        var balanceAfter = balanceBefore + amount;
+
+        var transaction = new Transaction
+        {
+            Id = $"txn_{Ulid.NewUlid()}",
+            UserId = userId,
+            Type = type,
+            Amount = amount,
+            BalanceBefore = balanceBefore,
+            BalanceAfter = balanceAfter,
+            Description = description,
+            ReferenceId = referenceId,
+            ReferenceType = referenceType,
+            CreatedAt = now
+        };
+
+        try
+        {
+            if (session == null)
+            {
+                await _transactions.InsertOneAsync(transaction);
+            }
+            else
+            {
+                await _transactions.InsertOneAsync(session, transaction);
+            }
+
+            await InsertLedgerEntryAsync(
+                session,
+                userId,
+                LedgerEntryType.Credit,
+                amount,
+                balanceAfter,
+                type,
+                referenceId ?? transaction.Id,
+                referenceType,
+                transaction.Id,
+                description,
+                bestEffortAudit);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to write transaction records for user {UserId}", userId);
+
+            if (session == null)
+            {
+                try
+                {
+                    var compensationUpdate = Builders<UserWallet>.Update
+                        .Inc(w => w.Balance, -amount)
+                        .Set(w => w.UpdatedAt, DateTime.UtcNow);
+
+                    await _wallets.UpdateOneAsync(
+                        Builders<UserWallet>.Filter.Eq(w => w.UserId, userId),
+                        compensationUpdate);
+                }
+                catch (Exception compensationEx)
+                {
+                    _logger.LogCritical(
+                        compensationEx,
+                        "CRITICAL: Failed to compensate wallet balance after audit write failure. UserId: {UserId}, Amount: {Amount}",
+                        userId,
+                        amount);
+                }
+            }
+
+            throw;
+        }
+
+        _logger.LogInformation(
+            "Added {Amount} to user {UserId}. Balance: {Before} -> {After}",
+            amount,
+            userId,
+            balanceBefore,
+            balanceAfter);
+
+        return transaction.Id;
+    }
 
     private void ValidatePin(string pin)
     {
@@ -489,7 +689,8 @@ public class WalletService : IWalletService
         await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
     }
 
-    private async Task TryInsertLedgerEntryAsync(
+    private async Task InsertLedgerEntryAsync(
+        IClientSessionHandle? session,
         uint userId,
         LedgerEntryType entryType,
         long amount,
@@ -498,7 +699,8 @@ public class WalletService : IWalletService
         string referenceId,
         string? referenceType,
         string transactionId,
-        string description)
+        string description,
+        bool bestEffort)
     {
         try
         {
@@ -527,11 +729,22 @@ public class WalletService : IWalletService
                 Status = TransactionStatus.Completed
             };
 
-            await _ledger.InsertOneAsync(ledgerEntry);
+            if (session == null)
+            {
+                await _ledger.InsertOneAsync(ledgerEntry);
+            }
+            else
+            {
+                await _ledger.InsertOneAsync(session, ledgerEntry);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to write transaction ledger for user {UserId}", userId);
+            if (!bestEffort)
+            {
+                throw;
+            }
         }
     }
 

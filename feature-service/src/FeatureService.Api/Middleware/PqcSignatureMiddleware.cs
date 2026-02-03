@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Globalization;
 using System.Text;
 using FeatureService.Api.Attributes;
 using FeatureService.Api.Domain.Entities;
@@ -119,16 +120,43 @@ public class PqcSignatureMiddleware
                 return SignatureValidationResult.Failure("Missing X-PQC-Timestamp header");
             }
 
-            if (!DateTime.TryParse(timestampHeader, out var timestamp))
+            var timestampRaw = timestampHeader.ToString();
+            if (!IsUtcIso8601Timestamp(timestampRaw))
             {
-                return SignatureValidationResult.Failure("Invalid X-PQC-Timestamp format");
+                return SignatureValidationResult.Failure(
+                    "Invalid X-PQC-Timestamp format. Must be ISO 8601 UTC using suffix 'Z' or '+00:00'.");
             }
 
-            var age = DateTime.UtcNow - timestamp;
+            if (!DateTimeOffset.TryParse(
+                    timestampRaw,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out var timestamp))
+            {
+                return SignatureValidationResult.Failure("Invalid X-PQC-Timestamp value");
+            }
+
+            var age = DateTimeOffset.UtcNow - timestamp;
             if (age.TotalSeconds > attribute.MaxTimestampAgeSeconds || age.TotalSeconds < -60)
             {
                 return SignatureValidationResult.Failure(
                     $"Request timestamp is too old or in the future. Max age: {attribute.MaxTimestampAgeSeconds}s");
+            }
+        }
+
+        // Validate idempotency key if required (important for replay resistance)
+        if (attribute.RequireIdempotencyKey)
+        {
+            var idempotencyKey = context.Request.Headers[IdempotencyKeyHeader].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(idempotencyKey))
+            {
+                return SignatureValidationResult.Failure("Missing X-Idempotency-Key header");
+            }
+
+            if (!IsValidIdempotencyKey(idempotencyKey))
+            {
+                return SignatureValidationResult.Failure(
+                    "Invalid X-Idempotency-Key format. Use 8-128 chars of A-Z a-z 0-9 - _ :");
             }
         }
 
@@ -216,13 +244,13 @@ public class PqcSignatureMiddleware
         // Include timestamp header
         if (context.Request.Headers.TryGetValue(TimestampHeader, out var timestamp))
         {
-            builder.Append(timestamp);
+            builder.Append(timestamp.FirstOrDefault());
         }
 
         // Include idempotency key if present
         if (context.Request.Headers.TryGetValue(IdempotencyKeyHeader, out var idempotencyKey))
         {
-            builder.Append(idempotencyKey);
+            builder.Append(idempotencyKey.FirstOrDefault());
         }
 
         // Include body if required
@@ -239,6 +267,44 @@ public class PqcSignatureMiddleware
         }
 
         return Encoding.UTF8.GetBytes(builder.ToString());
+    }
+
+    private static bool IsUtcIso8601Timestamp(string timestamp)
+    {
+        if (string.IsNullOrWhiteSpace(timestamp))
+        {
+            return false;
+        }
+
+        // Enforce canonical UTC suffix to avoid ambiguous timestamps across clients.
+        return timestamp.EndsWith("Z", StringComparison.OrdinalIgnoreCase)
+            || timestamp.EndsWith("+00:00", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsValidIdempotencyKey(string idempotencyKey)
+    {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            return false;
+        }
+
+        // Keep Redis and logs safe; also enforces minimum entropy for replay protection.
+        if (idempotencyKey.Length is < 8 or > 128)
+        {
+            return false;
+        }
+
+        foreach (var c in idempotencyKey)
+        {
+            if (char.IsLetterOrDigit(c) || c is '-' or '_' or ':')
+            {
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     private async Task UpdateKeyUsageAsync(MongoDbContext dbContext, string keyId)

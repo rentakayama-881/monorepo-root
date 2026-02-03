@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Services;
 using FeatureService.Api.Models.Entities;
+using FeatureService.Api.Attributes;
 
 namespace FeatureService.Api.Controllers.Finance;
 
@@ -33,6 +34,7 @@ public class DisputesController : ApiControllerBase
     /// sampai dispute diselesaikan oleh admin.
     /// </remarks>
     [HttpPost]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(ApiResponse<CreateDisputeResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateDispute([FromBody] CreateDisputeRequest request)
@@ -118,6 +120,7 @@ public class DisputesController : ApiControllerBase
     /// Add a message to dispute conversation
     /// </summary>
     [HttpPost("{disputeId}/messages")]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddMessage(string disputeId, [FromBody] AddDisputeMessageRequest request)
@@ -150,6 +153,7 @@ public class DisputesController : ApiControllerBase
     /// Add evidence to dispute
     /// </summary>
     [HttpPost("{disputeId}/evidence")]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddEvidence(string disputeId, [FromBody] AddDisputeEvidenceRequest request)
@@ -180,6 +184,7 @@ public class DisputesController : ApiControllerBase
     /// Cancel a dispute (only initiator can cancel)
     /// </summary>
     [HttpPost("{disputeId}/cancel")]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CancelDispute(string disputeId)
@@ -212,6 +217,7 @@ public class DisputesController : ApiControllerBase
     /// Dispute akan ditandai sebagai Resolved.
     /// </remarks>
     [HttpPost("{disputeId}/mutual-refund")]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> MutualRefund(string disputeId)

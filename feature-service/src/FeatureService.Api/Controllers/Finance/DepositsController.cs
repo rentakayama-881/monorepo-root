@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Services;
 using FeatureService.Api.Infrastructure.Auth;
+using FeatureService.Api.Attributes;
 
 namespace FeatureService.Api.Controllers.Finance;
 
@@ -30,6 +31,7 @@ public class DepositsController : ApiControllerBase
     /// Create a manual deposit request (QRIS only)
     /// </summary>
     [HttpPost]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(ApiResponse<DepositRequestResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateDepositRequest([FromBody] CreateDepositRequest request)

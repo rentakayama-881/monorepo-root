@@ -168,24 +168,80 @@ public class DepositService : IDepositService
         if (amount < MinDeposit)
             return (false, $"Jumlah deposit minimum Rp{MinDeposit:N0}");
 
-        var walletTransactionId = await _walletService.AddBalanceAsync(
-            deposit.UserId,
-            amount,
-            $"Deposit {deposit.Method} ({deposit.ExternalTransactionId})",
-            TransactionType.Deposit,
-            deposit.Id,
-            "deposit"
-        );
+        // Mark as approved first to prevent double-credit (exactly-once semantics)
+        var now = DateTime.UtcNow;
+        var approveFilter = Builders<DepositRequest>.Filter.And(
+            Builders<DepositRequest>.Filter.Eq(d => d.Id, deposit.Id),
+            Builders<DepositRequest>.Filter.Eq(d => d.Status, DepositStatus.Pending));
 
-        var update = Builders<DepositRequest>.Update
+        var approveUpdate = Builders<DepositRequest>.Update
             .Set(d => d.Status, DepositStatus.Approved)
-            .Set(d => d.WalletTransactionId, walletTransactionId)
             .Set(d => d.ApprovedById, adminId)
             .Set(d => d.ApprovedByUsername, adminUsername)
-            .Set(d => d.ApprovedAt, DateTime.UtcNow)
-            .Set(d => d.UpdatedAt, DateTime.UtcNow);
+            .Set(d => d.ApprovedAt, now)
+            .Set(d => d.UpdatedAt, now);
 
-        await _deposits.UpdateOneAsync(d => d.Id == deposit.Id, update);
+        var approveResult = await _deposits.UpdateOneAsync(approveFilter, approveUpdate);
+        if (approveResult.ModifiedCount == 0)
+        {
+            return (false, "Deposit sudah diproses oleh request lain");
+        }
+
+        string walletTransactionId;
+        try
+        {
+            walletTransactionId = await _walletService.AddBalanceAsync(
+                deposit.UserId,
+                amount,
+                $"Deposit {deposit.Method} ({deposit.ExternalTransactionId})",
+                TransactionType.Deposit,
+                deposit.Id,
+                "deposit"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to credit wallet for approved deposit {DepositId}. Attempting status rollback.", depositId);
+
+            try
+            {
+                var rollback = Builders<DepositRequest>.Update
+                    .Set(d => d.Status, DepositStatus.Pending)
+                    .Set(d => d.UpdatedAt, DateTime.UtcNow)
+                    .Unset(d => d.ApprovedById)
+                    .Unset(d => d.ApprovedByUsername)
+                    .Unset(d => d.ApprovedAt);
+
+                await _deposits.UpdateOneAsync(
+                    Builders<DepositRequest>.Filter.And(
+                        Builders<DepositRequest>.Filter.Eq(d => d.Id, deposit.Id),
+                        Builders<DepositRequest>.Filter.Eq(d => d.Status, DepositStatus.Approved),
+                        Builders<DepositRequest>.Filter.Eq(d => d.WalletTransactionId, null)),
+                    rollback);
+            }
+            catch (Exception rollbackEx)
+            {
+                _logger.LogCritical(
+                    rollbackEx,
+                    "CRITICAL: Failed to rollback deposit approval after wallet credit failure. DepositId: {DepositId}",
+                    depositId);
+            }
+
+            return (false, "Gagal memproses deposit. Silakan coba lagi atau hubungi support.");
+        }
+
+        try
+        {
+            var update = Builders<DepositRequest>.Update
+                .Set(d => d.WalletTransactionId, walletTransactionId)
+                .Set(d => d.UpdatedAt, DateTime.UtcNow);
+
+            await _deposits.UpdateOneAsync(d => d.Id == deposit.Id, update);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to finalize deposit approval {DepositId}. WalletTransactionId: {WalletTransactionId}", depositId, walletTransactionId);
+        }
 
         _logger.LogInformation("Deposit approved: {DepositId} by admin {AdminId}", depositId, adminId);
         return (true, null);
@@ -201,15 +257,24 @@ public class DepositService : IDepositService
         if (deposit.Status != DepositStatus.Pending)
             return (false, "Deposit sudah diproses");
 
+        var now = DateTime.UtcNow;
+        var rejectFilter = Builders<DepositRequest>.Filter.And(
+            Builders<DepositRequest>.Filter.Eq(d => d.Id, deposit.Id),
+            Builders<DepositRequest>.Filter.Eq(d => d.Status, DepositStatus.Pending));
+
         var update = Builders<DepositRequest>.Update
             .Set(d => d.Status, DepositStatus.Rejected)
             .Set(d => d.RejectionReason, reason)
             .Set(d => d.ApprovedById, adminId)
             .Set(d => d.ApprovedByUsername, adminUsername)
-            .Set(d => d.ApprovedAt, DateTime.UtcNow)
-            .Set(d => d.UpdatedAt, DateTime.UtcNow);
+            .Set(d => d.ApprovedAt, now)
+            .Set(d => d.UpdatedAt, now);
 
-        await _deposits.UpdateOneAsync(d => d.Id == deposit.Id, update);
+        var rejectResult = await _deposits.UpdateOneAsync(rejectFilter, update);
+        if (rejectResult.ModifiedCount == 0)
+        {
+            return (false, "Deposit sudah diproses oleh request lain");
+        }
 
         _logger.LogInformation("Deposit rejected: {DepositId} by admin {AdminId}", depositId, adminId);
         return (true, null);

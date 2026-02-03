@@ -12,6 +12,7 @@ public class RegisterPqcKeyRequest
     /// </summary>
     [Required]
     [MinLength(100, ErrorMessage = "Public key terlalu pendek")]
+    [MaxLength(5000, ErrorMessage = "Public key terlalu panjang")]
     public string PublicKeyBase64 { get; set; } = string.Empty;
 
     /// <summary>

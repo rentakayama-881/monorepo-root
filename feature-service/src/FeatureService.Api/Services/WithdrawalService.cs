@@ -87,6 +87,19 @@ public class WithdrawalService : IWithdrawalService
             Builders<Withdrawal>.IndexKeys.Ascending(w => w.Reference),
             new CreateIndexOptions { Unique = true }
         ));
+
+        // Enforce at most one active withdrawal (Pending/Processing) per user.
+        // This is critical to prevent race-condition double withdrawals.
+        _withdrawals.Indexes.CreateOne(new CreateIndexModel<Withdrawal>(
+            Builders<Withdrawal>.IndexKeys.Ascending(w => w.UserId),
+            new CreateIndexOptions<Withdrawal>
+            {
+                Unique = true,
+                PartialFilterExpression = Builders<Withdrawal>.Filter.In(
+                    w => w.Status,
+                    new[] { WithdrawalStatus.Pending, WithdrawalStatus.Processing })
+            }
+        ));
     }
 
     public async Task<CreateWithdrawalResponse> CreateWithdrawalAsync(
@@ -161,7 +174,70 @@ public class WithdrawalService : IWithdrawalService
             UpdatedAt = DateTime.UtcNow
         };
 
-        await _withdrawals.InsertOneAsync(withdrawal);
+        try
+        {
+            await _withdrawals.InsertOneAsync(withdrawal);
+        }
+        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        {
+            // Likely violated "one active withdrawal per user" rule (partial unique index).
+            _logger.LogWarning(
+                ex,
+                "Duplicate active withdrawal detected for user {UserId}. Refunding deduction for withdrawal {WithdrawalId}",
+                userId,
+                withdrawalId);
+
+            try
+            {
+                _ = await _walletService.AddBalanceAsync(
+                    userId,
+                    totalDeduction,
+                    $"Refund: duplicate withdrawal request {reference}",
+                    TransactionType.Refund,
+                    withdrawalId,
+                    "withdrawal"
+                );
+            }
+            catch (Exception refundEx)
+            {
+                _logger.LogCritical(
+                    refundEx,
+                    "CRITICAL: Failed to refund after duplicate withdrawal insert failure. WithdrawalId: {WithdrawalId}, UserId: {UserId}, Amount: {Amount}",
+                    withdrawalId,
+                    userId,
+                    totalDeduction);
+            }
+
+            return new CreateWithdrawalResponse(false, null, null,
+                "Anda memiliki penarikan yang sedang diproses. Harap tunggu hingga selesai.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to insert withdrawal {WithdrawalId} after wallet deduction; attempting refund", withdrawalId);
+
+            try
+            {
+                _ = await _walletService.AddBalanceAsync(
+                    userId,
+                    totalDeduction,
+                    $"Refund: gagal membuat penarikan {reference}",
+                    TransactionType.Refund,
+                    withdrawalId,
+                    "withdrawal"
+                );
+            }
+            catch (Exception refundEx)
+            {
+                _logger.LogCritical(
+                    refundEx,
+                    "CRITICAL: Failed to refund after withdrawal insert failure. WithdrawalId: {WithdrawalId}, UserId: {UserId}, Amount: {Amount}",
+                    withdrawalId,
+                    userId,
+                    totalDeduction);
+            }
+
+            throw;
+        }
 
         _logger.LogInformation(
             "Withdrawal created: {WithdrawalId}, user: {UserId}, amount: {Amount}, bank: {Bank}",
@@ -227,23 +303,61 @@ public class WithdrawalService : IWithdrawalService
         if (!pinResult.Valid)
             return (false, pinResult.Message);
 
+        var now = DateTime.UtcNow;
+
+        // Update status first to prevent double-refund
+        var updateFilter = Builders<Withdrawal>.Filter.And(
+            Builders<Withdrawal>.Filter.Eq(w => w.Id, withdrawalId),
+            Builders<Withdrawal>.Filter.Eq(w => w.UserId, userId),
+            Builders<Withdrawal>.Filter.Eq(w => w.Status, WithdrawalStatus.Pending));
+
+        var statusUpdate = Builders<Withdrawal>.Update
+            .Set(w => w.Status, WithdrawalStatus.Cancelled)
+            .Set(w => w.UpdatedAt, now);
+
+        var updateResult = await _withdrawals.UpdateOneAsync(updateFilter, statusUpdate);
+        if (updateResult.ModifiedCount == 0)
+            return (false, "Penarikan sudah diproses oleh request lain");
+
         // Refund full amount (including fee)
         var totalRefund = withdrawal.Amount + withdrawal.Fee;
-        _ = await _walletService.AddBalanceAsync(
-            userId,
-            totalRefund,
-            $"Pembatalan penarikan {withdrawal.Reference}",
-            TransactionType.Refund,
-            withdrawalId,
-            "withdrawal"
-        );
+        try
+        {
+            _ = await _walletService.AddBalanceAsync(
+                userId,
+                totalRefund,
+                $"Pembatalan penarikan {withdrawal.Reference}",
+                TransactionType.Refund,
+                withdrawalId,
+                "withdrawal"
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refund cancelled withdrawal {WithdrawalId}. Attempting status rollback.", withdrawalId);
 
-        // Update status
-        var update = Builders<Withdrawal>.Update
-            .Set(w => w.Status, WithdrawalStatus.Cancelled)
-            .Set(w => w.UpdatedAt, DateTime.UtcNow);
+            try
+            {
+                var rollback = Builders<Withdrawal>.Update
+                    .Set(w => w.Status, WithdrawalStatus.Pending)
+                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
 
-        await _withdrawals.UpdateOneAsync(w => w.Id == withdrawalId, update);
+                await _withdrawals.UpdateOneAsync(
+                    Builders<Withdrawal>.Filter.And(
+                        Builders<Withdrawal>.Filter.Eq(w => w.Id, withdrawalId),
+                        Builders<Withdrawal>.Filter.Eq(w => w.Status, WithdrawalStatus.Cancelled)),
+                    rollback);
+            }
+            catch (Exception rollbackEx)
+            {
+                _logger.LogCritical(
+                    rollbackEx,
+                    "CRITICAL: Failed to rollback withdrawal status after refund failure. WithdrawalId: {WithdrawalId}",
+                    withdrawalId);
+            }
+
+            return (false, "Gagal mengembalikan dana. Silakan coba lagi atau hubungi support.");
+        }
 
         _logger.LogInformation("Withdrawal cancelled: {WithdrawalId} by user {UserId}", withdrawalId, userId);
 

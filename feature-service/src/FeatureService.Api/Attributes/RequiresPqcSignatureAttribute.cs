@@ -18,6 +18,13 @@ public class RequiresPqcSignatureAttribute : Attribute
     public bool ValidateTimestamp { get; set; } = true;
 
     /// <summary>
+    /// Apakah header X-Idempotency-Key wajib ada dan ikut di-sign.
+    /// Sangat direkomendasikan untuk semua operasi finansial yang mengubah state,
+    /// agar request replay tidak bisa mengeksekusi transaksi lebih dari sekali.
+    /// </summary>
+    public bool RequireIdempotencyKey { get; set; } = false;
+
+    /// <summary>
     /// Maximum age of timestamp dalam detik (default 5 menit)
     /// </summary>
     public int MaxTimestampAgeSeconds { get; set; } = 300;
