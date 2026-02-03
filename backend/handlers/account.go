@@ -27,9 +27,11 @@ import (
 	"backend-gin/ent/totppendingtoken"
 	entuser "backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
+	"backend-gin/logger"
 	"backend-gin/utils"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func normalizeSocialAccounts(socialAccounts map[string]interface{}) interface{} {
@@ -295,7 +297,12 @@ func UploadAvatarHandler(c *gin.Context) {
 	filename := fmt.Sprintf("u%d_%d%s", user.ID, time.Now().Unix(), ext)
 	avatarURL, err := supabase.UploadFile(file, filename, contentTypes[ext])
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal mengupload ke storage: " + err.Error()})
+		logger.Error("Failed to upload avatar to storage",
+			zap.Int("user_id", user.ID),
+			zap.String("filename", filename),
+			zap.Error(err),
+		)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal mengupload ke storage"})
 		return
 	}
 
@@ -373,29 +380,29 @@ func CanDeleteAccountHandler(c *gin.Context) {
 	if err != nil {
 		// STRICT MODE: If Feature-Service is unavailable, block deletion for safety
 		// This prevents users with wallet balance or pending transactions from deleting
-			c.JSON(http.StatusOK, gin.H{
-				"can_delete":          false,
-				"blocking_reasons":    []string{"Layanan verifikasi wallet tidak tersedia. Coba lagi nanti."},
-				"warnings":            []string{},
-				"wallet_balance":      0,
-				"pending_transfers":   0,
-				"disputed_transfers":  0,
-				"pending_withdrawals": 0,
-				"service_unavailable": true,
-			})
+		c.JSON(http.StatusOK, gin.H{
+			"can_delete":          false,
+			"blocking_reasons":    []string{"Layanan verifikasi wallet tidak tersedia. Coba lagi nanti."},
+			"warnings":            []string{},
+			"wallet_balance":      0,
+			"pending_transfers":   0,
+			"disputed_transfers":  0,
+			"pending_withdrawals": 0,
+			"service_unavailable": true,
+		})
 		return
 	}
 
-		c.JSON(http.StatusOK, gin.H{
-			"can_delete":          result.CanDelete,
-			"blocking_reasons":    result.BlockingReasons,
-			"warnings":            result.Warnings,
-			"wallet_balance":      result.WalletBalance,
-			"pending_transfers":   result.PendingTransfers,
-			"disputed_transfers":  result.DisputedTransfers,
-			"pending_withdrawals": result.PendingWithdrawals,
-		})
-	}
+	c.JSON(http.StatusOK, gin.H{
+		"can_delete":          result.CanDelete,
+		"blocking_reasons":    result.BlockingReasons,
+		"warnings":            result.Warnings,
+		"wallet_balance":      result.WalletBalance,
+		"pending_transfers":   result.PendingTransfers,
+		"disputed_transfers":  result.DisputedTransfers,
+		"pending_withdrawals": result.PendingWithdrawals,
+	})
+}
 
 // callFeatureServiceValidation calls Feature-Service to validate account deletion
 func callFeatureServiceValidation(c *gin.Context, userID uint) (*FeatureServiceValidationResult, error) {
@@ -536,50 +543,50 @@ func DeleteAccountHandler(c *gin.Context) {
 		// Data in MongoDB becomes orphan but user can still delete account
 	}
 
-		// Step 3: Delete from PostgreSQL
-		client := database.GetEntClient()
+	// Step 3: Delete from PostgreSQL
+	client := database.GetEntClient()
 
-		// Use Ent transaction for cascading delete
-		tx, err := client.Tx(ctx)
-		if err != nil {
+	// Use Ent transaction for cascading delete
+	tx, err := client.Tx(ctx)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses penghapusan"})
 		return
 	}
 
-		// 1. Delete all user's threads
-		if _, err := tx.Thread.Delete().Where(thread.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-			_ = tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus thread"})
-			return
-		}
+	// 1. Delete all user's threads
+	if _, err := tx.Thread.Delete().Where(thread.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
+		_ = tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus thread"})
+		return
+	}
 
-		// 2. Delete all sessions
-		if _, err := tx.Session.Delete().Where(session.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-			_ = tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus sesi"})
-			return
-		}
+	// 2. Delete all sessions
+	if _, err := tx.Session.Delete().Where(session.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
+		_ = tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus sesi"})
+		return
+	}
 
-		// 3. Delete sudo sessions
-		if _, err := tx.SudoSession.Delete().Where(sudosession.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-			_ = tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus sesi sudo"})
-			return
-		}
+	// 3. Delete sudo sessions
+	if _, err := tx.SudoSession.Delete().Where(sudosession.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
+		_ = tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus sesi sudo"})
+		return
+	}
 
-		// 4. Delete session locks
-		if _, err := tx.SessionLock.Delete().Where(sessionlock.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-			_ = tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus session locks"})
-			return
-		}
+	// 4. Delete session locks
+	if _, err := tx.SessionLock.Delete().Where(sessionlock.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
+		_ = tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus session locks"})
+		return
+	}
 
-		// 5. Delete backup codes
-		if _, err := tx.BackupCode.Delete().Where(backupcode.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-			_ = tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus backup codes"})
-			return
-		}
+	// 5. Delete backup codes
+	if _, err := tx.BackupCode.Delete().Where(backupcode.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
+		_ = tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus backup codes"})
+		return
+	}
 
 	// 7. Delete passkeys
 	if _, err := tx.Passkey.Delete().Where(passkey.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {

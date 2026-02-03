@@ -11,6 +11,8 @@ This document lists all required and optional environment variables for the Alep
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `JWT_SECRET` | Secret key for signing JWT tokens (min 32 chars) | `your-super-secret-jwt-key-min-32-chars` |
+| `JWT_ISSUER` | JWT issuer (`iss`) claim (must match Feature Service `JWT__ISSUER`) | `api.alephdraad.fun` |
+| `JWT_AUDIENCE` | JWT audience (`aud`) claim (must match Feature Service `JWT__AUDIENCE`) | `alephdraad-clients` |
 | `ADMIN_JWT_SECRET` | Secret key for admin JWT tokens (shared with Feature Service) | `admin-jwt-secret-key-32-chars-min` |
 | `DATABASE_URL` | Full PostgreSQL connection URL | `postgres://user:pass@host:5432/dbname?sslmode=require` |
 | `FRONTEND_BASE_URL` | Frontend URL for CORS and redirects | `https://alephdraad.fun` |
@@ -37,6 +39,7 @@ This document lists all required and optional environment variables for the Alep
 | `LOG_LEVEL` | Logging level | `info` |
 | `VERSION` | App version | `1.0.0` |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated CORS origins | Same as FRONTEND_BASE_URL |
+| `TRUSTED_PROXIES` | Comma-separated proxy IPs/CIDRs to trust for `X-Forwarded-For` (set to `127.0.0.1,::1` behind local Nginx; set to `none` to disable) | `127.0.0.1,::1` |
 
 ### Redis (Optional - graceful degradation)
 
@@ -170,9 +173,10 @@ This document lists all required and optional environment variables for the Alep
 
 1. **Never commit `.env` files** - Use `.env.example` as template
 2. **JWT secrets must match** between Go backend and Feature Service
-3. **ADMIN_JWT_SECRET** is used by Go backend to sign admin tokens and by Feature Service to verify them
-4. **Minimum key lengths**: JWT secrets should be at least 32 characters
-5. **In production**: Use environment variables directly, not `.env` files
+3. **JWT_ISSUER and JWT_AUDIENCE must match** between Go backend and Feature Service
+4. **ADMIN_JWT_SECRET** is used by Go backend to sign admin tokens and by Feature Service to verify them
+5. **Minimum key lengths**: JWT secrets should be at least 32 characters
+6. **In production**: Use environment variables directly, not `.env` files
 
 ---
 
@@ -183,7 +187,7 @@ This document lists all required and optional environment variables for the Alep
 ```bash
 # Backend
 cp backend/.env.example backend/.env
-# Fill in: JWT_SECRET, ADMIN_JWT_SECRET, DATABASE_URL, FRONTEND_BASE_URL
+# Fill in: JWT_SECRET, JWT_ISSUER, JWT_AUDIENCE, ADMIN_JWT_SECRET, DATABASE_URL, FRONTEND_BASE_URL
 
 # Feature Service
 # Edit appsettings.Development.json with local MongoDB and matching JWT secrets

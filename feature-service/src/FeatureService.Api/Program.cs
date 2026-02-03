@@ -124,13 +124,18 @@ try
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
+            var validateIssuer = jwtSettings.ValidateIssuer && !string.IsNullOrWhiteSpace(jwtSettings.Issuer);
+            var validateAudience = jwtSettings.ValidateAudience && !string.IsNullOrWhiteSpace(jwtSettings.Audience);
+
             // Use the older JwtSecurityTokenHandler which handles missing kid better
             options.UseSecurityTokenValidators = true;
 
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuer = false, // Go backend doesn't set issuer
-                ValidateAudience = false, // Go backend doesn't set audience
+                ValidateIssuer = validateIssuer,
+                ValidIssuer = jwtSettings.Issuer,
+                ValidateAudience = validateAudience,
+                ValidAudience = jwtSettings.Audience,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = false, // We use custom SignatureValidator
                 RequireSignedTokens = true,
@@ -151,18 +156,30 @@ try
                     using var hmac = new System.Security.Cryptography.HMACSHA256(
                         Encoding.UTF8.GetBytes(jwtSettings.Secret));
                     var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(headerAndPayload));
-                    var computedSignature = Base64UrlEncoder.Encode(hash);
+                    byte[] tokenSignatureBytes;
+                    try
+                    {
+                        tokenSignatureBytes = Base64UrlEncoder.DecodeBytes(tokenSignature);
+                    }
+                    catch
+                    {
+                        throw new SecurityTokenInvalidSignatureException("Invalid token signature encoding");
+                    }
 
                     if (enableJwtDebug)
                     {
                         // Avoid logging the secret or full token in any environment.
                         Log.Debug("[JWT DEBUG] Secret length: {SecretLen}", jwtSettings.Secret.Length);
                         Log.Debug("[JWT DEBUG] Token sig prefix: {SigPrefix}", tokenSignature.Substring(0, Math.Min(20, tokenSignature.Length)));
+                        var computedSignature = Base64UrlEncoder.Encode(hash);
                         Log.Debug("[JWT DEBUG] Computed prefix: {SigPrefix}", computedSignature.Substring(0, Math.Min(20, computedSignature.Length)));
                     }
 
-                    if (!string.Equals(computedSignature, tokenSignature, StringComparison.Ordinal))
-                        throw new SecurityTokenInvalidSignatureException($"Signature mismatch: expected {computedSignature.Substring(0, 20)}... got {tokenSignature.Substring(0, 20)}...");
+                    if (tokenSignatureBytes.Length != hash.Length
+                        || !System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(tokenSignatureBytes, hash))
+                    {
+                        throw new SecurityTokenInvalidSignatureException("Signature mismatch");
+                    }
 
                     return jwtToken;
                 },
@@ -217,8 +234,10 @@ try
                                 {
                                     ValidateIssuerSigningKey = true,
                                     IssuerSigningKey = new SymmetricSecurityKey(key),
-                                    ValidateIssuer = false,
-                                    ValidateAudience = false,
+                                    ValidateIssuer = validateIssuer,
+                                    ValidIssuer = jwtSettings.Issuer,
+                                    ValidateAudience = validateAudience,
+                                    ValidAudience = jwtSettings.Audience,
                                     ValidateLifetime = true,
                                     ClockSkew = TimeSpan.FromMinutes(5)
                                 };

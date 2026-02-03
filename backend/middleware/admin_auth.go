@@ -4,6 +4,9 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
+
+	"backend-gin/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -46,7 +49,14 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 				return nil, jwt.ErrSignatureInvalid
 			}
 			return getAdminJWTKey(), nil
-		})
+		},
+			jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+			jwt.WithIssuer(config.JWTIssuer),
+			jwt.WithAudience(config.JWTAudience),
+			jwt.WithIssuedAt(),
+			jwt.WithExpirationRequired(),
+			jwt.WithLeeway(time.Minute),
+		)
 
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{

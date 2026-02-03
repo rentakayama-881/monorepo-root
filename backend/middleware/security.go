@@ -10,18 +10,9 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 		// Strict-Transport-Security - Enforce HTTPS
 		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 
-		// Content Security Policy - Protect against XSS
-		// Allows same origin, specific trusted CDNs, and inline styles/scripts with nonce
-		c.Header("Content-Security-Policy",
-			"default-src 'self'; "+
-				"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://*.vercel.app; "+
-				"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "+
-				"img-src 'self' data: https: http:; "+
-				"font-src 'self' https://fonts.gstatic.com; "+
-				"connect-src 'self' https://*.vercel.app https://vercel.live; "+
-				"frame-ancestors 'none'; "+
-				"base-uri 'self'; "+
-				"form-action 'self'")
+		// Content-Security-Policy:
+		// This service is a JSON API. Use a strict CSP to reduce browser attack surface.
+		c.Header("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 
 		// X-Content-Type-Options - Prevent MIME type sniffing
 		c.Header("X-Content-Type-Options", "nosniff")
@@ -34,6 +25,9 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 
 		// Referrer-Policy - Control referrer information
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+
+		// Prevent Adobe Flash / Acrobat from loading cross-domain content.
+		c.Header("X-Permitted-Cross-Domain-Policies", "none")
 
 		// Permissions-Policy - Control browser features
 		c.Header("Permissions-Policy",

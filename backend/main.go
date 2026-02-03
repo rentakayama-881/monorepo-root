@@ -261,6 +261,31 @@ func main() {
 	}
 
 	router := gin.Default()
+	// SECURITY: Gin trusts all proxies by default (unsafe). Trust only explicit proxies instead.
+	// Default: loopback only, which is correct for a VPS behind Nginx on the same host.
+	trustedProxiesEnv := strings.TrimSpace(os.Getenv("TRUSTED_PROXIES"))
+	var trustedProxies []string
+	switch strings.ToLower(trustedProxiesEnv) {
+	case "", "default":
+		trustedProxies = []string{"127.0.0.1", "::1"}
+	case "none", "off", "disabled":
+		trustedProxies = nil // Disable forwarded IP handling entirely.
+	default:
+		for _, part := range strings.Split(trustedProxiesEnv, ",") {
+			clean := strings.TrimSpace(part)
+			if clean == "" {
+				continue
+			}
+			trustedProxies = append(trustedProxies, clean)
+		}
+	}
+	if err := router.SetTrustedProxies(trustedProxies); err != nil {
+		logger.Fatal("Failed to configure trusted proxies", zap.Error(err))
+	}
+	logger.Info("Trusted proxies configured", zap.Strings("trusted_proxies", trustedProxies))
+
+	// Basic request size limits to reduce DoS blast-radius (per-endpoint checks still apply).
+	router.Use(middleware.JSONRequestSizeLimitMiddleware())
 	router.Use(middleware.SecurityHeadersMiddleware())
 	router.Use(cors.New(buildCORSConfig()))
 	// Serve file statis: /static/...
@@ -389,11 +414,11 @@ func main() {
 			badges.GET("/:id", handlers.GetBadgeDetailHandler)
 		}
 
-			// Account badge settings (authenticated)
-			account.GET("/badges", middleware.AuthMiddleware(), handlers.GetMyBadges)
-			account.PUT("/primary-badge", middleware.AuthMiddleware(), handlers.SetPrimaryBadge)
+		// Account badge settings (authenticated)
+		account.GET("/badges", middleware.AuthMiddleware(), handlers.GetMyBadges)
+		account.PUT("/primary-badge", middleware.AuthMiddleware(), handlers.SetPrimaryBadge)
 
-		}
+	}
 
 	// Admin routes (separate auth)
 	admin := router.Group("/admin")
@@ -417,12 +442,12 @@ func main() {
 			adminProtected.POST("/users/:userId/badges", handlers.AssignBadgeToUser)
 			adminProtected.DELETE("/users/:userId/badges/:badgeId", handlers.RevokeBadgeFromUser)
 
-				// Thread management (admin only)
-				adminProtected.GET("/categories", handlers.AdminListCategories)
-				adminProtected.POST("/threads/:id/move", handlers.AdminMoveThread)
+			// Thread management (admin only)
+			adminProtected.GET("/categories", handlers.AdminListCategories)
+			adminProtected.POST("/threads/:id/move", handlers.AdminMoveThread)
 
-			}
 		}
+	}
 
 	// Get port from environment variable
 	port := os.Getenv("PORT")
@@ -440,7 +465,17 @@ func main() {
 	listenAddr := bindAddr + ":" + port
 	logger.Info("Server backend berjalan", zap.String("addr", listenAddr))
 
-	if err := router.Run(listenAddr); err != nil {
+	server := &http.Server{
+		Addr:              listenAddr,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1 MiB
+	}
+
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal("Failed to start server: ", err)
 	}
 }

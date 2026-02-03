@@ -86,12 +86,17 @@ public class AdminJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOpt
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(secret);
 
+            var validateIssuer = _jwtSettings.ValidateIssuer && !string.IsNullOrWhiteSpace(_jwtSettings.Issuer);
+            var validateAudience = _jwtSettings.ValidateAudience && !string.IsNullOrWhiteSpace(_jwtSettings.Audience);
+
             var validationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = false,
-                ValidateAudience = false,
+                ValidateIssuer = validateIssuer,
+                ValidIssuer = _jwtSettings.Issuer,
+                ValidateAudience = validateAudience,
+                ValidAudience = _jwtSettings.Audience,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.FromMinutes(5)
             };

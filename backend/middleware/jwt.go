@@ -48,6 +48,9 @@ func GenerateAccessToken(userID uint, email string, username string, totpEnabled
 		TokenType:   TokenTypeAccess,
 		JTI:         jti,
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    config.JWTIssuer,
+			Subject:   fmt.Sprintf("%d", userID),
+			Audience:  jwt.ClaimStrings{config.JWTAudience},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -68,6 +71,9 @@ func GenerateRefreshToken(userID uint, email string, username string, totpEnable
 		TokenType:   TokenTypeRefresh,
 		JTI:         jti,
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    config.JWTIssuer,
+			Subject:   fmt.Sprintf("%d", userID),
+			Audience:  jwt.ClaimStrings{config.JWTAudience},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -84,6 +90,8 @@ func GenerateJWT(email string, duration time.Duration) (string, error) {
 		TokenType: TokenTypeAccess,
 		JTI:       generateJTI(),
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    config.JWTIssuer,
+			Audience:  jwt.ClaimStrings{config.JWTAudience},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -96,7 +104,14 @@ func GenerateJWT(email string, duration time.Duration) (string, error) {
 func ParseJWT(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return config.JWTKey, nil
-	})
+	},
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+		jwt.WithIssuer(config.JWTIssuer),
+		jwt.WithAudience(config.JWTAudience),
+		jwt.WithIssuedAt(),
+		jwt.WithExpirationRequired(),
+		jwt.WithLeeway(time.Minute),
+	)
 	if err != nil {
 		return nil, err
 	}

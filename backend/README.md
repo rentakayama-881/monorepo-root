@@ -172,14 +172,15 @@ backend/
 BIND_ADDR=127.0.0.1
 PORT=8080
 GIN_MODE=release
+TRUSTED_PROXIES=127.0.0.1,::1
 
 # Database
 DATABASE_URL=postgresql://user:pass@host:5432/dbname?sslmode=require
 
 # JWT
 JWT_SECRET=your-super-secret-key-min-32-chars
-JWT_ISSUER=alephdraad
-JWT_AUDIENCE=alephdraad-users
+JWT_ISSUER=api.alephdraad.fun
+JWT_AUDIENCE=alephdraad-clients
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=168h
 
