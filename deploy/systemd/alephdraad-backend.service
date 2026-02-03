@@ -13,5 +13,23 @@ Restart=always
 RestartSec=5
 LimitNOFILE=65535
 
+# --- systemd hardening (defense-in-depth) ---
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectHome=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+LockPersonality=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+UMask=0077
+CapabilityBoundingSet=
+AmbientCapabilities=
+MemoryDenyWriteExecute=true
+
 [Install]
 WantedBy=multi-user.target

@@ -15,5 +15,23 @@ KillSignal=SIGINT
 SyslogIdentifier=feature-service
 LimitNOFILE=65535
 
+# --- systemd hardening (defense-in-depth) ---
+# NOTE: Do NOT enable MemoryDenyWriteExecute=true here because .NET uses a JIT.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectHome=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+LockPersonality=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+UMask=0077
+CapabilityBoundingSet=
+AmbientCapabilities=
+
 [Install]
 WantedBy=multi-user.target
