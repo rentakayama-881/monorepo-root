@@ -1,13 +1,23 @@
 'use client';
 
 import clsx from 'clsx';
+import { TagIcon } from './TagIcons';
 
 /**
  * GitHub-style Tag Pill Component
  * Displays a single tag with icon and color
  */
-export function TagPill({ tag, size = 'sm', className = "", onClick = null }) {
-  const Component = onClick ? 'button' : 'span';
+export function TagPill({
+  tag,
+  size = 'sm',
+  className = "",
+  onClick = null,
+  onRemove = null,
+  selected = false,
+}) {
+  const isClickable = typeof onClick === "function";
+  const canRemove = !isClickable && typeof onRemove === "function";
+  const Component = isClickable ? "button" : "span";
   
   const sizeClasses = {
     xs: 'px-2 py-0.5 text-[11px] leading-4',
@@ -19,22 +29,39 @@ export function TagPill({ tag, size = 'sm', className = "", onClick = null }) {
   return (
     <Component
       onClick={onClick}
+      type={isClickable ? "button" : undefined}
+      aria-pressed={isClickable ? selected : undefined}
       className={clsx(
-        "inline-flex items-center gap-1.5 rounded-md font-semibold border transition-colors",
+        "inline-flex items-center gap-1.5 rounded-full border font-medium select-none",
+        "bg-secondary text-foreground border-border",
+        isClickable && "cursor-pointer hover:bg-accent hover:border-foreground/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+        selected && "bg-primary/10 text-primary border-primary/20",
         sizeClasses[size],
-        onClick && "cursor-pointer hover:opacity-80",
         className
       )}
-      style={{
-        backgroundColor: `${tag.color}10`,
-        borderColor: `${tag.color}40`,
-        color: tag.color
-      }}
     >
-      {tag.icon && (
-        <span className="text-xs leading-none">{getIconEmoji(tag.icon)}</span>
-      )}
+      <TagIcon
+        name={tag?.icon || "tag"}
+        className={clsx(
+          size === "xs" ? "h-3 w-3" : "h-3.5 w-3.5",
+          selected ? "text-primary" : "text-muted-foreground"
+        )}
+      />
       <span>{tag.name}</span>
+      {canRemove && (
+        <button
+          type="button"
+          onClick={() => onRemove?.(tag.slug)}
+          className={clsx(
+            "ml-0.5 inline-flex items-center justify-center rounded-full p-0.5",
+            "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          )}
+          aria-label={`Remove ${tag.name}`}
+        >
+          <TagIcon name="x" className="h-3 w-3" />
+        </button>
+      )}
     </Component>
   );
 }
@@ -59,28 +86,6 @@ export function TagList({ tags, size = 'sm', maxDisplay = null, className = "" }
       )}
     </div>
   );
-}
-
-// Helper function for emoji icons
-function getIconEmoji(iconName) {
-  const icons = {
-    'briefcase': '💼',
-    'tag': '🏷️',
-    'search': '🔍',
-    'people': '👥',
-    'git-merge': '🔀',
-    'question': '❓',
-    'comment-discussion': '💬',
-    'megaphone': '📢',
-    'book': '📖',
-    'star': '⭐',
-    'help': '🆘',
-    'need': '🧩',
-    'payment': '💰',
-    'task': '🧾',
-    'jobhunt': '🧭',
-  };
-  return icons[iconName] || '🏷️';
 }
 
 export default TagPill;

@@ -67,7 +67,9 @@ func (s *EntThreadService) GetLatestThreads(ctx context.Context, limit, offset i
 			q.WithPrimaryBadge()
 		}).
 		WithCategory().
-		WithTags().
+		WithTags(func(q *ent.TagQuery) {
+			q.Where(tag.IsActiveEQ(true))
+		}).
 		Order(ent.Desc(thread.FieldCreatedAt)).
 		Limit(limit).
 		Offset(offset).
@@ -104,7 +106,9 @@ func (s *EntThreadService) GetThreadsByCategory(ctx context.Context, slug string
 			q.WithPrimaryBadge()
 		}).
 		WithCategory().
-		WithTags().
+		WithTags(func(q *ent.TagQuery) {
+			q.Where(tag.IsActiveEQ(true))
+		}).
 		Order(byPinnedDesc(), ent.Desc(thread.FieldCreatedAt)).
 		Limit(limit).
 		Offset(offset).
@@ -126,7 +130,9 @@ func (s *EntThreadService) GetThreadsByUserID(ctx context.Context, userID int, l
 			q.WithPrimaryBadge()
 		}).
 		WithCategory().
-		WithTags().
+		WithTags(func(q *ent.TagQuery) {
+			q.Where(tag.IsActiveEQ(true))
+		}).
 		Order(ent.Desc(thread.FieldCreatedAt)).
 		Limit(limit).
 		Offset(offset).
@@ -148,7 +154,9 @@ func (s *EntThreadService) GetThreadDetail(ctx context.Context, threadID int) (*
 			q.WithPrimaryBadge()
 		}).
 		WithCategory().
-		WithTags().
+		WithTags(func(q *ent.TagQuery) {
+			q.Where(tag.IsActiveEQ(true))
+		}).
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -255,7 +263,9 @@ func (s *EntThreadService) createThreadInternal(ctx context.Context, userID int,
 		Where(thread.IDEQ(t.ID)).
 		WithUser().
 		WithCategory().
-		WithTags().
+		WithTags(func(q *ent.TagQuery) {
+			q.Where(tag.IsActiveEQ(true))
+		}).
 		Only(ctx)
 	if err != nil {
 		logger.Error("Failed to reload thread", zap.Error(err))
@@ -367,7 +377,9 @@ func (s *EntThreadService) updateThreadInternal(ctx context.Context, threadID, u
 		Where(thread.IDEQ(t.ID)).
 		WithUser().
 		WithCategory().
-		WithTags().
+		WithTags(func(q *ent.TagQuery) {
+			q.Where(tag.IsActiveEQ(true))
+		}).
 		Only(ctx)
 	if err != nil {
 		return nil, apperrors.ErrDatabase

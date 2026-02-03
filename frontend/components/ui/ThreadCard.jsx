@@ -197,121 +197,121 @@ export default function ThreadCard({
   }
 
   // Default variant - full card
-return (
-  <div
-    className={cn(
-      "thread-card group relative overflow-hidden rounded-md border border-border bg-card transition-colors",
-      "hover:border-foreground/20 hover:bg-muted/20",
-      className
-    )}
-  >
-    <Link href={`/thread/${id}`} className="block px-3 pb-2 pt-0.1">
-      {/* Header with Title & Category */}
-      <div className="flex items-baseline justify-between gap-0.5 mb-0.2">
-        {/* Title */}
-        <h3 className="flex-1 text-[13px] font-semibold leading-[1.1] text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-          {title}
-        </h3>
+  return (
+    <div
+      className={cn(
+        "thread-card group relative overflow-hidden rounded-md border border-border bg-card transition-colors",
+        "hover:border-foreground/20 hover:bg-muted/20",
+        className
+      )}
+    >
+      <Link href={`/thread/${id}`} className="block px-3 pb-2 pt-3">
+        {/* Header with Title & Category */}
+        <div className="flex items-baseline justify-between gap-2 mb-1">
+          {/* Title */}
+          <h3 className="flex-1 text-[13px] font-semibold leading-[1.1] text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+            {title}
+          </h3>
 
-        {/* Category badge on the right */}
-        {showCategory && category && (
-          <span className="inline-block shrink-0 mt-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
-            {category.name || category.slug}
-          </span>
-        )}
-      </div>
-
-      {/* Tags */}
-      {tags && tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-1.5">
-          <TagList tags={tags} size="xs" maxDisplay={3} />
+          {/* Category badge on the right */}
+          {showCategory && category && (
+            <span className="inline-block shrink-0 mt-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+              {category.name || category.slug}
+            </span>
+          )}
         </div>
-      )}
 
-      {/* Summary */}
-      {showSummary && summary && (
-        <p className="text-[11px] text-muted-foreground line-clamp-2 mb-2 leading-relaxed">
-          {summary}
-        </p>
-      )}
-
-      {/* Footer - Author & Meta */}
-      <div className="flex items-center justify-between pt-2.5 border-t border-border">
-        {/* Author */}
-        {showAuthor && (
-          <div className="flex items-center gap-2 min-w-0">
-            <Avatar
-              src={avatar_url}
-              name={username}
-              className="h-5 w-5 ring-2 ring-background transition-all group-hover:ring-primary/20"
-            />
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <div className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground truncate">
-                @{username || "Anonim"}
-                {primary_badge && <Badge badge={primary_badge} size="xs" />}
-              </div>
-
-              {showDate && (
-                <div className="text-[11px] text-muted-foreground whitespace-nowrap">
-                  {formatRelativeTime(created_at)}
-                </div>
-              )}
-            </div>
+        {/* Tags */}
+        {tags && tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-1.5">
+            <TagList tags={tags} size="xs" maxDisplay={3} />
           </div>
         )}
 
-        {/* Stats */}
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-          {typeof reply_count === "number" && (
-            <span
-              className="inline-flex items-center gap-1 transition-colors group-hover:text-foreground"
-              title="Balasan"
-            >
-              <svg
-                className="h-3.5 w-3.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
-                />
-              </svg>
-              <span className="font-medium">{reply_count}</span>
-            </span>
+        {/* Summary */}
+        {showSummary && summary && (
+          <p className="text-[11px] text-muted-foreground line-clamp-2 mb-2 leading-relaxed">
+            {summary}
+          </p>
+        )}
+
+        {/* Footer - Author & Meta */}
+        <div className="flex items-center justify-between pt-2.5 border-t border-border">
+          {/* Author */}
+          {showAuthor && (
+            <div className="flex items-center gap-2 min-w-0">
+              <Avatar
+                src={avatar_url}
+                name={username}
+                className="h-5 w-5 ring-2 ring-background transition-all group-hover:ring-primary/20"
+              />
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <div className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground truncate">
+                  @{username || "Anonim"}
+                  {primary_badge && <Badge badge={primary_badge} size="xs" />}
+                </div>
+
+                {showDate && (
+                  <div className="text-[11px] text-muted-foreground whitespace-nowrap">
+                    {formatRelativeTime(created_at)}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
-          {typeof view_count === "number" && (
-            <span
-              className="inline-flex items-center gap-1 transition-colors group-hover:text-foreground"
-              title="Dilihat"
-            >
-              <svg
-                className="h-3.5 w-3.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
+          {/* Stats */}
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            {typeof reply_count === "number" && (
+              <span
+                className="inline-flex items-center gap-1 transition-colors group-hover:text-foreground"
+                title="Balasan"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              <span className="font-medium">{view_count}</span>
-            </span>
-          )}
-         </div>
-       </div>
+                <svg
+                  className="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
+                  />
+                </svg>
+                <span className="font-medium">{reply_count}</span>
+              </span>
+            )}
+
+            {typeof view_count === "number" && (
+              <span
+                className="inline-flex items-center gap-1 transition-colors group-hover:text-foreground"
+                title="Dilihat"
+              >
+                <svg
+                  className="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                <span className="font-medium">{view_count}</span>
+              </span>
+            )}
+          </div>
+        </div>
       </Link>
     </div>
   );

@@ -423,9 +423,10 @@ export default function MyThreadsPage() {
                   selectedTags={selectedTags}
                   onTagsChange={setSelectedTags}
                   availableTags={availableTags}
-                  maxTags={3}
+                  maxTags={4}
                   placeholder="Pilih tags untuk thread..."
                   enableSearch={false}
+                  singlePerGroup={true}
                 />
                 {!tagsAvailable && (
                   <p className="mt-1 text-xs text-muted-foreground">

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
+import { TagPill } from './TagPill';
+import { TagIcon } from './TagIcons';
 
 /**
  * GitHub-style Tag Selector Component
@@ -14,7 +16,8 @@ export default function TagSelector({
   maxTags = 5,
   placeholder = "Add tags...",
   className = "",
-  enableSearch = true
+  enableSearch = true,
+  singlePerGroup = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,14 +45,40 @@ export default function TagSelector({
     return matchesSearch && notSelected;
   });
 
+  function getTagGroup(tagSlug) {
+    const slug = String(tagSlug || "").toLowerCase();
+    if (slug.startsWith("artifact-")) return "artifact";
+    if (slug.startsWith("stage-")) return "stage";
+    if (slug.startsWith("domain-")) return "domain";
+    if (slug.startsWith("evidence-")) return "evidence";
+    return "other";
+  }
+
+  const groupedTags = (() => {
+    const groups = { artifact: [], stage: [], domain: [], evidence: [], other: [] };
+    for (const tag of filteredTags) {
+      const key = getTagGroup(tag.slug);
+      groups[key].push(tag);
+    }
+    return groups;
+  })();
+
   // Toggle tag selection
   const toggleTag = (tag) => {
     if (selectedTags.find(t => t.slug === tag.slug)) {
       // Remove tag
       onTagsChange(selectedTags.filter(t => t.slug !== tag.slug));
-    } else if (selectedTags.length < maxTags) {
-      // Add tag
-      onTagsChange([...selectedTags, tag]);
+    } else {
+      // Add / replace tag
+      let base = selectedTags;
+      if (singlePerGroup) {
+        const groupKey = getTagGroup(tag.slug);
+        if (groupKey !== "other") {
+          base = selectedTags.filter((t) => getTagGroup(t.slug) !== groupKey);
+        }
+      }
+      if (base.length >= maxTags) return;
+      onTagsChange([...base, tag]);
     }
     if (enableSearch) {
       setSearchQuery('');
@@ -68,30 +97,12 @@ export default function TagSelector({
       {/* Selected tags display */}
       <div className="flex flex-wrap gap-2 mb-2">
         {selectedTags.map((tag) => (
-          <div
+          <TagPill
             key={tag.slug}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors"
-            style={{
-              backgroundColor: `${tag.color}10`,
-              borderColor: `${tag.color}40`,
-              color: tag.color
-            }}
-          >
-            {tag.icon && (
-              <span className="text-xs">{getIconSVG(tag.icon)}</span>
-            )}
-            <span>{tag.name}</span>
-            <button
-              type="button"
-              onClick={() => removeTag(tag.slug)}
-              className="hover:opacity-70 transition-opacity ml-0.5"
-              aria-label={`Remove ${tag.name}`}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                <path d="M2.22 2.22a.75.75 0 0 1 1.06 0L6 4.94l2.72-2.72a.75.75 0 1 1 1.06 1.06L7.06 6l2.72 2.72a.75.75 0 1 1-1.06 1.06L6 7.06l-2.72 2.72a.75.75 0 0 1-1.06-1.06L4.94 6 2.22 3.28a.75.75 0 0 1 0-1.06z"/>
-              </svg>
-            </button>
-          </div>
+            tag={tag}
+            size="sm"
+            onRemove={removeTag}
+          />
         ))}
       </div>
 
@@ -107,7 +118,7 @@ export default function TagSelector({
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
-            placeholder={selectedTags.length >= maxTags ? `Max ${maxTags} tags` : placeholder}
+            placeholder={selectedTags.length >= maxTags ? `Maks ${maxTags} tags` : placeholder}
             disabled={selectedTags.length >= maxTags}
             className={clsx(
               "w-full px-3 py-2 text-sm border rounded-[var(--radius)]",
@@ -138,7 +149,7 @@ export default function TagSelector({
             <span className={clsx(
               selectedTags.length >= maxTags ? "text-muted-foreground" : "text-muted-foreground"
             )}>
-              {selectedTags.length >= maxTags ? `Max ${maxTags} tags` : placeholder}
+              {selectedTags.length >= maxTags ? `Maks ${maxTags} tags` : placeholder}
             </span>
           </button>
         )}
@@ -170,32 +181,48 @@ export default function TagSelector({
           "bg-card border-border",
           "max-h-60 overflow-y-auto"
         )}>
-          {filteredTags.map((tag) => (
-            <button
-              key={tag.slug}
-              type="button"
-              onClick={() => toggleTag(tag)}
-              className={clsx(
-                "w-full px-3 py-2 text-left text-sm flex items-center gap-2",
-                "hover:bg-accent transition-colors"
-              )}
-            >
-              <div
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: tag.color }}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-foreground">
-                  {tag.name}
+          {[
+            { key: "artifact", label: "Artifact" },
+            { key: "stage", label: "Stage" },
+            { key: "domain", label: "Domain" },
+            { key: "evidence", label: "Validation" },
+            { key: "other", label: "Other" },
+          ].map((group) => {
+            const items = groupedTags[group.key] || [];
+            if (items.length === 0) return null;
+            return (
+              <div key={group.key} className="py-1">
+                <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {group.label}
                 </div>
-                {tag.description && (
-                  <div className="text-xs text-muted-foreground truncate">
-                    {tag.description}
-                  </div>
-                )}
+                {items.map((tag) => (
+                  <button
+                    key={tag.slug}
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    className={clsx(
+                      "w-full px-3 py-2 text-left text-sm flex items-start gap-2",
+                      "hover:bg-accent transition-colors"
+                    )}
+                  >
+                    <span className="mt-0.5 text-muted-foreground">
+                      <TagIcon name={tag.icon || "tag"} className="h-4 w-4" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-foreground">
+                        {tag.name}
+                      </div>
+                      {tag.description && (
+                        <div className="text-xs text-muted-foreground line-clamp-2">
+                          {tag.description}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
               </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -206,37 +233,15 @@ export default function TagSelector({
           "bg-card border-border",
           "text-sm text-muted-foreground text-center"
         )}>
-          No tags found
+          Tags tidak ditemukan
         </div>
       )}
 
       {/* Helper text */}
       <p className="mt-1.5 text-xs text-muted-foreground">
-        Select up to {maxTags} tags to categorize your thread.
-        {selectedTags.length > 0 && ` (${selectedTags.length}/${maxTags} selected)`}
+        Pilih hingga {maxTags} tags. Ideal: 1 artifact + 1 domain + opsional stage/validation.
+        {selectedTags.length > 0 && ` (${selectedTags.length}/${maxTags} dipilih)`}
       </p>
     </div>
   );
-}
-
-// Simple icon helper (could be replaced with actual icon library)
-function getIconSVG(iconName) {
-  const icons = {
-    'briefcase': '💼',
-    'tag': '🏷️',
-    'search': '🔍',
-    'people': '👥',
-    'git-merge': '🔀',
-    'question': '❓',
-    'comment-discussion': '💬',
-    'megaphone': '📢',
-    'book': '📖',
-    'star': '⭐',
-    'help': '🆘',
-    'need': '🧩',
-    'payment': '💰',
-    'task': '🧾',
-    'jobhunt': '🧭',
-  };
-  return icons[iconName] || '🏷️';
 }

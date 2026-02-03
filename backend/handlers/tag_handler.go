@@ -88,7 +88,9 @@ func GetThreadsByTagHandler(c *gin.Context) {
 		Where(thread.HasTagsWith(tag.IDEQ(t.ID))).
 		WithUser().
 		WithCategory().
-		WithTags().
+		WithTags(func(q *ent.TagQuery) {
+			q.Where(tag.IsActiveEQ(true))
+		}).
 		Order(ent.Desc(thread.FieldCreatedAt)).
 		Limit(50).
 		All(ctx)
@@ -168,7 +170,9 @@ func GetThreadTagsHandler(c *gin.Context) {
 	// Get thread with tags
 	th, err := client.Thread.Query().
 		Where(thread.IDEQ(threadID)).
-		WithTags().
+		WithTags(func(q *ent.TagQuery) {
+			q.Where(tag.IsActiveEQ(true))
+		}).
 		Only(ctx)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "thread tidak ditemukan"})

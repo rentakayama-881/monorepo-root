@@ -1,20 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { LOCKED_CATEGORIES } from "@/lib/constants";
 import ThreadCard, { ThreadCardSkeleton } from "@/components/ui/ThreadCard";
 import EmptyState from "@/components/ui/EmptyState";
+import { TagPill } from "@/components/ui/TagPill";
 
 export default function CategoryThreadsPage() {
   const params = useParams();
   const [threads, setThreads] = useState([]);
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedTagSlugs, setSelectedTagSlugs] = useState([]);
 
   const API = getApiBase();
+
+  useEffect(() => {
+    setSelectedTagSlugs([]);
+  }, [params.slug]);
 
   useEffect(() => {
     setLoading(true);
@@ -26,6 +32,70 @@ export default function CategoryThreadsPage() {
       })
       .finally(() => setLoading(false));
   }, [API, params.slug]);
+
+  function getTagGroup(tagSlug) {
+    const slug = String(tagSlug || "").toLowerCase();
+    if (slug.startsWith("artifact-")) return "artifact";
+    if (slug.startsWith("domain-")) return "domain";
+    if (slug.startsWith("stage-")) return "stage";
+    if (slug.startsWith("evidence-")) return "evidence";
+    return "other";
+  }
+
+  const availableTags = useMemo(() => {
+    const map = new Map();
+    for (const thread of threads) {
+      const list = Array.isArray(thread?.tags) ? thread.tags : [];
+      for (const tag of list) {
+        if (tag?.slug && !map.has(tag.slug)) {
+          map.set(tag.slug, tag);
+        }
+      }
+    }
+
+    const groupRank = { artifact: 1, domain: 2, stage: 3, evidence: 4, other: 5 };
+    return Array.from(map.values()).sort((a, b) => {
+      const ga = getTagGroup(a.slug);
+      const gb = getTagGroup(b.slug);
+      const ra = groupRank[ga] || 99;
+      const rb = groupRank[gb] || 99;
+      if (ra !== rb) return ra - rb;
+      return String(a.name || "").localeCompare(String(b.name || ""), "id-ID");
+    });
+  }, [threads]);
+
+  const filteredThreads = useMemo(() => {
+    if (!Array.isArray(selectedTagSlugs) || selectedTagSlugs.length === 0) return threads;
+    return threads.filter((thread) => {
+      const slugs = new Set((Array.isArray(thread?.tags) ? thread.tags : []).map((t) => t.slug));
+      return selectedTagSlugs.every((slug) => slugs.has(slug));
+    });
+  }, [threads, selectedTagSlugs]);
+
+  const hasActiveFilter = selectedTagSlugs.length > 0;
+  const totalThreads = threads.length;
+  const visibleThreads = filteredThreads.length;
+
+  function toggleFilterTag(slug) {
+    setSelectedTagSlugs((prev) => {
+      const set = new Set(prev);
+      if (set.has(slug)) {
+        set.delete(slug);
+        return Array.from(set);
+      }
+
+      const groupKey = getTagGroup(slug);
+      if (groupKey !== "other") {
+        for (const existing of prev) {
+          if (getTagGroup(existing) === groupKey) {
+            set.delete(existing);
+          }
+        }
+      }
+      set.add(slug);
+      return Array.from(set);
+    });
+  }
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -49,14 +119,14 @@ export default function CategoryThreadsPage() {
               </p>
               {!loading && threads.length > 0 && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {threads.length} thread{threads.length !== 1 ? 's' : ''}
+                  {hasActiveFilter ? `${visibleThreads} dari ${totalThreads}` : totalThreads} thread{totalThreads !== 1 ? "s" : ""}
                 </p>
               )}
             </>
           )}
         </div>
 
-{!LOCKED_CATEGORIES.includes(params.slug) ? (
+        {!LOCKED_CATEGORIES.includes(params.slug) ? (
           <Link
             href={`/category/${params.slug}/new`}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
@@ -76,6 +146,40 @@ export default function CategoryThreadsPage() {
           </div>
         )}
       </header>
+
+      {/* Tag Filter (client-side, based on tags present in loaded threads) */}
+      {!loading && availableTags.length > 0 && (
+        <section className="mb-6 rounded-lg border border-border bg-card p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="mr-1 text-sm font-medium text-foreground">Filter tags</div>
+            <div className="flex flex-wrap gap-2">
+              {availableTags.map((tag) => (
+                <TagPill
+                  key={tag.slug}
+                  tag={tag}
+                  size="sm"
+                  selected={selectedTagSlugs.includes(tag.slug)}
+                  onClick={() => toggleFilterTag(tag.slug)}
+                />
+              ))}
+            </div>
+            {hasActiveFilter && (
+              <button
+                type="button"
+                onClick={() => setSelectedTagSlugs([])}
+                className="ml-auto inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              >
+                Reset filter
+              </button>
+            )}
+          </div>
+          {hasActiveFilter && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Menampilkan {visibleThreads} thread yang cocok.
+            </p>
+          )}
+        </section>
+      )}
 
       {loading ? (
         <div className="space-y-3">
@@ -102,9 +206,26 @@ export default function CategoryThreadsPage() {
             )
           }
         />
+      ) : filteredThreads.length === 0 ? (
+        <EmptyState
+          variant="content"
+          title="Tidak ada thread yang cocok"
+          description="Coba kurangi filter tags atau reset filter untuk melihat semua thread."
+          action={
+            hasActiveFilter && (
+              <button
+                type="button"
+                onClick={() => setSelectedTagSlugs([])}
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
+              >
+                Reset filter
+              </button>
+            )
+          }
+        />
       ) : (
         <div className="space-y-4">
-          {threads.map((thread) => (
+          {filteredThreads.map((thread) => (
             <ThreadCard
               key={thread.id}
               thread={thread}

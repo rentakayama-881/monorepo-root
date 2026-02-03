@@ -2,17 +2,47 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { getApiBase, fetchJsonAuth } from "@/lib/api";
+import { getApiBase } from "@/lib/api";
 import { getValidToken, refreshAccessToken } from "@/lib/tokenRefresh";
 import { getToken, isTokenExpired } from "@/lib/auth";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import TagSelector from "@/components/ui/TagSelector";
+import { TagIcon } from "@/components/ui/TagIcons";
 import Button from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 
-// Autosave key for localStorage
-const DRAFT_KEY_PREFIX = "thread_draft_";
+// Autosave key for localStorage (scoped per user + category to prevent cross-user leakage)
+const DRAFT_KEY_PREFIX = "thread_draft_v2_";
+const AUTOSAVE_DEBOUNCE_MS = 900;
+
+function decodeJwtPayload(token) {
+  try {
+    const parts = String(token || "").split(".");
+    if (parts.length < 2) return null;
+    const base64Url = parts[1];
+    const pad = "=".repeat((4 - (base64Url.length % 4)) % 4);
+    const base64 = (base64Url + pad).replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(base64);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+function getDraftUserKey() {
+  // Prefer user_id from our JWT Claims (backend/middleware/jwt.go)
+  // Fallback to username/sub if present, else "anon".
+  try {
+    const token = getToken();
+    if (!token) return "anon";
+    const payload = decodeJwtPayload(token);
+    const key = payload?.user_id ?? payload?.username ?? payload?.sub;
+    return key ? String(key) : "anon";
+  } catch {
+    return "anon";
+  }
+}
 
 export default function CreateThreadPage() {
   const router = useRouter();
@@ -28,16 +58,25 @@ export default function CreateThreadPage() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [legacyDraft, setLegacyDraft] = useState(null);
   const [lastSaved, setLastSaved] = useState(null);
   const autosaveTimerRef = useRef(null);
   const tokenRefreshIntervalRef = useRef(null);
+  const draftStateRef = useRef({ title: "", summary: "", content: "", telegram: "", selectedTags: [] });
+  const hasUserEditedRef = useRef(false);
 
   const API = getApiBase();
-  const draftKey = `${DRAFT_KEY_PREFIX}${params.slug}`;
+  const draftKey = `${DRAFT_KEY_PREFIX}${getDraftUserKey()}_${params.slug}`;
+
+  // Keep a fresh snapshot for safe flush-on-unmount (avoids stale closures)
+  useEffect(() => {
+    draftStateRef.current = { title, summary, content, telegram, selectedTags };
+  }, [title, summary, content, telegram, selectedTags]);
 
   // Restore draft from localStorage on mount
   useEffect(() => {
     try {
+      setLegacyDraft(null);
       const saved = localStorage.getItem(draftKey);
       if (saved) {
         const draft = JSON.parse(saved);
@@ -48,41 +87,65 @@ export default function CreateThreadPage() {
         if (draft.selectedTags) setSelectedTags(draft.selectedTags);
         if (draft.savedAt) setLastSaved(new Date(draft.savedAt));
         setDraftRestored(true);
+        return;
+      }
+
+      // Legacy v1 drafts were stored without user-scoping: "thread_draft_{categorySlug}"
+      // For safety, do NOT auto-restore across accounts; instead, offer an explicit import action.
+      const legacyKey = `thread_draft_${params.slug}`;
+      const legacySaved = localStorage.getItem(legacyKey);
+      if (legacySaved) {
+        const draft = JSON.parse(legacySaved);
+        const savedAt = draft?.savedAt ? new Date(draft.savedAt) : null;
+        setLegacyDraft({ key: legacyKey, draft, savedAt });
       }
     } catch {
       // Ignore localStorage errors
     }
-  }, [draftKey]);
+  }, [draftKey, params.slug]);
 
   // Autosave draft to localStorage
   const saveDraft = useCallback(() => {
     try {
+      const snapshot = draftStateRef.current;
       const draft = {
-        title,
-        summary,
-        content,
-        telegram,
-        selectedTags,
+        ...snapshot,
         savedAt: new Date().toISOString(),
+        version: 2,
+        categorySlug: params.slug,
+        userKey: getDraftUserKey(),
       };
-      // Only save if there's actual content
-      if (title.trim() || content.trim() || summary.trim()) {
-        localStorage.setItem(draftKey, JSON.stringify(draft));
-        setLastSaved(new Date());
+
+      const hasAny =
+        snapshot.title.trim() ||
+        snapshot.summary.trim() ||
+        snapshot.content.trim() ||
+        snapshot.telegram.trim() ||
+        (Array.isArray(snapshot.selectedTags) && snapshot.selectedTags.length > 0);
+
+      // If user cleared everything, remove draft (prevents stale empty drafts)
+      if (!hasAny) {
+        localStorage.removeItem(draftKey);
+        setLastSaved(null);
+        return;
       }
+
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+      setLastSaved(new Date());
     } catch {
       // Ignore localStorage errors
     }
-  }, [title, summary, content, telegram, selectedTags, draftKey]);
+  }, [draftKey, params.slug]);
 
-  // Autosave every 10 seconds when content changes
+  // Autosave (debounced) after user starts interacting
   useEffect(() => {
+    if (!hasUserEditedRef.current) return;
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
     }
     autosaveTimerRef.current = setTimeout(() => {
       saveDraft();
-    }, 10000);
+    }, AUTOSAVE_DEBOUNCE_MS);
 
     return () => {
       if (autosaveTimerRef.current) {
@@ -90,6 +153,22 @@ export default function CreateThreadPage() {
       }
     };
   }, [title, summary, content, telegram, selectedTags, saveDraft]);
+
+  // Flush draft on unmount (covers client-side navigation/back)
+  useEffect(() => {
+    return () => {
+      try {
+        if (autosaveTimerRef.current) {
+          clearTimeout(autosaveTimerRef.current);
+        }
+        if (hasUserEditedRef.current) {
+          saveDraft();
+        }
+      } catch {
+        // Ignore
+      }
+    };
+  }, [saveDraft]);
 
   // Also save on window unload/beforeunload
   useEffect(() => {
@@ -107,6 +186,48 @@ export default function CreateThreadPage() {
       // Ignore
     }
   }, [draftKey]);
+
+  const importLegacyDraft = useCallback(() => {
+    if (!legacyDraft?.draft || !legacyDraft?.key) return;
+    try {
+      const draft = legacyDraft.draft || {};
+      const next = {
+        title: typeof draft.title === "string" ? draft.title : "",
+        summary: typeof draft.summary === "string" ? draft.summary : "",
+        content: typeof draft.content === "string" ? draft.content : "",
+        telegram: typeof draft.telegram === "string" ? draft.telegram : "",
+        selectedTags: Array.isArray(draft.selectedTags) ? draft.selectedTags : [],
+      };
+
+      setTitle(next.title);
+      setSummary(next.summary);
+      setContent(next.content);
+      setTelegram(next.telegram);
+      setSelectedTags(next.selectedTags);
+      draftStateRef.current = { ...draftStateRef.current, ...next };
+      hasUserEditedRef.current = true;
+
+      const now = new Date();
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          ...next,
+          savedAt: now.toISOString(),
+          version: 2,
+          categorySlug: params.slug,
+          userKey: getDraftUserKey(),
+        })
+      );
+      localStorage.removeItem(legacyDraft.key);
+
+      setLastSaved(now);
+      setDraftRestored(true);
+      setLegacyDraft(null);
+    } catch {
+      // Ignore corrupted legacy draft
+      setLegacyDraft(null);
+    }
+  }, [draftKey, legacyDraft, params.slug]);
 
   // Proactive token refresh - keep session alive while user is typing
   useEffect(() => {
@@ -159,11 +280,16 @@ export default function CreateThreadPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); setSuccess("");
+    setError("");
+    setSuccess("");
+
     if (!title.trim()) return setError("Judul thread wajib diisi");
     if (title.trim().length < 3) return setError("Judul thread minimal 3 karakter");
     if (!content.trim()) return setError("Konten thread wajib diisi");
     if (!telegram.trim()) return setError("Contact telegram wajib diisi");
+    if (tagsAvailable && selectedTags.length < 2) {
+      return setError("Pilih minimal 2 tags agar thread mudah difilter");
+    }
 
     // Save draft before attempting submit (in case of failure)
     saveDraft();
@@ -189,7 +315,7 @@ export default function CreateThreadPage() {
           summary,
           content_type: "text",
           content,
-          tag_slugs: tagsAvailable ? selectedTags.map(t => t.slug) : [],
+          tag_slugs: tagsAvailable ? selectedTags.map((t) => t.slug) : [],
           meta: {
             telegram,
           },
@@ -218,7 +344,7 @@ export default function CreateThreadPage() {
                   summary,
                   content_type: "text",
                   content,
-                  tag_slugs: tagsAvailable ? selectedTags.map(t => t.slug) : [],
+                  tag_slugs: tagsAvailable ? selectedTags.map((t) => t.slug) : [],
                   meta: {
                     telegram,
                   },
@@ -231,7 +357,8 @@ export default function CreateThreadPage() {
                 return;
               }
             }
-            message = "Sesi telah berakhir. Draft Anda telah disimpan. Silakan refresh halaman dan login kembali.";
+            message =
+              "Sesi telah berakhir. Draft Anda telah disimpan. Silakan refresh halaman dan login kembali.";
           } else {
             message = data?.details || data?.error || data?.message || message;
           }
@@ -255,11 +382,43 @@ export default function CreateThreadPage() {
 
   return (
     <div className="container py-8 md:py-12">
+      {/* Legacy Draft Found (manual import to avoid cross-user leakage) */}
+      {legacyDraft && !draftRestored && (
+        <div className="mb-4 rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2">
+            <TagIcon name="alert-triangle" className="mt-0.5 h-4 w-4 text-muted-foreground" />
+            <div>
+              <p className="font-medium text-foreground">Draft lama ditemukan</p>
+              <p className="text-xs text-muted-foreground">
+                Draft versi lama tidak terikat akun. Klik Import jika ini draft Anda.
+                {legacyDraft.savedAt ? ` (tersimpan ${legacyDraft.savedAt.toLocaleString("id-ID")})` : ""}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={importLegacyDraft}
+              className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+            >
+              Import
+            </button>
+            <button
+              type="button"
+              onClick={() => setLegacyDraft(null)}
+              className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Draft Restored Notification */}
       {draftRestored && (
-        <div className="mb-4 rounded-lg border border-blue-500/50 bg-blue-500/10 px-4 py-3 text-sm text-blue-600 dark:text-blue-400 flex items-center justify-between">
+        <div className="mb-4 rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>Draft sebelumnya telah dipulihkan. Konten Anda aman.</span>
@@ -307,7 +466,12 @@ export default function CreateThreadPage() {
                 className="flex h-10 w-full rounded-lg border bg-background px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                 value={title}
                 maxLength={100}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  hasUserEditedRef.current = true;
+                  const next = e.target.value;
+                  draftStateRef.current = { ...draftStateRef.current, title: next };
+                  setTitle(next);
+                }}
                 placeholder="Masukkan judul yang jelas dan menarik"
               />
               <p className="text-xs text-muted-foreground">{title.length}/100 karakter</p>
@@ -324,7 +488,12 @@ export default function CreateThreadPage() {
                 rows={3}
                 maxLength={300}
                 value={summary}
-                onChange={(e) => setSummary(e.target.value)}
+                onChange={(e) => {
+                  hasUserEditedRef.current = true;
+                  const next = e.target.value;
+                  draftStateRef.current = { ...draftStateRef.current, summary: next };
+                  setSummary(next);
+                }}
                 placeholder="Deskripsi singkat yang akan muncul di preview thread"
               />
               <p className="text-xs text-muted-foreground">{summary.length}/300 karakter</p>
@@ -334,15 +503,20 @@ export default function CreateThreadPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
                 Tags
-                <span className="ml-2 text-xs font-normal text-muted-foreground">(pilih maksimal 3)</span>
+                <span className="ml-2 text-xs font-normal text-muted-foreground">(pilih 2–4)</span>
               </label>
               <TagSelector
                 selectedTags={selectedTags}
-                onTagsChange={setSelectedTags}
+                onTagsChange={(next) => {
+                  hasUserEditedRef.current = true;
+                  draftStateRef.current = { ...draftStateRef.current, selectedTags: next };
+                  setSelectedTags(next);
+                }}
                 availableTags={availableTags}
-                maxTags={3}
+                maxTags={4}
                 placeholder="Pilih tags untuk thread..."
                 enableSearch={false}
+                singlePerGroup={true}
               />
               {!tagsAvailable && (
                 <p className="text-xs text-muted-foreground">
@@ -358,7 +532,11 @@ export default function CreateThreadPage() {
               </label>
               <MarkdownEditor
                 value={content}
-                onChange={setContent}
+                onChange={(val) => {
+                  hasUserEditedRef.current = true;
+                  draftStateRef.current = { ...draftStateRef.current, content: val };
+                  setContent(val);
+                }}
                 placeholder="Tulis konten thread di sini. Markdown didukung..."
                 minHeight="300px"
                 disabled={loading}
@@ -380,7 +558,12 @@ export default function CreateThreadPage() {
                   className="flex h-10 w-full rounded-r-lg border bg-background px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                   value={telegram}
                   maxLength={50}
-                  onChange={(e) => setTelegram(e.target.value)}
+                  onChange={(e) => {
+                    hasUserEditedRef.current = true;
+                    const next = e.target.value;
+                    draftStateRef.current = { ...draftStateRef.current, telegram: next };
+                    setTelegram(next);
+                  }}
                   placeholder="username"
                 />
               </div>
@@ -435,7 +618,10 @@ export default function CreateThreadPage() {
         <div className="lg:col-span-1">
           <Card className="sticky top-20">
             <CardHeader>
-              <CardTitle className="text-base">💡 Tips Membuat Thread</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TagIcon name="lightbulb" className="h-4 w-4 text-muted-foreground" />
+                Tips Membuat Thread
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-muted-foreground">
               <div>
@@ -455,8 +641,15 @@ export default function CreateThreadPage() {
                 <p>Gunakan markdown untuk format yang rapi. Tambahkan heading, list, dan code block jika perlu.</p>
               </div>
               <div className="pt-4 border-t">
-                <p className="text-xs">
-                  ⚠️ Pastikan konten thread sesuai dengan <a href="/rules-content" className="text-primary hover:underline">aturan komunitas</a>.
+                <p className="flex items-start gap-2 text-xs">
+                  <TagIcon name="alert-triangle" className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                  <span>
+                    Pastikan konten thread sesuai dengan{" "}
+                    <a href="/rules-content" className="text-primary hover:underline">
+                      aturan komunitas
+                    </a>
+                    .
+                  </span>
                 </p>
               </div>
             </CardContent>
