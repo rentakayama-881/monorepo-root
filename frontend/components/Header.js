@@ -17,6 +17,7 @@ export default function Header() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [userName, setUserName] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
@@ -33,6 +34,7 @@ export default function Header() {
         if (!token) {
           setAvatarUrl(null);
           setUserName("");
+          setProfileLoading(false);
         }
       } catch (_) {
         setIsAuthed(false);
@@ -62,13 +64,16 @@ export default function Header() {
       if (!token) {
         setAvatarUrl(null);
         setUserName("");
+        setProfileLoading(false);
         return;
       }
+      setProfileLoading(true);
       try {
         // Use fetchWithAuth for auto token refresh
         const res = await fetchWithAuth(`${getApiBase()}/api/user/me`);
         if (!res || !res.ok) {
           setAvatarUrl(null);
+          setUserName("");
           return;
         }
         const data = await res.json();
@@ -78,6 +83,8 @@ export default function Header() {
         }
       } catch {
         if (!cancelled) setAvatarUrl(null);
+      } finally {
+        if (!cancelled) setProfileLoading(false);
       }
     }
 
@@ -237,13 +244,25 @@ export default function Header() {
                 aria-expanded={profileOpen}
                 type="button"
               >
-                <Avatar 
-                  src={avatarUrl} 
-                  name={userName} 
-                  size="xs" 
-                />
+                {profileLoading ? (
+                  <span
+                    className="h-6 w-6 rounded-full bg-secondary animate-pulse"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Avatar src={avatarUrl} name={userName} size="xs" />
+                )}
                 <span className="hidden sm:inline text-sm font-medium text-foreground">
-                  @{userName}
+                  {profileLoading ? (
+                    <span
+                      className="inline-block h-4 w-24 rounded bg-secondary align-middle animate-pulse"
+                      aria-hidden="true"
+                    />
+                  ) : userName ? (
+                    <>@{userName}</>
+                  ) : (
+                    "Akun"
+                  )}
                 </span>
               </button>
 

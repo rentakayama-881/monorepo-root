@@ -1,8 +1,9 @@
-import Button from '../ui/Button';
+import Button from "../ui/Button";
+import { Card } from "../ui/Card";
 
 export default function Hero() {
   return (
-    <section className="relative py-12 md:py-16 border-b overflow-hidden">
+    <section className="relative border-b overflow-hidden">
       {/* Subtle background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
       
@@ -12,42 +13,28 @@ export default function Hero() {
         backgroundSize: '64px 64px'
       }} />
 
-      <div className="container relative z-20">
-        <div className="max-w-2xl">
-          <h1 className="space-y-0 overflow-visible animate-slide-up">
-            <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tighter leading-none text-balance text-foreground">
-              Этот сайт является пространством для реализации идей и инноваций специалистов в области Threat Intelligence,
-            </span>
-            <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl italic font-serif tracking-tight leading-tight text-foreground">
-              Мы запрещаем любые атаки на территорию Индонезии и всех стран бывшего Советского Союза.
-            </span>
-          </h1>
-
-          <p className="mt-6 text-muted-foreground text-lg max-w-xl animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            Ketika reputasi dipertaruhkan, Anda butuh lebih dari sekadar pengalaman.
-            Maju dan berkembanglah bersama kami - Salam.
-          </p>
-
-          {/* Feature badges */}
-          <div className="mt-8 flex flex-wrap gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            <div className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground hover:scale-105 duration-200">
-              <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-              </svg>
-              <span>Escrow Aman</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground hover:scale-105 duration-200">
-              <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-              </svg>
-              <span>Komunitas Aktif</span>
-            </div>
+      <div className="container relative z-20 py-12 md:py-16">
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
+            <span className="inline-flex h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
+            Platform validasi hasil kerja berbasis AI
           </div>
 
+          <h1 className="mt-5 text-balance animate-slide-up text-3xl font-bold tracking-tighter text-foreground sm:text-4xl md:text-5xl lg:text-6xl">
+            Validasi hasil AI,{" "}
+            <span className="text-primary">lebih cepat</span>,{" "}
+            <span className="text-primary">lebih jelas</span>,{" "}
+            <span className="text-primary">lebih bisa dipertanggungjawabkan</span>.
+          </h1>
+
+          <p className="mx-auto mt-5 max-w-2xl animate-slide-up text-base text-muted-foreground sm:text-lg" style={{ animationDelay: "0.1s" }}>
+            Buat thread dengan konteks dan kriteria. Dapatkan review dari validator sesuai bidangnya—coding, data, desain, penulisan, keamanan, dan lainnya.
+          </p>
+
           {/* CTA Buttons */}
-          <div className="mt-10 flex flex-wrap gap-3 animate-slide-up" style={{ animationDelay: '0.3s' }}>
-            <Button 
-              href="/threads" 
+          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            <Button
+              href="#categories"
               size="lg"
               variant="gradient"
               iconRight={
@@ -56,8 +43,72 @@ export default function Hero() {
                 </svg>
               }
             >
-              Jelajahi Thread
+              Mulai dari Kategori
             </Button>
+            <Button
+              href="#latest"
+              size="lg"
+              variant="outline"
+              iconRight={
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              }
+            >
+              Lihat Thread Terbaru
+            </Button>
+          </div>
+
+          {/* Highlight cards */}
+          <div className="mt-10 grid grid-cols-1 gap-3 text-left sm:grid-cols-3 animate-slide-up" style={{ animationDelay: "0.3s" }}>
+            <Card className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="font-semibold text-foreground">Buat Thread</div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Jelaskan tujuan, input/output AI, batasan, dan kriteria “selesai”.
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="font-semibold text-foreground">Validator Menawarkan</div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Profesional bisa menawarkan validasi sesuai keahlian dan pendekatan kerja.
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="font-semibold text-foreground">Hasil Lebih Rapi</div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Checklist, catatan risiko, dan rekomendasi perbaikan yang bisa Anda tindaklanjuti.
+                  </p>
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
       </div>

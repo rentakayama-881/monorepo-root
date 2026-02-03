@@ -6,6 +6,7 @@ import { clearToken, getToken, getRefreshToken } from "@/lib/auth";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
 import { maskEmail } from "@/lib/email";
 import Avatar from "@/components/ui/Avatar";
+import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton";
 
 export default function ProfileSidebar({ onClose }) {
   const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
@@ -59,6 +60,7 @@ export default function ProfileSidebar({ onClose }) {
         setUser({
           username: data.username || data.name || "",
           avatar_url: data.avatar_url || "",
+          email: data.email || "",
         });
         
         // Load wallet balance from Feature Service
@@ -151,8 +153,36 @@ export default function ProfileSidebar({ onClose }) {
           ref={panelRef}
           className="fixed right-4 top-16 z-50 w-80 rounded-[var(--radius)] border bg-card p-4 shadow-xl"
         >
-          <div className="flex items-center justify-center py-8">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
+          <div className="space-y-4" aria-busy="true" aria-live="polite">
+            <div className="flex items-center gap-3">
+              <SkeletonCircle size="h-10 w-10" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <SkeletonText width="w-32" />
+                <SkeletonText width="w-40" height="h-3" />
+              </div>
+              <Skeleton className="h-8 w-8 rounded-md" />
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 rounded-[var(--radius)] border bg-secondary/50 p-3">
+              <div className="space-y-2 text-center">
+                <Skeleton className="h-5 w-10 mx-auto rounded" />
+                <Skeleton className="h-3 w-12 mx-auto rounded" />
+              </div>
+              <div className="space-y-2 text-center border-x">
+                <Skeleton className="h-5 w-10 mx-auto rounded" />
+                <Skeleton className="h-3 w-12 mx-auto rounded" />
+              </div>
+              <div className="space-y-2 text-center">
+                <Skeleton className="h-5 w-10 mx-auto rounded" />
+                <Skeleton className="h-3 w-12 mx-auto rounded" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
           </div>
         </div>
       </>

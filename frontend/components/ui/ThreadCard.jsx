@@ -99,7 +99,8 @@ export default function ThreadCard({
           <Avatar
             src={avatar_url}
             name={username}
-            className="h-4 w-4"
+            size="xxs"
+            className="shrink-0"
           />
         )}
         <span className="flex-1 truncate text-sm font-medium text-foreground">
@@ -127,7 +128,12 @@ export default function ThreadCard({
       >
         {/* Avatar */}
         {showAuthor && (
-          <Avatar src={avatar_url} name={username} className="h-4 w-4 mt-0.5" />
+          <Avatar
+            src={avatar_url}
+            name={username}
+            size="xxs"
+            className="mt-0.5 shrink-0"
+          />
         )}
         
         {/* Content */}
@@ -243,7 +249,8 @@ export default function ThreadCard({
               <Avatar
                 src={avatar_url}
                 name={username}
-                className="h-5 w-5 ring-2 ring-background transition-all group-hover:ring-primary/20"
+                size="xxs"
+                className="ring-2 ring-background transition-all group-hover:ring-primary/20"
               />
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <div className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground truncate">

@@ -6,7 +6,8 @@ import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import Avatar from "@/components/ui/Avatar";
 import { Badge, BadgeChip } from "@/components/ui/Badge";
-import ThreadCard from "@/components/ui/ThreadCard";
+import ThreadCard, { ThreadCardSkeleton } from "@/components/ui/ThreadCard";
+import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton";
 
 const SOCIAL_ICONS = {
   instagram: (
@@ -121,13 +122,47 @@ export default function UserProfilePage() {
     loadTabContent();
   }, [API, username, profile, activeTab]);
 
-  if (loading) return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <div className="h-8 w-8 rounded-full border-2 border-muted border-t-primary animate-spin" />
-      </div>
-    </div>
-  );
+  if (loading) {
+    return (
+      <section className="max-w-4xl mx-auto px-4 py-6" aria-busy="true" aria-live="polite">
+        {/* Profile Header Skeleton */}
+        <div className="flex flex-col gap-4 mb-8">
+          <div className="flex items-start gap-4">
+            <SkeletonCircle size="h-20 w-20" />
+            <div className="min-w-0 flex-1 pt-1 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <SkeletonText width="w-48" height="h-7" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+              <SkeletonText width="w-40" height="h-4" />
+              <SkeletonText width="w-32" height="h-4" />
+            </div>
+          </div>
+
+          <Skeleton className="h-12 w-full rounded-md" />
+
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-8 w-20 rounded-full" />
+            <Skeleton className="h-8 w-24 rounded-full" />
+            <Skeleton className="h-8 w-16 rounded-full" />
+          </div>
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="flex gap-2 border-b border-border mb-6 pb-2">
+          <Skeleton className="h-8 w-24 rounded-md" />
+          <Skeleton className="h-8 w-24 rounded-md" />
+          <Skeleton className="h-8 w-24 rounded-md" />
+        </div>
+
+        {/* Content Skeleton */}
+        <div className="space-y-4">
+          <ThreadCardSkeleton variant="default" />
+          <ThreadCardSkeleton variant="default" />
+        </div>
+      </section>
+    );
+  }
   
   if (!profile || profile.error) return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -180,8 +215,8 @@ export default function UserProfilePage() {
           <Avatar 
             src={profile.avatar_url} 
             name={displayName} 
-            size="lg"
-            className="h-20 w-20 shrink-0"
+            size="xl"
+            className="shrink-0"
           />
           <div className="min-w-0 flex-1 pt-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -316,8 +351,26 @@ export default function UserProfilePage() {
       {/* Tab Content */}
       <div className="min-h-[200px]">
         {loadingContent ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 rounded-full border-2 border-muted border-t-primary animate-spin" />
+          <div className="space-y-4 py-2">
+            {activeTab === "threads" && (
+              <>
+                <ThreadCardSkeleton variant="default" />
+                <ThreadCardSkeleton variant="default" />
+              </>
+            )}
+            {activeTab === "replies" && (
+              <>
+                <Skeleton className="h-28 w-full rounded-lg border border-border" />
+                <Skeleton className="h-28 w-full rounded-lg border border-border" />
+              </>
+            )}
+            {activeTab === "badges" && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-28 w-full rounded-lg border border-border" />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <>

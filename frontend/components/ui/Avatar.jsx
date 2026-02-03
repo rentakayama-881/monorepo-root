@@ -4,6 +4,24 @@ import { cn } from "@/lib/utils";
 import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
 import { useState } from "react";
 
+function FallbackUserIcon({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={cn("h-[60%] w-[60%] opacity-90", className)}
+    >
+      <path d="M20 21a8 8 0 1 0-16 0" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
 /**
  * Avatar component that shows image or initials
  * @param {Object} props
@@ -88,14 +106,14 @@ export default function Avatar({
     // Show initials with colored background
     <div
       className={cn(
-        "flex items-center justify-center rounded-full font-semibold text-white select-none",
+        "flex items-center justify-center rounded-full border border-border font-semibold text-white select-none",
         sizeClass,
         className
       )}
       style={{ backgroundColor: bgColor }}
       title={name}
     >
-      {initials}
+      {initials ? initials : <FallbackUserIcon />}
     </div>
   );
 

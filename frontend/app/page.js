@@ -1,15 +1,19 @@
-import { Suspense } from 'react';
-import Hero from '../components/home/Hero';
-import CategoryGrid from '../components/home/CategoryGrid';
-import LatestThreads from '../components/home/LatestThreads';
-import Skeleton from '../components/ui/Skeleton';
+import { Suspense } from "react";
+import Hero from "../components/home/Hero";
+import HowItWorks from "../components/home/HowItWorks";
+import FocusAreas from "../components/home/FocusAreas";
+import CategoryGrid from "../components/home/CategoryGrid";
+import LatestThreads from "../components/home/LatestThreads";
+import Skeleton from "../components/ui/Skeleton";
 
 export const metadata = {
-  title: 'Beranda',
-  description: 'Alephdraad - Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.',
+  title: "Beranda",
+  description:
+    "Alephdraad - Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.",
   openGraph: {
-    title: 'Alephdraad - Komunitas & Escrow Terpercaya',
-    description: 'Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.',
+    title: "Alephdraad - Validasi Hasil AI",
+    description:
+      "Buat thread, jelaskan konteks, dan dapatkan review terstruktur dari validator sesuai bidangnya.",
   },
 };
 
@@ -18,17 +22,25 @@ export default function Home() {
     <div className="relative">
       <Hero />
 
-      <section className="container py-12">
-        <div className="flex flex-col gap-14">
-          <Suspense fallback={<ListSkeleton />}>
-            <LatestThreads />
-          </Suspense>
+      <section className="container py-12 md:py-16">
+        <div className="flex flex-col gap-12">
+          <HowItWorks />
+
+          <FocusAreas />
+
+          <div id="latest" className="scroll-mt-16">
+            <Suspense fallback={<ListSkeleton />}>
+              <LatestThreads />
+            </Suspense>
+          </div>
 
           <div className="h-px w-full bg-border" />
 
-          <Suspense fallback={<GridSkeleton />}>
-            <CategoryGrid />
-          </Suspense>
+          <div id="categories" className="scroll-mt-16">
+            <Suspense fallback={<GridSkeleton />}>
+              <CategoryGrid />
+            </Suspense>
+          </div>
         </div>
       </section>
     </div>

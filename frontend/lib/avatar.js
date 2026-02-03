@@ -23,9 +23,9 @@ export function resolveAvatarSrc(avatarUrl) {
  * Get initials from a name or username (max 2 characters)
  */
 export function getInitials(name) {
-  if (!name) return "??";
+  if (name == null) return "";
   const cleaned = String(name).trim();
-  if (!cleaned) return "??";
+  if (!cleaned) return "";
   
   // Split by space to get first letters of each word
   const words = cleaned.split(/\s+/).filter(Boolean);
