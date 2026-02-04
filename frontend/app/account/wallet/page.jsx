@@ -183,7 +183,7 @@ export default function WalletPage() {
             <div className="text-sm text-blue-800 dark:text-blue-200">
               <p className="font-medium">Tentang ALEPH Token</p>
               <p className="mt-1 text-blue-700 dark:text-blue-300">
-                ALEPH adalah token internal Alephdraad yang digunakan untuk transaksi antar pengguna.
+                ALEPH adalah token internal AIvalid yang digunakan untuk transaksi antar pengguna.
                 1 ALEPH = Rp 1.000. Minimal deposit Rp 10.000 dan minimal withdraw Rp 50.000.
               </p>
             </div>

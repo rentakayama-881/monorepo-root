@@ -45,12 +45,12 @@ export function generateOrganizationStructuredData() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Alephdraad",
-    description: "Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.",
-    url: process.env.NEXT_PUBLIC_SITE_URL || "https://alephdraad.fun",
+    name: "AIvalid",
+    description: "Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id",
     logo: {
       "@type": "ImageObject",
-      url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://alephdraad.fun"}/logo/logo-icon-only.svg`,
+      url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id"}/logo/logo-icon-only.svg`,
     },
     sameAs: [],
   };
@@ -64,13 +64,13 @@ export function generateWebsiteStructuredData() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Alephdraad",
-    url: process.env.NEXT_PUBLIC_SITE_URL || "https://alephdraad.fun",
+    name: "AIvalid",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id",
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${process.env.NEXT_PUBLIC_SITE_URL || "https://alephdraad.fun"}/search?q={search_term_string}`,
+        urlTemplate: `${process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id"}/search?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },
@@ -89,14 +89,14 @@ export function generateOpenGraphMetadata({
   image = "/images/og-image.png",
   url = "",
 }) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://alephdraad.fun";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
   
   return {
     title,
     description,
     type,
     url: `${siteUrl}${url}`,
-    siteName: "Alephdraad",
+    siteName: "AIvalid",
     locale: "id_ID",
     images: [
       {
@@ -133,6 +133,6 @@ export function generateTwitterMetadata({
  * @returns {string} - Canonical URL
  */
 export function generateCanonicalUrl(path = "") {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://alephdraad.fun";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
   return `${siteUrl}${path}`;
 }

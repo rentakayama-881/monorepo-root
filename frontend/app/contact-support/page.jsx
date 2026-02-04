@@ -19,8 +19,8 @@ import {
 export const dynamic = "force-static";
 
 export const metadata = { 
-  title: "Bantuan - AlephDraad",
-  description: "Pusat bantuan dan dukungan pelanggan AlephDraad"
+  title: "Bantuan - AIvalid",
+  description: "Pusat bantuan dan dukungan pelanggan AIvalid"
 };
 
 // Contact Card - compact
@@ -119,8 +119,8 @@ export default function HelpPage() {
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <ContactCard icon={MailIcon} title="Email" highlight={true}>
-            <a href="mailto:help@alephdraad.fun" className="text-sm font-medium text-foreground hover:underline">
-              help@alephdraad.fun
+            <a href="mailto:help@aivalid.id" className="text-sm font-medium text-foreground hover:underline">
+              help@aivalid.id
             </a>
             <p className="mt-1 text-xs text-muted-foreground">Respons dalam 1-2 hari kerja</p>
           </ContactCard>
@@ -139,7 +139,7 @@ export default function HelpPage() {
         </h2>
         <div className="space-y-3">
           <FAQItem question="Bagaimana cara mendaftar akun?" icon={UserIcon}>
-            <p className="mb-3">Untuk mendaftar akun AlephDraad:</p>
+            <p className="mb-3">Untuk mendaftar akun AIvalid:</p>
             <ol className="space-y-2.5">
               <Step number={1} description='Klik tombol "Daftar" di pojok kanan atas' />
               <Step number={2} description="Masukkan alamat email yang valid" />
@@ -152,7 +152,7 @@ export default function HelpPage() {
           <FAQItem question="Bagaimana sistem escrow bekerja?" icon={ShieldIcon}>
             <p className="mb-3">Sistem escrow melindungi pembeli dan penjual dalam transaksi:</p>
             <ol className="space-y-2.5">
-              <Step number={1} title="Pembeli memulai transaksi" description="Dana ditransfer ke rekening escrow AlephDraad" />
+              <Step number={1} title="Pembeli memulai transaksi" description="Dana ditransfer ke rekening escrow AIvalid" />
               <Step number={2} title="Penjual menerima notifikasi" description="Penjual mengirimkan produk/jasa sesuai kesepakatan" />
               <Step number={3} title="Pembeli melakukan inspeksi" description="Pembeli memiliki waktu untuk memeriksa produk/jasa" />
               <Step number={4} title="Konfirmasi penyelesaian" description="Jika sesuai, pembeli mengkonfirmasi dan dana diteruskan ke penjual" />
@@ -223,7 +223,7 @@ export default function HelpPage() {
           </FAQItem>
 
           <FAQItem question="Metode pembayaran apa yang didukung?" icon={CreditCardIcon}>
-            <p className="mb-3">AlephDraad mendukung berbagai metode pembayaran:</p>
+            <p className="mb-3">AIvalid mendukung berbagai metode pembayaran:</p>
             <ul className="space-y-2.5">
               <ListItem icon={CreditCardIcon}>
                 <strong className="text-foreground">Transfer Bank</strong> — BCA, Mandiri, BNI, BRI, dan bank lainnya

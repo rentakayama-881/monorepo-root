@@ -30,7 +30,7 @@ const footerSections = [
     title: "Sumber Daya",
     links: [
       { href: "/contact-support#faq", label: "FAQ" },
-      { href: "mailto:help@alephdraad.fun", label: "Dukungan" },
+      { href: "mailto:help@aivalid.id", label: "Dukungan" },
     ],
   },
 ];
@@ -56,24 +56,16 @@ export default function Footer() {
               <Link href="/" className="inline-flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
                 <Image
                   src="/logo/logo-icon-only.svg"
-                  alt="Alephdraad"
-                  width={24}
-                  height={24}
-                  className="dark:hidden"
-                />
-                <Image
-                  src="/logo/logo-icon-only-dark.svg"
-                  alt="Alephdraad"
-                  width={24}
-                  height={24}
-                  className="hidden dark:block"
+                  alt="AIvalid"
+                  width={32}
+                  height={32}
                 />
               </Link>
               <p className="text-sm text-muted-foreground">
                 Platform komunitas digital untuk forum, marketplace, dan pertukaran pengetahuan.
               </p>
               <a 
-                href="https://t.me/alephdraad" 
+                href="https://t.me/aivalid" 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -107,7 +99,7 @@ export default function Footer() {
           
           {/* Bottom bar */}
           <div className="mt-8 pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-            <span>© {new Date().getFullYear()} Alephdraad. All rights reserved.</span>
+            <span>© {new Date().getFullYear()} AIvalid. All rights reserved.</span>
             <div className="flex items-center gap-2">
               <Link 
                 href="/changelog" 

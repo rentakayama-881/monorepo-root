@@ -23,8 +23,8 @@ export function getApiBase() {
   // Keeps local dev behavior unchanged.
   if (!base && typeof window !== "undefined") {
     const host = window.location?.hostname || "";
-    if (host === "alephdraad.fun" || host === "www.alephdraad.fun" || (host.endsWith(".alephdraad.fun") && host !== "api.alephdraad.fun")) {
-      base = "https://api.alephdraad.fun";
+    if (host === "aivalid.id" || host === "www.aivalid.id" || (host.endsWith(".aivalid.id") && host !== "api.aivalid.id")) {
+      base = "https://api.aivalid.id";
     }
   }
 

@@ -9,9 +9,9 @@ import Skeleton from "../components/ui/Skeleton";
 export const metadata = {
   title: "Beranda",
   description:
-    "Alephdraad - Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.",
+    "AIvalid - Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.",
   openGraph: {
-    title: "Alephdraad - Validasi Hasil AI",
+    title: "AIvalid - Validasi Hasil AI",
     description:
       "Buat thread, jelaskan konteks, dan dapatkan review terstruktur dari validator sesuai bidangnya.",
   },

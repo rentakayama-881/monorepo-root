@@ -15,8 +15,8 @@ import {
 export const dynamic = "force-static";
 
 export const metadata = { 
-  title: "Tentang Kami - Alephdraad",
-  description: "PT Alephdraad Utility Stack - Platform komunitas digital untuk forum, marketplace, dan pertukaran pengetahuan"
+  title: "Tentang Kami - AIvalid",
+  description: "PT AIvalid Utility Stack - Platform komunitas digital untuk forum, marketplace, dan pertukaran pengetahuan"
 };
 
 // Reusable styled list item with icon - compact
@@ -66,7 +66,7 @@ export default function AboutPage() {
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       {/* Header */}
       <div className="mb-6 border-b border-border pb-4">
-        <h1 className="text-lg font-semibold text-foreground">Tentang AlephDraad</h1>
+        <h1 className="text-lg font-semibold text-foreground">Tentang AIvalid</h1>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Platform komunitas digital Indonesia
         </p>
@@ -76,13 +76,13 @@ export default function AboutPage() {
         {/* Company Info */}
         <Section title="Perusahaan" icon={ZapIcon}>
           <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-            <strong className="text-foreground">PT ALEPHDRAAD UTILITY STACK</strong> adalah perusahaan teknologi 
+            <strong className="text-foreground">PT AIVALID UTILITY STACK</strong> adalah perusahaan teknologi 
             yang berfokus pada pengembangan platform komunitas digital. Kami berkomitmen untuk menyediakan 
             ruang yang aman, terpercaya, dan bermanfaat bagi seluruh pengguna di Indonesia.
           </p>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Didirikan dengan visi untuk mendemokratisasi akses terhadap pengetahuan dan peluang ekonomi digital, 
-            AlephDraad hadir sebagai jembatan antara komunitas, edukasi, dan transaksi yang transparan.
+            AIvalid hadir sebagai jembatan antara komunitas, edukasi, dan transaksi yang transparan.
           </p>
         </Section>
 
@@ -140,7 +140,7 @@ export default function AboutPage() {
         {/* Landasan Hukum */}
         <Section title="Landasan Hukum" icon={ScaleIcon}>
           <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-            PT AlephDraad Utility Stack beroperasi sesuai dengan peraturan perundang-undangan Republik Indonesia, termasuk namun tidak terbatas pada:
+            PT AIvalid Utility Stack beroperasi sesuai dengan peraturan perundang-undangan Republik Indonesia, termasuk namun tidak terbatas pada:
           </p>
           <ul className="space-y-3 text-sm text-muted-foreground">
             <ListItem icon={ScaleIcon}>
@@ -173,8 +173,8 @@ export default function AboutPage() {
               </span>
               <div>
                 <p className="text-xs text-muted-foreground">Email</p>
-                <a href="mailto:ops@alephdraad.fun" className="text-sm font-medium text-foreground hover:underline">
-                  ops@alephdraad.fun
+                <a href="mailto:ops@aivalid.id" className="text-sm font-medium text-foreground hover:underline">
+                  ops@aivalid.id
                 </a>
               </div>
             </div>
@@ -184,8 +184,8 @@ export default function AboutPage() {
               </span>
               <div>
                 <p className="text-xs text-muted-foreground">Website</p>
-                <a href="https://www.alephdraad.fun" className="text-sm font-medium text-foreground hover:underline">
-                  www.alephdraad.fun
+                <a href="https://www.aivalid.id" className="text-sm font-medium text-foreground hover:underline">
+                  www.aivalid.id
                 </a>
               </div>
             </div>

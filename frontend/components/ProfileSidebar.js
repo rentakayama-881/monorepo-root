@@ -65,7 +65,7 @@ export default function ProfileSidebar({ onClose }) {
         
         // Load wallet balance from Feature Service
         try {
-          const featureBase = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.alephdraad.fun";
+          const featureBase = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
           const walletRes = await fetchWithAuth(`${featureBase}/api/v1/wallets/me`);
           if (walletRes.ok) {
             const walletData = await walletRes.json();

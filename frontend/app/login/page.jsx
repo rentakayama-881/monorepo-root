@@ -331,7 +331,7 @@ function LoginForm() {
   return (
     <div className="w-full max-w-md mx-auto space-y-6 page-enter">
       <div className="text-center space-y-1">
-        <h1 className="text-xl font-semibold text-foreground">Masuk ke Alephdraad</h1>
+        <h1 className="text-xl font-semibold text-foreground">Masuk ke AIvalid</h1>
         <p className="text-sm text-muted-foreground">Gunakan email dan password Anda untuk melanjutkan.</p>
       </div>
 

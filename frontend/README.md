@@ -1,4 +1,4 @@
-# Alephdraad Frontend
+# AIvalid Frontend
 
 Next.js 15 application with React 19 and Tailwind CSS 4.
 
@@ -159,12 +159,12 @@ npm run format        # Format with Prettier
 
 ```env
 # API URLs
-NEXT_PUBLIC_BACKEND_URL=https://api.alephdraad.fun
-NEXT_PUBLIC_FEATURE_URL=https://feature.alephdraad.fun
+NEXT_PUBLIC_BACKEND_URL=https://api.aivalid.id
+NEXT_PUBLIC_FEATURE_URL=https://feature.aivalid.id
 
 # App Config
-NEXT_PUBLIC_APP_NAME=Alephdraad
-NEXT_PUBLIC_APP_URL=https://alephdraad.fun
+NEXT_PUBLIC_APP_NAME=AIvalid
+NEXT_PUBLIC_APP_URL=https://aivalid.id
 ```
 
 ---

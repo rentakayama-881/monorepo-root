@@ -1,8 +1,8 @@
 export const dynamic = "force-static";
 
 export const metadata = { 
-  title: "Pedoman Komunitas - AlephDraad",
-  description: "Pedoman perilaku dan etika komunitas AlephDraad untuk menciptakan lingkungan yang aman dan produktif"
+  title: "Pedoman Komunitas - AIvalid",
+  description: "Pedoman perilaku dan etika komunitas AIvalid untuk menciptakan lingkungan yang aman dan produktif"
 };
 
 export default function CommunityGuidelinesPage() {
@@ -21,7 +21,7 @@ export default function CommunityGuidelinesPage() {
         <section className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
           <h2 className="mb-1.5 text-sm font-semibold text-foreground">Prinsip Dasar</h2>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            AlephDraad didirikan untuk memfasilitasi pertukaran pengetahuan dan pengalaman. Kami menjunjung 
+            AIvalid didirikan untuk memfasilitasi pertukaran pengetahuan dan pengalaman. Kami menjunjung 
             tinggi ilmu dan memberikan penghargaan tertinggi untuk setiap upaya, sekecil apapun. Di sini, 
             setiap pengguna didorong untuk merealisasikan ide mereka dalam berbagai bentuk tindakan, teknik, dan inovasi.
           </p>
@@ -245,8 +245,8 @@ export default function CommunityGuidelinesPage() {
         <section>
           <p className="text-sm text-muted-foreground">
             Untuk melaporkan pelanggaran atau pertanyaan terkait pedoman komunitas, hubungi:{" "}
-            <a href="mailto:ops@alephdraad.fun" className="text-primary hover:underline">
-              ops@alephdraad.fun
+            <a href="mailto:ops@aivalid.id" className="text-primary hover:underline">
+              ops@aivalid.id
             </a>
           </p>
         </section>

@@ -3,7 +3,7 @@
  * https://nextjs.org/docs/app/api-reference/file-conventions/metadata/sitemap
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://alephdraad.fun";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
 
 export default async function sitemap() {
   // Static pages

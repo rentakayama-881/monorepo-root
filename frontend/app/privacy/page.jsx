@@ -19,8 +19,8 @@ import {
 export const dynamic = "force-static";
 
 export const metadata = { 
-  title: "Kebijakan Privasi - AlephDraad",
-  description: "Kebijakan privasi dan perlindungan data pribadi pengguna AlephDraad"
+  title: "Kebijakan Privasi - AIvalid",
+  description: "Kebijakan privasi dan perlindungan data pribadi pengguna AIvalid"
 };
 
 // Reusable styled list item with icon - compact
@@ -75,9 +75,9 @@ export default function PrivacyPage() {
         {/* Intro */}
         <div className="mb-4 rounded-lg border border-border bg-card p-3">
           <p className="text-xs leading-relaxed text-muted-foreground">
-            PT AlephDraad Utility Stack ("Kami") berkomitmen untuk melindungi privasi dan data pribadi Anda. 
+            PT AIvalid Utility Stack ("Kami") berkomitmen untuk melindungi privasi dan data pribadi Anda. 
             Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, menyimpan, dan melindungi 
-            informasi Anda saat menggunakan platform AlephDraad.
+            informasi Anda saat menggunakan platform AIvalid.
           </p>
         </div>
 
@@ -211,8 +211,8 @@ export default function PrivacyPage() {
               <h2 className="mb-1 text-sm font-semibold text-foreground">Hubungi Kami</h2>
               <p className="text-sm text-muted-foreground">
                 Untuk pertanyaan terkait privasi dan data pribadi, silakan hubungi:{" "}
-                <a href="mailto:ops@alephdraad.fun" className="font-medium text-foreground hover:underline">
-                  ops@alephdraad.fun
+                <a href="mailto:ops@aivalid.id" className="font-medium text-foreground hover:underline">
+                  ops@aivalid.id
                 </a>
               </p>
               <p className="mt-2 text-xs text-muted-foreground">

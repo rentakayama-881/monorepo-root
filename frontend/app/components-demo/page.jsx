@@ -37,7 +37,7 @@ function ComponentsDemoContent() {
             Form Components Demo - Phase 2
           </h1>
           <p className="text-muted-foreground">
-            Premium UI/UX enhancements for Alephdraad
+            Premium UI/UX enhancements for AIvalid
           </p>
         </div>
 

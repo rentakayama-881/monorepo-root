@@ -4,7 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import logger from "@/lib/logger";
 
-const API_BASE = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.alephdraad.fun";
+const API_BASE = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
 
 export default function AdminDisputeDetailPage() {
   const router = useRouter();

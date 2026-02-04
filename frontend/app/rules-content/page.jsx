@@ -19,8 +19,8 @@ import {
 export const dynamic = "force-static";
 
 export const metadata = { 
-  title: "Syarat dan Ketentuan - AlephDraad",
-  description: "Syarat dan ketentuan penggunaan platform AlephDraad serta pedoman komunitas"
+  title: "Syarat dan Ketentuan - AIvalid",
+  description: "Syarat dan ketentuan penggunaan platform AIvalid serta pedoman komunitas"
 };
 
 // Section card with icon header - compact
@@ -97,16 +97,16 @@ export default function TermsPage() {
         {/* Intro */}
         <div className="mb-4 rounded-lg border border-border bg-card p-3">
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Dengan mengakses dan menggunakan platform AlephDraad (<Link href="/" className="font-medium text-foreground hover:underline">www.alephdraad.fun</Link>), 
+            Dengan mengakses dan menggunakan platform AIvalid (<Link href="/" className="font-medium text-foreground hover:underline">www.aivalid.id</Link>), 
             Anda menyatakan telah membaca, memahami, dan menyetujui untuk terikat dengan syarat dan ketentuan ini. 
-            Dokumen ini merupakan perjanjian yang sah secara hukum antara Anda ("Pengguna") dan PT AlephDraad Utility Stack ("Kami").
+            Dokumen ini merupakan perjanjian yang sah secara hukum antara Anda ("Pengguna") dan PT AIvalid Utility Stack ("Kami").
           </p>
         </div>
 
         {/* Pasal 1 - Definisi */}
         <Section number="1" title="Definisi" icon={DocumentIcon}>
           <ul className="space-y-3 text-sm text-muted-foreground">
-            <DefinitionItem term="Platform">adalah situs web AlephDraad beserta seluruh layanan yang disediakan.</DefinitionItem>
+            <DefinitionItem term="Platform">adalah situs web AIvalid beserta seluruh layanan yang disediakan.</DefinitionItem>
             <DefinitionItem term="Pengguna">adalah setiap individu yang mengakses atau menggunakan Platform.</DefinitionItem>
             <DefinitionItem term="Konten">adalah segala informasi, teks, gambar, atau materi lain yang diunggah ke Platform.</DefinitionItem>
             <DefinitionItem term="Escrow">adalah sistem penjaminan dana yang dikelola Platform untuk keamanan transaksi.</DefinitionItem>
@@ -168,7 +168,7 @@ export default function TermsPage() {
             <NumberedItem number={1}>Pengguna mempertahankan hak atas konten yang diunggah ke Platform.</NumberedItem>
             <NumberedItem number={2}>Dengan mengunggah konten, Pengguna memberikan lisensi non-eksklusif kepada Platform untuk menampilkan konten tersebut.</NumberedItem>
             <NumberedItem number={3}>Platform berhak menghapus konten yang diduga melanggar hak kekayaan intelektual pihak lain.</NumberedItem>
-            <NumberedItem number={4}>Merek dagang "AlephDraad" dan logo terkait adalah milik PT AlephDraad Utility Stack.</NumberedItem>
+            <NumberedItem number={4}>Merek dagang "AIvalid" dan logo terkait adalah milik PT AIvalid Utility Stack.</NumberedItem>
           </ol>
         </Section>
 
@@ -231,8 +231,8 @@ export default function TermsPage() {
               <h2 className="mb-1 text-sm font-semibold text-foreground">Kontak</h2>
               <p className="text-sm text-muted-foreground">
                 Untuk pertanyaan terkait Syarat dan Ketentuan ini, silakan hubungi:{" "}
-                <a href="mailto:info@alephdraad.fun" className="font-medium text-foreground hover:underline">
-                  info@alephdraad.fun
+                <a href="mailto:info@aivalid.id" className="font-medium text-foreground hover:underline">
+                  info@aivalid.id
                 </a>
               </p>
             </div>

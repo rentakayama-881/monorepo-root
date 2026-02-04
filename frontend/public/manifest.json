@@ -1,7 +1,7 @@
 {
-  "name": "Alephdraad",
-  "short_name": "Alephdraad",
-  "description": "Platform komunitas dan escrow terpercaya untuk transaksi aman",
+  "name": "AIvalid",
+  "short_name": "AIvalid",
+  "description": "Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
@@ -10,12 +10,6 @@
   "icons": [
     {
       "src": "/logo/logo-icon-only.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/logo/logo-icon-only-dark.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

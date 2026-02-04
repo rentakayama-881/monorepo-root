@@ -1,8 +1,8 @@
 export const dynamic = "force-static";
 
 export const metadata = { 
-  title: "Catatan Perubahan - AlephDraad",
-  description: "Riwayat pembaruan, fitur baru, dan perbaikan pada platform AlephDraad"
+  title: "Catatan Perubahan - AIvalid",
+  description: "Riwayat pembaruan, fitur baru, dan perbaikan pada platform AIvalid"
 };
 
 // Version history data
@@ -12,7 +12,7 @@ const releases = [
     codename: "Genesis",
     date: "2026-01-03",
     type: "major",
-    summary: "Rilis publik pertama AlephDraad dengan fitur lengkap forum, marketplace, dan sistem keamanan enterprise-grade.",
+    summary: "Rilis publik pertama AIvalid dengan fitur lengkap forum, marketplace, dan sistem keamanan enterprise-grade.",
     changes: {
       added: [
         "Sistem autentikasi dengan email dan kata sandi",
@@ -159,7 +159,7 @@ export default function ChangelogPage() {
       <section className="mb-8">
         <h2 className="mb-3 text-sm font-semibold text-foreground">Skema Versioning</h2>
         <p className="mb-3 text-sm text-muted-foreground">
-          AlephDraad menggunakan <a href="https://semver.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Semantic Versioning 2.0.0</a> (SemVer):
+          AIvalid menggunakan <a href="https://semver.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Semantic Versioning 2.0.0</a> (SemVer):
         </p>
         <div className="rounded-lg border border-border p-3">
           <code className="text-sm text-foreground">MAJOR.MINOR.PATCH</code>
@@ -255,8 +255,8 @@ export default function ChangelogPage() {
             <p className="text-sm font-medium text-foreground">Ingin fitur baru?</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Kirimkan saran dan masukan Anda ke{" "}
-              <a href="mailto:feedback@alephdraad.fun" className="text-primary hover:underline">
-                feedback@alephdraad.fun
+              <a href="mailto:feedback@aivalid.id" className="text-primary hover:underline">
+                feedback@aivalid.id
               </a>
             </p>
           </div>

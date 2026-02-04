@@ -11,7 +11,7 @@ import { clearToken } from "./auth";
  * Get Feature Service base URL
  */
 export function getFeatureApiBase() {
-  return process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.alephdraad.fun";
+  return process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
 }
 
 /**

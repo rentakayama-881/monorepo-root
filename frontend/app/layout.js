@@ -31,9 +31,9 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const siteName = "Alephdraad";
-const siteDescription = "Platform komunitas dan escrow terpercaya untuk transaksi aman antar pengguna di Indonesia.";
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://alephdraad.fun";
+const siteName = "AIvalid";
+const siteDescription = "Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -42,9 +42,9 @@ export const metadata = {
   },
   description: siteDescription,
   keywords: ["escrow", "transaksi aman", "komunitas", "forum", "Indonesia", "payment"],
-  authors: [{ name: "Alephdraad Team" }],
-  creator: "Alephdraad",
-  publisher: "Alephdraad",
+  authors: [{ name: "AIvalid Team" }],
+  creator: "AIvalid",
+  publisher: "AIvalid",
   
   // Open Graph
   openGraph: {
@@ -85,12 +85,12 @@ export const metadata = {
     },
   },
   
-  // Icons - Alephdraad
+  // Icons - AIvalid
   icons: {
     icon: [
-      { url: "/logo/favicon.svg", type: "image/svg+xml" },
+      { url: "/logo/logo-icon-only.svg", type: "image/svg+xml" },
     ],
-    shortcut: "/logo/favicon.svg",
+    shortcut: "/logo/logo-icon-only.svg",
     apple: "/logo/logo-icon-only.svg",
   },
   

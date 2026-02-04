@@ -1,15 +1,15 @@
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Biaya Layanan - AlephDraad",
-  description: "Informasi lengkap biaya deposit, transaksi escrow, dan penarikan dana di AlephDraad"
+  title: "Biaya Layanan - AIvalid",
+  description: "Informasi lengkap biaya deposit, transaksi escrow, dan penarikan dana di AIvalid"
 };
 
 const feeStructure = [
   {
     type: "Deposit",
     fee: "Gratis",
-    description: "Top-up saldo ke wallet AlephDraad",
+    description: "Top-up saldo ke wallet AIvalid",
     details: [
       "Tidak ada biaya administrasi",
       "Metode: Transfer Bank, QRIS, E-Wallet",
@@ -63,7 +63,7 @@ export default function FeesPage() {
       <div className="mb-6 border-b border-border pb-4">
         <h1 className="text-lg font-semibold text-foreground">Biaya Layanan</h1>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Struktur biaya transparan untuk semua layanan AlephDraad
+          Struktur biaya transparan untuk semua layanan AIvalid
         </p>
       </div>
 
@@ -142,7 +142,7 @@ export default function FeesPage() {
             <div>
               <h3 className="text-[13px] font-medium text-foreground">Penting: Waktu Pencairan Dana</h3>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                AlephDraad menggunakan sistem pembayaran dengan mekanisme settlement H+1 hingga H+3 hari kerja, 
+                AIvalid menggunakan sistem pembayaran dengan mekanisme settlement H+1 hingga H+3 hari kerja, 
                 tergantung metode pembayaran yang digunakan.
               </p>
             </div>
@@ -311,8 +311,8 @@ export default function FeesPage() {
             <p className="text-sm font-medium text-foreground">Ada Pertanyaan?</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Hubungi tim kami di{" "}
-              <a href="mailto:tx@alephdraad.fun" className="text-foreground font-medium hover:underline">
-                tx@alephdraad.fun
+              <a href="mailto:tx@aivalid.id" className="text-foreground font-medium hover:underline">
+                tx@aivalid.id
               </a>
             </p>
           </div>
