@@ -17,27 +17,22 @@ function resolveThemeValue(theme) {
 }
 
 export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState("system");
-  const [resolvedTheme, setResolvedTheme] = useState("light");
-  const [mounted, setMounted] = useState(false);
-
-  // Initialize theme from localStorage
-  useEffect(() => {
-    setMounted(true);
+  const [theme, setThemeState] = useState(() => {
+    if (typeof window === "undefined") return "system";
     try {
-      const storedTheme = localStorage.getItem(STORAGE_KEYS.THEME) || "system";
-      setThemeState(storedTheme);
-    } catch (error) {
-      // localStorage unavailable (e.g., private browsing)
-      console.warn("localStorage unavailable, using default theme:", error);
-      setThemeState("system");
+      return localStorage.getItem(STORAGE_KEYS.THEME) || "system";
+    } catch {
+      return "system";
     }
-  }, []);
+  });
+
+  const [resolvedTheme, setResolvedTheme] = useState(() => {
+    if (typeof document === "undefined") return "light";
+    return document.documentElement.classList.contains("dark") ? "dark" : "light";
+  });
 
   // Update resolved theme based on current theme and system preference
   useEffect(() => {
-    if (!mounted) return;
-
     const updateResolvedTheme = () => {
       let resolved = theme;
       
@@ -65,11 +60,9 @@ export function ThemeProvider({ children }) {
 
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [theme, mounted]);
+  }, [theme]);
 
   const setTheme = (newTheme) => {
-    if (!mounted) return;
-    
     const root = document.documentElement;
     const resolved = resolveThemeValue(newTheme);
 
@@ -86,11 +79,6 @@ export function ThemeProvider({ children }) {
       console.warn("Failed to save theme to localStorage:", error);
     }
   };
-
-  // Prevent flash of unstyled content
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>

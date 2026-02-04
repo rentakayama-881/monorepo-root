@@ -7,10 +7,6 @@ import dynamic from "next/dynamic";
 const CommandPalette = dynamic(() => import("./CommandPalette"), {
   loading: () => null,
   ssr: false,
-  // Handle loading errors gracefully
-  onError: (error) => {
-    console.error("Failed to load CommandPalette:", error);
-  },
 });
 
 const CommandPaletteContext = createContext({
@@ -45,7 +41,9 @@ export function CommandPaletteProvider({ children }) {
       }}
     >
       {children}
-      <CommandPalette isOpen={isOpen} onClose={closeCommandPalette} />
+      {isOpen ? (
+        <CommandPalette isOpen={isOpen} onClose={closeCommandPalette} />
+      ) : null}
     </CommandPaletteContext.Provider>
   );
 }

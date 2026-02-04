@@ -28,7 +28,26 @@ export default function ApiStatusBanner() {
 
   // Initial check
   useEffect(() => {
-    ping();
+    let cancelled = false;
+
+    const start = () => {
+      if (cancelled) return;
+      ping();
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(start, { timeout: 3000 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(id);
+      };
+    }
+
+    const id = window.setTimeout(start, 1500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
   }, [ping]);
 
   // Countdown timer when unhealthy

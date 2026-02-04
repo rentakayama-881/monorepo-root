@@ -108,9 +108,23 @@ export default function Header() {
       }
     }
 
-    loadCategories();
+    const start = () => {
+      if (cancelled) return;
+      loadCategories();
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(start, { timeout: 3000 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(id);
+      };
+    }
+
+    const id = window.setTimeout(start, 800);
     return () => {
       cancelled = true;
+      window.clearTimeout(id);
     };
   }, []);
 

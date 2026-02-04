@@ -93,6 +93,9 @@ export default function Sidebar({ open, onClose }) {
   }, [open, handleClose]);
 
   useEffect(() => {
+    if (!open) return;
+    if (categories.length > 0) return;
+
     let cancelled = false;
     async function loadCategories() {
       setLoadingCategories(true);
@@ -104,7 +107,7 @@ export default function Sidebar({ open, onClose }) {
     }
     loadCategories();
     return () => { cancelled = true; };
-  }, []);
+  }, [open, categories.length]);
 
   const filteredCategories = search.trim()
     ? categories.filter(cat => cat.name.toLowerCase().includes(search.toLowerCase()))
