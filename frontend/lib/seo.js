@@ -50,7 +50,7 @@ export function generateOrganizationStructuredData() {
     url: process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id",
     logo: {
       "@type": "ImageObject",
-      url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id"}/logo/light-mode.svg`,
+      url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id"}/favicon.svg`,
     },
     sameAs: [],
   };

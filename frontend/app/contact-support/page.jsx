@@ -197,7 +197,7 @@ export default function HelpPage() {
           <FAQItem question="Bagaimana cara melaporkan konten yang melanggar?" icon={WarningIcon}>
             <p className="mb-3">Untuk melaporkan konten yang melanggar:</p>
             <ol className="space-y-2.5">
-              <Step number={1} description="Klik tombol "Laporkan"  pada konten yang ingin dilaporkan" />
+              <Step number={1} description='Klik tombol "Laporkan" pada konten yang ingin dilaporkan' />
               <Step number={2} description='"Laporkan"' />
               <Step number={3} description="Pilih kategori pelanggaran" />
               <Step number={4} description="Berikan penjelasan tambahan jika diperlukan" />

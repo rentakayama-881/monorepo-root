@@ -86,15 +86,12 @@ export const metadata = {
     },
   },
   
-  // Icons - AIvalid
-  icons: {
-    icon: [
-      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
-    ],
-    shortcut: "/favicon-32.png",
-    apple: "/favicon-32.png",
-  },
+	  // Icons - AIvalid
+	  icons: {
+	    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+	    shortcut: "/favicon.svg",
+	    apple: "/logo/light-mode.png",
+	  },
   
   // Manifest
   manifest: "/manifest.json",
