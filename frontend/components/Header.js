@@ -7,6 +7,7 @@ import ThemeToggle from "./ThemeToggle";
 import CommandPaletteTrigger from "./CommandPaletteTrigger";
 import { Logo } from "./ui/Logo";
 import Avatar from "./ui/Avatar";
+import Portal from "./ui/Portal";
 import { fetchCategories } from "../lib/categories";
 import { AUTH_CHANGED_EVENT, getToken, TOKEN_KEY } from "@/lib/auth";
 import { getApiBase } from "@/lib/api";
@@ -323,8 +324,6 @@ export default function Header() {
                   )}
                 </span>
               </button>
-
-              {profileOpen && <ProfileSidebar onClose={() => setProfileOpen(false)} />}
             </div>
           ) : (
             <>
@@ -345,9 +344,12 @@ export default function Header() {
         </div>
       </div>
 
-      {sidebarMounted ? (
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      ) : null}
+      <Portal>
+        {sidebarMounted ? (
+          <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        ) : null}
+        {profileOpen ? <ProfileSidebar onClose={() => setProfileOpen(false)} /> : null}
+      </Portal>
     </header>
   );
 }

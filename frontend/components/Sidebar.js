@@ -120,7 +120,7 @@ export default function Sidebar({ open, onClose }) {
     <>
       <aside
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 z-40 flex flex h-dvh w-80 flex-col border-r bg-card shadow-xl transition-all duration-300 md:hidden ${
+        className={`fixed inset-y-0 left-0 z-[120] flex flex h-dvh w-80 flex-col border-r bg-card shadow-xl transition-all duration-300 md:hidden ${
           open && !isClosing 
             ? "translate-x-0 opacity-100" 
             : "-translate-x-full opacity-0"
@@ -224,7 +224,7 @@ export default function Sidebar({ open, onClose }) {
       {/* Overlay untuk mobile - match prompts.chat Sheet overlay */}
       {open && (
         <div
-          className={`fixed inset-0 z-30 bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30 md:hidden transition-opacity duration-300 ${
+          className={`fixed inset-0 z-[110] bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30 md:hidden transition-opacity duration-300 ${
             isClosing ? 'opacity-0' : 'opacity-100'
           }`}
           onClick={handleClose}

@@ -145,13 +145,13 @@ export default function ProfileSidebar({ onClose }) {
       <>
         {/* Backdrop overlay */}
         <div 
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30"
+          className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30"
           onClick={onClose}
           aria-hidden="true"
         />
         <div
           ref={panelRef}
-          className="fixed right-4 top-16 z-50 w-80 rounded-[var(--radius)] border bg-card p-4 shadow-xl"
+          className="fixed right-4 top-16 z-[120] w-80 rounded-[var(--radius)] border bg-card p-4 shadow-xl"
         >
           <div className="space-y-4" aria-busy="true" aria-live="polite">
             <div className="flex items-center gap-3">
@@ -193,13 +193,13 @@ export default function ProfileSidebar({ onClose }) {
     <>
       {/* Backdrop overlay - click to close */}
       <div 
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30 animate-fade-in"
+        className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30 animate-fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
       <div
         ref={panelRef}
-        className="fixed right-4 top-16 z-50 w-80 rounded-[var(--radius)] border bg-card shadow-xl flex flex-col max-h-[calc(100dvh-6rem)] animate-slide-down"
+        className="fixed right-4 top-16 z-[120] w-80 rounded-[var(--radius)] border bg-card shadow-xl flex flex-col max-h-[calc(100dvh-6rem)] animate-slide-down"
       >
         {/* Fixed header section */}
         <div className="p-4 pb-0 shrink-0">
