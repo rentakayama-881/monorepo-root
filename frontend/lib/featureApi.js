@@ -39,8 +39,6 @@ export const FEATURE_ENDPOINTS = {
   // Reports
   REPORTS: {
     CREATE: "/api/v1/reports",
-    LIST: "/api/v1/reports/my",
-    DETAIL: (id) => `/api/v1/reports/${id}`,
     REASONS: "/api/v1/reports/reasons",
   },
 

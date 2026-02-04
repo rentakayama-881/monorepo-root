@@ -2,7 +2,11 @@ package enttest
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +19,28 @@ import (
 	_ "github.com/lib/pq"
 )
 
+var ErrDockerUnavailable = errors.New("docker is unavailable")
+
+func dockerAvailable() bool {
+	dockerHost := strings.TrimSpace(os.Getenv("DOCKER_HOST"))
+	if dockerHost == "" || strings.HasPrefix(dockerHost, "unix://") {
+		socketPath := "/var/run/docker.sock"
+		if strings.HasPrefix(dockerHost, "unix://") {
+			socketPath = strings.TrimPrefix(dockerHost, "unix://")
+		}
+		conn, err := net.DialTimeout("unix", socketPath, 500*time.Millisecond)
+		if err != nil {
+			return false
+		}
+		_ = conn.Close()
+		return true
+	}
+
+	// Best-effort: if DOCKER_HOST is set to a non-unix address, assume Docker is available.
+	// Testcontainers will still error if it isn't.
+	return true
+}
+
 // PostgresContainer represents a running PostgreSQL test container
 type PostgresContainer struct {
 	Container testcontainers.Container
@@ -25,6 +51,10 @@ type PostgresContainer struct {
 
 // SetupPostgresContainer creates a PostgreSQL container for integration testing
 func SetupPostgresContainer(ctx context.Context) (*PostgresContainer, error) {
+	if !dockerAvailable() {
+		return nil, ErrDockerUnavailable
+	}
+
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:16-alpine",
 		ExposedPorts: []string{"5432/tcp"},
@@ -90,6 +120,9 @@ func NewTestClient(t *testing.T) *TestClient {
 
 	container, err := SetupPostgresContainer(ctx)
 	if err != nil {
+		if errors.Is(err, ErrDockerUnavailable) {
+			t.Skip("skipping integration tests: Docker is not available")
+		}
 		t.Fatalf("failed to setup postgres container: %v", err)
 	}
 

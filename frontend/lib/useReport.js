@@ -1,6 +1,6 @@
 /**
  * Custom hooks for Reports API (Feature Service)
- * Handles report submission and listing
+ * Handles report submission
  */
 import { useState, useEffect, useCallback } from "react";
 import { fetchFeature, fetchFeatureAuth, FEATURE_ENDPOINTS } from "./featureApi";
@@ -37,7 +37,7 @@ export function useSubmitReport() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const submitReport = useCallback(async (targetType, targetId, reason, description = "") => {
+  const submitReport = useCallback(async ({ targetType, targetId, threadId, reason, description = "" }) => {
     const token = getToken();
     if (!token) {
       const err = new Error("Authentication required to submit a report");
@@ -60,6 +60,13 @@ export function useSubmitReport() {
       throw err;
     }
 
+    const parsedThreadId = Number(threadId);
+    if (!Number.isFinite(parsedThreadId) || parsedThreadId <= 0) {
+      const err = new Error("Invalid thread ID");
+      setError(err.message);
+      throw err;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(false);
@@ -68,6 +75,7 @@ export function useSubmitReport() {
       const body = {
         targetType,
         targetId,
+        threadId: parsedThreadId,
         reason,
       };
 
@@ -80,12 +88,18 @@ export function useSubmitReport() {
         body: JSON.stringify(body),
       });
 
-      if (result.success) {
+      if (result?.reportId) {
         setSuccess(true);
-        return result.data; // { reportId }
-      } else {
+        return result; // { reportId, message }
+      }
+
+      if (result?.success === false) {
         throw new Error(result.message || "Failed to submit report");
       }
+
+      // Backwards-compatible: treat any 2xx JSON as success if fetchFeatureAuth didn't throw.
+      setSuccess(true);
+      return result;
     } catch (err) {
       logger.error("Submit Report Error:", err.message);
       setError(err.message);
@@ -101,89 +115,6 @@ export function useSubmitReport() {
   }, []);
 
   return { submitReport, loading, error, success, reset };
-}
-
-/**
- * Hook for fetching user's reports
- * @param {object} options - Options
- * @param {number} options.limit - Items per page
- * @param {boolean} options.skip - Skip initial fetch
- * @returns {{ reports, loading, error, hasMore, loadMore, refetch }}
- */
-export function useMyReports(options = {}) {
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(!options.skip);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [error, setError] = useState(null);
-  const [hasMore, setHasMore] = useState(false);
-  const [nextCursor, setNextCursor] = useState(null);
-
-  const fetchReports = useCallback(
-    async (cursor = null, append = false) => {
-      const token = getToken();
-      if (!token) {
-        setError("Please sign in to view your reports");
-        setLoading(false);
-        return;
-      }
-
-      const limit = options.limit || 20;
-
-      if (append) {
-        setIsLoadingMore(true);
-      } else {
-        setLoading(true);
-        setError(null);
-      }
-
-      try {
-        const queryParams = new URLSearchParams({ limit: String(limit) });
-        if (cursor) {
-          queryParams.set("cursor", cursor);
-        }
-
-        const endpoint = `${FEATURE_ENDPOINTS.REPORTS.LIST}?${queryParams}`;
-        const result = await fetchFeatureAuth(endpoint);
-
-        if (result.success) {
-          const newReports = result.data || [];
-          setReports((prev) => (append ? [...prev, ...newReports] : newReports));
-          setHasMore(result.meta?.hasMore || false);
-          setNextCursor(result.meta?.nextCursor || null);
-        } else {
-          throw new Error(result.message || "Failed to load reports");
-        }
-      } catch (err) {
-        logger.error("Fetch Reports Error:", err.message);
-        if (!append) {
-          setError(err.message);
-        }
-      } finally {
-        setLoading(false);
-        setIsLoadingMore(false);
-      }
-    },
-    [options.limit]
-  );
-
-  const loadMore = useCallback(() => {
-    if (nextCursor && !isLoadingMore) {
-      fetchReports(nextCursor, true);
-    }
-  }, [nextCursor, isLoadingMore, fetchReports]);
-
-  const refetch = useCallback(() => {
-    setNextCursor(null);
-    fetchReports(null, false);
-  }, [fetchReports]);
-
-  useEffect(() => {
-    if (!options.skip) {
-      fetchReports();
-    }
-  }, [options.skip, fetchReports]);
-
-  return { reports, loading, error, hasMore, loadMore, refetch, isLoadingMore };
 }
 
 /**

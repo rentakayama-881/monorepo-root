@@ -3,6 +3,8 @@ using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Controllers;
+using System.Net;
+using System.Text.Json;
 using Ulid = NUlid.Ulid;
 
 namespace FeatureService.Api.Services;
@@ -21,19 +23,89 @@ public class ReportService : IReportService
 {
     private readonly MongoDbContext _context;
     private readonly ILogger<ReportService> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IConfiguration _configuration;
 
-    public ReportService(MongoDbContext context, ILogger<ReportService> logger)
+    public ReportService(
+        MongoDbContext context,
+        ILogger<ReportService> logger,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
+        _configuration = configuration;
     }
 
     public async Task<string> CreateReportAsync(uint reporterUserId, string targetType, string targetId, uint threadId, string reason, string? description)
     {
+        if (string.IsNullOrWhiteSpace(targetId))
+        {
+            throw new ArgumentException("TargetId is required", nameof(targetId));
+        }
+
+        targetType = targetType?.Trim() ?? string.Empty;
+        targetId = targetId.Trim();
+        reason = reason?.Trim() ?? string.Empty;
+        description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+
         // Validate reason
         if (!ReportReason.All.Contains(reason))
         {
             throw new ArgumentException($"Invalid reason. Must be one of: {string.Join(", ", ReportReason.All)}");
+        }
+
+        var resolvedThreadId = threadId;
+        uint resolvedReportedUserId = 0;
+
+        if (string.Equals(targetType, ReportTargetType.Thread, StringComparison.OrdinalIgnoreCase))
+        {
+            if (resolvedThreadId == 0)
+            {
+                if (!uint.TryParse(targetId, out resolvedThreadId) || resolvedThreadId == 0)
+                {
+                    throw new ArgumentException("ThreadId is required for thread reports", nameof(threadId));
+                }
+            }
+
+            var ownerId = await TryResolveThreadOwnerUserIdAsync(resolvedThreadId);
+            if (ownerId.HasValue)
+            {
+                resolvedReportedUserId = ownerId.Value;
+            }
+        }
+        else if (string.Equals(targetType, ReportTargetType.Reply, StringComparison.OrdinalIgnoreCase))
+        {
+            var reply = await _context.Replies
+                .Find(r => r.Id == targetId)
+                .FirstOrDefaultAsync();
+
+            if (reply == null)
+            {
+                throw new KeyNotFoundException("Reply not found");
+            }
+
+            resolvedReportedUserId = reply.UserId;
+
+            if (resolvedThreadId == 0)
+            {
+                resolvedThreadId = reply.ThreadId;
+            }
+            else if (reply.ThreadId != resolvedThreadId)
+            {
+                _logger.LogWarning(
+                    "Report threadId mismatch for reply. Using reply.ThreadId. Provided={ProvidedThreadId}, Actual={ActualThreadId}, ReplyId={ReplyId}",
+                    resolvedThreadId,
+                    reply.ThreadId,
+                    reply.Id);
+                resolvedThreadId = reply.ThreadId;
+            }
+        }
+
+        if (resolvedThreadId == 0)
+        {
+            throw new ArgumentException("ThreadId is required", nameof(threadId));
         }
 
         // Check if user already reported this content
@@ -47,8 +119,8 @@ public class ReportService : IReportService
             Id = $"rpt_{Ulid.NewUlid()}",
             TargetType = targetType,
             TargetId = targetId,
-            ThreadId = threadId,
-            ReportedUserId = 0, // Will be set by caller or fetched from Go backend
+            ThreadId = resolvedThreadId,
+            ReportedUserId = resolvedReportedUserId,
             ReporterUserId = reporterUserId,
             Reason = reason,
             Description = description,
@@ -62,6 +134,44 @@ public class ReportService : IReportService
             report.Id, reporterUserId, targetType, targetId);
 
         return report.Id;
+    }
+
+    private async Task<uint?> TryResolveThreadOwnerUserIdAsync(uint threadId)
+    {
+        var goBackendUrl = (_configuration["GoBackend:BaseUrl"] ?? "http://127.0.0.1:8080").TrimEnd('/');
+        var url = $"{goBackendUrl}/api/threads/{threadId}/public";
+
+        try
+        {
+            var httpClient = _httpClientFactory.CreateClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using var response = await httpClient.SendAsync(request);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var thread = JsonSerializer.Deserialize<GoThreadDetailResponse>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (thread?.User?.Id is > 0)
+            {
+                return thread.User.Id;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to resolve thread owner via Go backend for thread {ThreadId}", threadId);
+            return null;
+        }
     }
 
     public async Task<Report?> GetReportByIdAsync(string reportId)
@@ -176,4 +286,15 @@ public class ReportService : IReportService
         var count = await _context.Reports.CountDocumentsAsync(filter);
         return count > 0;
     }
+}
+
+internal sealed class GoThreadDetailResponse
+{
+    public GoThreadUser? User { get; set; }
+}
+
+internal sealed class GoThreadUser
+{
+    public uint Id { get; set; }
+    public string? Username { get; set; }
 }

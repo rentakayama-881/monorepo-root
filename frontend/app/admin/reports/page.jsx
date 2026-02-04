@@ -29,7 +29,7 @@ export default function ReportsPage() {
       );
       if (!res.ok) throw new Error("Gagal memuat reports");
       const data = await res.json();
-      setReports(data.items || []);
+      setReports(data.reports || data.items || data.data?.reports || data.data?.items || []);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -53,7 +53,7 @@ export default function ReportsPage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ action, reason }),
+          body: JSON.stringify({ action, adminNotes: reason }),
         }
       );
       if (!res.ok) throw new Error("Gagal memproses aksi");
@@ -150,7 +150,7 @@ export default function ReportsPage() {
                   <div className="flex items-center gap-2 mb-1">
                     {getStatusBadge(report.status)}
                     <span className="px-2 py-0.5 rounded-full text-xs bg-muted/50 text-foreground">
-                      {getContentTypeLabel(report.contentType)}
+                      {getContentTypeLabel(report.targetType)}
                     </span>
                     <span className="px-2 py-0.5 rounded-full text-xs bg-orange-100 text-orange-800">
                       {getReasonLabel(report.reason)}
@@ -160,8 +160,13 @@ export default function ReportsPage() {
                     {report.description || "Tidak ada deskripsi"}
                   </p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span>Reporter: {report.reporterUsername || report.reporterId}</span>
-                    <span>Target: {report.targetUsername || report.targetId}</span>
+                    <span>Reporter: {report.reporterUsername || report.reporterUserId}</span>
+                    <span>
+                      Target:{" "}
+                      {report.reportedUsername ||
+                        report.reportedUserId ||
+                        report.targetId}
+                    </span>
                     <span>{new Date(report.createdAt).toLocaleString("id-ID")}</span>
                   </div>
                 </div>
@@ -200,7 +205,7 @@ export default function ReportsPage() {
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">Content Type</label>
-                  <p className="text-sm text-foreground">{getContentTypeLabel(selectedReport.contentType)}</p>
+                  <p className="text-sm text-foreground">{getContentTypeLabel(selectedReport.targetType)}</p>
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">Reason</label>
@@ -222,23 +227,21 @@ export default function ReportsPage() {
               <div>
                 <label className="text-xs text-muted-foreground">Reporter</label>
                 <p className="text-sm text-foreground">
-                  {selectedReport.reporterUsername} (ID: {selectedReport.reporterId})
+                  {selectedReport.reporterUsername || "-"} (ID: {selectedReport.reporterUserId})
                 </p>
               </div>
 
               <div>
                 <label className="text-xs text-muted-foreground">Target User</label>
                 <p className="text-sm text-foreground">
-                  {selectedReport.targetUsername} (ID: {selectedReport.targetId})
+                  {selectedReport.reportedUsername || "-"} (ID: {selectedReport.reportedUserId || "-"})
                 </p>
               </div>
 
-              {selectedReport.contentId && (
-                <div>
-                  <label className="text-xs text-muted-foreground">Content ID</label>
-                  <p className="text-sm text-foreground font-mono">{selectedReport.contentId}</p>
-                </div>
-              )}
+              <div>
+                <label className="text-xs text-muted-foreground">Content ID</label>
+                <p className="text-sm text-foreground font-mono">{selectedReport.targetId}</p>
+              </div>
 
               {selectedReport.status === "pending" && (
                 <div className="pt-4 border-t border-border">
@@ -255,7 +258,7 @@ export default function ReportsPage() {
                     <Button
                       size="sm"
                       className="bg-yellow-500 hover:bg-yellow-600 text-white"
-                      onClick={() => handleAction(selectedReport.id, "warn", "Warned by admin")}
+                      onClick={() => handleAction(selectedReport.id, "warning", "Warning issued by admin")}
                       disabled={actionLoading}
                     >
                       Warn User

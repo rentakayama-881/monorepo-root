@@ -22,6 +22,7 @@ export default function ReportModal({
   onClose,
   targetType,
   targetId,
+  threadId,
   targetTitle = "",
 }) {
   const [reason, setReason] = useState("");
@@ -44,7 +45,16 @@ export default function ReportModal({
     }
 
     try {
-      await submitReport(targetType, targetId, reason, description);
+      const effectiveThreadId =
+        threadId ?? (targetType === REPORT_TARGET_TYPES.THREAD ? targetId : null);
+
+      await submitReport({
+        targetType,
+        targetId,
+        threadId: effectiveThreadId,
+        reason,
+        description,
+      });
       toast.success("Laporan Terkirim", "Terima kasih atas laporan Anda. Tim kami akan meninjau.");
       handleClose();
     } catch (err) {

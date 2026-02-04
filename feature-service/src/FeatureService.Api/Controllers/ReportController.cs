@@ -75,6 +75,19 @@ public class ReportController : ControllerBase
             return CreatedAtAction(nameof(GetReportStatus), new { id = reportId },
                 new ReportCreatedResponse(reportId, "Report submitted successfully"));
         }
+        catch (InvalidOperationException ex)
+        {
+            // e.g., already reported (double-submit or race)
+            return Conflict(new { error = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create report for {TargetType} {TargetId}", request.TargetType, request.TargetId);
@@ -111,25 +124,6 @@ public class ReportController : ControllerBase
             report.CreatedAt,
             report.ReviewedAt
         ));
-    }
-
-    /// <summary>
-    /// Get user's submitted reports
-    /// </summary>
-    [HttpGet("my-reports")]
-    [ProducesResponseType(typeof(PaginatedReportsResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetMyReports([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-    {
-        var userId = GetCurrentUserId();
-        if (userId == 0)
-        {
-            return Unauthorized(new { error = "User not authenticated" });
-        }
-
-        pageSize = Math.Min(pageSize, 50); // Cap at 50
-
-        var reports = await _reportService.GetUserReportsAsync(userId, page, pageSize);
-        return Ok(reports);
     }
 
     /// <summary>
