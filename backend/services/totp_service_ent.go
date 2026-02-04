@@ -255,16 +255,28 @@ func (s *EntTOTPService) VerifyBackupCode(ctx context.Context, userID int, code 
 	// Normalize the input code
 	normalizedCode := normalizeBackupCode(code)
 
-	// Hash the normalized code
+	// Hash the normalized code (current format)
 	hash := sha256.Sum256([]byte(normalizedCode))
 	codeHash := hex.EncodeToString(hash[:])
+
+	// Backward-compatible: older versions mistakenly hashed the displayed format ("XXXX-XXXX") directly.
+	// Keep accepting it so existing backup codes remain usable after upgrades.
+	codeHashes := []string{codeHash}
+	if len(normalizedCode) == BackupCodeLength*2 {
+		legacyFormat := normalizedCode[:BackupCodeLength] + "-" + normalizedCode[BackupCodeLength:]
+		legacyHash := sha256.Sum256([]byte(legacyFormat))
+		legacyCodeHash := hex.EncodeToString(legacyHash[:])
+		if legacyCodeHash != codeHash {
+			codeHashes = append(codeHashes, legacyCodeHash)
+		}
+	}
 
 	// Find unused backup code
 	bc, err := s.client.BackupCode.
 		Query().
 		Where(
 			backupcode.UserIDEQ(userID),
-			backupcode.CodeHashEQ(codeHash),
+			backupcode.CodeHashIn(codeHashes...),
 			// Backward-compatible: older rows were mistakenly created with UsedAt set to zero time instead of NULL.
 			backupcode.Or(
 				backupcode.UsedAtIsNil(),

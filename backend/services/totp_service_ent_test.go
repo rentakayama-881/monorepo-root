@@ -140,11 +140,13 @@ func TestEntTOTPService_VerifyBackupCode_AllowsNullOrZeroUsedAt(t *testing.T) {
 				code   = "ABCD-EFGH"
 			)
 
-			codeHash := func() string {
-				normalizedCode := normalizeBackupCode(code)
-				hash := sha256.Sum256([]byte(normalizedCode))
-				return hex.EncodeToString(hash[:])
-			}()
+			normalizedCode := normalizeBackupCode(code)
+			hash := sha256.Sum256([]byte(normalizedCode))
+			codeHash := hex.EncodeToString(hash[:])
+
+			legacyFormat := normalizedCode[:BackupCodeLength] + "-" + normalizedCode[BackupCodeLength:]
+			legacyHash := sha256.Sum256([]byte(legacyFormat))
+			legacyCodeHash := hex.EncodeToString(legacyHash[:])
 
 			var (
 				selectQuery string
@@ -154,7 +156,7 @@ func TestEntTOTPService_VerifyBackupCode_AllowsNullOrZeroUsedAt(t *testing.T) {
 
 			now := time.Now()
 			sqlDrv := &entSQLDriver{
-				query: func(query string, _ []driver.NamedValue) (driver.Rows, error) {
+				query: func(query string, args []driver.NamedValue) (driver.Rows, error) {
 					selectQuery = query
 
 					if !strings.Contains(query, `FROM "backup_codes"`) {
@@ -165,6 +167,31 @@ func TestEntTOTPService_VerifyBackupCode_AllowsNullOrZeroUsedAt(t *testing.T) {
 					}
 					if !strings.Contains(query, `"backup_codes"."used_at" =`) {
 						return nil, fmt.Errorf("expected UsedAt zero-time equality check in query, got: %s", query)
+					}
+
+					foundNormalized := false
+					foundLegacy := false
+					for _, arg := range args {
+						switch v := arg.Value.(type) {
+						case string:
+							if v == codeHash {
+								foundNormalized = true
+							}
+							if v == legacyCodeHash {
+								foundLegacy = true
+							}
+						case []byte:
+							s := string(v)
+							if s == codeHash {
+								foundNormalized = true
+							}
+							if s == legacyCodeHash {
+								foundLegacy = true
+							}
+						}
+					}
+					if !foundNormalized || !foundLegacy {
+						return nil, fmt.Errorf("expected both normalized and legacy code hashes to be present in query args (foundNormalized=%v foundLegacy=%v)", foundNormalized, foundLegacy)
 					}
 
 					return &entSQLRows{
