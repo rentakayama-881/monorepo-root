@@ -698,12 +698,12 @@ public class TransferService : ITransferService
         }
     }
 
-    private async Task<string?> GetUsernameFromBackend(uint userId)
-    {
-        try
-        {
-            var backendUrl = _configuration["Backend:ApiUrl"] ?? "https://api.alephdraad.fun";
-            var response = await _httpClient.GetAsync($"{backendUrl}/api/users/{userId}/public");
+	    private async Task<string?> GetUsernameFromBackend(uint userId)
+	    {
+	        try
+	        {
+	            var backendUrl = _configuration["Backend:ApiUrl"] ?? "https://api.aivalid.id";
+	            var response = await _httpClient.GetAsync($"{backendUrl}/api/users/{userId}/public");
 
             if (response.IsSuccessStatusCode)
             {

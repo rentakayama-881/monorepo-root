@@ -57,7 +57,7 @@ func buildCORSConfig() cors.Config {
 
 	frontend := strings.TrimSpace(os.Getenv("FRONTEND_BASE_URL"))
 	if frontend == "" {
-		frontend = "https://alephdraad.fun"
+		frontend = "https://aivalid.id"
 	}
 
 	allowedOriginsEnv := os.Getenv("CORS_ALLOWED_ORIGINS")
