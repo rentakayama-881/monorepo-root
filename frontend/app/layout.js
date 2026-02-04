@@ -5,6 +5,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 import { ToastProvider } from "../components/ui/Toast";
+import { SudoProvider } from "../components/SudoModal";
 import Providers from "../components/Providers";
 import { ThemeProvider } from "../lib/ThemeContext";
 import { CommandPaletteProvider } from "../components/CommandPaletteProvider";
@@ -138,17 +139,19 @@ export default function RootLayout({ children }) {
           <Providers>
             <CommandPaletteProvider>
               <ToastProvider>
-                <Header />
-                <ApiStatusBanner />
+                <SudoProvider>
+                  <Header />
+                  <ApiStatusBanner />
 
-                <main id="main-content" className="flex-1 pt-[var(--header-height)]">{children}</main>
-                
-                <Footer />
-                <SpeedInsights />                  
-                {/* Global keyboard shortcuts handler */}
-                <GlobalKeyboardShortcuts />
-                
-                {/* Back to top button - REMOVED as per design requirements */}
+                  <main id="main-content" className="flex-1 pt-[var(--header-height)]">{children}</main>
+                  
+                  <Footer />
+                  <SpeedInsights />                  
+                  {/* Global keyboard shortcuts handler */}
+                  <GlobalKeyboardShortcuts />
+                  
+                  {/* Back to top button - REMOVED as per design requirements */}
+                </SudoProvider>
               </ToastProvider>
             </CommandPaletteProvider>
           </Providers>
