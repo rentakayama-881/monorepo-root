@@ -233,7 +233,6 @@ func (s *EntTOTPService) generateBackupCodesInternal(ctx context.Context, userID
 			Create().
 			SetUserID(userID).
 			SetCodeHash(codeHash).
-			SetUsedAt(time.Time{}). // Will be set when used
 			Save(ctx)
 		if err != nil {
 			s.logger.Error("failed to save backup code", zap.Error(err), zap.Int("user_id", userID))
@@ -266,7 +265,11 @@ func (s *EntTOTPService) VerifyBackupCode(ctx context.Context, userID int, code 
 		Where(
 			backupcode.UserIDEQ(userID),
 			backupcode.CodeHashEQ(codeHash),
-			backupcode.UsedAtIsNil(),
+			// Backward-compatible: older rows were mistakenly created with UsedAt set to zero time instead of NULL.
+			backupcode.Or(
+				backupcode.UsedAtIsNil(),
+				backupcode.UsedAtEQ(time.Time{}),
+			),
 		).
 		Only(ctx)
 	if err != nil {
@@ -306,6 +309,7 @@ func (s *EntTOTPService) GetBackupCodeStatus(ctx context.Context, userID int) (i
 		Where(
 			backupcode.UserIDEQ(userID),
 			backupcode.UsedAtNotNil(),
+			backupcode.UsedAtNEQ(time.Time{}),
 		).
 		Count(ctx)
 	if err != nil {
