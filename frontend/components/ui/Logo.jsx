@@ -124,7 +124,7 @@ export function Logo({
                 fontWeight: '700',
               }}
             >
-              Aleфdraad
+              AIvalid
             </text>
           </g>
         )}
