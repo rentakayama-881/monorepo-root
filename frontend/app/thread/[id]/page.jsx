@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
@@ -26,7 +26,7 @@ export default function ThreadDetailPage() {
   const [error, setError] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
   const [repliesKey, setRepliesKey] = useState(0); // Force refresh replies
-  const [readingProgress, setReadingProgress] = useState(0);
+  const readingProgressRef = useRef(null);
 
   const isAuthed = typeof window !== "undefined" ? !!getToken() : false;
   const currentUsername = typeof window !== "undefined" ? localStorage.getItem("username") : null;
@@ -50,9 +50,11 @@ export default function ThreadDetailPage() {
           
           if (trackLength > 0) {
             const progress = (scrollTop / trackLength) * 100;
-            setReadingProgress(Math.min(progress, 100));
+            const node = readingProgressRef.current;
+            if (node) node.style.width = `${Math.min(progress, 100)}%`;
           } else {
-            setReadingProgress(0);
+            const node = readingProgressRef.current;
+            if (node) node.style.width = `0%`;
           }
           
           lastUpdate = now;
@@ -173,12 +175,16 @@ export default function ThreadDetailPage() {
           <div className="p-6">
             {/* Image */}
             {data.meta?.image && (
-              <div className="mb-6">
-                <img
-                  src={data.meta.image}
-                  alt="Thread image"
-                  className="max-h-96 w-full rounded-lg border border-border object-cover"
-                />
+              <div className="mb-6 overflow-hidden rounded-lg border border-border bg-muted/20">
+                <div className="relative aspect-video">
+                  <img
+                    src={data.meta.image}
+                    alt="Thread image"
+                    className="absolute inset-0 h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
               </div>
             )}
 
@@ -299,11 +305,7 @@ export default function ThreadDetailPage() {
       ) : null}
 
       {/* Reading progress bar */}
-      <div 
-        className="reading-progress" 
-        style={{ width: `${readingProgress}%` }}
-        aria-hidden="true"
-      />
+      <div ref={readingProgressRef} className="reading-progress" aria-hidden="true" />
     </main>
   );
 }

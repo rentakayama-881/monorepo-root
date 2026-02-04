@@ -23,11 +23,11 @@ export function Logo({
   const iconAlt = showText ? '' : text;
   const iconAriaHidden = showText ? true : undefined;
   const iconSizes = `${size}px`;
-  const iconSrc = resolvedTheme === 'dark' ? '/logo/dark-mode.svg' : '/logo/light-mode.svg';
+  const iconSrc = resolvedTheme === 'dark' ? '/logo/dark-mode.png' : '/logo/light-mode.png';
 
   // Warm cache for the other theme logo to make theme switch feel instant.
   useEffect(() => {
-    const otherSrc = iconSrc === '/logo/dark-mode.svg' ? '/logo/light-mode.svg' : '/logo/dark-mode.svg';
+    const otherSrc = iconSrc === '/logo/dark-mode.png' ? '/logo/light-mode.png' : '/logo/dark-mode.png';
 
     const preload = () => {
       const img = new window.Image();
@@ -53,6 +53,7 @@ export function Logo({
         width={size}
         height={size}
         sizes={iconSizes}
+        quality={100}
         priority={priority}
       />
       {showText && (

@@ -358,6 +358,12 @@ button:focus-visible {
   color: var(--foreground);
 }
 
+.markdown-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
 /* Blockquote */
 .markdown-body blockquote {
   padding: 0 1em;
@@ -1169,6 +1175,7 @@ html {
   top: 0;
   left: 0;
   height: 3px;
+  width: 0%;
   background: var(--primary);
   z-index: 100;
   transition: width 0.1s linear;

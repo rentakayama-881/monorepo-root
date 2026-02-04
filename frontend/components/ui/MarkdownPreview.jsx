@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -77,12 +77,6 @@ function CodeBlock({ children, className, inline }) {
  * - Theme-aware (respects dark/light mode via CSS variables)
  */
 export default function MarkdownPreview({ content, className = "" }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   if (!content) {
     return (
       <p className="text-muted-foreground italic text-sm">
@@ -91,22 +85,17 @@ export default function MarkdownPreview({ content, className = "" }) {
     );
   }
 
-  // SSR fallback - prevents hydration mismatch
-  if (!mounted) {
-    return (
-      <div className="animate-pulse space-y-3">
-        <div className="h-4 bg-secondary rounded w-3/4"></div>
-        <div className="h-4 bg-secondary rounded w-1/2"></div>
-        <div className="h-4 bg-secondary rounded w-5/6"></div>
-      </div>
-    );
-  }
+  const shouldHighlight = useMemo(() => content.includes("```"), [content]);
+  const rehypePlugins = useMemo(
+    () => (shouldHighlight ? [rehypeHighlight] : []),
+    [shouldHighlight]
+  );
 
   return (
     <div className={`markdown-body text-foreground ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
+        rehypePlugins={rehypePlugins}
         components={{
           // === HEADINGS ===
           h1: ({ children }) => (

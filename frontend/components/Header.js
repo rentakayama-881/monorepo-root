@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import Sidebar from "./Sidebar";
-import ProfileSidebar from "./ProfileSidebar";
 import ThemeToggle from "./ThemeToggle";
 import CommandPaletteTrigger from "./CommandPaletteTrigger";
 import { Logo } from "./ui/Logo";
@@ -12,6 +11,9 @@ import { fetchCategories } from "../lib/categories";
 import { AUTH_CHANGED_EVENT, getToken, TOKEN_KEY } from "@/lib/auth";
 import { getApiBase } from "@/lib/api";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
+
+const Sidebar = dynamic(() => import("./Sidebar"), { ssr: false });
+const ProfileSidebar = dynamic(() => import("./ProfileSidebar"), { ssr: false });
 
 export default function Header() {
   const [isAuthed, setIsAuthed] = useState(false);
@@ -54,6 +56,21 @@ export default function Header() {
       window.removeEventListener(AUTH_CHANGED_EVENT, sync);
       window.removeEventListener("storage", onStorage);
     };
+  }, []);
+
+  useEffect(() => {
+    const preload = () => {
+      import("./Sidebar");
+      import("./ProfileSidebar");
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(preload, { timeout: 5000 });
+      return () => window.cancelIdleCallback(id);
+    }
+
+    const id = window.setTimeout(preload, 1200);
+    return () => window.clearTimeout(id);
   }, []);
 
   useEffect(() => {
@@ -254,41 +271,14 @@ export default function Header() {
           {/* Theme toggle */}
           <ThemeToggle />
           
-          {isAuthed ? (
-            <div className="relative">
-              <button
-                className="inline-flex items-center gap-2 rounded-[var(--radius)] px-2 py-1 hover:bg-accent transition-all duration-200 hover:shadow-sm focus-ring"
-                onClick={() => setProfileOpen((v) => !v)}
-                aria-label="Akun"
-                aria-expanded={profileOpen}
-                type="button"
-              >
-                {profileLoading ? (
-                  <span
-                    className="h-6 w-6 rounded-full bg-secondary animate-pulse"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <Avatar src={avatarUrl} name={userName} size="xs" />
-                )}
-                <span className="hidden sm:inline text-sm font-medium text-foreground">
-                  {profileLoading ? (
-                    <span
-                      className="inline-block h-4 w-24 rounded bg-secondary align-middle animate-pulse"
-                      aria-hidden="true"
-                    />
-                  ) : userName ? (
-                    <>@{userName}</>
-                  ) : (
-                    "Akun"
-                  )}
-                </span>
-              </button>
-
-              {profileOpen && <ProfileSidebar onClose={() => setProfileOpen(false)} />}
-            </div>
-          ) : (
-            <>
+          <div className="relative h-8 w-[164px] sm:w-[220px]">
+            {/* Unauthed state (kept in layout to prevent CLS) */}
+            <div
+              className={`absolute inset-0 flex items-center justify-end gap-1 transition-opacity ${
+                isAuthed ? "opacity-0 pointer-events-none" : "opacity-100"
+              }`}
+              aria-hidden={isAuthed}
+            >
               <Link
                 href="/login"
                 className="px-2 py-1 rounded-[var(--radius)] text-xs sm:text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
@@ -301,12 +291,53 @@ export default function Header() {
               >
                 Register
               </Link>
-            </>
-          )}
+            </div>
+
+            {/* Authed state (kept in layout to prevent CLS) */}
+            <div
+              className={`absolute inset-0 flex items-center justify-end transition-opacity ${
+                isAuthed ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+              aria-hidden={!isAuthed}
+            >
+              <div className="relative">
+                <button
+                  className="inline-flex items-center gap-2 rounded-[var(--radius)] px-2 py-1 hover:bg-accent transition-all duration-200 hover:shadow-sm focus-ring"
+                  onClick={() => setProfileOpen((v) => !v)}
+                  aria-label="Akun"
+                  aria-expanded={profileOpen}
+                  type="button"
+                >
+                  {profileLoading ? (
+                    <span
+                      className="h-6 w-6 rounded-full bg-secondary animate-pulse"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Avatar src={avatarUrl} name={userName} size="xs" />
+                  )}
+                  <span className="hidden sm:inline max-w-[9rem] truncate text-sm font-medium text-foreground">
+                    {profileLoading ? (
+                      <span
+                        className="inline-block h-4 w-24 rounded bg-secondary align-middle animate-pulse"
+                        aria-hidden="true"
+                      />
+                    ) : userName ? (
+                      <>@{userName}</>
+                    ) : (
+                      "Akun"
+                    )}
+                  </span>
+                </button>
+
+                {profileOpen && <ProfileSidebar onClose={() => setProfileOpen(false)} />}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {sidebarOpen ? <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} /> : null}
     </header>
   );
 }

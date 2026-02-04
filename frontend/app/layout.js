@@ -90,19 +90,9 @@ export const metadata = {
     icon: [
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
-      {
-        url: "/logo/light-mode.svg",
-        type: "image/svg+xml",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/logo/dark-mode.svg",
-        type: "image/svg+xml",
-        media: "(prefers-color-scheme: dark)",
-      },
     ],
     shortcut: "/favicon-32.png",
-    apple: "/logo/light-mode.svg",
+    apple: "/favicon-32.png",
   },
   
   // Manifest
