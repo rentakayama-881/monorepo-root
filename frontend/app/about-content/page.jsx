@@ -16,7 +16,7 @@ export const dynamic = "force-static";
 
 export const metadata = { 
   title: "Tentang Kami - AIvalid",
-  description: "PT AIvalid Utility Stack - Platform komunitas digital untuk forum, marketplace, dan pertukaran pengetahuan"
+  description: "AIvalid powered by PT Alephdraad Utility Stack - Platform validasi ai hasil kerja & market ai subscriptions #1 di Indonesia "
 };
 
 // Reusable styled list item with icon - compact
@@ -76,7 +76,7 @@ export default function AboutPage() {
         {/* Company Info */}
         <Section title="Perusahaan" icon={ZapIcon}>
           <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-            <strong className="text-foreground">PT AIVALID UTILITY STACK</strong> adalah perusahaan teknologi 
+            AIvalid powered by <strong className="text-foreground">PT ALEPHDRAAD UTILITY STACK</strong> adalah perusahaan teknologi 
             yang berfokus pada pengembangan platform komunitas digital. Kami berkomitmen untuk menyediakan 
             ruang yang aman, terpercaya, dan bermanfaat bagi seluruh pengguna di Indonesia.
           </p>
@@ -89,7 +89,7 @@ export default function AboutPage() {
         {/* Visi */}
         <Section title="Visi" icon={TargetIcon} highlight={true}>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Menjadi platform komunitas digital terdepan di Indonesia yang menghubungkan pengetahuan, 
+            Menjadi platform Validator AI & Market untuk AI terdepan di Indonesia yang menghubungkan pengetahuan, 
             inovasi, dan peluang ekonomi secara inklusif dan berkelanjutan.
           </p>
         </Section>
@@ -140,7 +140,7 @@ export default function AboutPage() {
         {/* Landasan Hukum */}
         <Section title="Landasan Hukum" icon={ScaleIcon}>
           <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-            PT AIvalid Utility Stack beroperasi sesuai dengan peraturan perundang-undangan Republik Indonesia, termasuk namun tidak terbatas pada:
+            PT Alephdraad Utility Stack beroperasi sesuai dengan peraturan perundang-undangan Republik Indonesia, termasuk namun tidak terbatas pada:
           </p>
           <ul className="space-y-3 text-sm text-muted-foreground">
             <ListItem icon={ScaleIcon}>

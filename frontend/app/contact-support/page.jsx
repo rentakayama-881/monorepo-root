@@ -152,11 +152,11 @@ export default function HelpPage() {
           <FAQItem question="Bagaimana sistem escrow bekerja?" icon={ShieldIcon}>
             <p className="mb-3">Sistem escrow melindungi pembeli dan penjual dalam transaksi:</p>
             <ol className="space-y-2.5">
-              <Step number={1} title="Pembeli memulai transaksi" description="Dana ditransfer ke rekening escrow AIvalid" />
+              <Step number={1} title="Ketika user A mengirim uang ke user B" description="Kami memfasilitasi penahanan uang selama periode 7 hari dan 30 hari" />
               <Step number={2} title="Penjual menerima notifikasi" description="Penjual mengirimkan produk/jasa sesuai kesepakatan" />
               <Step number={3} title="Pembeli melakukan inspeksi" description="Pembeli memiliki waktu untuk memeriksa produk/jasa" />
               <Step number={4} title="Konfirmasi penyelesaian" description="Jika sesuai, pembeli mengkonfirmasi dan dana diteruskan ke penjual" />
-              <Step number={5} title="Penyelesaian sengketa" description="Jika ada masalah, tim arbitrase akan membantu menyelesaikan" />
+              <Step number={5} title="Penyelesaian masalah" description="Jika ada masalah, tim arbitrase akan membantu menyelesaikan" />
             </ol>
             <p className="mt-4 rounded-lg bg-muted/50 p-3 text-xs">
               💡 Biaya layanan escrow: <strong className="text-foreground">2.5%</strong> dari nilai transaksi
@@ -170,7 +170,7 @@ export default function HelpPage() {
               <Step number={2} description='"Aktifkan Autentikasi Dua Faktor"' />
               <Step number={3} description="Pindai kode QR dengan aplikasi authenticator (Google Authenticator, Authy, dll)" />
               <Step number={4} description="Masukkan kode verifikasi 6 digit" />
-              <Step number={5} description="Simpan kode pemulihan di tempat aman" />
+              <Step number={5} description="Simpan backup codes  di tempat aman" />
             </ol>
             <p className="mt-4 text-sm">Kami juga mendukung <strong className="text-foreground">Passkey</strong> untuk keamanan yang lebih tinggi.</p>
           </FAQItem>
@@ -197,7 +197,7 @@ export default function HelpPage() {
           <FAQItem question="Bagaimana cara melaporkan konten yang melanggar?" icon={WarningIcon}>
             <p className="mb-3">Untuk melaporkan konten yang melanggar:</p>
             <ol className="space-y-2.5">
-              <Step number={1} description="Klik ikon titik tiga (⋯) pada konten yang ingin dilaporkan" />
+              <Step number={1} description="Klik tombol "Laporkan"  pada konten yang ingin dilaporkan" />
               <Step number={2} description='"Laporkan"' />
               <Step number={3} description="Pilih kategori pelanggaran" />
               <Step number={4} description="Berikan penjelasan tambahan jika diperlukan" />
@@ -286,7 +286,7 @@ export default function HelpPage() {
           <div>
             <p className="font-medium text-foreground">Tips untuk respons cepat</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Sertakan detail lengkap dalam pertanyaan Anda: ID akun, tangkapan layar error, dan langkah-langkah yang sudah dicoba.
+              Sertakan detail lengkap dalam pertanyaan Anda: tangkapan layar error, dan langkah-langkah yang sudah dicoba.
             </p>
           </div>
         </div>
