@@ -90,10 +90,19 @@ export const metadata = {
     icon: [
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
-      { url: "/logo/logo-icon-only.svg", type: "image/svg+xml" },
+      {
+        url: "/logo/light-mode.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/logo/dark-mode.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: dark)",
+      },
     ],
     shortcut: "/favicon-32.png",
-    apple: "/logo/logo-icon-only.svg",
+    apple: "/logo/light-mode.svg",
   },
   
   // Manifest

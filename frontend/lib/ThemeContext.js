@@ -9,6 +9,13 @@ const ThemeContext = createContext({
   resolvedTheme: "light",
 });
 
+function resolveThemeValue(theme) {
+  if (theme === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return theme;
+}
+
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState("system");
   const [resolvedTheme, setResolvedTheme] = useState("light");
@@ -35,10 +42,7 @@ export function ThemeProvider({ children }) {
       let resolved = theme;
       
       if (theme === "system") {
-        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
-        resolved = systemTheme;
+        resolved = resolveThemeValue("system");
       }
 
       setResolvedTheme(resolved);
@@ -66,10 +70,13 @@ export function ThemeProvider({ children }) {
   const setTheme = (newTheme) => {
     if (!mounted) return;
     
-    // Add transition class for smooth theme change
     const root = document.documentElement;
-    root.classList.add("theme-transitioning");
-    
+    const resolved = resolveThemeValue(newTheme);
+
+    // Apply immediately for responsive UI
+    root.classList.remove("light", "dark");
+    root.classList.add(resolved);
+    setResolvedTheme(resolved);
     setThemeState(newTheme);
     
     try {
@@ -78,11 +85,6 @@ export function ThemeProvider({ children }) {
       // localStorage unavailable (e.g., private browsing, quota exceeded)
       console.warn("Failed to save theme to localStorage:", error);
     }
-    
-    // Remove transition class after animation completes
-    setTimeout(() => {
-      root.classList.remove("theme-transitioning");
-    }, 300);
   };
 
   // Prevent flash of unstyled content
