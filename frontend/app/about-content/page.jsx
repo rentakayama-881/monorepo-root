@@ -16,7 +16,7 @@ export const dynamic = "force-static";
 
 export const metadata = { 
   title: "Tentang Kami - AIvalid",
-  description: "Tentang AIvalid — Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang."
+  description: "AIvalid powered by PT Alephdraad Utility Stack - Platform validasi ai hasil kerja & market ai subscriptions #1 di Indonesia"
 };
 
 // Reusable styled list item with icon - compact
@@ -73,13 +73,13 @@ export default function AboutPage() {
       </div>
 
       <article>
-        {/* Company Info */}
-        <Section title="Perusahaan" icon={ZapIcon}>
-          <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-            AIvalid adalah perusahaan teknologi
-            yang berfokus pada pengembangan platform komunitas digital. Kami berkomitmen untuk menyediakan 
-            ruang yang aman, terpercaya, dan bermanfaat bagi seluruh pengguna di Indonesia.
-          </p>
+	        {/* Company Info */}
+	        <Section title="Perusahaan" icon={ZapIcon}>
+	          <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
+	            AIvalid powered by <strong className="text-foreground">PT ALEPHDRAAD UTILITY STACK</strong> adalah perusahaan teknologi
+	            yang berfokus pada pengembangan platform komunitas digital. Kami berkomitmen untuk menyediakan
+	            ruang yang aman, terpercaya, dan bermanfaat bagi seluruh pengguna di Indonesia.
+	          </p>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Didirikan dengan visi untuk mendemokratisasi akses terhadap pengetahuan dan peluang ekonomi digital, 
             AIvalid hadir sebagai jembatan antara komunitas, edukasi, dan transaksi yang transparan.
@@ -137,11 +137,11 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Landasan Hukum */}
-        <Section title="Landasan Hukum" icon={ScaleIcon}>
-          <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-            AIvalid beroperasi sesuai dengan peraturan perundang-undangan Republik Indonesia, termasuk namun tidak terbatas pada:
-          </p>
+	        {/* Landasan Hukum */}
+	        <Section title="Landasan Hukum" icon={ScaleIcon}>
+	          <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
+	            PT Alephdraad Utility Stack beroperasi sesuai dengan peraturan perundang-undangan Republik Indonesia, termasuk namun tidak terbatas pada:
+	          </p>
           <ul className="space-y-3 text-sm text-muted-foreground">
             <ListItem icon={ScaleIcon}>
               Undang-Undang Nomor 11 Tahun 2008 tentang Informasi dan Transaksi Elektronik (UU ITE) sebagaimana diubah dengan UU No. 19 Tahun 2016
