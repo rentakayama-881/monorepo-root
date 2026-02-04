@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
+import { Logo } from "./ui/Logo";
 
 const footerSections = [
   {
@@ -53,14 +53,11 @@ export default function Footer() {
           <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
             {/* Column 1: Brand + Telegram */}
             <div className="space-y-4">
-              <Link href="/" className="inline-flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
-                <Image
-                  src="/logo/logo-icon-only.svg"
-                  alt="AIvalid"
-                  width={32}
-                  height={32}
-                />
-              </Link>
+              <Logo
+                variant="icon"
+                size={32}
+                className="opacity-80 hover:opacity-100 transition-opacity"
+              />
               <p className="text-sm text-muted-foreground">
                 Platform komunitas digital untuk forum, marketplace, dan pertukaran pengetahuan.
               </p>

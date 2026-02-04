@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { fetchCategories } from "../lib/categories";
 import { LOCKED_CATEGORIES } from "../lib/constants";
+import { Logo } from "./ui/Logo";
 
 
 
@@ -133,9 +133,12 @@ export default function Sidebar({ open, onClose }) {
         {/* Sticky header */}
         <div className="sticky top-0 z-10 space-y-3 border-b bg-card px-6 pb-4 pt-5">
           <div className="flex items-center justify-between">
-            <Link href="/" onClick={handleClose} className="flex items-center gap-2">
-              <Image src="/logo/logo-icon-only.svg" alt="AIvalid" width={40} height={40} />
-            </Link>
+            <Logo
+              variant="icon"
+              size={40}
+              onClick={handleClose}
+              className="shrink-0"
+            />
             <button
               className="rounded-[var(--radius)] p-1 text-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               onClick={handleClose}

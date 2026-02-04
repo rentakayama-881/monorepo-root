@@ -5,12 +5,12 @@
       <path
         d="M128 110 L150 86 L196 72 L236 60 L248 64 L236 74 L250 86 L232 92 L184 104 Z"
         fill="#D7C2AC"
-        stroke="#0B0D10"
+        stroke="#F9FAFB"
         stroke-width="10"
       />
       <path
         d="M128 110 L150 86 L196 72 L236 60 L248 64 L236 74 L250 86 L232 92 L184 104 Z"
-        stroke="#F9FAFB"
+        stroke="#0B0D10"
         stroke-width="6"
       />
       <path
@@ -36,10 +36,10 @@
     <path
       d="M128 126 L110 108 L128 92 L146 108 Z"
       fill="#D7C2AC"
-      stroke="#0B0D10"
+      stroke="#F9FAFB"
       stroke-width="10"
     />
-    <path d="M128 126 L110 108 L128 92 L146 108 Z" stroke="#F9FAFB" stroke-width="6" />
+    <path d="M128 126 L110 108 L128 92 L146 108 Z" stroke="#0B0D10" stroke-width="6" />
 
     <!-- Circuits (double-stroke for crisp outline) -->
     <g>

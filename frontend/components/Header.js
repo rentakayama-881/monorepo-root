@@ -175,6 +175,7 @@ export default function Header() {
         <Logo
           variant="horizontal"
           size={44}
+          priority
           className="shrink-0 -ml-1 md:ml-0 drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_6px_20px_rgba(0,0,0,0.22)]"
         />
 
