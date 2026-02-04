@@ -224,7 +224,7 @@ export default function Sidebar({ open, onClose }) {
       {/* Overlay untuk mobile - match prompts.chat Sheet overlay */}
       {open && (
         <div
-          className={`fixed inset-0 z-30 bg-black/50 backdrop-blur-strong md:hidden transition-opacity duration-300 ${
+          className={`fixed inset-0 z-30 bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30 md:hidden transition-opacity duration-300 ${
             isClosing ? 'opacity-0' : 'opacity-100'
           }`}
           onClick={handleClose}

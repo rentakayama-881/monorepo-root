@@ -16,10 +16,12 @@ const Sidebar = dynamic(() => import("./Sidebar"), { ssr: false });
 const ProfileSidebar = dynamic(() => import("./ProfileSidebar"), { ssr: false });
 
 export default function Header() {
+  const [authChecked, setAuthChecked] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [userName, setUserName] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
+  const [sidebarMounted, setSidebarMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
@@ -27,6 +29,8 @@ export default function Header() {
   const [loadingCategories, setLoadingCategories] = useState(true);
 
   const categoriesWrapRef = useRef(null);
+  const sidebarPrefetchedRef = useRef(false);
+  const profilePrefetchedRef = useRef(false);
 
   useEffect(() => {
     const sync = () => {
@@ -40,6 +44,8 @@ export default function Header() {
         }
       } catch (_) {
         setIsAuthed(false);
+      } finally {
+        setAuthChecked(true);
       }
     };
 
@@ -58,20 +64,17 @@ export default function Header() {
     };
   }, []);
 
-  useEffect(() => {
-    const preload = () => {
-      import("./Sidebar");
-      import("./ProfileSidebar");
-    };
+  const prefetchSidebar = () => {
+    if (sidebarPrefetchedRef.current) return;
+    sidebarPrefetchedRef.current = true;
+    import("./Sidebar");
+  };
 
-    if (typeof window.requestIdleCallback === "function") {
-      const id = window.requestIdleCallback(preload, { timeout: 5000 });
-      return () => window.cancelIdleCallback(id);
-    }
-
-    const id = window.setTimeout(preload, 1200);
-    return () => window.clearTimeout(id);
-  }, []);
+  const prefetchProfileSidebar = () => {
+    if (profilePrefetchedRef.current) return;
+    profilePrefetchedRef.current = true;
+    import("./ProfileSidebar");
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -181,7 +184,12 @@ export default function Header() {
         {/* Mobile menu */}
         <button
           className="flex items-center justify-center -ml-2 md:hidden p-2 rounded-[var(--radius)] hover:bg-accent transition-all duration-200 focus-ring"
-          onClick={() => setSidebarOpen(true)}
+          onClick={() => {
+            setSidebarMounted(true);
+            setSidebarOpen(true);
+          }}
+          onPointerEnter={prefetchSidebar}
+          onFocus={prefetchSidebar}
           aria-label="Toggle menu"
           aria-expanded={sidebarOpen}
           type="button"
@@ -220,14 +228,13 @@ export default function Header() {
           <div
             ref={categoriesWrapRef}
             className="relative"
-            onMouseEnter={() => setCategoriesOpen(true)}
-            onMouseLeave={() => setCategoriesOpen(false)}
           >
             <button
-              className={`${navItem} inline-flex items-center gap-0.5`}
+              className={`${navItem} inline-flex items-center gap-0.5 ${categoriesOpen ? "bg-accent text-foreground" : ""}`}
               onClick={() => setCategoriesOpen(!categoriesOpen)}
               aria-haspopup="true"
               aria-expanded={categoriesOpen}
+              aria-controls="categories-menu"
               type="button"
             >
               Kategori
@@ -237,7 +244,12 @@ export default function Header() {
             </button>
 
             {categoriesOpen && (
-              <div className="absolute left-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-[var(--radius)] border bg-popover shadow-lg animate-scale-in">
+              <div
+                id="categories-menu"
+                className="absolute left-0 top-full z-40 mt-2 w-64 overflow-hidden rounded-[var(--radius)] border bg-popover shadow-lg animate-scale-in"
+                role="menu"
+                aria-label="Kategori"
+              >
                 <div className="max-h-80 overflow-y-auto py-1">
                   {loadingCategories ? (
                     <div className="px-3 py-2 text-sm text-muted-foreground">Loading...</div>
@@ -270,15 +282,52 @@ export default function Header() {
         <div className="flex items-center gap-1">
           {/* Theme toggle */}
           <ThemeToggle />
-          
-          <div className="relative h-8 w-[164px] sm:w-[220px]">
-            {/* Unauthed state (kept in layout to prevent CLS) */}
+
+          {!authChecked ? (
             <div
-              className={`absolute inset-0 flex items-center justify-end gap-1 transition-opacity ${
-                isAuthed ? "opacity-0 pointer-events-none" : "opacity-100"
-              }`}
-              aria-hidden={isAuthed}
+              className="inline-flex items-center gap-2 rounded-[var(--radius)] px-2 py-1"
+              aria-hidden="true"
             >
+              <span className="h-6 w-6 rounded-full bg-secondary animate-pulse" />
+              <span className="hidden sm:inline h-4 w-24 rounded bg-secondary animate-pulse" />
+            </div>
+          ) : isAuthed ? (
+            <div className="relative">
+              <button
+                className="inline-flex items-center gap-2 rounded-[var(--radius)] px-2 py-1 hover:bg-accent transition-all duration-200 hover:shadow-sm focus-ring"
+                onClick={() => setProfileOpen((v) => !v)}
+                onPointerEnter={prefetchProfileSidebar}
+                onFocus={prefetchProfileSidebar}
+                aria-label="Akun"
+                aria-expanded={profileOpen}
+                type="button"
+              >
+                {profileLoading ? (
+                  <span
+                    className="h-6 w-6 rounded-full bg-secondary animate-pulse"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Avatar src={avatarUrl} name={userName} size="xs" />
+                )}
+                <span className="hidden sm:inline max-w-[9rem] truncate text-sm font-medium text-foreground">
+                  {profileLoading ? (
+                    <span
+                      className="inline-block h-4 w-24 rounded bg-secondary align-middle animate-pulse"
+                      aria-hidden="true"
+                    />
+                  ) : userName ? (
+                    <>@{userName}</>
+                  ) : (
+                    "Akun"
+                  )}
+                </span>
+              </button>
+
+              {profileOpen && <ProfileSidebar onClose={() => setProfileOpen(false)} />}
+            </div>
+          ) : (
+            <>
               <Link
                 href="/login"
                 className="px-2 py-1 rounded-[var(--radius)] text-xs sm:text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
@@ -291,53 +340,14 @@ export default function Header() {
               >
                 Register
               </Link>
-            </div>
-
-            {/* Authed state (kept in layout to prevent CLS) */}
-            <div
-              className={`absolute inset-0 flex items-center justify-end transition-opacity ${
-                isAuthed ? "opacity-100" : "opacity-0 pointer-events-none"
-              }`}
-              aria-hidden={!isAuthed}
-            >
-              <div className="relative">
-                <button
-                  className="inline-flex items-center gap-2 rounded-[var(--radius)] px-2 py-1 hover:bg-accent transition-all duration-200 hover:shadow-sm focus-ring"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  aria-label="Akun"
-                  aria-expanded={profileOpen}
-                  type="button"
-                >
-                  {profileLoading ? (
-                    <span
-                      className="h-6 w-6 rounded-full bg-secondary animate-pulse"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Avatar src={avatarUrl} name={userName} size="xs" />
-                  )}
-                  <span className="hidden sm:inline max-w-[9rem] truncate text-sm font-medium text-foreground">
-                    {profileLoading ? (
-                      <span
-                        className="inline-block h-4 w-24 rounded bg-secondary align-middle animate-pulse"
-                        aria-hidden="true"
-                      />
-                    ) : userName ? (
-                      <>@{userName}</>
-                    ) : (
-                      "Akun"
-                    )}
-                  </span>
-                </button>
-
-                {profileOpen && <ProfileSidebar onClose={() => setProfileOpen(false)} />}
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
 
-      {sidebarOpen ? <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} /> : null}
+      {sidebarMounted ? (
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      ) : null}
     </header>
   );
 }

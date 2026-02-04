@@ -145,7 +145,7 @@ export default function ProfileSidebar({ onClose }) {
       <>
         {/* Backdrop overlay */}
         <div 
-          className="fixed inset-0 z-40 bg-black/50"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -193,7 +193,7 @@ export default function ProfileSidebar({ onClose }) {
     <>
       {/* Backdrop overlay - click to close */}
       <div 
-        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-strong animate-fade-in"
+        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30 animate-fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
