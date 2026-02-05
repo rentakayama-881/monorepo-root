@@ -7,7 +7,7 @@ namespace FeatureService.Api.Services;
 
 public interface ITransferService
 {
-    Task<CreateTransferResponse> CreateTransferAsync(uint senderId, CreateTransferRequest request);
+    Task<CreateTransferResponse> CreateTransferAsync(uint senderId, CreateTransferRequest request, string? senderUsername = null);
     Task<List<TransferDto>> GetTransfersAsync(uint userId, TransferFilter? filter = null);
     Task<TransferDto?> GetTransferByIdAsync(string transferId, uint userId);
     Task<TransferDto?> GetTransferByCodeAsync(string code, uint userId);
@@ -84,7 +84,7 @@ public class TransferService : ITransferService
         ));
     }
 
-    public async Task<CreateTransferResponse> CreateTransferAsync(uint senderId, CreateTransferRequest request)
+    public async Task<CreateTransferResponse> CreateTransferAsync(uint senderId, CreateTransferRequest request, string? senderUsername = null)
     {
         // Validate amount
         if (request.Amount <= 0)
@@ -118,7 +118,9 @@ public class TransferService : ITransferService
 
         // Get sender's wallet to get username
         var senderWallet = await _walletService.GetOrCreateWalletAsync(senderId);
-        var senderUsername = await GetUsernameFromBackend(senderId);
+        senderUsername = !string.IsNullOrWhiteSpace(senderUsername)
+            ? senderUsername
+            : await GetUsernameFromBackend(senderId);
 
         // Check sender balance
         if (senderWallet.Balance < request.Amount)
@@ -579,7 +581,7 @@ public class TransferService : ITransferService
     {
         try
         {
-            var backendUrl = _configuration["Backend:ApiUrl"] ?? "http://localhost:8080";
+            var backendUrl = GetGoBackendBaseUrl();
             var response = await _httpClient.GetAsync($"{backendUrl}/api/user/{username}");
 
             if (!response.IsSuccessStatusCode)
@@ -698,11 +700,18 @@ public class TransferService : ITransferService
         }
     }
 
+    private string GetGoBackendBaseUrl()
+    {
+        return (_configuration["Backend:ApiUrl"]
+                ?? _configuration["GoBackend:BaseUrl"]
+                ?? "http://127.0.0.1:8080").TrimEnd('/');
+    }
+
 	    private async Task<string?> GetUsernameFromBackend(uint userId)
 	    {
 	        try
 	        {
-	            var backendUrl = _configuration["Backend:ApiUrl"] ?? "https://api.aivalid.id";
+	            var backendUrl = GetGoBackendBaseUrl();
 	            var response = await _httpClient.GetAsync($"{backendUrl}/api/users/{userId}/public");
 
             if (response.IsSuccessStatusCode)

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
+import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 
 const BANKS = [
@@ -102,7 +103,7 @@ export default function WithdrawPage() {
         router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/withdraw"));
         return;
       }
-      setError(e.message || "Gagal memproses penarikan");
+      setError(getErrorMessage(e, "Gagal memproses penarikan"));
     }
     setProcessing(false);
   };

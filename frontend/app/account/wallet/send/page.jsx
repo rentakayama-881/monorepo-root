@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
+import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 
 export default function SendMoneyPage() {
@@ -96,8 +97,8 @@ export default function SendMoneyPage() {
 
   const handleAmountNext = () => {
     const amountNum = parseInt(amount.replace(/\D/g, ""), 10);
-    if (!amountNum || amountNum < 1000) {
-      setError("Minimum transfer adalah Rp 1.000");
+    if (!amountNum || amountNum < 10000) {
+      setError("Minimum transfer adalah Rp 10.000");
       return;
     }
     if (amountNum > wallet.balance) {
@@ -122,7 +123,7 @@ export default function SendMoneyPage() {
           receiverUsername: selectedUser.username,
           amount: amountNum,
           holdHours: holdDays * 24, // Feature Service uses hours
-          description,
+          message: description,
           pin,
         }),
       });
@@ -135,7 +136,7 @@ export default function SendMoneyPage() {
         router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/send"));
         return;
       }
-      setError(e.message || "Gagal mengirim uang");
+      setError(getErrorMessage(e, "Gagal mengirim uang"));
       setLoading(false);
     }
   };

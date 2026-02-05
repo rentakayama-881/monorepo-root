@@ -5,6 +5,7 @@ import Link from "next/link";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 
 // Dispute categories matching backend
@@ -143,7 +144,7 @@ export default function TransactionDetailPage() {
       }
     } catch (e) {
       logger.error("Dispute action failed:", e);
-      setError(e.message || "Gagal membuat permintaan mediasi");
+      setError(getErrorMessage(e, "Gagal membuat permintaan mediasi"));
     }
     setProcessing(false);
   };
@@ -191,7 +192,7 @@ export default function TransactionDetailPage() {
       setTransfer(transferData.data || transferData);
     } catch (e) {
       logger.error("Action failed:", e);
-      setError(e.message || "Gagal memproses. Pastikan PIN benar.");
+      setError(getErrorMessage(e, "Gagal memproses. Pastikan PIN benar."));
     }
     setProcessing(false);
   };

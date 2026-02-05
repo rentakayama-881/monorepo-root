@@ -6,6 +6,7 @@ import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { getValidToken } from "@/lib/tokenRefresh";
+import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 
 export default function SetPinContent() {
@@ -120,7 +121,7 @@ export default function SetPinContent() {
         router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/set-pin"));
         return;
       }
-      setError(e.message || "Gagal menyimpan PIN");
+      setError(getErrorMessage(e, "Gagal menyimpan PIN"));
     }
     setProcessing(false);
   };

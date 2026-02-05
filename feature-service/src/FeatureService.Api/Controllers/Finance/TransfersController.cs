@@ -78,7 +78,7 @@ public class TransfersController : ApiControllerBase
             var userAgent = Request.Headers.UserAgent.ToString();
 
             var result = await _secureTransferService.CreateTransferAsync(
-                userId, request, idempotencyKey, ipAddress, userAgent);
+                userId, request, idempotencyKey, ipAddress, userAgent, GetUsername());
             return ApiCreated(result, "Transfer created successfully");
         }
         catch (ArgumentException ex)

@@ -19,7 +19,8 @@ public interface ISecureTransferService
         CreateTransferRequest request,
         string? idempotencyKey = null,
         string? ipAddress = null,
-        string? userAgent = null);
+        string? userAgent = null,
+        string? senderUsername = null);
 
     Task<(bool success, string? error)> ReleaseTransferAsync(
         string transferId,
@@ -84,10 +85,13 @@ public class SecureTransferService : ISecureTransferService
         CreateTransferRequest request,
         string? idempotencyKey = null,
         string? ipAddress = null,
-        string? userAgent = null)
+        string? userAgent = null,
+        string? senderUsername = null)
     {
         var key = BuildUserScopedIdempotencyKey("transfer", senderId, idempotencyKey);
-        var senderUsername = $"user_{senderId}";
+        senderUsername = !string.IsNullOrWhiteSpace(senderUsername)
+            ? senderUsername
+            : $"user_{senderId}";
 
         // Try to acquire idempotency lock
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
@@ -144,7 +148,7 @@ public class SecureTransferService : ISecureTransferService
             });
 
             // Execute actual transfer
-            var result = await _innerService.CreateTransferAsync(senderId, request);
+            var result = await _innerService.CreateTransferAsync(senderId, request, senderUsername);
 
             // Store result for idempotency
             await _idempotencyService.StoreResultAsync(key, result, ResultTtl);
