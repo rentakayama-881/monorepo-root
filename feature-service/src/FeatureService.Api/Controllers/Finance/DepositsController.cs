@@ -43,6 +43,10 @@ public class DepositsController : ApiControllerBase
         if (user == null)
             return ApiUnauthorized("UNAUTHORIZED", "User tidak terautentikasi");
 
+        // CRITICAL: Require 2FA for all financial operations (match transfers/withdrawals behavior)
+        var twoFactorCheck = RequiresTwoFactorAuth();
+        if (twoFactorCheck != null) return twoFactorCheck;
+
         try
         {
             var result = await _depositService.CreateRequestAsync(user.UserId, user.Username ?? "", request);

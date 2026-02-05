@@ -112,6 +112,8 @@ export default function SetPinContent() {
         router.push("/account/wallet/withdraw");
       } else if (redirect === "send") {
         router.push("/account/wallet/send");
+      } else if (redirect === "deposit") {
+        router.push("/account/wallet/deposit");
       } else {
         router.push("/account/wallet/transactions?success=pin");
       }

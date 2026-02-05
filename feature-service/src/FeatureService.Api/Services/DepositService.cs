@@ -45,9 +45,22 @@ public class DepositService : IDepositService
             Builders<DepositRequest>.IndexKeys.Ascending(d => d.Status)
         ));
 
-        _deposits.Indexes.CreateOne(new CreateIndexModel<DepositRequest>(
-            Builders<DepositRequest>.IndexKeys.Ascending(d => d.ExternalTransactionId)
-        ));
+        try
+        {
+            _deposits.Indexes.CreateOne(new CreateIndexModel<DepositRequest>(
+                Builders<DepositRequest>.IndexKeys.Ascending(d => d.ExternalTransactionId),
+                new CreateIndexOptions
+                {
+                    Unique = true,
+                    Name = "externalTransactionId_1"
+                }
+            ));
+        }
+        catch (Exception ex)
+        {
+            // Don't fail app startup/request if index creation fails (e.g., existing non-unique index in production)
+            _logger.LogWarning(ex, "Failed to create unique index for deposit externalTransactionId");
+        }
     }
 
     public async Task<DepositRequestResponse> CreateRequestAsync(uint userId, string username, CreateDepositRequest request)
@@ -69,20 +82,25 @@ public class DepositService : IDepositService
             throw new ArgumentException("ID transaksi tidak valid");
         }
 
-        var existing = await _deposits.Find(d =>
-            d.UserId == userId &&
-            d.ExternalTransactionId == externalId &&
-            d.Status == DepositStatus.Pending).FirstOrDefaultAsync();
+        var existingByExternalId = await _deposits
+            .Find(d => d.ExternalTransactionId == externalId)
+            .SortByDescending(d => d.CreatedAt)
+            .FirstOrDefaultAsync();
 
-        if (existing != null)
+        if (existingByExternalId != null)
         {
+            if (existingByExternalId.UserId != userId)
+            {
+                throw new InvalidOperationException("ID transaksi sudah digunakan");
+            }
+
             return new DepositRequestResponse(
-                existing.Id,
-                existing.Amount,
-                existing.Method,
-                existing.ExternalTransactionId,
-                existing.Status.ToString(),
-                existing.CreatedAt
+                existingByExternalId.Id,
+                existingByExternalId.Amount,
+                existingByExternalId.Method,
+                existingByExternalId.ExternalTransactionId,
+                existingByExternalId.Status.ToString(),
+                existingByExternalId.CreatedAt
             );
         }
 
@@ -99,7 +117,35 @@ public class DepositService : IDepositService
             UpdatedAt = DateTime.UtcNow
         };
 
-        await _deposits.InsertOneAsync(deposit);
+        try
+        {
+            await _deposits.InsertOneAsync(deposit);
+        }
+        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        {
+            // Idempotency / race: another request inserted same externalTransactionId.
+            var existing = await _deposits
+                .Find(d => d.ExternalTransactionId == externalId)
+                .SortByDescending(d => d.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (existing != null)
+            {
+                if (existing.UserId != userId)
+                    throw new InvalidOperationException("ID transaksi sudah digunakan");
+
+                return new DepositRequestResponse(
+                    existing.Id,
+                    existing.Amount,
+                    existing.Method,
+                    existing.ExternalTransactionId,
+                    existing.Status.ToString(),
+                    existing.CreatedAt
+                );
+            }
+
+            throw;
+        }
 
         _logger.LogInformation("Deposit request created: {DepositId} user {UserId} amount {Amount}",
             deposit.Id, userId, deposit.Amount);
@@ -161,8 +207,19 @@ public class DepositService : IDepositService
         if (deposit == null)
             return (false, "Deposit tidak ditemukan");
 
-        if (deposit.Status != DepositStatus.Pending)
-            return (false, "Deposit sudah diproses");
+        if (deposit.Status == DepositStatus.Rejected)
+            return (false, "Deposit sudah ditolak");
+
+        if (deposit.Status == DepositStatus.Approved)
+        {
+            if (string.IsNullOrWhiteSpace(deposit.WalletTransactionId))
+            {
+                _logger.LogWarning(
+                    "Deposit {DepositId} already approved but walletTransactionId is missing. Manual verification may be required.",
+                    depositId);
+            }
+            return (true, null);
+        }
 
         var amount = amountOverride ?? deposit.Amount;
         if (amount < MinDeposit)
@@ -184,6 +241,10 @@ public class DepositService : IDepositService
         var approveResult = await _deposits.UpdateOneAsync(approveFilter, approveUpdate);
         if (approveResult.ModifiedCount == 0)
         {
+            var latest = await _deposits.Find(d => d.Id == depositId).FirstOrDefaultAsync();
+            if (latest?.Status == DepositStatus.Approved)
+                return (true, null);
+
             return (false, "Deposit sudah diproses oleh request lain");
         }
 
