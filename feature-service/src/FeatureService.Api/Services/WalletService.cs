@@ -354,14 +354,14 @@ public class WalletService : IWalletService
 
     // === Private Helper Methods ===
 
-    private async Task<T> TryWithMongoTransactionAsync<T>(
-        Func<IClientSessionHandle, Task<T>> transactional,
-        Func<Task<T>> fallback)
-    {
-        try
-        {
-            using var session = await _wallets.Database.Client.StartSessionAsync();
-            session.StartTransaction();
+	    private async Task<T> TryWithMongoTransactionAsync<T>(
+	        Func<IClientSessionHandle, Task<T>> transactional,
+	        Func<Task<T>> fallback)
+	    {
+	        try
+	        {
+	            using var session = await _wallets.Database.Client.StartSessionAsync();
+	            session.StartTransaction();
 
             try
             {
@@ -372,21 +372,34 @@ public class WalletService : IWalletService
             catch
             {
                 await session.AbortTransactionAsync();
-                throw;
-            }
-        }
-        catch (MongoCommandException ex) when (IsTransactionsNotSupported(ex))
-        {
-            _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates");
-            return await fallback();
-        }
-    }
+	                throw;
+	            }
+	        }
+	        catch (NotSupportedException ex) when (IsTransactionsNotSupported(ex))
+	        {
+	            _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates");
+	            return await fallback();
+	        }
+	        catch (MongoCommandException ex) when (IsTransactionsNotSupported(ex))
+	        {
+	            _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates");
+	            return await fallback();
+	        }
+	    }
 
-    private static bool IsTransactionsNotSupported(MongoCommandException ex)
-    {
-        // Standalone MongoDB: "Transaction numbers are only allowed on a replica set member or mongos"
-        return ex.Message.Contains("Transaction numbers are only allowed", StringComparison.OrdinalIgnoreCase)
-            || ex.Message.Contains("replica set member", StringComparison.OrdinalIgnoreCase)
+	    private static bool IsTransactionsNotSupported(NotSupportedException ex)
+	    {
+	        // Driver may throw NotSupportedException for standalone servers:
+	        // "Standalone servers do not support transactions."
+	        return ex.Message.Contains("do not support transactions", StringComparison.OrdinalIgnoreCase)
+	               || ex.Message.Contains("transactions", StringComparison.OrdinalIgnoreCase);
+	    }
+
+	    private static bool IsTransactionsNotSupported(MongoCommandException ex)
+	    {
+	        // Standalone MongoDB: "Transaction numbers are only allowed on a replica set member or mongos"
+	        return ex.Message.Contains("Transaction numbers are only allowed", StringComparison.OrdinalIgnoreCase)
+	            || ex.Message.Contains("replica set member", StringComparison.OrdinalIgnoreCase)
             || ex.Message.Contains("not supported", StringComparison.OrdinalIgnoreCase);
     }
 
