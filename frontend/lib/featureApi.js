@@ -11,7 +11,45 @@ import { clearToken } from "./auth";
  * Get Feature Service base URL
  */
 export function getFeatureApiBase() {
-  return process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
+  return (
+    process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL ||
+    // Backward-compat: older env name used in code
+    process.env.NEXT_PUBLIC_FEATURE_API_URL ||
+    "https://feature.aivalid.id"
+  );
+}
+
+function safeToString(value) {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  if (value instanceof Error) return value.message;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function extractFeatureServiceError(data) {
+  // Feature Service standard error:
+  // { success:false, error:{ code, message, details }, meta:{ requestId, timestamp } }
+  const apiError = data?.error;
+  if (apiError && typeof apiError === "object") {
+    return {
+      code: apiError.code,
+      message: safeToString(apiError.message),
+      details: apiError.details,
+      requestId: data?.meta?.requestId,
+    };
+  }
+
+  // Legacy/other shapes
+  return {
+    code: data?.code,
+    message: safeToString(data?.message || data?.error),
+    details: data?.details,
+    requestId: data?.requestId || data?.meta?.requestId,
+  };
 }
 
 /**
@@ -144,11 +182,14 @@ export async function fetchFeature(path, options = {}) {
     }
 
     if (!res.ok) {
-      const message = data?.message || data?.error || res.statusText || `Request failed with status ${res.status}`;
+      const extracted = extractFeatureServiceError(data);
+      const message =
+        extracted.message || res.statusText || `Request failed with status ${res.status}`;
       const error = new Error(message);
       error.status = res.status;
-      error.code = data?.code;
-      error.details = data?.details;
+      error.code = extracted.code;
+      error.details = extracted.details;
+      error.requestId = extracted.requestId;
       error.data = data;
       throw error;
     }
@@ -221,29 +262,35 @@ export async function fetchFeatureAuth(path, options = {}) {
     }
 
     if (!res.ok) {
+      const extracted = extractFeatureServiceError(data);
+      const message =
+        extracted.message || res.statusText || `Request failed with status ${res.status}`;
+
       // Handle auth errors
       if (res.status === 401) {
         clearToken();
-        const error = new Error(data?.message || data?.error || "Your session has expired. Please sign in again.");
+        const error = new Error(message || "Your session has expired. Please sign in again.");
         error.status = 401;
-        error.code = data?.code || "session_expired";
-        error.details = data?.details;
+        error.code = extracted.code || "session_expired";
+        error.details = extracted.details;
+        error.requestId = extracted.requestId;
         throw error;
       }
 
       if (res.status === 403) {
-        const error = new Error(data?.message || data?.error || "Access denied.");
+        const error = new Error(message || "Access denied.");
         error.status = 403;
-        error.code = data?.code || "forbidden";
-        error.details = data?.details;
+        error.code = extracted.code || "forbidden";
+        error.details = extracted.details;
+        error.requestId = extracted.requestId;
         throw error;
       }
 
-      const message = data?.message || data?.error || res.statusText || `Request failed with status ${res.status}`;
       const error = new Error(message);
       error.status = res.status;
-      error.code = data?.code;
-      error.details = data?.details;
+      error.code = extracted.code;
+      error.details = extracted.details;
+      error.requestId = extracted.requestId;
       error.data = data;
       throw error;
     }
