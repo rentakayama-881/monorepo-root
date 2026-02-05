@@ -5,9 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { LOCKED_CATEGORIES } from "@/lib/constants";
-import ThreadCard, { ThreadCardSkeleton } from "@/components/ui/ThreadCard";
+import ThreadCard from "@/components/ui/ThreadCard";
 import EmptyState from "@/components/ui/EmptyState";
 import { TagPill } from "@/components/ui/TagPill";
+import CategoryThreadsSkeleton from "./CategoryThreadsSkeleton";
 
 export default function CategoryThreadsPage() {
   const params = useParams();
@@ -97,32 +98,32 @@ export default function CategoryThreadsPage() {
     });
   }
 
+  if (loading) {
+    return (
+      <CategoryThreadsSkeleton
+        slug={params.slug}
+        locked={LOCKED_CATEGORIES.includes(params.slug)}
+        threadCount={8}
+      />
+    );
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header - with skeleton loading */}
+      {/* Header */}
       <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex-1">
-          {loading ? (
-            <>
-              {/* Skeleton for title */}
-              <div className="h-7 w-48 animate-pulse rounded bg-border" />
-              {/* Skeleton for description */}
-              <div className="mt-2 h-4 w-72 animate-pulse rounded bg-border" />
-            </>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold text-foreground">
-                {category?.name || String(params.slug || "").replace(/-/g, " ")}
-              </h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {category?.description || "Diskusi dan thread terbaru di kategori ini."}
-              </p>
-              {!loading && threads.length > 0 && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {hasActiveFilter ? `${visibleThreads} dari ${totalThreads}` : totalThreads} thread{totalThreads !== 1 ? "s" : ""}
-                </p>
-              )}
-            </>
+          <h1 className="text-2xl font-bold text-foreground">
+            {category?.name || String(params.slug || "").replace(/-/g, " ")}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {category?.description || "Diskusi dan thread terbaru di kategori ini."}
+          </p>
+          {threads.length > 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {hasActiveFilter ? `${visibleThreads} dari ${totalThreads}` : totalThreads} thread
+              {totalThreads !== 1 ? "s" : ""}
+            </p>
           )}
         </div>
 
@@ -148,7 +149,7 @@ export default function CategoryThreadsPage() {
       </header>
 
       {/* Tag Filter (client-side, based on tags present in loaded threads) */}
-      {!loading && availableTags.length > 0 && (
+      {availableTags.length > 0 && (
         <section className="mb-6 rounded-lg border border-border bg-card p-4">
           <div className="flex flex-wrap items-center gap-2">
             <div className="mr-1 text-sm font-medium text-foreground">Filter tags</div>
@@ -181,13 +182,7 @@ export default function CategoryThreadsPage() {
         </section>
       )}
 
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <ThreadCardSkeleton key={i} variant="list" />
-          ))}
-        </div>
-      ) : threads.length === 0 ? (
+      {threads.length === 0 ? (
         <EmptyState
           variant="content"
           title="Belum ada thread di kategori ini"

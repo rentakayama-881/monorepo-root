@@ -15,6 +15,7 @@ import ReplyList from "@/components/ReplyList";
 import ReplyForm from "@/components/ReplyForm";
 import ReportModal from "@/components/ReportModal";
 import { REPORT_TARGET_TYPES } from "@/lib/useReport";
+import ThreadDetailSkeleton from "./ThreadDetailSkeleton";
 
 export default function ThreadDetailPage() {
   const params = useParams();
@@ -106,6 +107,10 @@ export default function ThreadDetailPage() {
     );
   }
 
+  if (loading) {
+    return <ThreadDetailSkeleton threadId={id} />;
+  }
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Breadcrumb */}
@@ -123,13 +128,7 @@ export default function ThreadDetailPage() {
         <span className="text-foreground">Thread #{id}</span>
       </nav>
 
-      {loading ? (
-        <div className="space-y-4">
-          <div className="h-8 w-2/3 animate-pulse rounded-md bg-border" />
-          <div className="h-4 w-1/3 animate-pulse rounded-md bg-border" />
-          <div className="h-40 animate-pulse rounded-lg bg-border" />
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
       ) : data ? (
         <>
