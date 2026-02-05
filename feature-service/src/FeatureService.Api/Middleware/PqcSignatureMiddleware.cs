@@ -51,34 +51,49 @@ public class PqcSignatureMiddleware
             return;
         }
 
-        // Validate PQC signature
-        var validationResult = await ValidateSignatureAsync(
-            context, pqcService, dbContext, attribute);
+        // Determine if the current user has an active PQC key.
+        // If the user has no PQC key registered yet, we allow a backward-compatible path:
+        // - Still enforce X-Idempotency-Key when required by the endpoint
+        // - Skip PQC signature verification (since the client cannot produce it)
+        var userId = TryGetUserId(context);
+        if (userId == 0)
+        {
+            await RejectAsync(context, auditService, "User not authenticated");
+            return;
+        }
+
+        var hasActivePqcKey = await HasActivePqcKeyAsync(dbContext, userId);
+        if (!hasActivePqcKey)
+        {
+            if (attribute.RequireIdempotencyKey)
+            {
+                var idempotencyKey = context.Request.Headers[IdempotencyKeyHeader].FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(idempotencyKey))
+                {
+                    await RejectAsync(context, auditService, "Missing X-Idempotency-Key header");
+                    return;
+                }
+
+                if (!IsValidIdempotencyKey(idempotencyKey))
+                {
+                    await RejectAsync(
+                        context,
+                        auditService,
+                        "Invalid X-Idempotency-Key format. Use 8-128 chars of A-Z a-z 0-9 - _ :");
+                    return;
+                }
+            }
+
+            await _next(context);
+            return;
+        }
+
+        // Validate PQC signature (enforced only when the user has an active PQC key)
+        var validationResult = await ValidateSignatureAsync(context, pqcService, dbContext, attribute);
 
         if (!validationResult.IsValid)
         {
-            // Record failed signature attempt
-            await RecordSignatureFailureAsync(context, auditService, validationResult.ErrorMessage ?? "Unknown error");
-
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            context.Response.ContentType = "application/json";
-
-            var errorResponse = new
-            {
-                success = false,
-                error = new
-                {
-                    code = "PQC_SIGNATURE_INVALID",
-                    message = validationResult.ErrorMessage ?? "Signature validation failed"
-                },
-                meta = new
-                {
-                    requestId = context.Items["RequestId"]?.ToString() ?? Guid.NewGuid().ToString(),
-                    timestamp = DateTime.UtcNow
-                }
-            };
-
-            await context.Response.WriteAsJsonAsync(errorResponse);
+            await RejectAsync(context, auditService, validationResult.ErrorMessage ?? "Unknown error");
             return;
         }
 
@@ -90,6 +105,59 @@ public class PqcSignatureMiddleware
         await UpdateKeyUsageAsync(dbContext, validationResult.KeyId!);
 
         await _next(context);
+    }
+
+    private async Task RejectAsync(HttpContext context, IAuditTrailService auditService, string message)
+    {
+        // Record failed signature attempt
+        await RecordSignatureFailureAsync(context, auditService, message);
+
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        context.Response.ContentType = "application/json";
+
+        var errorResponse = new
+        {
+            success = false,
+            error = new
+            {
+                code = "PQC_SIGNATURE_INVALID",
+                message
+            },
+            meta = new
+            {
+                requestId = context.Items["RequestId"]?.ToString() ?? Guid.NewGuid().ToString(),
+                timestamp = DateTime.UtcNow
+            }
+        };
+
+        await context.Response.WriteAsJsonAsync(errorResponse);
+    }
+
+    private static uint TryGetUserId(HttpContext context)
+    {
+        var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? context.User.FindFirst("user_id")?.Value;
+
+        return uint.TryParse(userIdClaim, out var userId) ? userId : 0u;
+    }
+
+    private async Task<bool> HasActivePqcKeyAsync(MongoDbContext dbContext, uint userId)
+    {
+        try
+        {
+            var keyId = await dbContext.UserPqcKeys
+                .Find(k => k.UserId == userId && k.IsActive)
+                .Project(k => k.KeyId)
+                .FirstOrDefaultAsync();
+
+            return !string.IsNullOrWhiteSpace(keyId);
+        }
+        catch (Exception ex)
+        {
+            // Fail closed: if we cannot determine key existence, require PQC enforcement.
+            _logger.LogError(ex, "Failed to check active PQC key existence for user {UserId}", userId);
+            return true;
+        }
     }
 
     private async Task<SignatureValidationResult> ValidateSignatureAsync(

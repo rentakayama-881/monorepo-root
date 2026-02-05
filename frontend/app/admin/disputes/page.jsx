@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import logger from "@/lib/logger";
 
-const API_BASE = process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
+const API_BASE = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
 
 export default function AdminDisputesPage() {
   const [disputes, setDisputes] = useState([]);

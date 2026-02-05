@@ -13,10 +13,36 @@ import { clearToken } from "./auth";
 export function getFeatureApiBase() {
   return (
     process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL ||
-    // Backward-compat: older env name used in code
-    process.env.NEXT_PUBLIC_FEATURE_API_URL ||
     "https://feature.aivalid.id"
   );
+}
+
+function hasHeader(headers, key) {
+  if (!headers) return false;
+  const target = String(key || "").toLowerCase();
+  return Object.keys(headers).some((k) => String(k).toLowerCase() === target);
+}
+
+function shouldAttachIdempotencyKey(path, method) {
+  const m = String(method || "GET").toUpperCase();
+  if (m === "GET" || m === "HEAD" || m === "OPTIONS") return false;
+
+  // Only attach where Feature Service expects idempotency keys (finance/security writes).
+  return (
+    typeof path === "string" &&
+    (path.startsWith("/api/v1/wallets/") || path.startsWith("/api/v1/disputes"))
+  );
+}
+
+function generateIdempotencyKey() {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch {
+    // ignore
+  }
+  return `idem_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
 }
 
 function safeToString(value) {
@@ -244,12 +270,21 @@ export async function fetchFeatureAuth(path, options = {}) {
       throw error;
     }
 
+    const method = rest.method || "GET";
+    const resolvedHeaders = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...headers,
+    };
+
+    if (shouldAttachIdempotencyKey(path, method) && !hasHeader(resolvedHeaders, "X-Idempotency-Key")) {
+      resolvedHeaders["X-Idempotency-Key"] = generateIdempotencyKey();
+    }
+
     const res = await fetch(`${getFeatureApiBase()}${path}`, {
       ...rest,
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...headers,
+        ...resolvedHeaders,
       },
       signal: controller.signal,
     });
