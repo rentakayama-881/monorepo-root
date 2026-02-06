@@ -35,8 +35,9 @@ public class TransferService : ITransferService
 
     // Fee configuration - 2% for transfers
     private const decimal TransferFeePercent = 0.02m;
-    private const int DefaultHoldHours = 24;
-    private const int MaxHoldHours = 72;
+    private const int HoursPerDay = 24;
+    private const int DefaultHoldHours = 7 * HoursPerDay;
+    private const int MaxHoldHours = 30 * HoursPerDay;
 
     public TransferService(
         MongoDbContext dbContext,
@@ -96,7 +97,7 @@ public class TransferService : ITransferService
             throw new InvalidOperationException($"Saldo tidak cukup. Saldo: Rp {senderWallet.Balance:N0}, Dibutuhkan: Rp {request.Amount:N0}");
         }
 
-        // Calculate hold period (default 24h, max 72h)
+        // Calculate hold period (default 7 days, max 30 days)
         var holdHours = request.HoldHours > 0 ? Math.Min(request.HoldHours, MaxHoldHours) : DefaultHoldHours;
         var holdUntil = DateTime.UtcNow.AddHours(holdHours);
 

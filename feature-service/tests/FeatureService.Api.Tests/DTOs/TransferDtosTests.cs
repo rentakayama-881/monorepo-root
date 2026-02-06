@@ -16,7 +16,7 @@ public class TransferDtosTests
             Amount: 10000,
             Message: "Test transfer",
             Pin: "123456",
-            HoldHours: 24
+            HoldHours: 168
         );
 
         // Act
@@ -36,7 +36,7 @@ public class TransferDtosTests
             Amount: 0,
             Message: "Test transfer",
             Pin: "123456",
-            HoldHours: 24
+            HoldHours: 168
         );
 
         // Assert - record is created, validation would happen at service level
@@ -47,18 +47,18 @@ public class TransferDtosTests
     [Fact]
     public void CreateTransferRequest_WithLongHoldHours_CreatesRecordSuccessfully()
     {
-        // Note: HoldHours validation (max 72) happens in the service layer
+        // Note: HoldHours validation (max 720) happens in the service layer
         // Arrange
         var request = new CreateTransferRequest(
             ReceiverUsername: "testuser",
             Amount: 10000,
             Message: "Test transfer",
             Pin: "123456",
-            HoldHours: 100 // Service will cap this at 72
+            HoldHours: 1000 // Service will cap this at 720
         );
 
         // Assert - record is created, service will enforce max
-        Assert.Equal(100, request.HoldHours);
+        Assert.Equal(1000, request.HoldHours);
     }
 
     [Fact]

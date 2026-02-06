@@ -86,7 +86,7 @@ public record CreateTransferRequest(
     long Amount,
     string? Message,
     string Pin,
-    int HoldHours = 24 // Default 24 hours hold period
+    int HoldHours = 168 // Default 7 days hold period
 );
 
 public record CreateTransferResponse(

@@ -41,7 +41,7 @@ public class TransfersController : ApiControllerBase
     /// - Post-Quantum Cryptography (PQC) digital signature required
     /// - Idempotency via Redis Sentinel to prevent duplicate transactions
     /// - Immutable audit trail for compliance
-    /// - Dana ditahan selama hold period (default 24 jam, maksimal 72 jam)
+    /// - Dana ditahan selama hold period (default 7 hari, maksimal 30 hari)
     /// - Penerima bisa meng-klaim dana setelah hold period selesai
     /// - Pengirim bisa membatalkan sebelum dana diklaim
     /// - Fee 2% dipotong saat dana dilepaskan
