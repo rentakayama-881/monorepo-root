@@ -87,7 +87,7 @@ public class TransfersController : ApiControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return ApiError(401, "INVALID_PIN", ex.Message);
+            return ApiError(400, "INVALID_PIN", ex.Message);
         }
         catch (InvalidOperationException ex)
         {
