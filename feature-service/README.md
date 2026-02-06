@@ -93,11 +93,11 @@ docker-compose down
 - `DELETE /api/v1/threads/{threadId}/reactions` - Remove reaction
 - `GET /api/v1/threads/{threadId}/reactions/summary` - Get reaction counts
 
-### Finance Service (Phase 2 - Coming Soon)
-- `GET /api/v1/wallets/me` - Get user wallet (501 Not Implemented)
-- `POST /api/v1/wallets/transfers` - Create transfer (501 Not Implemented)
-- `POST /api/v1/wallets/withdrawals` - Request withdrawal (501 Not Implemented)
-- `POST /api/v1/disputes` - Create dispute (501 Not Implemented)
+### Finance Service
+- `GET /api/v1/wallets/me` - Get user wallet
+- `POST /api/v1/wallets/transfers` - Create escrow transfer (`holdHours` supported, e.g. 168 for 7 days, 720 for 30 days)
+- `POST /api/v1/wallets/withdrawals` - Request withdrawal
+- `POST /api/v1/disputes` - Create dispute
 
 ## Authentication
 

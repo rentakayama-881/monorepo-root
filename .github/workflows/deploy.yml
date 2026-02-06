@@ -11,8 +11,7 @@
 # - Multi-service coordination
 #
 # VPS Configuration:
-# - VPS 1 (Go Backend): 72.62.124.23
-# - VPS 2 (Feature Service): 203.175.11.84
+# - Feature Service VPS: 194.238.57.132
 # =============================================================================
 
 name: Deploy to Production
@@ -218,8 +217,8 @@ jobs:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_FEATURE_HOST }}
-          username: ${{ secrets.VPS_FEATURE_USER }}
+          host: 194.238.57.132
+          username: alep
           key: ${{ secrets.VPS_FEATURE_SSH_KEY }}
           script: |
             set -e
@@ -229,39 +228,40 @@ jobs:
             echo "=========================================="
 
             # Create backup
-            BACKUP_DIR="/home/asp/backups/$(date +%Y%m%d_%H%M%S)"
+            BACKUP_DIR="/home/alep/backups/$(date +%Y%m%d_%H%M%S)"
             mkdir -p $BACKUP_DIR
-            if [ -d /home/asp/monorepo-root/feature-service/publish ]; then
-              cp -r /home/asp/monorepo-root/feature-service/publish $BACKUP_DIR/
+            if [ -f /opt/alephdraad/feature-service/FeatureService.Api.dll ]; then
+              cp -a /opt/alephdraad/feature-service/FeatureService.Api.dll $BACKUP_DIR/FeatureService.Api.dll.bak
               echo "✅ Backup created: $BACKUP_DIR"
             fi
 
             # Pull latest code
-            cd /home/asp/monorepo-root
+            cd /home/alep/monorepo-root
             git fetch origin main
             git reset --hard origin/main
 
             # Build
             cd feature-service/src/FeatureService.Api
-            dotnet publish -c Release -o /home/asp/monorepo-root/feature-service/publish --self-contained false
+            dotnet publish -c Release -o /opt/alephdraad/feature-service --self-contained false
 
             # Graceful restart
             echo "🔄 Restarting service..."
-            sudo systemctl restart featureservice.service
+            sudo systemctl restart feature-service || sudo systemctl restart featureservice.service
 
             # Health check (wait up to 60 seconds for .NET warmup)
             echo "🏥 Running health check..."
             for i in {1..60}; do
-              if curl -sf http://localhost:5000/health > /dev/null 2>&1; then
+              if curl -sf http://localhost:5000/api/v1/health > /dev/null 2>&1; then
                 echo "✅ Health check passed!"
                 break
               fi
               if [ $i -eq 60 ]; then
                 echo "❌ Health check failed after 60 seconds"
                 echo "🔄 Rolling back..."
-                rm -rf /home/asp/monorepo-root/feature-service/publish
-                cp -r $BACKUP_DIR/publish /home/asp/monorepo-root/feature-service/
-                sudo systemctl restart featureservice.service
+                if [ -f $BACKUP_DIR/FeatureService.Api.dll.bak ]; then
+                  cp -a $BACKUP_DIR/FeatureService.Api.dll.bak /opt/alephdraad/feature-service/FeatureService.Api.dll
+                fi
+                sudo systemctl restart feature-service || sudo systemctl restart featureservice.service
                 exit 1
               fi
               sleep 1
