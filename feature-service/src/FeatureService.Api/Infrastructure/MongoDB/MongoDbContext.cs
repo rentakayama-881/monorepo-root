@@ -1,16 +1,19 @@
 using MongoDB.Driver;
 using FeatureService.Api.Models.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace FeatureService.Api.Infrastructure.MongoDB;
 
 public class MongoDbContext
 {
     private readonly IMongoDatabase _database;
+    private readonly ILogger<MongoDbContext> _logger;
 
-    public MongoDbContext(MongoDbSettings settings)
+    public MongoDbContext(MongoDbSettings settings, ILogger<MongoDbContext> logger)
     {
         var client = new MongoClient(settings.ConnectionString);
         _database = client.GetDatabase(settings.DatabaseName);
+        _logger = logger;
 
         CreateIndexes();
     }
@@ -50,6 +53,11 @@ public class MongoDbContext
     #region Wallet Collections
 
     public IMongoCollection<UserWallet> Wallets => _database.GetCollection<UserWallet>("wallets");
+    public IMongoCollection<Transaction> Transactions => _database.GetCollection<Transaction>("transactions");
+    public IMongoCollection<TransactionLedger> TransactionLedger => _database.GetCollection<TransactionLedger>("transaction_ledger");
+    public IMongoCollection<DepositRequest> DepositRequests => _database.GetCollection<DepositRequest>("deposit_requests");
+    public IMongoCollection<Transfer> Transfers => _database.GetCollection<Transfer>("transfers");
+    public IMongoCollection<Dispute> Disputes => _database.GetCollection<Dispute>("disputes");
     public IMongoCollection<Withdrawal> Withdrawals => _database.GetCollection<Withdrawal>("withdrawals");
 
     #endregion
@@ -139,6 +147,139 @@ public class MongoDbContext
             new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Descending(d => d.CreatedAt)),
             new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Text(d => d.Title).Text(d => d.Description))
         });
+
+        // Wallet indexes
+        Wallets.Indexes.CreateOne(new CreateIndexModel<UserWallet>(
+            Builders<UserWallet>.IndexKeys.Ascending(w => w.UserId),
+            new CreateIndexOptions { Unique = true }
+        ));
+
+        Transactions.Indexes.CreateOne(new CreateIndexModel<Transaction>(
+            Builders<Transaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Descending(t => t.CreatedAt)
+        ));
+
+        TransactionLedger.Indexes.CreateOne(new CreateIndexModel<TransactionLedger>(
+            Builders<TransactionLedger>.IndexKeys
+                .Ascending(l => l.UserId)
+                .Descending(l => l.CreatedAt)
+        ));
+
+        // Deposit indexes
+        DepositRequests.Indexes.CreateMany(new[]
+        {
+            new CreateIndexModel<DepositRequest>(Builders<DepositRequest>.IndexKeys
+                .Ascending(d => d.UserId)
+                .Descending(d => d.CreatedAt)),
+            new CreateIndexModel<DepositRequest>(Builders<DepositRequest>.IndexKeys.Ascending(d => d.Status))
+        });
+
+        try
+        {
+            DepositRequests.Indexes.CreateOne(new CreateIndexModel<DepositRequest>(
+                Builders<DepositRequest>.IndexKeys.Ascending(d => d.ExternalTransactionId),
+                new CreateIndexOptions
+                {
+                    Unique = true,
+                    Name = "externalTransactionId_1"
+                }
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create unique index for deposit externalTransactionId");
+        }
+
+        // Transfer indexes
+        Transfers.Indexes.CreateMany(new[]
+        {
+            new CreateIndexModel<Transfer>(Builders<Transfer>.IndexKeys
+                .Ascending(t => t.SenderId)
+                .Descending(t => t.CreatedAt)),
+            new CreateIndexModel<Transfer>(Builders<Transfer>.IndexKeys
+                .Ascending(t => t.ReceiverId)
+                .Descending(t => t.CreatedAt)),
+            new CreateIndexModel<Transfer>(Builders<Transfer>.IndexKeys
+                .Ascending(t => t.Status)
+                .Ascending(t => t.HoldUntil))
+        });
+
+        try
+        {
+            Transfers.Indexes.CreateOne(new CreateIndexModel<Transfer>(
+                Builders<Transfer>.IndexKeys.Ascending(t => t.Code),
+                new CreateIndexOptions { Unique = true }
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create unique index for transfer code");
+        }
+
+        // Dispute indexes
+        Disputes.Indexes.CreateMany(new[]
+        {
+            new CreateIndexModel<Dispute>(Builders<Dispute>.IndexKeys
+                .Ascending(d => d.InitiatorId)
+                .Descending(d => d.CreatedAt)),
+            new CreateIndexModel<Dispute>(Builders<Dispute>.IndexKeys
+                .Ascending(d => d.Status)
+                .Descending(d => d.CreatedAt))
+        });
+
+        try
+        {
+            Disputes.Indexes.CreateOne(new CreateIndexModel<Dispute>(
+                Builders<Dispute>.IndexKeys.Ascending(d => d.TransferId),
+                new CreateIndexOptions { Unique = true }
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create unique index for dispute transferId");
+        }
+
+        // Withdrawal indexes
+        Withdrawals.Indexes.CreateMany(new[]
+        {
+            new CreateIndexModel<Withdrawal>(Builders<Withdrawal>.IndexKeys
+                .Ascending(w => w.UserId)
+                .Descending(w => w.CreatedAt)),
+            new CreateIndexModel<Withdrawal>(Builders<Withdrawal>.IndexKeys
+                .Ascending(w => w.Status)
+                .Ascending(w => w.CreatedAt))
+        });
+
+        try
+        {
+            Withdrawals.Indexes.CreateOne(new CreateIndexModel<Withdrawal>(
+                Builders<Withdrawal>.IndexKeys.Ascending(w => w.Reference),
+                new CreateIndexOptions { Unique = true }
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create unique index for withdrawal reference");
+        }
+
+        try
+        {
+            Withdrawals.Indexes.CreateOne(new CreateIndexModel<Withdrawal>(
+                Builders<Withdrawal>.IndexKeys.Ascending(w => w.UserId),
+                new CreateIndexOptions<Withdrawal>
+                {
+                    Unique = true,
+                    PartialFilterExpression = Builders<Withdrawal>.Filter.In(
+                        w => w.Status,
+                        new[] { WithdrawalStatus.Pending, WithdrawalStatus.Processing })
+                }
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create partial unique index for active withdrawals by user");
+        }
 
         // PQC Key indexes
         UserPqcKeys.Indexes.CreateMany(new[]

@@ -46,6 +46,10 @@ public class AdminDepositsController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Approve(string id, [FromBody] ApproveDepositRequest? request = null)
     {
+        var depositId = id?.Trim();
+        if (string.IsNullOrWhiteSpace(depositId))
+            return ApiBadRequest("VALIDATION_ERROR", "ID deposit tidak valid");
+
         var adminId = GetUserId();
         var adminUsername = GetUsername();
         if (adminId == 0)
@@ -53,15 +57,15 @@ public class AdminDepositsController : ApiControllerBase
 
         try
         {
-            var (success, error) = await _depositService.ApproveAsync(id, adminId, adminUsername, request?.AmountOverride);
+            var (success, error) = await _depositService.ApproveAsync(depositId, adminId, adminUsername, request?.AmountOverride);
             if (!success)
                 return ApiBadRequest("DEPOSIT_APPROVE_FAILED", error ?? "Gagal approve deposit");
 
-            return ApiOk(new { id }, "Deposit approved");
+            return ApiOk(new { id = depositId }, "Deposit approved");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error approving deposit {DepositId}", id);
+            _logger.LogError(ex, "Error approving deposit {DepositId}", depositId);
             return ApiError(500, "INTERNAL_ERROR", "Gagal approve deposit");
         }
     }
@@ -73,8 +77,19 @@ public class AdminDepositsController : ApiControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Reject(string id, [FromBody] RejectDepositRequest request)
     {
+        var depositId = id?.Trim();
+        if (string.IsNullOrWhiteSpace(depositId))
+            return ApiBadRequest("VALIDATION_ERROR", "ID deposit tidak valid");
+
+        if (request == null)
+            return ApiBadRequest("VALIDATION_ERROR", "Data tidak valid");
+
         if (!ModelState.IsValid)
             return ApiBadRequest("VALIDATION_ERROR", "Data tidak valid");
+
+        var reason = request.Reason?.Trim();
+        if (string.IsNullOrWhiteSpace(reason) || reason.Length < 3 || reason.Length > 200)
+            return ApiBadRequest("VALIDATION_ERROR", "Alasan penolakan harus 3-200 karakter");
 
         var adminId = GetUserId();
         var adminUsername = GetUsername();
@@ -83,15 +98,15 @@ public class AdminDepositsController : ApiControllerBase
 
         try
         {
-            var (success, error) = await _depositService.RejectAsync(id, adminId, adminUsername, request.Reason);
+            var (success, error) = await _depositService.RejectAsync(depositId, adminId, adminUsername, reason);
             if (!success)
                 return ApiBadRequest("DEPOSIT_REJECT_FAILED", error ?? "Gagal reject deposit");
 
-            return ApiOk(new { id }, "Deposit rejected");
+            return ApiOk(new { id = depositId }, "Deposit rejected");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error rejecting deposit {DepositId}", id);
+            _logger.LogError(ex, "Error rejecting deposit {DepositId}", depositId);
             return ApiError(500, "INTERNAL_ERROR", "Gagal reject deposit");
         }
     }

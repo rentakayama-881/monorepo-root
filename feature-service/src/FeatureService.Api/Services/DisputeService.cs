@@ -41,31 +41,6 @@ public class DisputeService : IDisputeService
         _transfers = dbContext.GetCollection<Transfer>("transfers");
         _walletService = walletService;
         _logger = logger;
-
-        CreateIndexes();
-    }
-
-    private void CreateIndexes()
-    {
-        // Index for transfer lookup
-        _disputes.Indexes.CreateOne(new CreateIndexModel<Dispute>(
-            Builders<Dispute>.IndexKeys.Ascending(d => d.TransferId),
-            new CreateIndexOptions { Unique = true }
-        ));
-
-        // Index for user disputes
-        _disputes.Indexes.CreateOne(new CreateIndexModel<Dispute>(
-            Builders<Dispute>.IndexKeys
-                .Ascending(d => d.InitiatorId)
-                .Descending(d => d.CreatedAt)
-        ));
-
-        // Index for admin queries
-        _disputes.Indexes.CreateOne(new CreateIndexModel<Dispute>(
-            Builders<Dispute>.IndexKeys
-                .Ascending(d => d.Status)
-                .Descending(d => d.CreatedAt)
-        ));
     }
 
     public async Task<CreateDisputeResponse> CreateDisputeAsync(uint userId, CreateDisputeRequest request)

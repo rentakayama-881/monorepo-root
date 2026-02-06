@@ -2,7 +2,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
+import {
+  fetchFeatureAuth,
+  FEATURE_ENDPOINTS,
+  unwrapFeatureData,
+} from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
@@ -17,6 +21,19 @@ const BANKS = [
   { code: "danamon", name: "Bank Danamon" },
   { code: "bsi", name: "Bank Syariah Indonesia (BSI)" },
 ];
+
+function normalizeWallet(payload) {
+  const data = unwrapFeatureData(payload) || {};
+  const balanceRaw =
+    data.balance ?? data.Balance ?? data.availableBalance ?? data.AvailableBalance ?? 0;
+  const pinSetRaw =
+    data.pinSet ?? data.PinSet ?? data.pin_set ?? data.hasPin ?? data.has_pin ?? false;
+
+  return {
+    balance: Number(balanceRaw) || 0,
+    has_pin: Boolean(pinSetRaw),
+  };
+}
 
 export default function WithdrawPage() {
   const router = useRouter();
@@ -42,9 +59,11 @@ export default function WithdrawPage() {
       }
 
       try {
-        const walletData = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
-        setWallet({ balance: walletData.balance || 0, has_pin: walletData.pinSet || false });
-        if (!walletData.pinSet) {
+        const walletData = normalizeWallet(
+          await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME)
+        );
+        setWallet(walletData);
+        if (!walletData.has_pin) {
           router.push("/account/wallet/set-pin?redirect=withdraw");
         }
       } catch (e) {

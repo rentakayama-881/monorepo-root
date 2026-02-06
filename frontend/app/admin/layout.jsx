@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import {
+  clearAdminSession,
+  getAdminInfo,
+  getAdminToken,
+} from "@/lib/adminAuth";
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
@@ -11,7 +16,7 @@ export default function AdminLayout({ children }) {
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
-  // Wait for client-side mount before accessing localStorage
+  // Wait for client-side mount before accessing browser auth storage
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -26,15 +31,15 @@ export default function AdminLayout({ children }) {
     }
 
     try {
-      const token = localStorage.getItem("admin_token");
-      const adminInfo = localStorage.getItem("admin_info");
+      const token = getAdminToken();
+      const adminInfo = getAdminInfo();
 
       if (!token || !adminInfo) {
         router.push("/admin/login");
         return;
       }
 
-      setAdmin(JSON.parse(adminInfo));
+      setAdmin(adminInfo);
     } catch {
       router.push("/admin/login");
       return;
@@ -44,8 +49,7 @@ export default function AdminLayout({ children }) {
   }, [pathname, router, mounted]);
 
   const handleLogout = () => {
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_info");
+    clearAdminSession();
     router.push("/admin/login");
   };
 

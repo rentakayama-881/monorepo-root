@@ -2,41 +2,65 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import logger from "@/lib/logger";
+import { getAdminToken } from "@/lib/adminAuth";
+import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
 
 const API_BASE = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
+
+function normalizeDispute(item) {
+  return {
+    id: item?.id ?? item?.Id ?? "",
+    status: item?.status ?? item?.Status ?? "Open",
+    category: item?.category ?? item?.Category ?? "Other",
+    amount: Number(item?.amount ?? item?.Amount ?? 0) || 0,
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? null,
+    initiatorUsername:
+      item?.initiatorUsername ??
+      item?.InitiatorUsername ??
+      item?.senderUsername ??
+      item?.SenderUsername ??
+      "Unknown",
+    respondentUsername:
+      item?.respondentUsername ??
+      item?.RespondentUsername ??
+      item?.receiverUsername ??
+      item?.ReceiverUsername ??
+      "Unknown",
+  };
+}
 
 export default function AdminDisputesPage() {
   const [disputes, setDisputes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("Open");
 
-  const getAdminToken = () => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("admin_token");
-    }
-    return null;
-  };
-
   const loadDisputes = async () => {
     setLoading(true);
     try {
       const token = getAdminToken();
-      const status = filter === "all" ? "" : `?status=${filter}`;
-      const res = await fetch(`${API_BASE}/api/v1/admin/disputes${status}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      if (!token) {
+        setDisputes([]);
+      } else {
+        const status = filter === "all" ? "" : `?status=${filter}`;
+        const res = await fetch(`${API_BASE}/api/v1/admin/disputes${status}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
-      if (!res.ok) throw new Error("Failed to fetch disputes");
+        if (!res.ok) throw new Error("Failed to fetch disputes");
 
-      const data = await res.json();
-      setDisputes(data.data || []);
+        const data = await res.json();
+        const payload = unwrapFeatureData(data);
+        const items = extractFeatureItems(payload).map(normalizeDispute);
+        setDisputes(items);
+      }
     } catch (e) {
       logger.error("Failed to load disputes:", e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -45,7 +69,9 @@ export default function AdminDisputesPage() {
 
   // Format date
   const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
     const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return "-";
     return date.toLocaleDateString("id-ID", {
       day: "numeric",
       month: "short",
@@ -60,39 +86,59 @@ export default function AdminDisputesPage() {
     return new Intl.NumberFormat("id-ID").format(amount);
   };
 
+  const normalizeStatus = (status) => String(status || "").replace(/\s+/g, "").toLowerCase();
+
   // Get status color
   const getStatusColor = (status) => {
-    switch (status) {
-      case "Open": return "bg-yellow-500 text-white";
-      case "UnderReview": return "bg-blue-500 text-white";
-      case "WaitingForEvidence": return "bg-orange-500 text-white";
-      case "Resolved": return "bg-green-500 text-white";
-      case "Cancelled": return "bg-gray-500 text-white";
-      default: return "bg-gray-500 text-white";
+    switch (normalizeStatus(status)) {
+      case "open":
+        return "bg-yellow-500 text-white";
+      case "underreview":
+        return "bg-blue-500 text-white";
+      case "waitingforevidence":
+        return "bg-orange-500 text-white";
+      case "resolved":
+        return "bg-green-500 text-white";
+      case "cancelled":
+        return "bg-gray-500 text-white";
+      default:
+        return "bg-gray-500 text-white";
     }
   };
 
   // Get status label
   const getStatusLabel = (status) => {
-    switch (status) {
-      case "Open": return "Menunggu";
-      case "UnderReview": return "Ditinjau";
-      case "WaitingForEvidence": return "Butuh Bukti";
-      case "Resolved": return "Selesai";
-      case "Cancelled": return "Dibatalkan";
-      default: return status;
+    switch (normalizeStatus(status)) {
+      case "open":
+        return "Menunggu";
+      case "underreview":
+        return "Ditinjau";
+      case "waitingforevidence":
+        return "Butuh Bukti";
+      case "resolved":
+        return "Selesai";
+      case "cancelled":
+        return "Dibatalkan";
+      default:
+        return status;
     }
   };
 
   // Get category label
   const getCategoryLabel = (category) => {
-    switch (category) {
-      case "ItemNotReceived": return "Barang Tidak Diterima";
-      case "ItemNotAsDescribed": return "Tidak Sesuai Deskripsi";
-      case "Fraud": return "Dugaan Penipuan";
-      case "SellerNotResponding": return "Penjual Tidak Merespons";
-      case "Other": return "Lainnya";
-      default: return category;
+    switch (String(category || "").replace(/\s+/g, "").toLowerCase()) {
+      case "itemnotreceived":
+        return "Barang Tidak Diterima";
+      case "itemnotasdescribed":
+        return "Tidak Sesuai Deskripsi";
+      case "fraud":
+        return "Dugaan Penipuan";
+      case "sellernotresponding":
+        return "Penjual Tidak Merespons";
+      case "other":
+        return "Lainnya";
+      default:
+        return category;
     }
   };
 
@@ -107,10 +153,26 @@ export default function AdminDisputesPage() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Menunggu", value: disputes.filter(d => d.status === "Open").length, color: "bg-yellow-500" },
-          { label: "Ditinjau", value: disputes.filter(d => d.status === "UnderReview").length, color: "bg-blue-500" },
-          { label: "Butuh Bukti", value: disputes.filter(d => d.status === "WaitingForEvidence").length, color: "bg-orange-500" },
-          { label: "Total Aktif", value: disputes.filter(d => !["Resolved", "Cancelled"].includes(d.status)).length, color: "bg-primary" },
+          {
+            label: "Menunggu",
+            value: disputes.filter((d) => normalizeStatus(d.status) === "open").length,
+            color: "bg-yellow-500",
+          },
+          {
+            label: "Ditinjau",
+            value: disputes.filter((d) => normalizeStatus(d.status) === "underreview").length,
+            color: "bg-blue-500",
+          },
+          {
+            label: "Butuh Bukti",
+            value: disputes.filter((d) => normalizeStatus(d.status) === "waitingforevidence").length,
+            color: "bg-orange-500",
+          },
+          {
+            label: "Total Aktif",
+            value: disputes.filter((d) => !["resolved", "cancelled"].includes(normalizeStatus(d.status))).length,
+            color: "bg-primary",
+          },
         ].map((stat, idx) => (
           <div key={idx} className="bg-card rounded-lg border border-border p-4">
             <div className="text-2xl font-bold text-foreground">{stat.value}</div>

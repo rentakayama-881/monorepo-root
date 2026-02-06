@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -171,6 +172,102 @@ func deriveRPOrigins() []string {
 	return origins
 }
 
+func getEnvInt(key string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < 0 {
+		logger.Warn("Invalid integer env value, using default",
+			zap.String("key", key),
+			zap.String("value", raw),
+			zap.Int("default", fallback),
+		)
+		return fallback
+	}
+
+	return value
+}
+
+func getEnvPositiveInt(key string, fallback int) int {
+	value := getEnvInt(key, fallback)
+	if value <= 0 {
+		logger.Warn("Non-positive integer env value is not allowed, using default",
+			zap.String("key", key),
+			zap.Int("value", value),
+			zap.Int("default", fallback),
+		)
+		return fallback
+	}
+	return value
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+
+	value, err := strconv.ParseBool(raw)
+	if err != nil {
+		logger.Warn("Invalid boolean env value, using default",
+			zap.String("key", key),
+			zap.String("value", raw),
+			zap.Bool("default", fallback),
+		)
+		return fallback
+	}
+
+	return value
+}
+
+func getEnvCSV(key string) []string {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return nil
+	}
+
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	seen := map[string]struct{}{}
+	for _, part := range parts {
+		clean := strings.TrimSpace(part)
+		if clean == "" {
+			continue
+		}
+		if _, exists := seen[clean]; exists {
+			continue
+		}
+		seen[clean] = struct{}{}
+		out = append(out, clean)
+	}
+
+	return out
+}
+
+func buildRateLimitConfig() middleware.RateLimitConfig {
+	cfg := middleware.DefaultRateLimitConfig()
+
+	cfg.RequestsPerMinute = getEnvPositiveInt("RATE_LIMIT_REQUESTS_PER_MINUTE", cfg.RequestsPerMinute)
+	cfg.RequestsPerHour = getEnvPositiveInt("RATE_LIMIT_REQUESTS_PER_HOUR", cfg.RequestsPerHour)
+	cfg.AuthRequestsPerMinute = getEnvPositiveInt("RATE_LIMIT_AUTH_REQUESTS_PER_MINUTE", cfg.AuthRequestsPerMinute)
+	cfg.AuthRequestsPerHour = getEnvPositiveInt("RATE_LIMIT_AUTH_REQUESTS_PER_HOUR", cfg.AuthRequestsPerHour)
+	cfg.SearchRequestsPerMinute = getEnvPositiveInt("RATE_LIMIT_SEARCH_REQUESTS_PER_MINUTE", cfg.SearchRequestsPerMinute)
+	cfg.EnableIPLimit = getEnvBool("RATE_LIMIT_ENABLE_IP_LIMIT", cfg.EnableIPLimit)
+	cfg.EnableUserLimit = getEnvBool("RATE_LIMIT_ENABLE_USER_LIMIT", cfg.EnableUserLimit)
+
+	if whitelist := getEnvCSV("RATE_LIMIT_WHITELIST_IPS"); len(whitelist) > 0 {
+		cfg.WhitelistIPs = whitelist
+	}
+	if blacklist := getEnvCSV("RATE_LIMIT_BLACKLIST_IPS"); len(blacklist) > 0 {
+		cfg.BlacklistIPs = blacklist
+	}
+
+	return cfg
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -291,139 +388,163 @@ func main() {
 	// Serve file statis: /static/...
 	router.Static("/static", "./public")
 
+	rateLimitConfig := buildRateLimitConfig()
+	enhancedRateLimiter := middleware.NewEnhancedRateLimiter(rateLimitConfig)
+	logger.Info("Enhanced rate limiter configured",
+		zap.Int("requests_per_minute", rateLimitConfig.RequestsPerMinute),
+		zap.Int("requests_per_hour", rateLimitConfig.RequestsPerHour),
+		zap.Int("auth_requests_per_minute", rateLimitConfig.AuthRequestsPerMinute),
+		zap.Int("auth_requests_per_hour", rateLimitConfig.AuthRequestsPerHour),
+		zap.Bool("enable_ip_limit", rateLimitConfig.EnableIPLimit),
+		zap.Bool("enable_user_limit", rateLimitConfig.EnableUserLimit),
+		zap.Strings("whitelist_ips", rateLimitConfig.WhitelistIPs),
+		zap.Strings("blacklist_ips", rateLimitConfig.BlacklistIPs),
+	)
+
 	api := router.Group("/api")
 	{
 		api.GET("/health", handlers.HealthHandler)
 		api.GET("/ready", handlers.ReadinessHandler)
 
-		auth := api.Group("/auth")
+		// Keep health/readiness outside request rate limits.
+		apiRateLimited := api.Group("")
+		apiRateLimited.Use(enhancedRateLimiter.Middleware())
 		{
-			auth.POST("/register", authHandler.Register)
-			auth.POST("/login", authHandler.Login)
-			auth.POST("/login/totp", authHandler.LoginTOTP)
-			auth.POST("/login/backup-code", authHandler.LoginBackupCode)
-			auth.POST("/refresh", authHandler.RefreshToken)
-			auth.POST("/logout", authHandler.Logout)
-			auth.POST("/logout-all", middleware.AuthMiddleware(), authHandler.LogoutAll)
-			auth.GET("/sessions", middleware.AuthMiddleware(), authHandler.GetActiveSessions)
-			auth.DELETE("/sessions/:id", middleware.AuthMiddleware(), authHandler.RevokeSession)
-			auth.POST("/verify/request", authHandler.RequestVerification)
-			auth.POST("/verify/confirm", authHandler.ConfirmVerification)
-			auth.POST("/forgot-password", authHandler.ForgotPassword)
-			auth.POST("/reset-password", authHandler.ResetPassword)
-			auth.POST("/username", middleware.AuthMiddleware(), handlers.CreateUsernameHandler)
-
-			// TOTP / 2FA routes
-			totp := auth.Group("/totp")
-			totp.Use(middleware.AuthMiddleware())
+			auth := apiRateLimited.Group("/auth")
 			{
-				totp.GET("/status", totpHandler.GetStatus)
-				totp.POST("/setup", totpHandler.Setup)
-				totp.POST("/verify", totpHandler.Verify) // Returns backup codes on first enable
-				totp.POST("/verify-code", totpHandler.VerifyCode)
-				totp.POST("/disable", totpHandler.Disable)
-				// NOTE: POST /backup-codes removed for security - backup codes only generated during TOTP enable
-				totp.GET("/backup-codes/count", totpHandler.GetBackupCodeCount)
+				authSensitive := auth.Group("")
+				authSensitive.Use(enhancedRateLimiter.AuthMiddleware())
+				authSensitive.POST("/register", authHandler.Register)
+				authSensitive.POST("/login", authHandler.Login)
+				authSensitive.POST("/login/totp", authHandler.LoginTOTP)
+				authSensitive.POST("/login/backup-code", authHandler.LoginBackupCode)
+				authSensitive.POST("/refresh", authHandler.RefreshToken)
+				authSensitive.POST("/logout", authHandler.Logout)
+				authSensitive.POST("/verify/request", authHandler.RequestVerification)
+				authSensitive.POST("/verify/confirm", authHandler.ConfirmVerification)
+				authSensitive.POST("/forgot-password", authHandler.ForgotPassword)
+				authSensitive.POST("/reset-password", authHandler.ResetPassword)
+
+				auth.POST("/logout-all", middleware.AuthMiddleware(), authHandler.LogoutAll)
+				auth.GET("/sessions", middleware.AuthMiddleware(), authHandler.GetActiveSessions)
+				auth.DELETE("/sessions/:id", middleware.AuthMiddleware(), authHandler.RevokeSession)
+				auth.POST("/username", middleware.AuthMiddleware(), handlers.CreateUsernameHandler)
+
+				// TOTP / 2FA routes
+				totp := auth.Group("/totp")
+				totp.Use(middleware.AuthMiddleware())
+				{
+					totp.GET("/status", totpHandler.GetStatus)
+					totp.POST("/setup", totpHandler.Setup)
+					totp.POST("/verify", totpHandler.Verify) // Returns backup codes on first enable
+					totp.POST("/verify-code", totpHandler.VerifyCode)
+					totp.POST("/disable", totpHandler.Disable)
+					// NOTE: POST /backup-codes removed for security - backup codes only generated during TOTP enable
+					totp.GET("/backup-codes/count", totpHandler.GetBackupCodeCount)
+				}
+
+				// Passkey / WebAuthn routes
+				passkeys := auth.Group("/passkeys")
+				{
+					// Public endpoints (for login)
+					passkeysPublic := passkeys.Group("")
+					passkeysPublic.Use(enhancedRateLimiter.AuthMiddleware())
+					passkeysPublic.POST("/check", passkeyHandler.CheckPasskeys)
+					passkeysPublic.POST("/login/begin", passkeyHandler.BeginLogin)
+					passkeysPublic.POST("/login/finish", passkeyHandler.FinishLogin)
+
+					// Protected endpoints (for registration/management)
+					passkeys.Use(middleware.AuthMiddleware())
+					passkeys.GET("/status", passkeyHandler.GetStatus)
+					passkeys.GET("", passkeyHandler.ListPasskeys)
+					passkeys.POST("/register/begin", passkeyHandler.BeginRegistration)
+					passkeys.POST("/register/finish", passkeyHandler.FinishRegistration)
+					passkeys.DELETE("/:id", passkeyHandler.DeletePasskey)
+					passkeys.PUT("/:id/name", passkeyHandler.RenamePasskey)
+				}
+
+				// Sudo mode routes (re-authentication for critical actions)
+				sudo := auth.Group("/sudo")
+				sudo.Use(middleware.AuthMiddleware())
+				{
+					sudo.POST("/verify", sudoHandler.Verify)
+					sudo.GET("/status", sudoHandler.GetStatus)
+					sudo.POST("/extend", sudoHandler.Extend)
+					sudo.DELETE("", sudoHandler.Revoke)
+				}
 			}
 
-			// Passkey / WebAuthn routes
-			passkeys := auth.Group("/passkeys")
+			account := apiRateLimited.Group("/account")
 			{
-				// Public endpoints (for login)
-				passkeys.POST("/check", passkeyHandler.CheckPasskeys)
-				passkeys.POST("/login/begin", passkeyHandler.BeginLogin)
-				passkeys.POST("/login/finish", passkeyHandler.FinishLogin)
-
-				// Protected endpoints (for registration/management)
-				passkeys.Use(middleware.AuthMiddleware())
-				passkeys.GET("/status", passkeyHandler.GetStatus)
-				passkeys.GET("", passkeyHandler.ListPasskeys)
-				passkeys.POST("/register/begin", passkeyHandler.BeginRegistration)
-				passkeys.POST("/register/finish", passkeyHandler.FinishRegistration)
-				passkeys.DELETE("/:id", passkeyHandler.DeletePasskey)
-				passkeys.PUT("/:id/name", passkeyHandler.RenamePasskey)
+				account.GET("/me", middleware.AuthMiddleware(), handlers.GetMyAccountHandler)
+				account.PUT("", middleware.AuthMiddleware(), handlers.UpdateMyAccountHandler)
+				account.POST("/change-username", middleware.AuthMiddleware(), handlers.ChangeUsernamePaidHandler)
+				account.PUT("/avatar", middleware.AuthMiddleware(), handlers.UploadAvatarHandler)
+				account.DELETE("/avatar", middleware.AuthMiddleware(), handlers.DeleteAvatarHandler)
+				// Check if user can delete account (validates wallet balance, pending transfers, disputes)
+				account.GET("/can-delete", middleware.AuthMiddleware(), handlers.CanDeleteAccountHandler)
+				// Delete account requires sudo mode
+				account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), middleware.RequireSudo(sudoValidator), handlers.DeleteAccountHandler)
 			}
 
-			// Sudo mode routes (re-authentication for critical actions)
-			sudo := auth.Group("/sudo")
-			sudo.Use(middleware.AuthMiddleware())
+			user := apiRateLimited.Group("/user")
 			{
-				sudo.POST("/verify", sudoHandler.Verify)
-				sudo.GET("/status", sudoHandler.GetStatus)
-				sudo.POST("/extend", sudoHandler.Extend)
-				sudo.DELETE("", sudoHandler.Revoke)
+				user.GET("/me", middleware.AuthMiddleware(), userHandler.GetUserInfo)
+				user.GET("/:username", userHandler.GetPublicUserProfile)
+				user.GET("/:username/threads", enhancedRateLimiter.SearchMiddleware(), threadHandler.GetThreadsByUsername)
+				user.GET("/:username/badges", handlers.GetUserBadgesHandler)
 			}
+
+			// Internal API for service-to-service calls
+			users := apiRateLimited.Group("/users")
+			{
+				users.GET("/:id/public", userHandler.GetPublicUserProfileByID)
+			}
+
+			threads := apiRateLimited.Group("/threads")
+			{
+				threads.GET("/categories", threadHandler.GetCategories)
+				threads.GET("/category/:slug", threadHandler.GetThreadsByCategory)
+				threads.GET("/latest", enhancedRateLimiter.SearchMiddleware(), threadHandler.GetLatestThreads)
+				threads.GET("/:id/public", threadHandler.GetPublicThreadDetail)
+				threads.GET("/:id", middleware.AuthMiddleware(), threadHandler.GetThreadDetail)
+				threads.POST("", middleware.AuthMiddleware(), threadHandler.CreateThread)
+				threads.GET("/me", middleware.AuthMiddleware(), threadHandler.GetMyThreads)
+				threads.PUT("/:id", middleware.AuthMiddleware(), threadHandler.UpdateThread)
+				threads.DELETE("/:id", middleware.AuthMiddleware(), threadHandler.DeleteThread)
+				// Thread tags
+				threads.GET("/:id/tags", handlers.GetThreadTagsHandler)
+				threads.POST("/:id/tags", middleware.AuthMiddleware(), handlers.AddTagsToThreadHandler)
+				threads.DELETE("/:id/tags/:tagSlug", middleware.AuthMiddleware(), handlers.RemoveTagFromThreadHandler)
+			}
+
+			// Tags endpoints
+			tags := apiRateLimited.Group("/tags")
+			{
+				tags.GET("", handlers.GetAllTagsHandler)
+				tags.GET("/:slug", handlers.GetTagBySlugHandler)
+				tags.GET("/:slug/threads", enhancedRateLimiter.SearchMiddleware(), handlers.GetThreadsByTagHandler)
+			}
+
+			// Financial endpoints are handled by the ASP.NET service; omitted here to keep responsibilities separated.
+
+			badges := apiRateLimited.Group("/badges")
+			{
+				badges.GET("/:id", handlers.GetBadgeDetailHandler)
+			}
+
+			// Account badge settings (authenticated)
+			account.GET("/badges", middleware.AuthMiddleware(), handlers.GetMyBadges)
+			account.PUT("/primary-badge", middleware.AuthMiddleware(), handlers.SetPrimaryBadge)
 		}
-
-		account := api.Group("/account")
-		{
-			account.GET("/me", middleware.AuthMiddleware(), handlers.GetMyAccountHandler)
-			account.PUT("", middleware.AuthMiddleware(), handlers.UpdateMyAccountHandler)
-			account.POST("/change-username", middleware.AuthMiddleware(), handlers.ChangeUsernamePaidHandler)
-			account.PUT("/avatar", middleware.AuthMiddleware(), handlers.UploadAvatarHandler)
-			account.DELETE("/avatar", middleware.AuthMiddleware(), handlers.DeleteAvatarHandler)
-			// Check if user can delete account (validates wallet balance, pending transfers, disputes)
-			account.GET("/can-delete", middleware.AuthMiddleware(), handlers.CanDeleteAccountHandler)
-			// Delete account requires sudo mode
-			account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), middleware.RequireSudo(sudoValidator), handlers.DeleteAccountHandler)
-		}
-
-		user := api.Group("/user")
-		{
-			user.GET("/me", middleware.AuthMiddleware(), userHandler.GetUserInfo)
-			user.GET("/:username", userHandler.GetPublicUserProfile)
-			user.GET("/:username/threads", threadHandler.GetThreadsByUsername)
-			user.GET("/:username/badges", handlers.GetUserBadgesHandler)
-		}
-
-		// Internal API for service-to-service calls
-		users := api.Group("/users")
-		{
-			users.GET("/:id/public", userHandler.GetPublicUserProfileByID)
-		}
-
-		threads := api.Group("/threads")
-		{
-			threads.GET("/categories", threadHandler.GetCategories)
-			threads.GET("/category/:slug", threadHandler.GetThreadsByCategory)
-			threads.GET("/latest", threadHandler.GetLatestThreads)
-			threads.GET("/:id/public", threadHandler.GetPublicThreadDetail)
-			threads.GET("/:id", middleware.AuthMiddleware(), threadHandler.GetThreadDetail)
-			threads.POST("", middleware.AuthMiddleware(), threadHandler.CreateThread)
-			threads.GET("/me", middleware.AuthMiddleware(), threadHandler.GetMyThreads)
-			threads.PUT("/:id", middleware.AuthMiddleware(), threadHandler.UpdateThread)
-			threads.DELETE("/:id", middleware.AuthMiddleware(), threadHandler.DeleteThread)
-			// Thread tags
-			threads.GET("/:id/tags", handlers.GetThreadTagsHandler)
-			threads.POST("/:id/tags", middleware.AuthMiddleware(), handlers.AddTagsToThreadHandler)
-			threads.DELETE("/:id/tags/:tagSlug", middleware.AuthMiddleware(), handlers.RemoveTagFromThreadHandler)
-		}
-
-		// Tags endpoints
-		tags := api.Group("/tags")
-		{
-			tags.GET("", handlers.GetAllTagsHandler)
-			tags.GET("/:slug", handlers.GetTagBySlugHandler)
-			tags.GET("/:slug/threads", handlers.GetThreadsByTagHandler)
-		}
-
-		// Financial endpoints are handled by the ASP.NET service; omitted here to keep responsibilities separated.
-
-		badges := api.Group("/badges")
-		{
-			badges.GET("/:id", handlers.GetBadgeDetailHandler)
-		}
-
-		// Account badge settings (authenticated)
-		account.GET("/badges", middleware.AuthMiddleware(), handlers.GetMyBadges)
-		account.PUT("/primary-badge", middleware.AuthMiddleware(), handlers.SetPrimaryBadge)
 
 	}
 
 	// Admin routes (separate auth)
 	admin := router.Group("/admin")
+	admin.Use(enhancedRateLimiter.Middleware())
 	{
-		admin.POST("/auth/login", handlers.AdminLogin)
+		admin.POST("/auth/login", enhancedRateLimiter.AuthMiddleware(), handlers.AdminLogin)
 
 		// Protected admin routes
 		adminProtected := admin.Group("")
@@ -437,7 +558,7 @@ func main() {
 			adminProtected.DELETE("/badges/:id", handlers.DeleteBadge)
 
 			// User management
-			adminProtected.GET("/users", handlers.AdminListUsers)
+			adminProtected.GET("/users", enhancedRateLimiter.SearchMiddleware(), handlers.AdminListUsers)
 			adminProtected.GET("/users/:userId", handlers.AdminGetUser)
 			adminProtected.POST("/users/:userId/badges", handlers.AssignBadgeToUser)
 			adminProtected.DELETE("/users/:userId/badges/:badgeId", handlers.RevokeBadgeFromUser)

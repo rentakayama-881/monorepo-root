@@ -2,9 +2,27 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
+import {
+  fetchFeatureAuth,
+  FEATURE_ENDPOINTS,
+  unwrapFeatureData,
+  extractFeatureItems,
+} from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
+
+function normalizeDispute(item) {
+  return {
+    id: item?.id ?? item?.Id ?? "",
+    status: item?.status ?? item?.Status ?? "open",
+    phase: item?.phase ?? item?.Phase ?? "negotiation",
+    reason: item?.reason ?? item?.Reason ?? "",
+    amount: Number(item?.amount ?? item?.Amount ?? 0) || 0,
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? item?.created_at ?? null,
+    phaseDeadline:
+      item?.phaseDeadline ?? item?.PhaseDeadline ?? item?.phase_deadline ?? null,
+  };
+}
 
 export default function DisputesPage() {
   const router = useRouter();
@@ -23,8 +41,11 @@ export default function DisputesPage() {
       setLoading(true);
       try {
         const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.LIST);
-        // Response: { success, data: [...], message, meta }
-        setDisputes(response?.data || []);
+        const disputeData = unwrapFeatureData(response);
+        const items = extractFeatureItems(disputeData)
+          .map(normalizeDispute)
+          .filter((d) => d.id);
+        setDisputes(items);
       } catch (e) {
         logger.error("Failed to load disputes:", e);
         setDisputes([]);

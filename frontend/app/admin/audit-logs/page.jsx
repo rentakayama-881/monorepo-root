@@ -2,8 +2,39 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
+import { getAdminToken } from "@/lib/adminAuth";
+import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
 
 const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
+
+function normalizeAuditLog(item) {
+  return {
+    id: item?.id ?? item?.Id ?? "",
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? null,
+    adminName: item?.adminName ?? item?.AdminName ?? "",
+    adminId: item?.adminId ?? item?.AdminId ?? null,
+    actionType: item?.actionType ?? item?.ActionType ?? "unknown",
+    targetType: item?.targetType ?? item?.TargetType ?? "",
+    targetId: item?.targetId ?? item?.TargetId ?? "",
+    targetUserId: item?.targetUserId ?? item?.TargetUserId ?? null,
+    details: item?.details ?? item?.Details ?? "",
+    reason: item?.reason ?? item?.Reason ?? "",
+    metadata: item?.metadata ?? item?.Metadata ?? null,
+  };
+}
+
+function extractTotalCount(payload, itemsLength) {
+  const raw =
+    payload?.totalCount ??
+    payload?.TotalCount ??
+    payload?.total ??
+    payload?.Total ??
+    payload?.count ??
+    payload?.Count ??
+    itemsLength;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : itemsLength;
+}
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState([]);
@@ -20,7 +51,13 @@ export default function AuditLogsPage() {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) {
+        setLogs([]);
+        setTotalPages(1);
+        setError("Sesi admin berakhir. Silakan login ulang.");
+        return;
+      }
       let url = `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/logs?page=${page}&pageSize=30`;
       if (filter.actionType) url += `&actionType=${filter.actionType}`;
       if (filter.adminId) url += `&adminId=${filter.adminId}`;
@@ -33,8 +70,12 @@ export default function AuditLogsPage() {
       });
       if (!res.ok) throw new Error("Gagal memuat audit logs");
       const data = await res.json();
-      setLogs(data.logs || []);
-      setTotalPages(Math.ceil((data.totalCount || 0) / 30) || 1);
+      const payload = unwrapFeatureData(data);
+      const logsPayload = payload?.logs ?? payload?.Logs ?? payload;
+      const items = extractFeatureItems(logsPayload).map(normalizeAuditLog);
+      const totalCount = extractTotalCount(payload, items.length);
+      setLogs(items);
+      setTotalPages(Math.ceil(totalCount / 30) || 1);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -47,6 +88,7 @@ export default function AuditLogsPage() {
   }, [fetchLogs]);
 
   const getActionBadge = (action) => {
+    const normalizedAction = String(action || "unknown").toLowerCase();
     const styles = {
       report_action: "bg-blue-100 text-blue-800",
       device_ban: "bg-red-100 text-red-800",
@@ -58,10 +100,17 @@ export default function AuditLogsPage() {
       thread_transferred: "bg-purple-100 text-purple-800",
     };
     return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[action] || "bg-gray-100 text-gray-800"}`}>
-        {action.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[normalizedAction] || "bg-gray-100 text-gray-800"}`}>
+        {normalizedAction.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
       </span>
     );
+  };
+
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return "-";
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleString("id-ID");
   };
 
   const actionTypes = [
@@ -136,7 +185,7 @@ export default function AuditLogsPage() {
                 {logs.map((log) => (
                   <tr key={log.id} className="border-b border-border hover:bg-muted/50">
                     <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(log.createdAt).toLocaleString("id-ID")}
+                      {formatDateTime(log.createdAt)}
                     </td>
                     <td className="py-3 px-4">
                       <span className="text-sm text-foreground">

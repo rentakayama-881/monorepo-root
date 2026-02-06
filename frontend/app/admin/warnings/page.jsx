@@ -2,8 +2,25 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
+import { getAdminToken } from "@/lib/adminAuth";
+import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
 
 const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
+
+function normalizeWarning(item) {
+  return {
+    id: item?.id ?? item?.Id ?? "",
+    userId: item?.userId ?? item?.UserId ?? null,
+    username: item?.username ?? item?.Username ?? "",
+    adminId: item?.adminId ?? item?.AdminId ?? null,
+    reason: item?.reason ?? item?.Reason ?? "",
+    severity: item?.severity ?? item?.Severity ?? "moderate",
+    isAcknowledged: Boolean(item?.isAcknowledged ?? item?.IsAcknowledged ?? false),
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? null,
+    contentType: item?.contentType ?? item?.ContentType ?? "",
+    contentId: item?.contentId ?? item?.ContentId ?? "",
+  };
+}
 
 export default function WarningsPage() {
   const [warnings, setWarnings] = useState([]);
@@ -24,7 +41,12 @@ export default function WarningsPage() {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) {
+        setWarnings([]);
+        setError("Sesi admin berakhir. Silakan login ulang.");
+        return;
+      }
       let url = `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/warnings?page=1&pageSize=50`;
       if (searchUserId) {
         url += `&userId=${searchUserId}`;
@@ -37,7 +59,9 @@ export default function WarningsPage() {
       });
       if (!res.ok) throw new Error("Gagal memuat warnings");
       const data = await res.json();
-      setWarnings(data.items || []);
+      const payload = unwrapFeatureData(data);
+      const items = extractFeatureItems(payload).map(normalizeWarning);
+      setWarnings(items);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -53,9 +77,14 @@ export default function WarningsPage() {
     e.preventDefault();
     setCreateLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
+      const userId = parseInt(form.userId, 10);
+      if (!Number.isFinite(userId) || userId <= 0) {
+        throw new Error("User ID tidak valid");
+      }
       const body = {
-        userId: parseInt(form.userId),
+        userId,
         reason: form.reason,
         severity: form.severity,
       };
@@ -85,16 +114,24 @@ export default function WarningsPage() {
   };
 
   const getSeverityBadge = (severity) => {
+    const normalized = String(severity || "moderate").toLowerCase();
     const styles = {
       minor: "bg-blue-100 text-blue-800",
       moderate: "bg-yellow-100 text-yellow-800",
       severe: "bg-red-100 text-red-800",
     };
     return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[severity] || styles.moderate}`}>
-        {severity.charAt(0).toUpperCase() + severity.slice(1)}
+      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[normalized] || styles.moderate}`}>
+        {normalized.charAt(0).toUpperCase() + normalized.slice(1)}
       </span>
     );
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleString("id-ID");
   };
 
   return (
@@ -156,7 +193,7 @@ export default function WarningsPage() {
                     <span>User ID: {warning.userId}</span>
                     {warning.username && <span>Username: {warning.username}</span>}
                     <span>Issued by: Admin {warning.adminId}</span>
-                    <span>{new Date(warning.createdAt).toLocaleString("id-ID")}</span>
+                    <span>{formatDateTime(warning.createdAt)}</span>
                   </div>
                   {warning.contentType && (
                     <div className="mt-2 text-xs text-muted-foreground">

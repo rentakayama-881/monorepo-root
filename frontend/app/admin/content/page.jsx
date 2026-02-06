@@ -2,8 +2,21 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
+import { getAdminToken } from "@/lib/adminAuth";
+import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
 
 const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
+
+function normalizeHiddenContent(item) {
+  return {
+    id: item?.id ?? item?.Id ?? "",
+    contentType: item?.contentType ?? item?.ContentType ?? "",
+    contentId: item?.contentId ?? item?.ContentId ?? "",
+    reason: item?.reason ?? item?.Reason ?? "",
+    adminId: item?.adminId ?? item?.AdminId ?? null,
+    hiddenAt: item?.hiddenAt ?? item?.HiddenAt ?? item?.createdAt ?? item?.CreatedAt ?? null,
+  };
+}
 
 export default function HiddenContentPage() {
   const [contents, setContents] = useState([]);
@@ -21,7 +34,12 @@ export default function HiddenContentPage() {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) {
+        setContents([]);
+        setError("Sesi admin berakhir. Silakan login ulang.");
+        return;
+      }
       const res = await fetch(
         `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/content/hidden?page=1&pageSize=50`,
         {
@@ -33,7 +51,9 @@ export default function HiddenContentPage() {
       );
       if (!res.ok) throw new Error("Gagal memuat hidden content");
       const data = await res.json();
-      setContents(data.items || []);
+      const payload = unwrapFeatureData(data);
+      const items = extractFeatureItems(payload).map(normalizeHiddenContent);
+      setContents(items);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -49,7 +69,8 @@ export default function HiddenContentPage() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
       const res = await fetch(
         `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/content/hide`,
         {
@@ -76,7 +97,8 @@ export default function HiddenContentPage() {
     if (!confirm("Yakin ingin menampilkan kembali konten ini?")) return;
     setActionLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
       const res = await fetch(
         `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/content/unhide/${hiddenContentId}`,
         {
@@ -97,11 +119,19 @@ export default function HiddenContentPage() {
   };
 
   const getContentTypeLabel = (type) => {
+    const normalized = String(type || "").toLowerCase();
     const labels = {
       thread: "Thread",
       reply: "Balasan",
     };
-    return labels[type] || type;
+    return labels[normalized] || type;
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleString("id-ID");
   };
 
   return (
@@ -152,7 +182,7 @@ export default function HiddenContentPage() {
                   <td className="py-3 px-4 max-w-48 truncate">{content.reason}</td>
                   <td className="py-3 px-4">Admin {content.adminId}</td>
                   <td className="py-3 px-4 text-xs text-muted-foreground">
-                    {new Date(content.hiddenAt).toLocaleString("id-ID")}
+                    {formatDateTime(content.hiddenAt)}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <Button

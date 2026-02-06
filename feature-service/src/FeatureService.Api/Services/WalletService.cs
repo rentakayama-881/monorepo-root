@@ -41,35 +41,6 @@ public class WalletService : IWalletService
         _transactions = dbContext.GetCollection<Transaction>("transactions");
         _ledger = dbContext.GetCollection<TransactionLedger>("transaction_ledger");
         _logger = logger;
-
-        // Create indexes
-        CreateIndexes();
-    }
-
-    private void CreateIndexes()
-    {
-        // Index for userId lookup (unique)
-        var userIdIndexModel = new CreateIndexModel<UserWallet>(
-            Builders<UserWallet>.IndexKeys.Ascending(w => w.UserId),
-            new CreateIndexOptions { Unique = true }
-        );
-        _wallets.Indexes.CreateOne(userIdIndexModel);
-
-        // Index for transaction userId + createdAt (for history queries)
-        var txnUserIdIndexModel = new CreateIndexModel<Transaction>(
-            Builders<Transaction>.IndexKeys
-                .Ascending(t => t.UserId)
-                .Descending(t => t.CreatedAt)
-        );
-        _transactions.Indexes.CreateOne(txnUserIdIndexModel);
-
-        // Index for ledger
-        var ledgerIndexModel = new CreateIndexModel<TransactionLedger>(
-            Builders<TransactionLedger>.IndexKeys
-                .Ascending(l => l.UserId)
-                .Descending(l => l.CreatedAt)
-        );
-        _ledger.Indexes.CreateOne(ledgerIndexModel);
     }
 
     public async Task<UserWallet> GetOrCreateWalletAsync(uint userId)

@@ -2,8 +2,26 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
+import { getAdminToken } from "@/lib/adminAuth";
+import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
 
 const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
+
+function normalizeReport(item) {
+  return {
+    id: item?.id ?? item?.Id ?? "",
+    status: item?.status ?? item?.Status ?? "pending",
+    targetType: item?.targetType ?? item?.TargetType ?? "",
+    reason: item?.reason ?? item?.Reason ?? "other",
+    description: item?.description ?? item?.Description ?? "",
+    reporterUsername: item?.reporterUsername ?? item?.ReporterUsername ?? "",
+    reporterUserId: item?.reporterUserId ?? item?.ReporterUserId ?? null,
+    reportedUsername: item?.reportedUsername ?? item?.ReportedUsername ?? "",
+    reportedUserId: item?.reportedUserId ?? item?.ReportedUserId ?? null,
+    targetId: item?.targetId ?? item?.TargetId ?? "",
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? null,
+  };
+}
 
 export default function ReportsPage() {
   const [reports, setReports] = useState([]);
@@ -17,7 +35,12 @@ export default function ReportsPage() {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) {
+        setReports([]);
+        setError("Sesi admin berakhir. Silakan login ulang.");
+        return;
+      }
       const res = await fetch(
         `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/reports?status=${filter}&page=1&pageSize=50`,
         {
@@ -29,7 +52,10 @@ export default function ReportsPage() {
       );
       if (!res.ok) throw new Error("Gagal memuat reports");
       const data = await res.json();
-      setReports(data.reports || data.items || data.data?.reports || data.data?.items || []);
+      const payload = unwrapFeatureData(data);
+      const reportsPayload = payload?.reports ?? payload?.Reports ?? payload;
+      const items = extractFeatureItems(reportsPayload).map(normalizeReport);
+      setReports(items);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -44,7 +70,8 @@ export default function ReportsPage() {
   const handleAction = async (reportId, action, reason = "") => {
     setActionLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
       const res = await fetch(
         `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/reports/${reportId}/action`,
         {
@@ -67,15 +94,17 @@ export default function ReportsPage() {
   };
 
   const getContentTypeLabel = (type) => {
+    const normalized = String(type || "").toLowerCase();
     const labels = {
       thread: "Thread",
       reply: "Balasan",
       user: "User",
     };
-    return labels[type] || type;
+    return labels[normalized] || type;
   };
 
   const getReasonLabel = (reason) => {
+    const normalized = String(reason || "").toLowerCase();
     const labels = {
       spam: "Spam",
       harassment: "Pelecehan",
@@ -85,10 +114,11 @@ export default function ReportsPage() {
       inappropriate: "Tidak Pantas",
       other: "Lainnya",
     };
-    return labels[reason] || reason;
+    return labels[normalized] || reason;
   };
 
   const getStatusBadge = (status) => {
+    const normalized = String(status || "pending").toLowerCase();
     const styles = {
       pending: "bg-yellow-100 text-yellow-800",
       reviewing: "bg-blue-100 text-blue-800",
@@ -96,10 +126,17 @@ export default function ReportsPage() {
       dismissed: "bg-gray-100 text-gray-800",
     };
     return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status] || styles.pending}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[normalized] || styles.pending}`}>
+        {normalized.charAt(0).toUpperCase() + normalized.slice(1)}
       </span>
     );
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleString("id-ID");
   };
 
   return (
@@ -167,7 +204,7 @@ export default function ReportsPage() {
                         report.reportedUserId ||
                         report.targetId}
                     </span>
-                    <span>{new Date(report.createdAt).toLocaleString("id-ID")}</span>
+                    <span>{formatDateTime(report.createdAt)}</span>
                   </div>
                 </div>
                 <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,7 +250,7 @@ export default function ReportsPage() {
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">Reported At</label>
-                  <p className="text-sm text-foreground">{new Date(selectedReport.createdAt).toLocaleString("id-ID")}</p>
+                  <p className="text-sm text-foreground">{formatDateTime(selectedReport.createdAt)}</p>
                 </div>
               </div>
 
@@ -243,7 +280,7 @@ export default function ReportsPage() {
                 <p className="text-sm text-foreground font-mono">{selectedReport.targetId}</p>
               </div>
 
-              {selectedReport.status === "pending" && (
+              {String(selectedReport.status || "").toLowerCase() === "pending" && (
                 <div className="pt-4 border-t border-border">
                   <h3 className="text-sm font-medium text-foreground mb-3">Actions</h3>
                   <div className="flex flex-wrap gap-2">

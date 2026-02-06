@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { fetchJson } from "@/lib/api";
+import { setAdminSession } from "@/lib/adminAuth";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -26,8 +27,7 @@ export default function AdminLoginPage() {
       });
 
       // Store admin token separately from user token
-      localStorage.setItem("admin_token", data.token);
-      localStorage.setItem("admin_info", JSON.stringify(data.admin));
+      setAdminSession(data.token, data.admin);
 
       router.push("/admin");
     } catch (err) {

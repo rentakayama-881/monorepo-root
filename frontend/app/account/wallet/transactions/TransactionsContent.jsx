@@ -2,9 +2,41 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
+import {
+  fetchFeatureAuth,
+  FEATURE_ENDPOINTS,
+  unwrapFeatureData,
+  extractFeatureItems,
+} from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
+
+function normalizeWallet(payload) {
+  const data = unwrapFeatureData(payload) || {};
+  const balanceRaw =
+    data.balance ?? data.Balance ?? data.availableBalance ?? data.AvailableBalance ?? 0;
+  const userIdRaw = data.userId ?? data.UserId ?? data.user_id ?? data.userID ?? null;
+
+  return {
+    balance: Number(balanceRaw) || 0,
+    userId: userIdRaw == null ? null : Number(userIdRaw) || null,
+  };
+}
+
+function normalizeTransfer(item) {
+  return {
+    id: item?.id ?? item?.Id ?? "",
+    senderId: Number(item?.senderId ?? item?.SenderId ?? 0) || 0,
+    receiverId: Number(item?.receiverId ?? item?.ReceiverId ?? 0) || 0,
+    senderUsername: item?.senderUsername ?? item?.SenderUsername ?? "Unknown",
+    receiverUsername: item?.receiverUsername ?? item?.ReceiverUsername ?? "Unknown",
+    status: item?.status ?? item?.Status ?? "",
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? null,
+    holdUntil: item?.holdUntil ?? item?.HoldUntil ?? null,
+    message: item?.message ?? item?.Message ?? "",
+    amount: Number(item?.amount ?? item?.Amount ?? 0) || 0,
+  };
+}
 
 export default function TransactionsContent() {
   const router = useRouter();
@@ -33,16 +65,21 @@ export default function TransactionsContent() {
       setLoading(true);
       try {
         // Load wallet from Feature Service
-        const walletData = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
-        setWallet({ balance: walletData.balance || 0, userId: walletData.userId || walletData.user_id || null });
+        const walletData = normalizeWallet(
+          await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME)
+        );
+        setWallet(walletData);
 
         // Load transfers from Feature Service
         let url = FEATURE_ENDPOINTS.TRANSFERS.LIST + "?limit=50";
         if (activeTab === "sent") url += "&role=sender";
         if (activeTab === "received") url += "&role=receiver";
 
-        const transferData = await fetchFeatureAuth(url);
-        setTransfers(transferData.data || transferData.transfers || []);
+        const transferPayload = unwrapFeatureData(await fetchFeatureAuth(url));
+        const transferItems = extractFeatureItems(transferPayload)
+          .map(normalizeTransfer)
+          .filter((transfer) => transfer.id);
+        setTransfers(transferItems);
       } catch (e) {
         logger.error("Failed to load data:", e);
       }
@@ -178,8 +215,12 @@ export default function TransactionsContent() {
           <div className="space-y-3">
             {transfers.map((transfer) => {
               // Determine if current user is sender or receiver
-              const isSender = wallet.userId && transfer.senderId === wallet.userId;
-              const isReceiver = wallet.userId && transfer.receiverId === wallet.userId;
+              const isSender =
+                wallet.userId != null &&
+                Number(transfer.senderId) === Number(wallet.userId);
+              const isReceiver =
+                wallet.userId != null &&
+                Number(transfer.receiverId) === Number(wallet.userId);
               const otherUsername = isSender ? transfer.receiverUsername : transfer.senderUsername;
               const status = normalizeStatus(transfer.status);
               
@@ -222,7 +263,7 @@ export default function TransactionsContent() {
                     </div>
                     <div className="text-right">
                       <div className="font-semibold text-foreground">
-                        Rp {transfer.amount?.toLocaleString("id-ID") || 0}
+                        Rp {(Number(transfer.amount) || 0).toLocaleString("id-ID")}
                       </div>
                       <div className="mt-1">{getStatusBadge(transfer.status)}</div>
                     </div>

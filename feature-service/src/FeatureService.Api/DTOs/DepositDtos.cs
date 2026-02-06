@@ -39,7 +39,7 @@ public class ApproveDepositRequest
 public class RejectDepositRequest
 {
     [Required(ErrorMessage = "Alasan penolakan wajib diisi")]
-    [StringLength(200, ErrorMessage = "Alasan terlalu panjang")]
+    [StringLength(200, MinimumLength = 3, ErrorMessage = "Alasan penolakan harus 3-200 karakter")]
     public string Reason { get; set; } = string.Empty;
 }
 

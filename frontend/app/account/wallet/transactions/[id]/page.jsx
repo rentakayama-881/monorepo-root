@@ -2,7 +2,11 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
+import {
+  fetchFeatureAuth,
+  FEATURE_ENDPOINTS,
+  unwrapFeatureData,
+} from "@/lib/featureApi";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
@@ -16,6 +20,36 @@ const DISPUTE_CATEGORIES = [
   { value: "SellerNotResponding", label: "Penjual Tidak Merespons" },
   { value: "Other", label: "Alasan Lainnya" },
 ];
+
+function normalizeWallet(payload) {
+  const data = unwrapFeatureData(payload) || {};
+  const pinSetRaw =
+    data.pinSet ?? data.PinSet ?? data.pin_set ?? data.hasPin ?? data.has_pin ?? false;
+  return {
+    ...data,
+    pinSet: Boolean(pinSetRaw),
+  };
+}
+
+function normalizeTransfer(payload) {
+  const data = unwrapFeatureData(payload) || {};
+  return {
+    ...data,
+    id: data?.id ?? data?.Id ?? "",
+    senderId: Number(data?.senderId ?? data?.SenderId ?? 0) || 0,
+    receiverId: Number(data?.receiverId ?? data?.ReceiverId ?? 0) || 0,
+    senderUsername: data?.senderUsername ?? data?.SenderUsername ?? "Unknown",
+    receiverUsername: data?.receiverUsername ?? data?.ReceiverUsername ?? "Unknown",
+    amount: Number(data?.amount ?? data?.Amount ?? 0) || 0,
+    status: data?.status ?? data?.Status ?? "",
+    createdAt: data?.createdAt ?? data?.CreatedAt ?? null,
+    holdUntil: data?.holdUntil ?? data?.HoldUntil ?? null,
+    releasedAt: data?.releasedAt ?? data?.ReleasedAt ?? null,
+    cancelledAt: data?.cancelledAt ?? data?.CancelledAt ?? null,
+    code: data?.code ?? data?.Code ?? "",
+    message: data?.message ?? data?.Message ?? "",
+  };
+}
 
 export default function TransactionDetailPage() {
   const router = useRouter();
@@ -56,7 +90,7 @@ export default function TransactionDetailPage() {
       // Fetch wallet to check PIN status
       try {
         const walletData = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
-        setWallet(walletData);
+        setWallet(normalizeWallet(walletData));
       } catch (e) {
         logger.error("Failed to load wallet:", e);
       }
@@ -64,7 +98,7 @@ export default function TransactionDetailPage() {
       // Fetch transfer from Feature Service
       try {
         const transferData = await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.DETAIL(transferId));
-        setTransfer(transferData.data || transferData);
+        setTransfer(normalizeTransfer(transferData));
       } catch (e) {
         logger.error("Failed to load transfer:", e);
         setError("Transfer tidak ditemukan");
@@ -76,7 +110,7 @@ export default function TransactionDetailPage() {
   }, [router, transferId]);
 
   // Check if user has PIN set
-  const hasPinSet = wallet?.pinSet || wallet?.pin_set || false;
+  const hasPinSet = Boolean(wallet?.pinSet);
 
   // Handle action - check PIN requirement
   const handleAction = (action) => {
@@ -133,14 +167,14 @@ export default function TransactionDetailPage() {
       setShowConfirmModal(false);
       
       // Redirect to dispute center
-      const disputeData = result.data || result;
+      const disputeData = unwrapFeatureData(result) || {};
       if (disputeData?.disputeId) {
-        router.push(`/account/disputes/${disputeData.disputeId}`);
+        router.push(`/account/wallet/disputes/${disputeData.disputeId}`);
       } else {
         setActionSuccess("Permintaan mediasi berhasil dikirim. Tim kami akan menghubungi Anda.");
         // Reload transfer
         const transferData = await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.DETAIL(transferId));
-        setTransfer(transferData.data || transferData);
+        setTransfer(normalizeTransfer(transferData));
       }
     } catch (e) {
       logger.error("Dispute action failed:", e);
@@ -189,7 +223,7 @@ export default function TransactionDetailPage() {
       
       // Reload transfer
       const transferData = await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.DETAIL(transferId));
-      setTransfer(transferData.data || transferData);
+      setTransfer(normalizeTransfer(transferData));
     } catch (e) {
       logger.error("Action failed:", e);
       setError(getErrorMessage(e, "Gagal memproses. Pastikan PIN benar."));

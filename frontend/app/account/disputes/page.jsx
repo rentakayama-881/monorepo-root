@@ -2,9 +2,25 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { fetchFeatureAuth } from "@/lib/featureApi";
+import {
+  fetchFeatureAuth,
+  unwrapFeatureData,
+  extractFeatureItems,
+} from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
+
+function normalizeDispute(item) {
+  return {
+    id: item?.id ?? item?.Id ?? "",
+    status: item?.status ?? item?.Status ?? "Open",
+    category: item?.category ?? item?.Category ?? "Other",
+    amount: Number(item?.amount ?? item?.Amount ?? 0) || 0,
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? null,
+    respondentUsername:
+      item?.respondentUsername ?? item?.RespondentUsername ?? "Unknown",
+  };
+}
 
 export default function DisputesListPage() {
   const router = useRouter();
@@ -25,8 +41,11 @@ export default function DisputesListPage() {
   const loadDisputes = async () => {
     try {
       const response = await fetchFeatureAuth("/api/v1/disputes");
-      // Response structure: { success, data, message, meta }
-      setDisputes(response?.data || []);
+      const disputeData = unwrapFeatureData(response);
+      const items = extractFeatureItems(disputeData)
+        .map(normalizeDispute)
+        .filter((d) => d.id);
+      setDisputes(items);
     } catch (e) {
       logger.error("Failed to load disputes:", e);
       setDisputes([]);
@@ -51,33 +70,56 @@ export default function DisputesListPage() {
 
   // Get status color
   const getStatusColor = (status) => {
-    switch (status) {
-      case "Open": return "bg-yellow-500/10 text-yellow-600";
-      case "UnderReview": return "bg-blue-500/10 text-blue-600";
-      case "WaitingForEvidence": return "bg-orange-500/10 text-orange-600";
-      case "Resolved": return "bg-green-500/10 text-green-600";
-      case "Cancelled": return "bg-gray-500/10 text-gray-600";
+    const normalized = String(status || "").toLowerCase();
+    switch (normalized) {
+      case "open":
+        return "bg-yellow-500/10 text-yellow-600";
+      case "underreview":
+      case "under_review":
+      case "admin_review":
+        return "bg-blue-500/10 text-blue-600";
+      case "waitingforevidence":
+      case "waiting_for_evidence":
+      case "evidence":
+        return "bg-orange-500/10 text-orange-600";
+      case "resolved":
+        return "bg-green-500/10 text-green-600";
+      case "cancelled":
+      case "closed":
+        return "bg-gray-500/10 text-gray-600";
       default: return "bg-gray-500/10 text-gray-600";
     }
   };
 
   // Get status label
   const getStatusLabel = (status) => {
-    switch (status) {
-      case "Open": return "Menunggu";
-      case "UnderReview": return "Ditinjau";
-      case "WaitingForEvidence": return "Butuh Bukti";
-      case "Resolved": return "Selesai";
-      case "Cancelled": return "Dibatalkan";
+    const normalized = String(status || "").toLowerCase();
+    switch (normalized) {
+      case "open":
+        return "Menunggu";
+      case "underreview":
+      case "under_review":
+      case "admin_review":
+        return "Ditinjau";
+      case "waitingforevidence":
+      case "waiting_for_evidence":
+      case "evidence":
+        return "Butuh Bukti";
+      case "resolved":
+        return "Selesai";
+      case "cancelled":
+      case "closed":
+        return "Dibatalkan";
       default: return status;
     }
   };
 
   // Filter disputes
   const filteredDisputes = disputes.filter(d => {
+    const status = String(d.status || "").toLowerCase();
     if (filter === "all") return true;
-    if (filter === "active") return !["Resolved", "Cancelled"].includes(d.status);
-    if (filter === "resolved") return d.status === "Resolved";
+    if (filter === "active") return !["resolved", "cancelled", "closed"].includes(status);
+    if (filter === "resolved") return ["resolved", "closed"].includes(status);
     return true;
   });
 

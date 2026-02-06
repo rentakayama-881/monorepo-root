@@ -62,44 +62,6 @@ public class WithdrawalService : IWithdrawalService
         _withdrawals = dbContext.GetCollection<Withdrawal>("withdrawals");
         _walletService = walletService;
         _logger = logger;
-
-        CreateIndexes();
-    }
-
-    private void CreateIndexes()
-    {
-        // Index for user withdrawals
-        _withdrawals.Indexes.CreateOne(new CreateIndexModel<Withdrawal>(
-            Builders<Withdrawal>.IndexKeys
-                .Ascending(w => w.UserId)
-                .Descending(w => w.CreatedAt)
-        ));
-
-        // Index for pending withdrawals (admin)
-        _withdrawals.Indexes.CreateOne(new CreateIndexModel<Withdrawal>(
-            Builders<Withdrawal>.IndexKeys
-                .Ascending(w => w.Status)
-                .Ascending(w => w.CreatedAt)
-        ));
-
-        // Unique reference
-        _withdrawals.Indexes.CreateOne(new CreateIndexModel<Withdrawal>(
-            Builders<Withdrawal>.IndexKeys.Ascending(w => w.Reference),
-            new CreateIndexOptions { Unique = true }
-        ));
-
-        // Enforce at most one active withdrawal (Pending/Processing) per user.
-        // This is critical to prevent race-condition double withdrawals.
-        _withdrawals.Indexes.CreateOne(new CreateIndexModel<Withdrawal>(
-            Builders<Withdrawal>.IndexKeys.Ascending(w => w.UserId),
-            new CreateIndexOptions<Withdrawal>
-            {
-                Unique = true,
-                PartialFilterExpression = Builders<Withdrawal>.Filter.In(
-                    w => w.Status,
-                    new[] { WithdrawalStatus.Pending, WithdrawalStatus.Processing })
-            }
-        ));
     }
 
     public async Task<CreateWithdrawalResponse> CreateWithdrawalAsync(
