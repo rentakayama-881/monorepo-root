@@ -3,6 +3,7 @@ using MongoDB.Driver;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
+using System.Globalization;
 
 namespace FeatureService.Api.Services;
 
@@ -18,6 +19,7 @@ public interface IDepositService
 public class DepositService : IDepositService
 {
     private readonly IMongoCollection<DepositRequest> _deposits;
+    private readonly IMongoCollection<BsonDocument> _depositsRaw;
     private readonly IWalletService _walletService;
     private readonly ILogger<DepositService> _logger;
 
@@ -27,6 +29,7 @@ public class DepositService : IDepositService
     public DepositService(MongoDbContext dbContext, IWalletService walletService, ILogger<DepositService> logger)
     {
         _deposits = dbContext.GetCollection<DepositRequest>("deposit_requests");
+        _depositsRaw = dbContext.GetCollection<BsonDocument>("deposit_requests");
         _walletService = walletService;
         _logger = logger;
 
@@ -182,22 +185,125 @@ public class DepositService : IDepositService
 
     public async Task<List<AdminDepositResponse>> GetPendingDepositsAsync(int limit = 50)
     {
-        var deposits = await _deposits
-            .Find(d => d.Status == DepositStatus.Pending)
-            .SortBy(d => d.CreatedAt)
-            .Limit(Math.Clamp(limit, 1, 200))
+        var safeLimit = Math.Clamp(limit, 1, 200);
+
+        // Backward compatibility: older data may store status as string ("Pending"/"pending")
+        // while newer data uses enum-backed numeric representation (0 = Pending).
+        var pendingFilter = Builders<BsonDocument>.Filter.Or(
+            Builders<BsonDocument>.Filter.Eq("status", (int)DepositStatus.Pending),
+            Builders<BsonDocument>.Filter.Eq("status", DepositStatus.Pending.ToString()),
+            Builders<BsonDocument>.Filter.Eq("status", DepositStatus.Pending.ToString().ToLowerInvariant()),
+            Builders<BsonDocument>.Filter.Eq("status", DepositStatus.Pending.ToString().ToUpperInvariant())
+        );
+
+        var deposits = await _depositsRaw
+            .Find(pendingFilter)
+            .Sort(Builders<BsonDocument>.Sort.Ascending("createdAt"))
+            .Limit(safeLimit)
             .ToListAsync();
 
-        return deposits.Select(d => new AdminDepositResponse(
-            d.Id,
-            d.UserId,
-            d.Username,
-            d.Amount,
-            d.Method,
-            d.ExternalTransactionId,
-            d.Status.ToString(),
-            d.CreatedAt
-        )).ToList();
+        return deposits.Select(MapAdminDeposit).ToList();
+    }
+
+    private static AdminDepositResponse MapAdminDeposit(BsonDocument doc)
+    {
+        var id = GetString(doc, "_id");
+        if (string.IsNullOrWhiteSpace(id))
+            id = GetString(doc, "id");
+
+        return new AdminDepositResponse(
+            id,
+            GetUInt(doc, "userId"),
+            GetString(doc, "username"),
+            GetLong(doc, "amount"),
+            GetString(doc, "method", "QRIS"),
+            GetString(doc, "externalTransactionId"),
+            GetStatus(doc),
+            GetDateTime(doc, "createdAt")
+        );
+    }
+
+    private static string GetString(BsonDocument doc, string field, string fallback = "")
+    {
+        if (!doc.TryGetValue(field, out var value) || value.IsBsonNull)
+            return fallback;
+
+        return value.BsonType switch
+        {
+            BsonType.ObjectId => value.AsObjectId.ToString(),
+            BsonType.String => value.AsString,
+            _ => value.ToString()
+        };
+    }
+
+    private static uint GetUInt(BsonDocument doc, string field)
+    {
+        if (!doc.TryGetValue(field, out var value) || value.IsBsonNull)
+            return 0;
+
+        return value.BsonType switch
+        {
+            BsonType.Int32 => value.AsInt32 < 0 ? 0 : (uint)value.AsInt32,
+            BsonType.Int64 => value.AsInt64 < 0 ? 0 : (uint)Math.Min(value.AsInt64, uint.MaxValue),
+            BsonType.String when uint.TryParse(value.AsString, out var parsed) => parsed,
+            _ => 0
+        };
+    }
+
+    private static long GetLong(BsonDocument doc, string field)
+    {
+        if (!doc.TryGetValue(field, out var value) || value.IsBsonNull)
+            return 0;
+
+        return value.BsonType switch
+        {
+            BsonType.Int32 => value.AsInt32,
+            BsonType.Int64 => value.AsInt64,
+            BsonType.Double => (long)value.AsDouble,
+            BsonType.Decimal128 => (long)value.AsDecimal128.ToDecimal(),
+            BsonType.String when long.TryParse(value.AsString, out var parsed) => parsed,
+            _ => 0
+        };
+    }
+
+    private static string GetStatus(BsonDocument doc)
+    {
+        if (!doc.TryGetValue("status", out var value) || value.IsBsonNull)
+            return DepositStatus.Pending.ToString();
+
+        if (value.BsonType == BsonType.String)
+        {
+            var raw = value.AsString?.Trim();
+            if (Enum.TryParse<DepositStatus>(raw, true, out var parsed))
+                return parsed.ToString();
+            return string.IsNullOrEmpty(raw) ? DepositStatus.Pending.ToString() : raw;
+        }
+
+        if (value.BsonType is BsonType.Int32 or BsonType.Int64)
+        {
+            var numeric = value.BsonType == BsonType.Int32 ? value.AsInt32 : (int)value.AsInt64;
+            if (Enum.IsDefined(typeof(DepositStatus), numeric))
+                return ((DepositStatus)numeric).ToString();
+        }
+
+        return DepositStatus.Pending.ToString();
+    }
+
+    private static DateTime GetDateTime(BsonDocument doc, string field)
+    {
+        if (!doc.TryGetValue(field, out var value) || value.IsBsonNull)
+            return DateTime.UtcNow;
+
+        return value.BsonType switch
+        {
+            BsonType.DateTime => value.AsBsonDateTime.ToUniversalTime(),
+            BsonType.String when DateTime.TryParse(
+                value.AsString,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
+                out var parsed) => parsed,
+            _ => DateTime.UtcNow
+        };
     }
 
     public async Task<(bool success, string? error)> ApproveAsync(

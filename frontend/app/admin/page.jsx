@@ -8,6 +8,40 @@ import { getApiBase } from "@/lib/api";
 
 const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
 
+function normalizePendingDepositItem(item) {
+  return {
+    id: item?.id ?? item?.Id ?? "",
+    userId: item?.userId ?? item?.UserId ?? 0,
+    username: item?.username ?? item?.Username ?? "",
+    amount: Number(item?.amount ?? item?.Amount ?? 0),
+    method: item?.method ?? item?.Method ?? "QRIS",
+    externalTransactionId:
+      item?.externalTransactionId ?? item?.ExternalTransactionId ?? "",
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? new Date().toISOString(),
+  };
+}
+
+function normalizePendingDeposits(payload) {
+  const root = payload?.data ?? payload;
+  let items = [];
+
+  if (Array.isArray(root)) {
+    items = root;
+  } else if (Array.isArray(root?.items)) {
+    items = root.items;
+  } else if (Array.isArray(root?.deposits)) {
+    items = root.deposits;
+  }
+
+  return items
+    .map(normalizePendingDepositItem)
+    .filter((item) => Boolean(item.id));
+}
+
+function extractApiErrorMessage(payload, fallback) {
+  return payload?.error?.message || payload?.message || fallback;
+}
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
     totalBadges: 0,
@@ -29,17 +63,30 @@ export default function AdminDashboardPage() {
         if (FEATURE_SERVICE_URL) {
           setDepositLoading(true);
           setDepositError("");
-          const depositsRes = await fetch(
-            `${FEATURE_SERVICE_URL}/api/v1/admin/deposits/pending?limit=20`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
+          try {
+            const depositsRes = await fetch(
+              `${FEATURE_SERVICE_URL}/api/v1/admin/deposits/pending?limit=20`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+
+            const depositsData = await depositsRes.json().catch(() => null);
+            if (!depositsRes.ok) {
+              setDepositError(
+                extractApiErrorMessage(depositsData, "Gagal memuat deposit pending")
+              );
+              setPendingDeposits([]);
+            } else {
+              setPendingDeposits(normalizePendingDeposits(depositsData));
             }
-          );
-          if (depositsRes.ok) {
-            const depositsData = await depositsRes.json();
-            setPendingDeposits(depositsData?.data || depositsData || []);
+          } catch (err) {
+            logger.error("Failed to fetch pending deposits:", err);
+            setDepositError("Gagal memuat deposit pending");
+            setPendingDeposits([]);
+          } finally {
+            setDepositLoading(false);
           }
-          setDepositLoading(false);
         }
 
         // Fetch badges count from Go backend
@@ -84,8 +131,6 @@ export default function AdminDashboardPage() {
         }
       } catch (err) {
         logger.error("Failed to fetch stats:", err);
-        setDepositError("Gagal memuat deposit pending");
-        setDepositLoading(false);
       }
     };
 
