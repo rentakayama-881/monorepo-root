@@ -193,12 +193,13 @@ public class DepositService : IDepositService
             Builders<BsonDocument>.Filter.Eq("status", (int)DepositStatus.Pending),
             Builders<BsonDocument>.Filter.Eq("status", DepositStatus.Pending.ToString()),
             Builders<BsonDocument>.Filter.Eq("status", DepositStatus.Pending.ToString().ToLowerInvariant()),
-            Builders<BsonDocument>.Filter.Eq("status", DepositStatus.Pending.ToString().ToUpperInvariant())
+            Builders<BsonDocument>.Filter.Eq("status", DepositStatus.Pending.ToString().ToUpperInvariant()),
+            Builders<BsonDocument>.Filter.Exists("status", false)
         );
 
         var deposits = await _depositsRaw
             .Find(pendingFilter)
-            .Sort(Builders<BsonDocument>.Sort.Ascending("createdAt"))
+            .Sort(Builders<BsonDocument>.Sort.Descending("createdAt"))
             .Limit(safeLimit)
             .ToListAsync();
 

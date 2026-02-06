@@ -6,7 +6,8 @@ import Card from "@/components/ui/Card";
 import logger from "@/lib/logger";
 import { getApiBase } from "@/lib/api";
 
-const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
+const FEATURE_SERVICE_URL =
+  process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
 
 function normalizePendingDepositItem(item) {
   return {
@@ -55,38 +56,42 @@ export default function AdminDashboardPage() {
   const [depositLoading, setDepositLoading] = useState(false);
   const [depositError, setDepositError] = useState("");
 
+  const fetchPendingDeposits = async (token) => {
+    setDepositLoading(true);
+    setDepositError("");
+    try {
+      const depositsRes = await fetch(
+        `${FEATURE_SERVICE_URL}/api/v1/admin/deposits/pending?limit=20`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const depositsData = await depositsRes.json().catch(() => null);
+      if (!depositsRes.ok) {
+        setDepositError(
+          extractApiErrorMessage(depositsData, "Gagal memuat deposit pending")
+        );
+        setPendingDeposits([]);
+      } else {
+        setPendingDeposits(normalizePendingDeposits(depositsData));
+      }
+    } catch (err) {
+      logger.error("Failed to fetch pending deposits:", err);
+      setDepositError("Gagal memuat deposit pending");
+      setPendingDeposits([]);
+    } finally {
+      setDepositLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchStats = async () => {
       const token = localStorage.getItem("admin_token");
 
       try {
         if (FEATURE_SERVICE_URL) {
-          setDepositLoading(true);
-          setDepositError("");
-          try {
-            const depositsRes = await fetch(
-              `${FEATURE_SERVICE_URL}/api/v1/admin/deposits/pending?limit=20`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              }
-            );
-
-            const depositsData = await depositsRes.json().catch(() => null);
-            if (!depositsRes.ok) {
-              setDepositError(
-                extractApiErrorMessage(depositsData, "Gagal memuat deposit pending")
-              );
-              setPendingDeposits([]);
-            } else {
-              setPendingDeposits(normalizePendingDeposits(depositsData));
-            }
-          } catch (err) {
-            logger.error("Failed to fetch pending deposits:", err);
-            setDepositError("Gagal memuat deposit pending");
-            setPendingDeposits([]);
-          } finally {
-            setDepositLoading(false);
-          }
+          await fetchPendingDeposits(token);
         }
 
         // Fetch badges count from Go backend
@@ -312,14 +317,22 @@ export default function AdminDashboardPage() {
       </div>
 
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
-          Pending Deposits (QRIS)
-        </h2>
-        {!FEATURE_SERVICE_URL && (
-          <p className="text-sm text-muted-foreground">
-            Feature Service URL belum dikonfigurasi.
-          </p>
-        )}
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-foreground">
+            Pending Deposits (QRIS)
+          </h2>
+          <button
+            type="button"
+            onClick={() => {
+              const token = localStorage.getItem("admin_token");
+              void fetchPendingDeposits(token);
+            }}
+            disabled={depositLoading}
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {depositLoading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
         {depositLoading && (
           <p className="text-sm text-muted-foreground">Memuat deposit pending...</p>
         )}
