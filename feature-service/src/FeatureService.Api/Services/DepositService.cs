@@ -284,7 +284,7 @@ public class DepositService : IDepositService
             BsonType.Int32 => value.AsInt32,
             BsonType.Int64 => value.AsInt64,
             BsonType.Double => (long)value.AsDouble,
-            BsonType.Decimal128 => (long)value.AsDecimal128.ToDecimal(),
+            BsonType.Decimal128 => (long)Decimal128.ToDecimal(value.AsDecimal128),
             BsonType.String when long.TryParse(value.AsString, out var parsed) => parsed,
             _ => 0
         };
