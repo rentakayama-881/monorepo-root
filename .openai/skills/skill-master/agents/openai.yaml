@@ -1,4 +1,0 @@
-interface:
-  display_name: "Skill Master"
-  short_description: "Discover and generate project skills"
-  default_prompt: "Use $skill-master to analyze this repository and generate missing skills under .openai/skills."
