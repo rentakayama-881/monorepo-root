@@ -1,10 +1,42 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
+import {
+  fetchFeatureAuth,
+  FEATURE_ENDPOINTS,
+  unwrapFeatureData,
+} from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
+
+function normalizeWallet(payload) {
+  const data = unwrapFeatureData(payload) || {};
+  const balanceRaw =
+    data.balance ?? data.Balance ?? data.availableBalance ?? data.AvailableBalance ?? 0;
+  const pinSetRaw =
+    data.pinSet ?? data.PinSet ?? data.pin_set ?? data.hasPin ?? data.has_pin ?? false;
+
+  return {
+    balance: Number(balanceRaw) || 0,
+    has_pin: Boolean(pinSetRaw),
+  };
+}
+
+function normalizeSearchUser(payload) {
+  const data = unwrapFeatureData(payload) || {};
+  const existsRaw = data.exists ?? data.Exists;
+  const userId = data.userId ?? data.UserId ?? data.user_id ?? null;
+  const username = data.username ?? data.Username ?? "";
+  const avatarUrl = data.avatarUrl ?? data.AvatarUrl ?? data.avatar_url ?? "";
+
+  return {
+    exists: typeof existsRaw === "boolean" ? existsRaw : Boolean(userId && username),
+    userId: Number(userId) || 0,
+    username: String(username || ""),
+    avatarUrl: String(avatarUrl || ""),
+  };
+}
 
 export default function SendMoneyPage() {
   const router = useRouter();
@@ -33,14 +65,13 @@ export default function SendMoneyPage() {
 
       try {
         // Get wallet and PIN status from Feature Service
-        const walletData = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
-        setWallet({ 
-          balance: walletData.balance || 0, 
-          has_pin: walletData.pinSet || false 
-        });
-        
+        const walletData = normalizeWallet(
+          await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME)
+        );
+        setWallet(walletData);
+
         // If PIN not set, redirect to set PIN page
-        if (!walletData.pinSet) {
+        if (!walletData.has_pin) {
           router.push("/account/wallet/set-pin?redirect=send");
         }
       } catch (e) {
@@ -60,11 +91,10 @@ export default function SendMoneyPage() {
       if (searchQuery.length >= 3) {
         setSearching(true);
         try {
-          const response = await fetchFeatureAuth(
+          const userData = normalizeSearchUser(
+            await fetchFeatureAuth(
             FEATURE_ENDPOINTS.TRANSFERS.SEARCH_USER + `?username=${encodeURIComponent(searchQuery)}`
-          );
-          // Response is { data: { userId, username, avatarUrl, exists } }
-          const userData = response.data;
+          ));
           if (userData && userData.exists) {
             setSearchResults([{
               id: userData.userId,

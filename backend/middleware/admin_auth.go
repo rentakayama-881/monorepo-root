@@ -3,7 +3,6 @@ package middleware
 import (
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"backend-gin/config"
@@ -35,8 +34,8 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		if tokenString == authHeader {
+		tokenString, ok := parseBearerToken(authHeader)
+		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"code":    "ADMIN002",
 				"message": "Format token tidak valid",

@@ -3,8 +3,73 @@
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import { getApiBase } from "@/lib/api";
+import { getAdminToken } from "@/lib/adminAuth";
+import { unwrapFeatureData } from "@/lib/featureApi";
 
 const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
+
+function normalizeCategory(item) {
+  return {
+    id: item?.id ?? item?.Id ?? item?.ID ?? "",
+    name: item?.name ?? item?.Name ?? "",
+    slug: item?.slug ?? item?.Slug ?? "",
+  };
+}
+
+function normalizeUser(item) {
+  return {
+    id: item?.id ?? item?.Id ?? item?.ID ?? "",
+    username: item?.username ?? item?.Username ?? "",
+    email: item?.email ?? item?.Email ?? "",
+  };
+}
+
+function normalizeMoveResult(item) {
+  return {
+    threadId: item?.threadId ?? item?.ThreadId ?? item?.thread_id ?? null,
+    oldOwnerId:
+      item?.oldOwner?.id ??
+      item?.OldOwner?.ID ??
+      item?.old_owner?.id ??
+      null,
+    newOwnerId:
+      item?.newOwner?.id ??
+      item?.NewOwner?.ID ??
+      item?.new_owner?.id ??
+      null,
+    oldCategoryId:
+      item?.oldCategory?.id ??
+      item?.OldCategory?.ID ??
+      item?.old_category?.id ??
+      null,
+    newCategoryId:
+      item?.newCategory?.id ??
+      item?.NewCategory?.ID ??
+      item?.new_category?.id ??
+      null,
+    requestId: item?.requestId ?? item?.RequestID ?? item?.request_id ?? null,
+  };
+}
+
+function readErrorMessage(payload, fallback) {
+  return (
+    payload?.error?.message ||
+    payload?.error?.Message ||
+    payload?.message ||
+    payload?.Message ||
+    fallback
+  );
+}
+
+async function readPayload(response) {
+  const text = await response.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
 
 export default function ThreadManagementPage() {
   const [loading, setLoading] = useState(false);
@@ -40,21 +105,26 @@ export default function ThreadManagementPage() {
     setCategoryLoading(true);
     setCategoryError("");
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) {
+        setCategories([]);
+        setCategoryError("Sesi admin berakhir. Silakan login ulang.");
+        return;
+      }
+
       const res = await fetch(`${getApiBase()}/admin/categories`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await res.json().catch(() => null);
+      const data = await readPayload(res);
       if (!res.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error?.message ||
-            "Gagal memuat daftar kategori"
-        );
+        throw new Error(readErrorMessage(data, "Gagal memuat daftar kategori"));
       }
 
-      setCategories(data?.categories || []);
+      const payload = unwrapFeatureData(data);
+      const categoriesPayload = payload?.categories ?? payload?.Categories ?? payload;
+      const items = Array.isArray(categoriesPayload) ? categoriesPayload : [];
+      setCategories(items.map(normalizeCategory));
     } catch (e) {
       setCategoryError(e.message);
     } finally {
@@ -72,22 +142,25 @@ export default function ThreadManagementPage() {
 
     setUserSearch((s) => ({ ...s, loading: true, error: "", results: [] }));
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) {
+        throw new Error("Sesi admin berakhir. Silakan login ulang.");
+      }
+
       const params = new URLSearchParams({ search: q, limit: "10", page: "1" });
       const res = await fetch(`${getApiBase()}/admin/users?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await res.json().catch(() => null);
+      const data = await readPayload(res);
       if (!res.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error?.message ||
-            "Gagal mencari user"
-        );
+        throw new Error(readErrorMessage(data, "Gagal mencari user"));
       }
 
-      setUserSearch((s) => ({ ...s, results: data?.users || [] }));
+      const payload = unwrapFeatureData(data);
+      const usersPayload = payload?.users ?? payload?.Users ?? payload;
+      const items = Array.isArray(usersPayload) ? usersPayload : [];
+      setUserSearch((s) => ({ ...s, results: items.map(normalizeUser) }));
     } catch (e) {
       setUserSearch((s) => ({ ...s, error: e.message }));
     } finally {
@@ -102,12 +175,33 @@ export default function ThreadManagementPage() {
     setLoading(true);
     setResult(null);
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) {
+        throw new Error("Sesi admin berakhir. Silakan login ulang.");
+      }
+
       const threadId = Number(moveForm.threadId);
       const newOwnerId = Number(moveForm.newOwnerId);
       const newCategoryId = moveForm.newCategoryId
         ? Number(moveForm.newCategoryId)
         : null;
+      const reason = moveForm.reason.trim();
+
+      if (!Number.isFinite(threadId) || threadId <= 0) {
+        throw new Error("Thread ID tidak valid.");
+      }
+      if (!Number.isFinite(newOwnerId) || newOwnerId <= 0) {
+        throw new Error("New Owner User ID tidak valid.");
+      }
+      if (
+        newCategoryId != null &&
+        (!Number.isFinite(newCategoryId) || newCategoryId <= 0)
+      ) {
+        throw new Error("New Category tidak valid.");
+      }
+      if (reason.length < 5) {
+        throw new Error("Reason minimal 5 karakter.");
+      }
 
       const res = await fetch(`${getApiBase()}/admin/threads/${threadId}/move`, {
         method: "POST",
@@ -118,24 +212,22 @@ export default function ThreadManagementPage() {
         body: JSON.stringify({
           new_owner_user_id: newOwnerId,
           new_category_id: newCategoryId,
-          reason: moveForm.reason,
+          reason,
           dry_run: moveForm.dryRun,
         }),
       });
       
-      const data = await res.json().catch(() => null);
+      const data = await readPayload(res);
       if (!res.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error?.message ||
-            "Gagal memindahkan thread"
-        );
+        throw new Error(readErrorMessage(data, "Gagal memindahkan thread"));
       }
+
+      const moveResultPayload = unwrapFeatureData(data);
       
       setResult({
         type: "success",
         message: data?.message || "Thread berhasil dipindahkan",
-        data: data?.data,
+        data: normalizeMoveResult(moveResultPayload),
       });
       if (!moveForm.dryRun) {
         setMoveForm({
@@ -161,27 +253,49 @@ export default function ThreadManagementPage() {
     setLoading(true);
     setResult(null);
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) {
+        throw new Error("Sesi admin berakhir. Silakan login ulang.");
+      }
+      if (!FEATURE_SERVICE_URL) {
+        throw new Error("Feature service URL belum dikonfigurasi.");
+      }
+
+      const threadId = Number(deleteForm.threadId);
+      if (!Number.isFinite(threadId) || threadId <= 0) {
+        throw new Error("Thread ID harus berupa angka positif.");
+      }
+
+      const reason = deleteForm.reason.trim();
+      if (reason.length < 3) {
+        throw new Error("Reason minimal 3 karakter.");
+      }
+
+      const params = new URLSearchParams({
+        hardDelete: "true",
+        reason,
+      });
       const res = await fetch(
-        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/threads/${deleteForm.threadId}`,
+        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/threads/${threadId}?${params.toString()}`,
         {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            reason: deleteForm.reason,
-          }),
+            Accept: "application/json",
+          }
         }
       );
+
+      const data = await readPayload(res);
       
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Gagal menghapus thread");
+        throw new Error(readErrorMessage(data, "Gagal menghapus thread"));
       }
       
-      setResult({ type: "success", message: "Thread berhasil dihapus" });
+      setResult({
+        type: "success",
+        message: data?.message || "Thread berhasil dihapus",
+      });
       setDeleteForm({ threadId: "", reason: "" });
     } catch (e) {
       setResult({ type: "error", message: e.message });
@@ -351,21 +465,21 @@ export default function ThreadManagementPage() {
             {result?.type === "success" && result?.data && (
               <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
                 <div>
-                  Thread: <span className="font-mono">{result.data.thread_id}</span>
+                  Thread: <span className="font-mono">{result.data.threadId}</span>
                 </div>
                 <div>
                   Owner:{" "}
-                  <span className="font-mono">{result.data.old_owner?.id}</span> →{" "}
-                  <span className="font-mono">{result.data.new_owner?.id}</span>
+                  <span className="font-mono">{result.data.oldOwnerId}</span> →{" "}
+                  <span className="font-mono">{result.data.newOwnerId}</span>
                 </div>
                 <div>
                   Category:{" "}
-                  <span className="font-mono">{result.data.old_category?.id}</span> →{" "}
-                  <span className="font-mono">{result.data.new_category?.id}</span>
+                  <span className="font-mono">{result.data.oldCategoryId}</span> →{" "}
+                  <span className="font-mono">{result.data.newCategoryId}</span>
                 </div>
-                {result.data.request_id && (
+                {result.data.requestId && (
                   <div>
-                    Request ID: <span className="font-mono">{result.data.request_id}</span>
+                    Request ID: <span className="font-mono">{result.data.requestId}</span>
                   </div>
                 )}
               </div>
@@ -392,7 +506,7 @@ export default function ThreadManagementPage() {
                 type="text"
                 value={deleteForm.threadId}
                 onChange={(e) => setDeleteForm({ ...deleteForm, threadId: e.target.value })}
-                placeholder="cth: abc123"
+                placeholder="cth: 123"
                 className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 required
               />

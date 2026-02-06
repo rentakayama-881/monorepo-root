@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
@@ -8,6 +9,8 @@ import Modal from "@/components/ui/Modal";
 import Card from "@/components/ui/Card";
 import logger from "@/lib/logger";
 import { getApiBase } from "@/lib/api";
+import { clearAdminSession, getAdminToken } from "@/lib/adminAuth";
+import { unwrapFeatureData } from "@/lib/featureApi";
 
 // Available icon types - matches Badge.jsx BadgeIcons
 const ICON_TYPES = [
@@ -19,6 +22,45 @@ const ICON_TYPES = [
   { value: "trusted", label: "Trusted", description: "Shield + check untuk trusted user" },
   { value: "checkmark", label: "Checkmark", description: "Badge dengan centang" },
 ];
+
+function readErrorMessage(payload, fallback) {
+  return (
+    payload?.error?.message ||
+    payload?.error?.Message ||
+    payload?.message ||
+    payload?.Message ||
+    payload?.error ||
+    fallback
+  );
+}
+
+async function readPayload(response) {
+  const text = await response.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeBadge(item) {
+  return {
+    id: item?.id ?? item?.Id ?? item?.ID ?? null,
+    name: item?.name ?? item?.Name ?? "",
+    slug: item?.slug ?? item?.Slug ?? "",
+    description: item?.description ?? item?.Description ?? "",
+    icon_type: item?.icon_type ?? item?.iconType ?? item?.IconType ?? "verified",
+    color: item?.color ?? item?.Color ?? "#3b82f6",
+  };
+}
+
+function extractBadgeItems(payload) {
+  const root = unwrapFeatureData(payload);
+  const badgesPayload = root?.badges ?? root?.Badges ?? root;
+  if (!Array.isArray(badgesPayload)) return [];
+  return badgesPayload.map(normalizeBadge).filter((badge) => badge.id != null);
+}
 
 // Badge icon preview components (matching Badge.jsx)
 const BadgeIconPreview = ({ type, color, size = "h-6 w-6" }) => {
@@ -68,8 +110,10 @@ const BadgeIconPreview = ({ type, color, size = "h-6 w-6" }) => {
 };
 
 export default function AdminBadgesPage() {
+  const router = useRouter();
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingBadge, setEditingBadge] = useState(null);
   const [formData, setFormData] = useState({
@@ -82,26 +126,46 @@ export default function AdminBadgesPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const fetchBadges = async () => {
-    const token = localStorage.getItem("admin_token");
+  const handleAuthExpired = useCallback(() => {
+    setAuthError("Sesi admin berakhir. Silakan login kembali.");
+    clearAdminSession();
+    setTimeout(() => router.push("/admin/login"), 1500);
+  }, [router]);
+
+  const fetchBadges = useCallback(async () => {
+    const token = getAdminToken();
+    if (!token) {
+      handleAuthExpired();
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch(`${getApiBase()}/admin/badges`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setBadges(data.badges || []);
+
+      const data = await readPayload(res);
+      if (res.status === 401 || res.status === 403) {
+        handleAuthExpired();
+        return;
       }
+
+      if (!res.ok) {
+        throw new Error(readErrorMessage(data, "Gagal memuat badge"));
+      }
+
+      setBadges(extractBadgeItems(data));
     } catch (err) {
       logger.error("Failed to fetch badges:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [handleAuthExpired]);
 
   useEffect(() => {
     fetchBadges();
-  }, []);
+  }, [fetchBadges]);
 
   const openCreateModal = () => {
     setEditingBadge(null);
@@ -134,8 +198,33 @@ export default function AdminBadgesPage() {
     setError("");
     setSaving(true);
 
-    const token = localStorage.getItem("admin_token");
+    const token = getAdminToken();
+    if (!token) {
+      handleAuthExpired();
+      setSaving(false);
+      return;
+    }
+
     const isEdit = !!editingBadge;
+    const name = formData.name.trim();
+    const slug = formData.slug.trim();
+    const payload = {
+      ...formData,
+      name,
+      slug,
+      description: formData.description.trim(),
+    };
+
+    if (!name) {
+      setError("Nama badge wajib diisi");
+      setSaving(false);
+      return;
+    }
+    if (!slug) {
+      setError("Slug badge wajib diisi");
+      setSaving(false);
+      return;
+    }
 
     try {
       const res = await fetch(
@@ -146,26 +235,23 @@ export default function AdminBadgesPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         }
       );
 
-      const text = await res.text();
-      let data = {};
-      if (text) {
-        try {
-          data = JSON.parse(text);
-        } catch (parseErr) {
-          logger.error("Failed to parse response:", text);
-          throw new Error("Response tidak valid dari server");
-        }
+      const data = await readPayload(res);
+
+      if (res.status === 401 || res.status === 403) {
+        handleAuthExpired();
+        return;
       }
 
       if (!res.ok) {
-        throw new Error(data.error?.message || data.error || "Gagal menyimpan badge");
+        throw new Error(readErrorMessage(data, "Gagal menyimpan badge"));
       }
 
       setShowModal(false);
+      setEditingBadge(null);
       fetchBadges();
     } catch (err) {
       setError(err.message);
@@ -177,20 +263,27 @@ export default function AdminBadgesPage() {
   const handleDelete = async (badge) => {
     if (!confirm(`Hapus badge "${badge.name}"?`)) return;
 
-    const token = localStorage.getItem("admin_token");
+    const token = getAdminToken();
+    if (!token) {
+      handleAuthExpired();
+      return;
+    }
+
     try {
       const res = await fetch(`${getApiBase()}/admin/badges/${badge.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      const data = await readPayload(res);
+
+      if (res.status === 401 || res.status === 403) {
+        handleAuthExpired();
+        return;
+      }
+
       if (!res.ok) {
-        const text = await res.text();
-        let data = {};
-        if (text) {
-          try { data = JSON.parse(text); } catch {}
-        }
-        alert(data.error?.message || data.error || "Gagal menghapus badge");
+        alert(readErrorMessage(data, "Gagal menghapus badge"));
         return;
       }
 
@@ -204,6 +297,17 @@ export default function AdminBadgesPage() {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-4">
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-6 py-4 text-sm text-destructive">
+          {authError}
+        </div>
+        <p className="text-muted-foreground">Mengalihkan ke halaman login...</p>
       </div>
     );
   }

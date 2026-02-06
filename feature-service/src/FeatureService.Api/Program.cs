@@ -475,14 +475,26 @@ try
         });
     });
 
+    var enableSwagger =
+        builder.Environment.IsDevelopment()
+        || string.Equals(
+            Environment.GetEnvironmentVariable("ENABLE_SWAGGER"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+
+    if (enableSwagger && !builder.Environment.IsDevelopment())
+    {
+        Log.Warning("Swagger is enabled outside Development via ENABLE_SWAGGER=true.");
+    }
+
     var app = builder.Build();
 
-    // Initialize MongoDB indexes
+    // Ensure MongoDbContext is initialized at startup so index creation runs
+    // before the first request hits financial/admin endpoints.
     using (var scope = app.Services.CreateScope())
     {
-        var dbContext = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
-        await MongoDbIndexes.CreateIndexesAsync(dbContext);
-        Log.Information("MongoDB indexes created successfully");
+        _ = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
+        Log.Information("MongoDB context initialized and indexes ensured");
     }
 
     // Configure middleware pipeline
@@ -496,13 +508,15 @@ try
     app.UseMiddleware<RequestLoggingMiddleware>();
     app.UseMiddleware<ErrorHandlingMiddleware>();
 
-    // Enable Swagger in all environments (protected by auth in production)
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    if (enableSwagger)
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Feature Service API v1");
-        c.RoutePrefix = "swagger";
-    });
+        app.UseSwagger();
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Feature Service API v1");
+            c.RoutePrefix = "swagger";
+        });
+    }
 
     app.UseCors();
 

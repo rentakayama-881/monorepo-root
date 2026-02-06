@@ -2,12 +2,23 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
+import {
+  fetchFeatureAuth,
+  FEATURE_ENDPOINTS,
+  unwrapFeatureData,
+} from "@/lib/featureApi";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { getValidToken } from "@/lib/tokenRefresh";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
+
+function normalizePinStatus(payload) {
+  const data = unwrapFeatureData(payload) || {};
+  const pinSetRaw =
+    data.pinSet ?? data.PinSet ?? data.pin_set ?? data.hasPin ?? data.has_pin ?? false;
+  return Boolean(pinSetRaw);
+}
 
 export default function SetPinContent() {
   const router = useRouter();
@@ -43,7 +54,7 @@ export default function SetPinContent() {
 
         // Get PIN status from Feature Service
         const pinStatus = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.PIN_STATUS);
-        setHasPin(pinStatus.pinSet || false);
+        setHasPin(normalizePinStatus(pinStatus));
       } catch (e) {
         logger.error("Failed to check wallet:", e);
         // If Feature Service unavailable, show error
@@ -159,7 +170,7 @@ export default function SetPinContent() {
         <div className="text-center mb-8">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <svg
-              className="h-8 w-8 text-primary]"
+              className="h-8 w-8 text-primary"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

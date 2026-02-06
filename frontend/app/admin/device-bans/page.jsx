@@ -2,8 +2,24 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
+import { getAdminToken } from "@/lib/adminAuth";
+import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
 
 const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
+
+function normalizeDeviceBan(item) {
+  return {
+    id: item?.id ?? item?.Id ?? "",
+    deviceFingerprint:
+      item?.deviceFingerprint ?? item?.DeviceFingerprint ?? item?.fingerprint ?? "",
+    userId: item?.userId ?? item?.UserId ?? null,
+    reason: item?.reason ?? item?.Reason ?? "",
+    isPermanent: Boolean(item?.isPermanent ?? item?.IsPermanent ?? false),
+    isActive: Boolean(item?.isActive ?? item?.IsActive ?? false),
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? null,
+    expiresAt: item?.expiresAt ?? item?.ExpiresAt ?? null,
+  };
+}
 
 export default function DeviceBansPage() {
   const [bans, setBans] = useState([]);
@@ -23,7 +39,12 @@ export default function DeviceBansPage() {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) {
+        setBans([]);
+        setError("Sesi admin berakhir. Silakan login ulang.");
+        return;
+      }
       const res = await fetch(
         `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/device-bans?page=1&pageSize=50`,
         {
@@ -35,7 +56,9 @@ export default function DeviceBansPage() {
       );
       if (!res.ok) throw new Error("Gagal memuat device bans");
       const data = await res.json();
-      setBans(data.items || []);
+      const payload = unwrapFeatureData(data);
+      const items = extractFeatureItems(payload).map(normalizeDeviceBan);
+      setBans(items);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -51,10 +74,11 @@ export default function DeviceBansPage() {
     e.preventDefault();
     setCreateLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
       const body = {
         deviceFingerprint: form.deviceFingerprint,
-        userId: form.userId ? parseInt(form.userId) : null,
+        userId: form.userId ? parseInt(form.userId, 10) : null,
         reason: form.reason,
         isPermanent: form.isPermanent,
       };
@@ -87,7 +111,8 @@ export default function DeviceBansPage() {
   const handleUnban = async (banId) => {
     if (!confirm("Yakin ingin menghapus ban ini?")) return;
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
+      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
       const res = await fetch(
         `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/device-bans/${banId}`,
         {
@@ -102,6 +127,13 @@ export default function DeviceBansPage() {
     } catch (e) {
       alert(e.message);
     }
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleString("id-ID");
   };
 
   return (
@@ -157,10 +189,10 @@ export default function DeviceBansPage() {
                     )}
                   </td>
                   <td className="py-3 px-4 text-xs text-muted-foreground">
-                    {new Date(ban.createdAt).toLocaleString("id-ID")}
+                    {formatDateTime(ban.createdAt)}
                   </td>
                   <td className="py-3 px-4 text-xs text-muted-foreground">
-                    {ban.isPermanent ? "-" : ban.expiresAt ? new Date(ban.expiresAt).toLocaleString("id-ID") : "-"}
+                    {ban.isPermanent ? "-" : formatDateTime(ban.expiresAt)}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <Button

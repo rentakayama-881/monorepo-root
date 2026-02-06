@@ -18,6 +18,9 @@ public interface IDepositService
 
 public class DepositService : IDepositService
 {
+    private static readonly string[] StatusFieldAliases = ["status", "Status"];
+    private static readonly string[] CreatedAtFieldAliases = ["createdAt", "CreatedAt", "created_at"];
+
     private readonly IMongoCollection<DepositRequest> _deposits;
     private readonly IMongoCollection<BsonDocument> _depositsRaw;
     private readonly IWalletService _walletService;
@@ -27,43 +30,24 @@ public class DepositService : IDepositService
     private const string AllowedMethod = "QRIS";
 
     public DepositService(MongoDbContext dbContext, IWalletService walletService, ILogger<DepositService> logger)
+        : this(
+            dbContext.GetCollection<DepositRequest>("deposit_requests"),
+            dbContext.GetCollection<BsonDocument>("deposit_requests"),
+            walletService,
+            logger)
     {
-        _deposits = dbContext.GetCollection<DepositRequest>("deposit_requests");
-        _depositsRaw = dbContext.GetCollection<BsonDocument>("deposit_requests");
-        _walletService = walletService;
-        _logger = logger;
-
-        CreateIndexes();
     }
 
-    private void CreateIndexes()
+    public DepositService(
+        IMongoCollection<DepositRequest> deposits,
+        IMongoCollection<BsonDocument> depositsRaw,
+        IWalletService walletService,
+        ILogger<DepositService> logger)
     {
-        _deposits.Indexes.CreateOne(new CreateIndexModel<DepositRequest>(
-            Builders<DepositRequest>.IndexKeys
-                .Ascending(d => d.UserId)
-                .Descending(d => d.CreatedAt)
-        ));
-
-        _deposits.Indexes.CreateOne(new CreateIndexModel<DepositRequest>(
-            Builders<DepositRequest>.IndexKeys.Ascending(d => d.Status)
-        ));
-
-        try
-        {
-            _deposits.Indexes.CreateOne(new CreateIndexModel<DepositRequest>(
-                Builders<DepositRequest>.IndexKeys.Ascending(d => d.ExternalTransactionId),
-                new CreateIndexOptions
-                {
-                    Unique = true,
-                    Name = "externalTransactionId_1"
-                }
-            ));
-        }
-        catch (Exception ex)
-        {
-            // Don't fail app startup/request if index creation fails (e.g., existing non-unique index in production)
-            _logger.LogWarning(ex, "Failed to create unique index for deposit externalTransactionId");
-        }
+        _deposits = deposits;
+        _depositsRaw = depositsRaw;
+        _walletService = walletService;
+        _logger = logger;
     }
 
     public async Task<DepositRequestResponse> CreateRequestAsync(uint userId, string username, CreateDepositRequest request)
@@ -189,44 +173,83 @@ public class DepositService : IDepositService
 
         // Backward compatibility: older data may store status as string ("Pending"/"pending")
         // while newer data uses enum-backed numeric representation (0 = Pending).
-        var pendingFilter = Builders<BsonDocument>.Filter.Or(
-            Builders<BsonDocument>.Filter.Eq("status", (int)DepositStatus.Pending),
-            Builders<BsonDocument>.Filter.Eq("status", DepositStatus.Pending.ToString()),
-            Builders<BsonDocument>.Filter.Eq("status", DepositStatus.Pending.ToString().ToLowerInvariant()),
-            Builders<BsonDocument>.Filter.Eq("status", DepositStatus.Pending.ToString().ToUpperInvariant()),
-            Builders<BsonDocument>.Filter.Exists("status", false)
+        var filterBuilder = Builders<BsonDocument>.Filter;
+        var pendingValueFilters = new List<FilterDefinition<BsonDocument>>();
+        foreach (var field in StatusFieldAliases)
+        {
+            pendingValueFilters.Add(filterBuilder.Eq(field, (int)DepositStatus.Pending));
+            pendingValueFilters.Add(filterBuilder.Eq(field, (long)DepositStatus.Pending));
+            pendingValueFilters.Add(filterBuilder.Eq(field, "0"));
+            pendingValueFilters.Add(filterBuilder.Eq(field, DepositStatus.Pending.ToString()));
+            pendingValueFilters.Add(filterBuilder.Eq(field, DepositStatus.Pending.ToString().ToLowerInvariant()));
+            pendingValueFilters.Add(filterBuilder.Eq(field, DepositStatus.Pending.ToString().ToUpperInvariant()));
+        }
+
+        // Treat documents as pending by default when all known status aliases are unset.
+        // This keeps admin visibility for legacy records with missing/null/empty status fields.
+        var missingStatusFilter = filterBuilder.And(
+            StatusFieldAliases.Select(field =>
+                filterBuilder.Or(
+                    filterBuilder.Exists(field, false),
+                    filterBuilder.Eq(field, BsonNull.Value),
+                    filterBuilder.Eq(field, "")))
         );
+
+        var pendingFilter = filterBuilder.Or(
+            pendingValueFilters.Append(missingStatusFilter)
+        );
+        var sortDefinition = Builders<BsonDocument>.Sort
+            .Descending("createdAt")
+            .Descending("CreatedAt")
+            .Descending("created_at")
+            .Descending("_id");
 
         var deposits = await _depositsRaw
             .Find(pendingFilter)
-            .Sort(Builders<BsonDocument>.Sort.Descending("createdAt"))
+            .Sort(sortDefinition)
             .Limit(safeLimit)
             .ToListAsync();
 
-        return deposits.Select(MapAdminDeposit).ToList();
+        return deposits
+            .Select(MapAdminDeposit)
+            .Where(d => !string.IsNullOrWhiteSpace(d.Id))
+            .ToList();
     }
 
     private static AdminDepositResponse MapAdminDeposit(BsonDocument doc)
     {
-        var id = GetString(doc, "_id");
-        if (string.IsNullOrWhiteSpace(id))
-            id = GetString(doc, "id");
+        var id = GetString(doc, "", "_id", "id", "Id");
 
         return new AdminDepositResponse(
             id,
-            GetUInt(doc, "userId"),
-            GetString(doc, "username"),
-            GetLong(doc, "amount"),
-            GetString(doc, "method", "QRIS"),
-            GetString(doc, "externalTransactionId"),
+            GetUInt(doc, "userId", "UserId", "user_id"),
+            GetString(doc, "", "username", "Username", "user_name"),
+            GetLong(doc, "amount", "Amount"),
+            GetString(doc, "QRIS", "method", "Method"),
+            GetString(doc, "", "externalTransactionId", "ExternalTransactionId", "external_transaction_id"),
             GetStatus(doc),
-            GetDateTime(doc, "createdAt")
+            GetDateTime(doc, CreatedAtFieldAliases)
         );
     }
 
-    private static string GetString(BsonDocument doc, string field, string fallback = "")
+    private static bool TryGetValue(BsonDocument doc, out BsonValue value, params string[] fields)
     {
-        if (!doc.TryGetValue(field, out var value) || value.IsBsonNull)
+        foreach (var field in fields)
+        {
+            if (doc.TryGetValue(field, out var candidate) && !candidate.IsBsonNull)
+            {
+                value = candidate;
+                return true;
+            }
+        }
+
+        value = BsonNull.Value;
+        return false;
+    }
+
+    private static string GetString(BsonDocument doc, string fallback = "", params string[] fields)
+    {
+        if (!TryGetValue(doc, out var value, fields))
             return fallback;
 
         return value.BsonType switch
@@ -237,9 +260,9 @@ public class DepositService : IDepositService
         };
     }
 
-    private static uint GetUInt(BsonDocument doc, string field)
+    private static uint GetUInt(BsonDocument doc, params string[] fields)
     {
-        if (!doc.TryGetValue(field, out var value) || value.IsBsonNull)
+        if (!TryGetValue(doc, out var value, fields))
             return 0;
 
         return value.BsonType switch
@@ -251,9 +274,9 @@ public class DepositService : IDepositService
         };
     }
 
-    private static long GetLong(BsonDocument doc, string field)
+    private static long GetLong(BsonDocument doc, params string[] fields)
     {
-        if (!doc.TryGetValue(field, out var value) || value.IsBsonNull)
+        if (!TryGetValue(doc, out var value, fields))
             return 0;
 
         return value.BsonType switch
@@ -269,7 +292,7 @@ public class DepositService : IDepositService
 
     private static string GetStatus(BsonDocument doc)
     {
-        if (!doc.TryGetValue("status", out var value) || value.IsBsonNull)
+        if (!TryGetValue(doc, out var value, StatusFieldAliases))
             return DepositStatus.Pending.ToString();
 
         if (value.BsonType == BsonType.String)
@@ -292,7 +315,12 @@ public class DepositService : IDepositService
 
     private static DateTime GetDateTime(BsonDocument doc, string field)
     {
-        if (!doc.TryGetValue(field, out var value) || value.IsBsonNull)
+        return GetDateTime(doc, new[] { field });
+    }
+
+    private static DateTime GetDateTime(BsonDocument doc, params string[] fields)
+    {
+        if (!TryGetValue(doc, out var value, fields))
             return DateTime.UtcNow;
 
         return value.BsonType switch
@@ -310,7 +338,15 @@ public class DepositService : IDepositService
     public async Task<(bool success, string? error)> ApproveAsync(
         string depositId, uint adminId, string adminUsername, long? amountOverride)
     {
-        var deposit = await _deposits.Find(d => d.Id == depositId).FirstOrDefaultAsync();
+        var normalizedDepositId = depositId?.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedDepositId))
+            return (false, "ID deposit tidak valid");
+
+        var actorName = string.IsNullOrWhiteSpace(adminUsername)
+            ? $"admin:{adminId}"
+            : adminUsername.Trim();
+
+        var deposit = await _deposits.Find(d => d.Id == normalizedDepositId).FirstOrDefaultAsync();
         if (deposit == null)
             return (false, "Deposit tidak ditemukan");
 
@@ -323,7 +359,7 @@ public class DepositService : IDepositService
             {
                 _logger.LogWarning(
                     "Deposit {DepositId} already approved but walletTransactionId is missing. Manual verification may be required.",
-                    depositId);
+                    normalizedDepositId);
             }
             return (true, null);
         }
@@ -341,14 +377,14 @@ public class DepositService : IDepositService
         var approveUpdate = Builders<DepositRequest>.Update
             .Set(d => d.Status, DepositStatus.Approved)
             .Set(d => d.ApprovedById, adminId)
-            .Set(d => d.ApprovedByUsername, adminUsername)
+            .Set(d => d.ApprovedByUsername, actorName)
             .Set(d => d.ApprovedAt, now)
             .Set(d => d.UpdatedAt, now);
 
         var approveResult = await _deposits.UpdateOneAsync(approveFilter, approveUpdate);
         if (approveResult.ModifiedCount == 0)
         {
-            var latest = await _deposits.Find(d => d.Id == depositId).FirstOrDefaultAsync();
+            var latest = await _deposits.Find(d => d.Id == normalizedDepositId).FirstOrDefaultAsync();
             if (latest?.Status == DepositStatus.Approved)
                 return (true, null);
 
@@ -369,7 +405,7 @@ public class DepositService : IDepositService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to credit wallet for approved deposit {DepositId}. Attempting status rollback.", depositId);
+            _logger.LogError(ex, "Failed to credit wallet for approved deposit {DepositId}. Attempting status rollback.", normalizedDepositId);
 
             try
             {
@@ -392,7 +428,7 @@ public class DepositService : IDepositService
                 _logger.LogCritical(
                     rollbackEx,
                     "CRITICAL: Failed to rollback deposit approval after wallet credit failure. DepositId: {DepositId}",
-                    depositId);
+                    normalizedDepositId);
             }
 
             return (false, "Gagal memproses deposit. Silakan coba lagi atau hubungi support.");
@@ -408,17 +444,32 @@ public class DepositService : IDepositService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to finalize deposit approval {DepositId}. WalletTransactionId: {WalletTransactionId}", depositId, walletTransactionId);
+            _logger.LogError(ex, "Failed to finalize deposit approval {DepositId}. WalletTransactionId: {WalletTransactionId}", normalizedDepositId, walletTransactionId);
         }
 
-        _logger.LogInformation("Deposit approved: {DepositId} by admin {AdminId}", depositId, adminId);
+        _logger.LogInformation("Deposit approved: {DepositId} by admin {AdminId}", normalizedDepositId, adminId);
         return (true, null);
     }
 
     public async Task<(bool success, string? error)> RejectAsync(
         string depositId, uint adminId, string adminUsername, string reason)
     {
-        var deposit = await _deposits.Find(d => d.Id == depositId).FirstOrDefaultAsync();
+        var normalizedDepositId = depositId?.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedDepositId))
+            return (false, "ID deposit tidak valid");
+
+        var normalizedReason = reason?.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedReason) || normalizedReason.Length < 3)
+            return (false, "Alasan penolakan harus 3-200 karakter");
+
+        if (normalizedReason.Length > 200)
+            return (false, "Alasan penolakan harus 3-200 karakter");
+
+        var actorName = string.IsNullOrWhiteSpace(adminUsername)
+            ? $"admin:{adminId}"
+            : adminUsername.Trim();
+
+        var deposit = await _deposits.Find(d => d.Id == normalizedDepositId).FirstOrDefaultAsync();
         if (deposit == null)
             return (false, "Deposit tidak ditemukan");
 
@@ -432,9 +483,9 @@ public class DepositService : IDepositService
 
         var update = Builders<DepositRequest>.Update
             .Set(d => d.Status, DepositStatus.Rejected)
-            .Set(d => d.RejectionReason, reason)
+            .Set(d => d.RejectionReason, normalizedReason)
             .Set(d => d.ApprovedById, adminId)
-            .Set(d => d.ApprovedByUsername, adminUsername)
+            .Set(d => d.ApprovedByUsername, actorName)
             .Set(d => d.ApprovedAt, now)
             .Set(d => d.UpdatedAt, now);
 
@@ -444,7 +495,7 @@ public class DepositService : IDepositService
             return (false, "Deposit sudah diproses oleh request lain");
         }
 
-        _logger.LogInformation("Deposit rejected: {DepositId} by admin {AdminId}", depositId, adminId);
+        _logger.LogInformation("Deposit rejected: {DepositId} by admin {AdminId}", normalizedDepositId, adminId);
         return (true, null);
     }
 }

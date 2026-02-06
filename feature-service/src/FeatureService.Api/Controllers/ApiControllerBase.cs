@@ -35,6 +35,7 @@ public abstract class ApiControllerBase : ControllerBase
     protected string GetUsername()
     {
         return User.FindFirst(ClaimTypes.Name)?.Value
+            ?? User.FindFirst("name")?.Value
             ?? User.FindFirst("username")?.Value
             ?? User.FindFirst("preferred_username")?.Value
             ?? "";

@@ -2,7 +2,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
+import {
+  fetchFeatureAuth,
+  FEATURE_ENDPOINTS,
+  unwrapFeatureData,
+  extractFeatureItems,
+} from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
@@ -22,9 +27,37 @@ const PAYMENT_METHODS = [
   { value: "SHOPEEPAY", label: "ShopeePay (tidak tersedia)", enabled: false },
 ];
 
-function unwrapFeatureResponse(res) {
-  if (res && typeof res === "object" && "data" in res) return res.data;
-  return res;
+function normalizeWallet(payload) {
+  const data = unwrapFeatureData(payload) || {};
+  const balanceRaw =
+    data.balance ?? data.Balance ?? data.availableBalance ?? data.AvailableBalance ?? 0;
+  const pinSetRaw =
+    data.pinSet ?? data.PinSet ?? data.pin_set ?? data.hasPin ?? data.has_pin ?? false;
+
+  return {
+    balance: Number(balanceRaw) || 0,
+    has_pin: Boolean(pinSetRaw),
+  };
+}
+
+function normalizeDeposit(item) {
+  return {
+    id: item?.id ?? item?.Id ?? "",
+    amount: Number(item?.amount ?? item?.Amount ?? 0) || 0,
+    method: item?.method ?? item?.Method ?? "QRIS",
+    externalTransactionId:
+      item?.externalTransactionId ??
+      item?.ExternalTransactionId ??
+      item?.external_transaction_id ??
+      "",
+    status: item?.status ?? item?.Status ?? "Pending",
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? item?.created_at ?? null,
+  };
+}
+
+function extractDeposits(payload) {
+  const data = unwrapFeatureData(payload);
+  return extractFeatureItems(data).map(normalizeDeposit).filter((d) => d.id);
 }
 
 export default function DepositPage() {
@@ -51,12 +84,11 @@ export default function DepositPage() {
       }
 
       try {
-        const walletData = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
-        const pinSet = walletData.pinSet || false;
-        setWallet({
-          balance: walletData.balance || 0,
-          has_pin: pinSet,
-        });
+        const walletData = normalizeWallet(
+          await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME)
+        );
+        setWallet(walletData);
+        const pinSet = walletData.has_pin;
 
         if (!pinSet) {
           router.push("/account/wallet/set-pin?redirect=deposit");
@@ -70,8 +102,7 @@ export default function DepositPage() {
           const historyRes = await fetchFeatureAuth(
             FEATURE_ENDPOINTS.WALLETS.DEPOSITS + "?limit=10"
           );
-          const historyData = unwrapFeatureResponse(historyRes);
-          setDepositHistory(historyData?.deposits || []);
+          setDepositHistory(extractDeposits(historyRes));
         } catch (e) {
           logger.error("Failed to load deposit history:", e);
           setHistoryError(getErrorMessage(e, "Gagal memuat riwayat deposit"));
@@ -133,7 +164,7 @@ export default function DepositPage() {
         }),
       });
 
-      const deposit = unwrapFeatureResponse(res);
+      const deposit = normalizeDeposit(unwrapFeatureData(res));
       setCreatedDeposit(deposit);
       setStep(3);
 
@@ -142,8 +173,7 @@ export default function DepositPage() {
         const historyRes = await fetchFeatureAuth(
           FEATURE_ENDPOINTS.WALLETS.DEPOSITS + "?limit=10"
         );
-        const historyData = unwrapFeatureResponse(historyRes);
-        setDepositHistory(historyData?.deposits || []);
+        setDepositHistory(extractDeposits(historyRes));
       } catch (e) {
         logger.error("Failed to refresh deposit history:", e);
       }

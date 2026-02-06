@@ -50,38 +50,6 @@ public class TransferService : ITransferService
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
-
-        CreateIndexes();
-    }
-
-    private void CreateIndexes()
-    {
-        // Index for sender transfers
-        _transfers.Indexes.CreateOne(new CreateIndexModel<Transfer>(
-            Builders<Transfer>.IndexKeys
-                .Ascending(t => t.SenderId)
-                .Descending(t => t.CreatedAt)
-        ));
-
-        // Index for receiver transfers
-        _transfers.Indexes.CreateOne(new CreateIndexModel<Transfer>(
-            Builders<Transfer>.IndexKeys
-                .Ascending(t => t.ReceiverId)
-                .Descending(t => t.CreatedAt)
-        ));
-
-        // Unique index for code
-        _transfers.Indexes.CreateOne(new CreateIndexModel<Transfer>(
-            Builders<Transfer>.IndexKeys.Ascending(t => t.Code),
-            new CreateIndexOptions { Unique = true }
-        ));
-
-        // Index for auto-release check
-        _transfers.Indexes.CreateOne(new CreateIndexModel<Transfer>(
-            Builders<Transfer>.IndexKeys
-                .Ascending(t => t.Status)
-                .Ascending(t => t.HoldUntil)
-        ));
     }
 
     public async Task<CreateTransferResponse> CreateTransferAsync(uint senderId, CreateTransferRequest request, string? senderUsername = null)

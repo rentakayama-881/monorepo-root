@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
+	"net/netip"
 	"strings"
 	"sync"
 	"time"
@@ -62,12 +64,19 @@ type EnhancedRateLimiter struct {
 	authMinuteLimiter *RateLimiter
 	authHourLimiter   *RateLimiter
 	searchLimiter     *RateLimiter
+	whitelistExact    map[string]struct{}
+	whitelistCIDRs    []netip.Prefix
+	blacklistExact    map[string]struct{}
+	blacklistCIDRs    []netip.Prefix
 	mu                sync.RWMutex
 	blacklist         map[string]time.Time // IP -> block expiry
 }
 
 // NewEnhancedRateLimiter creates a new enhanced rate limiter
 func NewEnhancedRateLimiter(config RateLimitConfig) *EnhancedRateLimiter {
+	whitelistExact, whitelistCIDRs := parseIPRules(config.WhitelistIPs)
+	blacklistExact, blacklistCIDRs := parseIPRules(config.BlacklistIPs)
+
 	return &EnhancedRateLimiter{
 		config:            config,
 		ipMinuteLimiter:   NewRateLimiter(config.RequestsPerMinute, time.Minute),
@@ -77,40 +86,36 @@ func NewEnhancedRateLimiter(config RateLimitConfig) *EnhancedRateLimiter {
 		authMinuteLimiter: NewRateLimiter(config.AuthRequestsPerMinute, time.Minute),
 		authHourLimiter:   NewRateLimiter(config.AuthRequestsPerHour, time.Hour),
 		searchLimiter:     NewRateLimiter(config.SearchRequestsPerMinute, time.Minute),
+		whitelistExact:    whitelistExact,
+		whitelistCIDRs:    whitelistCIDRs,
+		blacklistExact:    blacklistExact,
+		blacklistCIDRs:    blacklistCIDRs,
 		blacklist:         make(map[string]time.Time),
 	}
 }
 
-// GetClientIP extracts the real client IP from request
+// GetClientIP returns the client IP resolved by Gin.
+// Important: this respects TrustedProxies configuration set in main.go
+// and avoids trusting spoofable forwarding headers directly.
 func GetClientIP(c *gin.Context) string {
-	// Check X-Forwarded-For header first (for proxies/load balancers)
-	xff := c.GetHeader("X-Forwarded-For")
-	if xff != "" {
-		// Take the first IP in the chain (original client)
-		ips := strings.Split(xff, ",")
-		if len(ips) > 0 {
-			ip := strings.TrimSpace(ips[0])
-			if ip != "" {
-				return ip
-			}
-		}
-	}
-
-	// Check X-Real-IP header
-	xri := c.GetHeader("X-Real-IP")
-	if xri != "" {
-		return xri
-	}
-
-	// Fallback to remote address
 	return c.ClientIP()
 }
 
 // IsWhitelisted checks if IP is whitelisted
 func (r *EnhancedRateLimiter) IsWhitelisted(ip string) bool {
-	for _, whiteIP := range r.config.WhitelistIPs {
-		if ip == whiteIP {
-			return true
+	normalized, addr, hasAddr := normalizeIP(ip)
+	rawKey := strings.TrimSpace(ip)
+	if _, ok := r.whitelistExact[normalized]; ok {
+		return true
+	}
+	if _, ok := r.whitelistExact[rawKey]; ok {
+		return true
+	}
+	if hasAddr {
+		for _, prefix := range r.whitelistCIDRs {
+			if prefix.Contains(addr) {
+				return true
+			}
 		}
 	}
 	return false
@@ -119,15 +124,26 @@ func (r *EnhancedRateLimiter) IsWhitelisted(ip string) bool {
 // IsBlacklisted checks if IP is blacklisted
 func (r *EnhancedRateLimiter) IsBlacklisted(ip string) bool {
 	// Check static blacklist
-	for _, blackIP := range r.config.BlacklistIPs {
-		if ip == blackIP {
-			return true
+	normalized, addr, hasAddr := normalizeIP(ip)
+	rawKey := strings.TrimSpace(ip)
+	if _, ok := r.blacklistExact[normalized]; ok {
+		return true
+	}
+	if _, ok := r.blacklistExact[rawKey]; ok {
+		return true
+	}
+	if hasAddr {
+		for _, prefix := range r.blacklistCIDRs {
+			if prefix.Contains(addr) {
+				return true
+			}
 		}
 	}
 
 	// Check dynamic blacklist
+	dynamicKey := normalizedIPKey(ip)
 	r.mu.RLock()
-	expiry, exists := r.blacklist[ip]
+	expiry, exists := r.blacklist[dynamicKey]
 	r.mu.RUnlock()
 
 	if exists {
@@ -136,7 +152,7 @@ func (r *EnhancedRateLimiter) IsBlacklisted(ip string) bool {
 		}
 		// Remove expired entry
 		r.mu.Lock()
-		delete(r.blacklist, ip)
+		delete(r.blacklist, dynamicKey)
 		r.mu.Unlock()
 	}
 
@@ -147,7 +163,7 @@ func (r *EnhancedRateLimiter) IsBlacklisted(ip string) bool {
 func (r *EnhancedRateLimiter) BlockIP(ip string, duration time.Duration) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.blacklist[ip] = time.Now().Add(duration)
+	r.blacklist[normalizedIPKey(ip)] = time.Now().Add(duration)
 }
 
 // Middleware returns a Gin middleware for rate limiting
@@ -188,8 +204,8 @@ func (r *EnhancedRateLimiter) Middleware() gin.HandlerFunc {
 
 		// User-based rate limiting (if authenticated)
 		if r.config.EnableUserLimit {
-			if userID, exists := c.Get("userID"); exists {
-				userKey := "user:" + userID.(string)
+			userKey := getUserRateLimitKey(c)
+			if userKey != "" {
 				if !r.userMinuteLimiter.Allow(userKey) || !r.userHourLimiter.Allow(userKey) {
 					c.Header("Retry-After", "60")
 					c.JSON(http.StatusTooManyRequests, gin.H{
@@ -205,6 +221,28 @@ func (r *EnhancedRateLimiter) Middleware() gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+func getUserRateLimitKey(c *gin.Context) string {
+	if userID, exists := c.Get("user_id"); exists {
+		if normalized := normalizeRateLimitIdentity(userID); normalized != "" {
+			return "user:" + normalized
+		}
+	}
+	if legacyUserID, exists := c.Get("userID"); exists {
+		if normalized := normalizeRateLimitIdentity(legacyUserID); normalized != "" {
+			return "user:" + normalized
+		}
+	}
+	return ""
+}
+
+func normalizeRateLimitIdentity(value interface{}) string {
+	normalized := strings.TrimSpace(fmt.Sprint(value))
+	if normalized == "" || normalized == "<nil>" {
+		return ""
+	}
+	return normalized
 }
 
 // AuthMiddleware returns a stricter rate limiter for auth endpoints
@@ -290,4 +328,50 @@ func GetEnhancedRateLimiter() *EnhancedRateLimiter {
 // SetEnhancedRateLimiter sets the global enhanced rate limiter (for testing)
 func SetEnhancedRateLimiter(r *EnhancedRateLimiter) {
 	enhancedRateLimiter = r
+}
+
+func parseIPRules(entries []string) (map[string]struct{}, []netip.Prefix) {
+	exact := make(map[string]struct{}, len(entries))
+	cidrs := make([]netip.Prefix, 0)
+
+	for _, entry := range entries {
+		clean := strings.TrimSpace(entry)
+		if clean == "" {
+			continue
+		}
+
+		if strings.Contains(clean, "/") {
+			if prefix, err := netip.ParsePrefix(clean); err == nil {
+				cidrs = append(cidrs, prefix.Masked())
+				continue
+			}
+			// Keep invalid CIDR entries as exact raw rules for backward compatibility.
+			exact[clean] = struct{}{}
+			continue
+		}
+
+		if addr, err := netip.ParseAddr(clean); err == nil {
+			exact[addr.String()] = struct{}{}
+			continue
+		}
+
+		// Keep unknown formats as raw exact entries for backward compatibility.
+		exact[clean] = struct{}{}
+	}
+
+	return exact, cidrs
+}
+
+func normalizeIP(ip string) (string, netip.Addr, bool) {
+	clean := strings.TrimSpace(ip)
+	addr, err := netip.ParseAddr(clean)
+	if err != nil {
+		return clean, netip.Addr{}, false
+	}
+	return addr.String(), addr, true
+}
+
+func normalizedIPKey(ip string) string {
+	normalized, _, _ := normalizeIP(ip)
+	return normalized
 }

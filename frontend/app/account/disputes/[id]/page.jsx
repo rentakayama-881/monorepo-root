@@ -2,9 +2,94 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { fetchFeatureAuth, FEATURE_ENDPOINTS } from "@/lib/featureApi";
+import {
+  fetchFeatureAuth,
+  FEATURE_ENDPOINTS,
+  unwrapFeatureData,
+  extractFeatureItems,
+} from "@/lib/featureApi";
+import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
+
+function normalizeCurrentUser(payload) {
+  return {
+    id: Number(payload?.id ?? payload?.user_id ?? payload?.userId ?? 0) || 0,
+    username: payload?.username ?? payload?.Username ?? "",
+  };
+}
+
+function normalizeResolution(payload) {
+  if (!payload) return null;
+  if (typeof payload === "string") {
+    const normalized = payload.toLowerCase();
+    if (normalized === "refund") {
+      return { type: "FullRefundToSender", refundToSender: 0, releaseToReceiver: 0, note: "" };
+    }
+    if (normalized === "release") {
+      return { type: "FullReleaseToReceiver", refundToSender: 0, releaseToReceiver: 0, note: "" };
+    }
+    return { type: payload, refundToSender: 0, releaseToReceiver: 0, note: "" };
+  }
+  return {
+    type: payload?.type ?? payload?.Type ?? "",
+    refundToSender: Number(payload?.refundToSender ?? payload?.RefundToSender ?? 0) || 0,
+    releaseToReceiver:
+      Number(payload?.releaseToReceiver ?? payload?.ReleaseToReceiver ?? 0) || 0,
+    note: payload?.note ?? payload?.Note ?? "",
+  };
+}
+
+function normalizeDisputeMessage(message) {
+  return {
+    id: message?.id ?? message?.Id ?? "",
+    senderId: Number(message?.senderId ?? message?.SenderId ?? 0) || 0,
+    senderUsername: message?.senderUsername ?? message?.SenderUsername ?? "User",
+    isAdmin: Boolean(message?.isAdmin ?? message?.IsAdmin ?? false),
+    content: message?.content ?? message?.Content ?? message?.message ?? "",
+    sentAt:
+      message?.sentAt ??
+      message?.SentAt ??
+      message?.createdAt ??
+      message?.CreatedAt ??
+      message?.sent_at ??
+      null,
+  };
+}
+
+function normalizeDisputeEvidence(evidence) {
+  const typeRaw = evidence?.type ?? evidence?.Type ?? "other";
+  return {
+    id: evidence?.id ?? evidence?.Id ?? "",
+    url: evidence?.url ?? evidence?.Url ?? evidence?.fileUrl ?? evidence?.FileUrl ?? "",
+    type: String(typeRaw).toLowerCase(),
+    description: evidence?.description ?? evidence?.Description ?? "",
+    uploadedAt:
+      evidence?.uploadedAt ??
+      evidence?.UploadedAt ??
+      evidence?.createdAt ??
+      evidence?.CreatedAt ??
+      null,
+  };
+}
+
+function normalizeDispute(payload) {
+  const data = unwrapFeatureData(payload) || {};
+  return {
+    id: data?.id ?? data?.Id ?? "",
+    status: data?.status ?? data?.Status ?? "Open",
+    category: data?.category ?? data?.Category ?? "Other",
+    reason: data?.reason ?? data?.Reason ?? "",
+    amount: Number(data?.amount ?? data?.Amount ?? 0) || 0,
+    initiatorId: Number(data?.initiatorId ?? data?.InitiatorId ?? 0) || 0,
+    respondentId: Number(data?.respondentId ?? data?.RespondentId ?? 0) || 0,
+    initiatorUsername: data?.initiatorUsername ?? data?.InitiatorUsername ?? "Unknown",
+    respondentUsername: data?.respondentUsername ?? data?.RespondentUsername ?? "Unknown",
+    resolution: normalizeResolution(data?.resolution ?? data?.Resolution ?? null),
+    messages: extractFeatureItems(data?.messages ?? data?.Messages).map(normalizeDisputeMessage),
+    evidence: extractFeatureItems(data?.evidence ?? data?.Evidence).map(normalizeDisputeEvidence),
+  };
+}
 
 export default function DisputeCenterPage() {
   const router = useRouter();
@@ -17,7 +102,7 @@ export default function DisputeCenterPage() {
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(0);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -25,37 +110,58 @@ export default function DisputeCenterPage() {
   };
 
   // Load dispute data
-  const loadDispute = async () => {
+  const loadDispute = async (isInitialLoad = false) => {
+    if (isInitialLoad) {
+      setLoading(true);
+    }
     try {
-      const data = await fetchFeatureAuth(`/api/v1/disputes/${disputeId}`);
-      setDispute(data.data || data);
+      const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.DETAIL(disputeId));
+      setDispute(normalizeDispute(response));
     } catch (e) {
       logger.error("Failed to load dispute:", e);
       setError("Dispute tidak ditemukan atau Anda tidak memiliki akses");
+    } finally {
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      router.push("/login");
-      return;
+    let isMounted = true;
+    let interval;
+
+    async function initialize() {
+      const token = getToken();
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      try {
+        const user = normalizeCurrentUser(await fetchJsonAuth("/api/user/me"));
+        if (isMounted) {
+          setCurrentUserId(user.id);
+        }
+      } catch (e) {
+        logger.error("Failed to load current user:", e);
+      }
+
+      await loadDispute(true);
+
+      interval = setInterval(() => {
+        loadDispute(false);
+      }, 5000);
     }
 
-    // Get user ID from token
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setCurrentUserId(payload.user_id);
-    } catch (e) {
-      logger.error("Failed to parse token:", e);
-    }
+    initialize();
 
-    loadDispute();
-    
-    // Poll for new messages every 5 seconds
-    const interval = setInterval(loadDispute, 5000);
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [router, disputeId]);
 
   useEffect(() => {
@@ -71,12 +177,12 @@ export default function DisputeCenterPage() {
     setError("");
 
     try {
-      await fetchFeatureAuth(`/api/v1/disputes/${disputeId}/messages`, {
+      await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.MESSAGES(disputeId), {
         method: "POST",
         body: JSON.stringify({ content: message.trim() }),
       });
       setMessage("");
-      await loadDispute();
+      await loadDispute(false);
     } catch (e) {
       logger.error("Failed to send message:", e);
       setError("Gagal mengirim pesan");
@@ -86,7 +192,9 @@ export default function DisputeCenterPage() {
 
   // Format date
   const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
     const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return "-";
     return date.toLocaleDateString("id-ID", {
       day: "numeric",
       month: "short",
@@ -102,26 +210,40 @@ export default function DisputeCenterPage() {
   };
 
   // Get status color
+  const normalizeStatus = (status) => String(status || "").replace(/\s+/g, "").toLowerCase();
+
   const getStatusColor = (status) => {
-    switch (status) {
-      case "Open": return "bg-yellow-500/10 text-yellow-600";
-      case "UnderReview": return "bg-blue-500/10 text-blue-600";
-      case "WaitingForEvidence": return "bg-orange-500/10 text-orange-600";
-      case "Resolved": return "bg-green-500/10 text-green-600";
-      case "Cancelled": return "bg-gray-500/10 text-gray-600";
-      default: return "bg-gray-500/10 text-gray-600";
+    switch (normalizeStatus(status)) {
+      case "open":
+        return "bg-yellow-500/10 text-yellow-600";
+      case "underreview":
+        return "bg-blue-500/10 text-blue-600";
+      case "waitingforevidence":
+        return "bg-orange-500/10 text-orange-600";
+      case "resolved":
+        return "bg-green-500/10 text-green-600";
+      case "cancelled":
+        return "bg-gray-500/10 text-gray-600";
+      default:
+        return "bg-gray-500/10 text-gray-600";
     }
   };
 
   // Get status label
   const getStatusLabel = (status) => {
-    switch (status) {
-      case "Open": return "Menunggu Review";
-      case "UnderReview": return "Sedang Ditinjau";
-      case "WaitingForEvidence": return "Butuh Bukti Tambahan";
-      case "Resolved": return "Selesai";
-      case "Cancelled": return "Dibatalkan";
-      default: return status;
+    switch (normalizeStatus(status)) {
+      case "open":
+        return "Menunggu Review";
+      case "underreview":
+        return "Sedang Ditinjau";
+      case "waitingforevidence":
+        return "Butuh Bukti Tambahan";
+      case "resolved":
+        return "Selesai";
+      case "cancelled":
+        return "Dibatalkan";
+      default:
+        return status;
     }
   };
 
@@ -150,8 +272,9 @@ export default function DisputeCenterPage() {
     );
   }
 
-  const isInitiator = dispute?.initiatorId === parseInt(currentUserId);
-  const isClosed = dispute?.status === "Resolved" || dispute?.status === "Cancelled";
+  const isInitiator = Number(dispute?.initiatorId) === Number(currentUserId);
+  const status = normalizeStatus(dispute?.status);
+  const isClosed = status === "resolved" || status === "cancelled";
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -259,7 +382,7 @@ export default function DisputeCenterPage() {
             )}
 
             {dispute?.messages?.map((msg) => {
-              const isMe = msg.senderId === parseInt(currentUserId);
+              const isMe = Number(msg.senderId) === Number(currentUserId);
               const isAdmin = msg.isAdmin;
 
               return (

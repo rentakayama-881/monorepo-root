@@ -23,6 +23,33 @@ function hasHeader(headers, key) {
   return Object.keys(headers).some((k) => String(k).toLowerCase() === target);
 }
 
+function isFormDataBody(body) {
+  return typeof FormData !== "undefined" && body instanceof FormData;
+}
+
+function buildRequestHeaders(baseHeaders = {}, extraHeaders = {}, body) {
+  const merged = {
+    ...baseHeaders,
+    ...extraHeaders,
+  };
+
+  if (isFormDataBody(body)) {
+    // Let browser set proper multipart/form-data boundary automatically.
+    for (const key of Object.keys(merged)) {
+      if (String(key).toLowerCase() === "content-type") {
+        delete merged[key];
+      }
+    }
+    return merged;
+  }
+
+  if (!hasHeader(merged, "Content-Type")) {
+    merged["Content-Type"] = "application/json";
+  }
+
+  return merged;
+}
+
 function shouldAttachIdempotencyKey(path, method) {
   const m = String(method || "GET").toUpperCase();
   if (m === "GET" || m === "HEAD" || m === "OPTIONS") return false;
@@ -191,12 +218,10 @@ export async function fetchFeature(path, options = {}) {
   }
 
   try {
+    const resolvedHeaders = buildRequestHeaders({}, rest.headers || {}, rest.body);
     const res = await fetch(`${getFeatureApiBase()}${path}`, {
       ...rest,
-      headers: {
-        "Content-Type": "application/json",
-        ...rest.headers,
-      },
+      headers: resolvedHeaders,
       signal: controller.signal,
     });
 
@@ -271,11 +296,11 @@ export async function fetchFeatureAuth(path, options = {}) {
     }
 
     const method = rest.method || "GET";
-    const resolvedHeaders = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...headers,
-    };
+    const resolvedHeaders = buildRequestHeaders(
+      { Authorization: `Bearer ${token}` },
+      headers,
+      rest.body
+    );
 
     if (shouldAttachIdempotencyKey(path, method) && !hasHeader(resolvedHeaders, "X-Idempotency-Key")) {
       resolvedHeaders["X-Idempotency-Key"] = generateIdempotencyKey();
@@ -353,6 +378,120 @@ export async function fetchFeatureAuth(path, options = {}) {
   }
 }
 
+export function unwrapFeatureData(payload) {
+  if (!payload || typeof payload !== "object") {
+    return payload;
+  }
+
+  if ("data" in payload) {
+    return payload.data;
+  }
+
+  if ("Data" in payload) {
+    return payload.Data;
+  }
+
+  if ("result" in payload) {
+    return payload.result;
+  }
+
+  if ("Result" in payload) {
+    return payload.Result;
+  }
+
+  return payload;
+}
+
+export function extractFeatureItems(payload) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  if (Array.isArray(payload.items)) {
+    return payload.items;
+  }
+
+  if (Array.isArray(payload.Items)) {
+    return payload.Items;
+  }
+
+  if (Array.isArray(payload.results)) {
+    return payload.results;
+  }
+
+  if (Array.isArray(payload.Results)) {
+    return payload.Results;
+  }
+
+  if (Array.isArray(payload.transfers)) {
+    return payload.transfers;
+  }
+
+  if (Array.isArray(payload.Transfers)) {
+    return payload.Transfers;
+  }
+
+  if (Array.isArray(payload.disputes)) {
+    return payload.disputes;
+  }
+
+  if (Array.isArray(payload.Disputes)) {
+    return payload.Disputes;
+  }
+
+  if (Array.isArray(payload.deposits)) {
+    return payload.deposits;
+  }
+
+  if (Array.isArray(payload.Deposits)) {
+    return payload.Deposits;
+  }
+
+  if (Array.isArray(payload.messages)) {
+    return payload.messages;
+  }
+
+  if (Array.isArray(payload.Messages)) {
+    return payload.Messages;
+  }
+
+  if (Array.isArray(payload.evidence)) {
+    return payload.evidence;
+  }
+
+  if (Array.isArray(payload.Evidence)) {
+    return payload.Evidence;
+  }
+
+  return [];
+}
+
+function extractTotalCount(payload, fallbackLength) {
+  if (payload && typeof payload === "object") {
+    if (typeof payload.totalCount === "number") {
+      return payload.totalCount;
+    }
+
+    if (typeof payload.TotalCount === "number") {
+      return payload.TotalCount;
+    }
+
+    if (typeof payload.total === "number") {
+      return payload.total;
+    }
+
+    if (typeof payload.Total === "number") {
+      return payload.Total;
+    }
+  }
+
+  return fallbackLength;
+}
+
 // ==================== Wallet Hooks ====================
 
 /**
@@ -367,8 +506,9 @@ export function useWallet() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
-      setWallet(data);
+      const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
+      const data = unwrapFeatureData(response);
+      setWallet(data && typeof data === "object" ? data : null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -398,9 +538,11 @@ export function useWalletTransactions({ page = 1, pageSize = 20, type } = {}) {
     try {
       let url = FEATURE_ENDPOINTS.WALLETS.TRANSACTIONS + "?page=" + page + "&pageSize=" + pageSize;
       if (type) url += "&type=" + type;
-      const data = await featureFetch(url);
-      setTransactions(data.items || []);
-      setTotalCount(data.totalCount || 0);
+      const response = await fetchFeatureAuth(url);
+      const data = unwrapFeatureData(response);
+      const items = extractFeatureItems(data);
+      setTransactions(items);
+      setTotalCount(extractTotalCount(data, items.length));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -430,9 +572,11 @@ export function useTransfers({ page = 1, pageSize = 20, status } = {}) {
     try {
       let url = FEATURE_ENDPOINTS.TRANSFERS.LIST + "?page=" + page + "&pageSize=" + pageSize;
       if (status) url += "&status=" + status;
-      const data = await featureFetch(url);
-      setTransfers(data.items || []);
-      setTotalCount(data.totalCount || 0);
+      const response = await fetchFeatureAuth(url);
+      const data = unwrapFeatureData(response);
+      const items = extractFeatureItems(data);
+      setTransfers(items);
+      setTotalCount(extractTotalCount(data, items.length));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -461,9 +605,11 @@ export function useWithdrawals({ page = 1, pageSize = 20, status } = {}) {
     try {
       let url = FEATURE_ENDPOINTS.WITHDRAWALS.LIST + "?page=" + page + "&pageSize=" + pageSize;
       if (status) url += "&status=" + status;
-      const data = await featureFetch(url);
-      setWithdrawals(data.items || []);
-      setTotalCount(data.totalCount || 0);
+      const response = await fetchFeatureAuth(url);
+      const data = unwrapFeatureData(response);
+      const items = extractFeatureItems(data);
+      setWithdrawals(items);
+      setTotalCount(extractTotalCount(data, items.length));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -493,9 +639,11 @@ export function useDisputes({ page = 1, pageSize = 20, status } = {}) {
     try {
       let url = FEATURE_ENDPOINTS.DISPUTES.LIST + "?page=" + page + "&pageSize=" + pageSize;
       if (status) url += "&status=" + status;
-      const data = await featureFetch(url);
-      setDisputes(data.items || []);
-      setTotalCount(data.totalCount || 0);
+      const response = await fetchFeatureAuth(url);
+      const data = unwrapFeatureData(response);
+      const items = extractFeatureItems(data);
+      setDisputes(items);
+      setTotalCount(extractTotalCount(data, items.length));
     } catch (err) {
       setError(err.message);
     } finally {

@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"strings"
 	"time"
 
 	"backend-gin/database"
@@ -21,11 +20,11 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Ambil token dari header Authorization
 		authHeader := c.GetHeader("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") {
+		tokenString, ok := parseBearerToken(authHeader)
+		if !ok {
 			abortWithAppError(c, apperrors.ErrInvalidToken.WithDetails("Token diperlukan"), nil)
 			return
 		}
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 		// Parsing dan validasi JWT
 		claims, err := ParseJWT(tokenString)
@@ -59,7 +58,19 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		// Check if account is locked via SessionLock
-		if lock, err := client.SessionLock.Query().Where(sessionlock.UserIDEQ(entUser.ID)).Order(ent.Desc(sessionlock.FieldCreatedAt)).First(c.Request.Context()); err == nil && lock != nil {
+		lock, lockErr := client.SessionLock.Query().
+			Where(sessionlock.UserIDEQ(entUser.ID)).
+			Order(ent.Desc(sessionlock.FieldCreatedAt)).
+			First(c.Request.Context())
+		if lockErr != nil && !ent.IsNotFound(lockErr) {
+			logger.Error("Failed to validate account lock state",
+				zap.Uint("user_id", uint(entUser.ID)),
+				zap.Error(lockErr),
+			)
+			abortWithAppError(c, apperrors.ErrInternalServer.WithDetails("Gagal memvalidasi status akun"), nil)
+			return
+		}
+		if lockErr == nil && lock != nil {
 			// Consider locked if unlocked_at is nil and expires_at in future
 			if lock.UnlockedAt == nil && lock.ExpiresAt.After(time.Now()) {
 				abortWithAppError(c, apperrors.ErrAccountLocked.WithDetails("Akun terkunci karena aktivitas mencurigakan. Hubungi admin untuk membuka."), map[string]interface{}{
@@ -80,36 +91,55 @@ func AuthMiddleware() gin.HandlerFunc {
 					session.UserIDEQ(entUser.ID),
 				).
 				First(c.Request.Context())
-			if err == nil && sess != nil {
-				// Validate not revoked and not expired
-				if sess.RevokedAt != nil || sess.ExpiresAt.Before(time.Now()) {
+			if err != nil {
+				if ent.IsNotFound(err) {
 					abortWithAppError(c, apperrors.ErrSessionInvalid, nil)
 					return
 				}
 
-				clientIP := c.ClientIP()
-				clientUA := c.GetHeader("User-Agent")
+				logger.Error("Failed to validate session by JTI",
+					zap.Uint("user_id", uint(entUser.ID)),
+					zap.String("jti", claims.JTI),
+					zap.Error(err),
+				)
+				abortWithAppError(c, apperrors.ErrInternalServer.WithDetails("Gagal memvalidasi sesi"), nil)
+				return
+			}
 
-				// Update session with drift-aware behavior
-				updates := client.Session.UpdateOneID(sess.ID).SetLastUsedAt(time.Now())
-				if sess.IPAddress != "" && sess.IPAddress != clientIP {
-					logger.Warn("IP address changed during session",
-						zap.Uint("user_id", uint(entUser.ID)),
-						zap.String("session_ip", sess.IPAddress),
-						zap.String("request_ip", clientIP),
-					)
-					updates = updates.SetIPAddress(clientIP)
+			// Validate not revoked and not expired
+			if sess.RevokedAt != nil || sess.ExpiresAt.Before(time.Now()) {
+				abortWithAppError(c, apperrors.ErrSessionInvalid, nil)
+				return
+			}
+
+			clientIP := c.ClientIP()
+			clientUA := c.GetHeader("User-Agent")
+
+			// Update session with drift-aware behavior
+			updates := client.Session.UpdateOneID(sess.ID).SetLastUsedAt(time.Now())
+			if sess.IPAddress != "" && sess.IPAddress != clientIP {
+				logger.Warn("IP address changed during session",
+					zap.Uint("user_id", uint(entUser.ID)),
+					zap.String("session_ip", sess.IPAddress),
+					zap.String("request_ip", clientIP),
+				)
+				updates = updates.SetIPAddress(clientIP)
+			}
+			if sess.UserAgent != "" && sess.UserAgent != clientUA {
+				logger.Warn("User-Agent changed during session",
+					zap.Uint("user_id", uint(entUser.ID)),
+				)
+				if len(clientUA) > 512 {
+					clientUA = clientUA[:512]
 				}
-				if sess.UserAgent != "" && sess.UserAgent != clientUA {
-					logger.Warn("User-Agent changed during session",
-						zap.Uint("user_id", uint(entUser.ID)),
-					)
-					if len(clientUA) > 512 {
-						clientUA = clientUA[:512]
-					}
-					updates = updates.SetUserAgent(clientUA)
-				}
-				_, _ = updates.Save(c.Request.Context())
+				updates = updates.SetUserAgent(clientUA)
+			}
+			if _, updateErr := updates.Save(c.Request.Context()); updateErr != nil {
+				logger.Warn("Failed to update session activity metadata",
+					zap.Uint("user_id", uint(entUser.ID)),
+					zap.String("jti", claims.JTI),
+					zap.Error(updateErr),
+				)
 			}
 		}
 

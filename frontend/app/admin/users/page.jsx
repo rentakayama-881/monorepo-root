@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -9,6 +9,90 @@ import Card from "@/components/ui/Card";
 import Select from "@/components/ui/Select";
 import logger from "@/lib/logger";
 import { getApiBase } from "@/lib/api";
+import { clearAdminSession, getAdminToken } from "@/lib/adminAuth";
+import { unwrapFeatureData } from "@/lib/featureApi";
+
+const PAGE_SIZE = 20;
+
+function readErrorMessage(payload, fallback) {
+  return (
+    payload?.error?.message ||
+    payload?.error?.Message ||
+    payload?.message ||
+    payload?.Message ||
+    payload?.error ||
+    fallback
+  );
+}
+
+async function readPayload(response) {
+  const text = await response.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeBadge(item) {
+  return {
+    id:
+      item?.id ??
+      item?.Id ??
+      item?.ID ??
+      item?.badge_id ??
+      item?.BadgeId ??
+      null,
+    name: item?.name ?? item?.Name ?? "",
+    slug: item?.slug ?? item?.Slug ?? "",
+    description: item?.description ?? item?.Description ?? "",
+    icon_type:
+      item?.icon_type ?? item?.iconType ?? item?.IconType ?? "verified",
+    icon_url: item?.icon_url ?? item?.iconUrl ?? item?.IconUrl ?? "",
+    color: item?.color ?? item?.Color ?? "#6366f1",
+  };
+}
+
+function normalizeUser(item) {
+  const badges = Array.isArray(item?.badges)
+    ? item.badges
+    : Array.isArray(item?.Badges)
+      ? item.Badges
+      : [];
+
+  const primaryBadge = item?.primary_badge ?? item?.PrimaryBadge ?? null;
+
+  return {
+    id: item?.id ?? item?.Id ?? item?.ID ?? null,
+    email: item?.email ?? item?.Email ?? "",
+    username: item?.username ?? item?.Username ?? "",
+    avatar_url: item?.avatar_url ?? item?.avatarUrl ?? item?.AvatarURL ?? "",
+    primary_badge: primaryBadge ? normalizeBadge(primaryBadge) : null,
+    badges: badges.map(normalizeBadge).filter((badge) => badge.id != null),
+  };
+}
+
+function extractUsersResult(payload) {
+  const root = unwrapFeatureData(payload);
+  const usersPayload = root?.users ?? root?.Users ?? root;
+  const items = Array.isArray(usersPayload) ? usersPayload.map(normalizeUser) : [];
+
+  const totalRaw =
+    root?.total ?? root?.Total ?? payload?.total ?? payload?.Total ?? null;
+  const parsedTotal = Number(totalRaw);
+  const total =
+    Number.isFinite(parsedTotal) && parsedTotal >= 0 ? parsedTotal : null;
+
+  return { items, total };
+}
+
+function extractBadgeItems(payload) {
+  const root = unwrapFeatureData(payload);
+  const badgesPayload = root?.badges ?? root?.Badges ?? root;
+  if (!Array.isArray(badgesPayload)) return [];
+  return badgesPayload.map(normalizeBadge).filter((badge) => badge.id != null);
+}
 
 export default function AdminUsersPage() {
   const router = useRouter();
@@ -26,59 +110,102 @@ export default function AdminUsersPage() {
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState("");
 
-  const fetchUsers = async (searchQuery = "", pageNum = 1) => {
-    const token = localStorage.getItem("admin_token");
-    try {
-      const params = new URLSearchParams({ limit: "20", page: String(pageNum) });
-      if (searchQuery) params.set("search", searchQuery);
+  const handleAuthExpired = useCallback(() => {
+    setAuthError("Sesi admin berakhir. Silakan login kembali.");
+    clearAdminSession();
+    setTimeout(() => router.push("/admin/login"), 1500);
+  }, [router]);
 
-      const res = await fetch(`${getApiBase()}/admin/users?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.status === 401 || res.status === 403) {
-        setAuthError("Sesi admin berakhir. Silakan login kembali.");
-        localStorage.removeItem("admin_token");
-        localStorage.removeItem("admin_info");
-        setTimeout(() => router.push("/admin/login"), 1500);
+  const fetchUsers = useCallback(
+    async (searchQuery = "", pageNum = 1) => {
+      const token = getAdminToken();
+      if (!token) {
+        handleAuthExpired();
+        setLoading(false);
         return;
       }
 
-      if (res.ok) {
-        const data = await res.json();
-        if (pageNum === 1) {
-          setUsers(data.users || []);
-        } else {
-          setUsers((prev) => [...prev, ...(data.users || [])]);
-        }
-        setHasMore((data.users || []).length === 20);
-      }
-    } catch (err) {
-      logger.error("Failed to fetch users:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        const params = new URLSearchParams({
+          limit: String(PAGE_SIZE),
+          page: String(pageNum),
+        });
+        if (searchQuery.trim()) params.set("search", searchQuery.trim());
 
-  const fetchBadges = async () => {
-    const token = localStorage.getItem("admin_token");
+        const res = await fetch(`${getApiBase()}/admin/users?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await readPayload(res);
+
+        if (res.status === 401 || res.status === 403) {
+          handleAuthExpired();
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error(readErrorMessage(data, "Gagal memuat data user"));
+        }
+
+        const { items, total } = extractUsersResult(data);
+
+        if (pageNum === 1) {
+          setUsers(items);
+        } else {
+          setUsers((prev) => [...prev, ...items]);
+        }
+
+        if (typeof total === "number") {
+          setHasMore(pageNum * PAGE_SIZE < total);
+        } else {
+          setHasMore(items.length === PAGE_SIZE);
+        }
+      } catch (err) {
+        logger.error("Failed to fetch users:", err);
+        if (pageNum === 1) {
+          setUsers([]);
+          setHasMore(false);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleAuthExpired]
+  );
+
+  const fetchBadges = useCallback(async () => {
+    const token = getAdminToken();
+    if (!token) {
+      handleAuthExpired();
+      return;
+    }
+
     try {
       const res = await fetch(`${getApiBase()}/admin/badges`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setBadges(data.badges || []);
+
+      const data = await readPayload(res);
+
+      if (res.status === 401 || res.status === 403) {
+        handleAuthExpired();
+        return;
       }
+
+      if (!res.ok) {
+        throw new Error(readErrorMessage(data, "Gagal memuat badge"));
+      }
+
+      setBadges(extractBadgeItems(data));
     } catch (err) {
       logger.error("Failed to fetch badges:", err);
     }
-  };
+  }, [handleAuthExpired]);
 
   useEffect(() => {
     fetchUsers();
     fetchBadges();
-  }, []);
+  }, [fetchBadges, fetchUsers]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -98,13 +225,20 @@ export default function AdminUsersPage() {
     setAssignData({ badge_id: "", reason: "" });
     setAssignError("");
     setShowAssignModal(true);
-    // Refetch badges to ensure we have the latest list
     fetchBadges();
   };
 
   const handleAssign = async (e) => {
     e.preventDefault();
-    if (!assignData.badge_id) {
+
+    const userId = Number(selectedUser?.id);
+    if (!Number.isFinite(userId) || userId <= 0) {
+      setAssignError("User tidak valid");
+      return;
+    }
+
+    const badgeId = Number(assignData.badge_id);
+    if (!Number.isFinite(badgeId) || badgeId <= 0) {
       setAssignError("Pilih badge");
       return;
     }
@@ -112,34 +246,43 @@ export default function AdminUsersPage() {
     setAssigning(true);
     setAssignError("");
 
-    const token = localStorage.getItem("admin_token");
-    try {
-      const res = await fetch(
-        `${getApiBase()}/admin/users/${selectedUser.id}/badges`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            badge_id: Number(assignData.badge_id),
-            reason: assignData.reason,
-          }),
-        }
-      );
+    const token = getAdminToken();
+    if (!token) {
+      handleAuthExpired();
+      setAssigning(false);
+      return;
+    }
 
-      const data = await res.json();
+    try {
+      const res = await fetch(`${getApiBase()}/admin/users/${userId}/badges`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          badge_id: badgeId,
+          reason: assignData.reason?.trim() || "",
+        }),
+      });
+
+      const data = await readPayload(res);
+
+      if (res.status === 401 || res.status === 403) {
+        handleAuthExpired();
+        return;
+      }
+
       if (!res.ok) {
-        throw new Error(data.error?.message || "Gagal memberikan badge");
+        throw new Error(readErrorMessage(data, "Gagal memberikan badge"));
       }
 
       setShowAssignModal(false);
-      // Refresh users to see updated badges
-      fetchUsers(search, 1);
       setPage(1);
+      setLoading(true);
+      fetchUsers(search, 1);
     } catch (err) {
-      setAssignError(err.message);
+      setAssignError(err.message || "Gagal memberikan badge");
     } finally {
       setAssigning(false);
     }
@@ -149,36 +292,51 @@ export default function AdminUsersPage() {
     const reason = prompt(`Alasan pencabutan badge "${badge.name}"?`);
     if (reason === null) return;
 
-    const token = localStorage.getItem("admin_token");
-    try {
-      const res = await fetch(
-        `${getApiBase()}/admin/users/${user.id}/badges/${badge.ID || badge.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ reason }),
-        }
-      );
+    const userId = Number(user?.id);
+    const badgeId = Number(badge?.id);
+    if (!Number.isFinite(userId) || userId <= 0 || !Number.isFinite(badgeId) || badgeId <= 0) {
+      alert("Data user atau badge tidak valid");
+      return;
+    }
 
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.error?.message || "Gagal mencabut badge");
+    const token = getAdminToken();
+    if (!token) {
+      handleAuthExpired();
+      return;
+    }
+
+    try {
+      const res = await fetch(`${getApiBase()}/admin/users/${userId}/badges/${badgeId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+
+      const data = await readPayload(res);
+
+      if (res.status === 401 || res.status === 403) {
+        handleAuthExpired();
         return;
       }
 
-      fetchUsers(search, 1);
+      if (!res.ok) {
+        alert(readErrorMessage(data, "Gagal mencabut badge"));
+        return;
+      }
+
       setPage(1);
-    } catch (err) {
+      setLoading(true);
+      fetchUsers(search, 1);
+    } catch {
       alert("Gagal mencabut badge");
     }
   };
 
-  // Backend already returns only active (non-revoked) badges
   const getUserBadges = (user) => {
-    return user.badges || [];
+    return Array.isArray(user?.badges) ? user.badges : [];
   };
 
   if (loading && users.length === 0) {
@@ -204,12 +362,9 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Users</h1>
-        <p className="mt-1 text-muted-foreground">
-          Cari user dan kelola badge mereka
-        </p>
+        <p className="mt-1 text-muted-foreground">Cari user dan kelola badge mereka</p>
       </div>
 
-      {/* Search */}
       <form onSubmit={handleSearch} className="flex gap-2">
         <Input
           placeholder="Cari username atau email..."
@@ -222,12 +377,9 @@ export default function AdminUsersPage() {
         </Button>
       </form>
 
-      {/* Users List */}
       {users.length === 0 ? (
         <Card className="p-12 text-center">
-          <p className="text-muted-foreground">
-            {search ? "User tidak ditemukan" : "Belum ada user"}
-          </p>
+          <p className="text-muted-foreground">{search ? "User tidak ditemukan" : "Belum ada user"}</p>
         </Card>
       ) : (
         <div className="space-y-4">
@@ -237,18 +389,16 @@ export default function AdminUsersPage() {
               <Card key={user.id} className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    {/* Avatar */}
                     <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {user.avatar_url ? (
                         <img
                           src={user.avatar_url}
-                          alt={user.username}
+                          alt={user.username || user.email || "User"}
                           className="w-full h-full object-cover"
                         />
                       ) : (
                         <span className="text-xl text-muted-foreground">
-                          {(user.username || user.email)?.[0]?.toUpperCase() ||
-                            "?"}
+                          {(user.username || user.email)?.[0]?.toUpperCase() || "?"}
                         </span>
                       )}
                     </div>
@@ -258,7 +408,6 @@ export default function AdminUsersPage() {
                         <span className="font-semibold text-foreground truncate">
                           {user.username || "No username"}
                         </span>
-                        {/* Primary badge indicator */}
                         {user.primary_badge && (
                           <span
                             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
@@ -279,16 +428,13 @@ export default function AdminUsersPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {user.email}
-                      </p>
+                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
 
-                      {/* All badges */}
                       {userBadges.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {userBadges.map((badge) => (
                             <span
-                              key={badge.ID || badge.id}
+                              key={badge.id}
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-muted/50 text-muted-foreground"
                             >
                               {badge.icon_url && (
@@ -314,11 +460,7 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
 
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => openAssignModal(user)}
-                  >
+                  <Button variant="secondary" size="sm" onClick={() => openAssignModal(user)}>
                     + Badge
                   </Button>
                 </div>
@@ -328,7 +470,7 @@ export default function AdminUsersPage() {
 
           {hasMore && (
             <div className="text-center">
-              <Button variant="secondary" onClick={loadMore}>
+              <Button variant="secondary" onClick={loadMore} disabled={loading}>
                 Muat Lebih Banyak
               </Button>
             </div>
@@ -336,11 +478,10 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {/* Assign Badge Modal */}
       <Modal
         open={showAssignModal}
         onClose={() => setShowAssignModal(false)}
-        title={`Berikan Badge ke ${selectedUser?.username || "User"}`}
+        title={`Berikan Badge ke ${selectedUser?.username || selectedUser?.email || "User"}`}
       >
         <form onSubmit={handleAssign} className="space-y-4">
           {assignError && (

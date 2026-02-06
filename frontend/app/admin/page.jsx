@@ -5,33 +5,57 @@ import Link from "next/link";
 import Card from "@/components/ui/Card";
 import logger from "@/lib/logger";
 import { getApiBase } from "@/lib/api";
+import { getAdminToken } from "@/lib/adminAuth";
 
 const FEATURE_SERVICE_URL =
   process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
 
+function unwrapApiData(payload) {
+  if (!payload || typeof payload !== "object") return payload;
+  return (
+    payload.data ??
+    payload.Data ??
+    payload.result ??
+    payload.Result ??
+    payload
+  );
+}
+
 function normalizePendingDepositItem(item) {
+  const amountRaw = item?.amount ?? item?.Amount ?? 0;
   return {
-    id: item?.id ?? item?.Id ?? "",
-    userId: item?.userId ?? item?.UserId ?? 0,
-    username: item?.username ?? item?.Username ?? "",
-    amount: Number(item?.amount ?? item?.Amount ?? 0),
+    id: item?.id ?? item?.Id ?? item?._id ?? "",
+    userId: item?.userId ?? item?.UserId ?? item?.user_id ?? 0,
+    username: item?.username ?? item?.Username ?? item?.user_name ?? "",
+    amount: Number(amountRaw) || 0,
     method: item?.method ?? item?.Method ?? "QRIS",
     externalTransactionId:
-      item?.externalTransactionId ?? item?.ExternalTransactionId ?? "",
-    createdAt: item?.createdAt ?? item?.CreatedAt ?? new Date().toISOString(),
+      item?.externalTransactionId ??
+      item?.ExternalTransactionId ??
+      item?.external_transaction_id ??
+      "",
+    createdAt:
+      item?.createdAt ??
+      item?.CreatedAt ??
+      item?.created_at ??
+      new Date().toISOString(),
   };
 }
 
 function normalizePendingDeposits(payload) {
-  const root = payload?.data ?? payload;
+  const root = unwrapApiData(payload);
   let items = [];
 
   if (Array.isArray(root)) {
     items = root;
   } else if (Array.isArray(root?.items)) {
     items = root.items;
+  } else if (Array.isArray(root?.Items)) {
+    items = root.Items;
   } else if (Array.isArray(root?.deposits)) {
     items = root.deposits;
+  } else if (Array.isArray(root?.Deposits)) {
+    items = root.Deposits;
   }
 
   return items
@@ -40,7 +64,13 @@ function normalizePendingDeposits(payload) {
 }
 
 function extractApiErrorMessage(payload, fallback) {
-  return payload?.error?.message || payload?.message || fallback;
+  return (
+    payload?.error?.message ||
+    payload?.error?.Message ||
+    payload?.message ||
+    payload?.Message ||
+    fallback
+  );
 }
 
 export default function AdminDashboardPage() {
@@ -57,13 +87,23 @@ export default function AdminDashboardPage() {
   const [depositError, setDepositError] = useState("");
 
   const fetchPendingDeposits = async (token) => {
+    if (!token) {
+      setPendingDeposits([]);
+      setDepositError("Sesi admin tidak ditemukan. Silakan login ulang.");
+      return;
+    }
+
     setDepositLoading(true);
     setDepositError("");
     try {
       const depositsRes = await fetch(
         `${FEATURE_SERVICE_URL}/api/v1/admin/deposits/pending?limit=20`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
         }
       );
 
@@ -87,7 +127,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const token = localStorage.getItem("admin_token");
+      const token = getAdminToken();
 
       try {
         if (FEATURE_SERVICE_URL) {
@@ -120,17 +160,33 @@ export default function AdminDashboardPage() {
           const modStatsRes = await fetch(
             `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/dashboard`,
             {
-              headers: { Authorization: `Bearer ${token}` },
+              cache: "no-store",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: "application/json",
+              },
             }
           );
           if (modStatsRes.ok) {
-            const modData = await modStatsRes.json();
+            const modPayload = await modStatsRes.json().catch(() => null);
+            const modData = unwrapApiData(modPayload) || {};
             setStats((prev) => ({
               ...prev,
-              pendingReports: modData.pendingReports || 0,
-              activeDeviceBans: modData.activeDeviceBans || 0,
-              warningsToday: modData.warningsIssuedToday || 0,
-              hiddenContent: modData.hiddenContentCount || 0,
+              pendingReports:
+                Number(modData.pendingReports ?? modData.PendingReports ?? 0) ||
+                0,
+              activeDeviceBans:
+                Number(
+                  modData.activeDeviceBans ?? modData.ActiveDeviceBans ?? 0
+                ) || 0,
+              warningsToday:
+                Number(
+                  modData.warningsIssuedToday ?? modData.WarningsIssuedToday ?? 0
+                ) || 0,
+              hiddenContent:
+                Number(
+                  modData.hiddenContentCount ?? modData.HiddenContentCount ?? 0
+                ) || 0,
             }));
           }
         }
@@ -143,7 +199,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   const handleApproveDeposit = async (depositId) => {
-    const token = localStorage.getItem("admin_token");
+    const token = getAdminToken();
     try {
       const res = await fetch(
         `${FEATURE_SERVICE_URL}/api/v1/admin/deposits/${depositId}/approve`,
@@ -157,7 +213,9 @@ export default function AdminDashboardPage() {
       );
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.message || "Gagal approve deposit");
+        throw new Error(
+          extractApiErrorMessage(data, "Gagal approve deposit")
+        );
       }
       setPendingDeposits((prev) => prev.filter((d) => d.id !== depositId));
     } catch (err) {
@@ -173,7 +231,7 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    const token = localStorage.getItem("admin_token");
+    const token = getAdminToken();
     try {
       const res = await fetch(
         `${FEATURE_SERVICE_URL}/api/v1/admin/deposits/${depositId}/reject`,
@@ -188,7 +246,9 @@ export default function AdminDashboardPage() {
       );
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.message || "Gagal reject deposit");
+        throw new Error(
+          extractApiErrorMessage(data, "Gagal reject deposit")
+        );
       }
       setPendingDeposits((prev) => prev.filter((d) => d.id !== depositId));
     } catch (err) {
@@ -324,7 +384,7 @@ export default function AdminDashboardPage() {
           <button
             type="button"
             onClick={() => {
-              const token = localStorage.getItem("admin_token");
+              const token = getAdminToken();
               void fetchPendingDeposits(token);
             }}
             disabled={depositLoading}

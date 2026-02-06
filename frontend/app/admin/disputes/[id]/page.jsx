@@ -3,8 +3,87 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import logger from "@/lib/logger";
+import { getAdminToken } from "@/lib/adminAuth";
+import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
 
 const API_BASE = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
+
+function normalizeResolution(payload) {
+  if (!payload) return null;
+  return {
+    type: payload?.type ?? payload?.Type ?? "",
+    refundToSender: Number(payload?.refundToSender ?? payload?.RefundToSender ?? 0) || 0,
+    releaseToReceiver:
+      Number(payload?.releaseToReceiver ?? payload?.ReleaseToReceiver ?? 0) || 0,
+    note: payload?.note ?? payload?.Note ?? "",
+  };
+}
+
+function normalizeDisputeMessage(message) {
+  return {
+    id: message?.id ?? message?.Id ?? "",
+    senderUsername: message?.senderUsername ?? message?.SenderUsername ?? "User",
+    isAdmin: Boolean(message?.isAdmin ?? message?.IsAdmin ?? false),
+    content: message?.content ?? message?.Content ?? message?.message ?? "",
+    sentAt:
+      message?.sentAt ??
+      message?.SentAt ??
+      message?.createdAt ??
+      message?.CreatedAt ??
+      message?.sent_at ??
+      null,
+  };
+}
+
+function normalizeDisputeEvidence(evidence) {
+  const typeRaw = evidence?.type ?? evidence?.Type ?? "other";
+  return {
+    id: evidence?.id ?? evidence?.Id ?? "",
+    url: evidence?.url ?? evidence?.Url ?? evidence?.fileUrl ?? evidence?.FileUrl ?? "",
+    type: String(typeRaw).toLowerCase(),
+    description: evidence?.description ?? evidence?.Description ?? "",
+    uploadedAt:
+      evidence?.uploadedAt ??
+      evidence?.UploadedAt ??
+      evidence?.createdAt ??
+      evidence?.CreatedAt ??
+      null,
+  };
+}
+
+function normalizeDispute(payload) {
+  const data = unwrapFeatureData(payload) || {};
+  const senderUsername =
+    data?.senderUsername ??
+    data?.SenderUsername ??
+    data?.initiatorUsername ??
+    data?.InitiatorUsername ??
+    "Unknown";
+  const receiverUsername =
+    data?.receiverUsername ??
+    data?.ReceiverUsername ??
+    data?.respondentUsername ??
+    data?.RespondentUsername ??
+    "Unknown";
+
+  return {
+    id: data?.id ?? data?.Id ?? "",
+    status: data?.status ?? data?.Status ?? "Open",
+    category: data?.category ?? data?.Category ?? "Other",
+    reason: data?.reason ?? data?.Reason ?? "",
+    amount: Number(data?.amount ?? data?.Amount ?? 0) || 0,
+    createdAt: data?.createdAt ?? data?.CreatedAt ?? null,
+    senderUsername,
+    receiverUsername,
+    initiatorUsername:
+      data?.initiatorUsername ?? data?.InitiatorUsername ?? senderUsername,
+    respondentUsername:
+      data?.respondentUsername ?? data?.RespondentUsername ?? receiverUsername,
+    resolution: normalizeResolution(data?.resolution ?? data?.Resolution ?? null),
+    messages: extractFeatureItems(data?.messages ?? data?.Messages).map(normalizeDisputeMessage),
+    evidence: extractFeatureItems(data?.evidence ?? data?.Evidence).map(normalizeDisputeEvidence),
+  };
+}
 
 export default function AdminDisputeDetailPage() {
   const router = useRouter();
@@ -23,15 +102,12 @@ export default function AdminDisputeDetailPage() {
   const [pendingAction, setPendingAction] = useState(null);
   const [actionNote, setActionNote] = useState("");
 
-  const getAdminToken = () => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("admin_token");
-    }
-    return null;
-  };
-
   const fetchWithAuth = async (endpoint, options = {}) => {
     const token = getAdminToken();
+    if (!token) {
+      throw new Error("Sesi admin berakhir. Silakan login ulang.");
+    }
+
     const res = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers: {
@@ -42,9 +118,15 @@ export default function AdminDisputeDetailPage() {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.error?.message || "Request failed");
+      throw new Error(data.error?.message || data.message || "Request failed");
     }
-    return res.json();
+    if (res.status === 204) return null;
+
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      return null;
+    }
+    return res.json().catch(() => null);
   };
 
   // Scroll to bottom
@@ -56,7 +138,8 @@ export default function AdminDisputeDetailPage() {
   const loadDispute = async () => {
     try {
       const data = await fetchWithAuth(`/api/v1/admin/disputes/${disputeId}`);
-      setDispute(data.data || data);
+      setDispute(normalizeDispute(data));
+      setError("");
     } catch (e) {
       logger.error("Failed to load dispute:", e);
       setError("Dispute tidak ditemukan");
@@ -65,10 +148,14 @@ export default function AdminDisputeDetailPage() {
   };
 
   useEffect(() => {
+    if (!getAdminToken()) {
+      router.push("/admin/login");
+      return;
+    }
     loadDispute();
     const interval = setInterval(loadDispute, 5000);
     return () => clearInterval(interval);
-  }, [disputeId]);
+  }, [disputeId, router]);
 
   useEffect(() => {
     scrollToBottom();
@@ -146,7 +233,9 @@ export default function AdminDisputeDetailPage() {
 
   // Format helpers
   const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
     const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return "-";
     return date.toLocaleDateString("id-ID", {
       day: "numeric",
       month: "short",
@@ -160,36 +249,56 @@ export default function AdminDisputeDetailPage() {
     return new Intl.NumberFormat("id-ID").format(amount);
   };
 
+  const normalizeStatus = (status) => String(status || "").replace(/\s+/g, "").toLowerCase();
+
   const getStatusColor = (status) => {
-    switch (status) {
-      case "Open": return "bg-yellow-500 text-white";
-      case "UnderReview": return "bg-blue-500 text-white";
-      case "WaitingForEvidence": return "bg-orange-500 text-white";
-      case "Resolved": return "bg-green-500 text-white";
-      case "Cancelled": return "bg-gray-500 text-white";
-      default: return "bg-gray-500 text-white";
+    switch (normalizeStatus(status)) {
+      case "open":
+        return "bg-yellow-500 text-white";
+      case "underreview":
+        return "bg-blue-500 text-white";
+      case "waitingforevidence":
+        return "bg-orange-500 text-white";
+      case "resolved":
+        return "bg-green-500 text-white";
+      case "cancelled":
+        return "bg-gray-500 text-white";
+      default:
+        return "bg-gray-500 text-white";
     }
   };
 
   const getStatusLabel = (status) => {
-    switch (status) {
-      case "Open": return "Menunggu Review";
-      case "UnderReview": return "Sedang Ditinjau";
-      case "WaitingForEvidence": return "Butuh Bukti";
-      case "Resolved": return "Selesai";
-      case "Cancelled": return "Dibatalkan";
-      default: return status;
+    switch (normalizeStatus(status)) {
+      case "open":
+        return "Menunggu Review";
+      case "underreview":
+        return "Sedang Ditinjau";
+      case "waitingforevidence":
+        return "Butuh Bukti";
+      case "resolved":
+        return "Selesai";
+      case "cancelled":
+        return "Dibatalkan";
+      default:
+        return status;
     }
   };
 
   const getCategoryLabel = (category) => {
-    switch (category) {
-      case "ItemNotReceived": return "Barang Tidak Diterima";
-      case "ItemNotAsDescribed": return "Tidak Sesuai Deskripsi";
-      case "Fraud": return "Dugaan Penipuan";
-      case "SellerNotResponding": return "Penjual Tidak Merespons";
-      case "Other": return "Lainnya";
-      default: return category;
+    switch (String(category || "").replace(/\s+/g, "").toLowerCase()) {
+      case "itemnotreceived":
+        return "Barang Tidak Diterima";
+      case "itemnotasdescribed":
+        return "Tidak Sesuai Deskripsi";
+      case "fraud":
+        return "Dugaan Penipuan";
+      case "sellernotresponding":
+        return "Penjual Tidak Merespons";
+      case "other":
+        return "Lainnya";
+      default:
+        return category;
     }
   };
 
@@ -215,7 +324,7 @@ export default function AdminDisputeDetailPage() {
     );
   }
 
-  const isClosed = dispute.status === "Resolved" || dispute.status === "Cancelled";
+  const isClosed = ["resolved", "cancelled"].includes(normalizeStatus(dispute.status));
 
   return (
     <div className="p-6">
@@ -298,9 +407,9 @@ export default function AdminDisputeDetailPage() {
                   <button
                     key={status}
                     onClick={() => handleStatusUpdate(status)}
-                    disabled={dispute.status === status}
+                    disabled={normalizeStatus(dispute.status) === normalizeStatus(status)}
                     className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition ${
-                      dispute.status === status
+                      normalizeStatus(dispute.status) === normalizeStatus(status)
                         ? "bg-muted text-muted-foreground cursor-not-allowed"
                         : "bg-card border border-border hover:border-primary"
                     }`}
@@ -400,9 +509,7 @@ export default function AdminDisputeDetailPage() {
                 const isAdmin = msg.isAdmin;
                 // Use senderUsername (transfer sender = pembeli) for role determination
                 const buyerUsername = dispute.senderUsername || dispute.initiatorUsername;
-                const sellerUsername = dispute.receiverUsername || dispute.respondentUsername;
                 const isBuyer = msg.senderUsername === buyerUsername;
-                const isSeller = msg.senderUsername === sellerUsername;
 
                 return (
                   <div key={msg.id} className={`flex ${isAdmin ? "justify-center" : isBuyer ? "justify-start" : "justify-end"}`}>

@@ -15,7 +15,6 @@ import (
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
 	"backend-gin/logger"
-	"backend-gin/middleware"
 	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
@@ -23,10 +22,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
-
-// adminLoginLimiter limits admin login attempts to prevent brute-force attacks
-// 5 attempts per 15 minutes per IP
-var adminLoginLimiter = middleware.NewRateLimiter(5, 15*time.Minute)
 
 // ==================== Admin Auth ====================
 
@@ -36,14 +31,6 @@ type AdminLoginRequest struct {
 }
 
 func AdminLogin(c *gin.Context) {
-	// Rate limit admin login attempts
-	if !adminLoginLimiter.Allow(c.ClientIP()) {
-		c.JSON(http.StatusTooManyRequests, gin.H{
-			"error": gin.H{"code": "RATE001", "message": "Terlalu banyak percobaan. Coba lagi nanti."},
-		})
-		return
-	}
-
 	var req AdminLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -596,7 +583,13 @@ func RevokeBadgeFromUser(c *gin.Context) {
 func AdminListUsers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	search := c.Query("search")
+	search := strings.TrimSpace(c.Query("search"))
+	if len(search) > 128 {
+		logger.Warn("Admin user search query too long, trimming",
+			zap.Int("original_length", len(search)),
+		)
+		search = search[:128]
+	}
 
 	if page < 1 {
 		page = 1
@@ -606,68 +599,38 @@ func AdminListUsers(c *gin.Context) {
 	}
 	offset := (page - 1) * limit
 
-	// Build query with optional search filter
-	var total int64
-	var users []*ent.User
+	buildUsersQuery := func() *ent.UserQuery {
+		query := database.GetEntClient().User.Query()
+		if search != "" {
+			query = query.Where(user.Or(
+				user.EmailContainsFold(search),
+				user.UsernameContainsFold(search),
+				user.FullNameContainsFold(search),
+			))
+		}
+		return query
+	}
 
-	if search != "" {
-		// We'll query and filter manually since Ent doesn't have built-in COALESCE support
-		allUsers, _ := database.GetEntClient().User.Query().All(c.Request.Context())
-		var filtered []*ent.User
-		searchLower := strings.ToLower(search)
-		for _, u := range allUsers {
-			username := ""
-			if u.Username != nil {
-				username = strings.ToLower(*u.Username)
-			}
-			fullName := ""
-			if u.FullName != nil {
-				fullName = strings.ToLower(*u.FullName)
-			}
-			if strings.Contains(strings.ToLower(u.Email), searchLower) ||
-				strings.Contains(username, searchLower) ||
-				strings.Contains(fullName, searchLower) {
-				filtered = append(filtered, u)
-			}
-		}
-		// For pagination, we'll use the filtered set
-		total = int64(len(filtered))
-		start := offset
-		end := offset + limit
-		if start >= len(filtered) {
-			start = len(filtered)
-		}
-		if end > len(filtered) {
-			end = len(filtered)
-		}
-		if start < end {
-			users = filtered[start:end]
-		}
-	} else {
-		// No search, get all with pagination
-		count, countErr := database.GetEntClient().User.Query().Count(c.Request.Context())
-		total = int64(count)
-		if countErr != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": gin.H{"code": "SRV001", "message": "Gagal mengambil data user"},
-			})
-			return
-		}
+	count, countErr := buildUsersQuery().Count(c.Request.Context())
+	if countErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": gin.H{"code": "SRV001", "message": "Gagal mengambil data user"},
+		})
+		return
+	}
+	total := int64(count)
 
-		// Query users with offset and limit, ordered by created_at DESC
-		usersErr := error(nil)
-		users, usersErr = database.GetEntClient().User.Query().
-			Offset(offset).
-			Limit(limit).
-			Order(ent.Desc(user.FieldCreatedAt)).
-			WithPrimaryBadge().
-			All(c.Request.Context())
-		if usersErr != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": gin.H{"code": "SRV001", "message": "Gagal mengambil data user"},
-			})
-			return
-		}
+	users, usersErr := buildUsersQuery().
+		Offset(offset).
+		Limit(limit).
+		Order(ent.Desc(user.FieldCreatedAt)).
+		WithPrimaryBadge().
+		All(c.Request.Context())
+	if usersErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": gin.H{"code": "SRV001", "message": "Gagal mengambil data user"},
+		})
+		return
 	}
 
 	// Prepare response with user badges
@@ -679,6 +642,43 @@ func AdminListUsers(c *gin.Context) {
 		CreatedAt    time.Time        `json:"created_at"`
 		PrimaryBadge *services.Badge  `json:"primary_badge"`
 		Badges       []services.Badge `json:"badges"`
+	}
+
+	userBadgeMap := make(map[int][]services.Badge, len(users))
+	if len(users) > 0 {
+		userIDs := make([]int, 0, len(users))
+		for _, u := range users {
+			userIDs = append(userIDs, u.ID)
+		}
+
+		userBadges, err := database.GetEntClient().UserBadge.Query().
+			Where(
+				userbadge.UserIDIn(userIDs...),
+				userbadge.RevokedAtIsNil(),
+			).
+			WithBadge().
+			All(c.Request.Context())
+		if err == nil {
+			for _, ub := range userBadges {
+				if ub.Edges.Badge == nil {
+					continue
+				}
+				mb := services.Badge{
+					Name:        ub.Edges.Badge.Name,
+					Slug:        ub.Edges.Badge.Slug,
+					Description: ub.Edges.Badge.Description,
+					IconType:    ub.Edges.Badge.IconType,
+					Color:       ub.Edges.Badge.Color,
+				}
+				mb.ID = uint(ub.Edges.Badge.ID)
+				userBadgeMap[ub.UserID] = append(userBadgeMap[ub.UserID], mb)
+			}
+		} else {
+			logger.Warn("Failed to fetch user badges in bulk for admin list",
+				zap.Error(err),
+				zap.Int("user_count", len(userIDs)),
+			)
+		}
 	}
 
 	var result []UserWithBadges
@@ -704,28 +704,8 @@ func AdminListUsers(c *gin.Context) {
 			uwb.PrimaryBadge = &pb
 		}
 
-		// Get user's active badges
-		userBadges, err := database.GetEntClient().UserBadge.Query().
-			Where(
-				userbadge.UserIDEQ(u.ID),
-				userbadge.RevokedAtIsNil(),
-			).
-			WithBadge().
-			All(c.Request.Context())
-		if err == nil {
-			for _, ub := range userBadges {
-				if ub.Edges.Badge != nil {
-					mb := services.Badge{
-						Name:        ub.Edges.Badge.Name,
-						Slug:        ub.Edges.Badge.Slug,
-						Description: ub.Edges.Badge.Description,
-						IconType:    ub.Edges.Badge.IconType,
-						Color:       ub.Edges.Badge.Color,
-					}
-					mb.ID = uint(ub.Edges.Badge.ID)
-					uwb.Badges = append(uwb.Badges, mb)
-				}
-			}
+		if badges, ok := userBadgeMap[u.ID]; ok {
+			uwb.Badges = badges
 		}
 
 		result = append(result, uwb)
