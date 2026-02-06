@@ -13,7 +13,7 @@ export function Logo({
   priority = false,
   onClick,
   className = '',
-  text = 'aivalid,id',
+  text = 'aivalid.id',
 }) {
   const { resolvedTheme } = useTheme();
   const showText = variant === 'horizontal' || variant === 'full';
