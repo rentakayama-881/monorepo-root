@@ -10,17 +10,21 @@ import EmptyState from "@/components/ui/EmptyState";
 import { TagPill } from "@/components/ui/TagPill";
 import CategoryThreadsSkeleton from "./CategoryThreadsSkeleton";
 
+const PAGE_SIZE = 10;
+
 export default function CategoryThreadsPage() {
   const params = useParams();
   const [threads, setThreads] = useState([]);
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTagSlugs, setSelectedTagSlugs] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const API = getApiBase();
 
   useEffect(() => {
     setSelectedTagSlugs([]);
+    setCurrentPage(1);
   }, [params.slug]);
 
   useEffect(() => {
@@ -73,9 +77,29 @@ export default function CategoryThreadsPage() {
     });
   }, [threads, selectedTagSlugs]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedTagSlugs]);
+
+  const totalPages = useMemo(() => {
+    if (filteredThreads.length === 0) return 1;
+    return Math.ceil(filteredThreads.length / PAGE_SIZE);
+  }, [filteredThreads.length]);
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+
+  const paginatedThreads = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    return filteredThreads.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filteredThreads, currentPage]);
+
   const hasActiveFilter = selectedTagSlugs.length > 0;
   const totalThreads = threads.length;
   const visibleThreads = filteredThreads.length;
+  const paginationStart = visibleThreads === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const paginationEnd = Math.min(currentPage * PAGE_SIZE, visibleThreads);
 
   function toggleFilterTag(slug) {
     setSelectedTagSlugs((prev) => {
@@ -220,7 +244,7 @@ export default function CategoryThreadsPage() {
         />
       ) : (
         <div className="space-y-4">
-          {filteredThreads.map((thread) => (
+          {paginatedThreads.map((thread) => (
             <ThreadCard
               key={thread.id}
               thread={thread}
@@ -228,6 +252,32 @@ export default function CategoryThreadsPage() {
               showCategory={false}
             />
           ))}
+          {visibleThreads > PAGE_SIZE && (
+            <nav className="mt-4 flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-muted-foreground">
+                Menampilkan {paginationStart}-{paginationEnd} dari {visibleThreads} thread (halaman{" "}
+                {currentPage} / {totalPages})
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </nav>
+          )}
         </div>
       )}
     </main>
