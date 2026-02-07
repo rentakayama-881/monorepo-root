@@ -234,16 +234,16 @@ function AccountPageContent() {
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Alert banner when redirected for 2FA setup */}
       {setup2fa === "true" && (
-        <div className="mb-6 rounded-lg border border-amber-500 bg-amber-50 dark:bg-amber-950 p-4">
+        <div className="mb-6 rounded-lg border border-warning/30 bg-warning/10 p-4">
           <div className="flex items-start gap-3">
-            <svg className="w-6 h-6 text-amber-600 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-warning shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
             </svg>
             <div>
-              <p className="font-semibold text-amber-800 dark:text-amber-200">
+              <p className="font-semibold text-warning">
                 2FA Diperlukan untuk Fitur Wallet
               </p>
-              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Untuk menggunakan fitur kirim uang, tarik saldo, dan set PIN, Anda harus mengaktifkan 2FA terlebih dahulu.
                 Scroll ke bawah ke bagian &quot;Keamanan&quot; dan klik tombol &quot;Aktifkan 2FA&quot;.
               </p>
@@ -376,7 +376,7 @@ function AccountPageContent() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-foreground">{maskEmail(me.email)}</span>
                     {me.is_verified && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 text-xs font-medium text-emerald-600">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
                         <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
@@ -475,14 +475,14 @@ function AccountPageContent() {
           <section className="settings-section">
             <h3 className="settings-section-title mb-3">Username</h3>
             <div className="mt-1 text-sm text-foreground">Saat ini: <b>{username || "(belum ada)"}</b></div>
-            <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-3">
-              <div className="flex items-center gap-2 text-sm text-amber-600">
+            <div className="mt-3 rounded-lg border border-warning/30 bg-warning/10 p-3">
+              <div className="flex items-center gap-2 text-sm text-warning">
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
                 <span className="font-medium">Fitur Segera Hadir</span>
               </div>
-              <p className="mt-1 text-xs text-amber-600/80">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Fitur ganti username akan segera tersedia. Layanan ini berbayar Rp.100.000 dan saldo IDR akan dipotong otomatis.
               </p>
             </div>
@@ -581,8 +581,8 @@ function DeleteAccountSection({ API, router }) {
 
       {/* Blocking reasons - cannot delete */}
       {!checkingDelete && blockingReasons && blockingReasons.length > 0 && (
-        <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-          <p className="text-sm font-medium text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-2">
+        <div className="mt-4 p-3 rounded-lg bg-warning/10 border border-warning/20">
+          <p className="text-sm font-medium text-warning mb-2 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zm0-13.5a9 9 0 110 18 9 9 0 010-18z" />
             </svg>
@@ -590,7 +590,7 @@ function DeleteAccountSection({ API, router }) {
           </p>
           <ul className="space-y-1">
             {blockingReasons.map((reason, i) => (
-              <li key={i} className="text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2">
+              <li key={i} className="text-xs text-foreground flex items-start gap-2">
                 <span className="mt-1">•</span>
                 <span>{reason}</span>
               </li>
@@ -601,11 +601,11 @@ function DeleteAccountSection({ API, router }) {
 
       {/* Warnings - can delete but with caution */}
       {!checkingDelete && canDelete && warnings && warnings.length > 0 && (
-        <div className="mt-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-          <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">Peringatan:</p>
+        <div className="mt-4 p-3 rounded-lg bg-warning/10 border border-warning/20">
+          <p className="text-sm font-medium text-warning mb-2">Peringatan:</p>
           <ul className="space-y-1">
             {warnings.map((warning, i) => (
-              <li key={i} className="text-xs text-yellow-700 dark:text-yellow-300 flex items-start gap-2">
+              <li key={i} className="text-xs text-foreground flex items-start gap-2">
                 <span className="mt-1">•</span>
                 <span>{warning}</span>
               </li>

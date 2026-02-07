@@ -120,13 +120,17 @@ export default function ReportsPage() {
   const getStatusBadge = (status) => {
     const normalized = String(status || "pending").toLowerCase();
     const styles = {
-      pending: "bg-yellow-100 text-yellow-800",
-      reviewing: "bg-blue-100 text-blue-800",
-      resolved: "bg-green-100 text-green-800",
-      dismissed: "bg-gray-100 text-gray-800",
+      pending: "border-warning/20 bg-warning/10 text-warning",
+      reviewing: "border-primary/20 bg-primary/10 text-primary",
+      resolved: "border-success/20 bg-success/10 text-success",
+      dismissed: "border-border bg-muted/60 text-muted-foreground",
     };
     return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[normalized] || styles.pending}`}>
+      <span
+        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
+          styles[normalized] || styles.pending
+        }`}
+      >
         {normalized.charAt(0).toUpperCase() + normalized.slice(1)}
       </span>
     );
@@ -150,7 +154,7 @@ export default function ReportsPage() {
               onClick={() => setFilter(s)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 filter === s
-                  ? "bg-primary text-white"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-muted/50 text-foreground hover:bg-accent"
               }`}
             >
@@ -161,7 +165,7 @@ export default function ReportsPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -189,7 +193,7 @@ export default function ReportsPage() {
                     <span className="px-2 py-0.5 rounded-full text-xs bg-muted/50 text-foreground">
                       {getContentTypeLabel(report.targetType)}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-orange-100 text-orange-800">
+                    <span className="inline-flex items-center rounded-full border border-border bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
                       {getReasonLabel(report.reason)}
                     </span>
                   </div>
@@ -293,16 +297,18 @@ export default function ReportsPage() {
                       Dismiss
                     </Button>
                     <Button
+                      variant="outline"
                       size="sm"
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                      className="border-warning/30 bg-warning/10 text-warning hover:bg-warning/15 hover:border-warning/40"
                       onClick={() => handleAction(selectedReport.id, "warning", "Warning issued by admin")}
                       disabled={actionLoading}
                     >
                       Warn User
                     </Button>
                     <Button
+                      variant="outline"
                       size="sm"
-                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                      className="border-warning/30 bg-warning/15 text-warning hover:bg-warning/20 hover:border-warning/40"
                       onClick={() => handleAction(selectedReport.id, "hide", "Content hidden")}
                       disabled={actionLoading}
                     >

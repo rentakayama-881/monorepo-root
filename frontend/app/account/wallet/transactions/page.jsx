@@ -3,7 +3,7 @@ import TransactionsContent from "./TransactionsContent";
 
 function TransactionsSkeleton() {
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-2xl px-4 py-8">
         <div className="animate-pulse">
           <div className="mb-6 flex items-center justify-between">
@@ -22,7 +22,7 @@ function TransactionsSkeleton() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 

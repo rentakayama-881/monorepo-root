@@ -88,7 +88,7 @@ function LoginForm() {
   const inputClass =
     "w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
   const primaryButton =
-    "w-full inline-flex justify-center items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+    "w-full inline-flex justify-center items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
   const secondaryButton =
     "w-full inline-flex justify-center items-center rounded-md border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted/50 disabled:opacity-60";
 
@@ -336,12 +336,12 @@ function LoginForm() {
       </div>
 
       <div className="rounded-lg border border-border bg-card p-4 shadow-soft">{sessionExpired && (
-          <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">
+          <div className="mb-4 rounded-lg border border-warning/20 bg-warning/10 px-3 py-2 text-sm text-warning">
             Session Anda telah berakhir. Silakan login kembali.
           </div>
         )}
         {registeredNotice && (
-          <div className="mb-4 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400">
+          <div className="mb-4 rounded-lg border border-success/20 bg-success/10 px-3 py-2 text-sm text-success">
             Registrasi berhasil. Silahkan periksa kotak masuk Email, Email verifikasi mungkin akan masuk lebih lama, tunggu sekitar 5-10 menit.
           </div>
         )}

@@ -3,7 +3,7 @@ import SetPinContent from "./SetPinContent";
 
 function SetPinSkeleton() {
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-md px-4 py-8">
         <div className="animate-pulse">
           <div className="h-16 w-16 rounded-full bg-border mx-auto mb-4" />
@@ -12,7 +12,7 @@ function SetPinSkeleton() {
           <div className="h-64 bg-border rounded-lg" />
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 

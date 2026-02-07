@@ -263,42 +263,42 @@ export default function AdminDashboardPage() {
       value: stats.totalBadges,
       href: "/admin/badges",
       icon: "🏆",
-      color: "text-amber-600",
+      color: "text-warning",
     },
     {
       label: "Total Users",
       value: stats.totalUsers,
       href: "/admin/users",
       icon: "👥",
-      color: "text-blue-600",
+      color: "text-primary",
     },
     {
       label: "Pending Reports",
       value: stats.pendingReports,
       href: "/admin/reports",
       icon: "🚨",
-      color: "text-red-600",
+      color: "text-destructive",
     },
     {
       label: "Active Bans",
       value: stats.activeDeviceBans,
       href: "/admin/device-bans",
       icon: "🔒",
-      color: "text-orange-600",
+      color: "text-warning",
     },
     {
       label: "Warnings Today",
       value: stats.warningsToday,
       href: "/admin/warnings",
       icon: "⚠️",
-      color: "text-yellow-600",
+      color: "text-warning",
     },
     {
       label: "Hidden Content",
       value: stats.hiddenContent,
       href: "/admin/content",
       icon: "👁️",
-      color: "text-purple-600",
+      color: "text-muted-foreground",
     },
   ];
 
@@ -434,13 +434,13 @@ export default function AdminDashboardPage() {
                     <td className="py-3 flex gap-2">
                       <button
                         onClick={() => handleApproveDeposit(deposit.id)}
-                        className="rounded-md bg-emerald-600 px-3 py-1 text-white hover:bg-emerald-700"
+                        className="rounded-md border border-success/30 bg-success/10 px-3 py-1 text-xs font-semibold text-success hover:bg-success/15"
                       >
                         Approve
                       </button>
                       <button
                         onClick={() => handleRejectDeposit(deposit.id)}
-                        className="rounded-md bg-rose-600 px-3 py-1 text-white hover:bg-rose-700"
+                        className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-1 text-xs font-semibold text-destructive hover:bg-destructive/15"
                       >
                         Reject
                       </button>

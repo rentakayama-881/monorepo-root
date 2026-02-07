@@ -311,8 +311,8 @@ export default function ThreadManagementPage() {
       {result && (
         <div className={`mb-6 p-3 rounded-lg text-sm ${
           result.type === "success" 
-            ? "bg-green-50 text-green-700" 
-            : "bg-red-50 text-red-700"
+            ? "border border-success/30 bg-success/10 text-success"
+            : "border border-destructive/30 bg-destructive/10 text-destructive"
         }`}>
           {result.message}
         </div>
@@ -378,7 +378,7 @@ export default function ThreadManagementPage() {
               </div>
 
               {userSearch.error && (
-                <p className="mt-2 text-xs text-red-600">{userSearch.error}</p>
+                <p className="mt-2 text-xs text-destructive">{userSearch.error}</p>
               )}
 
               {userSearch.results.length > 0 && (
@@ -426,7 +426,7 @@ export default function ThreadManagementPage() {
                 ))}
               </select>
               {categoryError && (
-                <p className="mt-1 text-xs text-red-600">{categoryError}</p>
+                <p className="mt-1 text-xs text-destructive">{categoryError}</p>
               )}
               {!categoryError && categories.length === 0 && !categoryLoading && (
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -488,12 +488,12 @@ export default function ThreadManagementPage() {
         </div>
 
         {/* Delete Thread */}
-        <div className="p-6 rounded-lg border border-red-200 bg-red-50/30">
+        <div className="p-6 rounded-lg border border-destructive/30 bg-destructive/5">
           <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <span>🗑️</span> Delete Thread
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
-            <strong className="text-red-600">PERINGATAN:</strong> Menghapus thread secara permanen. 
+            <strong className="text-destructive">PERINGATAN:</strong> Menghapus thread secara permanen. 
             Semua balasan dan reaksi juga akan dihapus. Tindakan ini tidak dapat dibatalkan.
           </p>
           

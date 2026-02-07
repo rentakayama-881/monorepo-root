@@ -116,12 +116,16 @@ export default function WarningsPage() {
   const getSeverityBadge = (severity) => {
     const normalized = String(severity || "moderate").toLowerCase();
     const styles = {
-      minor: "bg-blue-100 text-blue-800",
-      moderate: "bg-yellow-100 text-yellow-800",
-      severe: "bg-red-100 text-red-800",
+      minor: "border-primary/20 bg-primary/10 text-primary",
+      moderate: "border-warning/20 bg-warning/10 text-warning",
+      severe: "border-destructive/20 bg-destructive/10 text-destructive",
     };
     return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[normalized] || styles.moderate}`}>
+      <span
+        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
+          styles[normalized] || styles.moderate
+        }`}
+      >
         {normalized.charAt(0).toUpperCase() + normalized.slice(1)}
       </span>
     );
@@ -158,7 +162,7 @@ export default function WarningsPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -183,7 +187,7 @@ export default function WarningsPage() {
                   <div className="flex items-center gap-2 mb-2">
                     {getSeverityBadge(warning.severity)}
                     {warning.isAcknowledged && (
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800">
+                      <span className="inline-flex items-center rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
                         Acknowledged
                       </span>
                     )}

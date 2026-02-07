@@ -228,16 +228,16 @@ function TOTPSettingsContent() {
     <div className="rounded-[var(--radius)] border bg-card p-6 space-y-4">
       {/* Show info banner if redirected for 2FA setup */}
       {setup2fa === "true" && !status.enabled && (
-        <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-4 mb-4">
+        <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 mb-4">
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-warning shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
             </svg>
             <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              <p className="text-sm font-medium text-warning">
                 2FA Diperlukan
               </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Untuk menggunakan fitur wallet (kirim uang, tarik saldo, set PIN), Anda harus mengaktifkan 2FA terlebih dahulu.
               </p>
             </div>
@@ -254,7 +254,11 @@ function TOTPSettingsContent() {
             Tambahkan lapisan keamanan ekstra dengan aplikasi authenticator
           </p>
         </div>
-        <div className={`px-2 py-1 rounded text-xs font-medium ${status.enabled ? "bg-green-500/10 text-green-600" : "bg-gray-500/10 text-gray-500"}`}>
+        <div className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium ${
+          status.enabled
+            ? "border-success/20 bg-success/10 text-success"
+            : "border-border bg-muted/60 text-muted-foreground"
+        }`}>
           {status.enabled ? "Aktif" : "Tidak Aktif"}
         </div>
       </div>
@@ -393,8 +397,8 @@ function TOTPSettingsContent() {
       {/* Disable Flow */}
       {showDisable && (
         <form onSubmit={disableTOTP} className="space-y-4 pt-2">
-          <div className="p-4 bg-red-500/5 rounded-lg border border-red-500/20">
-            <p className="text-sm text-red-600 dark:text-red-400 mb-3">
+          <div className="p-4 bg-destructive/5 rounded-lg border border-destructive/20">
+            <p className="text-sm text-destructive mb-3">
               Menonaktifkan 2FA akan mengurangi keamanan akun Anda. Pastikan Anda yakin ingin melanjutkan.
             </p>
             <div className="space-y-3">

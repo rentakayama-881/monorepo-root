@@ -212,9 +212,9 @@ export default function DepositPage() {
   const statusBadge = (status) => {
     const normalized = (status || "").toLowerCase();
     const styles = {
-      pending: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-      approved: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
-      rejected: "bg-red-500/10 text-red-600 border-red-500/30",
+      pending: "bg-warning/10 text-warning border-warning/30",
+      approved: "bg-success/10 text-success border-success/30",
+      rejected: "bg-destructive/10 text-destructive border-destructive/30",
     };
     const labels = {
       pending: "Menunggu Verifikasi",
@@ -234,16 +234,16 @@ export default function DepositPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background pt-16">
+      <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-lg px-4 py-8 text-center text-muted-foreground">
           Memuat...
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-3xl px-4 py-8">
           <Link
             href="/account/wallet"
@@ -277,7 +277,7 @@ export default function DepositPage() {
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
                     step >= s
-                      ? "bg-primary text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-muted/50 text-muted-foreground"
                   }`}
                 >
@@ -362,7 +362,7 @@ export default function DepositPage() {
                 type="button"
                 onClick={handleNextToPayment}
                 disabled={!amount}
-                className="w-full rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Lanjutkan ke Pembayaran
               </button>
@@ -421,7 +421,7 @@ export default function DepositPage() {
                   type="button"
                   onClick={handleCheckPayment}
                   disabled={submitting || !transactionId}
-                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting ? "Memproses..." : "Check Pembayaran"}
                 </button>
@@ -572,6 +572,6 @@ export default function DepositPage() {
             )}
           </div>
         </div>
-      </main>
+      </div>
   );
 }

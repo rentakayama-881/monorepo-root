@@ -129,16 +129,16 @@ export default function WithdrawPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background pt-16">
+      <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-md px-4 py-8 text-center text-muted-foreground">
           Memuat...
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-md px-4 py-8">
           <Link
             href="/account/wallet/transactions"
@@ -170,7 +170,7 @@ export default function WithdrawPage() {
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition ${
                     step >= s
-                      ? "bg-primary text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-card text-muted-foreground border border-border"
                   }`}
                 >
@@ -251,7 +251,7 @@ export default function WithdrawPage() {
               <button
                 onClick={() => setStep(2)}
                 disabled={!isStep1Valid}
-                className="mt-6 w-full rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                className="mt-6 w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
               >
                 Lanjutkan
               </button>
@@ -333,7 +333,7 @@ export default function WithdrawPage() {
                 <button
                   onClick={() => setStep(3)}
                   disabled={!isStep2Valid}
-                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   Lanjutkan
                 </button>
@@ -385,8 +385,8 @@ export default function WithdrawPage() {
                 />
               </div>
 
-              <div className="mb-4 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 p-3">
-                <div className="flex gap-2 text-sm text-amber-600">
+              <div className="mb-4 rounded-lg bg-warning/10 border border-warning/20 p-3">
+                <div className="flex gap-2 text-sm text-warning">
                   <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
@@ -407,7 +407,7 @@ export default function WithdrawPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={processing || pin.length !== 6}
-                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {processing ? "Memproses..." : "Tarik Dana"}
                 </button>
@@ -415,6 +415,6 @@ export default function WithdrawPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
   );
 }

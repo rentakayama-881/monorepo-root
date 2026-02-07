@@ -265,7 +265,7 @@ export default function DocumentsPage() {
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] px-2 py-0.5 rounded-full ${
                       doc.visibility === "public" 
-                        ? "bg-green-500/10 text-green-600"
+                        ? "bg-success/10 text-success"
                         : "bg-muted text-muted-foreground"
                     }`}>
                       {doc.visibility === "public" ? "Publik" : "Privat"}

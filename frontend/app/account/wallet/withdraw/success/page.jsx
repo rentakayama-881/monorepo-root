@@ -3,11 +3,11 @@ import Link from "next/link";
 
 export default function WithdrawSuccessPage() {
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-md px-4 py-16 text-center">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
             <svg
-              className="h-10 w-10 text-emerald-600"
+              className="h-10 w-10 text-success"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -30,7 +30,7 @@ export default function WithdrawSuccessPage() {
 
           <div className="rounded-lg border border-border bg-card p-4 mb-8">
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>Anda akan menerima notifikasi email ketika dana telah ditransfer.</span>
@@ -40,7 +40,7 @@ export default function WithdrawSuccessPage() {
           <div className="space-y-3">
             <Link
               href="/account/wallet/transactions"
-              className="block w-full rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90"
+              className="block w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90"
             >
               Lihat Transaksi
             </Link>
@@ -52,6 +52,6 @@ export default function WithdrawSuccessPage() {
             </Link>
           </div>
         </div>
-      </main>
+      </div>
   );
 }

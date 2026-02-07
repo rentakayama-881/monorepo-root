@@ -13,7 +13,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md",
-        destructive: "bg-destructive text-white hover:bg-destructive/90 hover:shadow-md",
+        // Alias: some pages still use `primary`
+        primary: "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-md",
+        // Alias: some pages still use `danger`
+        danger: "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-md",
         outline: "border bg-background hover:bg-accent hover:text-accent-foreground hover:border-accent-foreground/20",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:shadow-sm",
         ghost: "hover:bg-accent hover:text-accent-foreground",
@@ -39,7 +43,7 @@ const buttonVariants = cva(
 /**
  * Button component with multiple variants and sizes
  * @param {Object} props
- * @param {"default"|"destructive"|"outline"|"secondary"|"ghost"|"link"|"gradient"} props.variant
+ * @param {"default"|"primary"|"destructive"|"danger"|"outline"|"secondary"|"ghost"|"link"|"gradient"} props.variant
  * @param {"default"|"sm"|"lg"|"icon"|"icon-sm"|"icon-lg"} props.size
  * @param {boolean} props.loading - Show loading spinner
  * @param {boolean} props.disabled - Disable button
@@ -104,4 +108,3 @@ export default function Button({
 }
 
 export { buttonVariants };
-

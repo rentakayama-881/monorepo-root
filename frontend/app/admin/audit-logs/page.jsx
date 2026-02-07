@@ -90,17 +90,21 @@ export default function AuditLogsPage() {
   const getActionBadge = (action) => {
     const normalizedAction = String(action || "unknown").toLowerCase();
     const styles = {
-      report_action: "bg-blue-100 text-blue-800",
-      device_ban: "bg-red-100 text-red-800",
-      device_unban: "bg-green-100 text-green-800",
-      warning_issued: "bg-yellow-100 text-yellow-800",
-      content_hidden: "bg-orange-100 text-orange-800",
-      content_unhidden: "bg-green-100 text-green-800",
-      thread_deleted: "bg-red-100 text-red-800",
-      thread_transferred: "bg-purple-100 text-purple-800",
+      report_action: "border-primary/20 bg-primary/10 text-primary",
+      device_ban: "border-destructive/20 bg-destructive/10 text-destructive",
+      device_unban: "border-success/20 bg-success/10 text-success",
+      warning_issued: "border-warning/20 bg-warning/10 text-warning",
+      content_hidden: "border-warning/20 bg-warning/10 text-warning",
+      content_unhidden: "border-success/20 bg-success/10 text-success",
+      thread_deleted: "border-destructive/20 bg-destructive/10 text-destructive",
+      thread_transferred: "border-border bg-accent text-accent-foreground",
     };
     return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[normalizedAction] || "bg-gray-100 text-gray-800"}`}>
+      <span
+        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
+          styles[normalizedAction] || "border-border bg-muted/60 text-muted-foreground"
+        }`}
+      >
         {normalizedAction.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
       </span>
     );
@@ -155,7 +159,7 @@ export default function AuditLogsPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}

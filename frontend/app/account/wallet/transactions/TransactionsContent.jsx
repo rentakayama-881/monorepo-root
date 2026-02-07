@@ -104,11 +104,11 @@ export default function TransactionsContent() {
   const getStatusBadge = (status) => {
     const normalized = normalizeStatus(status);
     const styles = {
-      held: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-      released: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
-      refunded: "bg-blue-500/10 text-blue-600 border-blue-500/30",
-      disputed: "bg-red-500/10 text-red-600 border-red-500/30",
-      cancelled: "bg-gray-500/10 text-gray-600 border-gray-500/30",
+      held: "bg-warning/10 text-warning border-warning/30",
+      released: "bg-success/10 text-success border-success/30",
+      refunded: "bg-primary/10 text-primary border-primary/30",
+      disputed: "bg-destructive/10 text-destructive border-destructive/30",
+      cancelled: "bg-muted/60 text-muted-foreground border-border",
     };
     const labels = {
       held: "Ditahan",
@@ -136,11 +136,11 @@ export default function TransactionsContent() {
   };
 
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-2xl px-4 py-8">
         {/* Success Message */}
         {showSuccess && (
-          <div className="mb-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-4 text-emerald-600">
+          <div className="mb-4 rounded-lg border border-success/30 bg-success/10 p-4 text-success">
             <div className="flex items-center gap-2">
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -159,7 +159,7 @@ export default function TransactionsContent() {
           </div>
           <Link
             href="/account/wallet/send"
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
             + Kirim Uang
           </Link>
@@ -235,10 +235,10 @@ export default function TransactionsContent() {
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold ${
                           status === "held"
-                            ? "bg-yellow-500/10 text-yellow-600"
+                            ? "bg-warning/10 text-warning"
                             : status === "released"
-                            ? "bg-emerald-500/10 text-emerald-600"
-                            : "bg-gray-500/10 text-gray-600"
+                            ? "bg-success/10 text-success"
+                            : "bg-muted/60 text-muted-foreground"
                         }`}
                       >
                         {(otherUsername || "?")?.slice(0, 2).toUpperCase()}
@@ -286,6 +286,6 @@ export default function TransactionsContent() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }

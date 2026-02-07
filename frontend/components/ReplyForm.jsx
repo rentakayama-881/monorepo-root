@@ -172,7 +172,7 @@ export default function ReplyForm({
             onClick={() => setShowPreview(!showPreview)}
             className={`px-2 py-1 text-xs rounded transition-colors ${
               showPreview
-                ? "bg-primary text-white"
+                ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-secondary"
             }`}
           >

@@ -92,17 +92,17 @@ export default function AdminDisputesPage() {
   const getStatusColor = (status) => {
     switch (normalizeStatus(status)) {
       case "open":
-        return "bg-yellow-500 text-white";
+        return "border-warning/20 bg-warning/10 text-warning";
       case "underreview":
-        return "bg-blue-500 text-white";
+        return "border-primary/20 bg-primary/10 text-primary";
       case "waitingforevidence":
-        return "bg-orange-500 text-white";
+        return "border-warning/20 bg-warning/10 text-warning";
       case "resolved":
-        return "bg-green-500 text-white";
+        return "border-success/20 bg-success/10 text-success";
       case "cancelled":
-        return "bg-gray-500 text-white";
+        return "border-border bg-muted/60 text-muted-foreground";
       default:
-        return "bg-gray-500 text-white";
+        return "border-border bg-muted/60 text-muted-foreground";
     }
   };
 
@@ -156,22 +156,18 @@ export default function AdminDisputesPage() {
           {
             label: "Menunggu",
             value: disputes.filter((d) => normalizeStatus(d.status) === "open").length,
-            color: "bg-yellow-500",
           },
           {
             label: "Ditinjau",
             value: disputes.filter((d) => normalizeStatus(d.status) === "underreview").length,
-            color: "bg-blue-500",
           },
           {
             label: "Butuh Bukti",
             value: disputes.filter((d) => normalizeStatus(d.status) === "waitingforevidence").length,
-            color: "bg-orange-500",
           },
           {
             label: "Total Aktif",
             value: disputes.filter((d) => !["resolved", "cancelled"].includes(normalizeStatus(d.status))).length,
-            color: "bg-primary",
           },
         ].map((stat, idx) => (
           <div key={idx} className="bg-card rounded-lg border border-border p-4">
@@ -257,7 +253,7 @@ export default function AdminDisputesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(dispute.status)}`}>
+                    <span className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium ${getStatusColor(dispute.status)}`}>
                       {getStatusLabel(dispute.status)}
                     </span>
                   </td>

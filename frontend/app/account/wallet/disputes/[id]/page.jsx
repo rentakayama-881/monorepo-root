@@ -289,20 +289,20 @@ export default function DisputeDetailPage() {
       negotiation: {
         title: "Fase Negosiasi",
         description: "Diskusikan dengan pihak lain untuk menemukan solusi.",
-        containerClass: "bg-yellow-500/10 border border-yellow-500/30",
-        titleClass: "text-yellow-600",
+        containerClass: "bg-warning/10 border border-warning/30",
+        titleClass: "text-warning",
       },
       evidence: {
         title: "Fase Bukti",
         description: "Upload bukti-bukti pendukung klaim Anda.",
-        containerClass: "bg-orange-500/10 border border-orange-500/30",
-        titleClass: "text-orange-600",
+        containerClass: "bg-accent border border-border",
+        titleClass: "text-accent-foreground",
       },
       admin_review: {
         title: "Review Admin",
         description: "Tim kami sedang meninjau kasus ini.",
-        containerClass: "bg-purple-500/10 border border-purple-500/30",
-        titleClass: "text-purple-600",
+        containerClass: "bg-primary/10 border border-primary/30",
+        titleClass: "text-primary",
       },
     };
     return info[phase] || info.negotiation;
@@ -332,24 +332,24 @@ export default function DisputeDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background pt-16">
+      <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-3xl px-4 py-8 text-center text-muted-foreground">
           Memuat...
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!dispute) {
     return (
-      <main className="min-h-screen bg-background pt-16">
+      <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-3xl px-4 py-8 text-center">
           <div className="text-destructive mb-4">{error || "Dispute tidak ditemukan"}</div>
           <Link href="/account/wallet/disputes" className="text-primary hover:underline">
             ← Kembali
           </Link>
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -361,7 +361,7 @@ export default function DisputeDetailPage() {
   const isOpen = dispute.status?.toLowerCase() === "open";
 
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-3xl px-4 py-8">
           <Link
             href="/account/wallet/disputes"
@@ -427,9 +427,9 @@ export default function DisputeDetailPage() {
                         <div
                           className={`max-w-xs rounded-lg p-3 ${
                             msg.isAdmin
-                              ? "bg-purple-500/10 border border-purple-500/30"
+                              ? "bg-accent text-accent-foreground border border-border"
                               : msg.senderId === currentUser?.id || msg.senderUsername === currentUser?.username
-                              ? "bg-primary text-white"
+                              ? "bg-primary text-primary-foreground"
                               : "bg-background border border-border"
                           }`}
                         >
@@ -441,7 +441,7 @@ export default function DisputeDetailPage() {
                             className={`text-xs mt-1 ${
                               msg.senderId === currentUser?.id ||
                               msg.senderUsername === currentUser?.username
-                                ? "text-white/70"
+                                ? "text-primary-foreground/70"
                                 : "text-muted-foreground"
                             }`}
                           >
@@ -467,7 +467,7 @@ export default function DisputeDetailPage() {
                       <button
                         type="submit"
                         disabled={sendingMessage || !message.trim()}
-                        className="rounded-lg bg-primary px-4 py-2 font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                        className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                       >
                         Kirim
                       </button>
@@ -519,7 +519,7 @@ export default function DisputeDetailPage() {
                         <button
                           type="submit"
                           disabled={processing || !evidenceDescription.trim()}
-                          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                         >
                           Kirim Bukti
                         </button>
@@ -610,16 +610,16 @@ export default function DisputeDetailPage() {
                         Setuju Refund ke Pengirim
                       </button>
                     ) : (
-                      <div className="text-xs text-muted-foreground bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3">
-                        <p className="font-medium text-yellow-600 mb-1">Menunggu Respon</p>
+                      <div className="text-xs text-muted-foreground bg-warning/5 border border-warning/20 rounded-lg p-3">
+                        <p className="font-medium text-warning mb-1">Menunggu Respon</p>
                         <p>Anda telah membuka dispute. Tunggu respon dari penerima atau eskalasi ke admin jika diperlukan.</p>
                       </div>
                     )}
 
                     {/* Info for receiver about defense */}
                     {isReceiver && (
-                      <div className="text-xs text-muted-foreground bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
-                        <p className="font-medium text-blue-600 mb-1">Info</p>
+                      <div className="text-xs text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg p-3">
+                        <p className="font-medium text-primary mb-1">Info</p>
                         <p>Jika Anda ingin melanjutkan transaksi, sampaikan pembelaan Anda di chat. Admin akan memutuskan berdasarkan diskusi.</p>
                       </div>
                     )}
@@ -629,7 +629,7 @@ export default function DisputeDetailPage() {
                       <button
                         onClick={escalateDispute}
                         disabled={processing}
-                        className="w-full rounded-lg border border-orange-500/30 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-500/10 disabled:opacity-50"
+                        className="w-full rounded-lg border border-warning/30 py-2 text-sm font-medium text-warning transition hover:bg-warning/10 disabled:opacity-50"
                       >
                         {dispute.phase === "negotiation"
                           ? "Eskalasi ke Fase Bukti"
@@ -642,8 +642,8 @@ export default function DisputeDetailPage() {
 
               {/* Resolution Result */}
               {dispute.status === "resolved" && (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
-                  <h3 className="font-semibold text-emerald-600 mb-2">Dispute Selesai</h3>
+                <div className="rounded-lg border border-success/30 bg-success/10 p-4">
+                  <h3 className="font-semibold text-success mb-2">Dispute Selesai</h3>
                   <p className="text-sm text-muted-foreground">
                     Hasil: <strong className="text-foreground">
                       {getResolutionLabel(dispute.resolution)}
@@ -659,6 +659,6 @@ export default function DisputeDetailPage() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
   );
 }

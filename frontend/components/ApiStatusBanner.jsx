@@ -71,7 +71,7 @@ export default function ApiStatusBanner() {
   if (!checked) return null;
 
   return (
-    <div className="fixed top-[var(--header-height)] left-0 right-0 z-40 w-full bg-amber-500 text-amber-950 shadow-md">
+    <div className="fixed top-[var(--header-height)] left-0 right-0 z-40 w-full bg-warning text-warning-foreground shadow-md">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-center gap-3 text-sm font-medium">
         {/* Animated spinner */}
         <svg
@@ -109,7 +109,7 @@ export default function ApiStatusBanner() {
         {!retrying && (
           <button
             onClick={ping}
-            className="ml-2 px-3 py-1 bg-amber-700 hover:bg-amber-800 text-white text-xs font-medium rounded-md transition-colors"
+            className="ml-2 px-3 py-1 bg-warning-foreground/90 hover:bg-warning-foreground text-warning text-xs font-medium rounded-md transition-colors"
           >
             Coba Sekarang
           </button>

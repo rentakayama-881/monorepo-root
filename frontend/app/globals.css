@@ -22,6 +22,10 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -167,6 +171,7 @@
   /* Status colors (keep) */
   --success: oklch(0.65 0.2 145);
   --warning: oklch(0.75 0.15 85);
+  --warning-foreground: var(--color-space-indigo-950);
   --error: oklch(0.577 0.245 27.325);
 
   /* ===== Legacy token mappings (biar hljs & bagian lama aman) ===== */
@@ -234,34 +239,11 @@
   /* Status colors (dark mode keep) */
   --success: oklch(0.75 0.2 145);
   --warning: oklch(0.85 0.15 85);
+  --warning-foreground: var(--color-space-indigo-950);
   --error: oklch(0.704 0.191 22.216);
 
   color-scheme: dark;
 }
-
-  /* ===== Legacy token mappings for backward compatibility ===== */
-  :root {
-    /* Map old RGB tokens to new semantic tokens */
-    --bg: 246, 248, 250;
-    --fg: 36, 41, 47;
-    --surface: 255, 255, 255;
-    --surface-2: 248, 250, 252;
-    --surface-1: 255, 255, 255;
-    --brand: 31, 111, 235;
-    --brand-2: 9, 105, 218;
-    --skeleton: 208, 215, 222;
-    --muted-2: 110, 118, 129;
-    
-    /* Status colors (legacy RGB format) */
-    --success-bg: 240, 253, 244;
-    --success-border: 187, 247, 208;
-    --error-bg: 254, 242, 242;
-    --error-border: 254, 202, 202;
-    --warning-bg: 254, 252, 232;
-    --warning-border: 254, 240, 138;
-  }
-
-
 
   body {
     margin: 0;
@@ -383,7 +365,7 @@ button:focus-visible {
 /* ===== Syntax Highlighting (theme-aware) ===== */
 /* Light mode syntax colors */
 .markdown-body .hljs {
-  color: rgb(var(--fg));
+  color: var(--foreground);
   background: transparent;
 }
 
@@ -439,52 +421,50 @@ button:focus-visible {
   background-color: #dafbe1;
 }
 
-/* Dark mode syntax colors */
-@media (prefers-color-scheme: dark) {
-  .markdown-body .hljs-keyword,
-  .markdown-body .hljs-selector-tag {
-    color: #ff7b72;
-  }
+/* Dark mode syntax colors (match theme toggle, not OS preference) */
+.dark .markdown-body .hljs-keyword,
+.dark .markdown-body .hljs-selector-tag {
+  color: #ff7b72;
+}
 
-  .markdown-body .hljs-string,
-  .markdown-body .hljs-doctag {
-    color: #a5d6ff;
-  }
+.dark .markdown-body .hljs-string,
+.dark .markdown-body .hljs-doctag {
+  color: #a5d6ff;
+}
 
-  .markdown-body .hljs-number,
-  .markdown-body .hljs-literal {
-    color: #79c0ff;
-  }
+.dark .markdown-body .hljs-number,
+.dark .markdown-body .hljs-literal {
+  color: #79c0ff;
+}
 
-  .markdown-body .hljs-title,
-  .markdown-body .hljs-section,
-  .markdown-body .hljs-selector-id {
-    color: #d2a8ff;
-  }
+.dark .markdown-body .hljs-title,
+.dark .markdown-body .hljs-section,
+.dark .markdown-body .hljs-selector-id {
+  color: #d2a8ff;
+}
 
-  .markdown-body .hljs-built_in,
-  .markdown-body .hljs-type {
-    color: #ffa657;
-  }
+.dark .markdown-body .hljs-built_in,
+.dark .markdown-body .hljs-type {
+  color: #ffa657;
+}
 
-  .markdown-body .hljs-attr,
-  .markdown-body .hljs-attribute {
-    color: #79c0ff;
-  }
+.dark .markdown-body .hljs-attr,
+.dark .markdown-body .hljs-attribute {
+  color: #79c0ff;
+}
 
-  .markdown-body .hljs-meta {
-    color: #c9d1d9;
-  }
+.dark .markdown-body .hljs-meta {
+  color: #c9d1d9;
+}
 
-  .markdown-body .hljs-deletion {
-    color: #ffdcd7;
-    background-color: #67060c;
-  }
+.dark .markdown-body .hljs-deletion {
+  color: #ffdcd7;
+  background-color: #67060c;
+}
 
-  .markdown-body .hljs-addition {
-    color: #aff5b4;
-    background-color: #033a16;
-  }
+.dark .markdown-body .hljs-addition {
+  color: #aff5b4;
+  background-color: #033a16;
 }
 
 /* ===== Additional Markdown Elements ===== */

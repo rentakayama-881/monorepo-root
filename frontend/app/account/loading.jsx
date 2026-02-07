@@ -3,7 +3,7 @@
  */
 export default function AccountLoading() {
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-2xl px-4 py-8">
         {/* Header skeleton */}
         <div className="animate-pulse mb-8">
@@ -28,6 +28,6 @@ export default function AccountLoading() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

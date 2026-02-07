@@ -146,7 +146,7 @@ export default function DeviceBansPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -181,11 +181,17 @@ export default function DeviceBansPage() {
                   <td className="py-3 px-4 max-w-48 truncate">{ban.reason}</td>
                   <td className="py-3 px-4">
                     {ban.isPermanent ? (
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-800">Permanent</span>
+                      <span className="inline-flex items-center rounded-full border border-destructive/20 bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+                        Permanent
+                      </span>
                     ) : ban.isActive ? (
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800">Active</span>
+                      <span className="inline-flex items-center rounded-full border border-warning/20 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                        Active
+                      </span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-800">Expired</span>
+                      <span className="inline-flex items-center rounded-full border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                        Expired
+                      </span>
                     )}
                   </td>
                   <td className="py-3 px-4 text-xs text-muted-foreground">

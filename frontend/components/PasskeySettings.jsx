@@ -309,10 +309,10 @@ export default function PasskeySettings() {
           {Icons.passkey}
           Passkeys
         </h3>
-        <div className="mt-3 p-3 rounded-md bg-amber-600/10 border border-amber-600/30">
+        <div className="mt-3 p-3 rounded-md bg-warning/10 border border-warning/20">
           <div className="flex items-start gap-2">
-            <span className="text-amber-600">{Icons.warning}</span>
-            <p className="text-sm text-amber-600">
+            <span className="text-warning">{Icons.warning}</span>
+            <p className="text-sm text-warning">
               Browser Anda tidak mendukung Passkey/WebAuthn. Gunakan browser modern seperti Chrome, Firefox, Safari, atau Edge versi terbaru.
             </p>
           </div>
@@ -344,7 +344,7 @@ export default function PasskeySettings() {
       )}
 
       {success && (
-        <div className="mt-3 p-2 rounded-md bg-emerald-600/10 border border-emerald-600/30 text-sm text-emerald-600">
+        <div className="mt-3 p-2 rounded-md bg-success/10 border border-success/20 text-sm text-success">
           {success}
         </div>
       )}
@@ -441,11 +441,11 @@ export default function PasskeySettings() {
             <button
               onClick={registerPasskey}
               disabled={registering}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {registering ? (
                 <>
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   Mendaftarkan...
                 </>
               ) : (

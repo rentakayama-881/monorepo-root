@@ -91,15 +91,15 @@ export default function VerifyEmailClient() {
   };
 
   const styles = {
-    pending: "bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-800 text-amber-600",
-    success: "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-600",
+    pending: "bg-warning/10 border-warning/20 text-warning",
+    success: "bg-success/10 border-success/20 text-success",
     error: "bg-destructive/10 border-destructive/20 text-destructive",
   };
 
   const resendStyles = {
     idle: "",
     loading: "",
-    success: "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-600",
+    success: "bg-success/10 border-success/20 text-success",
     error: "bg-destructive/10 border-destructive/20 text-destructive",
   };
 

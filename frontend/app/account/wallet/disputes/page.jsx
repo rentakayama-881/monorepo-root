@@ -59,14 +59,14 @@ export default function DisputesPage() {
   const getStatusBadge = (status, phase) => {
     const normalizedStatus = status?.toLowerCase() || "open";
     const phaseStyles = {
-      negotiation: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-      evidence: "bg-orange-500/10 text-orange-600 border-orange-500/30",
-      admin_review: "bg-purple-500/10 text-purple-600 border-purple-500/30",
+      negotiation: "bg-warning/10 text-warning border-warning/30",
+      evidence: "bg-accent text-accent-foreground border-border",
+      admin_review: "bg-primary/10 text-primary border-primary/30",
     };
     const statusStyles = {
       open: phaseStyles[phase] || phaseStyles.negotiation,
-      resolved: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
-      closed: "bg-gray-500/10 text-gray-600 border-gray-500/30",
+      resolved: "bg-success/10 text-success border-success/30",
+      closed: "bg-muted/60 text-muted-foreground border-border",
     };
     const phaseLabels = {
       negotiation: "Negosiasi",
@@ -99,7 +99,7 @@ export default function DisputesPage() {
   const displayDisputes = activeTab === "active" ? activeDisputes : resolvedDisputes;
 
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-2xl px-4 py-8">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-foreground">Dispute Center</h1>
@@ -109,13 +109,13 @@ export default function DisputesPage() {
           </div>
 
           {/* Info Card */}
-          <div className="mb-6 rounded-lg bg-blue-500/10 border border-blue-500/30 p-4">
+          <div className="mb-6 rounded-lg border border-primary/30 bg-primary/10 p-4">
             <div className="flex gap-3">
-              <svg className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="text-sm text-muted-foreground">
-                <p className="font-medium text-blue-600 mb-1">Proses Dispute</p>
+                <p className="font-medium text-primary mb-1">Proses Dispute</p>
                 <ol className="list-decimal list-inside space-y-1">
                   <li><strong>Negosiasi</strong> - Diskusi dengan pihak lain (24 jam)</li>
                   <li><strong>Bukti</strong> - Upload bukti pendukung (48 jam)</li>
@@ -196,10 +196,10 @@ export default function DisputesPage() {
                   {/* Deadline warning */}
                   {dispute.status?.toLowerCase() === "open" && dispute.phaseDeadline && (
                     <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
-                      <svg className="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-xs text-amber-600">
+                      <span className="text-xs text-warning">
                         Batas waktu: {formatDate(dispute.phaseDeadline)}
                       </span>
                     </div>
@@ -209,6 +209,6 @@ export default function DisputesPage() {
             </div>
           )}
         </div>
-      </main>
+    </div>
   );
 }

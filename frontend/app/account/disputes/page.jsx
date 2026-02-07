@@ -73,21 +73,22 @@ export default function DisputesListPage() {
     const normalized = String(status || "").toLowerCase();
     switch (normalized) {
       case "open":
-        return "bg-yellow-500/10 text-yellow-600";
+        return "border-warning/20 bg-warning/10 text-warning";
       case "underreview":
       case "under_review":
       case "admin_review":
-        return "bg-blue-500/10 text-blue-600";
+        return "border-primary/20 bg-primary/10 text-primary";
       case "waitingforevidence":
       case "waiting_for_evidence":
       case "evidence":
-        return "bg-orange-500/10 text-orange-600";
+        return "border-border bg-accent text-accent-foreground";
       case "resolved":
-        return "bg-green-500/10 text-green-600";
+        return "border-success/20 bg-success/10 text-success";
       case "cancelled":
       case "closed":
-        return "bg-gray-500/10 text-gray-600";
-      default: return "bg-gray-500/10 text-gray-600";
+        return "border-border bg-muted/60 text-muted-foreground";
+      default:
+        return "border-border bg-muted/60 text-muted-foreground";
     }
   };
 
@@ -191,7 +192,7 @@ export default function DisputesListPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(dispute.status)}`}>
+                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(dispute.status)}`}>
                         {getStatusLabel(dispute.status)}
                       </span>
                       <span className="text-xs text-muted-foreground">

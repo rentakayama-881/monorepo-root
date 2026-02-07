@@ -92,7 +92,7 @@ export default function AdminLayout({ children }) {
             >
               Admin Panel
             </Link>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+            <span className="text-xs px-2 py-0.5 rounded-full border border-warning/20 bg-warning/10 text-warning">
               Admin
             </span>
           </div>

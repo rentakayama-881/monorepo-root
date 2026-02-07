@@ -261,17 +261,17 @@ export default function DisputeCenterPage() {
   const getStatusColor = (status) => {
     switch (normalizeStatus(status)) {
       case "open":
-        return "bg-yellow-500/10 text-yellow-600";
+        return "border-warning/20 bg-warning/10 text-warning";
       case "underreview":
-        return "bg-blue-500/10 text-blue-600";
+        return "border-primary/20 bg-primary/10 text-primary";
       case "waitingforevidence":
-        return "bg-orange-500/10 text-orange-600";
+        return "border-border bg-accent text-accent-foreground";
       case "resolved":
-        return "bg-green-500/10 text-green-600";
+        return "border-success/20 bg-success/10 text-success";
       case "cancelled":
-        return "bg-gray-500/10 text-gray-600";
+        return "border-border bg-muted/60 text-muted-foreground";
       default:
-        return "bg-gray-500/10 text-gray-600";
+        return "border-border bg-muted/60 text-muted-foreground";
     }
   };
 
@@ -342,7 +342,7 @@ export default function DisputeCenterPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(dispute?.status)}`}>
+                <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${getStatusColor(dispute?.status)}`}>
                   {getStatusLabel(dispute?.status)}
                 </span>
                 <span className="text-xs text-muted-foreground">
@@ -388,8 +388,8 @@ export default function DisputeCenterPage() {
           {/* Resolution */}
           {dispute?.resolution && (
             <div className="mt-4 pt-4 border-t border-border">
-              <div className="bg-green-500/10 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-green-600 font-medium mb-2">
+              <div className="rounded-lg border border-success/30 bg-success/10 p-4">
+                <div className="flex items-center gap-2 text-success font-medium mb-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -439,13 +439,13 @@ export default function DisputeCenterPage() {
                 <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[75%] ${
                     isAdmin 
-                      ? "bg-amber-500/10 border border-amber-500/20" 
+                      ? "bg-warning/10 border border-warning/20" 
                       : isMe 
                         ? "bg-primary text-primary-foreground" 
                         : "bg-card border border-border"
                   } rounded-lg px-4 py-2`}>
                     <div className={`text-xs font-medium mb-1 ${
-                      isAdmin ? "text-amber-600" : isMe ? "text-primary-foreground/80" : "text-muted-foreground"
+                      isAdmin ? "text-warning" : isMe ? "text-primary-foreground/80" : "text-muted-foreground"
                     }`}>
                       {isAdmin && "👑 "}
                       @{msg.senderUsername}

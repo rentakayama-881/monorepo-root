@@ -399,7 +399,7 @@ export default function CreateThreadPage() {
             <button
               type="button"
               onClick={importLegacyDraft}
-              className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
             >
               Import
             </button>
@@ -577,7 +577,7 @@ export default function CreateThreadPage() {
               </div>
             )}
             {success && (
-              <div className="rounded-lg border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
+              <div className="rounded-lg border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
                 {success}
               </div>
             )}
@@ -604,7 +604,7 @@ export default function CreateThreadPage() {
               {/* Autosave indicator */}
               {lastSaved && (
                 <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
-                  <svg className="h-3 w-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="h-3 w-3 text-success" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                   Draft tersimpan {lastSaved.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}

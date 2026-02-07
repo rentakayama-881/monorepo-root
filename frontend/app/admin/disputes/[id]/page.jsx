@@ -300,17 +300,17 @@ export default function AdminDisputeDetailPage() {
   const getStatusColor = (status) => {
     switch (normalizeStatus(status)) {
       case "open":
-        return "bg-yellow-500 text-white";
+        return "border-warning/20 bg-warning/10 text-warning";
       case "underreview":
-        return "bg-blue-500 text-white";
+        return "border-primary/20 bg-primary/10 text-primary";
       case "waitingforevidence":
-        return "bg-orange-500 text-white";
+        return "border-warning/20 bg-warning/10 text-warning";
       case "resolved":
-        return "bg-green-500 text-white";
+        return "border-success/20 bg-success/10 text-success";
       case "cancelled":
-        return "bg-gray-500 text-white";
+        return "border-border bg-muted/60 text-muted-foreground";
       default:
-        return "bg-gray-500 text-white";
+        return "border-border bg-muted/60 text-muted-foreground";
     }
   };
 
@@ -384,20 +384,20 @@ export default function AdminDisputeDetailPage() {
         </Link>
         <div className="flex items-center justify-between mt-2">
           <h1 className="text-2xl font-bold text-foreground">Dispute #{disputeId?.slice(-6)}</h1>
-          <span className={`px-3 py-1 rounded text-sm font-medium ${getStatusColor(dispute.status)}`}>
+          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${getStatusColor(dispute.status)}`}>
             {getStatusLabel(dispute.status)}
           </span>
         </div>
       </div>
 
       {success && (
-        <div className="mb-6 p-4 rounded-lg bg-green-500/10 text-green-600 border border-green-500/20">
+        <div className="mb-6 rounded-lg border border-success/30 bg-success/10 p-4 text-success">
           ✅ {success}
         </div>
       )}
 
       {error && (
-        <div className="mb-6 p-4 rounded-lg bg-red-500/10 text-red-600 border border-red-500/20">
+        <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive">
           ⚠️ {error}
         </div>
       )}
@@ -474,19 +474,19 @@ export default function AdminDisputeDetailPage() {
               <div className="space-y-3">
                 <button
                   onClick={() => handleAction("continue")}
-                  className="w-full py-3 px-4 rounded-lg bg-blue-600 text-white font-medium hover:opacity-90 transition"
+                  className="w-full py-3 px-4 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition"
                 >
                   🔄 Lanjutkan Transaksi
                 </button>
                 <button
                   onClick={() => handleAction("force-release")}
-                  className="w-full py-3 px-4 rounded-lg bg-green-600 text-white font-medium hover:opacity-90 transition"
+                  className="w-full py-3 px-4 rounded-lg border border-success/25 bg-success/15 text-success font-medium hover:bg-success/20 transition"
                 >
                   💰 Lepaskan ke Penjual
                 </button>
                 <button
                   onClick={() => handleAction("refund")}
-                  className="w-full py-3 px-4 rounded-lg bg-amber-600 text-white font-medium hover:opacity-90 transition"
+                  className="w-full py-3 px-4 rounded-lg border border-warning/25 bg-warning/15 text-warning font-medium hover:bg-warning/20 transition"
                 >
                   ↩️ Kembalikan ke Pembeli
                 </button>
@@ -499,8 +499,8 @@ export default function AdminDisputeDetailPage() {
 
           {/* Resolution */}
           {dispute.resolution && (
-            <div className="bg-green-500/10 rounded-lg border border-green-500/20 p-6">
-              <h2 className="font-semibold text-green-600 mb-4">✅ Keputusan</h2>
+            <div className="bg-success/10 rounded-lg border border-success/20 p-6">
+              <h2 className="font-semibold text-success mb-4">✅ Keputusan</h2>
               <div className="space-y-2 text-sm">
                 <div>
                   <span className="text-muted-foreground">Tipe:</span>
@@ -566,13 +566,13 @@ export default function AdminDisputeDetailPage() {
                   <div key={msg.id} className={`flex ${isAdmin ? "justify-center" : isBuyer ? "justify-start" : "justify-end"}`}>
                     <div className={`max-w-[75%] ${
                       isAdmin 
-                        ? "bg-amber-500/10 border border-amber-500/20 w-full" 
+                        ? "bg-warning/10 border border-warning/20 w-full" 
                         : isBuyer 
-                          ? "bg-blue-500/10 border border-blue-500/20" 
-                          : "bg-green-500/10 border border-green-500/20"
+                          ? "bg-primary/10 border border-primary/20" 
+                          : "bg-success/10 border border-success/20"
                     } rounded-lg px-4 py-2`}>
                       <div className={`text-xs font-medium mb-1 ${
-                        isAdmin ? "text-amber-600" : isBuyer ? "text-blue-600" : "text-green-600"
+                        isAdmin ? "text-warning" : isBuyer ? "text-primary" : "text-success"
                       }`}>
                         {isAdmin && "👑 "}
                         @{msg.senderUsername}
@@ -603,7 +603,7 @@ export default function AdminDisputeDetailPage() {
                   <button
                     type="submit"
                     disabled={sending || !message.trim()}
-                    className="px-6 py-2 rounded-lg bg-amber-600 text-white font-medium transition hover:opacity-90 disabled:opacity-50"
+                    className="px-6 py-2 rounded-lg border border-warning/25 bg-warning/15 text-warning font-medium transition hover:bg-warning/20 disabled:opacity-50"
                   >
                     {sending ? "..." : "👑 Kirim"}
                   </button>
@@ -677,10 +677,13 @@ export default function AdminDisputeDetailPage() {
               <button
                 onClick={confirmAction}
                 disabled={processing}
-                className={`flex-1 py-2 rounded-lg text-white font-medium transition ${
-                  pendingAction === "refund" ? "bg-amber-600" :
-                  pendingAction === "force-release" ? "bg-green-600" : "bg-blue-600"
-                } hover:opacity-90 disabled:opacity-50`}
+                className={`flex-1 py-2 rounded-lg font-medium transition disabled:opacity-50 ${
+                  pendingAction === "refund"
+                    ? "border border-warning/25 bg-warning/15 text-warning hover:bg-warning/20"
+                    : pendingAction === "force-release"
+                      ? "border border-success/25 bg-success/15 text-success hover:bg-success/20"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90"
+                }`}
               >
                 {processing ? "Memproses..." : "Konfirmasi"}
               </button>

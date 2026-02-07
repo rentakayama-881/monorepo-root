@@ -255,7 +255,7 @@ export default function MyThreadsPage() {
 
       {/* Status messages */}
       {ok && (
-        <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/50 px-4 py-3 text-sm text-emerald-600">
+        <div className="mb-4 rounded-md border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
           {ok}
         </div>
       )}
@@ -276,7 +276,7 @@ export default function MyThreadsPage() {
           <p className="text-sm text-muted-foreground">Anda belum memiliki thread.</p>
           <Link
             href="/"
-            className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             Buat Thread Pertama
           </Link>
@@ -351,7 +351,7 @@ export default function MyThreadsPage() {
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(th)}
-                        className="rounded-md p-2 text-muted-foreground hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30"
+                        className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                         title="Hapus"
                       >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -469,7 +469,7 @@ export default function MyThreadsPage() {
               <button
                 onClick={() => saveEdit(editingThread.id)}
                 disabled={saving}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
                 {saving ? "Menyimpan..." : "Simpan Perubahan"}
               </button>
@@ -484,8 +484,8 @@ export default function MyThreadsPage() {
           <div className="w-full max-w-md rounded-lg border border-border bg-card shadow-xl">
             {/* Modal Header */}
             <div className="flex items-center gap-3 border-b border-border px-6 py-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
+                <svg className="h-5 w-5 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
@@ -517,7 +517,7 @@ export default function MyThreadsPage() {
               <button
                 onClick={confirmDelete}
                 disabled={deleting}
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+                className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-60"
               >
                 {deleting ? "Menghapus..." : "Ya, Hapus Thread"}
               </button>

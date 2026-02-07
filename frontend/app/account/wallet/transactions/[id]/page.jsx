@@ -247,12 +247,12 @@ export default function TransactionDetailPage() {
   const getStatusBadge = (status) => {
     const normalized = normalizeStatus(status);
     const styles = {
-      held: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-      released: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
-      refunded: "bg-blue-500/10 text-blue-600 border-blue-500/30",
-      disputed: "bg-red-500/10 text-red-600 border-red-500/30",
-      cancelled: "bg-gray-500/10 text-gray-600 border-gray-500/30",
-      rejected: "bg-orange-500/10 text-orange-600 border-orange-500/30",
+      held: "bg-warning/10 text-warning border-warning/30",
+      released: "bg-success/10 text-success border-success/30",
+      refunded: "bg-primary/10 text-primary border-primary/30",
+      disputed: "bg-destructive/10 text-destructive border-destructive/30",
+      cancelled: "bg-muted/60 text-muted-foreground border-border",
+      rejected: "bg-destructive/10 text-destructive border-destructive/30",
     };
     const labels = {
       held: "Dana Ditahan",
@@ -282,24 +282,24 @@ export default function TransactionDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background pt-16">
+      <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-2xl px-4 py-8 text-center text-muted-foreground">
           Memuat...
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!transfer) {
     return (
-      <main className="min-h-screen bg-background pt-16">
+      <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-2xl px-4 py-8 text-center">
           <div className="text-destructive mb-4">{error || "Transfer tidak ditemukan"}</div>
           <Link href="/account/wallet/transactions" className="text-primary hover:underline">
             ← Kembali
           </Link>
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -321,7 +321,7 @@ export default function TransactionDetailPage() {
   const holdInfo = getHoldInfo();
 
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-2xl px-4 py-8">
           <Link
             href="/account/wallet/transactions"
@@ -401,7 +401,7 @@ export default function TransactionDetailPage() {
               {transfer.cancelledAt && (
                 <div className="flex justify-between py-2 border-b border-border">
                   <span className="text-muted-foreground">Tanggal Dibatalkan</span>
-                  <span className="font-medium text-red-500">
+                  <span className="font-medium text-destructive">
                     {formatDate(transfer.cancelledAt)}
                   </span>
                 </div>
@@ -410,13 +410,13 @@ export default function TransactionDetailPage() {
 
             {/* Status Explanation for Held */}
             {status === "held" && holdInfo && (
-              <div className="mx-6 mb-6 rounded-lg bg-amber-600/10 border border-amber-600/30 p-4">
+              <div className="mx-6 mb-6 rounded-lg bg-warning/10 border border-warning/30 p-4">
                 <div className="flex gap-3">
-                  <svg className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
-                    <div className="font-medium text-amber-600 mb-1">Dana Dalam Perlindungan Escrow</div>
+                    <div className="font-medium text-warning mb-1">Dana Dalam Perlindungan Escrow</div>
                     <div className="text-sm text-muted-foreground">
                       {isSender ? (
                         <>
@@ -449,8 +449,8 @@ export default function TransactionDetailPage() {
 
             {/* Success Message */}
             {actionSuccess && (
-              <div className="mx-6 mb-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-4">
-                <div className="flex items-center gap-2 text-emerald-600">
+              <div className="mx-6 mb-6 rounded-lg bg-success/10 border border-success/30 p-4">
+                <div className="flex items-center gap-2 text-success">
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -464,7 +464,7 @@ export default function TransactionDetailPage() {
               <div className="p-6 border-t border-border space-y-3">
                 {isSender && (
                   <>
-                    <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-4 text-sm text-muted-foreground">
+                    <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 text-sm text-muted-foreground">
                       <p className="mb-2">
                         <strong className="text-foreground">Info untuk Pengirim:</strong>
                       </p>
@@ -475,7 +475,7 @@ export default function TransactionDetailPage() {
                     </div>
                     <button
                       onClick={() => handleAction("release")}
-                      className="w-full rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90"
+                      className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90"
                     >
                       Lepaskan Dana Lebih Awal
                     </button>
@@ -483,7 +483,7 @@ export default function TransactionDetailPage() {
                 )}
                 {isReceiver && (
                   <>
-                    <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-4 text-sm text-muted-foreground">
+                    <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 text-sm text-muted-foreground">
                       <p className="mb-2">
                         <strong className="text-foreground">Info untuk Penerima:</strong>
                       </p>
@@ -493,7 +493,7 @@ export default function TransactionDetailPage() {
                     </div>
                     <button
                       onClick={() => handleAction("reject")}
-                      className="w-full rounded-lg border border-orange-500/30 py-3 font-semibold text-orange-600 transition hover:bg-orange-500/10"
+                      className="w-full rounded-lg border border-destructive/30 py-3 font-semibold text-destructive transition hover:bg-destructive/10"
                     >
                       Tolak Transfer & Kembalikan ke Pengirim
                     </button>
@@ -503,7 +503,7 @@ export default function TransactionDetailPage() {
                 {isSender && (
                   <button
                     onClick={() => handleAction("dispute")}
-                    className="w-full rounded-lg border border-blue-500/30 py-3 font-semibold text-blue-600 transition hover:bg-blue-500/10"
+                    className="w-full rounded-lg border border-primary/30 py-3 font-semibold text-primary transition hover:bg-primary/10"
                   >
                     Minta Bantuan Tim Mediasi
                   </button>
@@ -516,7 +516,7 @@ export default function TransactionDetailPage() {
               <div className="p-6 border-t border-border">
                 <Link
                   href={`/account/wallet/disputes/${transfer.disputeId}`}
-                  className="block w-full rounded-lg bg-blue-500/10 border border-blue-500/30 py-3 text-center font-semibold text-blue-600 transition hover:opacity-80"
+                  className="block w-full rounded-lg bg-primary/10 border border-primary/30 py-3 text-center font-semibold text-primary transition hover:opacity-80"
                 >
                   Lihat Detail Mediasi
                 </Link>
@@ -561,7 +561,7 @@ export default function TransactionDetailPage() {
                 <button
                   onClick={confirmActionWithPin}
                   disabled={processing || pin.length !== 6}
-                  className="flex-1 rounded-lg bg-primary py-2 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-primary py-2 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {processing ? "Memproses..." : "Konfirmasi"}
                 </button>
@@ -614,7 +614,7 @@ export default function TransactionDetailPage() {
                   rows={4}
                   className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-foreground focus:outline-none focus:border-primary resize-none"
                 />
-                <div className={`text-xs mt-1 ${disputeReason.length >= 20 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                <div className={`text-xs mt-1 ${disputeReason.length >= 20 ? 'text-success' : 'text-muted-foreground'}`}>
                   {disputeReason.length}/20 karakter minimum {disputeReason.length >= 20 ? '✓' : ''}
                 </div>
               </div>
@@ -632,7 +632,7 @@ export default function TransactionDetailPage() {
                 <button
                   onClick={confirmActionWithoutPin}
                   disabled={processing || !disputeCategory || disputeReason.length < 20}
-                  className="flex-1 rounded-lg bg-blue-600 py-2 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-primary py-2 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {processing ? "Memproses..." : "Kirim Permintaan"}
                 </button>
@@ -646,8 +646,8 @@ export default function TransactionDetailPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="w-full max-w-sm rounded-lg bg-card p-6">
               <div className="flex justify-center mb-4">
-                <div className="rounded-full bg-amber-500/10 p-3">
-                  <svg className="h-8 w-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="rounded-full bg-warning/10 p-3">
+                  <svg className="h-8 w-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-6V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
@@ -677,7 +677,7 @@ export default function TransactionDetailPage() {
                 </button>
                 <Link
                   href="/account?setup2fa=true"
-                  className="flex-1 rounded-lg bg-primary py-2 font-semibold text-white text-center transition hover:opacity-90"
+                  className="flex-1 rounded-lg bg-primary py-2 font-semibold text-primary-foreground text-center transition hover:opacity-90"
                 >
                   Atur Keamanan
                 </Link>
@@ -685,6 +685,6 @@ export default function TransactionDetailPage() {
             </div>
           </div>
         )}
-      </main>
+      </div>
   );
 }

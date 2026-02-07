@@ -212,7 +212,7 @@ export default function ProfileSidebar({ onClose }) {
                 size="md" 
               />
               {/* Status indicator */}
-              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card bg-green-500 ring-2 ring-card" />
+              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card bg-success ring-2 ring-card" />
             </div>
             <div className="min-w-0">
               <div className="truncate text-base font-semibold text-foreground">{user.username}</div>
@@ -264,7 +264,7 @@ export default function ProfileSidebar({ onClose }) {
               </div>
               <Link
                 href="/account/wallet/deposit"
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-all hover:opacity-90 hover:scale-105"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90 hover:scale-105"
               >
                 + Deposit
               </Link>

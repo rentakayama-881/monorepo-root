@@ -44,7 +44,7 @@ export default function WalletPage() {
       ),
       label: "Deposit",
       description: "Tambah saldo ke wallet",
-      color: "text-green-600",
+      color: "text-success",
     },
     {
       href: "/account/wallet/send",
@@ -55,7 +55,7 @@ export default function WalletPage() {
       ),
       label: "Kirim",
       description: "Transfer ke pengguna lain",
-      color: "text-blue-600",
+      color: "text-primary",
     },
     {
       href: "/account/wallet/withdraw",
@@ -66,7 +66,7 @@ export default function WalletPage() {
       ),
       label: "Tarik Dana",
       description: "Withdraw ke rekening bank",
-      color: "text-orange-600",
+      color: "text-warning",
     },
     {
       href: "/account/wallet/transactions",
@@ -77,7 +77,7 @@ export default function WalletPage() {
       ),
       label: "Riwayat",
       description: "Lihat semua transaksi",
-      color: "text-purple-600",
+      color: "text-muted-foreground",
     },
     {
       href: "/account/wallet/disputes",
@@ -88,7 +88,7 @@ export default function WalletPage() {
       ),
       label: "Disputes",
       description: "Kelola sengketa transfer",
-      color: "text-red-600",
+      color: "text-destructive",
     },
     {
       href: "/account/wallet/set-pin",
@@ -99,7 +99,7 @@ export default function WalletPage() {
       ),
       label: "PIN Transaksi",
       description: "Atur atau ubah PIN",
-      color: "text-indigo-600",
+      color: "text-foreground",
     },
   ];
 
@@ -147,7 +147,7 @@ export default function WalletPage() {
                 </p>
               )}
               {wallet?.lockedBalance > 0 && (
-                <p className="text-sm text-yellow-600 mt-1">
+                <p className="text-sm text-warning mt-1">
                   Saldo Terkunci: {formatBalance(wallet.lockedBalance)} ALEPH
                 </p>
               )}
@@ -175,14 +175,14 @@ export default function WalletPage() {
         </div>
 
         {/* Info Card */}
-        <Card className="p-4 border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30">
+        <Card className="p-4 border-primary/30 bg-primary/10">
           <div className="flex gap-3">
-            <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <div className="text-sm text-blue-800 dark:text-blue-200">
+            <div className="text-sm text-foreground">
               <p className="font-medium">Tentang ALEPH Token</p>
-              <p className="mt-1 text-blue-700 dark:text-blue-300">
+              <p className="mt-1 text-muted-foreground">
                 ALEPH adalah token internal AIvalid yang digunakan untuk transaksi antar pengguna.
                 1 ALEPH = Rp 1.000. Minimal deposit Rp 10.000 dan minimal withdraw Rp 50.000.
               </p>

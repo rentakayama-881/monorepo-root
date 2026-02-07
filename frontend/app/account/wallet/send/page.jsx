@@ -178,7 +178,7 @@ export default function SendMoneyPage() {
   };
 
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-lg px-4 py-8">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-foreground">Kirim Uang</h1>
@@ -194,7 +194,7 @@ export default function SendMoneyPage() {
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
                     step >= s
-                      ? "bg-primary text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-muted/50 text-muted-foreground"
                   }`}
                 >
@@ -264,7 +264,7 @@ export default function SendMoneyPage() {
                       onClick={() => handleSelectUser(user)}
                       className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-muted/50"
                     >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                         {user.username.slice(0, 2).toUpperCase()}
                       </div>
                       <div>
@@ -284,7 +284,7 @@ export default function SendMoneyPage() {
             <div className="space-y-4">
               {/* Selected User */}
               <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                   {selectedUser?.username.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="flex-1">
@@ -391,7 +391,7 @@ export default function SendMoneyPage() {
                 <button
                   type="button"
                   onClick={handleAmountNext}
-                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90"
+                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90"
                 >
                   Lanjutkan
                 </button>
@@ -426,7 +426,7 @@ export default function SendMoneyPage() {
               </div>
 
               {/* Info Box */}
-              <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 p-3 text-sm text-blue-600">
+              <div className="rounded-lg bg-primary/10 border border-primary/30 p-3 text-sm text-muted-foreground">
                 <p>
                   Uang akan di-hold selama {holdDays} hari. Setelah periode hold berakhir, uang akan otomatis dikirim ke {selectedUser?.username}. Anda dapat melepaskan uang lebih awal dari menu Transaksi.
                 </p>
@@ -464,7 +464,7 @@ export default function SendMoneyPage() {
                 <button
                   type="submit"
                   disabled={loading || pin.length !== 6}
-                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {loading ? "Memproses..." : "Kirim Uang"}
                 </button>
@@ -472,6 +472,6 @@ export default function SendMoneyPage() {
             </form>
           )}
         </div>
-      </main>
+      </div>
   );
 }

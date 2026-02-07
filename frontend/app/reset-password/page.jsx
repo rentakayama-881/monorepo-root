@@ -27,7 +27,7 @@ function ResetPasswordForm() {
   const inputClass =
     "w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
   const primaryButton =
-    "w-full inline-flex justify-center items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+    "w-full inline-flex justify-center items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -98,7 +98,7 @@ function ResetPasswordForm() {
       <div className="rounded-lg border border-border bg-card p-6">
         {status === "success" ? (
           <div className="space-y-4">
-            <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 px-4 py-3 text-sm text-emerald-600">
+            <div className="rounded-lg border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
               {message}
             </div>
             <p className="text-sm text-muted-foreground">Mengalihkan ke halaman login...</p>

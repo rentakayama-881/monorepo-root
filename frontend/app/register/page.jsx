@@ -151,7 +151,7 @@ export default function RegisterPage() {
                 </div>
               )}
               {form.password && (
-                <p className={`text-xs ${passwordStrength <= 1 ? 'text-destructive' : passwordStrength === 2 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                <p className={`text-xs ${passwordStrength <= 1 ? 'text-destructive' : passwordStrength === 2 ? 'text-warning' : 'text-success'}`}>
                   {passwordStrength <= 1 ? 'Password lemah' : passwordStrength === 2 ? 'Password sedang' : 'Password kuat'}
                 </p>
               )}
@@ -178,7 +178,7 @@ export default function RegisterPage() {
               />
             </div>
             {error && <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</div>}
-            {info && <div className="text-sm text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-400">{info}</div>}
+            {info && <div className="text-sm text-success bg-success/10 border border-success/20 rounded-lg px-3 py-2">{info}</div>}
             <button
               type="submit"
               disabled={loading}

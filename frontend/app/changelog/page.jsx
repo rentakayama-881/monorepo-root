@@ -86,7 +86,7 @@ const releases = [
 function VersionBadge({ type }) {
   const styles = {
     major: "bg-primary/10 text-primary border-primary/20",
-    minor: "bg-emerald-600/10 text-emerald-600 border-emerald-600/20",
+    minor: "bg-success/10 text-success border-success/20",
     patch: "bg-muted/10 text-muted-foreground border-muted/20",
   };
 
@@ -196,7 +196,7 @@ export default function ChangelogPage() {
                 </h3>
                 <VersionBadge type={release.type} />
                 {index === 0 && (
-                  <span className="inline-flex items-center rounded-full bg-emerald-600/10 border border-emerald-600/20 px-2 py-0.5 text-xs font-medium text-emerald-600">
+                  <span className="inline-flex items-center rounded-full bg-success/10 border border-success/20 px-2 py-0.5 text-xs font-medium text-success">
                     Latest
                   </span>
                 )}
@@ -220,7 +220,7 @@ export default function ChangelogPage() {
                 title="Fitur Baru" 
                 items={release.changes.added}
                 icon={<svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>}
-                color="text-emerald-600"
+                color="text-success"
               />
               <ChangeSection 
                 title="Peningkatan" 
@@ -232,7 +232,7 @@ export default function ChangelogPage() {
                 title="Perbaikan" 
                 items={release.changes.fixed}
                 icon={<svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-                color="text-amber-600"
+                color="text-warning"
               />
               <ChangeSection 
                 title="Keamanan" 

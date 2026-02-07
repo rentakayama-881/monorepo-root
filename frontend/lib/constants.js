@@ -50,17 +50,17 @@ export const API_ENDPOINTS = {
 // Status Colors/Styles
 export const STATUS_STYLES = {
   transfer: {
-    held: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-    released: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
-    refunded: "bg-blue-500/10 text-blue-600 border-blue-500/30",
-    disputed: "bg-red-500/10 text-red-600 border-red-500/30",
-    expired: "bg-gray-500/10 text-gray-500 border-gray-500/30",
+    held: "bg-warning/10 text-warning border-warning/30",
+    released: "bg-success/10 text-success border-success/30",
+    refunded: "bg-primary/10 text-primary border-primary/30",
+    disputed: "bg-destructive/10 text-destructive border-destructive/30",
+    expired: "bg-muted/60 text-muted-foreground border-border",
   },
   dispute: {
-    negotiation: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-    evidence: "bg-orange-500/10 text-orange-600 border-orange-500/30",
-    admin_review: "bg-purple-500/10 text-purple-600 border-purple-500/30",
-    resolved: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
+    negotiation: "bg-warning/10 text-warning border-warning/30",
+    evidence: "bg-accent text-accent-foreground border-border",
+    admin_review: "bg-primary/10 text-primary border-primary/30",
+    resolved: "bg-success/10 text-success border-success/30",
   },
 };
 

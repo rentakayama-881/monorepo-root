@@ -22,28 +22,28 @@ function SecurityContent() {
   }, [router, setup2fa, redirect]);
 
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-md px-4 py-8">
         <div className="flex flex-col items-center justify-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
           <p className="text-sm text-muted-foreground">Mengalihkan ke pengaturan keamanan...</p>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 
 export default function SecurityPage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-background pt-16">
+      <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-md px-4 py-8">
           <div className="flex flex-col items-center justify-center gap-4">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
             <p className="text-sm text-muted-foreground">Loading...</p>
           </div>
         </div>
-      </main>
+      </div>
     }>
       <SecurityContent />
     </Suspense>

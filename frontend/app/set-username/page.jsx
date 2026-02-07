@@ -109,7 +109,7 @@ export default function SetUsernamePage() {
               className="w-full rounded-lg border border-border bg-card pl-8 pr-10 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
             {validation.show && (
-              <span className={`absolute right-3 top-1/2 -translate-y-1/2 ${validation.valid ? "text-emerald-600" : "text-destructive"}`}>
+              <span className={`absolute right-3 top-1/2 -translate-y-1/2 ${validation.valid ? "text-success" : "text-destructive"}`}>
                 {validation.valid ? (
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -125,7 +125,7 @@ export default function SetUsernamePage() {
           
           {/* Hint / Validation Message */}
           <div className="mt-1.5 flex items-center justify-between">
-            <p className={`text-xs ${validation.show ? (validation.valid ? "text-emerald-600" : "text-destructive") : "text-muted-foreground"}`}>
+            <p className={`text-xs ${validation.show ? (validation.valid ? "text-success" : "text-destructive") : "text-muted-foreground"}`}>
               {validation.show ? validation.message : "Huruf kecil, angka, underscore. Min 7 karakter."}
             </p>
             <span className="text-xs text-muted-foreground">
@@ -144,7 +144,7 @@ export default function SetUsernamePage() {
       </form>
 
       {error && <div className="mt-3 text-sm text-destructive">{error}</div>}
-      {success && <div className="mt-3 text-sm text-emerald-600">{success}</div>}
+      {success && <div className="mt-3 text-sm text-success">{success}</div>}
     </div>
   );
 }

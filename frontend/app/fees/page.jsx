@@ -86,7 +86,7 @@ export default function FeesPage() {
               <ul className="space-y-1">
                 {item.details.map((detail, idx) => (
                   <li key={idx} className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
-                    <svg className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg className="mt-0.5 h-3 w-3 shrink-0 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M20 6L9 17l-5-5" />
                     </svg>
                     <span>{detail}</span>
@@ -133,9 +133,9 @@ export default function FeesPage() {
       <section className="mb-6">
         <h2 className="mb-3 text-sm font-semibold text-foreground">Informasi Pencairan Dana</h2>
         
-        <div className="rounded-lg border border-amber-600/20 bg-amber-600/5 p-3">
+        <div className="rounded-lg border border-warning/20 bg-warning/10 p-3">
           <div className="flex items-start gap-2">
-            <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="mt-0.5 h-4 w-4 shrink-0 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
               <path d="M12 8v4M12 16h.01" />
             </svg>
@@ -238,7 +238,7 @@ export default function FeesPage() {
               <div className="border-t border-border pt-2">
                 <div className="flex justify-between font-medium">
                   <span className="text-foreground">Diterima Seller</span>
-                  <span className="text-emerald-600">Rp 980.000</span>
+                  <span className="text-success">Rp 980.000</span>
                 </div>
               </div>
             </div>

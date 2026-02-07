@@ -32,27 +32,27 @@ export default function CommunityGuidelinesPage() {
           <h2 className="mb-2 text-sm font-semibold text-foreground">Perilaku yang Diharapkan</h2>
           <ul className="space-y-1 text-xs text-muted-foreground">
             <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-emerald-600">✓</span>
+              <span className="mt-0.5 text-success">✓</span>
               <span>Bersikap sopan, hormat, dan profesional dalam setiap interaksi</span>
             </li>
             <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-emerald-600">✓</span>
+              <span className="mt-0.5 text-success">✓</span>
               <span>Memberikan kritik yang konstruktif berfokus pada argumen, bukan individu</span>
             </li>
             <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-emerald-600">✓</span>
+              <span className="mt-0.5 text-success">✓</span>
               <span>Menghargai perbedaan pendapat, latar belakang, dan pengalaman</span>
             </li>
             <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-emerald-600">✓</span>
+              <span className="mt-0.5 text-success">✓</span>
               <span>Berkontribusi dengan konten yang bermanfaat dan berkualitas</span>
             </li>
             <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-emerald-600">✓</span>
+              <span className="mt-0.5 text-success">✓</span>
               <span>Melaporkan konten atau perilaku yang melanggar pedoman</span>
             </li>
             <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-emerald-600">✓</span>
+              <span className="mt-0.5 text-success">✓</span>
               <span>Bertransaksi dengan jujur dan memenuhi kesepakatan</span>
             </li>
           </ul>
@@ -148,15 +148,15 @@ export default function CommunityGuidelinesPage() {
           </p>
           <ul className="space-y-1 text-sm text-muted-foreground">
             <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-amber-600">!</span>
+              <span className="mt-0.5 text-warning">!</span>
               <span>Tidak mempublikasikan data pribadi aktif atau akses ilegal yang masih berlaku</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-amber-600">!</span>
+              <span className="mt-0.5 text-warning">!</span>
               <span>Tidak membagikan metode yang dapat merugikan individu secara langsung</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-amber-600">!</span>
+              <span className="mt-0.5 text-warning">!</span>
               <span>Pengguna bertanggung jawab penuh atas konsekuensi hukum dari tindakan mereka</span>
             </li>
           </ul>
@@ -203,7 +203,7 @@ export default function CommunityGuidelinesPage() {
               <h4 className="text-sm font-medium text-foreground">Pelanggaran Ringan</h4>
               <p className="text-xs text-muted-foreground">Teguran tertulis, penghapusan konten</p>
             </div>
-            <div className="rounded-lg border border-amber-600/30 bg-amber-600/5 p-3">
+            <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
               <h4 className="text-sm font-medium text-foreground">Pelanggaran Sedang</h4>
               <p className="text-xs text-muted-foreground">Pembatasan fitur, penangguhan sementara (1-30 hari)</p>
             </div>

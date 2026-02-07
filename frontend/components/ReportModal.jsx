@@ -74,9 +74,9 @@ export default function ReportModal({
     return (
       <Modal open={open} onClose={handleClose} title="Laporan Terkirim" size="sm">
         <div className="p-4 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-600/10 flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success/10 flex items-center justify-center">
             <svg
-              className="w-8 h-8 text-emerald-600"
+              className="w-8 h-8 text-success"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
