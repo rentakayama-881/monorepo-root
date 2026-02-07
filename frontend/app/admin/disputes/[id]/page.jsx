@@ -89,7 +89,9 @@ export default function AdminDisputeDetailPage() {
   const router = useRouter();
   const params = useParams();
   const disputeId = params.id;
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const autoScrollEnabledRef = useRef(true);
+  const lastMessageSignatureRef = useRef("");
 
   const [dispute, setDispute] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -129,9 +131,33 @@ export default function AdminDisputeDetailPage() {
     return res.json().catch(() => null);
   };
 
-  // Scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const getLastMessageSignature = (messages) => {
+    if (!Array.isArray(messages) || messages.length === 0) return "";
+    const lastMessage = messages[messages.length - 1];
+    return `${lastMessage?.id ?? ""}-${lastMessage?.sentAt ?? ""}-${messages.length}`;
+  };
+
+  const isNearBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+
+    const distanceToBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    return distanceToBottom <= 96;
+  };
+
+  // Scroll only within chat panel so page layout stays stable.
+  const scrollToBottom = (behavior = "auto") => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior,
+    });
+  };
+
+  const handleMessagesScroll = () => {
+    autoScrollEnabledRef.current = isNearBottom();
   };
 
   // Load dispute
@@ -158,7 +184,26 @@ export default function AdminDisputeDetailPage() {
   }, [disputeId, router]);
 
   useEffect(() => {
-    scrollToBottom();
+    const messages = dispute?.messages ?? [];
+    const signature = getLastMessageSignature(messages);
+
+    if (!signature) {
+      lastMessageSignatureRef.current = "";
+      return;
+    }
+
+    const isInitialBatch = !lastMessageSignatureRef.current;
+    const hasNewMessages = signature !== lastMessageSignatureRef.current;
+
+    if (!hasNewMessages) {
+      return;
+    }
+
+    lastMessageSignatureRef.current = signature;
+
+    if (isInitialBatch || autoScrollEnabledRef.current) {
+      scrollToBottom(isInitialBatch ? "auto" : "smooth");
+    }
   }, [dispute?.messages]);
 
   // Send admin message
@@ -168,6 +213,7 @@ export default function AdminDisputeDetailPage() {
 
     setSending(true);
     setError("");
+    autoScrollEnabledRef.current = true;
 
     try {
       await fetchWithAuth(`/api/v1/admin/disputes/${disputeId}/messages`, {
@@ -356,9 +402,9 @@ export default function AdminDisputeDetailPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Left: Dispute Info & Actions */}
-        <div className="col-span-1 space-y-6">
+        <div className="xl:col-span-1 space-y-6">
           {/* Dispute Info */}
           <div className="bg-card rounded-lg border border-border p-6">
             <h2 className="font-semibold text-foreground mb-4">Detail Dispute</h2>
@@ -489,7 +535,7 @@ export default function AdminDisputeDetailPage() {
         </div>
 
         {/* Right: Chat */}
-        <div className="col-span-2">
+        <div className="xl:col-span-2">
           <div className="bg-card rounded-lg border border-border overflow-hidden h-full flex flex-col">
             <div className="px-6 py-4 border-b border-border">
               <h3 className="font-semibold text-foreground">Diskusi Mediasi</h3>
@@ -497,7 +543,12 @@ export default function AdminDisputeDetailPage() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-background/50" style={{ minHeight: "400px", maxHeight: "500px" }}>
+            <div
+              ref={messagesContainerRef}
+              onScroll={handleMessagesScroll}
+              className="flex-1 overflow-y-auto p-4 space-y-4 bg-background/50"
+              style={{ minHeight: "400px", maxHeight: "500px" }}
+            >
               {dispute.messages?.length === 0 && (
                 <div className="text-center text-muted-foreground py-8">
                   <div className="text-4xl mb-2">💬</div>
@@ -535,7 +586,6 @@ export default function AdminDisputeDetailPage() {
                   </div>
                 );
               })}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Admin Message Input */}
@@ -568,7 +618,7 @@ export default function AdminDisputeDetailPage() {
       {dispute.evidence?.length > 0 && (
         <div className="mt-6 bg-card rounded-lg border border-border p-6">
           <h3 className="font-semibold text-foreground mb-4">Bukti yang Dilampirkan</h3>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {dispute.evidence.map((ev, idx) => (
               <a key={idx} href={ev.url} target="_blank" rel="noopener noreferrer" 
                  className="block rounded-lg border border-border p-3 hover:border-primary transition">

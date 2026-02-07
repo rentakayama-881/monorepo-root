@@ -244,7 +244,7 @@ export default function DepositPage() {
 
   return (
     <main className="min-h-screen bg-background pt-16">
-        <div className="mx-auto max-w-lg px-4 py-8">
+        <div className="mx-auto max-w-3xl px-4 py-8">
           <Link
             href="/account/wallet"
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -271,7 +271,7 @@ export default function DepositPage() {
           </div>
 
           {/* Progress Steps */}
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex items-center justify-between gap-2">
             {[1, 2, 3].map((s) => (
               <div key={s} className="flex items-center">
                 <div
@@ -285,7 +285,7 @@ export default function DepositPage() {
                 </div>
                 {s < 3 && (
                   <div
-                    className={`h-1 w-16 ${
+                    className={`h-1 w-8 sm:w-16 md:w-24 ${
                       step > s ? "bg-primary" : "bg-muted/50"
                     }`}
                   />
@@ -345,7 +345,7 @@ export default function DepositPage() {
               </div>
 
               {/* Quick Amount Buttons */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                 {quickAmounts.map((amt) => (
                   <button
                     key={amt}
@@ -379,7 +379,7 @@ export default function DepositPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border bg-card p-4">
+              <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
                 <div className="mb-3 text-sm font-medium text-foreground">
                   QRIS
                 </div>
@@ -387,7 +387,7 @@ export default function DepositPage() {
                   <img
                     src={QRIS_IMAGE_URL}
                     alt="QRIS Deposit"
-                    className="h-64 w-64 rounded-lg border border-border bg-white p-2"
+                    className="h-auto w-full max-w-72 rounded-lg border border-border bg-white p-2"
                     loading="lazy"
                   />
                 </div>
@@ -409,7 +409,7 @@ export default function DepositPage() {
                 />
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
                   onClick={() => setStep(1)}
@@ -456,10 +456,10 @@ export default function DepositPage() {
 
               {createdDeposit?.id && (
                 <div className="mt-4 rounded-lg border border-border bg-background p-4 text-left">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="text-xs text-muted-foreground">ID Request</div>
-                      <div className="font-mono text-sm text-foreground">
+                      <div className="font-mono text-sm text-foreground break-all">
                         {createdDeposit.id}
                       </div>
                     </div>
@@ -496,7 +496,7 @@ export default function DepositPage() {
             <h3 className="text-sm font-semibold text-foreground mb-3">
               Metode Pembayaran yang Didukung
             </h3>
-            <div className="grid grid-cols-4 gap-3 text-center text-xs text-muted-foreground">
+            <div className="grid grid-cols-2 gap-3 text-center text-xs text-muted-foreground sm:grid-cols-4">
               <div className="rounded-lg border border-border bg-card p-2">
                 QRIS
               </div>
@@ -552,7 +552,7 @@ export default function DepositPage() {
                     key={d.id}
                     className="rounded-lg border border-border bg-card p-4"
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <div className="font-medium text-foreground">
                           Rp {d.amount?.toLocaleString("id-ID") || 0}
@@ -561,10 +561,10 @@ export default function DepositPage() {
                           {d.method} • {formatDate(d.createdAt)}
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
-                          ID Transaksi: <span className="font-mono">{d.externalTransactionId}</span>
+                          ID Transaksi: <span className="font-mono break-all">{d.externalTransactionId}</span>
                         </div>
                       </div>
-                      <div>{statusBadge(d.status)}</div>
+                      <div className="self-start sm:self-auto">{statusBadge(d.status)}</div>
                     </div>
                   </div>
                 ))}

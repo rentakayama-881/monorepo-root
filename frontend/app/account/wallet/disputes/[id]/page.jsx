@@ -97,7 +97,9 @@ export default function DisputeDetailPage() {
   const router = useRouter();
   const params = useParams();
   const disputeId = params.id;
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const autoScrollEnabledRef = useRef(true);
+  const lastMessageSignatureRef = useRef("");
 
   const [dispute, setDispute] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -113,6 +115,35 @@ export default function DisputeDetailPage() {
   const [showEvidenceForm, setShowEvidenceForm] = useState(false);
   const [evidenceDescription, setEvidenceDescription] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
+
+  const getLastMessageSignature = (messages) => {
+    if (!Array.isArray(messages) || messages.length === 0) return "";
+    const lastMessage = messages[messages.length - 1];
+    return `${lastMessage?.id ?? ""}-${lastMessage?.createdAt ?? ""}-${messages.length}`;
+  };
+
+  const isNearBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+
+    const distanceToBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    return distanceToBottom <= 96;
+  };
+
+  // Scroll only inside the message area to keep page position stable.
+  const scrollToBottom = (behavior = "auto") => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior,
+    });
+  };
+
+  const handleMessagesScroll = () => {
+    autoScrollEnabledRef.current = isNearBottom();
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -144,7 +175,26 @@ export default function DisputeDetailPage() {
   }, [router, disputeId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const messages = dispute?.messages ?? [];
+    const signature = getLastMessageSignature(messages);
+
+    if (!signature) {
+      lastMessageSignatureRef.current = "";
+      return;
+    }
+
+    const isInitialBatch = !lastMessageSignatureRef.current;
+    const hasNewMessages = signature !== lastMessageSignatureRef.current;
+
+    if (!hasNewMessages) {
+      return;
+    }
+
+    lastMessageSignatureRef.current = signature;
+
+    if (isInitialBatch || autoScrollEnabledRef.current) {
+      scrollToBottom(isInitialBatch ? "auto" : "smooth");
+    }
   }, [dispute?.messages]);
 
   const refreshDispute = async () => {
@@ -161,6 +211,7 @@ export default function DisputeDetailPage() {
     if (!message.trim()) return;
 
     setSendingMessage(true);
+    autoScrollEnabledRef.current = true;
 
     try {
       await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.MESSAGES(disputeId), {
@@ -353,7 +404,11 @@ export default function DisputeDetailPage() {
                 <div className="border-b border-border p-4">
                   <h3 className="font-semibold text-foreground">Diskusi</h3>
                 </div>
-                <div className="h-80 overflow-y-auto p-4 space-y-4">
+                <div
+                  ref={messagesContainerRef}
+                  onScroll={handleMessagesScroll}
+                  className="h-80 overflow-y-auto p-4 space-y-4"
+                >
                   {dispute.messages?.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
                       Belum ada pesan
@@ -396,7 +451,6 @@ export default function DisputeDetailPage() {
                       </div>
                     ))
                   )}
-                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Message Input */}

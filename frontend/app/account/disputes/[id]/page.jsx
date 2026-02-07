@@ -95,7 +95,9 @@ export default function DisputeCenterPage() {
   const router = useRouter();
   const params = useParams();
   const disputeId = params.id;
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const autoScrollEnabledRef = useRef(true);
+  const lastMessageSignatureRef = useRef("");
 
   const [dispute, setDispute] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -104,9 +106,33 @@ export default function DisputeCenterPage() {
   const [error, setError] = useState("");
   const [currentUserId, setCurrentUserId] = useState(0);
 
-  // Scroll to bottom of messages
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const getLastMessageSignature = (messages) => {
+    if (!Array.isArray(messages) || messages.length === 0) return "";
+    const lastMessage = messages[messages.length - 1];
+    return `${lastMessage?.id ?? ""}-${lastMessage?.sentAt ?? ""}-${messages.length}`;
+  };
+
+  const isNearBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+
+    const distanceToBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    return distanceToBottom <= 96;
+  };
+
+  // Scroll only inside the message container to prevent viewport jump.
+  const scrollToBottom = (behavior = "auto") => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior,
+    });
+  };
+
+  const handleMessagesScroll = () => {
+    autoScrollEnabledRef.current = isNearBottom();
   };
 
   // Load dispute data
@@ -165,7 +191,26 @@ export default function DisputeCenterPage() {
   }, [router, disputeId]);
 
   useEffect(() => {
-    scrollToBottom();
+    const messages = dispute?.messages ?? [];
+    const signature = getLastMessageSignature(messages);
+
+    if (!signature) {
+      lastMessageSignatureRef.current = "";
+      return;
+    }
+
+    const isInitialBatch = !lastMessageSignatureRef.current;
+    const hasNewMessages = signature !== lastMessageSignatureRef.current;
+
+    if (!hasNewMessages) {
+      return;
+    }
+
+    lastMessageSignatureRef.current = signature;
+
+    if (isInitialBatch || autoScrollEnabledRef.current) {
+      scrollToBottom(isInitialBatch ? "auto" : "smooth");
+    }
   }, [dispute?.messages]);
 
   // Send message
@@ -175,6 +220,7 @@ export default function DisputeCenterPage() {
 
     setSending(true);
     setError("");
+    autoScrollEnabledRef.current = true;
 
     try {
       await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.MESSAGES(disputeId), {
@@ -373,7 +419,11 @@ export default function DisputeCenterPage() {
           </div>
 
           {/* Messages */}
-          <div className="h-96 overflow-y-auto p-4 space-y-4 bg-background/50">
+          <div
+            ref={messagesContainerRef}
+            onScroll={handleMessagesScroll}
+            className="h-96 overflow-y-auto p-4 space-y-4 bg-background/50"
+          >
             {dispute?.messages?.length === 0 && (
               <div className="text-center text-muted-foreground py-8">
                 <div className="text-4xl mb-2">💬</div>
@@ -413,7 +463,6 @@ export default function DisputeCenterPage() {
                 </div>
               );
             })}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Message Input */}
