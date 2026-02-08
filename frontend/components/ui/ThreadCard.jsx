@@ -5,8 +5,12 @@
  * Styled like prompts.chat PromptCard with GitHub-level polish
  */
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { getApiBase } from "@/lib/api";
+import { fetchWithAuth } from "@/lib/tokenRefresh";
+import { getToken } from "@/lib/auth";
 import Avatar from "./Avatar";
 import { TagList } from "./TagPill";
 import Badge from "./Badge";
@@ -82,6 +86,7 @@ export default function ThreadCard({
     reply_count,
     view_count,
     guarantee_amount,
+    credential_count,
     tags,
   } = thread;
 
@@ -159,59 +164,56 @@ export default function ThreadCard({
           )}
           
           {/* Metadata */}
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            {showAuthor && (
-              <Link 
-                href={`/user/${username}`}
-                className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary hover:underline"
-                onClick={(e) => e.stopPropagation()}
-              >
-                @{username || "Anonim"}
-                {primary_badge && (
-                  <Badge badge={primary_badge} size="xs" />
-                )}
-              </Link>
-            )}
-            {showCategory && category && (
-              <>
-                <span>•</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px]">
-                  {category.name || category.slug}
-                </span>
-              </>
-            )}
-            {showDate && (
-              <>
-                <span>•</span>
-                <span>{formatRelativeTime(created_at)}</span>
-              </>
-            )}
-            {Number(guarantee_amount) > 0 && (
-              <>
-                <span>•</span>
-                <span
-                  className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400"
-                  title="Jaminan Profil"
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground">
+              {showAuthor && (
+                <Link
+                  href={`/user/${username}`}
+                  className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary hover:underline"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
-                  </svg>
-                  Rp {Number(guarantee_amount).toLocaleString("id-ID")}
-                </span>
-              </>
-            )}
-            {typeof reply_count === "number" && reply_count > 0 && (
-              <>
-                <span>•</span>
-                <span className="inline-flex items-center gap-1">
-                  <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M1.75 1h8.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 10.25 10H7.061l-2.574 2.573A1.458 1.458 0 0 1 2 11.543V10h-.25A1.75 1.75 0 0 1 0 8.25v-5.5C0 1.784.784 1 1.75 1ZM1.5 2.75v5.5c0 .138.112.25.25.25h1a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h3.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25Zm13 2a.25.25 0 0 0-.25-.25h-.5a.75.75 0 0 1 0-1.5h.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 14.25 12H14v1.543a1.458 1.458 0 0 1-2.487 1.03L9.22 12.28a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215l2.22 2.22v-2.19a.75.75 0 0 1 .75-.75h1a.25.25 0 0 0 .25-.25Z"></path>
-                  </svg>
-                  {reply_count}
-                </span>
-              </>
-            )}
+                  @{username || "Anonim"}
+                  {primary_badge && (
+                    <Badge badge={primary_badge} size="xs" />
+                  )}
+                </Link>
+              )}
+              {showCategory && category && (
+                <>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px]">
+                    {category.name || category.slug}
+                  </span>
+                </>
+              )}
+              {showDate && (
+                <>
+                  <span>•</span>
+                  <span>{formatRelativeTime(created_at)}</span>
+                </>
+              )}
+              {typeof reply_count === "number" && reply_count > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-1">
+                    <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M1.75 1h8.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 10.25 10H7.061l-2.574 2.573A1.458 1.458 0 0 1 2 11.543V10h-.25A1.75 1.75 0 0 1 0 8.25v-5.5C0 1.784.784 1 1.75 1ZM1.5 2.75v5.5c0 .138.112.25.25.25h1a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h3.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25Zm13 2a.25.25 0 0 0-.25-.25h-.5a.75.75 0 0 1 0-1.5h.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 14.25 12H14v1.543a1.458 1.458 0 0 1-2.487 1.03L9.22 12.28a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215l2.22 2.22v-2.19a.75.75 0 0 1 .75-.75h1a.25.25 0 0 0 .25-.25Z"></path>
+                    </svg>
+                    {reply_count}
+                  </span>
+                </>
+              )}
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <CredentialPill
+                threadId={id}
+                initialCount={credential_count}
+                threadUsername={username}
+                size="xs"
+              />
+              <GuaranteePill amount={guarantee_amount} size="xs" />
+            </div>
           </div>
         </div>
       </Link>
@@ -258,7 +260,7 @@ export default function ThreadCard({
         )}
 
         {/* Footer - Author & Meta */}
-        <div className="flex items-center justify-between pt-2.5 border-t border-border">
+        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-border">
           {/* Author */}
           {showAuthor && (
             <div className="flex items-center gap-2 min-w-0">
@@ -279,25 +281,12 @@ export default function ThreadCard({
                     {formatRelativeTime(created_at)}
                   </div>
                 )}
-
-                {Number(guarantee_amount) > 0 && (
-                  <span
-                    className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400"
-                    title="Jaminan Profil"
-                  >
-                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
-                    </svg>
-                    Rp {Number(guarantee_amount).toLocaleString("id-ID")}
-                  </span>
-                )}
               </div>
             </div>
           )}
 
-          {/* Stats */}
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          {/* Actions */}
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             {typeof reply_count === "number" && (
               <span
                 className="inline-flex items-center gap-1 transition-colors group-hover:text-foreground"
@@ -346,10 +335,132 @@ export default function ThreadCard({
                 <span className="font-medium">{view_count}</span>
               </span>
             )}
+
+            <CredentialPill
+              threadId={id}
+              initialCount={credential_count}
+              threadUsername={username}
+            />
+            <GuaranteePill amount={guarantee_amount} />
           </div>
         </div>
       </Link>
     </div>
+  );
+}
+
+function GuaranteePill({ amount, size = "sm" }) {
+  if (Number(amount) <= 0) return null;
+
+  const classes =
+    size === "xs"
+      ? "px-1.5 py-0.5 text-[10px]"
+      : "px-2 py-1 text-[10px]";
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 font-medium text-emerald-700 dark:text-emerald-400",
+        classes
+      )}
+      title="Jaminan Profil"
+    >
+      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
+      </svg>
+      Rp {Number(amount).toLocaleString("id-ID")}
+    </span>
+  );
+}
+
+function CredentialPill({ threadId, initialCount = 0, threadUsername = "", size = "sm" }) {
+  const [count, setCount] = useState(typeof initialCount === "number" ? initialCount : 0);
+  const [hasCredentialed, setHasCredentialed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setCount(typeof initialCount === "number" ? initialCount : 0);
+  }, [initialCount]);
+
+  const isClient = typeof window !== "undefined";
+  const isAuthed = isClient ? !!getToken() : false;
+  const currentUsername = isClient ? localStorage.getItem("username") : null;
+  const isSelf = !!(currentUsername && threadUsername && currentUsername === threadUsername);
+
+  const disabled = !isAuthed || isSelf;
+
+  async function refreshCount() {
+    try {
+      const base = getApiBase();
+      const r = await fetch(`${base}/api/threads/${threadId}/credential/count`);
+      if (!r.ok) return;
+      const j = await r.json();
+      if (typeof j?.count === "number") setCount(j.count);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function toggle(e) {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    if (disabled || loading) return;
+    setError("");
+    setLoading(true);
+
+    const nextHas = !hasCredentialed;
+    try {
+      const base = getApiBase();
+      const res = await fetchWithAuth(`${base}/api/threads/${threadId}/credential`, {
+        method: nextHas ? "POST" : "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error("Gagal memproses credential");
+      }
+
+      setHasCredentialed(nextHas);
+      await refreshCount();
+    } catch (err) {
+      setError(String(err?.message || err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const title = !isAuthed
+    ? "Login untuk memberi credential"
+    : isSelf
+      ? "Tidak dapat memberikan credential pada thread sendiri"
+      : hasCredentialed
+        ? "Klik untuk menghapus credential"
+        : "Klik untuk memberi credential";
+
+  const padding = size === "xs" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[10px]";
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={disabled || loading}
+      title={error ? error : title}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border transition-colors",
+        padding,
+        hasCredentialed
+          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+          : "border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+        disabled || loading ? "opacity-60 cursor-not-allowed" : ""
+      )}
+    >
+      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
+      </svg>
+      <span className="tabular-nums font-semibold">{count}</span>
+      <span className={cn(size === "xs" ? "hidden sm:inline" : "inline")}>Credential</span>
+    </button>
   );
 }
 

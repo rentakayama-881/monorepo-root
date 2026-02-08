@@ -44,6 +44,7 @@ public class GuaranteesController : ApiControllerBase
         try
         {
             var guarantee = await _guaranteeService.GetActiveGuaranteeAsync(user.UserId);
+            await _guaranteeService.SyncGuaranteeAmountAsync(user.UserId, guarantee?.Amount ?? 0);
 
             if (guarantee == null)
             {
@@ -204,4 +205,3 @@ public class GuaranteesController : ApiControllerBase
         }
     }
 }
-

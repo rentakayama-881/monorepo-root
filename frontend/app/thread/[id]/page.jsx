@@ -243,16 +243,8 @@ export default function ThreadDetailPage() {
           </div>
 
           {/* Reactions */}
-          <div className="border-t border-border px-6 py-4 flex items-center gap-4">
-            <CredentialButton
-              threadId={id}
-              initialCount={data.credential_count}
-              initialHasCredentialed={data.has_credentialed}
-              disabled={!!(currentUsername && data?.user?.username && currentUsername === data.user.username)}
-            />
-            <div className="flex-1">
-              <ReactionBar threadId={id} />
-            </div>
+          <div className="border-t border-border px-6 py-4">
+            <ReactionBar threadId={id} />
           </div>
 
           {/* Footer actions */}
@@ -326,88 +318,6 @@ export default function ThreadDetailPage() {
       {/* Reading progress bar */}
       <div ref={readingProgressRef} className="reading-progress" aria-hidden="true" />
     </main>
-  );
-}
-
-function CredentialButton({
-  threadId,
-  initialCount = 0,
-  initialHasCredentialed = false,
-  disabled = false,
-}) {
-  const API = getApiBase();
-  const [count, setCount] = useState(typeof initialCount === "number" ? initialCount : 0);
-  const [hasCredentialed, setHasCredentialed] = useState(!!initialHasCredentialed);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    setCount(typeof initialCount === "number" ? initialCount : 0);
-    setHasCredentialed(!!initialHasCredentialed);
-  }, [initialCount, initialHasCredentialed]);
-
-  async function toggle() {
-    if (disabled || loading) return;
-    setError("");
-
-    const prevHas = hasCredentialed;
-    const prevCount = count;
-    const nextHas = !prevHas;
-
-    // Optimistic UI update
-    setHasCredentialed(nextHas);
-    setCount(Math.max(0, prevCount + (nextHas ? 1 : -1)));
-    setLoading(true);
-
-    try {
-      const res = await fetchWithAuth(`${API}/api/threads/${threadId}/credential`, {
-        method: nextHas ? "POST" : "DELETE",
-      });
-      if (!res.ok) {
-        throw new Error("Gagal memproses credential");
-      }
-    } catch (e) {
-      // Rollback
-      setHasCredentialed(prevHas);
-      setCount(prevCount);
-      setError(String(e.message || e));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const title = disabled
-    ? "Tidak dapat memberikan credential pada thread sendiri"
-    : hasCredentialed
-      ? "Klik untuk menghapus credential"
-      : "Klik untuk memberi credential";
-
-  return (
-    <div className="flex flex-col gap-1">
-      <button
-        type="button"
-        onClick={toggle}
-        disabled={disabled || loading}
-        title={title}
-        className={[
-          "inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium transition-colors",
-          hasCredentialed
-            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-            : "bg-card text-foreground hover:bg-muted/50",
-          disabled || loading ? "opacity-50 cursor-not-allowed" : "",
-        ].join(" ")}
-      >
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
-        </svg>
-        <span className="tabular-nums font-semibold">{count}</span>
-        <span>Credential</span>
-      </button>
-      {error && (
-        <div className="text-[11px] text-destructive">{error}</div>
-      )}
-    </div>
   );
 }
 

@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+using System.Text;
 using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
@@ -11,6 +11,7 @@ public interface IGuaranteeService
     Task<long> GetGuaranteeAmountAsync(uint userId);
     Task<GuaranteeLock> SetGuaranteeAsync(uint userId, long amount, string pin);
     Task<GuaranteeLock> ReleaseGuaranteeAsync(uint userId, string pin);
+    Task SyncGuaranteeAmountAsync(uint userId, long amount);
 }
 
 public class GuaranteeService : IGuaranteeService
@@ -205,6 +206,11 @@ public class GuaranteeService : IGuaranteeService
         return active;
     }
 
+    public async Task SyncGuaranteeAmountAsync(uint userId, long amount)
+    {
+        await BestEffortSyncGuaranteeAmountAsync(userId, amount);
+    }
+
     private async Task BestEffortRefundAsync(uint userId, long amount, string referenceId)
     {
         try
@@ -256,7 +262,11 @@ public class GuaranteeService : IGuaranteeService
                 $"{baseUrl}/api/internal/users/{userId}/guarantee");
 
             request.Headers.Add("X-Internal-Api-Key", internalKey);
-            request.Content = JsonContent.Create(new { guarantee_amount = amount });
+            // Ensure guarantee_amount is always present, even when amount=0.
+            request.Content = new StringContent(
+                $"{{\"guarantee_amount\":{amount}}}",
+                Encoding.UTF8,
+                "application/json");
 
             var response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
@@ -275,4 +285,3 @@ public class GuaranteeService : IGuaranteeService
         }
     }
 }
-
