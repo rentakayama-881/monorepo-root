@@ -455,7 +455,7 @@ function AccountPageContent() {
                     </Button>
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground">Gunakan gambar rasio 1:1 untuk hasil terbaik. Max ~2MB (sesuaikan backend).</div>
+                <div className="text-xs text-muted-foreground">Gunakan gambar rasio 1:1 untuk hasil terbaik. Maks ~2MB.</div>
               </div>
             </div>
           </section>
@@ -522,10 +522,6 @@ function AccountPageContent() {
                     Saldo tersedia: Rp {walletBalance.toLocaleString("id-ID")}
                   </div>
                 )}
-              </div>
-
-              <div className="text-xs text-muted-foreground">
-                Berdasarkan Signaling Theory (Spence, 1973), jaminan finansial berfungsi sebagai sinyal kredibel atas kualitas layanan Anda.
               </div>
 
               {guaranteeAmount > 0 ? (
