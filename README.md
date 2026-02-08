@@ -182,7 +182,7 @@ npm run typecheck
 
 ## API Endpoints
 
-### Go Backend (`api.alephdraad.fun`)
+### Go Backend (`api.aivalid.id`)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -195,7 +195,7 @@ npm run typecheck
 | POST | `/api/threads` | Create thread |
 | GET | `/api/user/:username` | User profile |
 
-### Feature Service (`feature.alephdraad.fun`)
+### Feature Service (`feature.aivalid.id`)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -219,7 +219,7 @@ DATABASE_URL=postgresql://user:pass@host:5432/db
 
 # JWT
 JWT_SECRET=your-secret-key
-JWT_ISSUER=alephdraad
+JWT_ISSUER=api.aivalid.id
 JWT_AUDIENCE=alephdraad-users
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
@@ -227,7 +227,7 @@ JWT_REFRESH_EXPIRY=7d
 # Email
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
-SMTP_USER=noreply@alephdraad.fun
+SMTP_USER=noreply@example.com
 SMTP_PASS=your-smtp-password
 
 # TOTP
@@ -238,7 +238,7 @@ TOTP_ISSUER=Alephdraad
 ```env
 MONGODB_URI=mongodb+srv://...
 JWT_SECRET=same-as-backend
-JWT_ISSUER=alephdraad
+JWT_ISSUER=api.aivalid.id
 JWT_AUDIENCE=alephdraad-users
 ```
 
@@ -251,9 +251,9 @@ JWT_AUDIENCE=alephdraad-users
 - **backend-deploy.yml** — Auto-deploy backend on main branch push
 
 ### Production URLs
-- Frontend: `https://alephdraad.fun`
-- Backend API: `https://api.alephdraad.fun`
-- Feature Service: `https://feature.alephdraad.fun`
+- Frontend: `https://aivalid.id`
+- Backend API: `https://api.aivalid.id`
+- Feature Service: `https://feature.aivalid.id`
 
 ---
 
@@ -277,7 +277,7 @@ JWT_AUDIENCE=alephdraad-users
 
 ## Security
 
-If you discover a security vulnerability, please email **security@alephdraad.fun** instead of creating a public issue.
+If you discover a security vulnerability, please use the contact listed in `SECURITY.md` instead of creating a public issue.
 
 ---
 

@@ -189,7 +189,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_BACKEND_URL: https://api.alephdraad.com
+          NEXT_PUBLIC_BACKEND_URL: https://api.aivalid.id
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

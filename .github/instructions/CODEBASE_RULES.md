@@ -157,9 +157,9 @@ fix: resolve session_id required error
 
 | Service | Server | Domain |
 |---------|--------|--------|
-| Frontend | Vercel (auto) | alephdraad.fun |
-| Backend | 72.62.124.23 | api.alephdraad.fun |
-| Feature | 203.175.11.84 | feature.alephdraad.fun |
+| Frontend | Vercel (auto) | aivalid.id |
+| Backend | 72.62.124.23 | api.aivalid.id |
+| Feature | 203.175.11.84 | feature.aivalid.id |
 
 ---
 

@@ -6,8 +6,8 @@ A microservice handling social features (replies, reactions) and finance feature
 
 ```
 Frontend (Next.js/Vercel)
-    ├── Core API (Gin) → api.alephdraad.fun → Neon Postgres
-    └── Feature API (ASP.NET Core) → feature.alephdraad.fun → MongoDB
+    ├── Core API (Gin) → api.aivalid.id → Neon Postgres
+    └── Feature API (ASP.NET Core) → feature.aivalid.id → MongoDB
 ```
 
 ## Features
@@ -109,7 +109,7 @@ Authorization: Bearer <jwt-token>
 
 JWT configuration must match the Gin backend:
 - Same `JWT_SECRET`
-- Same `JWT_ISSUER` (api.alephdraad.fun)
+- Same `JWT_ISSUER` (api.aivalid.id)
 - Same `JWT_AUDIENCE` (alephdraad-clients)
 
 ## Configuration
@@ -121,14 +121,14 @@ JWT configuration must match the Gin backend:
 | `MONGODB__CONNECTIONSTRING` | MongoDB connection string | `mongodb://127.0.0.1:27017` |
 | `MONGODB__DATABASENAME` | Database name | `feature_service_db` |
 | `JWT__SECRET` | JWT signing secret (required) | - |
-| `JWT__ISSUER` | JWT issuer | `api.alephdraad.fun` |
+| `JWT__ISSUER` | JWT issuer | `api.aivalid.id` |
 | `JWT__AUDIENCE` | JWT audience | `alephdraad-clients` |
 | `REDIS__CONNECTIONSTRING` | Redis connection string/URL (recommended: `rediss://...`) | - |
 | `REDIS__REQUIRETLS` | Require TLS for non-local Redis endpoints | `true` |
 | `REDIS__SSLHOST` | Optional TLS SNI/hostname override | - |
 | `REDIS__USER` | Optional Redis ACL username | - |
 | `REDIS__PASSWORD` | Optional Redis password (if not in connection string) | - |
-| `CORS__ALLOWEDORIGINS__0` | Allowed CORS origin | `https://alephdraad.fun` |
+| `CORS__ALLOWEDORIGINS__0` | Allowed CORS origin | `https://aivalid.id` |
 | `ASPNETCORE_URLS` | Service URLs | `http://127.0.0.1:5000` |
 
 ### MongoDB Collections & Indexes

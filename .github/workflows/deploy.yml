@@ -121,7 +121,7 @@ jobs:
     if: needs.validate.outputs.deploy_backend == 'true'
     environment:
       name: production-backend
-      url: https://api.alephdraad.com
+      url: https://api.aivalid.id
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -214,7 +214,7 @@ jobs:
     if: needs.validate.outputs.deploy_feature_service == 'true'
     environment:
       name: production-feature-service
-      url: https://features.alephdraad.com
+      url: https://feature.aivalid.id
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
