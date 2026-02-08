@@ -223,11 +223,15 @@ public class MongoDbContext
         {
             new CreateIndexModel<GuaranteeLock>(Builders<GuaranteeLock>.IndexKeys.Ascending(g => g.UserId)),
             new CreateIndexModel<GuaranteeLock>(
-                Builders<GuaranteeLock>.IndexKeys.Ascending(g => g.UserId),
+                // Use a different key pattern than (UserId) to avoid Mongo's index options conflict.
+                // Partial unique index still enforces: one Active guarantee per user.
+                Builders<GuaranteeLock>.IndexKeys
+                    .Ascending(g => g.UserId)
+                    .Ascending(g => g.Status),
                 new CreateIndexOptions<GuaranteeLock>
                 {
                     Unique = true,
-                    Name = "userId_active_unique",
+                    Name = "userId_status_active_unique",
                     PartialFilterExpression = Builders<GuaranteeLock>.Filter.Eq(g => g.Status, GuaranteeStatus.Active)
                 })
         });
