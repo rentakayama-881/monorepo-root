@@ -14,6 +14,7 @@ import { getToken } from "@/lib/auth";
 import Avatar from "./Avatar";
 import { TagList } from "./TagPill";
 import Badge from "./Badge";
+import { useToast } from "./Toast";
 
 /**
  * Format timestamp to readable date
@@ -49,6 +50,28 @@ function formatRelativeTime(timestamp) {
   if (diffHours < 24) return `${diffHours} jam lalu`;
   if (diffDays < 7) return `${diffDays} hari lalu`;
   return formatDate(timestamp);
+}
+
+function decodeJwtPayload(token) {
+  if (!token || typeof token !== "string") return null;
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+
+  try {
+    const base64Url = parts[1];
+    const padding = "=".repeat((4 - (base64Url.length % 4)) % 4);
+    const base64 = (base64Url + padding).replace(/-/g, "+").replace(/_/g, "/");
+    if (typeof atob !== "function") return null;
+    return JSON.parse(atob(base64));
+  } catch {
+    return null;
+  }
+}
+
+function getUsernameFromToken(token) {
+  const payload = decodeJwtPayload(token);
+  const uname = payload?.username ?? payload?.preferred_username ?? payload?.name ?? null;
+  return typeof uname === "string" && uname.trim() ? uname : null;
 }
 
 /**
@@ -375,21 +398,20 @@ function GuaranteePill({ amount, size = "sm" }) {
 }
 
 function CredentialPill({ threadId, initialCount = 0, threadUsername = "", size = "sm" }) {
+  const { toast } = useToast();
   const [count, setCount] = useState(typeof initialCount === "number" ? initialCount : 0);
   const [hasCredentialed, setHasCredentialed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     setCount(typeof initialCount === "number" ? initialCount : 0);
   }, [initialCount]);
 
   const isClient = typeof window !== "undefined";
-  const isAuthed = isClient ? !!getToken() : false;
-  const currentUsername = isClient ? localStorage.getItem("username") : null;
+  const token = isClient ? getToken() : null;
+  const isAuthed = !!token;
+  const currentUsername = isClient ? getUsernameFromToken(token) : null;
   const isSelf = !!(currentUsername && threadUsername && currentUsername === threadUsername);
-
-  const disabled = !isAuthed || isSelf;
 
   async function refreshCount() {
     try {
@@ -406,8 +428,17 @@ function CredentialPill({ threadId, initialCount = 0, threadUsername = "", size 
   async function toggle(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
-    if (disabled || loading) return;
-    setError("");
+    if (loading) return;
+
+    if (!isAuthed) {
+      toast.info("Login diperlukan", "Silakan login untuk memberi credential.");
+      return;
+    }
+    if (isSelf) {
+      toast.warning("Tidak bisa", "Kamu tidak bisa memberi credential pada thread sendiri.");
+      return;
+    }
+
     setLoading(true);
 
     const nextHas = !hasCredentialed;
@@ -417,13 +448,31 @@ function CredentialPill({ threadId, initialCount = 0, threadUsername = "", size 
         method: nextHas ? "POST" : "DELETE",
       });
       if (!res.ok) {
-        throw new Error("Gagal memproses credential");
+        let msg = "Gagal memproses credential";
+        try {
+          const data = await res.clone().json();
+          msg = data?.error || data?.message || data?.error?.message || msg;
+        } catch {
+          // ignore
+        }
+        throw new Error(msg);
+      }
+
+      // Prefer backend-provided count (immediate UI update), fallback to count endpoint.
+      try {
+        const data = await res.clone().json();
+        if (typeof data?.count === "number") {
+          setCount(data.count);
+        }
+      } catch {
+        // ignore json parse errors
       }
 
       setHasCredentialed(nextHas);
       await refreshCount();
     } catch (err) {
-      setError(String(err?.message || err));
+      const msg = String(err?.message || err);
+      toast.error("Credential gagal", msg);
     } finally {
       setLoading(false);
     }
@@ -437,29 +486,33 @@ function CredentialPill({ threadId, initialCount = 0, threadUsername = "", size 
         ? "Klik untuk menghapus credential"
         : "Klik untuk memberi credential";
 
-  const padding = size === "xs" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[10px]";
+  const iconClass = size === "xs" ? "h-3.5 w-3.5" : "h-4 w-4";
+  const textClass = size === "xs" ? "text-[11px]" : "text-[11px]";
+  const padClass = size === "xs" ? "px-1 py-0.5" : "px-1.5 py-0.5";
 
   return (
     <button
       type="button"
       onClick={toggle}
-      disabled={disabled || loading}
-      title={error ? error : title}
+      disabled={loading}
+      title={title}
+      aria-label="Credential"
+      aria-pressed={hasCredentialed}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border transition-colors",
-        padding,
+        "inline-flex items-center gap-1 rounded-md transition-colors select-none",
+        padClass,
         hasCredentialed
-          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-          : "border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-        disabled || loading ? "opacity-60 cursor-not-allowed" : ""
+          ? "text-emerald-700 dark:text-emerald-400"
+          : "text-muted-foreground hover:text-foreground",
+        (!isAuthed || isSelf) ? "opacity-50" : "hover:bg-muted/50",
+        loading ? "opacity-60 cursor-wait" : ""
       )}
     >
-      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
       </svg>
-      <span className="tabular-nums font-semibold">{count}</span>
-      <span className={cn(size === "xs" ? "hidden sm:inline" : "inline")}>Credential</span>
+      <span className={cn("tabular-nums font-semibold", textClass)}>{count}</span>
     </button>
   );
 }

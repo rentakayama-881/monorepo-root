@@ -63,14 +63,28 @@ func (h *CredentialHandler) GiveCredential(c *gin.Context) {
 	if err != nil {
 		// Idempotent success on unique constraint
 		if ent.IsConstraintError(err) {
-			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+			resp := gin.H{"status": "ok", "already": true}
+			if count, cntErr := h.client.ThreadCredential.
+				Query().
+				Where(threadcredential.ThreadIDEQ(t.ID)).
+				Count(ctx); cntErr == nil {
+				resp["count"] = count
+			}
+			c.JSON(http.StatusOK, resp)
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal memproses"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	resp := gin.H{"status": "ok", "already": false}
+	if count, cntErr := h.client.ThreadCredential.
+		Query().
+		Where(threadcredential.ThreadIDEQ(t.ID)).
+		Count(ctx); cntErr == nil {
+		resp["count"] = count
+	}
+	c.JSON(http.StatusOK, resp)
 }
 
 // DELETE /api/threads/:id/credential (auth required)
@@ -104,7 +118,14 @@ func (h *CredentialHandler) RemoveCredential(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	resp := gin.H{"status": "ok"}
+	if count, cntErr := h.client.ThreadCredential.
+		Query().
+		Where(threadcredential.ThreadIDEQ(threadID)).
+		Count(ctx); cntErr == nil {
+		resp["count"] = count
+	}
+	c.JSON(http.StatusOK, resp)
 }
 
 // GET /api/threads/:id/credential/count (public)
