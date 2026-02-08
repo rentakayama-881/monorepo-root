@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Inter, Geist_Mono, Aref_Ruqaa } from "next/font/google";
+import { cookies } from "next/headers";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
@@ -109,9 +110,52 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
+  const themeCookie = cookies().get("theme")?.value;
+  const ssrThemeClass = themeCookie === "light" || themeCookie === "dark" ? themeCookie : "";
+  const ssrThemeLoadingClass = themeCookie ? "" : "theme-loading";
+  const htmlClassName = `${inter.variable} ${geistMono.variable} ${arefRuqaa.variable} ${ssrThemeClass} ${ssrThemeLoadingClass}`.trim();
+
   return (
-    <html lang="id" suppressHydrationWarning className={`${inter.variable} ${geistMono.variable} ${arefRuqaa.variable}`}>
+    <html lang="id" suppressHydrationWarning className={htmlClassName}>
       <body className="flex min-h-dvh flex-col antialiased bg-background text-foreground">
+        <script
+          id="theme-init"
+          // Inline + early on purpose: prevents flash of incorrect theme on first paint.
+          dangerouslySetInnerHTML={{
+            __html: `(() => {
+  const root = document.documentElement;
+
+  try {
+    const stored = localStorage.getItem("theme");
+    const cookieTheme = (() => {
+      const match = document.cookie.match(/(?:^|;\\s*)theme=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : null;
+    })();
+
+    const pref = stored || cookieTheme || "system";
+    const resolved =
+      pref === "light" || pref === "dark"
+        ? pref
+        : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+
+    root.classList.remove("light", "dark");
+    root.classList.add(resolved);
+
+    // Persist to cookie so SSR can apply theme class on the next request.
+    if (stored === "light" || stored === "dark" || stored === "system") {
+      const secure = location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = "theme=" + encodeURIComponent(stored) + "; Path=/; Max-Age=31536000; SameSite=Lax" + secure;
+    }
+  } catch (_) {
+    // If anything goes wrong, never keep the app hidden.
+  } finally {
+    root.classList.remove("theme-loading");
+    root.classList.add("theme-ready");
+  }
+})();`,
+          }}
+        />
+
         {/* Skip to main content link for accessibility */}
         <a href="#main-content" className="skip-link">
           Skip to main content

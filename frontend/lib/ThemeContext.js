@@ -9,6 +9,16 @@ const ThemeContext = createContext({
   resolvedTheme: "light",
 });
 
+function writeThemeCookie(theme) {
+  if (typeof document === "undefined") return;
+  if (theme !== "light" && theme !== "dark" && theme !== "system") return;
+
+  // Keep it JS-writeable (not HttpOnly) so the client can update it immediately.
+  // SSR uses this to set the initial <html> class and avoid theme flash on refresh.
+  const secure = typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `theme=${encodeURIComponent(theme)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+}
+
 function resolveThemeValue(theme) {
   if (theme === "system") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -62,6 +72,13 @@ export function ThemeProvider({ children }) {
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, [theme]);
 
+  // Ensure SSR can render the right theme on subsequent requests.
+  useEffect(() => {
+    try {
+      writeThemeCookie(theme);
+    } catch (_) {}
+  }, [theme]);
+
   const setTheme = (newTheme) => {
     const root = document.documentElement;
     const resolved = resolveThemeValue(newTheme);
@@ -74,6 +91,7 @@ export function ThemeProvider({ children }) {
     
     try {
       localStorage.setItem(STORAGE_KEYS.THEME, newTheme);
+      writeThemeCookie(newTheme);
     } catch (error) {
       // localStorage unavailable (e.g., private browsing, quota exceeded)
       console.warn("Failed to save theme to localStorage:", error);
