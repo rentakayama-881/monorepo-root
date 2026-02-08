@@ -57,7 +57,9 @@ function shouldAttachIdempotencyKey(path, method) {
   // Only attach where Feature Service expects idempotency keys (finance/security writes).
   return (
     typeof path === "string" &&
-    (path.startsWith("/api/v1/wallets/") || path.startsWith("/api/v1/disputes"))
+    (path.startsWith("/api/v1/wallets/") ||
+      path.startsWith("/api/v1/guarantees") ||
+      path.startsWith("/api/v1/disputes"))
   );
 }
 

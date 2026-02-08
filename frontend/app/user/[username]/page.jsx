@@ -236,6 +236,30 @@ export default function UserProfilePage() {
                 })}
               </p>
             )}
+
+            {Number(profile.credential_score) > 0 && (
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
+                  </svg>
+                  {profile.credential_score} Credentials
+                </span>
+              </div>
+            )}
+
+            {Number(profile.guarantee_amount) > 0 && (
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
+                  </svg>
+                  Jaminan Rp {profile.guarantee_amount.toLocaleString("id-ID")}
+                </span>
+              </div>
+            )}
           </div>
         </div>
         

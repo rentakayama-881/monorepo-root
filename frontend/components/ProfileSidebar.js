@@ -11,6 +11,7 @@ import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton
 export default function ProfileSidebar({ onClose }) {
   const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
   const [wallet, setWallet] = useState({ balance: 0, pin_set: false });
+  const [guarantee, setGuarantee] = useState({ amount: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const panelRef = useRef(null);
 
@@ -73,6 +74,16 @@ export default function ProfileSidebar({ onClose }) {
               setWallet({
                 balance: walletData.balance || 0,
                 pin_set: walletData.pinSet || walletData.pin_set || false,
+              });
+            }
+          }
+
+          const gRes = await fetchWithAuth(`${featureBase}/api/v1/guarantees/me`);
+          if (gRes.ok) {
+            const gData = await gRes.json();
+            if (!cancelled) {
+              setGuarantee({
+                amount: gData.amount || 0,
               });
             }
           }
@@ -163,21 +174,6 @@ export default function ProfileSidebar({ onClose }) {
               <Skeleton className="h-8 w-8 rounded-md" />
             </div>
 
-            <div className="grid grid-cols-3 gap-2 rounded-[var(--radius)] border bg-secondary/50 p-3">
-              <div className="space-y-2 text-center">
-                <Skeleton className="h-5 w-10 mx-auto rounded" />
-                <Skeleton className="h-3 w-12 mx-auto rounded" />
-              </div>
-              <div className="space-y-2 text-center border-x">
-                <Skeleton className="h-5 w-10 mx-auto rounded" />
-                <Skeleton className="h-3 w-12 mx-auto rounded" />
-              </div>
-              <div className="space-y-2 text-center">
-                <Skeleton className="h-5 w-10 mx-auto rounded" />
-                <Skeleton className="h-3 w-12 mx-auto rounded" />
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Skeleton className="h-10 w-full rounded-md" />
               <Skeleton className="h-10 w-full rounded-md" />
@@ -237,22 +233,6 @@ export default function ProfileSidebar({ onClose }) {
 
       {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto p-4 pt-0 scrollbar-thin" style={{ overscrollBehavior: 'contain' }}>
-        {/* User Stats Section */}
-        <div className="mt-4 grid grid-cols-3 gap-2 rounded-[var(--radius)] border bg-secondary/50 p-3">
-          <div className="text-center">
-            <div className="text-lg font-bold text-foreground">0</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Threads</div>
-          </div>
-          <div className="text-center border-x">
-            <div className="text-lg font-bold text-foreground">0</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Replies</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-bold text-foreground">0</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Points</div>
-          </div>
-        </div>
-
         {/* Wallet Balance Card */}
         <div className="mt-4 rounded-[var(--radius)] border bg-gradient-to-br from-secondary/50 to-transparent p-3">
             <div className="flex items-center justify-between">
@@ -261,6 +241,14 @@ export default function ProfileSidebar({ onClose }) {
                 <div className="text-lg font-bold text-foreground">
                   Rp {wallet.balance.toLocaleString("id-ID")}
                 </div>
+                {guarantee.amount > 0 && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Jaminan Aktif:{" "}
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                      Rp {guarantee.amount.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                )}
               </div>
               <Link
                 href="/account/wallet/deposit"

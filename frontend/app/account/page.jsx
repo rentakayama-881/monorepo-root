@@ -10,7 +10,6 @@ import { BadgeChip } from "../../components/ui/Badge";
 import Avatar from "../../components/ui/Avatar";
 import { getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import { maskEmail } from "@/lib/email";
 import { fetchWithAuth, getValidToken } from "@/lib/tokenRefresh";
 import TOTPSettings from "@/components/TOTPSettings";
 import PasskeySettings from "@/components/PasskeySettings";
@@ -41,6 +40,18 @@ function AccountPageContent() {
   const [badges, setBadges] = useState([]);
   const [primaryBadgeId, setPrimaryBadgeId] = useState(null);
   const [savingBadge, setSavingBadge] = useState(false);
+  const featureBase = useMemo(
+    () => process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id",
+    []
+  );
+  const [walletBalance, setWalletBalance] = useState(null);
+  const [guaranteeAmount, setGuaranteeAmount] = useState(0);
+  const [guaranteeLoading, setGuaranteeLoading] = useState(false);
+  const [setGuaranteeAmountInput, setSetGuaranteeAmountInput] = useState("");
+  const [setGuaranteePin, setSetGuaranteePin] = useState("");
+  const [releaseGuaranteePin, setReleaseGuaranteePin] = useState("");
+  const [guaranteeSubmitting, setGuaranteeSubmitting] = useState(false);
+  const [guaranteeReleasing, setGuaranteeReleasing] = useState(false);
 
   useEffect(() => {
     if (!authed) { setLoading(false); return; }
@@ -90,6 +101,125 @@ function AccountPageContent() {
     };
     loadBadges();
   }, [API, authed]);
+
+  function generateIdempotencyKey() {
+    try {
+      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+      }
+    } catch {
+      // ignore
+    }
+    return `idem_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
+  }
+
+  async function loadWalletAndGuarantee() {
+    if (!authed) return;
+    setGuaranteeLoading(true);
+    try {
+      const walletRes = await fetchWithAuth(`${featureBase}/api/v1/wallets/me`);
+      if (walletRes.ok) {
+        const w = await walletRes.json();
+        setWalletBalance(typeof w?.balance === "number" ? w.balance : 0);
+      }
+
+      const gRes = await fetchWithAuth(`${featureBase}/api/v1/guarantees/me`);
+      if (gRes.ok) {
+        const g = await gRes.json();
+        setGuaranteeAmount(typeof g?.amount === "number" ? g.amount : 0);
+      }
+    } catch {
+      // Ignore feature-service fetch errors on account page
+    } finally {
+      setGuaranteeLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadWalletAndGuarantee();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authed, featureBase]);
+
+  async function submitSetGuarantee(e) {
+    e.preventDefault();
+    setError(""); setOk("");
+    setGuaranteeSubmitting(true);
+    try {
+      const amount = Number(setGuaranteeAmountInput);
+      if (!Number.isFinite(amount)) throw new Error("Jumlah jaminan tidak valid");
+      if (amount < 100000) throw new Error("Minimal jaminan adalah Rp 100.000");
+      if (walletBalance != null && amount > walletBalance) throw new Error("Saldo tidak mencukupi");
+      if (!setGuaranteePin || String(setGuaranteePin).length !== 6) throw new Error("PIN harus 6 digit");
+
+      const r = await fetchWithAuth(`${featureBase}/api/v1/guarantees`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": generateIdempotencyKey(),
+        },
+        body: JSON.stringify({ amount, pin: setGuaranteePin }),
+      });
+
+      const txt = await r.text();
+      if (!r.ok) {
+        let msg = txt;
+        try {
+          const j = JSON.parse(txt);
+          msg = j?.error?.message || j?.message || j?.error || txt;
+        } catch {}
+        throw new Error(msg || "Gagal mengunci jaminan");
+      }
+
+      let data = {};
+      try { data = JSON.parse(txt); } catch {}
+      setGuaranteeAmount(typeof data?.amount === "number" ? data.amount : amount);
+      setOk("Jaminan berhasil dikunci.");
+      setSetGuaranteeAmountInput("");
+      setSetGuaranteePin("");
+      await loadWalletAndGuarantee();
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setGuaranteeSubmitting(false);
+    }
+  }
+
+  async function submitReleaseGuarantee(e) {
+    e.preventDefault();
+    setError(""); setOk("");
+    setGuaranteeReleasing(true);
+    try {
+      if (!releaseGuaranteePin || String(releaseGuaranteePin).length !== 6) throw new Error("PIN harus 6 digit");
+
+      const r = await fetchWithAuth(`${featureBase}/api/v1/guarantees/release`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": generateIdempotencyKey(),
+        },
+        body: JSON.stringify({ pin: releaseGuaranteePin }),
+      });
+
+      const txt = await r.text();
+      if (!r.ok) {
+        let msg = txt;
+        try {
+          const j = JSON.parse(txt);
+          msg = j?.error?.message || j?.message || j?.error || txt;
+        } catch {}
+        throw new Error(msg || "Gagal melepaskan jaminan");
+      }
+
+      setGuaranteeAmount(0);
+      setOk("Jaminan berhasil dilepaskan.");
+      setReleaseGuaranteePin("");
+      await loadWalletAndGuarantee();
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setGuaranteeReleasing(false);
+    }
+  }
 
   async function savePrimaryBadge(badgeId) {
     setError(""); setOk(""); setSavingBadge(true);
@@ -369,26 +499,94 @@ function AccountPageContent() {
           </section>
 
           <section className="settings-section">
-            <h3 className="settings-section-title mb-3">Email</h3>
+            <h3 className="settings-section-title mb-3">Jaminan Profil</h3>
             <div className="mt-3 space-y-3">
-              {me?.email && (
-                <div className="flex items-center rounded-md border border-border bg-muted/50 px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-foreground">{maskEmail(me.email)}</span>
-                    {me.is_verified && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
-                        <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        Terverifikasi
-                      </span>
+              <div className="rounded-md border border-border bg-muted/50 px-3 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm text-foreground">
+                    {guaranteeAmount > 0 ? (
+                      <>
+                        Jaminan Aktif:{" "}
+                        <b>Rp {guaranteeAmount.toLocaleString("id-ID")}</b>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Belum ada jaminan aktif.</span>
                     )}
                   </div>
+                  {guaranteeLoading && (
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" />
+                  )}
                 </div>
-              )}
-              <div className="text-xs text-muted-foreground">
-                Email Anda digunakan untuk login dan notifikasi penting.
+                {typeof walletBalance === "number" && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Saldo tersedia: Rp {walletBalance.toLocaleString("id-ID")}
+                  </div>
+                )}
               </div>
+
+              <div className="text-xs text-muted-foreground">
+                Berdasarkan Signaling Theory (Spence, 1973), jaminan finansial berfungsi sebagai sinyal kredibel atas kualitas layanan Anda.
+              </div>
+
+              {guaranteeAmount > 0 ? (
+                <form onSubmit={submitReleaseGuarantee} className="space-y-3">
+                  <Input
+                    label="PIN"
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="6 digit"
+                    value={releaseGuaranteePin}
+                    onChange={(e) => setReleaseGuaranteePin(e.target.value)}
+                  />
+                  <Button
+                    type="submit"
+                    variant="secondary"
+                    disabled={guaranteeReleasing}
+                    loading={guaranteeReleasing}
+                  >
+                    Lepaskan Jaminan
+                  </Button>
+                  <div className="text-xs text-muted-foreground">
+                    Untuk mengubah jumlah jaminan, lepaskan dulu lalu set ulang.
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={submitSetGuarantee} className="space-y-3">
+                  <Input
+                    label="Jumlah Jaminan (IDR)"
+                    type="number"
+                    min={100000}
+                    step={1000}
+                    placeholder="100000"
+                    value={setGuaranteeAmountInput}
+                    onChange={(e) => setSetGuaranteeAmountInput(e.target.value)}
+                  />
+                  <Input
+                    label="PIN"
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="6 digit"
+                    value={setGuaranteePin}
+                    onChange={(e) => setSetGuaranteePin(e.target.value)}
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    Minimal Rp 100.000
+                    {typeof walletBalance === "number"
+                      ? `, maksimal Rp ${walletBalance.toLocaleString("id-ID")}`
+                      : ""}
+                    .
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={guaranteeSubmitting}
+                    loading={guaranteeSubmitting}
+                  >
+                    Kunci Jaminan
+                  </Button>
+                </form>
+              )}
             </div>
           </section>
 

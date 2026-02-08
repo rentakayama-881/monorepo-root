@@ -81,6 +81,7 @@ export default function ThreadCard({
     created_at,
     reply_count,
     view_count,
+    guarantee_amount,
     tags,
   } = thread;
 
@@ -185,6 +186,21 @@ export default function ThreadCard({
                 <span>{formatRelativeTime(created_at)}</span>
               </>
             )}
+            {Number(guarantee_amount) > 0 && (
+              <>
+                <span>•</span>
+                <span
+                  className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400"
+                  title="Jaminan Profil"
+                >
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
+                  </svg>
+                  Rp {Number(guarantee_amount).toLocaleString("id-ID")}
+                </span>
+              </>
+            )}
             {typeof reply_count === "number" && reply_count > 0 && (
               <>
                 <span>•</span>
@@ -262,6 +278,19 @@ export default function ThreadCard({
                   <div className="text-[11px] text-muted-foreground whitespace-nowrap">
                     {formatRelativeTime(created_at)}
                   </div>
+                )}
+
+                {Number(guarantee_amount) > 0 && (
+                  <span
+                    className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400"
+                    title="Jaminan Profil"
+                  >
+                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
+                    </svg>
+                    Rp {Number(guarantee_amount).toLocaleString("id-ID")}
+                  </span>
                 )}
               </div>
             </div>
