@@ -1,6 +1,5 @@
 import "./globals.css";
 import { Inter, Geist_Mono, Aref_Ruqaa } from "next/font/google";
-import Script from "next/script";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
@@ -113,20 +112,6 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning className={`${inter.variable} ${geistMono.variable} ${arefRuqaa.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased bg-background text-foreground">
-        <Script id="theme-init" strategy="beforeInteractive">{`
-(() => {
-  try {
-    const theme = localStorage.getItem("theme");
-    const resolved =
-      theme === "light" || theme === "dark"
-        ? theme
-        : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    const root = document.documentElement;
-    root.classList.remove("light", "dark");
-    root.classList.add(resolved);
-  } catch (_) {}
-})();
-        `}</Script>
         {/* Skip to main content link for accessibility */}
         <a href="#main-content" className="skip-link">
           Skip to main content
