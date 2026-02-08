@@ -3,20 +3,29 @@ package handlers
 import (
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
+	"backend-gin/buildinfo"
 	"backend-gin/database"
 	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
 )
 
+func effectiveVersion() string {
+	if v := strings.TrimSpace(buildinfo.Version); v != "" && v != "dev" {
+		return v
+	}
+	if v := strings.TrimSpace(os.Getenv("VERSION")); v != "" {
+		return v
+	}
+	return "1.0.0"
+}
+
 // HealthHandler responds with backend readiness information without touching the database.
 func HealthHandler(c *gin.Context) {
-	version := os.Getenv("VERSION")
-	if version == "" {
-		version = "1.0.0"
-	}
+	version := effectiveVersion()
 
 	c.JSON(http.StatusOK, gin.H{
 		"ok":      true,
@@ -27,10 +36,7 @@ func HealthHandler(c *gin.Context) {
 
 // ReadinessHandler provides detailed health status including dependencies
 func ReadinessHandler(c *gin.Context) {
-	version := os.Getenv("VERSION")
-	if version == "" {
-		version = "1.0.0"
-	}
+	version := effectiveVersion()
 
 	checks := make(map[string]string)
 	allHealthy := true

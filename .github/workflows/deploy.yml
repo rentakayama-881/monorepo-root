@@ -59,33 +59,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Detect changes
         id: changes
         run: |
-          if [[ "${{ github.event.inputs.service }}" == "all" ]] || [[ "${{ github.event.inputs.service }}" == "" ]]; then
-            # Check actual file changes
-            BACKEND_CHANGES=$(git diff --name-only HEAD~1 HEAD -- backend/ | wc -l)
-            FS_CHANGES=$(git diff --name-only HEAD~1 HEAD -- feature-service/ | wc -l)
+          SERVICE_INPUT="${{ github.event.inputs.service }}"
 
-            if [[ $BACKEND_CHANGES -gt 0 ]] || [[ "${{ github.event.inputs.service }}" == "all" ]]; then
+          # Manual run: deploy exactly what is requested.
+          if [[ "$SERVICE_INPUT" == "all" ]]; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "feature_service=true" >> $GITHUB_OUTPUT
+          elif [[ "$SERVICE_INPUT" == "backend" ]]; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "feature_service=false" >> $GITHUB_OUTPUT
+          elif [[ "$SERVICE_INPUT" == "feature-service" ]]; then
+            echo "backend=false" >> $GITHUB_OUTPUT
+            echo "feature_service=true" >> $GITHUB_OUTPUT
+          else
+            # Push event: detect changes across the entire push range, not just HEAD~1..HEAD.
+            BEFORE_SHA="${{ github.event.before }}"
+            AFTER_SHA="${{ github.sha }}"
+            if [[ -z "$BEFORE_SHA" || "$BEFORE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+              BEFORE_SHA="$(git rev-parse "${AFTER_SHA}^")"
+            fi
+
+            echo "Diff range: $BEFORE_SHA..$AFTER_SHA"
+
+            BACKEND_CHANGES="$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA" -- backend/ | wc -l | tr -d ' ')"
+            FS_CHANGES="$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA" -- feature-service/ | wc -l | tr -d ' ')"
+
+            if [[ "$BACKEND_CHANGES" -gt 0 ]]; then
               echo "backend=true" >> $GITHUB_OUTPUT
             else
               echo "backend=false" >> $GITHUB_OUTPUT
             fi
 
-            if [[ $FS_CHANGES -gt 0 ]] || [[ "${{ github.event.inputs.service }}" == "all" ]]; then
+            if [[ "$FS_CHANGES" -gt 0 ]]; then
               echo "feature_service=true" >> $GITHUB_OUTPUT
             else
               echo "feature_service=false" >> $GITHUB_OUTPUT
             fi
-          elif [[ "${{ github.event.inputs.service }}" == "backend" ]]; then
-            echo "backend=true" >> $GITHUB_OUTPUT
-            echo "feature_service=false" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.inputs.service }}" == "feature-service" ]]; then
-            echo "backend=false" >> $GITHUB_OUTPUT
-            echo "feature_service=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Deployment summary
@@ -120,7 +134,7 @@ jobs:
       - name: Build binary
         run: |
           cd backend
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ github.sha }}" -o backend-linux-amd64 .
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X backend-gin/buildinfo.Version=${{ github.sha }}" -o backend-linux-amd64 .
           sha256sum backend-linux-amd64 > backend-linux-amd64.sha256
 
       - name: Deploy to VPS
@@ -151,7 +165,7 @@ jobs:
 
             # Build
             cd backend
-            /usr/local/go/bin/go build -ldflags="-s -w" -o app .
+            /usr/local/go/bin/go build -ldflags="-s -w -X backend-gin/buildinfo.Version=${{ github.sha }}" -o app .
 
             # Graceful restart
             echo "🔄 Restarting service..."
@@ -213,7 +227,7 @@ jobs:
       - name: Publish application
         run: |
           cd feature-service/src/FeatureService.Api
-          dotnet publish -c Release -o ./publish --self-contained false
+          dotnet publish -c Release -o ./publish --self-contained false -p:InformationalVersion=${{ github.sha }}
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
@@ -243,7 +257,7 @@ jobs:
 
             # Build
             cd feature-service/src/FeatureService.Api
-            dotnet publish -c Release -o /home/asp/monorepo-root/feature-service/publish --self-contained false
+            dotnet publish -c Release -o /home/asp/monorepo-root/feature-service/publish --self-contained false -p:InformationalVersion=${{ github.sha }}
 
             # Graceful restart
             echo "🔄 Restarting service..."

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using StackExchange.Redis;
 using FeatureService.Api.Infrastructure.MongoDB;
+using System.Reflection;
 
 namespace FeatureService.Api.Controllers;
 
@@ -34,10 +35,17 @@ public class HealthController : ControllerBase
     [ProducesResponseType(typeof(HealthResponse), StatusCodes.Status200OK)]
     public IActionResult GetHealth()
     {
+        var version =
+            Assembly.GetExecutingAssembly()
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                ?.InformationalVersion
+            ?? Environment.GetEnvironmentVariable("VERSION")
+            ?? "1.0.0";
+
         return Ok(new HealthResponse(
             Status: "healthy",
             Service: "feature-service",
-            Version: "1.0.0",
+            Version: version,
             Timestamp: DateTime.UtcNow
         ));
     }
