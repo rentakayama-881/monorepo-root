@@ -59,6 +59,11 @@
     visibility: hidden;
   }
 
+  /* Keep the page background correct even while <body> is hidden. */
+  html.theme-loading {
+    background-color: var(--background);
+  }
+
   html.theme-loading *,
   html.theme-loading *::before,
   html.theme-loading *::after {
