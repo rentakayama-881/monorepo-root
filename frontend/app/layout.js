@@ -109,8 +109,9 @@ export const viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }) {
-  const themeCookie = cookies().get("theme")?.value;
+export default async function RootLayout({ children }) {
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get("theme")?.value;
   const ssrThemeClass = themeCookie === "light" || themeCookie === "dark" ? themeCookie : "";
   const ssrThemeLoadingClass = themeCookie ? "" : "theme-loading";
   const htmlClassName = `${inter.variable} ${geistMono.variable} ${arefRuqaa.variable} ${ssrThemeClass} ${ssrThemeLoadingClass}`.trim();
