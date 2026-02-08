@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Inter, Geist_Mono, Aref_Ruqaa } from "next/font/google";
+import Script from "next/script";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
@@ -109,36 +110,25 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
-  // IMPORTANT: Keep this layout fully static (no `cookies()` / request APIs),
-  // because many routes are `export const dynamic = "force-static"`.
-  const htmlClassName = `${inter.variable} ${geistMono.variable} ${arefRuqaa.variable} theme-loading`.trim();
+  const htmlClassName = `${inter.variable} ${geistMono.variable} ${arefRuqaa.variable}`.trim();
 
   return (
     <html lang="id" suppressHydrationWarning className={htmlClassName}>
-      <body
-        className="flex min-h-dvh flex-col antialiased bg-background text-foreground"
-        style={{ visibility: "hidden" }}
-      >
-        {/* If JS is disabled, never keep the app hidden. */}
-        <noscript>
-          <style>{`body{visibility:visible}`}</style>
-        </noscript>
-
-        <script
-          id="theme-init"
-          // Inline + early on purpose: prevents flash of incorrect theme on first paint.
-          dangerouslySetInnerHTML={{
-            __html: `(() => {
+      <body className="flex min-h-dvh flex-col antialiased bg-background text-foreground">
+        <Script id="theme-init" strategy="beforeInteractive">{`
+(() => {
   const root = document.documentElement;
 
-  try {
-    const stored = localStorage.getItem("theme");
-    const cookieTheme = (() => {
-      const match = document.cookie.match(/(?:^|;\\s*)theme=([^;]+)/);
-      return match ? decodeURIComponent(match[1]) : null;
-    })();
+  // Disable transitions for the very first theme application to avoid a visible
+  // light->dark animation on refresh.
+  root.classList.add("theme-init");
 
-    const pref = stored || cookieTheme || "system";
+  try {
+    let pref = null;
+    try {
+      pref = localStorage.getItem("theme");
+    } catch (_) {}
+
     const resolved =
       pref === "light" || pref === "dark"
         ? pref
@@ -147,21 +137,17 @@ export default function RootLayout({ children }) {
     root.classList.remove("light", "dark");
     root.classList.add(resolved);
 
-    // Persist to cookie so SSR can apply theme class on the next request.
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      const secure = location.protocol === "https:" ? "; Secure" : "";
-      document.cookie = "theme=" + encodeURIComponent(stored) + "; Path=/; Max-Age=31536000; SameSite=Lax" + secure;
-    }
+    // Prevent the white flash before CSS loads by setting an immediate background.
+    // Once CSS is loaded, `body` uses `var(--background)` and takes over.
+    root.style.backgroundColor = resolved === "dark" ? "#0b1026" : "#ffffff";
   } catch (_) {
-    // If anything goes wrong, never keep the app hidden.
+    // Never block rendering if theme init fails.
   } finally {
-    root.classList.remove("theme-loading");
-    root.classList.add("theme-ready");
-    if (document.body) document.body.style.visibility = "visible";
+    // Re-enable transitions after the initial sync theme is applied.
+    setTimeout(() => root.classList.remove("theme-init"), 0);
   }
-})();`,
-          }}
-        />
+})();
+        `}</Script>
 
         {/* Skip to main content link for accessibility */}
         <a href="#main-content" className="skip-link">

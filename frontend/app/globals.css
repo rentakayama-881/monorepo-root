@@ -54,19 +54,10 @@
     height: 100%;
   }
 
-  /* ===== Prevent Theme Flash On Refresh ===== */
-  html.theme-loading body {
-    visibility: hidden;
-  }
-
-  /* Keep the page background correct even while <body> is hidden. */
-  html.theme-loading {
-    background-color: var(--background);
-  }
-
-  html.theme-loading *,
-  html.theme-loading *::before,
-  html.theme-loading *::after {
+  /* ===== Theme Init (avoid visible transitions on first paint) ===== */
+  html.theme-init *,
+  html.theme-init *::before,
+  html.theme-init *::after {
     transition: none !important;
   }
 
