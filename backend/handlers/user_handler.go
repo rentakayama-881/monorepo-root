@@ -86,7 +86,8 @@ func (h *UserHandler) GetPublicUserProfileByID(c *gin.Context) {
 }
 
 type UpdateGuaranteeAmountRequest struct {
-	GuaranteeAmount int64 `json:"guarantee_amount" binding:"required"`
+	// Pointer type so `binding:"required"` allows guarantee_amount=0 (valid for release).
+	GuaranteeAmount *int64 `json:"guarantee_amount" binding:"required"`
 }
 
 // PUT /api/internal/users/:id/guarantee (internal service auth required)
@@ -99,12 +100,13 @@ func (h *UserHandler) UpdateGuaranteeAmount(c *gin.Context) {
 	}
 
 	var req UpdateGuaranteeAmountRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil || req.GuaranteeAmount == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "request tidak valid"})
 		return
 	}
 
-	if req.GuaranteeAmount < 0 {
+	amount := *req.GuaranteeAmount
+	if amount < 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "guarantee_amount tidak boleh negatif"})
 		return
 	}
@@ -112,7 +114,7 @@ func (h *UserHandler) UpdateGuaranteeAmount(c *gin.Context) {
 	ctx := c.Request.Context()
 	_, err = database.GetEntClient().User.
 		UpdateOneID(id).
-		SetGuaranteeAmount(req.GuaranteeAmount).
+		SetGuaranteeAmount(amount).
 		Save(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
