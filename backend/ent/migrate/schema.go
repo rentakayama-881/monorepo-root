@@ -434,11 +434,6 @@ var (
 				Columns: []*schema.Column{SessionsColumns[14]},
 			},
 			{
-				Name:    "session_refresh_token_hash",
-				Unique:  true,
-				Columns: []*schema.Column{SessionsColumns[4]},
-			},
-			{
 				Name:    "session_token_family",
 				Unique:  false,
 				Columns: []*schema.Column{SessionsColumns[12]},
@@ -638,6 +633,52 @@ var (
 			},
 		},
 	}
+	// ThreadCredentialsColumns holds the columns for the "thread_credentials" table.
+	ThreadCredentialsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "thread_id", Type: field.TypeInt},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// ThreadCredentialsTable holds the schema information for the "thread_credentials" table.
+	ThreadCredentialsTable = &schema.Table{
+		Name:       "thread_credentials",
+		Columns:    ThreadCredentialsColumns,
+		PrimaryKey: []*schema.Column{ThreadCredentialsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "thread_credentials_threads_received_credentials",
+				Columns:    []*schema.Column{ThreadCredentialsColumns[4]},
+				RefColumns: []*schema.Column{ThreadsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "thread_credentials_users_given_credentials",
+				Columns:    []*schema.Column{ThreadCredentialsColumns[5]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "threadcredential_user_id_thread_id",
+				Unique:  true,
+				Columns: []*schema.Column{ThreadCredentialsColumns[5], ThreadCredentialsColumns[4]},
+			},
+			{
+				Name:    "threadcredential_thread_id",
+				Unique:  false,
+				Columns: []*schema.Column{ThreadCredentialsColumns[4]},
+			},
+			{
+				Name:    "threadcredential_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{ThreadCredentialsColumns[5]},
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -665,6 +706,7 @@ var (
 		{Name: "last_login_ip", Type: field.TypeString, Nullable: true, Size: 45},
 		{Name: "locked_until", Type: field.TypeTime, Nullable: true},
 		{Name: "lock_reason", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "guarantee_amount", Type: field.TypeInt64, Default: 0},
 		{Name: "primary_badge_id", Type: field.TypeInt, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
@@ -675,7 +717,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "users_badges_primary_badge",
-				Columns:    []*schema.Column{UsersColumns[25]},
+				Columns:    []*schema.Column{UsersColumns[26]},
 				RefColumns: []*schema.Column{BadgesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -790,6 +832,7 @@ var (
 		TotpPendingTokensTable,
 		TagsTable,
 		ThreadsTable,
+		ThreadCredentialsTable,
 		UsersTable,
 		UserBadgesTable,
 		TagThreadsTable,
@@ -864,6 +907,11 @@ func init() {
 	ThreadsTable.ForeignKeys[1].RefTable = UsersTable
 	ThreadsTable.Annotation = &entsql.Annotation{
 		Table: "threads",
+	}
+	ThreadCredentialsTable.ForeignKeys[0].RefTable = ThreadsTable
+	ThreadCredentialsTable.ForeignKeys[1].RefTable = UsersTable
+	ThreadCredentialsTable.Annotation = &entsql.Annotation{
+		Table: "thread_credentials",
 	}
 	UsersTable.ForeignKeys[0].RefTable = BadgesTable
 	UsersTable.Annotation = &entsql.Annotation{

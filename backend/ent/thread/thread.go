@@ -40,6 +40,8 @@ const (
 	EdgeCategory = "category"
 	// EdgeTags holds the string denoting the tags edge name in mutations.
 	EdgeTags = "tags"
+	// EdgeReceivedCredentials holds the string denoting the received_credentials edge name in mutations.
+	EdgeReceivedCredentials = "received_credentials"
 	// Table holds the table name of the thread in the database.
 	Table = "threads"
 	// UserTable is the table that holds the user relation/edge.
@@ -61,6 +63,13 @@ const (
 	// TagsInverseTable is the table name for the Tag entity.
 	// It exists in this package in order to avoid circular dependency with the "tag" package.
 	TagsInverseTable = "tags"
+	// ReceivedCredentialsTable is the table that holds the received_credentials relation/edge.
+	ReceivedCredentialsTable = "thread_credentials"
+	// ReceivedCredentialsInverseTable is the table name for the ThreadCredential entity.
+	// It exists in this package in order to avoid circular dependency with the "threadcredential" package.
+	ReceivedCredentialsInverseTable = "thread_credentials"
+	// ReceivedCredentialsColumn is the table column denoting the received_credentials relation/edge.
+	ReceivedCredentialsColumn = "thread_id"
 )
 
 // Columns holds all SQL columns for thread fields.
@@ -190,6 +199,20 @@ func ByTags(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newTagsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByReceivedCredentialsCount orders the results by received_credentials count.
+func ByReceivedCredentialsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newReceivedCredentialsStep(), opts...)
+	}
+}
+
+// ByReceivedCredentials orders the results by received_credentials terms.
+func ByReceivedCredentials(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newReceivedCredentialsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -209,5 +232,12 @@ func newTagsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(TagsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, true, TagsTable, TagsPrimaryKey...),
+	)
+}
+func newReceivedCredentialsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ReceivedCredentialsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ReceivedCredentialsTable, ReceivedCredentialsColumn),
 	)
 }

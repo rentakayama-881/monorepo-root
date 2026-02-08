@@ -83,7 +83,14 @@ func (h *ThreadHandler) GetThreadDetail(c *gin.Context) {
 		return
 	}
 
-	thread, err := h.threadService.GetThreadByID(c.Request.Context(), uint(threadID))
+	userIfc, ok := c.Get("user")
+	if !ok {
+		h.handleError(c, apperrors.ErrUnauthorized)
+		return
+	}
+	user := userIfc.(*ent.User)
+
+	thread, err := h.threadService.GetThreadByID(c.Request.Context(), uint(threadID), uint(user.ID))
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -101,7 +108,7 @@ func (h *ThreadHandler) GetPublicThreadDetail(c *gin.Context) {
 		return
 	}
 
-	thread, err := h.threadService.GetThreadByID(c.Request.Context(), uint(threadID))
+	thread, err := h.threadService.GetThreadByID(c.Request.Context(), uint(threadID), 0)
 	if err != nil {
 		h.handleError(c, err)
 		return

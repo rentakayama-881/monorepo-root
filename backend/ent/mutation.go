@@ -21,6 +21,7 @@ import (
 	"backend-gin/ent/sudosession"
 	"backend-gin/ent/tag"
 	"backend-gin/ent/thread"
+	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
@@ -61,6 +62,7 @@ const (
 	TypeTOTPPendingToken       = "TOTPPendingToken"
 	TypeTag                    = "Tag"
 	TypeThread                 = "Thread"
+	TypeThreadCredential       = "ThreadCredential"
 	TypeUser                   = "User"
 	TypeUserBadge              = "UserBadge"
 )
@@ -14739,28 +14741,31 @@ func (m *TagMutation) ResetEdge(name string) error {
 // ThreadMutation represents an operation that mutates the Thread nodes in the graph.
 type ThreadMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *int
-	created_at      *time.Time
-	updated_at      *time.Time
-	deleted_at      *time.Time
-	title           *string
-	summary         *string
-	content_type    *string
-	content_json    *map[string]interface{}
-	meta            *map[string]interface{}
-	clearedFields   map[string]struct{}
-	user            *int
-	cleareduser     bool
-	category        *int
-	clearedcategory bool
-	tags            map[int]struct{}
-	removedtags     map[int]struct{}
-	clearedtags     bool
-	done            bool
-	oldValue        func(context.Context) (*Thread, error)
-	predicates      []predicate.Thread
+	op                          Op
+	typ                         string
+	id                          *int
+	created_at                  *time.Time
+	updated_at                  *time.Time
+	deleted_at                  *time.Time
+	title                       *string
+	summary                     *string
+	content_type                *string
+	content_json                *map[string]interface{}
+	meta                        *map[string]interface{}
+	clearedFields               map[string]struct{}
+	user                        *int
+	cleareduser                 bool
+	category                    *int
+	clearedcategory             bool
+	tags                        map[int]struct{}
+	removedtags                 map[int]struct{}
+	clearedtags                 bool
+	received_credentials        map[int]struct{}
+	removedreceived_credentials map[int]struct{}
+	clearedreceived_credentials bool
+	done                        bool
+	oldValue                    func(context.Context) (*Thread, error)
+	predicates                  []predicate.Thread
 }
 
 var _ ent.Mutation = (*ThreadMutation)(nil)
@@ -15381,6 +15386,60 @@ func (m *ThreadMutation) ResetTags() {
 	m.removedtags = nil
 }
 
+// AddReceivedCredentialIDs adds the "received_credentials" edge to the ThreadCredential entity by ids.
+func (m *ThreadMutation) AddReceivedCredentialIDs(ids ...int) {
+	if m.received_credentials == nil {
+		m.received_credentials = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.received_credentials[ids[i]] = struct{}{}
+	}
+}
+
+// ClearReceivedCredentials clears the "received_credentials" edge to the ThreadCredential entity.
+func (m *ThreadMutation) ClearReceivedCredentials() {
+	m.clearedreceived_credentials = true
+}
+
+// ReceivedCredentialsCleared reports if the "received_credentials" edge to the ThreadCredential entity was cleared.
+func (m *ThreadMutation) ReceivedCredentialsCleared() bool {
+	return m.clearedreceived_credentials
+}
+
+// RemoveReceivedCredentialIDs removes the "received_credentials" edge to the ThreadCredential entity by IDs.
+func (m *ThreadMutation) RemoveReceivedCredentialIDs(ids ...int) {
+	if m.removedreceived_credentials == nil {
+		m.removedreceived_credentials = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.received_credentials, ids[i])
+		m.removedreceived_credentials[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedReceivedCredentials returns the removed IDs of the "received_credentials" edge to the ThreadCredential entity.
+func (m *ThreadMutation) RemovedReceivedCredentialsIDs() (ids []int) {
+	for id := range m.removedreceived_credentials {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ReceivedCredentialsIDs returns the "received_credentials" edge IDs in the mutation.
+func (m *ThreadMutation) ReceivedCredentialsIDs() (ids []int) {
+	for id := range m.received_credentials {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetReceivedCredentials resets all changes to the "received_credentials" edge.
+func (m *ThreadMutation) ResetReceivedCredentials() {
+	m.received_credentials = nil
+	m.clearedreceived_credentials = false
+	m.removedreceived_credentials = nil
+}
+
 // Where appends a list predicates to the ThreadMutation builder.
 func (m *ThreadMutation) Where(ps ...predicate.Thread) {
 	m.predicates = append(m.predicates, ps...)
@@ -15697,7 +15756,7 @@ func (m *ThreadMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ThreadMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.user != nil {
 		edges = append(edges, thread.EdgeUser)
 	}
@@ -15706,6 +15765,9 @@ func (m *ThreadMutation) AddedEdges() []string {
 	}
 	if m.tags != nil {
 		edges = append(edges, thread.EdgeTags)
+	}
+	if m.received_credentials != nil {
+		edges = append(edges, thread.EdgeReceivedCredentials)
 	}
 	return edges
 }
@@ -15728,15 +15790,24 @@ func (m *ThreadMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case thread.EdgeReceivedCredentials:
+		ids := make([]ent.Value, 0, len(m.received_credentials))
+		for id := range m.received_credentials {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ThreadMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedtags != nil {
 		edges = append(edges, thread.EdgeTags)
+	}
+	if m.removedreceived_credentials != nil {
+		edges = append(edges, thread.EdgeReceivedCredentials)
 	}
 	return edges
 }
@@ -15751,13 +15822,19 @@ func (m *ThreadMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case thread.EdgeReceivedCredentials:
+		ids := make([]ent.Value, 0, len(m.removedreceived_credentials))
+		for id := range m.removedreceived_credentials {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ThreadMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.cleareduser {
 		edges = append(edges, thread.EdgeUser)
 	}
@@ -15766,6 +15843,9 @@ func (m *ThreadMutation) ClearedEdges() []string {
 	}
 	if m.clearedtags {
 		edges = append(edges, thread.EdgeTags)
+	}
+	if m.clearedreceived_credentials {
+		edges = append(edges, thread.EdgeReceivedCredentials)
 	}
 	return edges
 }
@@ -15780,6 +15860,8 @@ func (m *ThreadMutation) EdgeCleared(name string) bool {
 		return m.clearedcategory
 	case thread.EdgeTags:
 		return m.clearedtags
+	case thread.EdgeReceivedCredentials:
+		return m.clearedreceived_credentials
 	}
 	return false
 }
@@ -15811,8 +15893,678 @@ func (m *ThreadMutation) ResetEdge(name string) error {
 	case thread.EdgeTags:
 		m.ResetTags()
 		return nil
+	case thread.EdgeReceivedCredentials:
+		m.ResetReceivedCredentials()
+		return nil
 	}
 	return fmt.Errorf("unknown Thread edge %s", name)
+}
+
+// ThreadCredentialMutation represents an operation that mutates the ThreadCredential nodes in the graph.
+type ThreadCredentialMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	created_at    *time.Time
+	updated_at    *time.Time
+	deleted_at    *time.Time
+	clearedFields map[string]struct{}
+	user          *int
+	cleareduser   bool
+	thread        *int
+	clearedthread bool
+	done          bool
+	oldValue      func(context.Context) (*ThreadCredential, error)
+	predicates    []predicate.ThreadCredential
+}
+
+var _ ent.Mutation = (*ThreadCredentialMutation)(nil)
+
+// threadcredentialOption allows management of the mutation configuration using functional options.
+type threadcredentialOption func(*ThreadCredentialMutation)
+
+// newThreadCredentialMutation creates new mutation for the ThreadCredential entity.
+func newThreadCredentialMutation(c config, op Op, opts ...threadcredentialOption) *ThreadCredentialMutation {
+	m := &ThreadCredentialMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeThreadCredential,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withThreadCredentialID sets the ID field of the mutation.
+func withThreadCredentialID(id int) threadcredentialOption {
+	return func(m *ThreadCredentialMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ThreadCredential
+		)
+		m.oldValue = func(ctx context.Context) (*ThreadCredential, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ThreadCredential.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withThreadCredential sets the old ThreadCredential of the mutation.
+func withThreadCredential(node *ThreadCredential) threadcredentialOption {
+	return func(m *ThreadCredentialMutation) {
+		m.oldValue = func(context.Context) (*ThreadCredential, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ThreadCredentialMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ThreadCredentialMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ThreadCredentialMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ThreadCredentialMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ThreadCredential.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ThreadCredentialMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ThreadCredentialMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ThreadCredential entity.
+// If the ThreadCredential object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ThreadCredentialMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ThreadCredentialMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ThreadCredentialMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ThreadCredentialMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ThreadCredential entity.
+// If the ThreadCredential object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ThreadCredentialMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ThreadCredentialMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *ThreadCredentialMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *ThreadCredentialMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the ThreadCredential entity.
+// If the ThreadCredential object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ThreadCredentialMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *ThreadCredentialMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[threadcredential.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *ThreadCredentialMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[threadcredential.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *ThreadCredentialMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, threadcredential.FieldDeletedAt)
+}
+
+// SetUserID sets the "user_id" field.
+func (m *ThreadCredentialMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *ThreadCredentialMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the ThreadCredential entity.
+// If the ThreadCredential object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ThreadCredentialMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *ThreadCredentialMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetThreadID sets the "thread_id" field.
+func (m *ThreadCredentialMutation) SetThreadID(i int) {
+	m.thread = &i
+}
+
+// ThreadID returns the value of the "thread_id" field in the mutation.
+func (m *ThreadCredentialMutation) ThreadID() (r int, exists bool) {
+	v := m.thread
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldThreadID returns the old "thread_id" field's value of the ThreadCredential entity.
+// If the ThreadCredential object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ThreadCredentialMutation) OldThreadID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldThreadID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldThreadID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldThreadID: %w", err)
+	}
+	return oldValue.ThreadID, nil
+}
+
+// ResetThreadID resets all changes to the "thread_id" field.
+func (m *ThreadCredentialMutation) ResetThreadID() {
+	m.thread = nil
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *ThreadCredentialMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[threadcredential.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *ThreadCredentialMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *ThreadCredentialMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *ThreadCredentialMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// ClearThread clears the "thread" edge to the Thread entity.
+func (m *ThreadCredentialMutation) ClearThread() {
+	m.clearedthread = true
+	m.clearedFields[threadcredential.FieldThreadID] = struct{}{}
+}
+
+// ThreadCleared reports if the "thread" edge to the Thread entity was cleared.
+func (m *ThreadCredentialMutation) ThreadCleared() bool {
+	return m.clearedthread
+}
+
+// ThreadIDs returns the "thread" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ThreadID instead. It exists only for internal usage by the builders.
+func (m *ThreadCredentialMutation) ThreadIDs() (ids []int) {
+	if id := m.thread; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetThread resets all changes to the "thread" edge.
+func (m *ThreadCredentialMutation) ResetThread() {
+	m.thread = nil
+	m.clearedthread = false
+}
+
+// Where appends a list predicates to the ThreadCredentialMutation builder.
+func (m *ThreadCredentialMutation) Where(ps ...predicate.ThreadCredential) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ThreadCredentialMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ThreadCredentialMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ThreadCredential, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ThreadCredentialMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ThreadCredentialMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ThreadCredential).
+func (m *ThreadCredentialMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ThreadCredentialMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.created_at != nil {
+		fields = append(fields, threadcredential.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, threadcredential.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, threadcredential.FieldDeletedAt)
+	}
+	if m.user != nil {
+		fields = append(fields, threadcredential.FieldUserID)
+	}
+	if m.thread != nil {
+		fields = append(fields, threadcredential.FieldThreadID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ThreadCredentialMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case threadcredential.FieldCreatedAt:
+		return m.CreatedAt()
+	case threadcredential.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case threadcredential.FieldDeletedAt:
+		return m.DeletedAt()
+	case threadcredential.FieldUserID:
+		return m.UserID()
+	case threadcredential.FieldThreadID:
+		return m.ThreadID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ThreadCredentialMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case threadcredential.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case threadcredential.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case threadcredential.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case threadcredential.FieldUserID:
+		return m.OldUserID(ctx)
+	case threadcredential.FieldThreadID:
+		return m.OldThreadID(ctx)
+	}
+	return nil, fmt.Errorf("unknown ThreadCredential field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ThreadCredentialMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case threadcredential.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case threadcredential.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case threadcredential.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case threadcredential.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case threadcredential.FieldThreadID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetThreadID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ThreadCredential field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ThreadCredentialMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ThreadCredentialMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ThreadCredentialMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ThreadCredential numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ThreadCredentialMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(threadcredential.FieldDeletedAt) {
+		fields = append(fields, threadcredential.FieldDeletedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ThreadCredentialMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ThreadCredentialMutation) ClearField(name string) error {
+	switch name {
+	case threadcredential.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ThreadCredential nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ThreadCredentialMutation) ResetField(name string) error {
+	switch name {
+	case threadcredential.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case threadcredential.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case threadcredential.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case threadcredential.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case threadcredential.FieldThreadID:
+		m.ResetThreadID()
+		return nil
+	}
+	return fmt.Errorf("unknown ThreadCredential field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ThreadCredentialMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.user != nil {
+		edges = append(edges, threadcredential.EdgeUser)
+	}
+	if m.thread != nil {
+		edges = append(edges, threadcredential.EdgeThread)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ThreadCredentialMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case threadcredential.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case threadcredential.EdgeThread:
+		if id := m.thread; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ThreadCredentialMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ThreadCredentialMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ThreadCredentialMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareduser {
+		edges = append(edges, threadcredential.EdgeUser)
+	}
+	if m.clearedthread {
+		edges = append(edges, threadcredential.EdgeThread)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ThreadCredentialMutation) EdgeCleared(name string) bool {
+	switch name {
+	case threadcredential.EdgeUser:
+		return m.cleareduser
+	case threadcredential.EdgeThread:
+		return m.clearedthread
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ThreadCredentialMutation) ClearEdge(name string) error {
+	switch name {
+	case threadcredential.EdgeUser:
+		m.ClearUser()
+		return nil
+	case threadcredential.EdgeThread:
+		m.ClearThread()
+		return nil
+	}
+	return fmt.Errorf("unknown ThreadCredential unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ThreadCredentialMutation) ResetEdge(name string) error {
+	switch name {
+	case threadcredential.EdgeUser:
+		m.ResetUser()
+		return nil
+	case threadcredential.EdgeThread:
+		m.ResetThread()
+		return nil
+	}
+	return fmt.Errorf("unknown ThreadCredential edge %s", name)
 }
 
 // UserMutation represents an operation that mutates the User nodes in the graph.
@@ -15846,6 +16598,8 @@ type UserMutation struct {
 	last_login_ip                    *string
 	locked_until                     *time.Time
 	lock_reason                      *string
+	guarantee_amount                 *int64
+	addguarantee_amount              *int64
 	clearedFields                    map[string]struct{}
 	passkeys                         map[int]struct{}
 	removedpasskeys                  map[int]struct{}
@@ -15889,6 +16643,9 @@ type UserMutation struct {
 	sudo_sessions                    map[int]struct{}
 	removedsudo_sessions             map[int]struct{}
 	clearedsudo_sessions             bool
+	given_credentials                map[int]struct{}
+	removedgiven_credentials         map[int]struct{}
+	clearedgiven_credentials         bool
 	primary_badge                    *int
 	clearedprimary_badge             bool
 	done                             bool
@@ -17135,6 +17892,62 @@ func (m *UserMutation) ResetLockReason() {
 	delete(m.clearedFields, user.FieldLockReason)
 }
 
+// SetGuaranteeAmount sets the "guarantee_amount" field.
+func (m *UserMutation) SetGuaranteeAmount(i int64) {
+	m.guarantee_amount = &i
+	m.addguarantee_amount = nil
+}
+
+// GuaranteeAmount returns the value of the "guarantee_amount" field in the mutation.
+func (m *UserMutation) GuaranteeAmount() (r int64, exists bool) {
+	v := m.guarantee_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGuaranteeAmount returns the old "guarantee_amount" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldGuaranteeAmount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGuaranteeAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGuaranteeAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGuaranteeAmount: %w", err)
+	}
+	return oldValue.GuaranteeAmount, nil
+}
+
+// AddGuaranteeAmount adds i to the "guarantee_amount" field.
+func (m *UserMutation) AddGuaranteeAmount(i int64) {
+	if m.addguarantee_amount != nil {
+		*m.addguarantee_amount += i
+	} else {
+		m.addguarantee_amount = &i
+	}
+}
+
+// AddedGuaranteeAmount returns the value that was added to the "guarantee_amount" field in this mutation.
+func (m *UserMutation) AddedGuaranteeAmount() (r int64, exists bool) {
+	v := m.addguarantee_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetGuaranteeAmount resets all changes to the "guarantee_amount" field.
+func (m *UserMutation) ResetGuaranteeAmount() {
+	m.guarantee_amount = nil
+	m.addguarantee_amount = nil
+}
+
 // AddPasskeyIDs adds the "passkeys" edge to the Passkey entity by ids.
 func (m *UserMutation) AddPasskeyIDs(ids ...int) {
 	if m.passkeys == nil {
@@ -17891,6 +18704,60 @@ func (m *UserMutation) ResetSudoSessions() {
 	m.removedsudo_sessions = nil
 }
 
+// AddGivenCredentialIDs adds the "given_credentials" edge to the ThreadCredential entity by ids.
+func (m *UserMutation) AddGivenCredentialIDs(ids ...int) {
+	if m.given_credentials == nil {
+		m.given_credentials = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.given_credentials[ids[i]] = struct{}{}
+	}
+}
+
+// ClearGivenCredentials clears the "given_credentials" edge to the ThreadCredential entity.
+func (m *UserMutation) ClearGivenCredentials() {
+	m.clearedgiven_credentials = true
+}
+
+// GivenCredentialsCleared reports if the "given_credentials" edge to the ThreadCredential entity was cleared.
+func (m *UserMutation) GivenCredentialsCleared() bool {
+	return m.clearedgiven_credentials
+}
+
+// RemoveGivenCredentialIDs removes the "given_credentials" edge to the ThreadCredential entity by IDs.
+func (m *UserMutation) RemoveGivenCredentialIDs(ids ...int) {
+	if m.removedgiven_credentials == nil {
+		m.removedgiven_credentials = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.given_credentials, ids[i])
+		m.removedgiven_credentials[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedGivenCredentials returns the removed IDs of the "given_credentials" edge to the ThreadCredential entity.
+func (m *UserMutation) RemovedGivenCredentialsIDs() (ids []int) {
+	for id := range m.removedgiven_credentials {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// GivenCredentialsIDs returns the "given_credentials" edge IDs in the mutation.
+func (m *UserMutation) GivenCredentialsIDs() (ids []int) {
+	for id := range m.given_credentials {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetGivenCredentials resets all changes to the "given_credentials" edge.
+func (m *UserMutation) ResetGivenCredentials() {
+	m.given_credentials = nil
+	m.clearedgiven_credentials = false
+	m.removedgiven_credentials = nil
+}
+
 // ClearPrimaryBadge clears the "primary_badge" edge to the Badge entity.
 func (m *UserMutation) ClearPrimaryBadge() {
 	m.clearedprimary_badge = true
@@ -17952,7 +18819,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 25)
+	fields := make([]string, 0, 26)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -18028,6 +18895,9 @@ func (m *UserMutation) Fields() []string {
 	if m.lock_reason != nil {
 		fields = append(fields, user.FieldLockReason)
 	}
+	if m.guarantee_amount != nil {
+		fields = append(fields, user.FieldGuaranteeAmount)
+	}
 	return fields
 }
 
@@ -18086,6 +18956,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.LockedUntil()
 	case user.FieldLockReason:
 		return m.LockReason()
+	case user.FieldGuaranteeAmount:
+		return m.GuaranteeAmount()
 	}
 	return nil, false
 }
@@ -18145,6 +19017,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldLockedUntil(ctx)
 	case user.FieldLockReason:
 		return m.OldLockReason(ctx)
+	case user.FieldGuaranteeAmount:
+		return m.OldGuaranteeAmount(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -18329,6 +19203,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetLockReason(v)
 		return nil
+	case user.FieldGuaranteeAmount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGuaranteeAmount(v)
+		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
 }
@@ -18340,6 +19221,9 @@ func (m *UserMutation) AddedFields() []string {
 	if m.addfailed_login_attempts != nil {
 		fields = append(fields, user.FieldFailedLoginAttempts)
 	}
+	if m.addguarantee_amount != nil {
+		fields = append(fields, user.FieldGuaranteeAmount)
+	}
 	return fields
 }
 
@@ -18350,6 +19234,8 @@ func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case user.FieldFailedLoginAttempts:
 		return m.AddedFailedLoginAttempts()
+	case user.FieldGuaranteeAmount:
+		return m.AddedGuaranteeAmount()
 	}
 	return nil, false
 }
@@ -18365,6 +19251,13 @@ func (m *UserMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddFailedLoginAttempts(v)
+		return nil
+	case user.FieldGuaranteeAmount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGuaranteeAmount(v)
 		return nil
 	}
 	return fmt.Errorf("unknown User numeric field %s", name)
@@ -18573,13 +19466,16 @@ func (m *UserMutation) ResetField(name string) error {
 	case user.FieldLockReason:
 		m.ResetLockReason()
 		return nil
+	case user.FieldGuaranteeAmount:
+		m.ResetGuaranteeAmount()
+		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 15)
+	edges := make([]string, 0, 16)
 	if m.passkeys != nil {
 		edges = append(edges, user.EdgePasskeys)
 	}
@@ -18621,6 +19517,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.sudo_sessions != nil {
 		edges = append(edges, user.EdgeSudoSessions)
+	}
+	if m.given_credentials != nil {
+		edges = append(edges, user.EdgeGivenCredentials)
 	}
 	if m.primary_badge != nil {
 		edges = append(edges, user.EdgePrimaryBadge)
@@ -18716,6 +19615,12 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeGivenCredentials:
+		ids := make([]ent.Value, 0, len(m.given_credentials))
+		for id := range m.given_credentials {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgePrimaryBadge:
 		if id := m.primary_badge; id != nil {
 			return []ent.Value{*id}
@@ -18726,7 +19631,7 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 15)
+	edges := make([]string, 0, 16)
 	if m.removedpasskeys != nil {
 		edges = append(edges, user.EdgePasskeys)
 	}
@@ -18768,6 +19673,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedsudo_sessions != nil {
 		edges = append(edges, user.EdgeSudoSessions)
+	}
+	if m.removedgiven_credentials != nil {
+		edges = append(edges, user.EdgeGivenCredentials)
 	}
 	return edges
 }
@@ -18860,13 +19768,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeGivenCredentials:
+		ids := make([]ent.Value, 0, len(m.removedgiven_credentials))
+		for id := range m.removedgiven_credentials {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 15)
+	edges := make([]string, 0, 16)
 	if m.clearedpasskeys {
 		edges = append(edges, user.EdgePasskeys)
 	}
@@ -18909,6 +19823,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedsudo_sessions {
 		edges = append(edges, user.EdgeSudoSessions)
 	}
+	if m.clearedgiven_credentials {
+		edges = append(edges, user.EdgeGivenCredentials)
+	}
 	if m.clearedprimary_badge {
 		edges = append(edges, user.EdgePrimaryBadge)
 	}
@@ -18947,6 +19864,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.cleareddevice_user_mappings
 	case user.EdgeSudoSessions:
 		return m.clearedsudo_sessions
+	case user.EdgeGivenCredentials:
+		return m.clearedgiven_credentials
 	case user.EdgePrimaryBadge:
 		return m.clearedprimary_badge
 	}
@@ -19009,6 +19928,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeSudoSessions:
 		m.ResetSudoSessions()
+		return nil
+	case user.EdgeGivenCredentials:
+		m.ResetGivenCredentials()
 		return nil
 	case user.EdgePrimaryBadge:
 		m.ResetPrimaryBadge()

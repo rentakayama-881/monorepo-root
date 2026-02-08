@@ -21,6 +21,7 @@ import (
 	"backend-gin/ent/sudosession"
 	"backend-gin/ent/tag"
 	"backend-gin/ent/thread"
+	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
@@ -758,6 +759,29 @@ func init() {
 	thread.DefaultContentType = threadDescContentType.Default.(string)
 	// thread.ContentTypeValidator is a validator for the "content_type" field. It is called by the builders before save.
 	thread.ContentTypeValidator = threadDescContentType.Validators[0].(func(string) error)
+	threadcredentialMixin := schema.ThreadCredential{}.Mixin()
+	threadcredentialMixinFields0 := threadcredentialMixin[0].Fields()
+	_ = threadcredentialMixinFields0
+	threadcredentialFields := schema.ThreadCredential{}.Fields()
+	_ = threadcredentialFields
+	// threadcredentialDescCreatedAt is the schema descriptor for created_at field.
+	threadcredentialDescCreatedAt := threadcredentialMixinFields0[0].Descriptor()
+	// threadcredential.DefaultCreatedAt holds the default value on creation for the created_at field.
+	threadcredential.DefaultCreatedAt = threadcredentialDescCreatedAt.Default.(func() time.Time)
+	// threadcredentialDescUpdatedAt is the schema descriptor for updated_at field.
+	threadcredentialDescUpdatedAt := threadcredentialMixinFields0[1].Descriptor()
+	// threadcredential.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	threadcredential.DefaultUpdatedAt = threadcredentialDescUpdatedAt.Default.(func() time.Time)
+	// threadcredential.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	threadcredential.UpdateDefaultUpdatedAt = threadcredentialDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// threadcredentialDescUserID is the schema descriptor for user_id field.
+	threadcredentialDescUserID := threadcredentialFields[0].Descriptor()
+	// threadcredential.UserIDValidator is a validator for the "user_id" field. It is called by the builders before save.
+	threadcredential.UserIDValidator = threadcredentialDescUserID.Validators[0].(func(int) error)
+	// threadcredentialDescThreadID is the schema descriptor for thread_id field.
+	threadcredentialDescThreadID := threadcredentialFields[1].Descriptor()
+	// threadcredential.ThreadIDValidator is a validator for the "thread_id" field. It is called by the builders before save.
+	threadcredential.ThreadIDValidator = threadcredentialDescThreadID.Validators[0].(func(int) error)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0
@@ -825,6 +849,10 @@ func init() {
 	userDescLockReason := userFields[21].Descriptor()
 	// user.LockReasonValidator is a validator for the "lock_reason" field. It is called by the builders before save.
 	user.LockReasonValidator = userDescLockReason.Validators[0].(func(string) error)
+	// userDescGuaranteeAmount is the schema descriptor for guarantee_amount field.
+	userDescGuaranteeAmount := userFields[22].Descriptor()
+	// user.DefaultGuaranteeAmount holds the default value on creation for the guarantee_amount field.
+	user.DefaultGuaranteeAmount = userDescGuaranteeAmount.Default.(int64)
 	userbadgeMixin := schema.UserBadge{}.Mixin()
 	userbadgeMixinFields0 := userbadgeMixin[0].Fields()
 	_ = userbadgeMixinFields0

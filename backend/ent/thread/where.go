@@ -559,6 +559,29 @@ func HasTagsWith(preds ...predicate.Tag) predicate.Thread {
 	})
 }
 
+// HasReceivedCredentials applies the HasEdge predicate on the "received_credentials" edge.
+func HasReceivedCredentials() predicate.Thread {
+	return predicate.Thread(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ReceivedCredentialsTable, ReceivedCredentialsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasReceivedCredentialsWith applies the HasEdge predicate on the "received_credentials" edge with a given conditions (other predicates).
+func HasReceivedCredentialsWith(preds ...predicate.ThreadCredential) predicate.Thread {
+	return predicate.Thread(func(s *sql.Selector) {
+		step := newReceivedCredentialsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Thread) predicate.Thread {
 	return predicate.Thread(sql.AndPredicates(predicates...))

@@ -7,6 +7,7 @@ import (
 	"backend-gin/ent/predicate"
 	"backend-gin/ent/tag"
 	"backend-gin/ent/thread"
+	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/user"
 	"context"
 	"database/sql/driver"
@@ -22,13 +23,14 @@ import (
 // ThreadQuery is the builder for querying Thread entities.
 type ThreadQuery struct {
 	config
-	ctx          *QueryContext
-	order        []thread.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.Thread
-	withUser     *UserQuery
-	withCategory *CategoryQuery
-	withTags     *TagQuery
+	ctx                     *QueryContext
+	order                   []thread.OrderOption
+	inters                  []Interceptor
+	predicates              []predicate.Thread
+	withUser                *UserQuery
+	withCategory            *CategoryQuery
+	withTags                *TagQuery
+	withReceivedCredentials *ThreadCredentialQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -124,6 +126,28 @@ func (_q *ThreadQuery) QueryTags() *TagQuery {
 			sqlgraph.From(thread.Table, thread.FieldID, selector),
 			sqlgraph.To(tag.Table, tag.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, thread.TagsTable, thread.TagsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryReceivedCredentials chains the current query on the "received_credentials" edge.
+func (_q *ThreadQuery) QueryReceivedCredentials() *ThreadCredentialQuery {
+	query := (&ThreadCredentialClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(thread.Table, thread.FieldID, selector),
+			sqlgraph.To(threadcredential.Table, threadcredential.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, thread.ReceivedCredentialsTable, thread.ReceivedCredentialsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -318,14 +342,15 @@ func (_q *ThreadQuery) Clone() *ThreadQuery {
 		return nil
 	}
 	return &ThreadQuery{
-		config:       _q.config,
-		ctx:          _q.ctx.Clone(),
-		order:        append([]thread.OrderOption{}, _q.order...),
-		inters:       append([]Interceptor{}, _q.inters...),
-		predicates:   append([]predicate.Thread{}, _q.predicates...),
-		withUser:     _q.withUser.Clone(),
-		withCategory: _q.withCategory.Clone(),
-		withTags:     _q.withTags.Clone(),
+		config:                  _q.config,
+		ctx:                     _q.ctx.Clone(),
+		order:                   append([]thread.OrderOption{}, _q.order...),
+		inters:                  append([]Interceptor{}, _q.inters...),
+		predicates:              append([]predicate.Thread{}, _q.predicates...),
+		withUser:                _q.withUser.Clone(),
+		withCategory:            _q.withCategory.Clone(),
+		withTags:                _q.withTags.Clone(),
+		withReceivedCredentials: _q.withReceivedCredentials.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -362,6 +387,17 @@ func (_q *ThreadQuery) WithTags(opts ...func(*TagQuery)) *ThreadQuery {
 		opt(query)
 	}
 	_q.withTags = query
+	return _q
+}
+
+// WithReceivedCredentials tells the query-builder to eager-load the nodes that are connected to
+// the "received_credentials" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ThreadQuery) WithReceivedCredentials(opts ...func(*ThreadCredentialQuery)) *ThreadQuery {
+	query := (&ThreadCredentialClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withReceivedCredentials = query
 	return _q
 }
 
@@ -443,10 +479,11 @@ func (_q *ThreadQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Threa
 	var (
 		nodes       = []*Thread{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withUser != nil,
 			_q.withCategory != nil,
 			_q.withTags != nil,
+			_q.withReceivedCredentials != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -483,6 +520,15 @@ func (_q *ThreadQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Threa
 		if err := _q.loadTags(ctx, query, nodes,
 			func(n *Thread) { n.Edges.Tags = []*Tag{} },
 			func(n *Thread, e *Tag) { n.Edges.Tags = append(n.Edges.Tags, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withReceivedCredentials; query != nil {
+		if err := _q.loadReceivedCredentials(ctx, query, nodes,
+			func(n *Thread) { n.Edges.ReceivedCredentials = []*ThreadCredential{} },
+			func(n *Thread, e *ThreadCredential) {
+				n.Edges.ReceivedCredentials = append(n.Edges.ReceivedCredentials, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -605,6 +651,36 @@ func (_q *ThreadQuery) loadTags(ctx context.Context, query *TagQuery, nodes []*T
 		for kn := range nodes {
 			assign(kn, n)
 		}
+	}
+	return nil
+}
+func (_q *ThreadQuery) loadReceivedCredentials(ctx context.Context, query *ThreadCredentialQuery, nodes []*Thread, init func(*Thread), assign func(*Thread, *ThreadCredential)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Thread)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(threadcredential.FieldThreadID)
+	}
+	query.Where(predicate.ThreadCredential(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(thread.ReceivedCredentialsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ThreadID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "thread_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

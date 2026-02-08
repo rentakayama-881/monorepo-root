@@ -16,6 +16,7 @@ import (
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
 	"backend-gin/ent/thread"
+	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
@@ -361,6 +362,20 @@ func (_c *UserCreate) SetNillableLockReason(v *string) *UserCreate {
 	return _c
 }
 
+// SetGuaranteeAmount sets the "guarantee_amount" field.
+func (_c *UserCreate) SetGuaranteeAmount(v int64) *UserCreate {
+	_c.mutation.SetGuaranteeAmount(v)
+	return _c
+}
+
+// SetNillableGuaranteeAmount sets the "guarantee_amount" field if the given value is not nil.
+func (_c *UserCreate) SetNillableGuaranteeAmount(v *int64) *UserCreate {
+	if v != nil {
+		_c.SetGuaranteeAmount(*v)
+	}
+	return _c
+}
+
 // AddPasskeyIDs adds the "passkeys" edge to the Passkey entity by IDs.
 func (_c *UserCreate) AddPasskeyIDs(ids ...int) *UserCreate {
 	_c.mutation.AddPasskeyIDs(ids...)
@@ -571,6 +586,21 @@ func (_c *UserCreate) AddSudoSessions(v ...*SudoSession) *UserCreate {
 	return _c.AddSudoSessionIDs(ids...)
 }
 
+// AddGivenCredentialIDs adds the "given_credentials" edge to the ThreadCredential entity by IDs.
+func (_c *UserCreate) AddGivenCredentialIDs(ids ...int) *UserCreate {
+	_c.mutation.AddGivenCredentialIDs(ids...)
+	return _c
+}
+
+// AddGivenCredentials adds the "given_credentials" edges to the ThreadCredential entity.
+func (_c *UserCreate) AddGivenCredentials(v ...*ThreadCredential) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddGivenCredentialIDs(ids...)
+}
+
 // SetPrimaryBadge sets the "primary_badge" edge to the Badge entity.
 func (_c *UserCreate) SetPrimaryBadge(v *Badge) *UserCreate {
 	return _c.SetPrimaryBadgeID(v.ID)
@@ -655,6 +685,10 @@ func (_c *UserCreate) defaults() {
 		v := user.DefaultFailedLoginAttempts
 		_c.mutation.SetFailedLoginAttempts(v)
 	}
+	if _, ok := _c.mutation.GuaranteeAmount(); !ok {
+		v := user.DefaultGuaranteeAmount
+		_c.mutation.SetGuaranteeAmount(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -702,6 +736,9 @@ func (_c *UserCreate) check() error {
 		if err := user.LockReasonValidator(v); err != nil {
 			return &ValidationError{Name: "lock_reason", err: fmt.Errorf(`ent: validator failed for field "User.lock_reason": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.GuaranteeAmount(); !ok {
+		return &ValidationError{Name: "guarantee_amount", err: errors.New(`ent: missing required field "User.guarantee_amount"`)}
 	}
 	return nil
 }
@@ -824,6 +861,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.LockReason(); ok {
 		_spec.SetField(user.FieldLockReason, field.TypeString, value)
 		_node.LockReason = value
+	}
+	if value, ok := _c.mutation.GuaranteeAmount(); ok {
+		_spec.SetField(user.FieldGuaranteeAmount, field.TypeInt64, value)
+		_node.GuaranteeAmount = value
 	}
 	if nodes := _c.mutation.PasskeysIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -1042,6 +1083,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(sudosession.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.GivenCredentialsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GivenCredentialsTable,
+			Columns: []string{user.GivenCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

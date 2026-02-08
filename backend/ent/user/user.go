@@ -64,6 +64,8 @@ const (
 	FieldLockedUntil = "locked_until"
 	// FieldLockReason holds the string denoting the lock_reason field in the database.
 	FieldLockReason = "lock_reason"
+	// FieldGuaranteeAmount holds the string denoting the guarantee_amount field in the database.
+	FieldGuaranteeAmount = "guarantee_amount"
 	// EdgePasskeys holds the string denoting the passkeys edge name in mutations.
 	EdgePasskeys = "passkeys"
 	// EdgeSessions holds the string denoting the sessions edge name in mutations.
@@ -92,6 +94,8 @@ const (
 	EdgeDeviceUserMappings = "device_user_mappings"
 	// EdgeSudoSessions holds the string denoting the sudo_sessions edge name in mutations.
 	EdgeSudoSessions = "sudo_sessions"
+	// EdgeGivenCredentials holds the string denoting the given_credentials edge name in mutations.
+	EdgeGivenCredentials = "given_credentials"
 	// EdgePrimaryBadge holds the string denoting the primary_badge edge name in mutations.
 	EdgePrimaryBadge = "primary_badge"
 	// Table holds the table name of the user in the database.
@@ -194,6 +198,13 @@ const (
 	SudoSessionsInverseTable = "sudo_sessions"
 	// SudoSessionsColumn is the table column denoting the sudo_sessions relation/edge.
 	SudoSessionsColumn = "user_id"
+	// GivenCredentialsTable is the table that holds the given_credentials relation/edge.
+	GivenCredentialsTable = "thread_credentials"
+	// GivenCredentialsInverseTable is the table name for the ThreadCredential entity.
+	// It exists in this package in order to avoid circular dependency with the "threadcredential" package.
+	GivenCredentialsInverseTable = "thread_credentials"
+	// GivenCredentialsColumn is the table column denoting the given_credentials relation/edge.
+	GivenCredentialsColumn = "user_id"
 	// PrimaryBadgeTable is the table that holds the primary_badge relation/edge.
 	PrimaryBadgeTable = "users"
 	// PrimaryBadgeInverseTable is the table name for the Badge entity.
@@ -231,6 +242,7 @@ var Columns = []string{
 	FieldLastLoginIP,
 	FieldLockedUntil,
 	FieldLockReason,
+	FieldGuaranteeAmount,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -276,6 +288,8 @@ var (
 	LastLoginIPValidator func(string) error
 	// LockReasonValidator is a validator for the "lock_reason" field. It is called by the builders before save.
 	LockReasonValidator func(string) error
+	// DefaultGuaranteeAmount holds the default value on creation for the "guarantee_amount" field.
+	DefaultGuaranteeAmount int64
 )
 
 // OrderOption defines the ordering options for the User queries.
@@ -404,6 +418,11 @@ func ByLockedUntil(opts ...sql.OrderTermOption) OrderOption {
 // ByLockReason orders the results by the lock_reason field.
 func ByLockReason(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLockReason, opts...).ToFunc()
+}
+
+// ByGuaranteeAmount orders the results by the guarantee_amount field.
+func ByGuaranteeAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGuaranteeAmount, opts...).ToFunc()
 }
 
 // ByPasskeysCount orders the results by passkeys count.
@@ -602,6 +621,20 @@ func BySudoSessions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByGivenCredentialsCount orders the results by given_credentials count.
+func ByGivenCredentialsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGivenCredentialsStep(), opts...)
+	}
+}
+
+// ByGivenCredentials orders the results by given_credentials terms.
+func ByGivenCredentials(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGivenCredentialsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByPrimaryBadgeField orders the results by primary_badge field.
 func ByPrimaryBadgeField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -704,6 +737,13 @@ func newSudoSessionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SudoSessionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SudoSessionsTable, SudoSessionsColumn),
+	)
+}
+func newGivenCredentialsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GivenCredentialsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GivenCredentialsTable, GivenCredentialsColumn),
 	)
 }
 func newPrimaryBadgeStep() *sqlgraph.Step {

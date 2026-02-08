@@ -175,6 +175,11 @@ func LockReason(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldLockReason, v))
 }
 
+// GuaranteeAmount applies equality check predicate on the "guarantee_amount" field. It's identical to GuaranteeAmountEQ.
+func GuaranteeAmount(v int64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldGuaranteeAmount, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
@@ -1495,6 +1500,46 @@ func LockReasonContainsFold(v string) predicate.User {
 	return predicate.User(sql.FieldContainsFold(FieldLockReason, v))
 }
 
+// GuaranteeAmountEQ applies the EQ predicate on the "guarantee_amount" field.
+func GuaranteeAmountEQ(v int64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldGuaranteeAmount, v))
+}
+
+// GuaranteeAmountNEQ applies the NEQ predicate on the "guarantee_amount" field.
+func GuaranteeAmountNEQ(v int64) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldGuaranteeAmount, v))
+}
+
+// GuaranteeAmountIn applies the In predicate on the "guarantee_amount" field.
+func GuaranteeAmountIn(vs ...int64) predicate.User {
+	return predicate.User(sql.FieldIn(FieldGuaranteeAmount, vs...))
+}
+
+// GuaranteeAmountNotIn applies the NotIn predicate on the "guarantee_amount" field.
+func GuaranteeAmountNotIn(vs ...int64) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldGuaranteeAmount, vs...))
+}
+
+// GuaranteeAmountGT applies the GT predicate on the "guarantee_amount" field.
+func GuaranteeAmountGT(v int64) predicate.User {
+	return predicate.User(sql.FieldGT(FieldGuaranteeAmount, v))
+}
+
+// GuaranteeAmountGTE applies the GTE predicate on the "guarantee_amount" field.
+func GuaranteeAmountGTE(v int64) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldGuaranteeAmount, v))
+}
+
+// GuaranteeAmountLT applies the LT predicate on the "guarantee_amount" field.
+func GuaranteeAmountLT(v int64) predicate.User {
+	return predicate.User(sql.FieldLT(FieldGuaranteeAmount, v))
+}
+
+// GuaranteeAmountLTE applies the LTE predicate on the "guarantee_amount" field.
+func GuaranteeAmountLTE(v int64) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldGuaranteeAmount, v))
+}
+
 // HasPasskeys applies the HasEdge predicate on the "passkeys" edge.
 func HasPasskeys() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
@@ -1809,6 +1854,29 @@ func HasSudoSessions() predicate.User {
 func HasSudoSessionsWith(preds ...predicate.SudoSession) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newSudoSessionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGivenCredentials applies the HasEdge predicate on the "given_credentials" edge.
+func HasGivenCredentials() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GivenCredentialsTable, GivenCredentialsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGivenCredentialsWith applies the HasEdge predicate on the "given_credentials" edge with a given conditions (other predicates).
+func HasGivenCredentialsWith(preds ...predicate.ThreadCredential) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newGivenCredentialsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

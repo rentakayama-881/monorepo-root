@@ -346,6 +346,7 @@ func main() {
 	// Use service wrappers for handlers expecting legacy interfaces
 	authHandler := handlers.NewAuthHandler(authServiceWrapper, sessionServiceWrapper)
 	threadHandler := handlers.NewThreadHandler(threadService)
+	credentialHandler := handlers.NewCredentialHandler(database.GetEntClient())
 	totpHandler := handlers.NewTOTPHandler(totpServiceWrapper, logger.GetLogger())
 	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authServiceWrapper, logger.GetLogger())
 	sudoHandler := handlers.NewEntSudoHandler(sudoEntService, logger.GetLogger())
@@ -501,6 +502,13 @@ func main() {
 				users.GET("/:id/public", userHandler.GetPublicUserProfileByID)
 			}
 
+			// Internal API protected by service token
+			internal := apiRateLimited.Group("/internal")
+			internal.Use(middleware.InternalServiceAuth())
+			{
+				internal.PUT("/users/:id/guarantee", userHandler.UpdateGuaranteeAmount)
+			}
+
 			threads := apiRateLimited.Group("/threads")
 			{
 				threads.GET("/categories", threadHandler.GetCategories)
@@ -512,6 +520,10 @@ func main() {
 				threads.GET("/me", middleware.AuthMiddleware(), threadHandler.GetMyThreads)
 				threads.PUT("/:id", middleware.AuthMiddleware(), threadHandler.UpdateThread)
 				threads.DELETE("/:id", middleware.AuthMiddleware(), threadHandler.DeleteThread)
+				// Thread credentials (reputation upvote)
+				threads.POST("/:id/credential", middleware.AuthMiddleware(), credentialHandler.GiveCredential)
+				threads.DELETE("/:id/credential", middleware.AuthMiddleware(), credentialHandler.RemoveCredential)
+				threads.GET("/:id/credential/count", credentialHandler.GetCredentialCount)
 				// Thread tags
 				threads.GET("/:id/tags", handlers.GetThreadTagsHandler)
 				threads.POST("/:id/tags", middleware.AuthMiddleware(), handlers.AddTagsToThreadHandler)

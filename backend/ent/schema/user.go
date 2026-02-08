@@ -117,6 +117,9 @@ func (User) Fields() []ent.Field {
 		field.String("lock_reason").
 			Optional().
 			MaxLen(255),
+		// Cached from Feature-Service (MongoDB) for fast thread/profile reads
+		field.Int64("guarantee_amount").
+			Default(0),
 	}
 }
 
@@ -137,6 +140,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("device_fingerprints", DeviceFingerprint.Type),
 		edge.To("device_user_mappings", DeviceUserMapping.Type),
 		edge.To("sudo_sessions", SudoSession.Type),
+		edge.To("given_credentials", ThreadCredential.Type),
 		edge.To("primary_badge", Badge.Type).
 			Field("primary_badge_id").
 			Unique(),

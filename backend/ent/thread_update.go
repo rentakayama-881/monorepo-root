@@ -7,6 +7,7 @@ import (
 	"backend-gin/ent/predicate"
 	"backend-gin/ent/tag"
 	"backend-gin/ent/thread"
+	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/user"
 	"context"
 	"errors"
@@ -182,6 +183,21 @@ func (_u *ThreadUpdate) AddTags(v ...*Tag) *ThreadUpdate {
 	return _u.AddTagIDs(ids...)
 }
 
+// AddReceivedCredentialIDs adds the "received_credentials" edge to the ThreadCredential entity by IDs.
+func (_u *ThreadUpdate) AddReceivedCredentialIDs(ids ...int) *ThreadUpdate {
+	_u.mutation.AddReceivedCredentialIDs(ids...)
+	return _u
+}
+
+// AddReceivedCredentials adds the "received_credentials" edges to the ThreadCredential entity.
+func (_u *ThreadUpdate) AddReceivedCredentials(v ...*ThreadCredential) *ThreadUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddReceivedCredentialIDs(ids...)
+}
+
 // Mutation returns the ThreadMutation object of the builder.
 func (_u *ThreadUpdate) Mutation() *ThreadMutation {
 	return _u.mutation
@@ -218,6 +234,27 @@ func (_u *ThreadUpdate) RemoveTags(v ...*Tag) *ThreadUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveTagIDs(ids...)
+}
+
+// ClearReceivedCredentials clears all "received_credentials" edges to the ThreadCredential entity.
+func (_u *ThreadUpdate) ClearReceivedCredentials() *ThreadUpdate {
+	_u.mutation.ClearReceivedCredentials()
+	return _u
+}
+
+// RemoveReceivedCredentialIDs removes the "received_credentials" edge to ThreadCredential entities by IDs.
+func (_u *ThreadUpdate) RemoveReceivedCredentialIDs(ids ...int) *ThreadUpdate {
+	_u.mutation.RemoveReceivedCredentialIDs(ids...)
+	return _u
+}
+
+// RemoveReceivedCredentials removes "received_credentials" edges to ThreadCredential entities.
+func (_u *ThreadUpdate) RemoveReceivedCredentials(v ...*ThreadCredential) *ThreadUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveReceivedCredentialIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -435,6 +472,51 @@ func (_u *ThreadUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ReceivedCredentialsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   thread.ReceivedCredentialsTable,
+			Columns: []string{thread.ReceivedCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedReceivedCredentialsIDs(); len(nodes) > 0 && !_u.mutation.ReceivedCredentialsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   thread.ReceivedCredentialsTable,
+			Columns: []string{thread.ReceivedCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ReceivedCredentialsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   thread.ReceivedCredentialsTable,
+			Columns: []string{thread.ReceivedCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{thread.Label}
@@ -606,6 +688,21 @@ func (_u *ThreadUpdateOne) AddTags(v ...*Tag) *ThreadUpdateOne {
 	return _u.AddTagIDs(ids...)
 }
 
+// AddReceivedCredentialIDs adds the "received_credentials" edge to the ThreadCredential entity by IDs.
+func (_u *ThreadUpdateOne) AddReceivedCredentialIDs(ids ...int) *ThreadUpdateOne {
+	_u.mutation.AddReceivedCredentialIDs(ids...)
+	return _u
+}
+
+// AddReceivedCredentials adds the "received_credentials" edges to the ThreadCredential entity.
+func (_u *ThreadUpdateOne) AddReceivedCredentials(v ...*ThreadCredential) *ThreadUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddReceivedCredentialIDs(ids...)
+}
+
 // Mutation returns the ThreadMutation object of the builder.
 func (_u *ThreadUpdateOne) Mutation() *ThreadMutation {
 	return _u.mutation
@@ -642,6 +739,27 @@ func (_u *ThreadUpdateOne) RemoveTags(v ...*Tag) *ThreadUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveTagIDs(ids...)
+}
+
+// ClearReceivedCredentials clears all "received_credentials" edges to the ThreadCredential entity.
+func (_u *ThreadUpdateOne) ClearReceivedCredentials() *ThreadUpdateOne {
+	_u.mutation.ClearReceivedCredentials()
+	return _u
+}
+
+// RemoveReceivedCredentialIDs removes the "received_credentials" edge to ThreadCredential entities by IDs.
+func (_u *ThreadUpdateOne) RemoveReceivedCredentialIDs(ids ...int) *ThreadUpdateOne {
+	_u.mutation.RemoveReceivedCredentialIDs(ids...)
+	return _u
+}
+
+// RemoveReceivedCredentials removes "received_credentials" edges to ThreadCredential entities.
+func (_u *ThreadUpdateOne) RemoveReceivedCredentials(v ...*ThreadCredential) *ThreadUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveReceivedCredentialIDs(ids...)
 }
 
 // Where appends a list predicates to the ThreadUpdate builder.
@@ -882,6 +1000,51 @@ func (_u *ThreadUpdateOne) sqlSave(ctx context.Context) (_node *Thread, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tag.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ReceivedCredentialsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   thread.ReceivedCredentialsTable,
+			Columns: []string{thread.ReceivedCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedReceivedCredentialsIDs(); len(nodes) > 0 && !_u.mutation.ReceivedCredentialsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   thread.ReceivedCredentialsTable,
+			Columns: []string{thread.ReceivedCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ReceivedCredentialsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   thread.ReceivedCredentialsTable,
+			Columns: []string{thread.ReceivedCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

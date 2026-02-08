@@ -54,9 +54,11 @@ type ThreadEdges struct {
 	Category *Category `json:"category,omitempty"`
 	// Tags holds the value of the tags edge.
 	Tags []*Tag `json:"tags,omitempty"`
+	// ReceivedCredentials holds the value of the received_credentials edge.
+	ReceivedCredentials []*ThreadCredential `json:"received_credentials,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -88,6 +90,15 @@ func (e ThreadEdges) TagsOrErr() ([]*Tag, error) {
 		return e.Tags, nil
 	}
 	return nil, &NotLoadedError{edge: "tags"}
+}
+
+// ReceivedCredentialsOrErr returns the ReceivedCredentials value or an error if the edge
+// was not loaded in eager-loading.
+func (e ThreadEdges) ReceivedCredentialsOrErr() ([]*ThreadCredential, error) {
+	if e.loadedTypes[3] {
+		return e.ReceivedCredentials, nil
+	}
+	return nil, &NotLoadedError{edge: "received_credentials"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -215,6 +226,11 @@ func (_m *Thread) QueryCategory() *CategoryQuery {
 // QueryTags queries the "tags" edge of the Thread entity.
 func (_m *Thread) QueryTags() *TagQuery {
 	return NewThreadClient(_m.config).QueryTags(_m)
+}
+
+// QueryReceivedCredentials queries the "received_credentials" edge of the Thread entity.
+func (_m *Thread) QueryReceivedCredentials() *ThreadCredentialQuery {
+	return NewThreadClient(_m.config).QueryReceivedCredentials(_m)
 }
 
 // Update returns a builder for updating this Thread.

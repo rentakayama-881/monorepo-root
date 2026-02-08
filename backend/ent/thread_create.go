@@ -6,6 +6,7 @@ import (
 	"backend-gin/ent/category"
 	"backend-gin/ent/tag"
 	"backend-gin/ent/thread"
+	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/user"
 	"context"
 	"errors"
@@ -146,6 +147,21 @@ func (_c *ThreadCreate) AddTags(v ...*Tag) *ThreadCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddTagIDs(ids...)
+}
+
+// AddReceivedCredentialIDs adds the "received_credentials" edge to the ThreadCredential entity by IDs.
+func (_c *ThreadCreate) AddReceivedCredentialIDs(ids ...int) *ThreadCreate {
+	_c.mutation.AddReceivedCredentialIDs(ids...)
+	return _c
+}
+
+// AddReceivedCredentials adds the "received_credentials" edges to the ThreadCredential entity.
+func (_c *ThreadCreate) AddReceivedCredentials(v ...*ThreadCredential) *ThreadCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddReceivedCredentialIDs(ids...)
 }
 
 // Mutation returns the ThreadMutation object of the builder.
@@ -348,6 +364,22 @@ func (_c *ThreadCreate) createSpec() (*Thread, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tag.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ReceivedCredentialsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   thread.ReceivedCredentialsTable,
+			Columns: []string{thread.ReceivedCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

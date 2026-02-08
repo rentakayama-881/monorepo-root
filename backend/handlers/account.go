@@ -24,6 +24,7 @@ import (
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
 	"backend-gin/ent/thread"
+	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	entuser "backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
@@ -235,18 +236,29 @@ func BuildPublicProfileFromEnt(c *gin.Context, u *ent.User) gin.H {
 		}
 	}
 
+	// Credential score = total credentials across all threads owned by this user.
+	credentialScore, err := database.GetEntClient().ThreadCredential.
+		Query().
+		Where(threadcredential.HasThreadWith(thread.UserIDEQ(u.ID))).
+		Count(ctx)
+	if err != nil {
+		credentialScore = 0
+	}
+
 	return gin.H{
-		"username":        name,
-		"full_name":       u.FullName,
-		"bio":             u.Bio,
-		"pronouns":        u.Pronouns,
-		"company":         u.Company,
-		"telegram":        u.Telegram,
-		"social_accounts": socials,
-		"avatar_url":      u.AvatarURL,
-		"id":              u.ID,
-		"primary_badge":   primaryBadge,
-		"badges":          badges,
+		"username":         name,
+		"full_name":        u.FullName,
+		"bio":              u.Bio,
+		"pronouns":         u.Pronouns,
+		"company":          u.Company,
+		"telegram":         u.Telegram,
+		"social_accounts":  socials,
+		"avatar_url":       u.AvatarURL,
+		"id":               u.ID,
+		"credential_score": credentialScore,
+		"guarantee_amount": u.GuaranteeAmount,
+		"primary_badge":    primaryBadge,
+		"badges":           badges,
 	}
 }
 

@@ -54,5 +54,7 @@ public enum TransactionType
     Escrow = 6,        // Money held in escrow
     EscrowRelease = 7, // Escrow released
     Reserved8 = 8,     // Reserved (legacy data)
-    Reserved9 = 9      // Reserved (legacy data)
+    Reserved9 = 9,     // Reserved (legacy data)
+    GuaranteeLock = 10,    // Money frozen for profile guarantee
+    GuaranteeRelease = 11  // Guarantee released back to wallet
 }

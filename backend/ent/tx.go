@@ -48,6 +48,8 @@ type Tx struct {
 	Tag *TagClient
 	// Thread is the client for interacting with the Thread builders.
 	Thread *ThreadClient
+	// ThreadCredential is the client for interacting with the ThreadCredential builders.
+	ThreadCredential *ThreadCredentialClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 	// UserBadge is the client for interacting with the UserBadge builders.
@@ -201,6 +203,7 @@ func (tx *Tx) init() {
 	tx.TOTPPendingToken = NewTOTPPendingTokenClient(tx.config)
 	tx.Tag = NewTagClient(tx.config)
 	tx.Thread = NewThreadClient(tx.config)
+	tx.ThreadCredential = NewThreadCredentialClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserBadge = NewUserBadgeClient(tx.config)
 }

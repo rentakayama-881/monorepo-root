@@ -69,6 +69,8 @@ type User struct {
 	LockedUntil *time.Time `json:"locked_until,omitempty"`
 	// LockReason holds the value of the "lock_reason" field.
 	LockReason string `json:"lock_reason,omitempty"`
+	// GuaranteeAmount holds the value of the "guarantee_amount" field.
+	GuaranteeAmount int64 `json:"guarantee_amount,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges        UserEdges `json:"edges"`
@@ -105,11 +107,13 @@ type UserEdges struct {
 	DeviceUserMappings []*DeviceUserMapping `json:"device_user_mappings,omitempty"`
 	// SudoSessions holds the value of the sudo_sessions edge.
 	SudoSessions []*SudoSession `json:"sudo_sessions,omitempty"`
+	// GivenCredentials holds the value of the given_credentials edge.
+	GivenCredentials []*ThreadCredential `json:"given_credentials,omitempty"`
 	// PrimaryBadge holds the value of the primary_badge edge.
 	PrimaryBadge *Badge `json:"primary_badge,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [15]bool
+	loadedTypes [16]bool
 }
 
 // PasskeysOrErr returns the Passkeys value or an error if the edge
@@ -238,12 +242,21 @@ func (e UserEdges) SudoSessionsOrErr() ([]*SudoSession, error) {
 	return nil, &NotLoadedError{edge: "sudo_sessions"}
 }
 
+// GivenCredentialsOrErr returns the GivenCredentials value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GivenCredentialsOrErr() ([]*ThreadCredential, error) {
+	if e.loadedTypes[14] {
+		return e.GivenCredentials, nil
+	}
+	return nil, &NotLoadedError{edge: "given_credentials"}
+}
+
 // PrimaryBadgeOrErr returns the PrimaryBadge value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e UserEdges) PrimaryBadgeOrErr() (*Badge, error) {
 	if e.PrimaryBadge != nil {
 		return e.PrimaryBadge, nil
-	} else if e.loadedTypes[14] {
+	} else if e.loadedTypes[15] {
 		return nil, &NotFoundError{label: badge.Label}
 	}
 	return nil, &NotLoadedError{edge: "primary_badge"}
@@ -258,7 +271,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case user.FieldEmailVerified, user.FieldTotpEnabled, user.FieldTotpVerified:
 			values[i] = new(sql.NullBool)
-		case user.FieldID, user.FieldPrimaryBadgeID, user.FieldFailedLoginAttempts:
+		case user.FieldID, user.FieldPrimaryBadgeID, user.FieldFailedLoginAttempts, user.FieldGuaranteeAmount:
 			values[i] = new(sql.NullInt64)
 		case user.FieldEmail, user.FieldUsername, user.FieldPasswordHash, user.FieldAvatarURL, user.FieldFullName, user.FieldBio, user.FieldPronouns, user.FieldCompany, user.FieldTelegram, user.FieldTotpSecret, user.FieldLastLoginIP, user.FieldLockReason:
 			values[i] = new(sql.NullString)
@@ -446,6 +459,12 @@ func (_m *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.LockReason = value.String
 			}
+		case user.FieldGuaranteeAmount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field guarantee_amount", values[i])
+			} else if value.Valid {
+				_m.GuaranteeAmount = value.Int64
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -527,6 +546,11 @@ func (_m *User) QueryDeviceUserMappings() *DeviceUserMappingQuery {
 // QuerySudoSessions queries the "sudo_sessions" edge of the User entity.
 func (_m *User) QuerySudoSessions() *SudoSessionQuery {
 	return NewUserClient(_m.config).QuerySudoSessions(_m)
+}
+
+// QueryGivenCredentials queries the "given_credentials" edge of the User entity.
+func (_m *User) QueryGivenCredentials() *ThreadCredentialQuery {
+	return NewUserClient(_m.config).QueryGivenCredentials(_m)
 }
 
 // QueryPrimaryBadge queries the "primary_badge" edge of the User entity.
@@ -645,6 +669,9 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("lock_reason=")
 	builder.WriteString(_m.LockReason)
+	builder.WriteString(", ")
+	builder.WriteString("guarantee_amount=")
+	builder.WriteString(fmt.Sprintf("%v", _m.GuaranteeAmount))
 	builder.WriteByte(')')
 	return builder.String()
 }

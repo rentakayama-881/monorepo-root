@@ -17,6 +17,7 @@ import (
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
 	"backend-gin/ent/thread"
+	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
@@ -52,6 +53,7 @@ type UserQuery struct {
 	withDeviceFingerprints      *DeviceFingerprintQuery
 	withDeviceUserMappings      *DeviceUserMappingQuery
 	withSudoSessions            *SudoSessionQuery
+	withGivenCredentials        *ThreadCredentialQuery
 	withPrimaryBadge            *BadgeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -397,6 +399,28 @@ func (_q *UserQuery) QuerySudoSessions() *SudoSessionQuery {
 	return query
 }
 
+// QueryGivenCredentials chains the current query on the "given_credentials" edge.
+func (_q *UserQuery) QueryGivenCredentials() *ThreadCredentialQuery {
+	query := (&ThreadCredentialClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(threadcredential.Table, threadcredential.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GivenCredentialsTable, user.GivenCredentialsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryPrimaryBadge chains the current query on the "primary_badge" edge.
 func (_q *UserQuery) QueryPrimaryBadge() *BadgeQuery {
 	query := (&BadgeClient{config: _q.config}).Query()
@@ -625,6 +649,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withDeviceFingerprints:      _q.withDeviceFingerprints.Clone(),
 		withDeviceUserMappings:      _q.withDeviceUserMappings.Clone(),
 		withSudoSessions:            _q.withSudoSessions.Clone(),
+		withGivenCredentials:        _q.withGivenCredentials.Clone(),
 		withPrimaryBadge:            _q.withPrimaryBadge.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -786,6 +811,17 @@ func (_q *UserQuery) WithSudoSessions(opts ...func(*SudoSessionQuery)) *UserQuer
 	return _q
 }
 
+// WithGivenCredentials tells the query-builder to eager-load the nodes that are connected to
+// the "given_credentials" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithGivenCredentials(opts ...func(*ThreadCredentialQuery)) *UserQuery {
+	query := (&ThreadCredentialClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGivenCredentials = query
+	return _q
+}
+
 // WithPrimaryBadge tells the query-builder to eager-load the nodes that are connected to
 // the "primary_badge" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithPrimaryBadge(opts ...func(*BadgeQuery)) *UserQuery {
@@ -875,7 +911,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [15]bool{
+		loadedTypes = [16]bool{
 			_q.withPasskeys != nil,
 			_q.withSessions != nil,
 			_q.withBackupCodes != nil,
@@ -890,6 +926,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withDeviceFingerprints != nil,
 			_q.withDeviceUserMappings != nil,
 			_q.withSudoSessions != nil,
+			_q.withGivenCredentials != nil,
 			_q.withPrimaryBadge != nil,
 		}
 	)
@@ -1014,6 +1051,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadSudoSessions(ctx, query, nodes,
 			func(n *User) { n.Edges.SudoSessions = []*SudoSession{} },
 			func(n *User, e *SudoSession) { n.Edges.SudoSessions = append(n.Edges.SudoSessions, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGivenCredentials; query != nil {
+		if err := _q.loadGivenCredentials(ctx, query, nodes,
+			func(n *User) { n.Edges.GivenCredentials = []*ThreadCredential{} },
+			func(n *User, e *ThreadCredential) { n.Edges.GivenCredentials = append(n.Edges.GivenCredentials, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1434,6 +1478,36 @@ func (_q *UserQuery) loadSudoSessions(ctx context.Context, query *SudoSessionQue
 	}
 	query.Where(predicate.SudoSession(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.SudoSessionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadGivenCredentials(ctx context.Context, query *ThreadCredentialQuery, nodes []*User, init func(*User), assign func(*User, *ThreadCredential)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(threadcredential.FieldUserID)
+	}
+	query.Where(predicate.ThreadCredential(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.GivenCredentialsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

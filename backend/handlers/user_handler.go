@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"backend-gin/database"
 	"backend-gin/ent"
 	"backend-gin/services"
 
@@ -82,4 +83,45 @@ func (h *UserHandler) GetPublicUserProfileByID(c *gin.Context) {
 		"username":   username,
 		"avatar_url": u.AvatarURL,
 	})
+}
+
+type UpdateGuaranteeAmountRequest struct {
+	GuaranteeAmount int64 `json:"guarantee_amount" binding:"required"`
+}
+
+// PUT /api/internal/users/:id/guarantee (internal service auth required)
+func (h *UserHandler) UpdateGuaranteeAmount(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	var req UpdateGuaranteeAmountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "request tidak valid"})
+		return
+	}
+
+	if req.GuaranteeAmount < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "guarantee_amount tidak boleh negatif"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	_, err = database.GetEntClient().User.
+		UpdateOneID(id).
+		SetGuaranteeAmount(req.GuaranteeAmount).
+		Save(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user tidak ditemukan"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal memproses"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

@@ -204,7 +204,7 @@ public class DepositServiceTests
         collection
             .Setup(c => c.Find(
                 It.IsAny<FilterDefinition<DepositRequest>>(),
-                It.IsAny<FindOptions<DepositRequest, DepositRequest>>()))
+                It.IsAny<FindOptions>()))
             .Returns(findFluent.Object);
 
         collection

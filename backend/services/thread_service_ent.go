@@ -9,6 +9,7 @@ import (
 	"backend-gin/ent/category"
 	"backend-gin/ent/tag"
 	"backend-gin/ent/thread"
+	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/user"
 	apperrors "backend-gin/errors"
 	"backend-gin/logger"
@@ -79,7 +80,7 @@ func (s *EntThreadService) GetLatestThreads(ctx context.Context, limit, offset i
 		return nil, apperrors.ErrDatabase
 	}
 
-	return s.threadsToListItems(threads), nil
+	return s.threadsToListItems(ctx, threads), nil
 }
 
 // GetThreadsByCategory returns threads for a specific category using Ent
@@ -118,7 +119,7 @@ func (s *EntThreadService) GetThreadsByCategory(ctx context.Context, slug string
 		return nil, "", apperrors.ErrDatabase
 	}
 
-	return s.threadsToListItems(threads), cat.Name, nil
+	return s.threadsToListItems(ctx, threads), cat.Name, nil
 }
 
 // GetThreadsByUserID returns threads created by a specific user using Ent
@@ -142,11 +143,11 @@ func (s *EntThreadService) GetThreadsByUserID(ctx context.Context, userID int, l
 		return nil, apperrors.ErrDatabase
 	}
 
-	return s.threadsToListItems(threads), nil
+	return s.threadsToListItems(ctx, threads), nil
 }
 
 // GetThreadDetail returns detailed thread information using Ent
-func (s *EntThreadService) GetThreadDetail(ctx context.Context, threadID int) (*ThreadDetailResponse, error) {
+func (s *EntThreadService) GetThreadDetail(ctx context.Context, threadID int, viewerUserID int) (*ThreadDetailResponse, error) {
 	t, err := s.client.Thread.
 		Query().
 		Where(thread.IDEQ(threadID)).
@@ -166,7 +167,7 @@ func (s *EntThreadService) GetThreadDetail(ctx context.Context, threadID int) (*
 		return nil, apperrors.ErrDatabase
 	}
 
-	return s.threadToDetailResponse(t), nil
+	return s.threadToDetailResponse(ctx, t, viewerUserID), nil
 }
 
 // createThreadInternal creates a new thread using Ent (internal with int)
@@ -278,7 +279,7 @@ func (s *EntThreadService) createThreadInternal(ctx context.Context, userID int,
 		zap.String("title", input.Title),
 	)
 
-	return s.threadToDetailResponse(t), nil
+	return s.threadToDetailResponse(ctx, t, 0), nil
 }
 
 // updateThreadInternal updates an existing thread using Ent (internal with int)
@@ -385,21 +386,51 @@ func (s *EntThreadService) updateThreadInternal(ctx context.Context, threadID, u
 		return nil, apperrors.ErrDatabase
 	}
 
-	return s.threadToDetailResponse(t), nil
+	return s.threadToDetailResponse(ctx, t, 0), nil
 }
 
 // Helper: convert threads to list items
-func (s *EntThreadService) threadsToListItems(threads []*ent.Thread) []ThreadListItem {
+func (s *EntThreadService) threadsToListItems(ctx context.Context, threads []*ent.Thread) []ThreadListItem {
+	credentialCounts := map[int]int{}
+	threadIDs := make([]int, 0, len(threads))
+	for _, t := range threads {
+		threadIDs = append(threadIDs, t.ID)
+	}
+
+	if len(threadIDs) > 0 {
+		type credentialCountRow struct {
+			ThreadID int `json:"thread_id"`
+			Count    int `json:"count"`
+		}
+
+		var rows []credentialCountRow
+		err := s.client.ThreadCredential.
+			Query().
+			Where(threadcredential.ThreadIDIn(threadIDs...)).
+			GroupBy(threadcredential.FieldThreadID).
+			Aggregate(ent.Count()).
+			Scan(ctx, &rows)
+		if err != nil {
+			logger.Error("Failed to get credential counts", zap.Error(err))
+		} else {
+			for _, row := range rows {
+				credentialCounts[row.ThreadID] = row.Count
+			}
+		}
+	}
+
 	result := make([]ThreadListItem, len(threads))
 	for i, t := range threads {
 		username := ""
 		avatarURL := ""
 		var primaryBadge *Badge
+		var guaranteeAmount int64
 		if u := t.Edges.User; u != nil {
 			if u.Username != nil {
 				username = *u.Username
 			}
 			avatarURL = u.AvatarURL
+			guaranteeAmount = u.GuaranteeAmount
 			// Add primary badge if exists
 			if pb := u.Edges.PrimaryBadge; pb != nil {
 				primaryBadge = &Badge{
@@ -438,23 +469,25 @@ func (s *EntThreadService) threadsToListItems(threads []*ent.Thread) []ThreadLis
 		}
 
 		result[i] = ThreadListItem{
-			ID:           uint(t.ID),
-			Title:        t.Title,
-			Summary:      t.Summary,
-			Username:     username,
-			AvatarURL:    avatarURL,
-			PrimaryBadge: primaryBadge,
-			Category:     cat,
-			Tags:         tags,
-			Meta:         t.Meta,
-			CreatedAt:    t.CreatedAt.Unix(),
+			ID:              uint(t.ID),
+			Title:           t.Title,
+			Summary:         t.Summary,
+			Username:        username,
+			AvatarURL:       avatarURL,
+			PrimaryBadge:    primaryBadge,
+			GuaranteeAmount: guaranteeAmount,
+			CredentialCount: credentialCounts[t.ID],
+			Category:        cat,
+			Tags:            tags,
+			Meta:            t.Meta,
+			CreatedAt:       t.CreatedAt.Unix(),
 		}
 	}
 	return result
 }
 
 // Helper: convert thread to detail response
-func (s *EntThreadService) threadToDetailResponse(t *ent.Thread) *ThreadDetailResponse {
+func (s *EntThreadService) threadToDetailResponse(ctx context.Context, t *ent.Thread, viewerUserID int) *ThreadDetailResponse {
 	var userInfo UserInfo
 	if u := t.Edges.User; u != nil {
 		username := ""
@@ -462,9 +495,10 @@ func (s *EntThreadService) threadToDetailResponse(t *ent.Thread) *ThreadDetailRe
 			username = *u.Username
 		}
 		userInfo = UserInfo{
-			ID:        uint(u.ID),
-			Username:  username,
-			AvatarURL: u.AvatarURL,
+			ID:              uint(u.ID),
+			Username:        username,
+			AvatarURL:       u.AvatarURL,
+			GuaranteeAmount: u.GuaranteeAmount,
 		}
 		// Add primary badge if exists
 		if pb := u.Edges.PrimaryBadge; pb != nil {
@@ -502,17 +536,44 @@ func (s *EntThreadService) threadToDetailResponse(t *ent.Thread) *ThreadDetailRe
 		}
 	}
 
+	credentialCount, err := s.client.ThreadCredential.
+		Query().
+		Where(threadcredential.ThreadIDEQ(t.ID)).
+		Count(ctx)
+	if err != nil {
+		logger.Error("Failed to get thread credential count", zap.Error(err), zap.Int("thread_id", t.ID))
+		credentialCount = 0
+	}
+
+	hasCredentialed := false
+	if viewerUserID > 0 && viewerUserID != t.UserID {
+		exists, err := s.client.ThreadCredential.
+			Query().
+			Where(
+				threadcredential.ThreadIDEQ(t.ID),
+				threadcredential.UserIDEQ(viewerUserID),
+			).
+			Exist(ctx)
+		if err != nil {
+			logger.Error("Failed to check thread credential existence", zap.Error(err), zap.Int("thread_id", t.ID), zap.Int("viewer_user_id", viewerUserID))
+		} else {
+			hasCredentialed = exists
+		}
+	}
+
 	return &ThreadDetailResponse{
-		ID:          uint(t.ID),
-		Title:       t.Title,
-		Summary:     t.Summary,
-		ContentType: t.ContentType,
-		Content:     t.ContentJSON,
-		Meta:        t.Meta,
-		CreatedAt:   t.CreatedAt.Unix(),
-		User:        userInfo,
-		Category:    cat,
-		Tags:        tags,
+		ID:              uint(t.ID),
+		Title:           t.Title,
+		Summary:         t.Summary,
+		ContentType:     t.ContentType,
+		Content:         t.ContentJSON,
+		Meta:            t.Meta,
+		CreatedAt:       t.CreatedAt.Unix(),
+		User:            userInfo,
+		Category:        cat,
+		Tags:            tags,
+		CredentialCount: credentialCount,
+		HasCredentialed: hasCredentialed,
 	}
 }
 
@@ -569,8 +630,8 @@ func (s *EntThreadService) UpdateThread(ctx context.Context, userID uint, input 
 }
 
 // GetThreadByID wraps GetThreadDetail to match interface signature
-func (s *EntThreadService) GetThreadByID(ctx context.Context, threadID uint) (*ThreadDetailResponse, error) {
-	return s.GetThreadDetail(ctx, int(threadID))
+func (s *EntThreadService) GetThreadByID(ctx context.Context, threadID uint, viewerUserID uint) (*ThreadDetailResponse, error) {
+	return s.GetThreadDetail(ctx, int(threadID), int(viewerUserID))
 }
 
 // ListLatestThreads wraps GetLatestThreads to match interface signature

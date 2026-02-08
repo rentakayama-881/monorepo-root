@@ -78,7 +78,6 @@ func (Session) Edges() []ent.Edge {
 func (Session) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("user_id"),
-		index.Fields("refresh_token_hash").Unique(),
 		index.Fields("token_family"),
 	}
 }

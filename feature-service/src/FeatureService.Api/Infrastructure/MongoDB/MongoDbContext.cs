@@ -59,6 +59,7 @@ public class MongoDbContext
     public IMongoCollection<Transfer> Transfers => _database.GetCollection<Transfer>("transfers");
     public IMongoCollection<Dispute> Disputes => _database.GetCollection<Dispute>("disputes");
     public IMongoCollection<Withdrawal> Withdrawals => _database.GetCollection<Withdrawal>("withdrawals");
+    public IMongoCollection<GuaranteeLock> GuaranteeLocks => _database.GetCollection<GuaranteeLock>("guarantee_locks");
 
     #endregion
 
@@ -216,6 +217,20 @@ public class MongoDbContext
         {
             _logger.LogWarning(ex, "Failed to create unique index for transfer code");
         }
+
+        // Guarantee lock indexes
+        GuaranteeLocks.Indexes.CreateMany(new[]
+        {
+            new CreateIndexModel<GuaranteeLock>(Builders<GuaranteeLock>.IndexKeys.Ascending(g => g.UserId)),
+            new CreateIndexModel<GuaranteeLock>(
+                Builders<GuaranteeLock>.IndexKeys.Ascending(g => g.UserId),
+                new CreateIndexOptions<GuaranteeLock>
+                {
+                    Unique = true,
+                    Name = "userId_active_unique",
+                    PartialFilterExpression = Builders<GuaranteeLock>.Filter.Eq(g => g.Status, GuaranteeStatus.Active)
+                })
+        });
 
         // Dispute indexes
         Disputes.Indexes.CreateMany(new[]

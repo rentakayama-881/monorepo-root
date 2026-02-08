@@ -60,6 +60,9 @@ type Tag func(*sql.Selector)
 // Thread is the predicate function for thread builders.
 type Thread func(*sql.Selector)
 
+// ThreadCredential is the predicate function for threadcredential builders.
+type ThreadCredential func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)
 

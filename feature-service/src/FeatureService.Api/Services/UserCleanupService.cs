@@ -68,6 +68,15 @@ public class UserCleanupService : IUserCleanupService
         var blockingReasons = new List<string>();
         var warnings = new List<string>();
 
+        // 0. Check active profile guarantee (money is frozen, must be released first)
+        var activeGuarantee = await _context.GuaranteeLocks
+            .Find(g => g.UserId == userId && g.Status == GuaranteeStatus.Active)
+            .FirstOrDefaultAsync();
+        if (activeGuarantee != null)
+        {
+            blockingReasons.Add($"Anda masih memiliki jaminan aktif Rp {activeGuarantee.Amount:N0}. Lepaskan jaminan terlebih dahulu.");
+        }
+
         // 1. Check wallet balance
         var wallet = await _context.Wallets
             .Find(w => w.UserId == userId)
@@ -185,10 +194,13 @@ public class UserCleanupService : IUserCleanupService
             // 7. Delete transaction ledger entries
             await _ledger.DeleteManyAsync(l => l.UserId == (int)userId);
 
-            // 8. Delete user warnings (where user is the target)
+            // 8. Delete guarantee locks (historical)
+            await _context.GuaranteeLocks.DeleteManyAsync(g => g.UserId == userId);
+
+            // 9. Delete user warnings (where user is the target)
             await _context.UserWarnings.DeleteManyAsync(w => w.UserId == userId);
 
-            // 9. Delete device bans for this user
+            // 10. Delete device bans for this user
             await _context.DeviceBans.DeleteManyAsync(d => d.UserId == userId);
 
             _logger.LogInformation("Cleanup completed for user {UserId}: {@Stats}", userId, stats.Build());

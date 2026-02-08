@@ -17,6 +17,7 @@ import (
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
 	"backend-gin/ent/thread"
+	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
@@ -472,6 +473,27 @@ func (_u *UserUpdate) ClearLockReason() *UserUpdate {
 	return _u
 }
 
+// SetGuaranteeAmount sets the "guarantee_amount" field.
+func (_u *UserUpdate) SetGuaranteeAmount(v int64) *UserUpdate {
+	_u.mutation.ResetGuaranteeAmount()
+	_u.mutation.SetGuaranteeAmount(v)
+	return _u
+}
+
+// SetNillableGuaranteeAmount sets the "guarantee_amount" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableGuaranteeAmount(v *int64) *UserUpdate {
+	if v != nil {
+		_u.SetGuaranteeAmount(*v)
+	}
+	return _u
+}
+
+// AddGuaranteeAmount adds value to the "guarantee_amount" field.
+func (_u *UserUpdate) AddGuaranteeAmount(v int64) *UserUpdate {
+	_u.mutation.AddGuaranteeAmount(v)
+	return _u
+}
+
 // AddPasskeyIDs adds the "passkeys" edge to the Passkey entity by IDs.
 func (_u *UserUpdate) AddPasskeyIDs(ids ...int) *UserUpdate {
 	_u.mutation.AddPasskeyIDs(ids...)
@@ -680,6 +702,21 @@ func (_u *UserUpdate) AddSudoSessions(v ...*SudoSession) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddSudoSessionIDs(ids...)
+}
+
+// AddGivenCredentialIDs adds the "given_credentials" edge to the ThreadCredential entity by IDs.
+func (_u *UserUpdate) AddGivenCredentialIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddGivenCredentialIDs(ids...)
+	return _u
+}
+
+// AddGivenCredentials adds the "given_credentials" edges to the ThreadCredential entity.
+func (_u *UserUpdate) AddGivenCredentials(v ...*ThreadCredential) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGivenCredentialIDs(ids...)
 }
 
 // SetPrimaryBadge sets the "primary_badge" edge to the Badge entity.
@@ -986,6 +1023,27 @@ func (_u *UserUpdate) RemoveSudoSessions(v ...*SudoSession) *UserUpdate {
 	return _u.RemoveSudoSessionIDs(ids...)
 }
 
+// ClearGivenCredentials clears all "given_credentials" edges to the ThreadCredential entity.
+func (_u *UserUpdate) ClearGivenCredentials() *UserUpdate {
+	_u.mutation.ClearGivenCredentials()
+	return _u
+}
+
+// RemoveGivenCredentialIDs removes the "given_credentials" edge to ThreadCredential entities by IDs.
+func (_u *UserUpdate) RemoveGivenCredentialIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveGivenCredentialIDs(ids...)
+	return _u
+}
+
+// RemoveGivenCredentials removes "given_credentials" edges to ThreadCredential entities.
+func (_u *UserUpdate) RemoveGivenCredentials(v ...*ThreadCredential) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGivenCredentialIDs(ids...)
+}
+
 // ClearPrimaryBadge clears the "primary_badge" edge to the Badge entity.
 func (_u *UserUpdate) ClearPrimaryBadge() *UserUpdate {
 	_u.mutation.ClearPrimaryBadge()
@@ -1184,6 +1242,12 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.LockReasonCleared() {
 		_spec.ClearField(user.FieldLockReason, field.TypeString)
+	}
+	if value, ok := _u.mutation.GuaranteeAmount(); ok {
+		_spec.SetField(user.FieldGuaranteeAmount, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedGuaranteeAmount(); ok {
+		_spec.AddField(user.FieldGuaranteeAmount, field.TypeInt64, value)
 	}
 	if _u.mutation.PasskeysCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1808,6 +1872,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(sudosession.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GivenCredentialsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GivenCredentialsTable,
+			Columns: []string{user.GivenCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGivenCredentialsIDs(); len(nodes) > 0 && !_u.mutation.GivenCredentialsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GivenCredentialsTable,
+			Columns: []string{user.GivenCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GivenCredentialsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GivenCredentialsTable,
+			Columns: []string{user.GivenCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -2293,6 +2402,27 @@ func (_u *UserUpdateOne) ClearLockReason() *UserUpdateOne {
 	return _u
 }
 
+// SetGuaranteeAmount sets the "guarantee_amount" field.
+func (_u *UserUpdateOne) SetGuaranteeAmount(v int64) *UserUpdateOne {
+	_u.mutation.ResetGuaranteeAmount()
+	_u.mutation.SetGuaranteeAmount(v)
+	return _u
+}
+
+// SetNillableGuaranteeAmount sets the "guarantee_amount" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableGuaranteeAmount(v *int64) *UserUpdateOne {
+	if v != nil {
+		_u.SetGuaranteeAmount(*v)
+	}
+	return _u
+}
+
+// AddGuaranteeAmount adds value to the "guarantee_amount" field.
+func (_u *UserUpdateOne) AddGuaranteeAmount(v int64) *UserUpdateOne {
+	_u.mutation.AddGuaranteeAmount(v)
+	return _u
+}
+
 // AddPasskeyIDs adds the "passkeys" edge to the Passkey entity by IDs.
 func (_u *UserUpdateOne) AddPasskeyIDs(ids ...int) *UserUpdateOne {
 	_u.mutation.AddPasskeyIDs(ids...)
@@ -2501,6 +2631,21 @@ func (_u *UserUpdateOne) AddSudoSessions(v ...*SudoSession) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddSudoSessionIDs(ids...)
+}
+
+// AddGivenCredentialIDs adds the "given_credentials" edge to the ThreadCredential entity by IDs.
+func (_u *UserUpdateOne) AddGivenCredentialIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddGivenCredentialIDs(ids...)
+	return _u
+}
+
+// AddGivenCredentials adds the "given_credentials" edges to the ThreadCredential entity.
+func (_u *UserUpdateOne) AddGivenCredentials(v ...*ThreadCredential) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGivenCredentialIDs(ids...)
 }
 
 // SetPrimaryBadge sets the "primary_badge" edge to the Badge entity.
@@ -2807,6 +2952,27 @@ func (_u *UserUpdateOne) RemoveSudoSessions(v ...*SudoSession) *UserUpdateOne {
 	return _u.RemoveSudoSessionIDs(ids...)
 }
 
+// ClearGivenCredentials clears all "given_credentials" edges to the ThreadCredential entity.
+func (_u *UserUpdateOne) ClearGivenCredentials() *UserUpdateOne {
+	_u.mutation.ClearGivenCredentials()
+	return _u
+}
+
+// RemoveGivenCredentialIDs removes the "given_credentials" edge to ThreadCredential entities by IDs.
+func (_u *UserUpdateOne) RemoveGivenCredentialIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveGivenCredentialIDs(ids...)
+	return _u
+}
+
+// RemoveGivenCredentials removes "given_credentials" edges to ThreadCredential entities.
+func (_u *UserUpdateOne) RemoveGivenCredentials(v ...*ThreadCredential) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGivenCredentialIDs(ids...)
+}
+
 // ClearPrimaryBadge clears the "primary_badge" edge to the Badge entity.
 func (_u *UserUpdateOne) ClearPrimaryBadge() *UserUpdateOne {
 	_u.mutation.ClearPrimaryBadge()
@@ -3035,6 +3201,12 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.LockReasonCleared() {
 		_spec.ClearField(user.FieldLockReason, field.TypeString)
+	}
+	if value, ok := _u.mutation.GuaranteeAmount(); ok {
+		_spec.SetField(user.FieldGuaranteeAmount, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedGuaranteeAmount(); ok {
+		_spec.AddField(user.FieldGuaranteeAmount, field.TypeInt64, value)
 	}
 	if _u.mutation.PasskeysCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -3659,6 +3831,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(sudosession.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GivenCredentialsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GivenCredentialsTable,
+			Columns: []string{user.GivenCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGivenCredentialsIDs(); len(nodes) > 0 && !_u.mutation.GivenCredentialsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GivenCredentialsTable,
+			Columns: []string{user.GivenCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GivenCredentialsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GivenCredentialsTable,
+			Columns: []string{user.GivenCredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

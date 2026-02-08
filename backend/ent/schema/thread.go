@@ -63,6 +63,7 @@ func (Thread) Edges() []ent.Edge {
 			Unique(),
 		edge.From("tags", Tag.Type).
 			Ref("threads"),
+		edge.To("received_credentials", ThreadCredential.Type),
 	}
 }
 
