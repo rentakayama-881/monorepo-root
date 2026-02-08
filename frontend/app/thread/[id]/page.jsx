@@ -11,6 +11,7 @@ import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import ProseMirrorRenderer from "@/components/ui/ProseMirrorRenderer";
 import { TagList } from "@/components/ui/TagPill";
 import ReactionBar from "@/components/ReactionBar";
+import { CredentialPill } from "@/components/ui/ThreadCard";
 import ReplyList from "@/components/ReplyList";
 import ReplyForm from "@/components/ReplyForm";
 import ReportModal from "@/components/ReportModal";
@@ -168,8 +169,8 @@ export default function ThreadDetailPage() {
                   title="Jaminan Profil"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
+                    <circle cx="12" cy="12" r="9" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 9.5c-.5-1-1.5-1.5-2.5-1.5-1.5 0-2.5 1-2.5 2.25s1 2.25 2.5 2.25c1.5 0 2.5 1 2.5 2.25S13.5 17 12 17c-1 0-2-.5-2.5-1.5M12 6.5v1M12 16.5v1" />
                   </svg>
                   Jaminan Rp {data.user.guarantee_amount.toLocaleString("id-ID")}
                 </span>
@@ -242,8 +243,15 @@ export default function ThreadDetailPage() {
             )}
           </div>
 
-          {/* Reactions */}
-          <div className="border-t border-border px-6 py-4">
+          {/* Reactions & Credential */}
+          <div className="border-t border-border px-6 py-4 flex items-center gap-4">
+            <CredentialPill
+              threadId={id}
+              initialCount={data.credential_count}
+              initialHasCredentialed={data.has_credentialed}
+              threadUsername={data.user?.username}
+              size="sm"
+            />
             <ReactionBar threadId={id} />
           </div>
 
