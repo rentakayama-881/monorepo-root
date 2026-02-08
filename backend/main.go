@@ -402,6 +402,11 @@ func main() {
 		zap.Strings("blacklist_ips", rateLimitConfig.BlacklistIPs),
 	)
 
+	// Health endpoints are kept outside request rate limits.
+	// Also exposed at root because production deployment scripts curl /health directly.
+	router.GET("/health", handlers.HealthHandler)
+	router.GET("/ready", handlers.ReadinessHandler)
+
 	api := router.Group("/api")
 	{
 		api.GET("/health", handlers.HealthHandler)
