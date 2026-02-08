@@ -1,6 +1,5 @@
 import "./globals.css";
 import { Inter, Geist_Mono, Aref_Ruqaa } from "next/font/google";
-import { cookies } from "next/headers";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
@@ -109,16 +108,22 @@ export const viewport = {
   viewportFit: "cover",
 };
 
-export default async function RootLayout({ children }) {
-  const cookieStore = await cookies();
-  const themeCookie = cookieStore.get("theme")?.value;
-  const ssrThemeClass = themeCookie === "light" || themeCookie === "dark" ? themeCookie : "";
-  const ssrThemeLoadingClass = themeCookie ? "" : "theme-loading";
-  const htmlClassName = `${inter.variable} ${geistMono.variable} ${arefRuqaa.variable} ${ssrThemeClass} ${ssrThemeLoadingClass}`.trim();
+export default function RootLayout({ children }) {
+  // IMPORTANT: Keep this layout fully static (no `cookies()` / request APIs),
+  // because many routes are `export const dynamic = "force-static"`.
+  const htmlClassName = `${inter.variable} ${geistMono.variable} ${arefRuqaa.variable} theme-loading`.trim();
 
   return (
     <html lang="id" suppressHydrationWarning className={htmlClassName}>
-      <body className="flex min-h-dvh flex-col antialiased bg-background text-foreground">
+      <body
+        className="flex min-h-dvh flex-col antialiased bg-background text-foreground"
+        style={{ visibility: "hidden" }}
+      >
+        {/* If JS is disabled, never keep the app hidden. */}
+        <noscript>
+          <style>{`body{visibility:visible}`}</style>
+        </noscript>
+
         <script
           id="theme-init"
           // Inline + early on purpose: prevents flash of incorrect theme on first paint.
@@ -152,6 +157,7 @@ export default async function RootLayout({ children }) {
   } finally {
     root.classList.remove("theme-loading");
     root.classList.add("theme-ready");
+    if (document.body) document.body.style.visibility = "visible";
   }
 })();`,
           }}
