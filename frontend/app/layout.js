@@ -138,7 +138,7 @@ export default function RootLayout({ children }) {
     root.classList.add(resolved);
 
     // Prevent the white flash before CSS loads by setting an immediate background.
-    // Once CSS is loaded, `body` uses `var(--background)` and takes over.
+    // Once CSS is loaded, body uses var(--background) and takes over.
     root.style.backgroundColor = resolved === "dark" ? "#0b1026" : "#ffffff";
   } catch (_) {
     // Never block rendering if theme init fails.
