@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { LOCKED_CATEGORIES } from "@/lib/constants";
@@ -11,6 +11,7 @@ import { TagPill } from "@/components/ui/TagPill";
 import CategoryThreadsSkeleton from "./CategoryThreadsSkeleton";
 
 const PAGE_SIZE = 10;
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export default function CategoryThreadsPage() {
   const params = useParams();
@@ -25,9 +26,10 @@ export default function CategoryThreadsPage() {
   // Avoid restoring a previous scroll position when we intentionally change list state
   // (pagination/filter) from within this page.
   const skipNextRestoreRef = useRef(false);
+  const pendingScrollToTopRef = useRef(false);
   const navigatingAwayRef = useRef(false);
   const lastScrollYRef = useRef(0);
-  const [scrollRestored, setScrollRestored] = useState(false);
+  const desiredRestoreYRef = useRef(null);
 
   const API = getApiBase();
 
@@ -99,8 +101,9 @@ export default function CategoryThreadsPage() {
   }, [threads]);
 
   const setListState = useCallback(
-    ({ nextPage, nextTags }) => {
+    ({ nextPage, nextTags, scrollToTop = false }) => {
       skipNextRestoreRef.current = true;
+      pendingScrollToTopRef.current = Boolean(scrollToTop);
       const next = new URLSearchParams(searchParams.toString());
 
       if (Array.isArray(nextTags)) {
@@ -141,7 +144,7 @@ export default function CategoryThreadsPage() {
   useEffect(() => {
     if (loading) return;
     if (requestedPage === currentPage) return;
-    setListState({ nextPage: currentPage });
+    setListState({ nextPage: currentPage, scrollToTop: true });
   }, [currentPage, loading, requestedPage, setListState]);
 
   const paginatedThreads = useMemo(() => {
@@ -169,7 +172,7 @@ export default function CategoryThreadsPage() {
   useEffect(() => {
     navigatingAwayRef.current = false;
     lastScrollYRef.current = window.scrollY || 0;
-    setScrollRestored(false);
+    desiredRestoreYRef.current = null;
   }, [scrollKey]);
 
   // Persist scroll while user scrolls the category list.
@@ -208,16 +211,32 @@ export default function CategoryThreadsPage() {
     };
   }, [scrollKey]);
 
-  // Restore scroll when returning to this category list state (e.g., from thread detail).
-  useEffect(() => {
-    if (loading) return;
-    if (scrollRestored) return;
+  const scrollToY = useCallback((y) => {
+    const top = Number.isFinite(Number(y)) ? Number(y) : 0;
+    try {
+      // Force instant scroll even though we use `scroll-behavior: smooth` globally.
+      window.scrollTo({ top, left: 0, behavior: "auto" });
+    } catch {
+      window.scrollTo(0, top);
+    }
+  }, []);
 
-    if (skipNextRestoreRef.current) {
-      skipNextRestoreRef.current = false;
-      setScrollRestored(true);
+  // Restore scroll as early as possible on route changes/back navigation, and
+  // keep pagination/filter transitions deterministic (always start at top).
+  useIsomorphicLayoutEffect(() => {
+    const shouldSkipRestore = skipNextRestoreRef.current;
+    const shouldScrollTop = pendingScrollToTopRef.current;
+
+    skipNextRestoreRef.current = false;
+    pendingScrollToTopRef.current = false;
+    desiredRestoreYRef.current = null;
+
+    if (shouldScrollTop) {
+      scrollToY(0);
       return;
     }
+
+    if (shouldSkipRestore) return;
 
     let raw = null;
     try {
@@ -228,10 +247,25 @@ export default function CategoryThreadsPage() {
 
     const y = Number(raw);
     if (Number.isFinite(y) && y > 0) {
-      window.requestAnimationFrame(() => window.scrollTo(0, y));
+      desiredRestoreYRef.current = y;
+      scrollToY(y);
     }
-    setScrollRestored(true);
-  }, [loading, scrollKey, scrollRestored]);
+  }, [scrollKey, scrollToY]);
+
+  // If the initial restore got clamped (content not tall enough yet), retry
+  // once after data is loaded.
+  useIsomorphicLayoutEffect(() => {
+    if (loading) return;
+    const y = desiredRestoreYRef.current;
+    if (!Number.isFinite(y) || y <= 0) return;
+
+    const maxScrollY =
+      (document?.documentElement?.scrollHeight || 0) - (window?.innerHeight || 0);
+    if (maxScrollY < y) return;
+    if (Math.abs((window.scrollY || 0) - y) < 4) return;
+
+    scrollToY(y);
+  }, [loading, scrollToY]);
 
   const handleThreadNavigate = useCallback(() => {
     navigatingAwayRef.current = true;
@@ -250,8 +284,7 @@ export default function CategoryThreadsPage() {
     const next = new Set(selectedTagSlugs);
     if (next.has(normalizedSlug)) {
       next.delete(normalizedSlug);
-      window.scrollTo(0, 0);
-      setListState({ nextPage: 1, nextTags: Array.from(next) });
+      setListState({ nextPage: 1, nextTags: Array.from(next), scrollToTop: true });
       return;
     }
 
@@ -264,8 +297,7 @@ export default function CategoryThreadsPage() {
       }
     }
     next.add(normalizedSlug);
-    window.scrollTo(0, 0);
-    setListState({ nextPage: 1, nextTags: Array.from(next) });
+    setListState({ nextPage: 1, nextTags: Array.from(next), scrollToTop: true });
   }
 
   if (loading) {
@@ -338,8 +370,7 @@ export default function CategoryThreadsPage() {
               <button
                 type="button"
                 onClick={() => {
-                  window.scrollTo(0, 0);
-                  setListState({ nextPage: 1, nextTags: [] });
+                  setListState({ nextPage: 1, nextTags: [], scrollToTop: true });
                 }}
                 className="ml-auto inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               >
@@ -384,8 +415,7 @@ export default function CategoryThreadsPage() {
               <button
                 type="button"
                 onClick={() => {
-                  window.scrollTo(0, 0);
-                  setListState({ nextPage: 1, nextTags: [] });
+                  setListState({ nextPage: 1, nextTags: [], scrollToTop: true });
                 }}
                 className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
               >
@@ -417,8 +447,10 @@ export default function CategoryThreadsPage() {
                   type="button"
                   onClick={() => {
                     if (currentPage === 1) return;
-                    window.scrollTo(0, 0);
-                    setListState({ nextPage: Math.max(1, currentPage - 1) });
+                    setListState({
+                      nextPage: Math.max(1, currentPage - 1),
+                      scrollToTop: true,
+                    });
                   }}
                   disabled={currentPage === 1}
                   className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -429,8 +461,10 @@ export default function CategoryThreadsPage() {
                   type="button"
                   onClick={() => {
                     if (currentPage === totalPages) return;
-                    window.scrollTo(0, 0);
-                    setListState({ nextPage: Math.min(totalPages, currentPage + 1) });
+                    setListState({
+                      nextPage: Math.min(totalPages, currentPage + 1),
+                      scrollToTop: true,
+                    });
                   }}
                   disabled={currentPage === totalPages}
                   className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
