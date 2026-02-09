@@ -1,22 +1,4 @@
-import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton";
-
-function ReplySkeletonItem() {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4 dark:bg-background">
-      <div className="flex items-start gap-3">
-        <SkeletonCircle size="h-8 w-8" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <SkeletonText width="w-28" height="h-4" />
-            <SkeletonText width="w-16" height="h-3" />
-          </div>
-          <SkeletonText width="w-full" height="h-4" />
-          <SkeletonText width="w-5/6" height="h-4" />
-        </div>
-      </div>
-    </div>
-  );
-}
+import Skeleton, { SkeletonText } from "@/components/ui/Skeleton";
 
 export default function ThreadDetailSkeleton({ threadId }) {
   return (
@@ -81,15 +63,6 @@ export default function ThreadDetailSkeleton({ threadId }) {
           </div>
         </div>
 
-        {/* Reactions */}
-        <div className="border-t border-border px-6 py-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <Skeleton className="h-9 w-24 rounded-md" />
-            <Skeleton className="h-9 w-24 rounded-md" />
-            <Skeleton className="h-9 w-24 rounded-md" />
-          </div>
-        </div>
-
         {/* Footer actions */}
         <div className="flex flex-wrap items-center gap-3 border-t border-border bg-muted/50 px-6 py-4">
           <Skeleton className="h-9 w-28 rounded-md" />
@@ -97,26 +70,6 @@ export default function ThreadDetailSkeleton({ threadId }) {
           <Skeleton className="ml-auto h-9 w-24 rounded-md" />
         </div>
       </article>
-
-      {/* Replies Section */}
-      <section className="mt-8 space-y-4">
-        <SkeletonText width="w-24" height="h-5" />
-
-        {/* Reply form placeholder */}
-        <div className="rounded-lg border border-border bg-card p-4 dark:bg-background">
-          <Skeleton className="h-24 w-full rounded-md" />
-          <div className="mt-3 flex justify-end">
-            <Skeleton className="h-9 w-32 rounded-md" />
-          </div>
-        </div>
-
-        {/* Replies list placeholder */}
-        <div className="space-y-3">
-          <ReplySkeletonItem />
-          <ReplySkeletonItem />
-          <ReplySkeletonItem />
-        </div>
-      </section>
 
       <div className="reading-progress" aria-hidden="true" />
     </main>

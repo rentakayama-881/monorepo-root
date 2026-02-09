@@ -1,6 +1,6 @@
 # Feature Service - ASP.NET Core + MongoDB
 
-A microservice handling social features (replies, reactions) and finance features (wallets, transfers, withdrawals, disputes) for the Alephdraad platform.
+A microservice handling social features (replies, reactions) and finance features (wallets, transfers, withdrawals, disputes) for the AIValid platform.
 
 ## Architecture
 
@@ -110,7 +110,7 @@ Authorization: Bearer <jwt-token>
 JWT configuration must match the Gin backend:
 - Same `JWT_SECRET`
 - Same `JWT_ISSUER` (api.aivalid.id)
-- Same `JWT_AUDIENCE` (alephdraad-clients)
+- Same `JWT_AUDIENCE` (aivalid-clients)
 
 ## Configuration
 
@@ -122,7 +122,7 @@ JWT configuration must match the Gin backend:
 | `MONGODB__DATABASENAME` | Database name | `feature_service_db` |
 | `JWT__SECRET` | JWT signing secret (required) | - |
 | `JWT__ISSUER` | JWT issuer | `api.aivalid.id` |
-| `JWT__AUDIENCE` | JWT audience | `alephdraad-clients` |
+| `JWT__AUDIENCE` | JWT audience | `aivalid-clients` |
 | `REDIS__CONNECTIONSTRING` | Redis connection string/URL (recommended: `rediss://...`) | - |
 | `REDIS__REQUIRETLS` | Require TLS for non-local Redis endpoints | `true` |
 | `REDIS__SSLHOST` | Optional TLS SNI/hostname override | - |
@@ -252,10 +252,10 @@ curl -X POST http://localhost:5000/api/v1/threads/1/reactions \
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name feature.alephdraad.fun;
+    server_name feature.aivalid.fun;
 
-    ssl_certificate /etc/letsencrypt/live/feature.alephdraad.fun/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/feature.alephdraad.fun/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/feature.aivalid.fun/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/feature.aivalid.fun/privkey.pem;
 
     location / {
         proxy_pass http://127.0.0.1:5000;

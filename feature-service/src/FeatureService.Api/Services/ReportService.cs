@@ -75,34 +75,6 @@ public class ReportService : IReportService
                 resolvedReportedUserId = ownerId.Value;
             }
         }
-        else if (string.Equals(targetType, ReportTargetType.Reply, StringComparison.OrdinalIgnoreCase))
-        {
-            var reply = await _context.Replies
-                .Find(r => r.Id == targetId)
-                .FirstOrDefaultAsync();
-
-            if (reply == null)
-            {
-                throw new KeyNotFoundException("Reply not found");
-            }
-
-            resolvedReportedUserId = reply.UserId;
-
-            if (resolvedThreadId == 0)
-            {
-                resolvedThreadId = reply.ThreadId;
-            }
-            else if (reply.ThreadId != resolvedThreadId)
-            {
-                _logger.LogWarning(
-                    "Report threadId mismatch for reply. Using reply.ThreadId. Provided={ProvidedThreadId}, Actual={ActualThreadId}, ReplyId={ReplyId}",
-                    resolvedThreadId,
-                    reply.ThreadId,
-                    reply.Id);
-                resolvedThreadId = reply.ThreadId;
-            }
-        }
-
         if (resolvedThreadId == 0)
         {
             throw new ArgumentException("ThreadId is required", nameof(threadId));

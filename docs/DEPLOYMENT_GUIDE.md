@@ -1,14 +1,14 @@
 # Deployment Guide
 
-Panduan deployment untuk AlephDraad setelah melakukan perubahan kode.
+Panduan deployment untuk AIValid setelah melakukan perubahan kode.
 
 ## Quick Reference
 
 | Service | VPS | SSH Command | URL |
 |---------|-----|-------------|-----|
-| Go Backend (Gin) | 72.62.124.23 | `ssh deploy@72.62.124.23` | https://api.alephdraad.fun |
-| Feature Service (ASP.NET) | 203.175.11.84 | `ssh asp@203.175.11.84` | https://feature.alephdraad.fun |
-| Frontend (Next.js) | Vercel | Auto-deploy | https://www.alephdraad.fun |
+| Go Backend (Gin) | 72.62.124.23 | `ssh deploy@72.62.124.23` | https://api.aivalid.fun |
+| Feature Service (ASP.NET) | 203.175.11.84 | `ssh asp@203.175.11.84` | https://feature.aivalid.fun |
+| Frontend (Next.js) | Vercel | Auto-deploy | https://www.aivalid.fun |
 
 ---
 
@@ -89,7 +89,7 @@ ASP.NET memerlukan build di **Windows lokal**, lalu upload ke VPS:
 
 ```powershell
 # 1. Build di Windows (dari folder project)
-cd C:\Users\Aorus\alephdraad\feature-service\src\FeatureService.Api
+cd C:\Users\Aorus\aivalid\feature-service\src\FeatureService.Api
 Remove-Item -Recurse -Force ./publish -ErrorAction SilentlyContinue
 dotnet publish -c Release -o ./publish
 
@@ -129,16 +129,16 @@ cat > /home/asp/feature-service-app/appsettings.json << 'EOF'
     "DatabaseName": "feature_service_db"
   },
   "Backend": {
-    "ApiUrl": "https://api.alephdraad.fun"
+    "ApiUrl": "https://api.aivalid.fun"
   },
   "Jwt": {
     "Secret": "",
-    "Issuer": "api.alephdraad.fun",
-    "Audience": "alephdraad-clients"
+    "Issuer": "api.aivalid.fun",
+    "Audience": "aivalid-clients"
   },
   "Cors": {
     "AllowedOrigins": [
-      "https://alephdraad.fun",
+      "https://aivalid.fun",
       "http://localhost:3000"
     ]
   }
@@ -154,7 +154,7 @@ EOF
 | Config | `/home/asp/feature-service-app/appsettings.json` |
 | Service file | `/etc/systemd/system/featureservice.service` |
 | Logs | `sudo journalctl -u featureservice -f` |
-| Swagger | https://feature.alephdraad.fun/swagger |
+| Swagger | https://feature.aivalid.fun/swagger |
 
 ### Troubleshooting
 
@@ -173,9 +173,9 @@ curl -s http://localhost:5000/api/v1/health
 
 ## 4. Checklist Setelah Deploy
 
-- [ ] Go Backend: `curl https://api.alephdraad.fun/health` → `200 OK`
-- [ ] Feature Service: `curl https://feature.alephdraad.fun/api/v1/health` → `200 OK`
-- [ ] Frontend: Buka https://www.alephdraad.my.id → Load normal
+- [ ] Go Backend: `curl https://api.aivalid.fun/health` → `200 OK`
+- [ ] Feature Service: `curl https://feature.aivalid.fun/api/v1/health` → `200 OK`
+- [ ] Frontend: Buka https://www.aivalid.my.id → Load normal
 - [ ] Test fitur yang diubah
 
 ---

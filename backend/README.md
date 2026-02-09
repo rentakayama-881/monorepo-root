@@ -1,4 +1,4 @@
-# Alephdraad Backend
+# AIValid Backend
 
 Go-based REST API server using Gin framework with Ent ORM.
 
@@ -180,19 +180,19 @@ DATABASE_URL=postgresql://user:pass@host:5432/dbname?sslmode=require
 # JWT
 JWT_SECRET=your-super-secret-key-min-32-chars
 JWT_ISSUER=api.aivalid.id
-JWT_AUDIENCE=alephdraad-clients
+JWT_AUDIENCE=aivalid-clients
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=168h
 
 # TOTP
-TOTP_ISSUER=Alephdraad
+TOTP_ISSUER=AIValid
 
 # Email (SMTP)
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=noreply@example.com
 SMTP_PASS=your-smtp-password
-SMTP_FROM=Alephdraad <noreply@example.com>
+SMTP_FROM=AIValid <noreply@example.com>
 
 # Frontend URL (for email links)
 FRONTEND_URL=https://aivalid.id
@@ -278,14 +278,14 @@ CMD ["/app"]
 
 ```ini
 [Unit]
-Description=Alephdraad Backend
+Description=AIValid Backend
 After=network.target
 
 [Service]
 Type=simple
-User=alephdraad
-WorkingDirectory=/opt/alephdraad/backend
-ExecStart=/opt/alephdraad/backend/app
+User=aivalid
+WorkingDirectory=/opt/aivalid/backend
+ExecStart=/opt/aivalid/backend/app
 Restart=always
 RestartSec=5
 Environment=GIN_MODE=release

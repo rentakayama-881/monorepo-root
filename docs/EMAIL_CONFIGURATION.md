@@ -1,12 +1,12 @@
 # Email Configuration Guide
 
-This document provides detailed information about email configuration for the Alephdraad platform using Resend API.
+This document provides detailed information about email configuration for the AIValid platform using Resend API.
 
 ---
 
 ## 📧 Overview
 
-Alephdraad uses [Resend](https://resend.com) as the email service provider for:
+AIValid uses [Resend](https://resend.com) as the email service provider for:
 - Email verification during registration
 - Password reset emails
 - System notifications
@@ -37,7 +37,7 @@ RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxx
 RESEND_FROM_EMAIL=noreply@yourdomain.com
 
 # Optional (recommended for better deliverability)
-RESEND_FROM_NAME=Alephdraad
+RESEND_FROM_NAME=AIValid
 
 # Required for email links
 FRONTEND_BASE_URL=https://yourdomain.com
@@ -80,13 +80,13 @@ The system automatically formats sender as:
 **Examples:**
 ```bash
 # ✅ Good - Full configuration
-RESEND_FROM_NAME=Alephdraad
-RESEND_FROM_EMAIL=noreply@alephdraad.fun
-# Results in: "Alephdraad <noreply@alephdraad.fun>"
+RESEND_FROM_NAME=AIValid
+RESEND_FROM_EMAIL=noreply@aivalid.fun
+# Results in: "AIValid <noreply@aivalid.fun>"
 
 # ⚠️ Acceptable - Using default name
-RESEND_FROM_EMAIL=noreply@alephdraad.fun
-# Results in: "Alephdraad <noreply@alephdraad.fun>" (uses default)
+RESEND_FROM_EMAIL=noreply@aivalid.fun
+# Results in: "AIValid <noreply@aivalid.fun>" (uses default)
 
 # ❌ Bad - Using test email in production
 RESEND_FROM_EMAIL=onboarding@resend.dev
@@ -225,7 +225,7 @@ Check logs for email queue activity:
 ```go
 // Info - Normal operation
 log.Printf("[EmailQueue] Started with 3 workers")
-log.Printf("Verification email sent to user@example.com (ID: abc123, From: Alephdraad <noreply@domain.com>)")
+log.Printf("Verification email sent to user@example.com (ID: abc123, From: AIValid <noreply@domain.com>)")
 
 // Warning - Potential issues
 log.Printf("[EmailQueue] WARNING: Worker 1: Job was queued for 6s")
@@ -277,7 +277,7 @@ grep "API call:" logs/app.log | grep "sent email"
 
 1. ✅ **Always set sender name**:
    ```bash
-   RESEND_FROM_NAME=Alephdraad
+   RESEND_FROM_NAME=AIValid
    ```
 
 2. ✅ **Use verified domain**:
@@ -350,7 +350,7 @@ defer utils.GetEmailQueue().Shutdown()
 # Minimum production configuration
 RESEND_API_KEY=re_xxxxxxxxxxxxx
 RESEND_FROM_EMAIL=noreply@yourdomain.com
-RESEND_FROM_NAME=Alephdraad
+RESEND_FROM_NAME=AIValid
 FRONTEND_BASE_URL=https://yourdomain.com
 
 # Development (no actual emails sent)

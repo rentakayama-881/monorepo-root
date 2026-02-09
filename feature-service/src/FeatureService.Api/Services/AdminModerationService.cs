@@ -110,13 +110,6 @@ public class AdminModerationService : IAdminModerationService
 
         await _context.HiddenContents.InsertOneAsync(hidden);
 
-        // If it's a reply, update the reply's isDeleted flag (soft delete)
-        if (contentType == ReportTargetType.Reply)
-        {
-            var replyUpdate = Builders<Reply>.Update.Set(r => r.IsDeleted, true);
-            await _context.Replies.UpdateOneAsync(r => r.Id == contentId, replyUpdate);
-        }
-
         // Log admin action
         await LogAdminActionAsync(adminId, null, AdminActionType.HideContent, AdminActionTargetType.Content, hidden.Id,
             new { contentType, contentId, threadId, reason }, null, null);
@@ -149,13 +142,6 @@ public class AdminModerationService : IAdminModerationService
             .Set(h => h.UpdatedAt, DateTime.UtcNow);
 
         await _context.HiddenContents.UpdateOneAsync(h => h.Id == hiddenContentId, update);
-
-        // If it's a reply, restore it
-        if (hidden.ContentType == ReportTargetType.Reply)
-        {
-            var replyUpdate = Builders<Reply>.Update.Set(r => r.IsDeleted, false);
-            await _context.Replies.UpdateOneAsync(r => r.Id == hidden.ContentId, replyUpdate);
-        }
 
         // Log admin action
         await LogAdminActionAsync(adminId, null, AdminActionType.UnhideContent, AdminActionTargetType.Content, hiddenContentId,
@@ -342,10 +328,6 @@ public class AdminModerationService : IAdminModerationService
             var error = await response.Content.ReadAsStringAsync();
             throw new Exception($"Failed to delete thread: {error}");
         }
-
-        // Also delete related data in MongoDB
-        await _context.Replies.DeleteManyAsync(r => r.ThreadId == request.ThreadId);
-        await _context.Reactions.DeleteManyAsync(r => r.ThreadId == request.ThreadId);
 
         // Log admin action
         await LogAdminActionAsync(adminId, null, AdminActionType.ThreadDelete, AdminActionTargetType.Thread, request.ThreadId.ToString(),

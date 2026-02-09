@@ -1,5 +1,5 @@
 # =============================================================================
-# Alephdraad CI/CD Pipeline
+# AIValid CI/CD Pipeline
 # =============================================================================
 # Enterprise-grade CI/CD following standards from GitHub, Stripe, Supabase
 #
@@ -297,7 +297,7 @@ jobs:
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
-          POSTGRES_DB: alephdraad_test
+          POSTGRES_DB: aivalid_test
         ports:
           - 5432:5432
         options: >-
@@ -318,7 +318,7 @@ jobs:
       run:
         working-directory: backend
     env:
-      DATABASE_URL: postgres://test:test@localhost:5432/alephdraad_test?sslmode=disable
+      DATABASE_URL: postgres://test:test@localhost:5432/aivalid_test?sslmode=disable
       REDIS_URL: redis://localhost:6379
     steps:
       - name: Checkout code
@@ -411,7 +411,7 @@ jobs:
       run:
         working-directory: feature-service
     env:
-      MONGODB_CONNECTION_STRING: mongodb://localhost:27017/alephdraad_test
+      MONGODB_CONNECTION_STRING: mongodb://localhost:27017/aivalid_test
       REDIS_CONNECTION_STRING: localhost:6379
     steps:
       - name: Checkout code

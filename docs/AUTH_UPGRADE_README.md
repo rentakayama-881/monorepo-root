@@ -1,6 +1,6 @@
 # 🔐 ENTERPRISE AUTH UPGRADE DOCUMENTATION
 
-> **Project:** Upgrade Alephdraad Authentication to Enterprise-Grade Standard  
+> **Project:** Upgrade AIValid Authentication to Enterprise-Grade Standard  
 > **Status:** 📋 Phase 0 & 1 COMPLETE - Awaiting Approval  
 > **Created:** 24 Januari 2026  
 
@@ -8,7 +8,7 @@
 
 ## 📚 DOCUMENTATION INDEX
 
-Dokumen lengkap untuk upgrade sistem autentikasi Alephdraad ke enterprise-grade standard.
+Dokumen lengkap untuk upgrade sistem autentikasi AIValid ke enterprise-grade standard.
 
 ### 1️⃣ Start Here: Executive Summary
 **File:** [`AUTH_UPGRADE_SUMMARY.md`](./AUTH_UPGRADE_SUMMARY.md)

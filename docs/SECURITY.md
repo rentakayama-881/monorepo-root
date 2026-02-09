@@ -179,7 +179,7 @@ credential, err := s.webauthn.FinishRegistration(user, session, response)
 **Configuration:**
 ```go
 type TOTPConfig struct {
-    Issuer       string        // "Alephdraad"
+    Issuer       string        // "AIValid"
     Algorithm    string        // SHA1
     Digits       int           // 6
     Period       uint          // 30 seconds
@@ -599,8 +599,8 @@ func buildCORSConfig() cors.Config {
     
     // Allowed origins from environment
     config.AllowOrigins = []string{
-        "https://alephdraad.fun",
-        "https://www.alephdraad.fun",
+        "https://aivalid.fun",
+        "https://www.aivalid.fun",
     }
     
     // Allowed methods
@@ -919,10 +919,10 @@ Level 3: Manual Review
 
 | Role | Contact |
 |------|---------|
-| Security Issues | security@alephdraad.fun |
+| Security Issues | security@aivalid.fun |
 | Bug Bounty | (Coming soon) |
-| Emergency | admin@alephdraad.fun |
+| Emergency | admin@aivalid.fun |
 
 ---
 
-*Dokumen ini adalah bagian dari dokumentasi teknis Alephdraad. Terakhir diperbarui: 15 Januari 2026.*
+*Dokumen ini adalah bagian dari dokumentasi teknis AIValid. Terakhir diperbarui: 15 Januari 2026.*

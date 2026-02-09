@@ -256,7 +256,7 @@ public class DepositService : IDepositService
         {
             BsonType.ObjectId => value.AsObjectId.ToString(),
             BsonType.String => value.AsString,
-            _ => value.ToString()
+            _ => value.ToString() ?? fallback
         };
     }
 

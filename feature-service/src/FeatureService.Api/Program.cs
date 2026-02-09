@@ -276,9 +276,6 @@ try
     // Register services
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<IUserContextAccessor, UserContextAccessor>();
-    builder.Services.AddScoped<IReplyService, ReplyService>();
-    builder.Services.AddScoped<IReactionService, ReactionService>();
-
     // Register financial services
     builder.Services.AddScoped<IWalletService, WalletService>();
     builder.Services.AddScoped<IGuaranteeService, GuaranteeService>();
@@ -435,11 +432,11 @@ try
         {
             Title = "Feature Service API",
             Version = "v1",
-            Description = "Feature Service API untuk AlephDraad - Social & Finance endpoints untuk komunitas investasi Indonesia",
+            Description = "Feature Service API for AIValid - Finance & moderation endpoints for Indonesian investment community",
             Contact = new OpenApiContact
             {
-                Name = "AlephDraad Team",
-                Url = new Uri("https://github.com/alephdraad")
+                Name = "AIValid Team",
+                Url = new Uri("https://aivalid.id")
             }
         });
 

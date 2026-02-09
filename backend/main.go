@@ -284,7 +284,7 @@ func main() {
 	logger.InitLogger()
 	defer func() { _ = logger.Log.Sync() }()
 
-	logger.Info("Starting Alephdraad Backend Server")
+	logger.Info("Starting AIValid Backend Server")
 
 	// Initialize Email Queue with 3 workers for async email sending
 	utils.InitEmailQueue(3)
@@ -332,7 +332,7 @@ func main() {
 	}
 	rpName := os.Getenv("WEBAUTHN_RP_NAME")
 	if rpName == "" {
-		rpName = "Alephdraad"
+		rpName = "AIValid"
 	}
 	passkeyService, err := services.NewEntPasskeyService(logger.GetLogger(), rpID, rpOrigins, rpName)
 	if err != nil {

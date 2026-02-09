@@ -276,7 +276,7 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 			if loginTracker != nil {
 				locked, _, _ := loginTracker.RecordFailedLogin(email, ipAddress)
 				if locked && securityAudit != nil {
-					securityAudit.LogBruteForceDetected(email, ipAddress, MaxFailedLoginAttempts)
+					securityAudit.LogBruteForceDetected(email, ipAddress, MaxLoginAttempts)
 				}
 			}
 			if securityAudit != nil {
@@ -319,13 +319,13 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 				// Persist lock to database
 				_, _ = s.client.User.
 					UpdateOneID(u.ID).
-					SetLockedUntil(time.Now().Add(LockDuration)).
+					SetLockedUntil(time.Now().Add(LockoutDuration)).
 					SetLockReason("Terlalu banyak percobaan login gagal").
 					Save(ctx)
 
 				if securityAudit != nil {
-					securityAudit.LogAccountLockedForEnt(u, ipAddress, "Brute force protection triggered", LockDuration)
-					securityAudit.LogBruteForceDetected(email, ipAddress, MaxFailedLoginAttempts)
+					securityAudit.LogAccountLockedForEnt(u, ipAddress, "Brute force protection triggered", LockoutDuration)
+					securityAudit.LogBruteForceDetected(email, ipAddress, MaxLoginAttempts)
 				}
 			}
 		}

@@ -1,4 +1,4 @@
-# Alephdraad
+# AIValid
 
 A modern Indonesian community platform with enterprise-grade security and real-time features.
 
@@ -83,7 +83,7 @@ A modern Indonesian community platform with enterprise-grade security and real-t
 ## Project Structure
 
 ```
-alephdraad/
+aivalid/
 ├── backend/                 # Go + Gin API
 │   ├── cmd/                 # CLI tools (seeding)
 │   ├── config/              # Configuration
@@ -220,7 +220,7 @@ DATABASE_URL=postgresql://user:pass@host:5432/db
 # JWT
 JWT_SECRET=your-secret-key
 JWT_ISSUER=api.aivalid.id
-JWT_AUDIENCE=alephdraad-users
+JWT_AUDIENCE=aivalid-users
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
 
@@ -231,7 +231,7 @@ SMTP_USER=noreply@example.com
 SMTP_PASS=your-smtp-password
 
 # TOTP
-TOTP_ISSUER=Alephdraad
+TOTP_ISSUER=AIValid
 ```
 
 ### Feature Service
@@ -239,7 +239,7 @@ TOTP_ISSUER=Alephdraad
 MONGODB_URI=mongodb+srv://...
 JWT_SECRET=same-as-backend
 JWT_ISSUER=api.aivalid.id
-JWT_AUDIENCE=alephdraad-users
+JWT_AUDIENCE=aivalid-users
 ```
 
 ---

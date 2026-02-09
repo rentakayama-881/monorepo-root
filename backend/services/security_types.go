@@ -69,14 +69,8 @@ const (
 	// MaxLoginAttempts is the maximum number of login attempts before lockout
 	MaxLoginAttempts = 5
 
-	// MaxFailedLoginAttempts is the same as MaxLoginAttempts (alias)
-	MaxFailedLoginAttempts = 5
-
 	// LockoutDuration is how long to lock an account after max attempts
 	LockoutDuration = 15 * time.Minute
-
-	// LockDuration is an alias for LockoutDuration
-	LockDuration = 15 * time.Minute
 
 	// MaxTOTPAttempts is the maximum number of TOTP attempts before lockout
 	MaxTOTPAttempts = 5
@@ -157,7 +151,7 @@ const (
 // TOTP constants
 const (
 	// TOTPIssuer is the issuer name for TOTP setup
-	TOTPIssuer = "AlephdRaad"
+	TOTPIssuer = "AIValid"
 
 	// TOTPDigits is the number of digits for TOTP codes
 	TOTPDigits = 6
@@ -176,7 +170,9 @@ const (
 func generateBackupCode() string {
 	const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // Exclude confusing chars
 	b := make([]byte, BackupCodeLength*2)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		panic("crypto/rand unavailable: " + err.Error())
+	}
 	code := make([]byte, BackupCodeLength*2)
 	for i := range code {
 		code[i] = charset[b[i]%byte(len(charset))]

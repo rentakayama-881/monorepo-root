@@ -71,7 +71,6 @@ export default function UserProfilePage() {
   const [profile, setProfile] = useState(null);
   const [badges, setBadges] = useState([]);
   const [threads, setThreads] = useState([]);
-  const [replies, setReplies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("threads");
   const [loadingContent, setLoadingContent] = useState(false);
@@ -104,12 +103,6 @@ export default function UserProfilePage() {
           if (res.ok) {
             const data = await res.json();
             setThreads(data.threads || []);
-          }
-        } else if (activeTab === "replies") {
-          const res = await fetch(`${API}/api/user/${username}/replies`);
-          if (res.ok) {
-            const data = await res.json();
-            setReplies(data.replies || []);
           }
         }
       } catch (err) {
@@ -343,20 +336,7 @@ export default function UserProfilePage() {
             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
           )}
         </button>
-        <button 
-          onClick={() => setActiveTab("replies")}
-          className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-            activeTab === "replies" 
-              ? "text-primary" 
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Replies
-          {activeTab === "replies" && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-          )}
-        </button>
-        <button 
+        <button
           onClick={() => setActiveTab("badges")}
           className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
             activeTab === "badges" 
@@ -379,12 +359,6 @@ export default function UserProfilePage() {
               <>
                 <ThreadCardSkeleton variant="default" />
                 <ThreadCardSkeleton variant="default" />
-              </>
-            )}
-            {activeTab === "replies" && (
-              <>
-                <Skeleton className="h-28 w-full rounded-lg border border-border" />
-                <Skeleton className="h-28 w-full rounded-lg border border-border" />
               </>
             )}
             {activeTab === "badges" && (
@@ -411,36 +385,6 @@ export default function UserProfilePage() {
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <p>No threads posted yet</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Replies Tab */}
-            {activeTab === "replies" && (
-              <div className="space-y-3">
-                {replies.length > 0 ? (
-                  replies.map(reply => (
-                    <div key={reply.id} className="rounded-lg border border-border bg-card p-4">
-                      <p className="text-sm text-foreground line-clamp-3 mb-2">
-                        {reply.content}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>in</span>
-                        <Link 
-                          href={`/thread/${reply.thread_id}`}
-                          className="text-primary hover:underline truncate max-w-xs"
-                        >
-                          {reply.thread_title || "Thread"}
-                        </Link>
-                        <span>•</span>
-                        <span>{new Date(reply.created_at * 1000).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <p>No replies posted yet</p>
                   </div>
                 )}
               </div>

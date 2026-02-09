@@ -98,7 +98,6 @@ public class Report
 public static class ReportTargetType
 {
     public const string Thread = "thread";
-    public const string Reply = "reply";
 }
 
 /// <summary>

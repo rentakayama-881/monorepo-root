@@ -26,13 +26,6 @@ public class MongoDbContext
         return _database.GetCollection<T>(name);
     }
 
-    #region Reply System Collections
-
-    public IMongoCollection<Reply> Replies => _database.GetCollection<Reply>("replies");
-    public IMongoCollection<Reaction> Reactions => _database.GetCollection<Reaction>("reactions");
-
-    #endregion
-
     #region Report & Moderation Collections
 
     public IMongoCollection<Report> Reports => _database.GetCollection<Report>("reports");
@@ -71,31 +64,6 @@ public class MongoDbContext
 
     private void CreateIndexes()
     {
-        // Reply indexes
-        // Note: Using string-based index for ParentId because it's a nullable field
-        // and MongoDB Driver LINQ3 doesn't support lambda expressions for nullable fields
-        Replies.Indexes.CreateMany(new[]
-        {
-            new CreateIndexModel<Reply>(Builders<Reply>.IndexKeys.Ascending(r => r.ThreadId)),
-            new CreateIndexModel<Reply>(Builders<Reply>.IndexKeys.Ascending(r => r.UserId)),
-            new CreateIndexModel<Reply>(Builders<Reply>.IndexKeys.Ascending("ParentId")),
-            new CreateIndexModel<Reply>(Builders<Reply>.IndexKeys.Descending(r => r.CreatedAt))
-        });
-
-        // Reaction indexes
-        Reactions.Indexes.CreateMany(new[]
-        {
-            new CreateIndexModel<Reaction>(Builders<Reaction>.IndexKeys
-                .Ascending(r => r.TargetType)
-                .Ascending(r => r.TargetId)),
-            new CreateIndexModel<Reaction>(Builders<Reaction>.IndexKeys.Ascending(r => r.UserId)),
-            new CreateIndexModel<Reaction>(Builders<Reaction>.IndexKeys
-                .Ascending(r => r.UserId)
-                .Ascending(r => r.TargetType)
-                .Ascending(r => r.TargetId),
-                new CreateIndexOptions { Unique = true })
-        });
-
         // Report indexes
         Reports.Indexes.CreateMany(new[]
         {

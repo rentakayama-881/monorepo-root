@@ -1,4 +1,4 @@
-# PHASE 0: AUDIT & INVENTORY - ALEPHDRAAD AUTH SYSTEM
+# PHASE 0: AUDIT & INVENTORY - AIVALID AUTH SYSTEM
 
 **Tanggal:** 24 Januari 2026  
 **Versi:** 1.0  
@@ -9,7 +9,7 @@
 
 ## EXECUTIVE SUMMARY
 
-Audit menyeluruh terhadap sistem autentikasi Alephdraad telah selesai. Sistem saat ini **sudah cukup baik** dengan rotating refresh tokens, reuse detection, dan token family tracking. Namun, ada beberapa **improvement opportunities** untuk mencapai enterprise-grade standard terutama di frontend token handling dan observability.
+Audit menyeluruh terhadap sistem autentikasi AIValid telah selesai. Sistem saat ini **sudah cukup baik** dengan rotating refresh tokens, reuse detection, dan token family tracking. Namun, ada beberapa **improvement opportunities** untuk mencapai enterprise-grade standard terutama di frontend token handling dan observability.
 
 ### Temuan Utama
 ✅ **SUDAH BAGUS:**

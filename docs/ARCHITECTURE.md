@@ -1,4 +1,4 @@
-# 🏗️ ARSITEKTUR SISTEM ALEPHDRAAD
+# 🏗️ ARSITEKTUR SISTEM AIVALID
 
 > **Versi:** 1.0  
 > **Terakhir Diperbarui:** 15 Januari 2026  
@@ -21,7 +21,7 @@
 
 ## 1. OVERVIEW ARSITEKTUR
 
-Alephdraad menggunakan **Microservices Architecture** dengan tiga layer utama:
+AIValid menggunakan **Microservices Architecture** dengan tiga layer utama:
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
@@ -85,7 +85,7 @@ Alephdraad menggunakan **Microservices Architecture** dengan tiga layer utama:
             │   Vercel     │        │  VPS #1      │        │  VPS #2      │
             │  Frontend    │        │  Go Backend  │        │  .NET Svc    │
             │              │        │              │        │              │
-            │ alephdraad   │        │ api.aleph... │        │ feature....  │
+            │ aivalid   │        │ api.aleph... │        │ feature....  │
             │   .fun       │        │   .fun       │        │   .fun       │
             └──────────────┘        └──────┬───────┘        └──────┬───────┘
                                            │                       │
@@ -680,7 +680,7 @@ CREATE TABLE session_locks (
 
 ### 6.3 API Endpoints Summary
 
-#### Go Backend (api.alephdraad.fun)
+#### Go Backend (api.aivalid.fun)
 
 ```
 Auth Endpoints:
@@ -719,7 +719,7 @@ PUT    /api/account                # Update own profile
 DELETE /api/account                # Delete account
 ```
 
-#### Feature Service (feature.alephdraad.fun)
+#### Feature Service (feature.aivalid.fun)
 
 ```
 Social Endpoints:
@@ -860,13 +860,13 @@ public class TransferValidator : AbstractValidator<CreateTransferRequest>
 │  ┌─────────────────┐                                            │
 │  │     Vercel      │◀─── GitHub Actions (auto-deploy on push)   │
 │  │    Frontend     │                                            │
-│  │                 │     Domain: alephdraad.fun                 │
+│  │                 │     Domain: aivalid.fun                 │
 │  │  Next.js 15     │     SSL: Let's Encrypt (auto)              │
 │  └─────────────────┘                                            │
 │                                                                  │
 │  ┌─────────────────┐                                            │
 │  │   VPS #1        │     IP: 72.62.124.23                       │
-│  │   Go Backend    │     Domain: api.alephdraad.fun             │
+│  │   Go Backend    │     Domain: api.aivalid.fun             │
 │  │                 │     SSL: Caddy (auto HTTPS)                │
 │  │   User: deploy  │     Service: systemd (backend)             │
 │  │   OS: Ubuntu    │                                            │
@@ -881,7 +881,7 @@ public class TransferValidator : AbstractValidator<CreateTransferRequest>
 │                                                                  │
 │  ┌─────────────────┐                                            │
 │  │   VPS #2        │     IP: 203.175.11.84                      │
-│  │  Feature Svc    │     Domain: feature.alephdraad.fun         │
+│  │  Feature Svc    │     Domain: feature.aivalid.fun         │
 │  │                 │     SSL: Caddy (auto HTTPS)                │
 │  │   User: asp     │     Service: systemd (featureservice)      │
 │  │   OS: Ubuntu    │                                            │
@@ -995,4 +995,4 @@ jobs:
 
 ---
 
-*Dokumen ini adalah bagian dari dokumentasi teknis Alephdraad. Terakhir diperbarui: 15 Januari 2026.*
+*Dokumen ini adalah bagian dari dokumentasi teknis AIValid. Terakhir diperbarui: 15 Januari 2026.*

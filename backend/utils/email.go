@@ -23,7 +23,7 @@ func SendVerificationEmail(recipientEmail, verificationToken string) error {
 
 	// Default sender name if not configured
 	if fromName == "" {
-		fromName = "Alephdraad"
+		fromName = "AIValid"
 	}
 
 	// Default sender email if not configured
@@ -132,7 +132,7 @@ func buildVerificationEmailHTML(verificationLink string) string {
                     <tr>
                         <td style="padding: 30px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
                             <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280; text-align: center;">
-                                © 2026 Alephdraad. All rights reserved.
+                                © 2026 AIValid. All rights reserved.
                             </p>
                             <p style="margin: 10px 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
                                 Email ini dikirim secara otomatis. Mohon jangan membalas email ini.
@@ -169,7 +169,7 @@ func SendPasswordResetEmail(recipientEmail, resetToken string) error {
 
 	// Default sender name if not configured
 	if fromName == "" {
-		fromName = "Alephdraad"
+		fromName = "AIValid"
 	}
 
 	if fromEmail == "" {
@@ -186,7 +186,7 @@ func SendPasswordResetEmail(recipientEmail, resetToken string) error {
 		From:    formattedFrom,
 		To:      []string{recipientEmail},
 		ReplyTo: fromEmail,
-		Subject: "Reset Password - Alephdraad",
+		Subject: "Reset Password - AIValid",
 		Html:    htmlBody,
 	}
 
@@ -255,7 +255,7 @@ func buildPasswordResetEmailHTML(resetLink string) string {
                     <tr>
                         <td style="padding: 30px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
                             <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280; text-align: center;">
-                                © 2026 Alephdraad. All rights reserved.
+                                © 2026 AIValid. All rights reserved.
                             </p>
                         </td>
                     </tr>

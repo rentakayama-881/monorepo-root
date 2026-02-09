@@ -106,7 +106,6 @@ export default function ThreadCard({
     primary_badge,
     category,
     created_at,
-    reply_count,
     view_count,
     guarantee_amount,
     credential_count,
@@ -215,17 +214,6 @@ export default function ThreadCard({
                   <span>{formatRelativeTime(created_at)}</span>
                 </>
               )}
-              {typeof reply_count === "number" && reply_count > 0 && (
-                <>
-                  <span>•</span>
-                  <span className="inline-flex items-center gap-1">
-                    <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M1.75 1h8.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 10.25 10H7.061l-2.574 2.573A1.458 1.458 0 0 1 2 11.543V10h-.25A1.75 1.75 0 0 1 0 8.25v-5.5C0 1.784.784 1 1.75 1ZM1.5 2.75v5.5c0 .138.112.25.25.25h1a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h3.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25Zm13 2a.25.25 0 0 0-.25-.25h-.5a.75.75 0 0 1 0-1.5h.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 14.25 12H14v1.543a1.458 1.458 0 0 1-2.487 1.03L9.22 12.28a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215l2.22 2.22v-2.19a.75.75 0 0 1 .75-.75h1a.25.25 0 0 0 .25-.25Z"></path>
-                    </svg>
-                    {reply_count}
-                  </span>
-                </>
-              )}
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
@@ -310,28 +298,6 @@ export default function ThreadCard({
 
           {/* Actions */}
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            {typeof reply_count === "number" && (
-              <span
-                className="inline-flex items-center gap-1 transition-colors group-hover:text-foreground"
-                title="Balasan"
-              >
-                <svg
-                  className="h-3.5 w-3.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
-                  />
-                </svg>
-                <span className="font-medium">{reply_count}</span>
-              </span>
-            )}
-
             {typeof view_count === "number" && (
               <span
                 className="inline-flex items-center gap-1 transition-colors group-hover:text-foreground"

@@ -1,4 +1,4 @@
-# 🤖 ALEPHDRAAD AI & DEVELOPER INSTRUCTIONS
+# 🤖 AIVALID AI & DEVELOPER INSTRUCTIONS
 
 > **Version:** 2.0  
 > **Last Updated:** January 15, 2026  
@@ -66,7 +66,7 @@ Internal/Technical: English
 ## 📁 STRUKTUR PROYEK
 
 ```
-alephdraad/
+aivalid/
 ├── backend/          # Go + Gin (Core API)
 │   ├── handlers/     # HTTP handlers only
 │   ├── services/     # Business logic

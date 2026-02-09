@@ -13,7 +13,7 @@ public class AuditTrailService : IAuditTrailService
     private readonly IMongoCollection<ImmutableAuditTrail> _auditCollection;
     private readonly ILogger<AuditTrailService> _logger;
     private static readonly SemaphoreSlim _sequenceLock = new(1, 1);
-    private const string GenesisHash = "GENESIS_BLOCK_ALEPHDRAAD_2026";
+    private const string GenesisHash = "GENESIS_BLOCK_AIVALID_2026";
 
     public AuditTrailService(
         MongoDbContext dbContext,

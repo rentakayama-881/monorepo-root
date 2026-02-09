@@ -1,6 +1,6 @@
-# Contributing to Alephdraad
+# Contributing to AIValid
 
-Thank you for your interest in contributing to Alephdraad! This document provides guidelines for contributing.
+Thank you for your interest in contributing to AIValid! This document provides guidelines for contributing.
 
 ## Code of Conduct
 
@@ -143,7 +143,7 @@ test(security): add 2FA requirement tests
 
 ## Questions?
 
-Open a [Discussion](https://github.com/alephdraad/discussions) for questions or suggestions.
+Open a [Discussion](https://github.com/aivalid/discussions) for questions or suggestions.
 
 ---
 

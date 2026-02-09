@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-We take the security of Alephdraad seriously. If you discover a security vulnerability, please follow these steps:
+We take the security of AIValid seriously. If you discover a security vulnerability, please follow these steps:
 
 ### Do NOT
 
@@ -18,7 +18,7 @@ We take the security of Alephdraad seriously. If you discover a security vulnera
 
 ### Do
 
-1. **Email us at:** security@alephdraad.fun
+1. **Email us at:** security@aivalid.fun
 2. **Include:**
    - Description of the vulnerability
    - Steps to reproduce

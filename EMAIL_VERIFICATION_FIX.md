@@ -48,7 +48,7 @@ This caused:
 // Get sender name from environment
 fromName := os.Getenv("RESEND_FROM_NAME")
 if fromName == "" {
-    fromName = "Alephdraad"  // Sensible default
+    fromName = "AIValid"  // Sensible default
 }
 
 // Format with display name
@@ -58,7 +58,7 @@ formattedFrom := fmt.Sprintf("%s <%s>", fromName, fromEmail)
 **Added Reply-To header:**
 ```go
 params := &resend.SendEmailRequest{
-    From:    formattedFrom,        // ✅ "Alephdraad <noreply@domain.com>"
+    From:    formattedFrom,        // ✅ "AIValid <noreply@domain.com>"
     ReplyTo: fromEmail,            // ✅ Allows replies
     To:      []string{recipientEmail},
     Subject: "Verifikasi Email Anda",
@@ -103,7 +103,7 @@ log.Printf("[EmailQueue] Worker %d: ✗ Failed to send email to %s: %v (took %v)
 # Resend Configuration (Modern Email API - Recommended)
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxx
 RESEND_FROM_EMAIL=noreply@yourdomain.com
-RESEND_FROM_NAME=Alephdraad
+RESEND_FROM_NAME=AIValid
 ```
 
 ### Documentation
@@ -146,7 +146,7 @@ Added:
 
 ### Backwards Compatibility
 ✅ **No breaking changes** - RESEND_FROM_NAME is optional  
-✅ **Sensible defaults** - Falls back to "Alephdraad" if not set  
+✅ **Sensible defaults** - Falls back to "AIValid" if not set  
 ✅ **Existing functionality preserved** - All existing code paths work  
 
 ## Deployment Instructions
@@ -161,7 +161,7 @@ RESEND_FROM_EMAIL=noreply@yourdomain.com
 
 **Recommended:**
 ```bash
-RESEND_FROM_NAME=Alephdraad
+RESEND_FROM_NAME=AIValid
 ```
 
 ### 2. Verify Domain in Resend
@@ -179,7 +179,7 @@ RESEND_FROM_NAME=Alephdraad
 # 1. Deploy the changes
 # 2. Register a test account
 # 3. Check email delivery time
-# 4. Verify sender display shows "Alephdraad" with proper avatar
+# 4. Verify sender display shows "AIValid" with proper avatar
 # 5. Check application logs for timing metrics
 ```
 
@@ -217,7 +217,7 @@ grep "✓ Successfully sent" logs/app.log
 
 ### Compatibility
 ✅ **Backwards compatible** - Existing deployments work without changes  
-✅ **Graceful defaults** - RESEND_FROM_NAME defaults to "Alephdraad"  
+✅ **Graceful defaults** - RESEND_FROM_NAME defaults to "AIValid"  
 ✅ **Dev mode preserved** - Works without API key in development  
 
 ## Expected Outcomes

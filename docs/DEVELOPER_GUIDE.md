@@ -1,4 +1,4 @@
-# 📖 PANDUAN DEVELOPER ALEPHDRAAD
+# 📖 PANDUAN DEVELOPER AIVALID
 
 > **Versi:** 1.0  
 > **Tanggal:** 15 Januari 2026  
@@ -9,7 +9,7 @@
 
 ## ⚠️ PENTING: BACA SEBELUM MENGERJAKAN
 
-Dokumen ini adalah **panduan wajib** untuk siapapun yang akan melanjutkan pengembangan Alephdraad, baik developer manusia maupun AI assistant. Ikuti aturan-aturan ini dengan ketat.
+Dokumen ini adalah **panduan wajib** untuk siapapun yang akan melanjutkan pengembangan AIValid, baik developer manusia maupun AI assistant. Ikuti aturan-aturan ini dengan ketat.
 
 ---
 
@@ -116,7 +116,7 @@ func handleError(c *gin.Context, err error) {
 ### 2.1 Monorepo Structure
 
 ```
-alephdraad/
+aivalid/
 ├── backend/                 # Go Backend (Core API)
 │   ├── main.go              # Entry point
 │   ├── config/              # Configuration
@@ -755,33 +755,33 @@ JWT_REFRESH_EXPIRY=168h
 # Email
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
-SMTP_USER=noreply@alephdraad.fun
+SMTP_USER=noreply@aivalid.fun
 SMTP_PASS=your-password
 
 # Redis
 REDIS_URL=redis://localhost:6379
 
 # WebAuthn
-WEBAUTHN_RP_ID=alephdraad.fun
-WEBAUTHN_RP_ORIGINS=https://alephdraad.fun
+WEBAUTHN_RP_ID=aivalid.fun
+WEBAUTHN_RP_ORIGINS=https://aivalid.fun
 
 # Frontend
-FRONTEND_BASE_URL=https://alephdraad.fun
+FRONTEND_BASE_URL=https://aivalid.fun
 ```
 
 **Feature Service (.env):**
 ```env
 # MongoDB
 MONGODB__CONNECTIONSTRING=mongodb+srv://...
-MONGODB__DATABASENAME=alephdraad
+MONGODB__DATABASENAME=aivalid
 
 # JWT (same as backend)
 JWT__SECRET=your-secret-key
-JWT__ISSUER=alephdraad
-JWT__AUDIENCE=alephdraad-users
+JWT__ISSUER=aivalid
+JWT__AUDIENCE=aivalid-users
 
 # CORS
-CORS__ALLOWEDORIGINS__0=https://alephdraad.fun
+CORS__ALLOWEDORIGINS__0=https://aivalid.fun
 ```
 
 ### 9.2 Deployment Commands
@@ -811,10 +811,10 @@ sudo systemctl restart featureservice
 
 ```bash
 # Backend
-curl https://api.alephdraad.fun/health
+curl https://api.aivalid.fun/health
 
 # Feature Service
-curl https://feature.alephdraad.fun/api/v1/health
+curl https://feature.aivalid.fun/api/v1/health
 
 # Check services
 sudo systemctl status backend
@@ -891,10 +891,10 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run
 
 | Role | Kontak |
 |------|--------|
-| Technical Issues | dev@alephdraad.fun |
-| Security Issues | security@alephdraad.fun |
-| Emergency | admin@alephdraad.fun |
+| Technical Issues | dev@aivalid.fun |
+| Security Issues | security@aivalid.fun |
+| Emergency | admin@aivalid.fun |
 
 ---
 
-*Dokumen ini adalah panduan wajib untuk pengembangan Alephdraad. Terakhir diperbarui: 15 Januari 2026.*
+*Dokumen ini adalah panduan wajib untuk pengembangan AIValid. Terakhir diperbarui: 15 Januari 2026.*

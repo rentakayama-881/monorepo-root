@@ -24,7 +24,6 @@ export const REPORT_REASONS = [
  */
 export const REPORT_TARGET_TYPES = {
   THREAD: "thread",
-  REPLY: "reply",
   USER: "user",
 };
 

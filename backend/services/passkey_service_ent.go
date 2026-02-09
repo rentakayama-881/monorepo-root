@@ -38,7 +38,7 @@ func NewEntPasskeyService(logger *zap.Logger, rpID string, rpOrigins []string, r
 		rpOrigins = []string{"http://localhost:3000"}
 	}
 	if rpName == "" {
-		rpName = "Alephdraad"
+		rpName = "AIValid"
 	}
 
 	wconfig := &webauthn.Config{

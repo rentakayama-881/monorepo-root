@@ -1,14 +1,14 @@
 [Unit]
-Description=Alephdraad Feature Service (.NET 8)
+Description=AIValid Feature Service (.NET 8)
 After=network.target
 
 [Service]
 Type=simple
-User=alephdraad
-Group=alephdraad
-WorkingDirectory=/opt/alephdraad/feature-service
-EnvironmentFile=/opt/alephdraad/feature-service/.env
-ExecStart=/usr/bin/dotnet /opt/alephdraad/feature-service/FeatureService.Api.dll
+User=aivalid
+Group=aivalid
+WorkingDirectory=/opt/aivalid/feature-service
+EnvironmentFile=/opt/aivalid/feature-service/.env
+ExecStart=/usr/bin/dotnet /opt/aivalid/feature-service/FeatureService.Api.dll
 Restart=always
 RestartSec=10
 KillSignal=SIGINT

@@ -1091,7 +1091,7 @@ func TestRequestIDMiddleware(t *testing.T) {
 # test/load/auth-refresh.yml
 
 config:
-  target: 'https://api.alephdraad.fun'
+  target: 'https://api.aivalid.fun'
   phases:
     - duration: 60
       arrivalRate: 50  # 50 users per second

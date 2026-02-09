@@ -1,4 +1,4 @@
-# 📊 PENILAIAN WEBSITE ALEPHDRAAD
+# 📊 PENILAIAN WEBSITE AIVALID
 
 > **Versi Dokumen:** 1.0  
 > **Tanggal Penilaian:** 15 Januari 2026  
@@ -8,7 +8,7 @@
 
 ## 🎯 RINGKASAN EKSEKUTIF
 
-**Alephdraad** adalah platform komunitas Indonesia dengan fitur enterprise-grade yang mencakup sistem autentikasi canggih, keuangan digital (wallet, transfer P2P, withdrawal), dan integrasi AI. Platform ini dibangun dengan arsitektur microservices modern menggunakan teknologi terkini.
+**AIValid** adalah platform komunitas Indonesia dengan fitur enterprise-grade yang mencakup sistem autentikasi canggih, keuangan digital (wallet, transfer P2P, withdrawal), dan integrasi AI. Platform ini dibangun dengan arsitektur microservices modern menggunakan teknologi terkini.
 
 ---
 
@@ -218,7 +218,7 @@ Auth:      WebAuthn | JWT | TOTP | PBKDF2
 
 ## 📊 PERBANDINGAN DENGAN KOMPETITOR
 
-| Fitur | Alephdraad | Kaskus | Discord | Reddit |
+| Fitur | AIValid | Kaskus | Discord | Reddit |
 |-------|------------|--------|---------|--------|
 | Modern Stack | ✅ | ❌ | ✅ | ✅ |
 | WebAuthn | ✅ | ❌ | ❌ | ❌ |

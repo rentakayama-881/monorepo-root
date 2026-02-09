@@ -1,6 +1,6 @@
 /**
  * Feature Service API Client
- * For ASP.NET Core backend (MongoDB) - handles replies, reactions, reports, etc.
+ * For ASP.NET Core backend (MongoDB) - handles reports, documents, wallets, etc.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -113,21 +113,6 @@ function extractFeatureServiceError(data) {
 export const FEATURE_ENDPOINTS = {
   // Health
   HEALTH: "/api/v1/health",
-
-  // Replies
-  REPLIES: {
-    LIST: (threadId) => `/api/v1/threads/${threadId}/replies`,
-    CREATE: (threadId) => `/api/v1/threads/${threadId}/replies`,
-    UPDATE: (threadId, replyId) => `/api/v1/threads/${threadId}/replies/${replyId}`,
-    DELETE: (threadId, replyId) => `/api/v1/threads/${threadId}/replies/${replyId}`,
-  },
-
-  // Reactions
-  REACTIONS: {
-    SUMMARY: (threadId) => `/api/v1/threads/${threadId}/reactions/summary`,
-    ADD: (threadId) => `/api/v1/threads/${threadId}/reactions`,
-    REMOVE: (threadId) => `/api/v1/threads/${threadId}/reactions`,
-  },
 
   // Reports
   REPORTS: {

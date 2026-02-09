@@ -53,8 +53,8 @@ public class KeyDerivationService : IKeyDerivationService
     private const int HashLength = 48;
 
     // Default info strings for common purposes
-    private static readonly byte[] EncryptionInfo = Encoding.UTF8.GetBytes("alephdraad-encryption-key-v1");
-    private static readonly byte[] MacInfo = Encoding.UTF8.GetBytes("alephdraad-mac-key-v1");
+    private static readonly byte[] EncryptionInfo = Encoding.UTF8.GetBytes("aivalid-encryption-key-v1");
+    private static readonly byte[] MacInfo = Encoding.UTF8.GetBytes("aivalid-mac-key-v1");
 
     public KeyDerivationService(ILogger<KeyDerivationService> logger)
     {
@@ -202,7 +202,7 @@ public class KeyDerivationService : IKeyDerivationService
         ArgumentException.ThrowIfNullOrEmpty(purpose);
 
         // Create purpose-specific info with version prefix
-        var info = Encoding.UTF8.GetBytes($"alephdraad-aes256-{purpose}-v1");
+        var info = Encoding.UTF8.GetBytes($"aivalid-aes256-{purpose}-v1");
 
         return DeriveKey(inputKeyMaterial, salt, info, 32);  // 256 bits for AES-256
     }

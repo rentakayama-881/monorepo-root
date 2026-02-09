@@ -10,10 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import ProseMirrorRenderer from "@/components/ui/ProseMirrorRenderer";
 import { TagList } from "@/components/ui/TagPill";
-import ReactionBar from "@/components/ReactionBar";
 import { CredentialPill } from "@/components/ui/ThreadCard";
-import ReplyList from "@/components/ReplyList";
-import ReplyForm from "@/components/ReplyForm";
 import ReportModal from "@/components/ReportModal";
 import { REPORT_TARGET_TYPES } from "@/lib/useReport";
 import ThreadDetailSkeleton from "./ThreadDetailSkeleton";
@@ -27,11 +24,9 @@ export default function ThreadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
-  const [repliesKey, setRepliesKey] = useState(0); // Force refresh replies
   const readingProgressRef = useRef(null);
 
   const isAuthed = typeof window !== "undefined" ? !!getToken() : false;
-  const currentUsername = typeof window !== "undefined" ? localStorage.getItem("username") : null;
 
   // Reading progress with throttling
   useEffect(() => {
@@ -243,7 +238,7 @@ export default function ThreadDetailPage() {
             )}
           </div>
 
-          {/* Reactions & Credential */}
+          {/* Credential */}
           <div className="border-t border-border px-6 py-4 flex items-center gap-4">
             <CredentialPill
               threadId={id}
@@ -252,7 +247,6 @@ export default function ThreadDetailPage() {
               threadUsername={data.user?.username}
               size="sm"
             />
-            <ReactionBar threadId={id} />
           </div>
 
           {/* Footer actions */}
@@ -290,27 +284,6 @@ export default function ThreadDetailPage() {
             </button>
           </div>
         </article>
-
-        {/* Replies Section */}
-        <section className="mt-8">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Balasan</h2>
-          
-          {/* Reply Form */}
-          <div className="mb-6 rounded-lg border border-border bg-card dark:bg-background p-4">
-            <ReplyForm
-              threadId={id}
-              onSuccess={() => setRepliesKey((k) => k + 1)}
-              placeholder="Tulis balasan untuk thread ini..."
-            />
-          </div>
-
-          {/* Reply List */}
-          <ReplyList
-            key={repliesKey}
-            threadId={id}
-            currentUsername={currentUsername}
-          />
-        </section>
 
         {/* Report Modal */}
         <ReportModal

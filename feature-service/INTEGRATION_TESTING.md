@@ -13,7 +13,7 @@ First, authenticate with the Core API (Gin backend) to get a JWT token:
 
 ```bash
 # Login to get JWT token
-curl -X POST https://api.alephdraad.fun/auth/login \
+curl -X POST https://api.aivalid.fun/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -30,7 +30,7 @@ TOKEN="eyJhbGc..."
 ```bash
 curl http://localhost:5000/health
 # or
-curl https://feature.alephdraad.fun/health
+curl https://feature.aivalid.fun/health
 
 # Expected response:
 # {

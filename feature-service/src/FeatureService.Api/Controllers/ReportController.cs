@@ -40,9 +40,9 @@ public class ReportController : ControllerBase
         }
 
         // Validate target type
-        if (request.TargetType != ReportTargetType.Thread && request.TargetType != ReportTargetType.Reply)
+        if (request.TargetType != ReportTargetType.Thread)
         {
-            return BadRequest(new { error = "Invalid target type. Must be 'thread' or 'reply'" });
+            return BadRequest(new { error = "Invalid target type. Must be 'thread'" });
         }
 
         // Validate reason

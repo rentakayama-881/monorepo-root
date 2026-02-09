@@ -38,8 +38,6 @@ public record UserCleanupResult(
 );
 
 public record UserCleanupStats(
-    int RepliesDeleted,
-    int ReactionsDeleted,
     int ReportsClosed,
     int DocumentsDeleted,
     int WalletsDeleted,
@@ -159,22 +157,14 @@ public class UserCleanupService : IUserCleanupService
                 return new UserCleanupResult(
                     Success: false,
                     Error: string.Join("; ", validation.BlockingReasons),
-                    Stats: new UserCleanupStats(0, 0, 0, 0, 0, 0)
+                    Stats: new UserCleanupStats(0, 0, 0, 0)
                 );
             }
 
             // Hard delete all user data
             var stats = new UserCleanupStatsBuilder();
 
-            // 1. Delete replies
-            var repliesResult = await _context.Replies.DeleteManyAsync(r => r.UserId == userId);
-            stats.RepliesDeleted = (int)repliesResult.DeletedCount;
-
-            // 2. Delete reactions
-            var reactionsResult = await _context.Reactions.DeleteManyAsync(r => r.UserId == userId);
-            stats.ReactionsDeleted = (int)reactionsResult.DeletedCount;
-
-            // 3. Close/delete reports (where user is reporter)
+            // 1. Close/delete reports (where user is reporter)
             var reportsResult = await _context.Reports.DeleteManyAsync(r => r.ReporterUserId == userId);
             stats.ReportsClosed = (int)reportsResult.DeletedCount;
 
@@ -217,7 +207,7 @@ public class UserCleanupService : IUserCleanupService
             return new UserCleanupResult(
                 Success: false,
                 Error: "Internal error during cleanup. Please contact support.",
-                Stats: new UserCleanupStats(0, 0, 0, 0, 0, 0)
+                Stats: new UserCleanupStats(0, 0, 0, 0)
             );
         }
     }
@@ -226,16 +216,12 @@ public class UserCleanupService : IUserCleanupService
 // Helper class to build stats
 internal class UserCleanupStatsBuilder
 {
-    public int RepliesDeleted { get; set; }
-    public int ReactionsDeleted { get; set; }
     public int ReportsClosed { get; set; }
     public int DocumentsDeleted { get; set; }
     public int WalletsDeleted { get; set; }
     public int TransactionsDeleted { get; set; }
 
     public UserCleanupStats Build() => new(
-        RepliesDeleted,
-        ReactionsDeleted,
         ReportsClosed,
         DocumentsDeleted,
         WalletsDeleted,

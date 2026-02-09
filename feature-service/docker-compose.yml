@@ -67,7 +67,7 @@ services:
       MONGODB__DATABASENAME: "feature_service_db"
       JWT__SECRET: "${JWT_SECRET}"
       JWT__ISSUER: "api.aivalid.id"
-      JWT__AUDIENCE: "alephdraad-clients"
+      JWT__AUDIENCE: "aivalid-clients"
       CORS__ALLOWEDORIGINS__0: "https://aivalid.id"
       REDIS__SENTINELENDPOINTS__0: "redis-sentinel:26379"
       REDIS__SERVICENAME: "mymaster"

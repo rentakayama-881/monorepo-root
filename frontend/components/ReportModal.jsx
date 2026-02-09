@@ -32,7 +32,6 @@ export default function ReportModal({
 
   const targetTypeLabels = {
     [REPORT_TARGET_TYPES.THREAD]: "Thread",
-    [REPORT_TARGET_TYPES.REPLY]: "Balasan",
     [REPORT_TARGET_TYPES.USER]: "Pengguna",
   };
 

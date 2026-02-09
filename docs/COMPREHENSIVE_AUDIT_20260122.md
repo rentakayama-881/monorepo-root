@@ -1,9 +1,9 @@
-# 📋 Alephdraad - Comprehensive Technical Audit
+# 📋 AIValid - Comprehensive Technical Audit
 
 **Tanggal Audit:** 22 Januari 2026  
 **Auditor:** AI Engineering Assistant  
 **Versi:** 1.0.0  
-**Repository:** github.com/xijinping-881/alephdraad
+**Repository:** github.com/xijinping-881/aivalid
 
 ---
 
@@ -24,7 +24,7 @@
 
 ## Executive Summary
 
-**Alephdraad** adalah platform komunitas Indonesia dengan arsitektur microservices yang terdiri dari:
+**AIValid** adalah platform komunitas Indonesia dengan arsitektur microservices yang terdiri dari:
 
 | Komponen | Teknologi | Database | Deployment |
 |----------|-----------|----------|------------|
@@ -59,13 +59,13 @@
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        CLOUDFLARE (DNS + WAF + CDN)                          │
-│                         alephdraad.fun (root domain)                         │
+│                         aivalid.fun (root domain)                         │
 └────────────┬────────────────────┬────────────────────┬─────────────────────┘
              │                    │                    │
              ▼                    ▼                    ▼
 ┌────────────────────┐ ┌───────────────────┐ ┌────────────────────────────┐
 │  FRONTEND (Vercel) │ │  GO BACKEND (VPS) │ │ FEATURE SERVICE (VPS)      │
-│  www.alephdraad.fun│ │ api.alephdraad.fun│ │ feature.alephdraad.fun     │
+│  www.aivalid.fun│ │ api.aivalid.fun│ │ feature.aivalid.fun     │
 │                    │ │                   │ │                            │
 │  • Next.js 15      │ │  • Gin Framework  │ │  • ASP.NET Core 8          │
 │  • React 19        │ │  • Ent ORM        │ │  • MongoDB Driver          │
@@ -215,7 +215,7 @@
 
 **Lokasi:** `feature-service/src/FeatureService.Api/Infrastructure/PQC/`
 
-> 🏆 **Catatan:** Sangat sedikit platform yang sudah implementasi PQC. Ini menempatkan Alephdraad di depan GitHub, Stripe, dll dalam kesiapan quantum.
+> 🏆 **Catatan:** Sangat sedikit platform yang sudah implementasi PQC. Ini menempatkan AIValid di depan GitHub, Stripe, dll dalam kesiapan quantum.
 
 ### 🚦 Rate Limiting
 
@@ -338,11 +338,11 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 
 ### vs GitHub
 
-| Aspek | GitHub | Alephdraad | Winner |
+| Aspek | GitHub | AIValid | Winner |
 |-------|--------|------------|--------|
 | **MFA Options** | TOTP, WebAuthn, SMS | TOTP, WebAuthn, Backup | 🤝 Tie |
 | **Session Management** | ✅ | ✅ | 🤝 Tie |
-| **PQC Ready** | ❌ Not yet | ✅ Dilithium3+Kyber768 | 🏆 Alephdraad |
+| **PQC Ready** | ❌ Not yet | ✅ Dilithium3+Kyber768 | 🏆 AIValid |
 | **2FA Recovery** | SMS, Backup codes | Backup codes (8) | 🏆 GitHub (more options) |
 | **API Rate Limiting** | ✅ Comprehensive | ✅ Per-endpoint | 🤝 Tie |
 | **Audit Logging** | ✅ Enterprise | ✅ All actions | 🤝 Tie |
@@ -351,7 +351,7 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 
 ### vs Stripe
 
-| Aspek | Stripe | Alephdraad | Winner |
+| Aspek | Stripe | AIValid | Winner |
 |-------|--------|------------|--------|
 | **Financial Security** | ✅ Bank-grade | ✅ PIN + 2FA + Escrow | 🤝 Tie |
 | **Idempotency** | ✅ Request IDs | ✅ Implemented | 🤝 Tie |
@@ -361,15 +361,15 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 
 ### vs Supabase
 
-| Aspek | Supabase | Alephdraad | Winner |
+| Aspek | Supabase | AIValid | Winner |
 |-------|----------|------------|--------|
-| **Auth Methods** | Email, OAuth, Phone | Email, TOTP, WebAuthn | 🏆 Alephdraad (more secure) |
+| **Auth Methods** | Email, OAuth, Phone | Email, TOTP, WebAuthn | 🏆 AIValid (more secure) |
 | **Real-time** | ✅ WebSocket | ❌ Polling | 🏆 Supabase |
-| **Database** | PostgreSQL | PostgreSQL + MongoDB | 🏆 Alephdraad (flexibility) |
+| **Database** | PostgreSQL | PostgreSQL + MongoDB | 🏆 AIValid (flexibility) |
 | **Edge Functions** | ✅ Deno | ❌ N/A | 🏆 Supabase |
 | **Self-hosted Option** | ✅ | ✅ | 🤝 Tie |
 
-### Keunggulan Kompetitif Alephdraad
+### Keunggulan Kompetitif AIValid
 
 1. **🔐 Post-Quantum Cryptography** - Satu-satunya yang sudah implementasi
 2. **💰 Built-in Escrow System** - Tidak perlu integrasi pihak ketiga
@@ -537,7 +537,7 @@ Implementasi risk scoring untuk transaksi.
 
 ## Kesimpulan
 
-**Alephdraad** adalah platform yang **well-engineered** dengan keamanan tingkat enterprise. Implementasi PQC menempatkannya di depan kompetitor besar seperti GitHub dan Stripe dalam kesiapan quantum computing.
+**AIValid** adalah platform yang **well-engineered** dengan keamanan tingkat enterprise. Implementasi PQC menempatkannya di depan kompetitor besar seperti GitHub dan Stripe dalam kesiapan quantum computing.
 
 ### Siap Production? ✅ YA
 

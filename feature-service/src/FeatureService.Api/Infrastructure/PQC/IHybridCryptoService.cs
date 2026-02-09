@@ -39,7 +39,7 @@ public interface IHybridCryptoService
     /// Perform hybrid key encapsulation using both ECDH and Kyber.
     ///
     /// Mathematical Formula:
-    /// K_shared = HKDF-SHA384(K_ecdh || K_kyber, salt="alephdraad-hybrid-v1", info="key-encapsulation")
+    /// K_shared = HKDF-SHA384(K_ecdh || K_kyber, salt="aivalid-hybrid-v1", info="key-encapsulation")
     /// </summary>
     /// <param name="recipientPublicKeys">Recipient's hybrid public keys</param>
     /// <returns>Shared secret and ciphertext for decapsulation</returns>

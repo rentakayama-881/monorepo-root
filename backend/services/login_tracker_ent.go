@@ -108,13 +108,13 @@ func (t *EntLoginAttemptTracker) RecordFailedLogin(email, ip string) (shouldLock
 	delay = ProgressiveDelays[delayIndex]
 
 	// Check if should lock
-	attemptsRemaining = MaxFailedLoginAttempts - record.Count
+	attemptsRemaining = MaxLoginAttempts - record.Count
 	if attemptsRemaining < 0 {
 		attemptsRemaining = 0
 	}
 
-	if record.Count >= MaxFailedLoginAttempts {
-		lockUntil := now.Add(LockDuration)
+	if record.Count >= MaxLoginAttempts {
+		lockUntil := now.Add(LockoutDuration)
 		record.LockedUntil = &lockUntil
 		shouldLock = true
 
@@ -178,13 +178,13 @@ func (t *EntLoginAttemptTracker) ResetAttempts(email string) {
 // PersistLock persists the lock to database for the user using Ent
 func (t *EntLoginAttemptTracker) PersistLock(ctx context.Context, entUser *ent.User, reason string) error {
 	now := time.Now()
-	lockUntil := now.Add(LockDuration)
+	lockUntil := now.Add(LockoutDuration)
 
 	client := database.GetEntClient()
 	_, err := client.User.UpdateOne(entUser).
 		SetLockedUntil(lockUntil).
 		SetLockReason(reason).
-		SetFailedLoginAttempts(MaxFailedLoginAttempts).
+		SetFailedLoginAttempts(MaxLoginAttempts).
 		Save(ctx)
 
 	if err != nil {

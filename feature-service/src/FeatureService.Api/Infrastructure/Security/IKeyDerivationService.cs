@@ -34,7 +34,7 @@ namespace FeatureService.Api.Infrastructure.Security;
 /// - OKM segments are independent when using different 'info' values
 /// - Salt provides domain separation between applications
 ///
-/// Use Cases in Alephdraad:
+/// Use Cases in AIValid:
 /// - Deriving per-purpose keys from master key (encryption key, MAC key, etc.)
 /// - Key rotation: derive new keys from old keys + rotation context
 /// - Hybrid crypto: combining classical + PQC shared secrets

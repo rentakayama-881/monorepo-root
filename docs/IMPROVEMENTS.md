@@ -77,7 +77,7 @@ import { Header } from '@/components/Header'
 describe('Header', () => {
   it('renders logo', () => {
     render(<Header />)
-    expect(screen.getByAltText('Alephdraad')).toBeInTheDocument()
+    expect(screen.getByAltText('AIValid')).toBeInTheDocument()
   })
   
   it('shows login button when not authenticated', () => {
@@ -273,7 +273,7 @@ func initTracer() func() {
     tp := trace.NewTracerProvider(
         trace.WithBatcher(exporter),
         trace.WithResource(resource.NewWithAttributes(
-            semconv.ServiceNameKey.String("alephdraad-backend"),
+            semconv.ServiceNameKey.String("aivalid-backend"),
         )),
     )
     
@@ -366,9 +366,9 @@ supergraph:
   schema:
     subgraphs:
       core:
-        routing_url: https://api.alephdraad.fun/graphql
+        routing_url: https://api.aivalid.fun/graphql
       features:
-        routing_url: https://feature.alephdraad.fun/graphql
+        routing_url: https://feature.aivalid.fun/graphql
 ```
 
 ---
@@ -507,7 +507,7 @@ threads, _ := client.Thread.Query().
 module.exports = {
   images: {
     remotePatterns: [
-      { hostname: 'cdn.alephdraad.fun' },
+      { hostname: 'cdn.aivalid.fun' },
     ],
   },
   async headers() {
@@ -656,7 +656,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: alephdraad/backend:latest
+        image: aivalid/backend:latest
         resources:
           requests:
             memory: "256Mi"
@@ -762,7 +762,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: alephdraad_dev
+      POSTGRES_DB: aivalid_dev
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev
     volumes:
@@ -799,7 +799,7 @@ cd backend
 go generate ./ent
 
 # Generate TypeScript types from OpenAPI
-npx openapi-typescript https://api.alephdraad.fun/swagger.json -o frontend/types/api.d.ts
+npx openapi-typescript https://api.aivalid.fun/swagger.json -o frontend/types/api.d.ts
 ```
 
 ### 6.3 Pre-commit Hooks
@@ -876,4 +876,4 @@ repos:
 
 ---
 
-*Dokumen ini adalah bagian dari dokumentasi teknis Alephdraad. Terakhir diperbarui: 15 Januari 2026.*
+*Dokumen ini adalah bagian dari dokumentasi teknis AIValid. Terakhir diperbarui: 15 Januari 2026.*

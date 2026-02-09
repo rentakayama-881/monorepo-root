@@ -77,7 +77,7 @@ public class HybridCryptoService : IHybridCryptoService
     private const string SignatureAlgorithm = "Ed25519+Dilithium3";
 
     // HKDF parameters
-    private static readonly byte[] DefaultSalt = Encoding.UTF8.GetBytes("alephdraad-hybrid-v1-2026");
+    private static readonly byte[] DefaultSalt = Encoding.UTF8.GetBytes("aivalid-hybrid-v1-2026");
     private static readonly byte[] KemInfo = Encoding.UTF8.GetBytes("hybrid-kem-key-derivation");
     private const int SharedSecretLength = 48; // 384 bits for AES-256 + extra entropy
 
