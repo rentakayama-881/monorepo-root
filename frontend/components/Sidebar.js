@@ -29,6 +29,7 @@ export default function Sidebar({ open, onClose }) {
   useEffect(() => {
     if (open) {
       const scrollY = window.scrollY;
+      const lockedPathname = window.location.pathname;
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
       document.body.style.left = '0';
@@ -40,7 +41,15 @@ export default function Sidebar({ open, onClose }) {
         document.body.style.left = '';
         document.body.style.right = '';
         document.body.style.overflow = '';
-        window.scrollTo(0, scrollY);
+
+        // If navigation happened while the sidebar was open, don't restore the
+        // previous page scroll onto the next page (prevents "category starts at
+        // home scroll position" confusion).
+        if (window.location.pathname === lockedPathname) {
+          window.scrollTo(0, scrollY);
+        } else {
+          window.scrollTo(0, 0);
+        }
       };
     }
   }, [open]);

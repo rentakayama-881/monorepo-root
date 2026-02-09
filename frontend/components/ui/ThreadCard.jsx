@@ -84,6 +84,8 @@ function getUsernameFromToken(token) {
  * @param {boolean} props.showCategory - Show category badge (default: true)
  * @param {boolean} props.showDate - Show date (default: true)
  * @param {boolean} props.showSummary - Show summary (default: true)
+ * @param {string} props.href - Optional override href for the thread detail link
+ * @param {(event: any) => void} props.onThreadClick - Optional click handler for the thread detail link
  * @param {string} props.className - Additional classes
  */
 export default function ThreadCard({
@@ -93,6 +95,8 @@ export default function ThreadCard({
   showCategory = true,
   showDate = true,
   showSummary = true,
+  href = "",
+  onThreadClick,
   className = "",
 }) {
   if (!thread) return null;
@@ -112,11 +116,14 @@ export default function ThreadCard({
     tags,
   } = thread;
 
+  const threadHref = typeof href === "string" && href.trim() ? href : `/thread/${id}`;
+
   // Compact variant - single line item
   if (variant === "compact") {
     return (
       <Link
-        href={`/thread/${id}`}
+        href={threadHref}
+        onClick={(event) => (typeof onThreadClick === "function" ? onThreadClick(event) : undefined)}
         className={cn(
           "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
           "hover:bg-accent",
@@ -147,7 +154,8 @@ export default function ThreadCard({
   if (variant === "list") {
     return (
       <Link
-        href={`/thread/${id}`}
+        href={threadHref}
+        onClick={(event) => (typeof onThreadClick === "function" ? onThreadClick(event) : undefined)}
         className={cn(
           "flex items-start gap-2 p-3 transition-colors border-b last:border-b-0",
           "hover:bg-accent",
@@ -240,7 +248,11 @@ export default function ThreadCard({
         className
       )}
     >
-      <Link href={`/thread/${id}`} className="block px-3 pb-2 pt-3">
+      <Link
+        href={threadHref}
+        onClick={(event) => (typeof onThreadClick === "function" ? onThreadClick(event) : undefined)}
+        className="block px-3 pb-2 pt-3"
+      >
         {/* Header with Title & Category */}
         <div className="flex items-baseline justify-between gap-2 mb-1">
           {/* Title */}

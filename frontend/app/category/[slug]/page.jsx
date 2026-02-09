@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { LOCKED_CATEGORIES } from "@/lib/constants";
 import ThreadCard from "@/components/ui/ThreadCard";
@@ -14,18 +14,22 @@ const PAGE_SIZE = 10;
 
 export default function CategoryThreadsPage() {
   const params = useParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [threads, setThreads] = useState([]);
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTagSlugs, setSelectedTagSlugs] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
+
+  // Avoid restoring a previous scroll position when we intentionally change list state
+  // (pagination/filter) from within this page.
+  const skipNextRestoreRef = useRef(false);
+  const navigatingAwayRef = useRef(false);
+  const lastScrollYRef = useRef(0);
+  const [scrollRestored, setScrollRestored] = useState(false);
 
   const API = getApiBase();
-
-  useEffect(() => {
-    setSelectedTagSlugs([]);
-    setCurrentPage(1);
-  }, [params.slug]);
 
   useEffect(() => {
     setLoading(true);
@@ -46,6 +50,31 @@ export default function CategoryThreadsPage() {
     if (slug.startsWith("evidence-")) return "evidence";
     return "other";
   }
+
+  const selectedTagSlugs = useMemo(() => {
+    const raw = searchParams.get("tags");
+    if (!raw) return [];
+    const parts = raw
+      .split(",")
+      .map((slug) => String(slug || "").trim().toLowerCase())
+      .filter(Boolean);
+
+    const uniq = [];
+    const seen = new Set();
+    for (const slug of parts) {
+      if (!seen.has(slug)) {
+        seen.add(slug);
+        uniq.push(slug);
+      }
+    }
+    return uniq;
+  }, [searchParams]);
+
+  const requestedPage = useMemo(() => {
+    const raw = searchParams.get("page");
+    const parsed = Number.parseInt(String(raw || ""), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }, [searchParams]);
 
   const availableTags = useMemo(() => {
     const map = new Map();
@@ -69,6 +98,28 @@ export default function CategoryThreadsPage() {
     });
   }, [threads]);
 
+  const setListState = useCallback(
+    ({ nextPage, nextTags }) => {
+      skipNextRestoreRef.current = true;
+      const next = new URLSearchParams(searchParams.toString());
+
+      if (Array.isArray(nextTags)) {
+        if (nextTags.length === 0) next.delete("tags");
+        else next.set("tags", nextTags.join(","));
+      }
+
+      if (typeof nextPage === "number") {
+        if (nextPage <= 1) next.delete("page");
+        else next.set("page", String(nextPage));
+      }
+
+      const nextQuery = next.toString();
+      const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
+      router.replace(nextUrl, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
   const filteredThreads = useMemo(() => {
     if (!Array.isArray(selectedTagSlugs) || selectedTagSlugs.length === 0) return threads;
     return threads.filter((thread) => {
@@ -77,18 +128,21 @@ export default function CategoryThreadsPage() {
     });
   }, [threads, selectedTagSlugs]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedTagSlugs]);
-
   const totalPages = useMemo(() => {
     if (filteredThreads.length === 0) return 1;
     return Math.ceil(filteredThreads.length / PAGE_SIZE);
   }, [filteredThreads.length]);
 
+  const currentPage = useMemo(() => {
+    return Math.min(Math.max(requestedPage, 1), totalPages);
+  }, [requestedPage, totalPages]);
+
+  // Clamp out-of-range ?page only after we have the data.
   useEffect(() => {
-    setCurrentPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
+    if (loading) return;
+    if (requestedPage === currentPage) return;
+    setListState({ nextPage: currentPage });
+  }, [currentPage, loading, requestedPage, setListState]);
 
   const paginatedThreads = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
@@ -101,25 +155,115 @@ export default function CategoryThreadsPage() {
   const paginationStart = visibleThreads === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const paginationEnd = Math.min(currentPage * PAGE_SIZE, visibleThreads);
 
-  function toggleFilterTag(slug) {
-    setSelectedTagSlugs((prev) => {
-      const set = new Set(prev);
-      if (set.has(slug)) {
-        set.delete(slug);
-        return Array.from(set);
-      }
+  const listUrl = useMemo(() => {
+    const query = searchParams.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [pathname, searchParams]);
 
-      const groupKey = getTagGroup(slug);
-      if (groupKey !== "other") {
-        for (const existing of prev) {
-          if (getTagGroup(existing) === groupKey) {
-            set.delete(existing);
-          }
+  const scrollKey = useMemo(() => {
+    // Scope per category list state (slug + query). This prevents "home scroll"
+    // leaking into category and enables proper back restoration.
+    return `scroll:categoryThreads:${listUrl}`;
+  }, [listUrl]);
+
+  useEffect(() => {
+    navigatingAwayRef.current = false;
+    lastScrollYRef.current = window.scrollY || 0;
+    setScrollRestored(false);
+  }, [scrollKey]);
+
+  // Persist scroll while user scrolls the category list.
+  useEffect(() => {
+    let raf = 0;
+    let lastWrite = 0;
+
+    const save = (y) => {
+      try {
+        sessionStorage.setItem(scrollKey, String(y));
+      } catch {
+        // Ignore sessionStorage errors (private mode/quota).
+      }
+    };
+
+    const onScroll = () => {
+      if (navigatingAwayRef.current) return;
+      const y = window.scrollY || 0;
+      lastScrollYRef.current = y;
+
+      const now = Date.now();
+      if (now - lastWrite < 150) return;
+      lastWrite = now;
+
+      if (raf) window.cancelAnimationFrame(raf);
+      raf = window.requestAnimationFrame(() => save(lastScrollYRef.current));
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) window.cancelAnimationFrame(raf);
+      // Save last known user scroll for this list state (avoid reading window.scrollY
+      // during route transitions which may already be reset).
+      save(lastScrollYRef.current);
+    };
+  }, [scrollKey]);
+
+  // Restore scroll when returning to this category list state (e.g., from thread detail).
+  useEffect(() => {
+    if (loading) return;
+    if (scrollRestored) return;
+
+    if (skipNextRestoreRef.current) {
+      skipNextRestoreRef.current = false;
+      setScrollRestored(true);
+      return;
+    }
+
+    let raw = null;
+    try {
+      raw = sessionStorage.getItem(scrollKey);
+    } catch {
+      // Ignore
+    }
+
+    const y = Number(raw);
+    if (Number.isFinite(y) && y > 0) {
+      window.requestAnimationFrame(() => window.scrollTo(0, y));
+    }
+    setScrollRestored(true);
+  }, [loading, scrollKey, scrollRestored]);
+
+  const handleThreadNavigate = useCallback(() => {
+    navigatingAwayRef.current = true;
+    const y = window.scrollY || 0;
+    lastScrollYRef.current = y;
+    try {
+      sessionStorage.setItem(scrollKey, String(y));
+    } catch {
+      // Ignore
+    }
+  }, [scrollKey]);
+
+  function toggleFilterTag(slug) {
+    const next = new Set(selectedTagSlugs);
+    if (next.has(slug)) {
+      next.delete(slug);
+      window.scrollTo(0, 0);
+      setListState({ nextPage: 1, nextTags: Array.from(next) });
+      return;
+    }
+
+    const groupKey = getTagGroup(slug);
+    if (groupKey !== "other") {
+      for (const existing of selectedTagSlugs) {
+        if (getTagGroup(existing) === groupKey) {
+          next.delete(existing);
         }
       }
-      set.add(slug);
-      return Array.from(set);
-    });
+    }
+    next.add(slug);
+    window.scrollTo(0, 0);
+    setListState({ nextPage: 1, nextTags: Array.from(next) });
   }
 
   if (loading) {
@@ -191,7 +335,10 @@ export default function CategoryThreadsPage() {
             {hasActiveFilter && (
               <button
                 type="button"
-                onClick={() => setSelectedTagSlugs([])}
+                onClick={() => {
+                  window.scrollTo(0, 0);
+                  setListState({ nextPage: 1, nextTags: [] });
+                }}
                 className="ml-auto inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               >
                 Reset filter
@@ -234,7 +381,10 @@ export default function CategoryThreadsPage() {
             hasActiveFilter && (
               <button
                 type="button"
-                onClick={() => setSelectedTagSlugs([])}
+                onClick={() => {
+                  window.scrollTo(0, 0);
+                  setListState({ nextPage: 1, nextTags: [] });
+                }}
                 className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
               >
                 Reset filter
@@ -250,6 +400,8 @@ export default function CategoryThreadsPage() {
               thread={thread}
               variant="default"
               showCategory={false}
+              href={`/thread/${thread.id}?from=${encodeURIComponent(listUrl)}`}
+              onThreadClick={handleThreadNavigate}
             />
           ))}
           {visibleThreads > PAGE_SIZE && (
@@ -261,7 +413,11 @@ export default function CategoryThreadsPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  onClick={() => {
+                    if (currentPage === 1) return;
+                    window.scrollTo(0, 0);
+                    setListState({ nextPage: Math.max(1, currentPage - 1) });
+                  }}
                   disabled={currentPage === 1}
                   className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -269,7 +425,11 @@ export default function CategoryThreadsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  onClick={() => {
+                    if (currentPage === totalPages) return;
+                    window.scrollTo(0, 0);
+                    setListState({ nextPage: Math.min(totalPages, currentPage + 1) });
+                  }}
                   disabled={currentPage === totalPages}
                   className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >

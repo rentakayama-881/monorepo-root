@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
 import { getToken } from "@/lib/auth";
@@ -17,6 +17,7 @@ import ThreadDetailSkeleton from "./ThreadDetailSkeleton";
 
 export default function ThreadDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params?.id;
   const API = getApiBase();
 
@@ -27,6 +28,10 @@ export default function ThreadDetailPage() {
   const readingProgressRef = useRef(null);
 
   const isAuthed = typeof window !== "undefined" ? !!getToken() : false;
+
+  const fromParam = searchParams.get("from");
+  const fromCategoryHref =
+    typeof fromParam === "string" && fromParam.startsWith("/category/") ? fromParam : null;
 
   // Reading progress with throttling
   useEffect(() => {
@@ -115,7 +120,10 @@ export default function ThreadDetailPage() {
         <span>/</span>
         {data?.category?.slug && (
           <>
-            <Link href={`/category/${encodeURIComponent(data.category.slug)}`} className="hover:text-foreground hover:underline">
+            <Link
+              href={fromCategoryHref || `/category/${encodeURIComponent(data.category.slug)}`}
+              className="hover:text-foreground hover:underline"
+            >
               {data.category.name || data.category.slug}
             </Link>
             <span>/</span>
@@ -141,7 +149,7 @@ export default function ThreadDetailPage() {
               </span>
               {data.category && (
                 <Link
-                  href={`/category/${encodeURIComponent(data.category.slug)}`}
+                  href={fromCategoryHref || `/category/${encodeURIComponent(data.category.slug)}`}
                   className="inline-flex items-center rounded-full bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground hover:bg-border"
                 >
                   {data.category.name || data.category.slug}
@@ -262,7 +270,7 @@ export default function ThreadDetailPage() {
             </Link>
             {data.category && (
               <Link
-                href={`/category/${encodeURIComponent(data.category.slug)}`}
+                href={fromCategoryHref || `/category/${encodeURIComponent(data.category.slug)}`}
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
                 View Category

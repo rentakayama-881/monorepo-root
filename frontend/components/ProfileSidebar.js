@@ -18,6 +18,7 @@ export default function ProfileSidebar({ onClose }) {
   // Lock body scroll when profile sidebar is open (like prompts.chat Sheet)
   useEffect(() => {
     const scrollY = window.scrollY;
+    const lockedPathname = window.location.pathname;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.left = '0';
@@ -29,7 +30,14 @@ export default function ProfileSidebar({ onClose }) {
       document.body.style.left = '';
       document.body.style.right = '';
       document.body.style.overflow = '';
-      window.scrollTo(0, scrollY);
+
+      // Avoid restoring previous-page scroll onto a different route if
+      // navigation happened while the sheet was open.
+      if (window.location.pathname === lockedPathname) {
+        window.scrollTo(0, scrollY);
+      } else {
+        window.scrollTo(0, 0);
+      }
     };
   }, []);
 
