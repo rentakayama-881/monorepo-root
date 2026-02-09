@@ -1047,9 +1047,10 @@ p {
   width: 100%;
 }
 
-/* Smooth scroll behavior */
+/* Avoid forced smooth scrolling:
+   It can feel like the page is "moving" on route transitions and cause dizziness. */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 /* Reduced motion support */
