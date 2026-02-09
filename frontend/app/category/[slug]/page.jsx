@@ -245,15 +245,17 @@ export default function CategoryThreadsPage() {
   }, [scrollKey]);
 
   function toggleFilterTag(slug) {
+    const normalizedSlug = String(slug || "").trim().toLowerCase();
+    if (!normalizedSlug) return;
     const next = new Set(selectedTagSlugs);
-    if (next.has(slug)) {
-      next.delete(slug);
+    if (next.has(normalizedSlug)) {
+      next.delete(normalizedSlug);
       window.scrollTo(0, 0);
       setListState({ nextPage: 1, nextTags: Array.from(next) });
       return;
     }
 
-    const groupKey = getTagGroup(slug);
+    const groupKey = getTagGroup(normalizedSlug);
     if (groupKey !== "other") {
       for (const existing of selectedTagSlugs) {
         if (getTagGroup(existing) === groupKey) {
@@ -261,7 +263,7 @@ export default function CategoryThreadsPage() {
         }
       }
     }
-    next.add(slug);
+    next.add(normalizedSlug);
     window.scrollTo(0, 0);
     setListState({ nextPage: 1, nextTags: Array.from(next) });
   }
@@ -327,7 +329,7 @@ export default function CategoryThreadsPage() {
                   key={tag.slug}
                   tag={tag}
                   size="sm"
-                  selected={selectedTagSlugs.includes(tag.slug)}
+                  selected={selectedTagSlugs.includes(String(tag.slug || "").toLowerCase())}
                   onClick={() => toggleFilterTag(tag.slug)}
                 />
               ))}
