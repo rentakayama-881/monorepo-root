@@ -103,7 +103,7 @@ export async function fetchJson(path, options = {}) {
  * Use this for all authenticated API calls.
  */
 export async function fetchJsonAuth(path, options = {}) {
-  const { timeout = 10000, signal, headers = {}, ...rest } = options;
+  const { timeout = 10000, signal, headers = {}, clearSessionOn401 = true, ...rest } = options;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(new Error("timeout")), timeout);
 
@@ -145,7 +145,9 @@ export async function fetchJsonAuth(path, options = {}) {
       // Handle specific auth errors
       if (res.status === 401) {
         // Session invalid - clear and signal session expired
-        clearToken();
+        if (clearSessionOn401) {
+          clearToken();
+        }
         const error = new Error(data?.message || data?.error || "Sesi telah berakhir. Silakan login kembali.");
         error.status = 401;
         error.code = data?.code || "session_expired";

@@ -54,18 +54,11 @@ export async function refreshAccessToken() {
           return null;
         }
 
-        // Only clear token and redirect for definitive auth errors (401, 403)
-        // Don't logout for server errors (5xx) or other issues
-        if (res.status === 401 || res.status === 403) {
-          clearToken();
-          if (typeof window !== "undefined") {
-            if (!window.location.pathname.includes("/login")) {
-              window.location.href = "/login?session=expired";
-            }
-          }
-        }
-        // For other errors (5xx, network), just return null without clearing
-        // Let the user retry or the page handle gracefully
+        // IMPORTANT:
+        // Do not clear user session immediately when refresh token fails.
+        // We still may have a usable access token in storage (clock skew / stale refresh token),
+        // and the caller can try the protected endpoint once before deciding session is expired.
+        // Session cleanup should happen only when the protected API itself returns 401.
         return null;
       }
 

@@ -11,11 +11,31 @@ import NewValidationCaseSkeleton from "./NewValidationCaseSkeleton";
 import Skeleton from "@/components/ui/Skeleton";
 
 const quickIntakeFields = [
-  { key: "validation_goal", label: "Tujuan Validasi" },
-  { key: "output_type", label: "Jenis Output" },
-  { key: "evidence_input", label: "Bukti / Input" },
-  { key: "pass_criteria", label: "Kriteria Lulus" },
-  { key: "constraints", label: "Batasan" },
+  {
+    key: "validation_goal",
+    label: "Masalah yang ingin diselesaikan",
+    placeholder: "Contoh: Saya perlu memastikan hasil kerja AI bisa dipakai untuk presentasi klien.",
+  },
+  {
+    key: "output_type",
+    label: "Hasil akhir yang kamu butuhkan",
+    placeholder: "Contoh: File Excel final, dokumen revisi, video 30 detik, atau deck presentasi.",
+  },
+  {
+    key: "evidence_input",
+    label: "Materi awal yang sudah tersedia",
+    placeholder: "Contoh: draft, raw file, catatan, prompt AI, screenshot, atau data pendukung.",
+  },
+  {
+    key: "pass_criteria",
+    label: "Standar hasil dianggap selesai",
+    placeholder: "Contoh: tidak ada error formula, style sesuai brand, typo <= 2, dan siap submit.",
+  },
+  {
+    key: "constraints",
+    label: "Batasan penting",
+    placeholder: "Contoh: deadline, format wajib, tools yang boleh/tidak boleh, aturan etika/akademik.",
+  },
 ];
 
 const checklistItems = [
@@ -47,6 +67,12 @@ function formatIDR(amount) {
   const n = Number(amount || 0);
   if (!Number.isFinite(n)) return "";
   return Math.max(0, Math.trunc(n)).toLocaleString("id-ID");
+}
+
+function sanitizeNumericInput(raw) {
+  return String(raw || "")
+    .replace(/[^\d]/g, "")
+    .replace(/^0+(?=\d)/, "");
 }
 
 function pickDefaultCategory(list) {
@@ -214,7 +240,7 @@ export default function NewValidationCaseClient() {
     }
 
     const title = String(form.title || "").trim();
-    const bounty = Number(String(form.bounty_amount || "").replace(/[^\d]/g, ""));
+    const bounty = Number(form.bounty_amount || 0);
     const caseRecord = String(form.case_record_text || "").trim();
     const sensitivity = String(form.quick_intake?.sensitivity || "S1").trim().toUpperCase();
 
@@ -224,6 +250,10 @@ export default function NewValidationCaseClient() {
     }
     if (!bounty || bounty < 10000) {
       setError("Bounty minimal Rp 10.000.");
+      return;
+    }
+    if (!Number.isSafeInteger(bounty)) {
+      setError("Nominal bounty terlalu besar.");
       return;
     }
     for (const item of quickIntakeFields) {
@@ -309,12 +339,12 @@ export default function NewValidationCaseClient() {
 
       <header className="mb-6">
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Two-layer Intake
+          Brief Tugas Cepat
         </div>
         <h1 className="mt-2 text-2xl font-semibold text-foreground">Create Validation Case</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Layer 1 wajib: Quick Intake 6 field. Layer 2: Auto Validation Brief dibentuk otomatis.
-          Tidak ada chat internal; semua flow via status, SLA, dan audit log.
+          Isi ringkas dulu agar validator langsung paham konteks kerja. Sistem akan menyusun ringkasan otomatis
+          agar proses cepat, jelas, dan bisa diaudit.
         </p>
       </header>
 
@@ -340,7 +370,7 @@ export default function NewValidationCaseClient() {
         <div className="border-b border-border px-5 py-4">
           <div className="text-sm font-semibold text-foreground">Protocol Intake</div>
           <div className="mt-1 text-xs text-muted-foreground">
-            Quick Intake wajib, tags wajib minimal 2, dan Case Record tetap tersedia dalam format terkontrol.
+            Isi brief inti, pilih minimal 2 tags, lalu tambahkan catatan tambahan jika perlu.
           </div>
         </div>
 
@@ -369,13 +399,14 @@ export default function NewValidationCaseClient() {
                     onChange={(e) => setQuickIntake(field.key, e.target.value)}
                     rows={field.key === "evidence_input" || field.key === "constraints" ? 3 : 2}
                     className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                    placeholder={field.placeholder}
                     disabled={locked || submitting}
                   />
                 </div>
               ))}
 
               <div>
-                <label className="text-xs font-semibold text-muted-foreground">Sensitivitas</label>
+                <label className="text-xs font-semibold text-muted-foreground">Tingkat kerahasiaan</label>
                 <select
                   value={form.quick_intake?.sensitivity || "S1"}
                   onChange={(e) => setQuickIntake("sensitivity", e.target.value)}
@@ -392,13 +423,20 @@ export default function NewValidationCaseClient() {
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">Bounty (IDR)</label>
                 <input
-                  value={formatIDR(form.bounty_amount)}
-                  onChange={(e) => setForm((prev) => ({ ...prev, bounty_amount: e.target.value }))}
+                  value={form.bounty_amount}
+                  onChange={(e) => {
+                    const next = sanitizeNumericInput(e.target.value);
+                    setForm((prev) => ({ ...prev, bounty_amount: next }));
+                  }}
                   className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
                   inputMode="numeric"
+                  placeholder="10000"
+                  maxLength={15}
                   disabled={locked || submitting}
                 />
-                <div className="mt-1 text-[11px] text-muted-foreground">Minimal Rp 10.000.</div>
+                <div className="mt-1 text-[11px] text-muted-foreground">
+                  Minimal Rp 10.000. Estimasi saat ini: {form.bounty_amount ? `Rp ${formatIDR(form.bounty_amount)}` : "-"}.
+                </div>
               </div>
             </div>
           </div>

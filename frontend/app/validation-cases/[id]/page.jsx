@@ -63,6 +63,36 @@ function statusLabel(statusRaw) {
   return map[s] || s.replace(/_/g, " ");
 }
 
+function sensitivityMeta(levelRaw) {
+  const level = String(levelRaw || "S1").toUpperCase();
+  switch (level) {
+    case "S0":
+      return { level: "S0", label: "Public", badgeClass: "border-emerald-200 bg-emerald-50 text-emerald-900" };
+    case "S1":
+      return { level: "S1", label: "Restricted", badgeClass: "border-blue-200 bg-blue-50 text-blue-900" };
+    case "S2":
+      return { level: "S2", label: "Confidential", badgeClass: "border-amber-200 bg-amber-50 text-amber-900" };
+    case "S3":
+      return { level: "S3", label: "Critical", badgeClass: "border-red-200 bg-red-50 text-red-900" };
+    default:
+      return { level: level || "-", label: "Unknown", badgeClass: "border-border bg-card text-foreground" };
+  }
+}
+
+function clarificationStateLabel(stateRaw) {
+  const s = normalizeStatus(stateRaw);
+  const map = {
+    none: "None",
+    waiting_owner_response: "Waiting Owner Response",
+    assumption_pending_owner_decision: "Assumption Pending Owner Decision",
+    owner_responded: "Owner Responded",
+    assumption_approved: "Assumption Approved",
+    assumption_rejected: "Assumption Rejected",
+    owner_inactive_sla_expired: "Owner Inactive SLA Expired",
+  };
+  return map[s] || (s ? s.replace(/_/g, " ") : "-");
+}
+
 function contentAsText(content) {
   if (content == null) return "";
   if (typeof content === "string") return content;
@@ -175,7 +205,7 @@ export default function ValidationCaseRecordPage() {
       return;
     }
     try {
-      const data = await fetchJsonAuth("/api/user/me", { method: "GET" });
+      const data = await fetchJsonAuth("/api/user/me", { method: "GET", clearSessionOn401: false });
       setMe(data);
     } catch {
       setMe(null);
@@ -202,9 +232,9 @@ export default function ValidationCaseRecordPage() {
 
     try {
       const [reqs, offers, log] = await Promise.all([
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests`, { method: "GET" }),
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/final-offers`, { method: "GET" }),
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/case-log`, { method: "GET" }),
+        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests`, { method: "GET", clearSessionOn401: false }),
+        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/final-offers`, { method: "GET", clearSessionOn401: false }),
+        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/case-log`, { method: "GET", clearSessionOn401: false }),
       ]);
 
       setConsultationRequests(Array.isArray(reqs?.consultation_requests) ? reqs.consultation_requests : []);
@@ -245,9 +275,9 @@ export default function ValidationCaseRecordPage() {
 
     try {
       const [offers, log] = await Promise.all([
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/final-offers`, { method: "GET" }),
+        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/final-offers`, { method: "GET", clearSessionOn401: false }),
         // Case Log is only visible to owner or approved validators; best-effort.
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/case-log`, { method: "GET" }).catch(() => null),
+        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/case-log`, { method: "GET", clearSessionOn401: false }).catch(() => null),
       ]);
       setFinalOffers(Array.isArray(offers?.final_offers) ? offers.final_offers : []);
       setCaseLog(Array.isArray(log?.case_log) ? log.case_log : []);
@@ -674,6 +704,8 @@ export default function ValidationCaseRecordPage() {
 
   const status = normalizeStatus(vc?.status);
   const consultationBlocked = status === "waiting_owner_response" || status === "on_hold_owner_inactive";
+  const sensitivity = sensitivityMeta(vc?.sensitivity_level);
+  const contactRestricted = sensitivity.level === "S2" || sensitivity.level === "S3";
   const owner = vc?.owner || {};
   const ownerBadge = owner?.primary_badge || null;
   const transferId = vc?.escrow_transfer_id || "";
@@ -830,7 +862,12 @@ export default function ValidationCaseRecordPage() {
                     <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       Private Contact
                     </div>
-                    <Button onClick={revealContact} variant="outline" disabled={contactLoading}>
+                    {contactRestricted ? (
+                      <div className="text-xs text-muted-foreground">
+                        Telegram private contact dinonaktifkan untuk tier {sensitivity.level} ({sensitivity.label}).
+                      </div>
+                    ) : null}
+                    <Button onClick={revealContact} variant="outline" disabled={contactLoading || contactRestricted}>
                       {contactLoading ? "Opening..." : "Reveal Telegram (Private)"}
                     </Button>
                     {contactTelegram ? (
@@ -1445,11 +1482,16 @@ export default function ValidationCaseRecordPage() {
                   </div>
                   <div className="flex items-center justify-between gap-4 py-2">
                     <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Sensitivity</dt>
-                    <dd className="font-mono text-xs text-muted-foreground">{String(vc?.sensitivity_level || "-")}</dd>
+                    <dd className="text-right">
+                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${sensitivity.badgeClass}`}>
+                        {sensitivity.level}
+                      </span>
+                      <div className="mt-1 text-xs text-muted-foreground">{sensitivity.label}</div>
+                    </dd>
                   </div>
                   <div className="flex items-center justify-between gap-4 py-2">
                     <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Clarification</dt>
-                    <dd className="font-mono text-xs text-muted-foreground">{String(vc?.clarification_state || "-")}</dd>
+                    <dd className="font-mono text-xs text-muted-foreground">{clarificationStateLabel(vc?.clarification_state)}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-4 py-2">
                     <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Workflow</dt>
@@ -1501,6 +1543,54 @@ function safeJson(value) {
   }
 }
 
+const CONTENT_LABEL_MAP = {
+  objective: "Fokus Validasi",
+  expected_output_type: "Hasil Akhir yang Diharapkan",
+  evidence_scope: "Materi yang Diperiksa",
+  pass_gate: "Standar Dinyatakan Selesai",
+  constraints: "Batasan",
+  sensitivity: "Tingkat Kerahasiaan",
+  owner_response_sla: "SLA Respons Owner",
+  validation_goal: "Masalah yang Ingin Diselesaikan",
+  output_type: "Hasil Akhir yang Dibutuhkan",
+  evidence_input: "Materi Awal yang Tersedia",
+  pass_criteria: "Kriteria Diterima",
+  case_record_text: "Catatan Tambahan",
+  sensitivity_policy: "Kebijakan Sensitivitas",
+  schema_version: "Versi Intake",
+  max_hours: "Batas Waktu (Jam)",
+  reminder_hours: "Pengingat (Jam)",
+  timeout_outcome: "Status Saat Timeout",
+  reassignment: "Reassignment Validator",
+  validator_penalty: "Penalti Validator",
+  visibility: "Akses Visibilitas",
+  telegram_allowed: "Telegram Diizinkan",
+  requires_admin_gate: "Perlu Admin Gate",
+  requires_pre_moderation: "Perlu Pre-Moderasi",
+};
+
+function prettifyKey(keyRaw) {
+  const key = String(keyRaw || "").trim();
+  if (!key) return "-";
+  if (CONTENT_LABEL_MAP[key]) return CONTENT_LABEL_MAP[key];
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function renderInlineValue(v) {
+  if (v == null || v === "") return "-";
+  if (typeof v === "boolean") return v ? "Ya" : "Tidak";
+  if (typeof v === "number") return String(v);
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) return v.map((x) => renderInlineValue(x)).join(", ");
+  try {
+    return JSON.stringify(v);
+  } catch {
+    return String(v);
+  }
+}
+
 function ContentTable({ content }) {
   if (!content) return <div className="text-sm text-muted-foreground">Tidak ada konten.</div>;
 
@@ -1536,7 +1626,7 @@ function Table({ rows }) {
         <tbody className="divide-y divide-border">
           {rows.map((r, i) => (
             <tr key={i} className={i % 2 === 0 ? "bg-card" : "bg-secondary/40"}>
-              <td className="w-52 px-4 py-3 align-top font-semibold text-foreground">{r.label}</td>
+              <td className="w-52 px-4 py-3 align-top font-semibold text-foreground">{prettifyKey(r.label)}</td>
               <td className="px-4 py-3 align-top text-muted-foreground">{renderValue(r.value)}</td>
             </tr>
           ))}
@@ -1558,6 +1648,28 @@ function renderValue(v) {
         ))}
       </ul>
     );
+  if (typeof v === "object") {
+    const entries = Object.entries(v);
+    if (!entries.length) return "-";
+    return (
+      <dl className="space-y-2">
+        {entries.map(([key, value]) => (
+          <div key={key} className="grid grid-cols-1 gap-1 md:grid-cols-[220px,1fr]">
+            <dt className="text-xs font-semibold text-foreground">{prettifyKey(key)}</dt>
+            <dd className="text-xs text-muted-foreground">
+              {typeof value === "object" && value !== null && !Array.isArray(value) ? (
+                <pre className="whitespace-pre-wrap break-words rounded-[var(--radius)] bg-secondary/30 p-2 text-[11px]">
+                  {safeJson(value)}
+                </pre>
+              ) : (
+                renderInlineValue(value)
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    );
+  }
   try {
     return (
       <pre className="whitespace-pre-wrap break-words rounded-[var(--radius)] bg-secondary/30 p-3 text-xs">
