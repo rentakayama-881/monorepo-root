@@ -52,14 +52,14 @@ function contentAsText(content) {
 
 function CaseSection({ title, subtitle, children }) {
   return (
-    <section className="border-t border-border pt-8">
+    <section className="space-y-4">
       <header className="flex flex-col gap-1">
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {subtitle || "Section"}
         </div>
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
       </header>
-      <div className="mt-4">{children}</div>
+      <div>{children}</div>
     </section>
   );
 }
@@ -248,6 +248,11 @@ export default function ValidationCaseRecordPage() {
       });
       setConsultationMsg("Request Consultation tercatat. Menunggu persetujuan pemilik kasus.");
     } catch (e) {
+      if (e?.status === 401) {
+        setConsultationMsg("Sesi berakhir. Silakan login kembali.");
+        router.push("/login?session=expired");
+        return;
+      }
       setConsultationMsg(e?.message || "Gagal Request Consultation");
     }
   }
@@ -576,58 +581,41 @@ export default function ValidationCaseRecordPage() {
       ) : null}
 
       {vc ? (
-        <article className="space-y-8">
-          <header className="pb-2">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Validation Case Record
-            </div>
-            <h1 className="mt-2 text-2xl font-semibold text-foreground">{vc?.title || "(untitled)"}</h1>
-            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Status</div>
-                <div className="mt-1 text-sm font-semibold text-foreground">{status || "unknown"}</div>
+        <article className="space-y-10 lg:grid lg:grid-cols-12 lg:gap-10 lg:space-y-0">
+          <div className="lg:col-span-8 space-y-10">
+            <header className="space-y-4">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Validation Case Record
               </div>
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Bounty</div>
-                <div className="mt-1 text-sm font-semibold text-foreground">{formatIDR(vc?.bounty_amount)}</div>
-              </div>
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Filed</div>
-                <div className="mt-1 text-sm font-semibold text-foreground">{formatDateTime(vc?.created_at)}</div>
-              </div>
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Owner</div>
-                <div className="mt-1 flex items-center gap-2">
-                  <Avatar src={owner?.avatar_url} name={owner?.username || ""} size="xs" />
-                  <Link
-                    href={owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "#"}
-                    className="text-sm font-semibold text-foreground hover:underline"
-                  >
-                    @{owner?.username || "-"}
-                  </Link>
-                  {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
-                </div>
-              </div>
-            </div>
+              <h1 className="text-2xl font-semibold text-foreground">{vc?.title || "(untitled)"}</h1>
 
-            {Array.isArray(vc?.tags) && vc.tags.length > 0 ? (
-              <div className="mt-4">
-                <TagList tags={vc.tags} size="sm" />
-              </div>
-            ) : null}
+              {vc?.summary ? <p className="text-sm text-muted-foreground">{vc.summary}</p> : null}
 
-            {vc?.summary ? (
-              <p className="mt-4 text-sm text-muted-foreground">{vc.summary}</p>
-            ) : null}
-          </header>
+              {Array.isArray(vc?.tags) && vc.tags.length > 0 ? <TagList tags={vc.tags} size="sm" /> : null}
+            </header>
 
           <CaseSection title="Overview" subtitle="Record">
-            <div className="prose prose-neutral max-w-none">
-              {vc?.content_type === "text" ? (
-                <MarkdownPreview content={contentAsText(vc?.content)} />
-              ) : (
-                <ContentTable content={vc?.content} />
-              )}
+            <div className="overflow-hidden rounded-[var(--radius)] bg-card">
+              <table className="w-full text-sm">
+                <tbody className="divide-y divide-border">
+                  <tr>
+                    <th className="w-40 bg-secondary/40 px-4 py-3 align-top text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      Case Record
+                    </th>
+                    <td className="px-4 py-3 align-top">
+                      <div className="max-h-[420px] overflow-auto pr-3 md:max-h-[520px]">
+                        <div className="prose prose-neutral max-w-none">
+                          {vc?.content_type === "text" ? (
+                            <MarkdownPreview content={contentAsText(vc?.content)} />
+                          ) : (
+                            <ContentTable content={vc?.content} />
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </CaseSection>
 
@@ -641,7 +629,7 @@ export default function ValidationCaseRecordPage() {
                   <li>Negosiasi harus ditutup dengan Final Offer di platform sebelum Lock Funds.</li>
                 </ul>
               </div>
-              <div className="rounded-[var(--radius)] bg-secondary/30 p-4">
+              <div className="md:border-l md:border-border md:pl-6">
                 {!isAuthed ? (
                   <div className="text-sm text-muted-foreground">
                     Login diperlukan untuk Request Consultation.
@@ -696,7 +684,7 @@ export default function ValidationCaseRecordPage() {
               ) : consultationRequests.length === 0 ? (
                 <div className="text-sm text-muted-foreground">Belum ada Request Consultation.</div>
               ) : (
-                <div className="overflow-x-auto rounded-[var(--radius)] bg-card">
+                <div className="overflow-x-auto">
                   <table className="min-w-[760px] w-full text-sm">
                     <thead className="bg-secondary/60 text-muted-foreground">
                       <tr>
@@ -764,50 +752,61 @@ export default function ValidationCaseRecordPage() {
 
           <CaseSection title="Final Offer" subtitle="Contract">
             {isAuthed && !isOwner ? (
-              <div className="mb-4 rounded-[var(--radius)] bg-secondary/30 p-4">
-                <div className="text-sm font-semibold text-foreground">Submit Final Offer</div>
-                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground">Amount (IDR)</label>
-                    <input
-                      value={offerForm.amount}
-                      onChange={(e) => setOfferForm((f) => ({ ...f, amount: e.target.value }))}
-                      placeholder="e.g. 250000"
+              <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="text-sm text-muted-foreground">
+                  <div className="font-semibold text-foreground">Submission Notes</div>
+                  <ul className="mt-2 list-disc pl-5">
+                    <li>Final Offer harus memuat amount, hold window, dan terms yang dapat diaudit.</li>
+                    <li>Pemilik kasus akan melakukan Lock Funds setelah menerima Final Offer.</li>
+                    <li>Hindari menyertakan info kontak di Terms.</li>
+                  </ul>
+                </div>
+
+                <div className="md:border-l md:border-border md:pl-6">
+                  <div className="text-sm font-semibold text-foreground">Submit Final Offer</div>
+                  <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground">Amount (IDR)</label>
+                      <input
+                        value={offerForm.amount}
+                        onChange={(e) => setOfferForm((f) => ({ ...f, amount: e.target.value }))}
+                        placeholder="e.g. 250000"
+                        className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                        inputMode="numeric"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground">Hold (days)</label>
+                      <input
+                        value={offerForm.hold_days}
+                        onChange={(e) => setOfferForm((f) => ({ ...f, hold_days: e.target.value }))}
+                        className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                        inputMode="numeric"
+                      />
+                      <div className="mt-1 text-[11px] text-muted-foreground">Max 30 days.</div>
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        onClick={submitFinalOffer}
+                        className="w-full rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                        type="button"
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <label className="text-xs font-semibold text-muted-foreground">Terms</label>
+                    <textarea
+                      value={offerForm.terms}
+                      onChange={(e) => setOfferForm((f) => ({ ...f, terms: e.target.value }))}
+                      rows={4}
+                      placeholder="Scope, acceptance criteria, assumptions, excluded items."
                       className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                      inputMode="numeric"
                     />
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground">Hold (days)</label>
-                    <input
-                      value={offerForm.hold_days}
-                      onChange={(e) => setOfferForm((f) => ({ ...f, hold_days: e.target.value }))}
-                      className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                      inputMode="numeric"
-                    />
-                    <div className="mt-1 text-[11px] text-muted-foreground">Max 30 days.</div>
-                  </div>
-                  <div className="flex items-end">
-                    <button
-                      onClick={submitFinalOffer}
-                      className="w-full rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-                      type="button"
-                    >
-                      Submit
-                    </button>
-                  </div>
+                  {offersMsg ? <div className="mt-3 text-xs text-muted-foreground">{offersMsg}</div> : null}
                 </div>
-                <div className="mt-3">
-                  <label className="text-xs font-semibold text-muted-foreground">Terms</label>
-                  <textarea
-                    value={offerForm.terms}
-                    onChange={(e) => setOfferForm((f) => ({ ...f, terms: e.target.value }))}
-                    rows={4}
-                    placeholder="Scope, acceptance criteria, assumptions, excluded items."
-                    className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                  />
-                </div>
-                {offersMsg ? <div className="mt-3 text-xs text-muted-foreground">{offersMsg}</div> : null}
               </div>
             ) : null}
 
@@ -816,7 +815,7 @@ export default function ValidationCaseRecordPage() {
             ) : finalOffers.length === 0 ? (
               <div className="text-sm text-muted-foreground">Belum ada Final Offer.</div>
             ) : (
-              <div className="overflow-x-auto rounded-[var(--radius)] bg-card">
+              <div className="overflow-x-auto">
                 <table className="min-w-[860px] w-full text-sm">
                   <thead className="bg-secondary/60 text-muted-foreground">
                     <tr>
@@ -893,22 +892,40 @@ export default function ValidationCaseRecordPage() {
                 Lock Funds dilakukan oleh pemilik Validation Case setelah menerima Final Offer.
               </div>
             ) : escrowDraft ? (
-              <div className="space-y-3">
-                <div className="rounded-[var(--radius)] bg-secondary/30 p-4 text-sm">
-                  <div className="font-semibold text-foreground">Escrow Draft</div>
-                  <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
-                    <div className="text-muted-foreground">
-                      Receiver: <span className="font-semibold text-foreground">@{escrowDraft.receiver_username}</span>
-                    </div>
-                    <div className="text-muted-foreground">
-                      Amount: <span className="font-semibold text-foreground">{formatIDR(escrowDraft.amount)}</span>
-                    </div>
-                    <div className="text-muted-foreground">
-                      Hold: <span className="font-semibold text-foreground">{Math.round((Number(escrowDraft.hold_hours) || 0) / 24)} days</span>
-                    </div>
-                    <div className="text-muted-foreground">
-                      Message: <span className="font-mono text-xs text-foreground">{escrowDraft.message}</span>
-                    </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="text-sm font-semibold text-foreground">Escrow Draft</div>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <tbody className="divide-y divide-border">
+                        <tr>
+                          <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            Receiver
+                          </th>
+                          <td className="px-4 py-3 font-semibold text-foreground">@{escrowDraft.receiver_username}</td>
+                        </tr>
+                        <tr>
+                          <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            Amount
+                          </th>
+                          <td className="px-4 py-3 font-semibold text-foreground">{formatIDR(escrowDraft.amount)}</td>
+                        </tr>
+                        <tr>
+                          <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            Hold
+                          </th>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {Math.round((Number(escrowDraft.hold_hours) || 0) / 24)} days
+                          </td>
+                        </tr>
+                        <tr>
+                          <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            Message
+                          </th>
+                          <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{escrowDraft.message}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
@@ -1020,8 +1037,8 @@ export default function ValidationCaseRecordPage() {
             ) : !artifactId ? (
               <div className="text-sm text-muted-foreground">Decision/Dispute aktif setelah Artifact Submission.</div>
             ) : (
-              <div className="space-y-4">
-                <div className="rounded-[var(--radius)] bg-secondary/30 p-4">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                <div>
                   <div className="text-sm font-semibold text-foreground">Approve</div>
                   <div className="mt-1 text-sm text-muted-foreground">
                     Jika work product memenuhi Final Offer, lakukan release escrow. Aksi ini memiliki konsekuensi finansial dan dicatat.
@@ -1052,7 +1069,7 @@ export default function ValidationCaseRecordPage() {
                   {releaseMsg ? <div className="mt-3 text-xs text-muted-foreground">{releaseMsg}</div> : null}
                 </div>
 
-                <div className="rounded-[var(--radius)] bg-card p-4">
+                <div>
                   <div className="text-sm font-semibold text-foreground">Dispute</div>
                   <div className="mt-1 text-sm text-muted-foreground">
                     Jika Anda menolak Artifact Submission, ajukan Dispute. Admin akan meninjau Final Offer dan Artifact Submission.
@@ -1107,9 +1124,13 @@ export default function ValidationCaseRecordPage() {
             ) : caseLogLoading ? (
               <div className="text-sm text-muted-foreground">Memuat Case Log...</div>
             ) : Array.isArray(caseLog) && caseLog.length > 0 ? (
-              <ol className="space-y-3">
+              <ol className="relative space-y-5 border-l border-border pl-6">
                 {caseLog.map((ev) => (
-                  <li key={String(ev.id)} className="rounded-[var(--radius)] bg-secondary/30 p-3">
+                  <li key={String(ev.id)} className="relative">
+                    <span
+                      className="absolute -left-[9px] top-2 h-3 w-3 rounded-full bg-border"
+                      aria-hidden="true"
+                    />
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         {String(ev.event_type || "").replace(/_/g, " ")}
@@ -1127,7 +1148,7 @@ export default function ValidationCaseRecordPage() {
                       )}
                     </div>
                     {ev?.detail ? (
-                      <pre className="mt-2 overflow-x-auto rounded-[var(--radius)] bg-card p-3 text-xs text-muted-foreground">
+                      <pre className="mt-2 overflow-x-auto rounded-[var(--radius)] bg-secondary/20 p-3 text-xs text-muted-foreground">
                         {safeJson(ev.detail)}
                       </pre>
                     ) : null}
@@ -1140,6 +1161,86 @@ export default function ValidationCaseRecordPage() {
               </div>
             )}
           </CaseSection>
+          </div>
+
+          <aside className="lg:col-span-4 lg:sticky lg:top-24 h-fit space-y-4">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Case File
+              </div>
+
+              <div className="mt-3 overflow-hidden rounded-[var(--radius)] bg-secondary/20">
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-border">
+                    <tr>
+                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        Case
+                      </th>
+                      <td className="px-4 py-3 font-mono text-xs text-foreground">#{String(id)}</td>
+                    </tr>
+                    <tr>
+                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        Status
+                      </th>
+                      <td className="px-4 py-3 font-semibold text-foreground">{status || "unknown"}</td>
+                    </tr>
+                    <tr>
+                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        Workflow
+                      </th>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {certifiedId
+                          ? "Certified Artifact Issued"
+                          : disputeId
+                            ? "Dispute Attached"
+                            : artifactId
+                              ? "Artifact Submitted"
+                              : transferId
+                                ? "Funds Locked (Escrow)"
+                                : vc?.accepted_final_offer_id ?? vc?.acceptedFinalOfferId
+                                  ? "Final Offer Accepted"
+                                  : "Open"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        Bounty
+                      </th>
+                      <td className="px-4 py-3 font-semibold text-foreground">{formatIDR(vc?.bounty_amount)}</td>
+                    </tr>
+                    <tr>
+                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        Filed
+                      </th>
+                      <td className="px-4 py-3 text-muted-foreground">{formatDateTime(vc?.created_at)}</td>
+                    </tr>
+                    <tr>
+                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        Owner
+                      </th>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Avatar src={owner?.avatar_url} name={owner?.username || ""} size="xs" />
+                          <Link
+                            href={owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "#"}
+                            prefetch={false}
+                            className="text-sm font-semibold text-foreground hover:underline"
+                          >
+                            @{owner?.username || "-"}
+                          </Link>
+                          {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="text-xs text-muted-foreground">
+              Dossier-only: tidak ada komentar, reaksi, atau voting. Setiap aksi yang tersedia memiliki konsekuensi audit/finansial.
+            </div>
+          </aside>
         </article>
       ) : null}
     </main>

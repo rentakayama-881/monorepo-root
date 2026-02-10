@@ -16,7 +16,6 @@ let refreshPromise = null;
 export async function refreshAccessToken() {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
-    clearToken();
     return null;
   }
 
@@ -98,7 +97,12 @@ export async function getValidToken() {
 
   // Check if token is about to expire
   if (isTokenExpired()) {
-    return await refreshAccessToken();
+    const refreshed = await refreshAccessToken();
+    if (refreshed) return refreshed;
+
+    // Refresh can fail due to missing refresh token or transient network issues.
+    // If the access token is still present, try it and let the API decide.
+    return getToken();
   }
 
   return token;

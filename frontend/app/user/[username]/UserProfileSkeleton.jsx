@@ -2,55 +2,42 @@ import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton
 
 export default function UserProfileSkeleton() {
   return (
-    <main className="container py-10" aria-busy="true" aria-live="polite">
-      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+    <section className="max-w-4xl mx-auto px-4 py-6" aria-busy="true" aria-live="polite">
+      {/* Profile Header Skeleton */}
+      <div className="flex flex-col gap-4 mb-8">
         <div className="flex items-start gap-4">
-          <SkeletonCircle size="h-16 w-16" />
-          <div className="space-y-2">
-            <SkeletonText width="w-56" height="h-7" />
-            <SkeletonText width="w-40" height="h-4" />
-            <div className="flex flex-wrap gap-2 pt-2">
-              <Skeleton className="h-6 w-24 rounded-full" />
+          <SkeletonCircle size="h-20 w-20" />
+          <div className="min-w-0 flex-1 pt-1 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <SkeletonText width="w-48" height="h-7" />
               <Skeleton className="h-6 w-20 rounded-full" />
-              <Skeleton className="h-6 w-28 rounded-full" />
             </div>
+            <SkeletonText width="w-40" height="h-4" />
+            <SkeletonText width="w-32" height="h-4" />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:w-80">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-12 w-full rounded-md" />
+
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-8 w-20 rounded-full" />
+          <Skeleton className="h-8 w-24 rounded-full" />
+          <Skeleton className="h-8 w-16 rounded-full" />
         </div>
       </div>
 
-      <div className="mt-8">
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-36" />
-          <Skeleton className="h-9 w-24" />
-        </div>
-
-        <div className="mt-4 overflow-x-auto rounded-[var(--radius)] border border-border bg-card">
-          <div className="min-w-[860px]">
-            <div className="grid grid-cols-6 gap-4 border-b border-border bg-secondary/60 px-4 py-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-4 w-32" />
-              ))}
-            </div>
-            <div className="divide-y divide-border">
-              {Array.from({ length: 6 }).map((_, row) => (
-                <div key={row} className="grid grid-cols-6 gap-4 px-4 py-4">
-                  {Array.from({ length: 6 }).map((__, col) => (
-                    <Skeleton key={col} className="h-4 w-full" />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* Tabs Skeleton */}
+      <div className="flex gap-2 border-b border-border mb-6 pb-2">
+        <Skeleton className="h-8 w-24 rounded-md" />
+        <Skeleton className="h-8 w-24 rounded-md" />
+        <Skeleton className="h-8 w-24 rounded-md" />
       </div>
-    </main>
+
+      {/* Content Skeleton */}
+      <div className="space-y-4">
+        <Skeleton className="h-20 w-full rounded-lg border border-border" />
+        <Skeleton className="h-20 w-full rounded-lg border border-border" />
+      </div>
+    </section>
   );
 }
-
