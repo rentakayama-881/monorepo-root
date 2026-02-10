@@ -32,6 +32,17 @@ function formatIDR(amount) {
   return `Rp ${Math.max(0, Math.trunc(n)).toLocaleString("id-ID")}`;
 }
 
+function formatHoldWindow(hours) {
+  const h = Number(hours || 0);
+  if (!Number.isFinite(h) || h <= 0) return "-";
+  if (h === 32) return "1 hari 8 jam";
+  if (h % 24 === 0) return `${h / 24} hari`;
+  const d = Math.floor(h / 24);
+  const rem = h % 24;
+  if (d > 0) return `${d} hari ${rem} jam`;
+  return `${h} jam`;
+}
+
 function normalizeStatus(s) {
   return String(s || "").toLowerCase().trim();
 }
@@ -94,7 +105,7 @@ export default function ValidationCaseRecordPage() {
   const [finalOffers, setFinalOffers] = useState([]);
   const [offersLoading, setOffersLoading] = useState(false);
   const [offersMsg, setOffersMsg] = useState("");
-  const [offerForm, setOfferForm] = useState({ amount: "", hold_days: 7, terms: "" });
+  const [offerForm, setOfferForm] = useState({ hold_hours: 168, terms: "" });
 
   const [escrowDraft, setEscrowDraft] = useState(null);
   const [lockFundsPin, setLockFundsPin] = useState("");
@@ -320,12 +331,16 @@ export default function ValidationCaseRecordPage() {
       return;
     }
     setOffersMsg("");
-    const amountNum = Number(String(offerForm.amount).replace(/[^\d]/g, ""));
-    const holdDaysNum = Number(offerForm.hold_days || 7);
-    const holdHours = Math.max(1, Math.min(30 * 24, Math.trunc(holdDaysNum * 24)));
+    const amountNum = Number(vc?.bounty_amount || 0);
+    const holdHours = Number(offerForm.hold_hours || 168);
+    const allowedHoldHours = new Set([32, 168, 720]);
 
     if (!amountNum || amountNum < 10000) {
-      setOffersMsg("Amount minimal Rp 10.000.");
+      setOffersMsg("Bounty belum valid (minimal Rp 10.000).");
+      return;
+    }
+    if (!allowedHoldHours.has(holdHours)) {
+      setOffersMsg("Hold window tidak valid. Pilih: 1 hari 8 jam, 7 hari, atau 30 hari.");
       return;
     }
 
@@ -334,7 +349,6 @@ export default function ValidationCaseRecordPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: amountNum,
           hold_hours: holdHours,
           terms: offerForm.terms || "",
         }),
@@ -756,7 +770,8 @@ export default function ValidationCaseRecordPage() {
                 <div className="text-sm text-muted-foreground">
                   <div className="font-semibold text-foreground">Submission Notes</div>
                   <ul className="mt-2 list-disc pl-5">
-                    <li>Final Offer harus memuat amount, hold window, dan terms yang dapat diaudit.</li>
+                    <li>Amount Final Offer mengikuti bounty_amount pada Validation Case (fixed).</li>
+                    <li>Validator memilih hold window (auto-release) dan terms yang dapat diaudit.</li>
                     <li>Pemilik kasus akan melakukan Lock Funds setelah menerima Final Offer.</li>
                     <li>Hindari menyertakan info kontak di Terms.</li>
                   </ul>
@@ -764,35 +779,56 @@ export default function ValidationCaseRecordPage() {
 
                 <div className="md:border-l md:border-border md:pl-6">
                   <div className="text-sm font-semibold text-foreground">Submit Final Offer</div>
-                  <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground">Amount (IDR)</label>
-                      <input
-                        value={offerForm.amount}
-                        onChange={(e) => setOfferForm((f) => ({ ...f, amount: e.target.value }))}
-                        placeholder="e.g. 250000"
-                        className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                        inputMode="numeric"
-                      />
+                  <div className="mt-3 space-y-3">
+                    <div className="rounded-[var(--radius)] border border-border bg-secondary/30 px-3 py-2">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Amount (locked funds)
+                      </div>
+                      <div className="mt-1 text-sm font-semibold text-foreground">{formatIDR(vc?.bounty_amount)}</div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">Sesuai bounty_amount (tidak dapat diubah di Final Offer).</div>
                     </div>
+
                     <div>
-                      <label className="text-xs font-semibold text-muted-foreground">Hold (days)</label>
-                      <input
-                        value={offerForm.hold_days}
-                        onChange={(e) => setOfferForm((f) => ({ ...f, hold_days: e.target.value }))}
-                        className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                        inputMode="numeric"
-                      />
-                      <div className="mt-1 text-[11px] text-muted-foreground">Max 30 days.</div>
-                    </div>
-                    <div className="flex items-end">
-                      <button
-                        onClick={submitFinalOffer}
-                        className="w-full rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-                        type="button"
-                      >
-                        Submit
-                      </button>
+                      <label className="text-xs font-semibold text-muted-foreground">Hold window</label>
+                      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                        <button
+                          type="button"
+                          onClick={() => setOfferForm((f) => ({ ...f, hold_hours: 32 }))}
+                          className={`rounded-[var(--radius)] border px-3 py-2 text-left transition ${
+                            Number(offerForm.hold_hours) === 32
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-card text-foreground hover:border-primary"
+                          }`}
+                        >
+                          <div className="text-sm font-semibold">1 hari 8 jam</div>
+                          <div className="text-[11px] opacity-70">Tugas ringan</div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOfferForm((f) => ({ ...f, hold_hours: 168 }))}
+                          className={`rounded-[var(--radius)] border px-3 py-2 text-left transition ${
+                            Number(offerForm.hold_hours) === 168
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-card text-foreground hover:border-primary"
+                          }`}
+                        >
+                          <div className="text-sm font-semibold">7 hari</div>
+                          <div className="text-[11px] opacity-70">Standar</div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOfferForm((f) => ({ ...f, hold_hours: 720 }))}
+                          className={`rounded-[var(--radius)] border px-3 py-2 text-left transition ${
+                            Number(offerForm.hold_hours) === 720
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-card text-foreground hover:border-primary"
+                          }`}
+                        >
+                          <div className="text-sm font-semibold">30 hari</div>
+                          <div className="text-[11px] opacity-70">Kasus kompleks</div>
+                        </button>
+                      </div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">Dana auto-release ketika hold berakhir jika tidak ada Dispute.</div>
                     </div>
                   </div>
                   <div className="mt-3">
@@ -804,6 +840,15 @@ export default function ValidationCaseRecordPage() {
                       placeholder="Scope, acceptance criteria, assumptions, excluded items."
                       className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
                     />
+                  </div>
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      onClick={submitFinalOffer}
+                      className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                      type="button"
+                    >
+                      Submit
+                    </button>
                   </div>
                   {offersMsg ? <div className="mt-3 text-xs text-muted-foreground">{offersMsg}</div> : null}
                 </div>
@@ -849,7 +894,7 @@ export default function ValidationCaseRecordPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 font-semibold text-foreground">{formatIDR(o.amount)}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{Math.round((Number(o.hold_hours) || 0) / 24)} days</td>
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{formatHoldWindow(o.hold_hours)}</td>
                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{String(o.status || "")}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
                           {o?.terms ? <div className="line-clamp-3 whitespace-pre-wrap">{o.terms}</div> : "-"}

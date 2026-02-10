@@ -142,7 +142,6 @@ func (h *ValidationCaseWorkflowHandler) SubmitFinalOffer(c *gin.Context) {
 	}
 
 	var req struct {
-		Amount    int64  `json:"amount" binding:"required"`
 		HoldHours int    `json:"hold_hours"`
 		Terms     string `json:"terms"`
 	}
@@ -151,7 +150,7 @@ func (h *ValidationCaseWorkflowHandler) SubmitFinalOffer(c *gin.Context) {
 		return
 	}
 
-	id, err := h.workflow.SubmitFinalOffer(c.Request.Context(), validationCaseID, uint(user.ID), req.Amount, req.HoldHours, req.Terms)
+	id, err := h.workflow.SubmitFinalOffer(c.Request.Context(), validationCaseID, uint(user.ID), req.HoldHours, req.Terms)
 	if err != nil {
 		h.handleError(c, err)
 		return

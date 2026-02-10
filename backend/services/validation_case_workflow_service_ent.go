@@ -332,7 +332,7 @@ func (s *EntValidationCaseWorkflowService) RevealOwnerTelegramContact(ctx contex
 	return telegram, nil
 }
 
-func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context, validationCaseID uint, validatorUserID uint, amount int64, holdHours int, terms string) (uint, error) {
+func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context, validationCaseID uint, validatorUserID uint, holdHours int, terms string) (uint, error) {
 	vc, err := s.client.ValidationCase.Get(ctx, int(validationCaseID))
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -361,23 +361,25 @@ func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context,
 		return 0, apperrors.ErrFinalOfferRequiresApproval
 	}
 
+	// Final Offer amount is locked to the posted bounty. Validators do not negotiate amount in-platform.
+	amount := vc.BountyAmount
 	if amount <= 0 {
-		return 0, apperrors.ErrInvalidInput.WithDetails("amount harus lebih dari 0")
+		return 0, apperrors.ErrInvalidInput.WithDetails("bounty_amount belum diatur")
 	}
 	if amount < 10_000 {
-		return 0, apperrors.ErrInvalidInput.WithDetails("amount minimal Rp 10.000")
-	}
-	if vc.BountyAmount > 0 && amount > vc.BountyAmount {
-		return 0, apperrors.ErrInvalidInput.WithDetails("amount tidak boleh melebihi bounty_amount")
+		return 0, apperrors.ErrInvalidInput.WithDetails("bounty_amount minimal Rp 10.000")
 	}
 
-	// Align with Feature Service escrow limits: default 7 days, max 30 days.
-	const maxHoldHours = 30 * 24
+	// Escrow hold windows are discrete options (mirrors wallet transfer UI):
+	// 1 day 8 hours (light), 7 days (standard), 30 days (long).
 	if holdHours <= 0 {
 		holdHours = 7 * 24
 	}
-	if holdHours > maxHoldHours {
-		holdHours = maxHoldHours
+	switch holdHours {
+	case 32, 7 * 24, 30 * 24:
+		// ok
+	default:
+		return 0, apperrors.ErrInvalidInput.WithDetails("hold_hours harus 32, 168, atau 720")
 	}
 
 	offer, err := s.client.FinalOffer.Create().
