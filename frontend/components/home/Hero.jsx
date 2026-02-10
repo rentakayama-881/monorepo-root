@@ -43,18 +43,6 @@ export default function Hero() {
             >
               Open Case Index
             </Button>
-            <Button
-              href="/validation-cases/new"
-              size="lg"
-              variant="outline"
-              iconRight={
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-              }
-            >
-              Create Validation Case
-            </Button>
           </div>
 
           {/* Highlight cards */}

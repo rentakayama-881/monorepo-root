@@ -1,4 +1,3 @@
-import Button from "../ui/Button";
 import { Card } from "../ui/Card";
 
 const STEPS = [
@@ -69,9 +68,9 @@ export default function HowItWorks() {
             Buat Validation Case dengan bounty dan acceptance criteria. Klasifikasi menggunakan Tags (audit meaningful).
           </p>
         </div>
-        <Button href="/validation-cases/new" variant="gradient">
-          Mulai Sekarang
-        </Button>
+        <div className="text-sm font-semibold text-muted-foreground">
+          Gunakan tombol <span className="font-mono text-foreground">+</span> di header untuk membuat kasus.
+        </div>
       </div>
     </section>
   );

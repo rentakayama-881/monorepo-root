@@ -180,9 +180,6 @@ export default function Header() {
           <Link href="/validation-cases" className={navItem}>
             Case Index
           </Link>
-          <Link href="/validation-cases/new" className={navItem}>
-            File Case
-          </Link>
         </nav>
 
         <div className="flex-1" />
@@ -192,6 +189,27 @@ export default function Header() {
 
         {/* Right actions */}
         <div className="flex items-center gap-1">
+          {/* Create (single entry) */}
+          <Link
+            href="/validation-cases/new"
+            className={iconButton}
+            aria-label="Create Validation Case"
+            title="Create Validation Case"
+          >
+            <svg
+              className="h-4 w-4 text-foreground"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </Link>
+
           {/* Theme toggle */}
           <ThemeToggle />
 

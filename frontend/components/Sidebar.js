@@ -101,7 +101,7 @@ export default function Sidebar({ open, onClose }) {
     <>
       <aside
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 z-[120] flex flex h-dvh w-80 flex-col border-r bg-card shadow-xl transition-all duration-300 md:hidden ${
+        className={`fixed inset-y-0 left-0 z-[120] flex flex h-dvh w-80 flex-col bg-card shadow-xl transition-all duration-300 md:hidden ${
           open && !isClosing 
             ? "translate-x-0 opacity-100" 
             : "-translate-x-full opacity-0"
@@ -115,7 +115,7 @@ export default function Sidebar({ open, onClose }) {
         aria-hidden={!open}
       >
         {/* Sticky header */}
-        <div className="sticky top-0 z-10 space-y-3 border-b bg-card px-6 pb-4 pt-5">
+        <div className="sticky top-0 z-10 bg-card px-6 pb-4 pt-5">
           <div className="flex items-center justify-between">
             <Logo
               variant="icon"
@@ -134,49 +134,31 @@ export default function Sidebar({ open, onClose }) {
               </svg>
             </button>
           </div>
+        </div>
 
-          {/* Quick nav */}
-          <nav className="flex gap-2 text-sm font-medium text-foreground">
+        {/* Scrollable content */}
+        <div
+          className="flex-1 overflow-y-auto px-3 pb-6 pt-2 scrollbar-thin"
+          style={{ overscrollBehavior: "contain" }}
+        >
+          <nav className="px-3 py-2 text-sm">
+            <div className={`${sectionHeading} mb-2 px-2`}>Navigation</div>
+
             <Link
               href="/"
-              className="flex-1 rounded-[var(--radius)] border px-3 py-2 text-center hover:border-muted-foreground hover:bg-accent transition-all"
+              className="block rounded-[var(--radius)] px-2.5 py-2 font-semibold text-foreground hover:bg-accent transition-colors"
               onClick={handleClose}
             >
               Home
             </Link>
             <Link
               href="/validation-cases"
-              className="flex-1 rounded-[var(--radius)] border px-3 py-2 text-center hover:border-muted-foreground hover:bg-accent transition-all"
+              className="block rounded-[var(--radius)] px-2.5 py-2 font-semibold text-foreground hover:bg-accent transition-colors"
               onClick={handleClose}
             >
               Case Index
             </Link>
           </nav>
-        </div>
-
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5 scrollbar-thin" style={{ overscrollBehavior: "contain" }}>
-          <section className="rounded-[var(--radius)] border bg-card p-4">
-            <div className={`${sectionHeading} mb-3`}>Registry</div>
-            <p className="text-sm text-muted-foreground">
-              Semua Validation Case berada di <span className="font-semibold text-foreground">Case Index</span>.
-              Klasifikasi menggunakan <span className="font-semibold text-foreground">Tags</span> dan{" "}
-              <span className="font-semibold text-foreground">Status</span> (audit meaningful).
-            </p>
-
-            <div className="mt-4 flex flex-col gap-2 text-sm">
-              <Link
-                href="/validation-cases/new"
-                className="inline-flex items-center justify-between rounded-[var(--radius)] border bg-card px-3 py-2 font-semibold text-foreground hover:bg-secondary/60"
-                onClick={handleClose}
-              >
-                File Validation Case
-                <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
-          </section>
         </div>
       </aside>
 

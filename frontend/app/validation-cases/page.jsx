@@ -1,6 +1,5 @@
-import Link from "next/link";
-import ValidationCaseTable from "@/components/ui/ValidationCaseTable";
 import { fetchJson } from "@/lib/api";
+import ValidationCaseIndexClient from "./ValidationCaseIndexClient";
 
 export const metadata = {
   title: "Validation Case Index",
@@ -38,19 +37,10 @@ export default async function ValidationCaseIndexPage() {
               Dossier-style listing. Tidak ada komentar, reaksi, atau voting. Setiap perubahan tercatat sebagai audit trail.
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/validation-cases/new"
-              className="inline-flex items-center rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-            >
-              Create Validation Case
-            </Link>
-          </div>
         </div>
       </header>
 
-      <ValidationCaseTable cases={cases} showCategory={false} />
+      <ValidationCaseIndexClient cases={cases} />
     </main>
   );
 }

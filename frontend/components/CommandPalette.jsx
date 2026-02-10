@@ -71,14 +71,6 @@ export default function CommandPalette({ isOpen, onClose }) {
     
     // Actions
     {
-      id: "action-new-case",
-      group: "Actions",
-      title: "Create Validation Case",
-      icon: "NEW",
-      action: () => router.push("/validation-cases/new"),
-      keywords: ["new", "create", "validation", "case", "buat", "baru"],
-    },
-    {
       id: "action-search",
       group: "Actions",
       title: "Search",

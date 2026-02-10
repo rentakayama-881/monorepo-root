@@ -8,6 +8,7 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import { TagList } from "@/components/ui/TagPill";
+import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton";
 import { fetchJson, fetchJsonAuth, getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
@@ -51,16 +52,14 @@ function contentAsText(content) {
 
 function CaseSection({ title, subtitle, children }) {
   return (
-    <section className="rounded-[var(--radius)] border border-border bg-card">
-      <header className="border-b border-border px-5 py-4">
-        <div className="flex flex-col gap-1">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            {subtitle || "Section"}
-          </div>
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+    <section className="border-t border-border pt-8">
+      <header className="flex flex-col gap-1">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {subtitle || "Section"}
         </div>
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
       </header>
-      <div className="px-5 py-4">{children}</div>
+      <div className="mt-4">{children}</div>
     </section>
   );
 }
@@ -543,8 +542,45 @@ export default function ValidationCaseRecordPage() {
   if (loading) {
     return (
       <main className="container py-10">
-        <div className="rounded-[var(--radius)] border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">
-          Memuat Validation Case Record...
+        <div className="space-y-7">
+          <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <SkeletonText width="w-12" height="h-4" />
+            <SkeletonText width="w-24" height="h-4" />
+            <SkeletonText width="w-20" height="h-4" />
+          </div>
+
+          <header className="space-y-3">
+            <SkeletonText width="w-44" height="h-3" />
+            <SkeletonText width="w-full max-w-2xl" height="h-10" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 pt-2">
+              <div className="space-y-2">
+                <SkeletonText width="w-16" height="h-3" />
+                <SkeletonText width="w-28" height="h-5" />
+              </div>
+              <div className="space-y-2">
+                <SkeletonText width="w-16" height="h-3" />
+                <SkeletonText width="w-28" height="h-5" />
+              </div>
+              <div className="space-y-2">
+                <SkeletonText width="w-16" height="h-3" />
+                <SkeletonText width="w-36" height="h-5" />
+              </div>
+              <div className="space-y-2">
+                <SkeletonText width="w-16" height="h-3" />
+                <div className="flex items-center gap-2">
+                  <SkeletonCircle size="h-7 w-7" />
+                  <SkeletonText width="w-32" height="h-5" />
+                </div>
+              </div>
+            </div>
+            <Skeleton className="h-16 w-full" />
+          </header>
+
+          <section className="border-t border-border pt-8 space-y-3">
+            <SkeletonText width="w-28" height="h-3" />
+            <SkeletonText width="w-44" height="h-7" />
+            <Skeleton className="h-72 w-full" />
+          </section>
         </div>
       </main>
     );
@@ -583,28 +619,38 @@ export default function ValidationCaseRecordPage() {
       ) : null}
 
       {vc ? (
-        <article className="space-y-5">
-          <header className="rounded-[var(--radius)] border border-border bg-card px-5 py-5">
+        <article className="space-y-8">
+          <header className="pb-2">
             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Validation Case Record
             </div>
             <h1 className="mt-2 text-2xl font-semibold text-foreground">{vc?.title || "(untitled)"}</h1>
-
-            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 text-xs font-semibold text-foreground">
-                Status: {status || "unknown"}
-              </span>
-              <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 text-xs font-semibold text-foreground">
-                Bounty: {formatIDR(vc?.bounty_amount)}
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-3 py-1 text-xs font-semibold text-foreground">
-                <Avatar src={owner?.avatar_url} name={owner?.username || ""} size="xs" />
-                <Link href={owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "#"} className="hover:underline">
-                  @{owner?.username || "-"}
-                </Link>
-                {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
-              </span>
-              <span className="font-mono text-xs">{formatDateTime(vc?.created_at)}</span>
+            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Status</div>
+                <div className="mt-1 text-sm font-semibold text-foreground">{status || "unknown"}</div>
+              </div>
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Bounty</div>
+                <div className="mt-1 text-sm font-semibold text-foreground">{formatIDR(vc?.bounty_amount)}</div>
+              </div>
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Filed</div>
+                <div className="mt-1 text-sm font-semibold text-foreground">{formatDateTime(vc?.created_at)}</div>
+              </div>
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Owner</div>
+                <div className="mt-1 flex items-center gap-2">
+                  <Avatar src={owner?.avatar_url} name={owner?.username || ""} size="xs" />
+                  <Link
+                    href={owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "#"}
+                    className="text-sm font-semibold text-foreground hover:underline"
+                  >
+                    @{owner?.username || "-"}
+                  </Link>
+                  {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
+                </div>
+              </div>
             </div>
 
             {Array.isArray(vc?.tags) && vc.tags.length > 0 ? (
@@ -614,9 +660,7 @@ export default function ValidationCaseRecordPage() {
             ) : null}
 
             {vc?.summary ? (
-              <div className="mt-4 rounded-[var(--radius)] border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground">
-                {vc.summary}
-              </div>
+              <p className="mt-4 text-sm text-muted-foreground">{vc.summary}</p>
             ) : null}
           </header>
 
@@ -640,7 +684,7 @@ export default function ValidationCaseRecordPage() {
                   <li>Negosiasi harus ditutup dengan Final Offer di platform sebelum Lock Funds.</li>
                 </ul>
               </div>
-              <div className="rounded-[var(--radius)] border border-border bg-secondary/40 p-4">
+              <div className="rounded-[var(--radius)] bg-secondary/30 p-4">
                 {!isAuthed ? (
                   <div className="text-sm text-muted-foreground">
                     Login diperlukan untuk Request Consultation.
@@ -695,7 +739,7 @@ export default function ValidationCaseRecordPage() {
               ) : consultationRequests.length === 0 ? (
                 <div className="text-sm text-muted-foreground">Belum ada Request Consultation.</div>
               ) : (
-                <div className="overflow-x-auto rounded-[var(--radius)] border border-border bg-card">
+                <div className="overflow-x-auto rounded-[var(--radius)] bg-card">
                   <table className="min-w-[760px] w-full text-sm">
                     <thead className="bg-secondary/60 text-muted-foreground">
                       <tr>
@@ -763,7 +807,7 @@ export default function ValidationCaseRecordPage() {
 
           <CaseSection title="Final Offer" subtitle="Contract">
             {isAuthed && !isOwner ? (
-              <div className="mb-4 rounded-[var(--radius)] border border-border bg-secondary/40 p-4">
+              <div className="mb-4 rounded-[var(--radius)] bg-secondary/30 p-4">
                 <div className="text-sm font-semibold text-foreground">Submit Final Offer</div>
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
                   <div>
@@ -815,7 +859,7 @@ export default function ValidationCaseRecordPage() {
             ) : finalOffers.length === 0 ? (
               <div className="text-sm text-muted-foreground">Belum ada Final Offer.</div>
             ) : (
-              <div className="overflow-x-auto rounded-[var(--radius)] border border-border bg-card">
+              <div className="overflow-x-auto rounded-[var(--radius)] bg-card">
                 <table className="min-w-[860px] w-full text-sm">
                   <thead className="bg-secondary/60 text-muted-foreground">
                     <tr>
@@ -893,7 +937,7 @@ export default function ValidationCaseRecordPage() {
               </div>
             ) : escrowDraft ? (
               <div className="space-y-3">
-                <div className="rounded-[var(--radius)] border border-border bg-secondary/40 p-4 text-sm">
+                <div className="rounded-[var(--radius)] bg-secondary/30 p-4 text-sm">
                   <div className="font-semibold text-foreground">Escrow Draft</div>
                   <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
                     <div className="text-muted-foreground">
@@ -1020,7 +1064,7 @@ export default function ValidationCaseRecordPage() {
               <div className="text-sm text-muted-foreground">Decision/Dispute aktif setelah Artifact Submission.</div>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-[var(--radius)] border border-border bg-secondary/40 p-4">
+                <div className="rounded-[var(--radius)] bg-secondary/30 p-4">
                   <div className="text-sm font-semibold text-foreground">Approve</div>
                   <div className="mt-1 text-sm text-muted-foreground">
                     Jika work product memenuhi Final Offer, lakukan release escrow. Aksi ini memiliki konsekuensi finansial dan dicatat.
@@ -1051,7 +1095,7 @@ export default function ValidationCaseRecordPage() {
                   {releaseMsg ? <div className="mt-3 text-xs text-muted-foreground">{releaseMsg}</div> : null}
                 </div>
 
-                <div className="rounded-[var(--radius)] border border-border bg-card p-4">
+                <div className="rounded-[var(--radius)] bg-card p-4">
                   <div className="text-sm font-semibold text-foreground">Dispute</div>
                   <div className="mt-1 text-sm text-muted-foreground">
                     Jika Anda menolak Artifact Submission, ajukan Dispute. Admin akan meninjau Final Offer dan Artifact Submission.
@@ -1108,7 +1152,7 @@ export default function ValidationCaseRecordPage() {
             ) : Array.isArray(caseLog) && caseLog.length > 0 ? (
               <ol className="space-y-3">
                 {caseLog.map((ev) => (
-                  <li key={String(ev.id)} className="rounded-[var(--radius)] border border-border bg-secondary/40 p-3">
+                  <li key={String(ev.id)} className="rounded-[var(--radius)] bg-secondary/30 p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         {String(ev.event_type || "").replace(/_/g, " ")}
@@ -1126,7 +1170,7 @@ export default function ValidationCaseRecordPage() {
                       )}
                     </div>
                     {ev?.detail ? (
-                      <pre className="mt-2 overflow-x-auto rounded-[var(--radius)] border border-border bg-card p-3 text-xs text-muted-foreground">
+                      <pre className="mt-2 overflow-x-auto rounded-[var(--radius)] bg-card p-3 text-xs text-muted-foreground">
                         {safeJson(ev.detail)}
                       </pre>
                     ) : null}
@@ -1157,7 +1201,7 @@ function ContentTable({ content }) {
   if (!content) return <div className="text-sm text-muted-foreground">Tidak ada konten.</div>;
 
   if (typeof content === "string") {
-    return <pre className="rounded-[var(--radius)] border border-border bg-secondary/40 p-4 text-xs text-muted-foreground">{content}</pre>;
+    return <pre className="rounded-[var(--radius)] bg-secondary/30 p-4 text-xs text-muted-foreground">{content}</pre>;
   }
 
   let rows = [];
@@ -1212,7 +1256,7 @@ function renderValue(v) {
     );
   try {
     return (
-      <pre className="whitespace-pre-wrap break-words rounded-[var(--radius)] border border-border bg-secondary/40 p-3 text-xs">
+      <pre className="whitespace-pre-wrap break-words rounded-[var(--radius)] bg-secondary/30 p-3 text-xs">
         {JSON.stringify(v, null, 2)}
       </pre>
     );

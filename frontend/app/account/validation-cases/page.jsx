@@ -81,15 +81,6 @@ export default function MyValidationCasesPage() {
             Daftar resmi kasus milik Anda. Setiap aktivitas protokol tercatat pada Case Log.
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Link
-            href="/validation-cases/new"
-            className="inline-flex items-center rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-          >
-            Create Validation Case
-          </Link>
-        </div>
       </header>
 
       {error ? (
