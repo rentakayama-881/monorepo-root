@@ -87,13 +87,13 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
               return (
                 <tr key={String(id)} className="hover:bg-secondary/40">
                   <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground">
-                    <Link href={href} className="hover:underline">
+                    <Link href={href} prefetch={false} className="hover:underline">
                       #{String(id)}
                     </Link>
                   </td>
                   <td className="px-4 py-3 align-top">
                     <div className="min-w-0">
-                      <Link href={href} className="block font-semibold text-foreground hover:underline">
+                      <Link href={href} prefetch={false} className="block font-semibold text-foreground hover:underline">
                         {vc?.title || "(untitled)"}
                       </Link>
                       {vc?.summary ? (
@@ -122,7 +122,11 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
                       <Avatar src={owner?.avatar_url || owner?.avatarUrl} name={owner?.username || ""} size="xs" />
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <Link href={owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "#"} className="truncate font-semibold text-foreground hover:underline">
+                          <Link
+                            href={owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "#"}
+                            prefetch={false}
+                            className="truncate font-semibold text-foreground hover:underline"
+                          >
                             {ownerName}
                           </Link>
                           {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
@@ -145,4 +149,3 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
     </div>
   );
 }
-

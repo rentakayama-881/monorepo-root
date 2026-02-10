@@ -4,6 +4,7 @@ import HowItWorks from "../components/home/HowItWorks";
 import FocusAreas from "../components/home/FocusAreas";
 import LatestValidationCases from "../components/home/LatestValidationCases";
 import Skeleton from "../components/ui/Skeleton";
+import Footer from "../components/Footer";
 
 export const metadata = {
   title: "Beranda",
@@ -34,6 +35,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }

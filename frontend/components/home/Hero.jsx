@@ -33,6 +33,7 @@ export default function Hero() {
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center animate-slide-up" style={{ animationDelay: "0.2s" }}>
             <Button
               href="/validation-cases"
+              prefetch={false}
               size="lg"
               variant="gradient"
               iconRight={

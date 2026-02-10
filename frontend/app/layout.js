@@ -1,7 +1,6 @@
 import "./globals.css";
 import Script from "next/script";
 import Header from "../components/Header";
-import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 import { ToastProvider } from "../components/ui/Toast";
 import { SudoProvider } from "../components/SudoModal";
@@ -144,7 +143,6 @@ export default function RootLayout({ children }) {
                     {children}
                   </div>
                   
-                  <Footer />
                   <SpeedInsights />                  
                   {/* Global keyboard shortcuts handler */}
                   <GlobalKeyboardShortcuts />

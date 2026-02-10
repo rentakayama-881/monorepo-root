@@ -177,7 +177,7 @@ export default function Header() {
           <Link href="/" className={navItem}>
             Home
           </Link>
-          <Link href="/validation-cases" className={navItem}>
+          <Link href="/validation-cases" prefetch={false} className={navItem}>
             Case Index
           </Link>
         </nav>
@@ -192,6 +192,7 @@ export default function Header() {
           {/* Create (single entry) */}
           <Link
             href="/validation-cases/new"
+            prefetch={false}
             className={iconButton}
             aria-label="Create Validation Case"
             title="Create Validation Case"

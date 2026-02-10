@@ -8,7 +8,7 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import { TagList } from "@/components/ui/TagPill";
-import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton";
+import ValidationCaseRecordSkeleton from "./ValidationCaseRecordSkeleton";
 import { fetchJson, fetchJsonAuth, getApiBase } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
@@ -540,50 +540,7 @@ export default function ValidationCaseRecordPage() {
   if (!id || id === "undefined") return null;
 
   if (loading) {
-    return (
-      <main className="container py-10">
-        <div className="space-y-7">
-          <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <SkeletonText width="w-12" height="h-4" />
-            <SkeletonText width="w-24" height="h-4" />
-            <SkeletonText width="w-20" height="h-4" />
-          </div>
-
-          <header className="space-y-3">
-            <SkeletonText width="w-44" height="h-3" />
-            <SkeletonText width="w-full max-w-2xl" height="h-10" />
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 pt-2">
-              <div className="space-y-2">
-                <SkeletonText width="w-16" height="h-3" />
-                <SkeletonText width="w-28" height="h-5" />
-              </div>
-              <div className="space-y-2">
-                <SkeletonText width="w-16" height="h-3" />
-                <SkeletonText width="w-28" height="h-5" />
-              </div>
-              <div className="space-y-2">
-                <SkeletonText width="w-16" height="h-3" />
-                <SkeletonText width="w-36" height="h-5" />
-              </div>
-              <div className="space-y-2">
-                <SkeletonText width="w-16" height="h-3" />
-                <div className="flex items-center gap-2">
-                  <SkeletonCircle size="h-7 w-7" />
-                  <SkeletonText width="w-32" height="h-5" />
-                </div>
-              </div>
-            </div>
-            <Skeleton className="h-16 w-full" />
-          </header>
-
-          <section className="border-t border-border pt-8 space-y-3">
-            <SkeletonText width="w-28" height="h-3" />
-            <SkeletonText width="w-44" height="h-7" />
-            <Skeleton className="h-72 w-full" />
-          </section>
-        </div>
-      </main>
-    );
+    return <ValidationCaseRecordSkeleton />;
   }
 
   const status = normalizeStatus(vc?.status);

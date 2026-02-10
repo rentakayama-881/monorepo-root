@@ -170,7 +170,7 @@ export default function ProfileSidebar({ onClose }) {
         />
         <div
           ref={panelRef}
-          className="fixed right-4 top-16 z-[120] w-80 rounded-[var(--radius)] border bg-card p-4 shadow-xl"
+          className="fixed right-4 top-16 z-[120] w-80 rounded-[var(--radius)] bg-card p-4 shadow-xl"
         >
           <div className="space-y-4" aria-busy="true" aria-live="polite">
             <div className="flex items-center gap-3">
@@ -203,7 +203,7 @@ export default function ProfileSidebar({ onClose }) {
       />
       <div
         ref={panelRef}
-        className="fixed right-4 top-16 z-[120] w-80 rounded-[var(--radius)] border bg-card shadow-xl flex flex-col max-h-[calc(100dvh-6rem)] animate-slide-down"
+        className="fixed right-4 top-16 z-[120] w-80 rounded-[var(--radius)] bg-card shadow-xl flex flex-col max-h-[calc(100dvh-6rem)] animate-slide-down"
       >
         {/* Fixed header section */}
         <div className="p-4 pb-0 shrink-0">
@@ -242,7 +242,7 @@ export default function ProfileSidebar({ onClose }) {
       {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto p-4 pt-0 scrollbar-thin" style={{ overscrollBehavior: 'contain' }}>
         {/* Wallet Balance Card */}
-        <div className="mt-4 rounded-[var(--radius)] border bg-gradient-to-br from-secondary/50 to-transparent p-3">
+        <div className="mt-4 rounded-[var(--radius)] bg-secondary/20 p-3">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-muted-foreground">Saldo</div>
@@ -260,7 +260,7 @@ export default function ProfileSidebar({ onClose }) {
               </div>
               <Link
                 href="/account/wallet/deposit"
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90 hover:scale-105"
+                className="rounded-[var(--radius)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
                 + Deposit
               </Link>
@@ -272,57 +272,57 @@ export default function ProfileSidebar({ onClose }) {
             <div className="text-xs font-semibold uppercase text-muted-foreground px-1">Wallet</div>
             <Link
               href="/account/wallet/send"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
+              className="group flex items-center justify-between rounded-[var(--radius)] px-3 py-2 transition-colors hover:bg-accent"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
                 Kirim Uang
               </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/account/wallet/transactions"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
+              className="group flex items-center justify-between rounded-[var(--radius)] px-3 py-2 transition-colors hover:bg-accent"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
                 Transaksi Saya
               </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/account/wallet/disputes"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
+              className="group flex items-center justify-between rounded-[var(--radius)] px-3 py-2 transition-colors hover:bg-accent"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 Dispute Center
               </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/account/wallet/withdraw"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
+              className="group flex items-center justify-between rounded-[var(--radius)] px-3 py-2 transition-colors hover:bg-accent"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 Tarik Dana
               </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
@@ -331,29 +331,29 @@ export default function ProfileSidebar({ onClose }) {
             <div className="text-xs font-semibold uppercase text-muted-foreground px-1 mt-2">Akun</div>
             <Link
               href="/account"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
+              className="group flex items-center justify-between rounded-[var(--radius)] px-3 py-2 transition-colors hover:bg-accent"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 Account
               </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/account/validation-cases"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 text-foreground transition-all hover:border-primary hover:bg-primary/5"
+              className="group flex items-center justify-between rounded-[var(--radius)] px-3 py-2 text-foreground transition-colors hover:bg-accent"
             >
               <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                 </svg>
                 My Validation Cases
               </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
@@ -363,10 +363,10 @@ export default function ProfileSidebar({ onClose }) {
         {/* End of scrollable content area */}
 
         {/* Fixed footer - Logout button - OUTSIDE scrollable area */}
-        <div className="shrink-0 p-4 border-t">
+        <div className="shrink-0 p-4">
           <button
             onClick={handleLogout}
-            className="w-full rounded-md border border-destructive/20 px-3 py-2 text-left text-sm font-semibold text-destructive transition-all hover:bg-destructive/10 hover:border-destructive/40"
+            className="w-full rounded-[var(--radius)] px-3 py-2 text-left text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10"
             type="button"
           >
             <span className="flex items-center gap-2">

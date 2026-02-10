@@ -39,6 +39,7 @@ export default async function LatestValidationCases() {
         </h2>
         <Link 
           href="/validation-cases"
+          prefetch={false}
           className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline transition-all hover:gap-2"
         >
           View Index
@@ -53,7 +54,7 @@ export default async function LatestValidationCases() {
           <ol className="divide-y divide-border">
             {cases.map((vc) => (
               <li key={String(vc.id)} className="px-4 py-4 hover:bg-secondary/40">
-                <Link href={`/validation-cases/${encodeURIComponent(String(vc.id))}`} className="block">
+                <Link href={`/validation-cases/${encodeURIComponent(String(vc.id))}`} prefetch={false} className="block">
                   <div className="text-sm font-semibold text-foreground hover:underline">{vc.title}</div>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className="font-mono">#{vc.id}</span>
