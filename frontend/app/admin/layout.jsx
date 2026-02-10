@@ -68,16 +68,16 @@ export default function AdminLayout({ children }) {
   }
 
   const navItems = [
-    { href: "/admin", label: "Dashboard", icon: "🏠" },
-    { href: "/admin/badges", label: "Badges", icon: "🏆" },
-    { href: "/admin/users", label: "Users", icon: "👥" },
-    { href: "/admin/disputes", label: "Disputes", icon: "⚖️" },
-    { href: "/admin/reports", label: "Reports", icon: "🚨" },
-    { href: "/admin/device-bans", label: "Device Bans", icon: "🔒" },
-    { href: "/admin/warnings", label: "Warnings", icon: "⚠️" },
-    { href: "/admin/content", label: "Hidden Content", icon: "👁️" },
-    { href: "/admin/threads", label: "Thread Mgmt", icon: "📝" },
-    { href: "/admin/audit-logs", label: "Audit Logs", icon: "📋" },
+    { href: "/admin", label: "Dashboard" },
+    { href: "/admin/users", label: "Users" },
+    { href: "/admin/badges", label: "Badges" },
+    { href: "/admin/disputes", label: "Dispute Center" },
+    { href: "/admin/reports", label: "Reports" },
+    { href: "/admin/device-bans", label: "Device Bans" },
+    { href: "/admin/warnings", label: "Warnings" },
+    { href: "/admin/content", label: "Hidden Records" },
+    { href: "/admin/validation-cases", label: "Validation Cases" },
+    { href: "/admin/audit-logs", label: "Audit Logs" },
   ];
 
   return (
@@ -125,7 +125,6 @@ export default function AdminLayout({ children }) {
                     : "text-foreground hover:bg-muted/50"
                 }`}
               >
-                <span>{item.icon}</span>
                 {item.label}
               </Link>
             ))}

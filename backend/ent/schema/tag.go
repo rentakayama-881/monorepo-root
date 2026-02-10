@@ -53,7 +53,7 @@ func (Tag) Fields() []ent.Field {
 // Edges of the Tag.
 func (Tag) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("threads", Thread.Type),
+		edge.To("validation_cases", ValidationCase.Type),
 	}
 }
 

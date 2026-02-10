@@ -13,7 +13,7 @@ import { useToast } from "@/components/ui/Toast";
  * @param {Object} props
  * @param {boolean} props.open - Modal open state
  * @param {Function} props.onClose - Close callback
- * @param {string} props.targetType - Type of target (thread, reply, user)
+ * @param {string} props.targetType - Type of target (validation_case)
  * @param {string} props.targetId - ID of the target
  * @param {string} props.targetTitle - Optional title/name for display
  */
@@ -22,7 +22,7 @@ export default function ReportModal({
   onClose,
   targetType,
   targetId,
-  threadId,
+  validationCaseId,
   targetTitle = "",
 }) {
   const [reason, setReason] = useState("");
@@ -31,8 +31,7 @@ export default function ReportModal({
   const { toast } = useToast();
 
   const targetTypeLabels = {
-    [REPORT_TARGET_TYPES.THREAD]: "Thread",
-    [REPORT_TARGET_TYPES.USER]: "Pengguna",
+    [REPORT_TARGET_TYPES.VALIDATION_CASE]: "Validation Case",
   };
 
   const handleSubmit = async (e) => {
@@ -44,13 +43,14 @@ export default function ReportModal({
     }
 
     try {
-      const effectiveThreadId =
-        threadId ?? (targetType === REPORT_TARGET_TYPES.THREAD ? targetId : null);
+      const effectiveValidationCaseId =
+        validationCaseId ??
+        (targetType === REPORT_TARGET_TYPES.VALIDATION_CASE ? targetId : null);
 
       await submitReport({
         targetType,
         targetId,
-        threadId: effectiveThreadId,
+        validationCaseId: effectiveValidationCaseId,
         reason,
         description,
       });

@@ -23,6 +23,97 @@ var (
 	SQLDB     *sql.DB
 )
 
+func tableExists(ctx context.Context, q interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}, name string) (bool, error) {
+	var reg sql.NullString
+	if err := q.QueryRowContext(ctx, `SELECT to_regclass($1)`, "public."+name).Scan(&reg); err != nil {
+		return false, err
+	}
+	return reg.Valid && reg.String != "", nil
+}
+
+func columnExists(ctx context.Context, q interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}, table, column string) (bool, error) {
+	var exists bool
+	if err := q.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_schema = 'public'
+			  AND table_name = $1
+			  AND column_name = $2
+		)
+	`, table, column).Scan(&exists); err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+// applyDomainRenames performs an idempotent, production-safe rename from legacy "thread" naming
+// to the new "validation case" naming at the DB level.
+//
+// This runs BEFORE Ent schema migration so the generated schema matches the physical tables.
+func applyDomainRenames(ctx context.Context, db *sql.DB) error {
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	threadsExists, err := tableExists(ctx, tx, "threads")
+	if err != nil {
+		return err
+	}
+	validationCasesExists, err := tableExists(ctx, tx, "validation_cases")
+	if err != nil {
+		return err
+	}
+	if threadsExists && !validationCasesExists {
+		if _, err := tx.ExecContext(ctx, `ALTER TABLE threads RENAME TO validation_cases`); err != nil {
+			return err
+		}
+	}
+
+	tagThreadsExists, err := tableExists(ctx, tx, "tag_threads")
+	if err != nil {
+		return err
+	}
+	tagValidationCasesExists, err := tableExists(ctx, tx, "tag_validation_cases")
+	if err != nil {
+		return err
+	}
+	if tagThreadsExists && !tagValidationCasesExists {
+		if _, err := tx.ExecContext(ctx, `ALTER TABLE tag_threads RENAME TO tag_validation_cases`); err != nil {
+			return err
+		}
+	}
+
+	// Join table column rename so Ent M2M edge matches.
+	joinTableExists, err := tableExists(ctx, tx, "tag_validation_cases")
+	if err != nil {
+		return err
+	}
+	if joinTableExists {
+		threadIDExists, err := columnExists(ctx, tx, "tag_validation_cases", "thread_id")
+		if err != nil {
+			return err
+		}
+		validationCaseIDExists, err := columnExists(ctx, tx, "tag_validation_cases", "validation_case_id")
+		if err != nil {
+			return err
+		}
+		if threadIDExists && !validationCaseIDExists {
+			if _, err := tx.ExecContext(ctx, `ALTER TABLE tag_validation_cases RENAME COLUMN thread_id TO validation_case_id`); err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
 // InitEntDB initializes the Ent client and SQL DB connection.
 func InitEntDB() {
 	// Prefer DATABASE_URL (recommended for Neon)
@@ -90,6 +181,12 @@ func InitEntDB() {
 	defer cancel()
 	if err := db.PingContext(ctx); err != nil {
 		logger.Fatal("Failed to ping database", zap.Error(err))
+	}
+
+	// One-time naming migration (Thread -> Validation Case) to keep DB aligned with domain terminology.
+	// Idempotent and safe: runs only when old tables exist and new tables do not.
+	if err := applyDomainRenames(ctx, db); err != nil {
+		logger.Fatal("Failed to apply domain renames", zap.Error(err))
 	}
 
 	SQLDB = db

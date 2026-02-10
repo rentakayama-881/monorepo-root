@@ -1,14 +1,14 @@
 # AIvalid Frontend
 
-Next.js 15 application with React 19 and Tailwind CSS 4.
+Next.js 16 application with React 19 and Tailwind CSS 4.
 
-**Last Updated:** January 12, 2026
+**Last Updated:** February 10, 2026
 
 ---
 
 ## Tech Stack
 
-- **Framework:** Next.js 15 (App Router)
+- **Framework:** Next.js 16 (App Router)
 - **React:** 19.x
 - **Styling:** Tailwind CSS 4.x
 - **Data Fetching:** SWR
@@ -61,11 +61,12 @@ frontend/
 │   ├── account/              # User account pages
 │   │   ├── settings/
 │   │   ├── security/
-│   │   └── wallet/
+│   │   ├── wallet/
+│   │   └── validation-cases/ # My Validation Cases
 │   │
-│   ├── thread/               # Thread pages
-│   │   └── [id]/
-│   ├── threads/              # Thread list
+│   ├── validation-cases/     # Validation Case Index + Record
+│   │   ├── [id]/
+│   │   └── new/
 │   │
 │   ├── user/                 # User profiles
 │   │   └── [username]/
@@ -78,7 +79,7 @@ frontend/
 │   │   ├── Avatar.jsx
 │   │   ├── Badge.jsx
 │   │   ├── Button.jsx
-│   │   ├── ThreadCard.jsx
+│   │   ├── ValidationCaseTable.jsx
 │   │   └── ...
 │   │
 │   ├── Header.jsx            # Global header
@@ -129,7 +130,7 @@ npm run format        # Format with Prettier
 
 ### Command Palette (Cmd+K)
 - Quick navigation across the app
-- Search threads, users, settings
+- Search validation cases, users, settings
 - Theme switching
 
 ### Keyboard Shortcuts
@@ -139,8 +140,8 @@ npm run format        # Format with Prettier
 | `Cmd+/` | Focus search |
 | `?` | Show shortcuts help |
 | `G` then `H` | Go to Home |
-| `G` then `T` | Go to Threads |
-| `N` | New thread |
+| `G` then `T` | Go to Validation Case Index |
+| `N` | New Validation Case |
 
 ### Theme System
 - Light / Dark / System modes
@@ -160,7 +161,7 @@ npm run format        # Format with Prettier
 ```env
 # API URLs
 NEXT_PUBLIC_BACKEND_URL=https://api.aivalid.id
-NEXT_PUBLIC_FEATURE_URL=https://feature.aivalid.id
+NEXT_PUBLIC_FEATURE_SERVICE_URL=https://feature.aivalid.id
 
 # App Config
 NEXT_PUBLIC_APP_NAME=AIvalid
@@ -175,7 +176,7 @@ NEXT_PUBLIC_APP_URL=https://aivalid.id
 
 ```jsx
 // Default exports
-import ThreadCard from "@/components/ui/ThreadCard";
+import ValidationCaseTable from "@/components/ui/ValidationCaseTable";
 import Avatar from "@/components/ui/Avatar";
 
 // Named exports
@@ -233,7 +234,7 @@ npm run start
 ## Changelog
 
 ### January 12, 2026
-- Fixed ThreadCard import error (default export)
+- Fixed ValidationCaseTable import error (default export)
 - Removed outdated PHASE6 documentation files
 
 ---

@@ -8,7 +8,7 @@ Go-based REST API server using Gin framework with Ent ORM.
 
 ## Tech Stack
 
-- **Language:** Go 1.22
+- **Language:** Go 1.24.5
 - **Framework:** Gin
 - **ORM:** Ent (entgo.io)
 - **Database:** PostgreSQL 16 (Neon)
@@ -19,7 +19,7 @@ Go-based REST API server using Gin framework with Ent ORM.
 ## Quick Start
 
 ### Prerequisites
-- Go 1.22+
+- Go 1.24.5+
 - PostgreSQL 16+
 
 ### Setup
@@ -60,7 +60,6 @@ backend/
 │
 ├── dto/                    # Data Transfer Objects
 │   ├── auth.go             # Auth request/response
-│   ├── create_thread.go    # Thread creation
 │   └── ...
 │
 ├── ent/                    # Ent ORM
@@ -72,7 +71,7 @@ backend/
 │
 ├── handlers/               # HTTP handlers
 │   ├── auth.go             # Authentication
-│   ├── threads.go          # Thread CRUD
+│   ├── validation_case_handler.go # Validation Case CRUD + public records
 │   ├── users.go            # User profiles
 │   └── ...
 │
@@ -117,51 +116,54 @@ backend/
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST | `/auth/register` | Register new user | No |
-| POST | `/auth/login` | Login with email/password | No |
-| POST | `/auth/refresh` | Refresh access token | Refresh Token |
-| POST | `/auth/logout` | Logout (invalidate session) | Yes |
-| POST | `/auth/verify-email` | Verify email with token | No |
-| POST | `/auth/request-verification` | Resend verification email | No |
-| POST | `/auth/forgot-password` | Request password reset | No |
-| POST | `/auth/reset-password` | Reset password with token | No |
+| POST | `/api/auth/register` | Register new user | No |
+| POST | `/api/auth/login` | Login with email/password | No |
+| POST | `/api/auth/refresh` | Refresh access token | Refresh Token |
+| POST | `/api/auth/logout` | Logout (invalidate session) | Yes |
+| POST | `/api/auth/verify/request` | Request verification email | No |
+| POST | `/api/auth/verify/confirm` | Confirm email verification | No |
+| POST | `/api/auth/forgot-password` | Request password reset | No |
+| POST | `/api/auth/reset-password` | Reset password with token | No |
 
 ### TOTP (2FA)
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST | `/auth/totp/setup` | Generate TOTP secret | Yes |
-| POST | `/auth/totp/verify` | Verify TOTP code | Yes |
-| POST | `/auth/totp/verify-login` | Complete login with TOTP | Partial |
-| POST | `/auth/totp/disable` | Disable 2FA | Yes |
-| POST | `/auth/backup-codes/generate` | Generate backup codes | Yes |
+| GET | `/api/auth/totp/status` | TOTP/2FA status | Yes |
+| POST | `/api/auth/totp/setup` | Generate TOTP secret | Yes |
+| POST | `/api/auth/totp/verify` | Enable TOTP with code | Yes |
+| POST | `/api/auth/totp/verify-code` | Verify TOTP code (for actions) | Yes |
+| POST | `/api/auth/totp/disable` | Disable 2FA | Yes |
+| GET | `/api/auth/totp/backup-codes/count` | Backup codes count | Yes |
 
-### Threads
+### Validation Cases
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | `/api/threads` | List threads | No |
-| GET | `/api/threads/:id` | Get thread by ID | No |
-| POST | `/api/threads` | Create thread | Yes |
-| PUT | `/api/threads/:id` | Update thread | Yes (Owner) |
-| DELETE | `/api/threads/:id` | Delete thread | Yes (Owner) |
+| GET | `/api/validation-cases/latest` | Validation Case Index (latest) | No |
+| GET | `/api/validation-cases/:id/public` | Validation Case Record (public) | No |
+| POST | `/api/validation-cases` | Create Validation Case | Yes |
+| GET | `/api/validation-cases/me` | My Validation Cases | Yes |
+| PUT | `/api/validation-cases/:id` | Update Validation Case | Yes (Owner) |
+| DELETE | `/api/validation-cases/:id` | Delete Validation Case | Yes (Owner) |
 
 ### Users
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
 | GET | `/api/user/:username` | Get user profile | No |
-| GET | `/api/user/:username/threads` | Get user's threads | No |
+| GET | `/api/user/:username/validation-cases` | Get user's validation cases | No |
 | GET | `/api/user/:username/badges` | Get user's badges | No |
-| PUT | `/api/me` | Update own profile | Yes |
+| GET | `/api/account/me` | Get own account profile | Yes |
+| PUT | `/api/account` | Update own profile | Yes |
 
 ### Admin
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | `/admin/users` | List all users | Admin |
-| PUT | `/admin/users/:id/ban` | Ban user | Admin |
-| DELETE | `/admin/threads/:id` | Delete any thread | Admin |
+| POST | `/admin/auth/login` | Admin login | No |
+| GET | `/admin/categories` | List categories | Admin |
+| POST | `/admin/validation-cases/:id/move` | Move validation case between categories | Admin |
 
 ---
 

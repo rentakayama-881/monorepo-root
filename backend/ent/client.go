@@ -12,14 +12,18 @@ import (
 	"backend-gin/ent/migrate"
 
 	"backend-gin/ent/admin"
+	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/badge"
 	"backend-gin/ent/category"
 	"backend-gin/ent/chaincursor"
+	"backend-gin/ent/consultationrequest"
 	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
+	"backend-gin/ent/endorsement"
+	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/securityevent"
@@ -27,11 +31,11 @@ import (
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
 	"backend-gin/ent/tag"
-	"backend-gin/ent/thread"
-	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
+	"backend-gin/ent/validationcase"
+	"backend-gin/ent/validationcaselog"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
@@ -46,6 +50,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Admin is the client for interacting with the Admin builders.
 	Admin *AdminClient
+	// ArtifactSubmission is the client for interacting with the ArtifactSubmission builders.
+	ArtifactSubmission *ArtifactSubmissionClient
 	// BackupCode is the client for interacting with the BackupCode builders.
 	BackupCode *BackupCodeClient
 	// Badge is the client for interacting with the Badge builders.
@@ -54,6 +60,8 @@ type Client struct {
 	Category *CategoryClient
 	// ChainCursor is the client for interacting with the ChainCursor builders.
 	ChainCursor *ChainCursorClient
+	// ConsultationRequest is the client for interacting with the ConsultationRequest builders.
+	ConsultationRequest *ConsultationRequestClient
 	// Credential is the client for interacting with the Credential builders.
 	Credential *CredentialClient
 	// DeviceFingerprint is the client for interacting with the DeviceFingerprint builders.
@@ -62,6 +70,10 @@ type Client struct {
 	DeviceUserMapping *DeviceUserMappingClient
 	// EmailVerificationToken is the client for interacting with the EmailVerificationToken builders.
 	EmailVerificationToken *EmailVerificationTokenClient
+	// Endorsement is the client for interacting with the Endorsement builders.
+	Endorsement *EndorsementClient
+	// FinalOffer is the client for interacting with the FinalOffer builders.
+	FinalOffer *FinalOfferClient
 	// Passkey is the client for interacting with the Passkey builders.
 	Passkey *PasskeyClient
 	// PasswordResetToken is the client for interacting with the PasswordResetToken builders.
@@ -78,14 +90,14 @@ type Client struct {
 	TOTPPendingToken *TOTPPendingTokenClient
 	// Tag is the client for interacting with the Tag builders.
 	Tag *TagClient
-	// Thread is the client for interacting with the Thread builders.
-	Thread *ThreadClient
-	// ThreadCredential is the client for interacting with the ThreadCredential builders.
-	ThreadCredential *ThreadCredentialClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 	// UserBadge is the client for interacting with the UserBadge builders.
 	UserBadge *UserBadgeClient
+	// ValidationCase is the client for interacting with the ValidationCase builders.
+	ValidationCase *ValidationCaseClient
+	// ValidationCaseLog is the client for interacting with the ValidationCaseLog builders.
+	ValidationCaseLog *ValidationCaseLogClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -98,14 +110,18 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Admin = NewAdminClient(c.config)
+	c.ArtifactSubmission = NewArtifactSubmissionClient(c.config)
 	c.BackupCode = NewBackupCodeClient(c.config)
 	c.Badge = NewBadgeClient(c.config)
 	c.Category = NewCategoryClient(c.config)
 	c.ChainCursor = NewChainCursorClient(c.config)
+	c.ConsultationRequest = NewConsultationRequestClient(c.config)
 	c.Credential = NewCredentialClient(c.config)
 	c.DeviceFingerprint = NewDeviceFingerprintClient(c.config)
 	c.DeviceUserMapping = NewDeviceUserMappingClient(c.config)
 	c.EmailVerificationToken = NewEmailVerificationTokenClient(c.config)
+	c.Endorsement = NewEndorsementClient(c.config)
+	c.FinalOffer = NewFinalOfferClient(c.config)
 	c.Passkey = NewPasskeyClient(c.config)
 	c.PasswordResetToken = NewPasswordResetTokenClient(c.config)
 	c.SecurityEvent = NewSecurityEventClient(c.config)
@@ -114,10 +130,10 @@ func (c *Client) init() {
 	c.SudoSession = NewSudoSessionClient(c.config)
 	c.TOTPPendingToken = NewTOTPPendingTokenClient(c.config)
 	c.Tag = NewTagClient(c.config)
-	c.Thread = NewThreadClient(c.config)
-	c.ThreadCredential = NewThreadCredentialClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.UserBadge = NewUserBadgeClient(c.config)
+	c.ValidationCase = NewValidationCaseClient(c.config)
+	c.ValidationCaseLog = NewValidationCaseLogClient(c.config)
 }
 
 type (
@@ -211,14 +227,18 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:                    ctx,
 		config:                 cfg,
 		Admin:                  NewAdminClient(cfg),
+		ArtifactSubmission:     NewArtifactSubmissionClient(cfg),
 		BackupCode:             NewBackupCodeClient(cfg),
 		Badge:                  NewBadgeClient(cfg),
 		Category:               NewCategoryClient(cfg),
 		ChainCursor:            NewChainCursorClient(cfg),
+		ConsultationRequest:    NewConsultationRequestClient(cfg),
 		Credential:             NewCredentialClient(cfg),
 		DeviceFingerprint:      NewDeviceFingerprintClient(cfg),
 		DeviceUserMapping:      NewDeviceUserMappingClient(cfg),
 		EmailVerificationToken: NewEmailVerificationTokenClient(cfg),
+		Endorsement:            NewEndorsementClient(cfg),
+		FinalOffer:             NewFinalOfferClient(cfg),
 		Passkey:                NewPasskeyClient(cfg),
 		PasswordResetToken:     NewPasswordResetTokenClient(cfg),
 		SecurityEvent:          NewSecurityEventClient(cfg),
@@ -227,10 +247,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		SudoSession:            NewSudoSessionClient(cfg),
 		TOTPPendingToken:       NewTOTPPendingTokenClient(cfg),
 		Tag:                    NewTagClient(cfg),
-		Thread:                 NewThreadClient(cfg),
-		ThreadCredential:       NewThreadCredentialClient(cfg),
 		User:                   NewUserClient(cfg),
 		UserBadge:              NewUserBadgeClient(cfg),
+		ValidationCase:         NewValidationCaseClient(cfg),
+		ValidationCaseLog:      NewValidationCaseLogClient(cfg),
 	}, nil
 }
 
@@ -251,14 +271,18 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:                    ctx,
 		config:                 cfg,
 		Admin:                  NewAdminClient(cfg),
+		ArtifactSubmission:     NewArtifactSubmissionClient(cfg),
 		BackupCode:             NewBackupCodeClient(cfg),
 		Badge:                  NewBadgeClient(cfg),
 		Category:               NewCategoryClient(cfg),
 		ChainCursor:            NewChainCursorClient(cfg),
+		ConsultationRequest:    NewConsultationRequestClient(cfg),
 		Credential:             NewCredentialClient(cfg),
 		DeviceFingerprint:      NewDeviceFingerprintClient(cfg),
 		DeviceUserMapping:      NewDeviceUserMappingClient(cfg),
 		EmailVerificationToken: NewEmailVerificationTokenClient(cfg),
+		Endorsement:            NewEndorsementClient(cfg),
+		FinalOffer:             NewFinalOfferClient(cfg),
 		Passkey:                NewPasskeyClient(cfg),
 		PasswordResetToken:     NewPasswordResetTokenClient(cfg),
 		SecurityEvent:          NewSecurityEventClient(cfg),
@@ -267,10 +291,10 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		SudoSession:            NewSudoSessionClient(cfg),
 		TOTPPendingToken:       NewTOTPPendingTokenClient(cfg),
 		Tag:                    NewTagClient(cfg),
-		Thread:                 NewThreadClient(cfg),
-		ThreadCredential:       NewThreadCredentialClient(cfg),
 		User:                   NewUserClient(cfg),
 		UserBadge:              NewUserBadgeClient(cfg),
+		ValidationCase:         NewValidationCaseClient(cfg),
+		ValidationCaseLog:      NewValidationCaseLogClient(cfg),
 	}, nil
 }
 
@@ -300,10 +324,12 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Admin, c.BackupCode, c.Badge, c.Category, c.ChainCursor, c.Credential,
-		c.DeviceFingerprint, c.DeviceUserMapping, c.EmailVerificationToken, c.Passkey,
+		c.Admin, c.ArtifactSubmission, c.BackupCode, c.Badge, c.Category, c.ChainCursor,
+		c.ConsultationRequest, c.Credential, c.DeviceFingerprint, c.DeviceUserMapping,
+		c.EmailVerificationToken, c.Endorsement, c.FinalOffer, c.Passkey,
 		c.PasswordResetToken, c.SecurityEvent, c.Session, c.SessionLock, c.SudoSession,
-		c.TOTPPendingToken, c.Tag, c.Thread, c.ThreadCredential, c.User, c.UserBadge,
+		c.TOTPPendingToken, c.Tag, c.User, c.UserBadge, c.ValidationCase,
+		c.ValidationCaseLog,
 	} {
 		n.Use(hooks...)
 	}
@@ -313,10 +339,12 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Admin, c.BackupCode, c.Badge, c.Category, c.ChainCursor, c.Credential,
-		c.DeviceFingerprint, c.DeviceUserMapping, c.EmailVerificationToken, c.Passkey,
+		c.Admin, c.ArtifactSubmission, c.BackupCode, c.Badge, c.Category, c.ChainCursor,
+		c.ConsultationRequest, c.Credential, c.DeviceFingerprint, c.DeviceUserMapping,
+		c.EmailVerificationToken, c.Endorsement, c.FinalOffer, c.Passkey,
 		c.PasswordResetToken, c.SecurityEvent, c.Session, c.SessionLock, c.SudoSession,
-		c.TOTPPendingToken, c.Tag, c.Thread, c.ThreadCredential, c.User, c.UserBadge,
+		c.TOTPPendingToken, c.Tag, c.User, c.UserBadge, c.ValidationCase,
+		c.ValidationCaseLog,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -327,6 +355,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *AdminMutation:
 		return c.Admin.mutate(ctx, m)
+	case *ArtifactSubmissionMutation:
+		return c.ArtifactSubmission.mutate(ctx, m)
 	case *BackupCodeMutation:
 		return c.BackupCode.mutate(ctx, m)
 	case *BadgeMutation:
@@ -335,6 +365,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Category.mutate(ctx, m)
 	case *ChainCursorMutation:
 		return c.ChainCursor.mutate(ctx, m)
+	case *ConsultationRequestMutation:
+		return c.ConsultationRequest.mutate(ctx, m)
 	case *CredentialMutation:
 		return c.Credential.mutate(ctx, m)
 	case *DeviceFingerprintMutation:
@@ -343,6 +375,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.DeviceUserMapping.mutate(ctx, m)
 	case *EmailVerificationTokenMutation:
 		return c.EmailVerificationToken.mutate(ctx, m)
+	case *EndorsementMutation:
+		return c.Endorsement.mutate(ctx, m)
+	case *FinalOfferMutation:
+		return c.FinalOffer.mutate(ctx, m)
 	case *PasskeyMutation:
 		return c.Passkey.mutate(ctx, m)
 	case *PasswordResetTokenMutation:
@@ -359,14 +395,14 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.TOTPPendingToken.mutate(ctx, m)
 	case *TagMutation:
 		return c.Tag.mutate(ctx, m)
-	case *ThreadMutation:
-		return c.Thread.mutate(ctx, m)
-	case *ThreadCredentialMutation:
-		return c.ThreadCredential.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	case *UserBadgeMutation:
 		return c.UserBadge.mutate(ctx, m)
+	case *ValidationCaseMutation:
+		return c.ValidationCase.mutate(ctx, m)
+	case *ValidationCaseLogMutation:
+		return c.ValidationCaseLog.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -518,6 +554,171 @@ func (c *AdminClient) mutate(ctx context.Context, m *AdminMutation) (Value, erro
 		return (&AdminDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Admin mutation op: %q", m.Op())
+	}
+}
+
+// ArtifactSubmissionClient is a client for the ArtifactSubmission schema.
+type ArtifactSubmissionClient struct {
+	config
+}
+
+// NewArtifactSubmissionClient returns a client for the ArtifactSubmission from the given config.
+func NewArtifactSubmissionClient(c config) *ArtifactSubmissionClient {
+	return &ArtifactSubmissionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `artifactsubmission.Hooks(f(g(h())))`.
+func (c *ArtifactSubmissionClient) Use(hooks ...Hook) {
+	c.hooks.ArtifactSubmission = append(c.hooks.ArtifactSubmission, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `artifactsubmission.Intercept(f(g(h())))`.
+func (c *ArtifactSubmissionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ArtifactSubmission = append(c.inters.ArtifactSubmission, interceptors...)
+}
+
+// Create returns a builder for creating a ArtifactSubmission entity.
+func (c *ArtifactSubmissionClient) Create() *ArtifactSubmissionCreate {
+	mutation := newArtifactSubmissionMutation(c.config, OpCreate)
+	return &ArtifactSubmissionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ArtifactSubmission entities.
+func (c *ArtifactSubmissionClient) CreateBulk(builders ...*ArtifactSubmissionCreate) *ArtifactSubmissionCreateBulk {
+	return &ArtifactSubmissionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ArtifactSubmissionClient) MapCreateBulk(slice any, setFunc func(*ArtifactSubmissionCreate, int)) *ArtifactSubmissionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ArtifactSubmissionCreateBulk{err: fmt.Errorf("calling to ArtifactSubmissionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ArtifactSubmissionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ArtifactSubmissionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ArtifactSubmission.
+func (c *ArtifactSubmissionClient) Update() *ArtifactSubmissionUpdate {
+	mutation := newArtifactSubmissionMutation(c.config, OpUpdate)
+	return &ArtifactSubmissionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ArtifactSubmissionClient) UpdateOne(_m *ArtifactSubmission) *ArtifactSubmissionUpdateOne {
+	mutation := newArtifactSubmissionMutation(c.config, OpUpdateOne, withArtifactSubmission(_m))
+	return &ArtifactSubmissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ArtifactSubmissionClient) UpdateOneID(id int) *ArtifactSubmissionUpdateOne {
+	mutation := newArtifactSubmissionMutation(c.config, OpUpdateOne, withArtifactSubmissionID(id))
+	return &ArtifactSubmissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ArtifactSubmission.
+func (c *ArtifactSubmissionClient) Delete() *ArtifactSubmissionDelete {
+	mutation := newArtifactSubmissionMutation(c.config, OpDelete)
+	return &ArtifactSubmissionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ArtifactSubmissionClient) DeleteOne(_m *ArtifactSubmission) *ArtifactSubmissionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ArtifactSubmissionClient) DeleteOneID(id int) *ArtifactSubmissionDeleteOne {
+	builder := c.Delete().Where(artifactsubmission.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ArtifactSubmissionDeleteOne{builder}
+}
+
+// Query returns a query builder for ArtifactSubmission.
+func (c *ArtifactSubmissionClient) Query() *ArtifactSubmissionQuery {
+	return &ArtifactSubmissionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeArtifactSubmission},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ArtifactSubmission entity by its id.
+func (c *ArtifactSubmissionClient) Get(ctx context.Context, id int) (*ArtifactSubmission, error) {
+	return c.Query().Where(artifactsubmission.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ArtifactSubmissionClient) GetX(ctx context.Context, id int) *ArtifactSubmission {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryValidationCase queries the validation_case edge of a ArtifactSubmission.
+func (c *ArtifactSubmissionClient) QueryValidationCase(_m *ArtifactSubmission) *ValidationCaseQuery {
+	query := (&ValidationCaseClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(artifactsubmission.Table, artifactsubmission.FieldID, id),
+			sqlgraph.To(validationcase.Table, validationcase.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, artifactsubmission.ValidationCaseTable, artifactsubmission.ValidationCaseColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryValidatorUser queries the validator_user edge of a ArtifactSubmission.
+func (c *ArtifactSubmissionClient) QueryValidatorUser(_m *ArtifactSubmission) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(artifactsubmission.Table, artifactsubmission.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, artifactsubmission.ValidatorUserTable, artifactsubmission.ValidatorUserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ArtifactSubmissionClient) Hooks() []Hook {
+	return c.hooks.ArtifactSubmission
+}
+
+// Interceptors returns the client interceptors.
+func (c *ArtifactSubmissionClient) Interceptors() []Interceptor {
+	return c.inters.ArtifactSubmission
+}
+
+func (c *ArtifactSubmissionClient) mutate(ctx context.Context, m *ArtifactSubmissionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ArtifactSubmissionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ArtifactSubmissionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ArtifactSubmissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ArtifactSubmissionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ArtifactSubmission mutation op: %q", m.Op())
 	}
 }
 
@@ -943,15 +1144,15 @@ func (c *CategoryClient) GetX(ctx context.Context, id int) *Category {
 	return obj
 }
 
-// QueryThreads queries the threads edge of a Category.
-func (c *CategoryClient) QueryThreads(_m *Category) *ThreadQuery {
-	query := (&ThreadClient{config: c.config}).Query()
+// QueryValidationCases queries the validation_cases edge of a Category.
+func (c *CategoryClient) QueryValidationCases(_m *Category) *ValidationCaseQuery {
+	query := (&ValidationCaseClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(category.Table, category.FieldID, id),
-			sqlgraph.To(thread.Table, thread.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, category.ThreadsTable, category.ThreadsColumn),
+			sqlgraph.To(validationcase.Table, validationcase.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, category.ValidationCasesTable, category.ValidationCasesColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1114,6 +1315,171 @@ func (c *ChainCursorClient) mutate(ctx context.Context, m *ChainCursorMutation) 
 		return (&ChainCursorDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ChainCursor mutation op: %q", m.Op())
+	}
+}
+
+// ConsultationRequestClient is a client for the ConsultationRequest schema.
+type ConsultationRequestClient struct {
+	config
+}
+
+// NewConsultationRequestClient returns a client for the ConsultationRequest from the given config.
+func NewConsultationRequestClient(c config) *ConsultationRequestClient {
+	return &ConsultationRequestClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `consultationrequest.Hooks(f(g(h())))`.
+func (c *ConsultationRequestClient) Use(hooks ...Hook) {
+	c.hooks.ConsultationRequest = append(c.hooks.ConsultationRequest, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `consultationrequest.Intercept(f(g(h())))`.
+func (c *ConsultationRequestClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ConsultationRequest = append(c.inters.ConsultationRequest, interceptors...)
+}
+
+// Create returns a builder for creating a ConsultationRequest entity.
+func (c *ConsultationRequestClient) Create() *ConsultationRequestCreate {
+	mutation := newConsultationRequestMutation(c.config, OpCreate)
+	return &ConsultationRequestCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ConsultationRequest entities.
+func (c *ConsultationRequestClient) CreateBulk(builders ...*ConsultationRequestCreate) *ConsultationRequestCreateBulk {
+	return &ConsultationRequestCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConsultationRequestClient) MapCreateBulk(slice any, setFunc func(*ConsultationRequestCreate, int)) *ConsultationRequestCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConsultationRequestCreateBulk{err: fmt.Errorf("calling to ConsultationRequestClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConsultationRequestCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConsultationRequestCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ConsultationRequest.
+func (c *ConsultationRequestClient) Update() *ConsultationRequestUpdate {
+	mutation := newConsultationRequestMutation(c.config, OpUpdate)
+	return &ConsultationRequestUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConsultationRequestClient) UpdateOne(_m *ConsultationRequest) *ConsultationRequestUpdateOne {
+	mutation := newConsultationRequestMutation(c.config, OpUpdateOne, withConsultationRequest(_m))
+	return &ConsultationRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ConsultationRequestClient) UpdateOneID(id int) *ConsultationRequestUpdateOne {
+	mutation := newConsultationRequestMutation(c.config, OpUpdateOne, withConsultationRequestID(id))
+	return &ConsultationRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ConsultationRequest.
+func (c *ConsultationRequestClient) Delete() *ConsultationRequestDelete {
+	mutation := newConsultationRequestMutation(c.config, OpDelete)
+	return &ConsultationRequestDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConsultationRequestClient) DeleteOne(_m *ConsultationRequest) *ConsultationRequestDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ConsultationRequestClient) DeleteOneID(id int) *ConsultationRequestDeleteOne {
+	builder := c.Delete().Where(consultationrequest.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ConsultationRequestDeleteOne{builder}
+}
+
+// Query returns a query builder for ConsultationRequest.
+func (c *ConsultationRequestClient) Query() *ConsultationRequestQuery {
+	return &ConsultationRequestQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConsultationRequest},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ConsultationRequest entity by its id.
+func (c *ConsultationRequestClient) Get(ctx context.Context, id int) (*ConsultationRequest, error) {
+	return c.Query().Where(consultationrequest.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConsultationRequestClient) GetX(ctx context.Context, id int) *ConsultationRequest {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryValidationCase queries the validation_case edge of a ConsultationRequest.
+func (c *ConsultationRequestClient) QueryValidationCase(_m *ConsultationRequest) *ValidationCaseQuery {
+	query := (&ValidationCaseClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(consultationrequest.Table, consultationrequest.FieldID, id),
+			sqlgraph.To(validationcase.Table, validationcase.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, consultationrequest.ValidationCaseTable, consultationrequest.ValidationCaseColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryValidatorUser queries the validator_user edge of a ConsultationRequest.
+func (c *ConsultationRequestClient) QueryValidatorUser(_m *ConsultationRequest) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(consultationrequest.Table, consultationrequest.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, consultationrequest.ValidatorUserTable, consultationrequest.ValidatorUserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ConsultationRequestClient) Hooks() []Hook {
+	return c.hooks.ConsultationRequest
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConsultationRequestClient) Interceptors() []Interceptor {
+	return c.inters.ConsultationRequest
+}
+
+func (c *ConsultationRequestClient) mutate(ctx context.Context, m *ConsultationRequestMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConsultationRequestCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConsultationRequestUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConsultationRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConsultationRequestDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ConsultationRequest mutation op: %q", m.Op())
 	}
 }
 
@@ -1710,6 +2076,336 @@ func (c *EmailVerificationTokenClient) mutate(ctx context.Context, m *EmailVerif
 		return (&EmailVerificationTokenDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown EmailVerificationToken mutation op: %q", m.Op())
+	}
+}
+
+// EndorsementClient is a client for the Endorsement schema.
+type EndorsementClient struct {
+	config
+}
+
+// NewEndorsementClient returns a client for the Endorsement from the given config.
+func NewEndorsementClient(c config) *EndorsementClient {
+	return &EndorsementClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `endorsement.Hooks(f(g(h())))`.
+func (c *EndorsementClient) Use(hooks ...Hook) {
+	c.hooks.Endorsement = append(c.hooks.Endorsement, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `endorsement.Intercept(f(g(h())))`.
+func (c *EndorsementClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Endorsement = append(c.inters.Endorsement, interceptors...)
+}
+
+// Create returns a builder for creating a Endorsement entity.
+func (c *EndorsementClient) Create() *EndorsementCreate {
+	mutation := newEndorsementMutation(c.config, OpCreate)
+	return &EndorsementCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Endorsement entities.
+func (c *EndorsementClient) CreateBulk(builders ...*EndorsementCreate) *EndorsementCreateBulk {
+	return &EndorsementCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *EndorsementClient) MapCreateBulk(slice any, setFunc func(*EndorsementCreate, int)) *EndorsementCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &EndorsementCreateBulk{err: fmt.Errorf("calling to EndorsementClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*EndorsementCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &EndorsementCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Endorsement.
+func (c *EndorsementClient) Update() *EndorsementUpdate {
+	mutation := newEndorsementMutation(c.config, OpUpdate)
+	return &EndorsementUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EndorsementClient) UpdateOne(_m *Endorsement) *EndorsementUpdateOne {
+	mutation := newEndorsementMutation(c.config, OpUpdateOne, withEndorsement(_m))
+	return &EndorsementUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EndorsementClient) UpdateOneID(id int) *EndorsementUpdateOne {
+	mutation := newEndorsementMutation(c.config, OpUpdateOne, withEndorsementID(id))
+	return &EndorsementUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Endorsement.
+func (c *EndorsementClient) Delete() *EndorsementDelete {
+	mutation := newEndorsementMutation(c.config, OpDelete)
+	return &EndorsementDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *EndorsementClient) DeleteOne(_m *Endorsement) *EndorsementDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *EndorsementClient) DeleteOneID(id int) *EndorsementDeleteOne {
+	builder := c.Delete().Where(endorsement.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EndorsementDeleteOne{builder}
+}
+
+// Query returns a query builder for Endorsement.
+func (c *EndorsementClient) Query() *EndorsementQuery {
+	return &EndorsementQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeEndorsement},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Endorsement entity by its id.
+func (c *EndorsementClient) Get(ctx context.Context, id int) (*Endorsement, error) {
+	return c.Query().Where(endorsement.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EndorsementClient) GetX(ctx context.Context, id int) *Endorsement {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryValidationCase queries the validation_case edge of a Endorsement.
+func (c *EndorsementClient) QueryValidationCase(_m *Endorsement) *ValidationCaseQuery {
+	query := (&ValidationCaseClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(endorsement.Table, endorsement.FieldID, id),
+			sqlgraph.To(validationcase.Table, validationcase.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, endorsement.ValidationCaseTable, endorsement.ValidationCaseColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryValidatorUser queries the validator_user edge of a Endorsement.
+func (c *EndorsementClient) QueryValidatorUser(_m *Endorsement) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(endorsement.Table, endorsement.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, endorsement.ValidatorUserTable, endorsement.ValidatorUserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EndorsementClient) Hooks() []Hook {
+	return c.hooks.Endorsement
+}
+
+// Interceptors returns the client interceptors.
+func (c *EndorsementClient) Interceptors() []Interceptor {
+	return c.inters.Endorsement
+}
+
+func (c *EndorsementClient) mutate(ctx context.Context, m *EndorsementMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&EndorsementCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&EndorsementUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&EndorsementUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&EndorsementDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Endorsement mutation op: %q", m.Op())
+	}
+}
+
+// FinalOfferClient is a client for the FinalOffer schema.
+type FinalOfferClient struct {
+	config
+}
+
+// NewFinalOfferClient returns a client for the FinalOffer from the given config.
+func NewFinalOfferClient(c config) *FinalOfferClient {
+	return &FinalOfferClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `finaloffer.Hooks(f(g(h())))`.
+func (c *FinalOfferClient) Use(hooks ...Hook) {
+	c.hooks.FinalOffer = append(c.hooks.FinalOffer, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `finaloffer.Intercept(f(g(h())))`.
+func (c *FinalOfferClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FinalOffer = append(c.inters.FinalOffer, interceptors...)
+}
+
+// Create returns a builder for creating a FinalOffer entity.
+func (c *FinalOfferClient) Create() *FinalOfferCreate {
+	mutation := newFinalOfferMutation(c.config, OpCreate)
+	return &FinalOfferCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FinalOffer entities.
+func (c *FinalOfferClient) CreateBulk(builders ...*FinalOfferCreate) *FinalOfferCreateBulk {
+	return &FinalOfferCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FinalOfferClient) MapCreateBulk(slice any, setFunc func(*FinalOfferCreate, int)) *FinalOfferCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FinalOfferCreateBulk{err: fmt.Errorf("calling to FinalOfferClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FinalOfferCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FinalOfferCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FinalOffer.
+func (c *FinalOfferClient) Update() *FinalOfferUpdate {
+	mutation := newFinalOfferMutation(c.config, OpUpdate)
+	return &FinalOfferUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FinalOfferClient) UpdateOne(_m *FinalOffer) *FinalOfferUpdateOne {
+	mutation := newFinalOfferMutation(c.config, OpUpdateOne, withFinalOffer(_m))
+	return &FinalOfferUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FinalOfferClient) UpdateOneID(id int) *FinalOfferUpdateOne {
+	mutation := newFinalOfferMutation(c.config, OpUpdateOne, withFinalOfferID(id))
+	return &FinalOfferUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FinalOffer.
+func (c *FinalOfferClient) Delete() *FinalOfferDelete {
+	mutation := newFinalOfferMutation(c.config, OpDelete)
+	return &FinalOfferDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FinalOfferClient) DeleteOne(_m *FinalOffer) *FinalOfferDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FinalOfferClient) DeleteOneID(id int) *FinalOfferDeleteOne {
+	builder := c.Delete().Where(finaloffer.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FinalOfferDeleteOne{builder}
+}
+
+// Query returns a query builder for FinalOffer.
+func (c *FinalOfferClient) Query() *FinalOfferQuery {
+	return &FinalOfferQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFinalOffer},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FinalOffer entity by its id.
+func (c *FinalOfferClient) Get(ctx context.Context, id int) (*FinalOffer, error) {
+	return c.Query().Where(finaloffer.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FinalOfferClient) GetX(ctx context.Context, id int) *FinalOffer {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryValidationCase queries the validation_case edge of a FinalOffer.
+func (c *FinalOfferClient) QueryValidationCase(_m *FinalOffer) *ValidationCaseQuery {
+	query := (&ValidationCaseClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(finaloffer.Table, finaloffer.FieldID, id),
+			sqlgraph.To(validationcase.Table, validationcase.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, finaloffer.ValidationCaseTable, finaloffer.ValidationCaseColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryValidatorUser queries the validator_user edge of a FinalOffer.
+func (c *FinalOfferClient) QueryValidatorUser(_m *FinalOffer) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(finaloffer.Table, finaloffer.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, finaloffer.ValidatorUserTable, finaloffer.ValidatorUserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *FinalOfferClient) Hooks() []Hook {
+	return c.hooks.FinalOffer
+}
+
+// Interceptors returns the client interceptors.
+func (c *FinalOfferClient) Interceptors() []Interceptor {
+	return c.inters.FinalOffer
+}
+
+func (c *FinalOfferClient) mutate(ctx context.Context, m *FinalOfferMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FinalOfferCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FinalOfferUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FinalOfferUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FinalOfferDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FinalOffer mutation op: %q", m.Op())
 	}
 }
 
@@ -2864,15 +3560,15 @@ func (c *TagClient) GetX(ctx context.Context, id int) *Tag {
 	return obj
 }
 
-// QueryThreads queries the threads edge of a Tag.
-func (c *TagClient) QueryThreads(_m *Tag) *ThreadQuery {
-	query := (&ThreadClient{config: c.config}).Query()
+// QueryValidationCases queries the validation_cases edge of a Tag.
+func (c *TagClient) QueryValidationCases(_m *Tag) *ValidationCaseQuery {
+	query := (&ValidationCaseClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(tag.Table, tag.FieldID, id),
-			sqlgraph.To(thread.Table, thread.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, tag.ThreadsTable, tag.ThreadsPrimaryKey...),
+			sqlgraph.To(validationcase.Table, validationcase.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, tag.ValidationCasesTable, tag.ValidationCasesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -2902,368 +3598,6 @@ func (c *TagClient) mutate(ctx context.Context, m *TagMutation) (Value, error) {
 		return (&TagDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Tag mutation op: %q", m.Op())
-	}
-}
-
-// ThreadClient is a client for the Thread schema.
-type ThreadClient struct {
-	config
-}
-
-// NewThreadClient returns a client for the Thread from the given config.
-func NewThreadClient(c config) *ThreadClient {
-	return &ThreadClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `thread.Hooks(f(g(h())))`.
-func (c *ThreadClient) Use(hooks ...Hook) {
-	c.hooks.Thread = append(c.hooks.Thread, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `thread.Intercept(f(g(h())))`.
-func (c *ThreadClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Thread = append(c.inters.Thread, interceptors...)
-}
-
-// Create returns a builder for creating a Thread entity.
-func (c *ThreadClient) Create() *ThreadCreate {
-	mutation := newThreadMutation(c.config, OpCreate)
-	return &ThreadCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of Thread entities.
-func (c *ThreadClient) CreateBulk(builders ...*ThreadCreate) *ThreadCreateBulk {
-	return &ThreadCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *ThreadClient) MapCreateBulk(slice any, setFunc func(*ThreadCreate, int)) *ThreadCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &ThreadCreateBulk{err: fmt.Errorf("calling to ThreadClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*ThreadCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &ThreadCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for Thread.
-func (c *ThreadClient) Update() *ThreadUpdate {
-	mutation := newThreadMutation(c.config, OpUpdate)
-	return &ThreadUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ThreadClient) UpdateOne(_m *Thread) *ThreadUpdateOne {
-	mutation := newThreadMutation(c.config, OpUpdateOne, withThread(_m))
-	return &ThreadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *ThreadClient) UpdateOneID(id int) *ThreadUpdateOne {
-	mutation := newThreadMutation(c.config, OpUpdateOne, withThreadID(id))
-	return &ThreadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for Thread.
-func (c *ThreadClient) Delete() *ThreadDelete {
-	mutation := newThreadMutation(c.config, OpDelete)
-	return &ThreadDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *ThreadClient) DeleteOne(_m *Thread) *ThreadDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ThreadClient) DeleteOneID(id int) *ThreadDeleteOne {
-	builder := c.Delete().Where(thread.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &ThreadDeleteOne{builder}
-}
-
-// Query returns a query builder for Thread.
-func (c *ThreadClient) Query() *ThreadQuery {
-	return &ThreadQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeThread},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a Thread entity by its id.
-func (c *ThreadClient) Get(ctx context.Context, id int) (*Thread, error) {
-	return c.Query().Where(thread.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *ThreadClient) GetX(ctx context.Context, id int) *Thread {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryUser queries the user edge of a Thread.
-func (c *ThreadClient) QueryUser(_m *Thread) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(thread.Table, thread.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, thread.UserTable, thread.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryCategory queries the category edge of a Thread.
-func (c *ThreadClient) QueryCategory(_m *Thread) *CategoryQuery {
-	query := (&CategoryClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(thread.Table, thread.FieldID, id),
-			sqlgraph.To(category.Table, category.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, thread.CategoryTable, thread.CategoryColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryTags queries the tags edge of a Thread.
-func (c *ThreadClient) QueryTags(_m *Thread) *TagQuery {
-	query := (&TagClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(thread.Table, thread.FieldID, id),
-			sqlgraph.To(tag.Table, tag.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, thread.TagsTable, thread.TagsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryReceivedCredentials queries the received_credentials edge of a Thread.
-func (c *ThreadClient) QueryReceivedCredentials(_m *Thread) *ThreadCredentialQuery {
-	query := (&ThreadCredentialClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(thread.Table, thread.FieldID, id),
-			sqlgraph.To(threadcredential.Table, threadcredential.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, thread.ReceivedCredentialsTable, thread.ReceivedCredentialsColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *ThreadClient) Hooks() []Hook {
-	return c.hooks.Thread
-}
-
-// Interceptors returns the client interceptors.
-func (c *ThreadClient) Interceptors() []Interceptor {
-	return c.inters.Thread
-}
-
-func (c *ThreadClient) mutate(ctx context.Context, m *ThreadMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ThreadCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ThreadUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ThreadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ThreadDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown Thread mutation op: %q", m.Op())
-	}
-}
-
-// ThreadCredentialClient is a client for the ThreadCredential schema.
-type ThreadCredentialClient struct {
-	config
-}
-
-// NewThreadCredentialClient returns a client for the ThreadCredential from the given config.
-func NewThreadCredentialClient(c config) *ThreadCredentialClient {
-	return &ThreadCredentialClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `threadcredential.Hooks(f(g(h())))`.
-func (c *ThreadCredentialClient) Use(hooks ...Hook) {
-	c.hooks.ThreadCredential = append(c.hooks.ThreadCredential, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `threadcredential.Intercept(f(g(h())))`.
-func (c *ThreadCredentialClient) Intercept(interceptors ...Interceptor) {
-	c.inters.ThreadCredential = append(c.inters.ThreadCredential, interceptors...)
-}
-
-// Create returns a builder for creating a ThreadCredential entity.
-func (c *ThreadCredentialClient) Create() *ThreadCredentialCreate {
-	mutation := newThreadCredentialMutation(c.config, OpCreate)
-	return &ThreadCredentialCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of ThreadCredential entities.
-func (c *ThreadCredentialClient) CreateBulk(builders ...*ThreadCredentialCreate) *ThreadCredentialCreateBulk {
-	return &ThreadCredentialCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *ThreadCredentialClient) MapCreateBulk(slice any, setFunc func(*ThreadCredentialCreate, int)) *ThreadCredentialCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &ThreadCredentialCreateBulk{err: fmt.Errorf("calling to ThreadCredentialClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*ThreadCredentialCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &ThreadCredentialCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for ThreadCredential.
-func (c *ThreadCredentialClient) Update() *ThreadCredentialUpdate {
-	mutation := newThreadCredentialMutation(c.config, OpUpdate)
-	return &ThreadCredentialUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ThreadCredentialClient) UpdateOne(_m *ThreadCredential) *ThreadCredentialUpdateOne {
-	mutation := newThreadCredentialMutation(c.config, OpUpdateOne, withThreadCredential(_m))
-	return &ThreadCredentialUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *ThreadCredentialClient) UpdateOneID(id int) *ThreadCredentialUpdateOne {
-	mutation := newThreadCredentialMutation(c.config, OpUpdateOne, withThreadCredentialID(id))
-	return &ThreadCredentialUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for ThreadCredential.
-func (c *ThreadCredentialClient) Delete() *ThreadCredentialDelete {
-	mutation := newThreadCredentialMutation(c.config, OpDelete)
-	return &ThreadCredentialDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *ThreadCredentialClient) DeleteOne(_m *ThreadCredential) *ThreadCredentialDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ThreadCredentialClient) DeleteOneID(id int) *ThreadCredentialDeleteOne {
-	builder := c.Delete().Where(threadcredential.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &ThreadCredentialDeleteOne{builder}
-}
-
-// Query returns a query builder for ThreadCredential.
-func (c *ThreadCredentialClient) Query() *ThreadCredentialQuery {
-	return &ThreadCredentialQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeThreadCredential},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a ThreadCredential entity by its id.
-func (c *ThreadCredentialClient) Get(ctx context.Context, id int) (*ThreadCredential, error) {
-	return c.Query().Where(threadcredential.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *ThreadCredentialClient) GetX(ctx context.Context, id int) *ThreadCredential {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryUser queries the user edge of a ThreadCredential.
-func (c *ThreadCredentialClient) QueryUser(_m *ThreadCredential) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(threadcredential.Table, threadcredential.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, threadcredential.UserTable, threadcredential.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryThread queries the thread edge of a ThreadCredential.
-func (c *ThreadCredentialClient) QueryThread(_m *ThreadCredential) *ThreadQuery {
-	query := (&ThreadClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(threadcredential.Table, threadcredential.FieldID, id),
-			sqlgraph.To(thread.Table, thread.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, threadcredential.ThreadTable, threadcredential.ThreadColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *ThreadCredentialClient) Hooks() []Hook {
-	return c.hooks.ThreadCredential
-}
-
-// Interceptors returns the client interceptors.
-func (c *ThreadCredentialClient) Interceptors() []Interceptor {
-	return c.inters.ThreadCredential
-}
-
-func (c *ThreadCredentialClient) mutate(ctx context.Context, m *ThreadCredentialMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ThreadCredentialCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ThreadCredentialUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ThreadCredentialUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ThreadCredentialDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown ThreadCredential mutation op: %q", m.Op())
 	}
 }
 
@@ -3423,15 +3757,15 @@ func (c *UserClient) QueryBackupCodes(_m *User) *BackupCodeQuery {
 	return query
 }
 
-// QueryThreads queries the threads edge of a User.
-func (c *UserClient) QueryThreads(_m *User) *ThreadQuery {
-	query := (&ThreadClient{config: c.config}).Query()
+// QueryValidationCases queries the validation_cases edge of a User.
+func (c *UserClient) QueryValidationCases(_m *User) *ValidationCaseQuery {
+	query := (&ValidationCaseClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(thread.Table, thread.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.ThreadsTable, user.ThreadsColumn),
+			sqlgraph.To(validationcase.Table, validationcase.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ValidationCasesTable, user.ValidationCasesColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -3599,15 +3933,79 @@ func (c *UserClient) QuerySudoSessions(_m *User) *SudoSessionQuery {
 	return query
 }
 
-// QueryGivenCredentials queries the given_credentials edge of a User.
-func (c *UserClient) QueryGivenCredentials(_m *User) *ThreadCredentialQuery {
-	query := (&ThreadCredentialClient{config: c.config}).Query()
+// QueryValidationCaseLogs queries the validation_case_logs edge of a User.
+func (c *UserClient) QueryValidationCaseLogs(_m *User) *ValidationCaseLogQuery {
+	query := (&ValidationCaseLogClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(threadcredential.Table, threadcredential.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.GivenCredentialsTable, user.GivenCredentialsColumn),
+			sqlgraph.To(validationcaselog.Table, validationcaselog.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ValidationCaseLogsTable, user.ValidationCaseLogsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConsultationRequests queries the consultation_requests edge of a User.
+func (c *UserClient) QueryConsultationRequests(_m *User) *ConsultationRequestQuery {
+	query := (&ConsultationRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(consultationrequest.Table, consultationrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ConsultationRequestsTable, user.ConsultationRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFinalOffers queries the final_offers edge of a User.
+func (c *UserClient) QueryFinalOffers(_m *User) *FinalOfferQuery {
+	query := (&FinalOfferClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(finaloffer.Table, finaloffer.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.FinalOffersTable, user.FinalOffersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryArtifactSubmissions queries the artifact_submissions edge of a User.
+func (c *UserClient) QueryArtifactSubmissions(_m *User) *ArtifactSubmissionQuery {
+	query := (&ArtifactSubmissionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(artifactsubmission.Table, artifactsubmission.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ArtifactSubmissionsTable, user.ArtifactSubmissionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEndorsements queries the endorsements edge of a User.
+func (c *UserClient) QueryEndorsements(_m *User) *EndorsementQuery {
+	query := (&EndorsementClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(endorsement.Table, endorsement.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.EndorsementsTable, user.EndorsementsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -3837,18 +4235,446 @@ func (c *UserBadgeClient) mutate(ctx context.Context, m *UserBadgeMutation) (Val
 	}
 }
 
+// ValidationCaseClient is a client for the ValidationCase schema.
+type ValidationCaseClient struct {
+	config
+}
+
+// NewValidationCaseClient returns a client for the ValidationCase from the given config.
+func NewValidationCaseClient(c config) *ValidationCaseClient {
+	return &ValidationCaseClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `validationcase.Hooks(f(g(h())))`.
+func (c *ValidationCaseClient) Use(hooks ...Hook) {
+	c.hooks.ValidationCase = append(c.hooks.ValidationCase, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `validationcase.Intercept(f(g(h())))`.
+func (c *ValidationCaseClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ValidationCase = append(c.inters.ValidationCase, interceptors...)
+}
+
+// Create returns a builder for creating a ValidationCase entity.
+func (c *ValidationCaseClient) Create() *ValidationCaseCreate {
+	mutation := newValidationCaseMutation(c.config, OpCreate)
+	return &ValidationCaseCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ValidationCase entities.
+func (c *ValidationCaseClient) CreateBulk(builders ...*ValidationCaseCreate) *ValidationCaseCreateBulk {
+	return &ValidationCaseCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ValidationCaseClient) MapCreateBulk(slice any, setFunc func(*ValidationCaseCreate, int)) *ValidationCaseCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ValidationCaseCreateBulk{err: fmt.Errorf("calling to ValidationCaseClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ValidationCaseCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ValidationCaseCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ValidationCase.
+func (c *ValidationCaseClient) Update() *ValidationCaseUpdate {
+	mutation := newValidationCaseMutation(c.config, OpUpdate)
+	return &ValidationCaseUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ValidationCaseClient) UpdateOne(_m *ValidationCase) *ValidationCaseUpdateOne {
+	mutation := newValidationCaseMutation(c.config, OpUpdateOne, withValidationCase(_m))
+	return &ValidationCaseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ValidationCaseClient) UpdateOneID(id int) *ValidationCaseUpdateOne {
+	mutation := newValidationCaseMutation(c.config, OpUpdateOne, withValidationCaseID(id))
+	return &ValidationCaseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ValidationCase.
+func (c *ValidationCaseClient) Delete() *ValidationCaseDelete {
+	mutation := newValidationCaseMutation(c.config, OpDelete)
+	return &ValidationCaseDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ValidationCaseClient) DeleteOne(_m *ValidationCase) *ValidationCaseDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ValidationCaseClient) DeleteOneID(id int) *ValidationCaseDeleteOne {
+	builder := c.Delete().Where(validationcase.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ValidationCaseDeleteOne{builder}
+}
+
+// Query returns a query builder for ValidationCase.
+func (c *ValidationCaseClient) Query() *ValidationCaseQuery {
+	return &ValidationCaseQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeValidationCase},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ValidationCase entity by its id.
+func (c *ValidationCaseClient) Get(ctx context.Context, id int) (*ValidationCase, error) {
+	return c.Query().Where(validationcase.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ValidationCaseClient) GetX(ctx context.Context, id int) *ValidationCase {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a ValidationCase.
+func (c *ValidationCaseClient) QueryUser(_m *ValidationCase) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(validationcase.Table, validationcase.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, validationcase.UserTable, validationcase.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCategory queries the category edge of a ValidationCase.
+func (c *ValidationCaseClient) QueryCategory(_m *ValidationCase) *CategoryQuery {
+	query := (&CategoryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(validationcase.Table, validationcase.FieldID, id),
+			sqlgraph.To(category.Table, category.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, validationcase.CategoryTable, validationcase.CategoryColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTags queries the tags edge of a ValidationCase.
+func (c *ValidationCaseClient) QueryTags(_m *ValidationCase) *TagQuery {
+	query := (&TagClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(validationcase.Table, validationcase.FieldID, id),
+			sqlgraph.To(tag.Table, tag.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, validationcase.TagsTable, validationcase.TagsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCaseLogs queries the case_logs edge of a ValidationCase.
+func (c *ValidationCaseClient) QueryCaseLogs(_m *ValidationCase) *ValidationCaseLogQuery {
+	query := (&ValidationCaseLogClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(validationcase.Table, validationcase.FieldID, id),
+			sqlgraph.To(validationcaselog.Table, validationcaselog.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, validationcase.CaseLogsTable, validationcase.CaseLogsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConsultationRequests queries the consultation_requests edge of a ValidationCase.
+func (c *ValidationCaseClient) QueryConsultationRequests(_m *ValidationCase) *ConsultationRequestQuery {
+	query := (&ConsultationRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(validationcase.Table, validationcase.FieldID, id),
+			sqlgraph.To(consultationrequest.Table, consultationrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, validationcase.ConsultationRequestsTable, validationcase.ConsultationRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFinalOffers queries the final_offers edge of a ValidationCase.
+func (c *ValidationCaseClient) QueryFinalOffers(_m *ValidationCase) *FinalOfferQuery {
+	query := (&FinalOfferClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(validationcase.Table, validationcase.FieldID, id),
+			sqlgraph.To(finaloffer.Table, finaloffer.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, validationcase.FinalOffersTable, validationcase.FinalOffersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryArtifactSubmissions queries the artifact_submissions edge of a ValidationCase.
+func (c *ValidationCaseClient) QueryArtifactSubmissions(_m *ValidationCase) *ArtifactSubmissionQuery {
+	query := (&ArtifactSubmissionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(validationcase.Table, validationcase.FieldID, id),
+			sqlgraph.To(artifactsubmission.Table, artifactsubmission.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, validationcase.ArtifactSubmissionsTable, validationcase.ArtifactSubmissionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEndorsements queries the endorsements edge of a ValidationCase.
+func (c *ValidationCaseClient) QueryEndorsements(_m *ValidationCase) *EndorsementQuery {
+	query := (&EndorsementClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(validationcase.Table, validationcase.FieldID, id),
+			sqlgraph.To(endorsement.Table, endorsement.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, validationcase.EndorsementsTable, validationcase.EndorsementsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ValidationCaseClient) Hooks() []Hook {
+	return c.hooks.ValidationCase
+}
+
+// Interceptors returns the client interceptors.
+func (c *ValidationCaseClient) Interceptors() []Interceptor {
+	return c.inters.ValidationCase
+}
+
+func (c *ValidationCaseClient) mutate(ctx context.Context, m *ValidationCaseMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ValidationCaseCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ValidationCaseUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ValidationCaseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ValidationCaseDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ValidationCase mutation op: %q", m.Op())
+	}
+}
+
+// ValidationCaseLogClient is a client for the ValidationCaseLog schema.
+type ValidationCaseLogClient struct {
+	config
+}
+
+// NewValidationCaseLogClient returns a client for the ValidationCaseLog from the given config.
+func NewValidationCaseLogClient(c config) *ValidationCaseLogClient {
+	return &ValidationCaseLogClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `validationcaselog.Hooks(f(g(h())))`.
+func (c *ValidationCaseLogClient) Use(hooks ...Hook) {
+	c.hooks.ValidationCaseLog = append(c.hooks.ValidationCaseLog, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `validationcaselog.Intercept(f(g(h())))`.
+func (c *ValidationCaseLogClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ValidationCaseLog = append(c.inters.ValidationCaseLog, interceptors...)
+}
+
+// Create returns a builder for creating a ValidationCaseLog entity.
+func (c *ValidationCaseLogClient) Create() *ValidationCaseLogCreate {
+	mutation := newValidationCaseLogMutation(c.config, OpCreate)
+	return &ValidationCaseLogCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ValidationCaseLog entities.
+func (c *ValidationCaseLogClient) CreateBulk(builders ...*ValidationCaseLogCreate) *ValidationCaseLogCreateBulk {
+	return &ValidationCaseLogCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ValidationCaseLogClient) MapCreateBulk(slice any, setFunc func(*ValidationCaseLogCreate, int)) *ValidationCaseLogCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ValidationCaseLogCreateBulk{err: fmt.Errorf("calling to ValidationCaseLogClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ValidationCaseLogCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ValidationCaseLogCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ValidationCaseLog.
+func (c *ValidationCaseLogClient) Update() *ValidationCaseLogUpdate {
+	mutation := newValidationCaseLogMutation(c.config, OpUpdate)
+	return &ValidationCaseLogUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ValidationCaseLogClient) UpdateOne(_m *ValidationCaseLog) *ValidationCaseLogUpdateOne {
+	mutation := newValidationCaseLogMutation(c.config, OpUpdateOne, withValidationCaseLog(_m))
+	return &ValidationCaseLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ValidationCaseLogClient) UpdateOneID(id int) *ValidationCaseLogUpdateOne {
+	mutation := newValidationCaseLogMutation(c.config, OpUpdateOne, withValidationCaseLogID(id))
+	return &ValidationCaseLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ValidationCaseLog.
+func (c *ValidationCaseLogClient) Delete() *ValidationCaseLogDelete {
+	mutation := newValidationCaseLogMutation(c.config, OpDelete)
+	return &ValidationCaseLogDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ValidationCaseLogClient) DeleteOne(_m *ValidationCaseLog) *ValidationCaseLogDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ValidationCaseLogClient) DeleteOneID(id int) *ValidationCaseLogDeleteOne {
+	builder := c.Delete().Where(validationcaselog.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ValidationCaseLogDeleteOne{builder}
+}
+
+// Query returns a query builder for ValidationCaseLog.
+func (c *ValidationCaseLogClient) Query() *ValidationCaseLogQuery {
+	return &ValidationCaseLogQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeValidationCaseLog},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ValidationCaseLog entity by its id.
+func (c *ValidationCaseLogClient) Get(ctx context.Context, id int) (*ValidationCaseLog, error) {
+	return c.Query().Where(validationcaselog.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ValidationCaseLogClient) GetX(ctx context.Context, id int) *ValidationCaseLog {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryValidationCase queries the validation_case edge of a ValidationCaseLog.
+func (c *ValidationCaseLogClient) QueryValidationCase(_m *ValidationCaseLog) *ValidationCaseQuery {
+	query := (&ValidationCaseClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(validationcaselog.Table, validationcaselog.FieldID, id),
+			sqlgraph.To(validationcase.Table, validationcase.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, validationcaselog.ValidationCaseTable, validationcaselog.ValidationCaseColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryActorUser queries the actor_user edge of a ValidationCaseLog.
+func (c *ValidationCaseLogClient) QueryActorUser(_m *ValidationCaseLog) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(validationcaselog.Table, validationcaselog.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, validationcaselog.ActorUserTable, validationcaselog.ActorUserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ValidationCaseLogClient) Hooks() []Hook {
+	return c.hooks.ValidationCaseLog
+}
+
+// Interceptors returns the client interceptors.
+func (c *ValidationCaseLogClient) Interceptors() []Interceptor {
+	return c.inters.ValidationCaseLog
+}
+
+func (c *ValidationCaseLogClient) mutate(ctx context.Context, m *ValidationCaseLogMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ValidationCaseLogCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ValidationCaseLogUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ValidationCaseLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ValidationCaseLogDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ValidationCaseLog mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Admin, BackupCode, Badge, Category, ChainCursor, Credential, DeviceFingerprint,
-		DeviceUserMapping, EmailVerificationToken, Passkey, PasswordResetToken,
-		SecurityEvent, Session, SessionLock, SudoSession, TOTPPendingToken, Tag,
-		Thread, ThreadCredential, User, UserBadge []ent.Hook
+		Admin, ArtifactSubmission, BackupCode, Badge, Category, ChainCursor,
+		ConsultationRequest, Credential, DeviceFingerprint, DeviceUserMapping,
+		EmailVerificationToken, Endorsement, FinalOffer, Passkey, PasswordResetToken,
+		SecurityEvent, Session, SessionLock, SudoSession, TOTPPendingToken, Tag, User,
+		UserBadge, ValidationCase, ValidationCaseLog []ent.Hook
 	}
 	inters struct {
-		Admin, BackupCode, Badge, Category, ChainCursor, Credential, DeviceFingerprint,
-		DeviceUserMapping, EmailVerificationToken, Passkey, PasswordResetToken,
-		SecurityEvent, Session, SessionLock, SudoSession, TOTPPendingToken, Tag,
-		Thread, ThreadCredential, User, UserBadge []ent.Interceptor
+		Admin, ArtifactSubmission, BackupCode, Badge, Category, ChainCursor,
+		ConsultationRequest, Credential, DeviceFingerprint, DeviceUserMapping,
+		EmailVerificationToken, Endorsement, FinalOffer, Passkey, PasswordResetToken,
+		SecurityEvent, Session, SessionLock, SudoSession, TOTPPendingToken, Tag, User,
+		UserBadge, ValidationCase, ValidationCaseLog []ent.Interceptor
 	}
 )

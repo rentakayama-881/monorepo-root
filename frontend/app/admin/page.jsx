@@ -262,42 +262,36 @@ export default function AdminDashboardPage() {
       label: "Total Badges",
       value: stats.totalBadges,
       href: "/admin/badges",
-      icon: "🏆",
       color: "text-warning",
     },
     {
       label: "Total Users",
       value: stats.totalUsers,
       href: "/admin/users",
-      icon: "👥",
       color: "text-primary",
     },
     {
       label: "Pending Reports",
       value: stats.pendingReports,
       href: "/admin/reports",
-      icon: "🚨",
       color: "text-destructive",
     },
     {
       label: "Active Bans",
       value: stats.activeDeviceBans,
       href: "/admin/device-bans",
-      icon: "🔒",
       color: "text-warning",
     },
     {
       label: "Warnings Today",
       value: stats.warningsToday,
       href: "/admin/warnings",
-      icon: "⚠️",
       color: "text-warning",
     },
     {
-      label: "Hidden Content",
+      label: "Hidden Records",
       value: stats.hiddenContent,
       href: "/admin/content",
-      icon: "👁️",
       color: "text-muted-foreground",
     },
   ];
@@ -316,7 +310,6 @@ export default function AdminDashboardPage() {
           <Link key={stat.href} href={stat.href}>
             <Card className="p-6 hover:border-primary transition-colors cursor-pointer">
               <div className="flex items-center gap-4">
-                <span className="text-3xl">{stat.icon}</span>
                 <div>
                   <p className="text-sm text-muted-foreground">
                     {stat.label}
@@ -341,7 +334,7 @@ export default function AdminDashboardPage() {
               href="/admin/badges"
               className="block rounded-lg px-4 py-3 bg-muted/50 hover:bg-accent transition-colors"
             >
-              <span className="font-medium">🏆 Manage Badges</span>
+              <span className="font-medium">Manage Badges</span>
               <p className="text-sm text-muted-foreground">
                 Create, edit, or delete badges
               </p>
@@ -350,7 +343,7 @@ export default function AdminDashboardPage() {
               href="/admin/users"
               className="block rounded-lg px-4 py-3 bg-muted/50 hover:bg-accent transition-colors"
             >
-              <span className="font-medium">👥 Manage Users</span>
+              <span className="font-medium">Manage Users</span>
               <p className="text-sm text-muted-foreground">
                 Assign or revoke badges from users
               </p>

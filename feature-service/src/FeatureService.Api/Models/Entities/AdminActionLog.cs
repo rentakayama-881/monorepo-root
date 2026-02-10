@@ -4,27 +4,43 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace FeatureService.Api.Models.Entities;
 
 /// <summary>
-/// Tracks thread ownership transfers performed by admin.
-/// The actual thread data remains in PostgreSQL (Go backend).
-/// This stores the transfer history for audit purposes.
+/// Tracks Validation Case ownership moves performed by admin.
+/// The actual Validation Case data remains in PostgreSQL (Go backend).
+/// This stores the move history for audit purposes.
 /// </summary>
-public class ThreadOwnershipTransfer
+public class ValidationCaseOwnershipTransfer
 {
     [BsonId]
     [BsonRepresentation(BsonType.String)]
     public string Id { get; set; } = string.Empty; // trf_xxx format using Ulid
 
     /// <summary>
-    /// Thread ID from PostgreSQL
+    /// Validation Case ID from PostgreSQL
     /// </summary>
-    [BsonElement("threadId")]
-    public uint ThreadId { get; set; }
+    [BsonElement("validationCaseId")]
+    public uint ValidationCaseId { get; set; }
 
     /// <summary>
-    /// Thread title at time of transfer (snapshot)
+    /// Legacy field: "threadId" from the old forum/thread domain.
+    /// Kept to preserve existing MongoDB documents during migration.
+    /// </summary>
+    [BsonElement("threadId")]
+    [BsonIgnoreIfDefault]
+    public uint LegacyThreadId { get; set; }
+
+    /// <summary>
+    /// Validation Case title at time of move (snapshot)
+    /// </summary>
+    [BsonElement("validationCaseTitle")]
+    public string? ValidationCaseTitle { get; set; }
+
+    /// <summary>
+    /// Legacy field: "threadTitle" from the old forum/thread domain.
+    /// Kept to preserve existing MongoDB documents during migration.
     /// </summary>
     [BsonElement("threadTitle")]
-    public string? ThreadTitle { get; set; }
+    [BsonIgnoreIfNull]
+    public string? LegacyThreadTitle { get; set; }
 
     /// <summary>
     /// Previous owner user ID
@@ -95,7 +111,7 @@ public class AdminActionLog
     public string ActionType { get; set; } = string.Empty;
 
     /// <summary>
-    /// Type of target: report, thread, device, content, user
+    /// Type of target: report, validation_case, device, content, user
     /// </summary>
     [BsonElement("targetType")]
     public string TargetType { get; set; } = string.Empty;
@@ -134,13 +150,16 @@ public class AdminActionLog
 public static class AdminActionType
 {
     public const string ReportAction = "report_action";
-    public const string ThreadTransfer = "thread_transfer";
-    public const string ThreadDelete = "thread_delete";
+    public const string ValidationCaseMove = "validation_case_move";
     public const string BanDevice = "ban_device";
     public const string UnbanDevice = "unban_device";
     public const string HideContent = "hide_content";
     public const string UnhideContent = "unhide_content";
     public const string Warning = "warning";
+
+    // Legacy (deprecated): old thread-based domain.
+    public const string ThreadTransfer = "thread_transfer";
+    public const string ThreadDelete = "thread_delete";
 }
 
 /// <summary>
@@ -149,8 +168,11 @@ public static class AdminActionType
 public static class AdminActionTargetType
 {
     public const string Report = "report";
-    public const string Thread = "thread";
+    public const string ValidationCase = "validation_case";
     public const string Device = "device";
     public const string Content = "content";
     public const string User = "user";
+
+    // Legacy (deprecated): old thread-based domain.
+    public const string Thread = "thread";
 }

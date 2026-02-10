@@ -72,8 +72,8 @@ const (
 	EdgeSessions = "sessions"
 	// EdgeBackupCodes holds the string denoting the backup_codes edge name in mutations.
 	EdgeBackupCodes = "backup_codes"
-	// EdgeThreads holds the string denoting the threads edge name in mutations.
-	EdgeThreads = "threads"
+	// EdgeValidationCases holds the string denoting the validation_cases edge name in mutations.
+	EdgeValidationCases = "validation_cases"
 	// EdgeUserBadges holds the string denoting the user_badges edge name in mutations.
 	EdgeUserBadges = "user_badges"
 	// EdgeSessionLocks holds the string denoting the session_locks edge name in mutations.
@@ -94,8 +94,16 @@ const (
 	EdgeDeviceUserMappings = "device_user_mappings"
 	// EdgeSudoSessions holds the string denoting the sudo_sessions edge name in mutations.
 	EdgeSudoSessions = "sudo_sessions"
-	// EdgeGivenCredentials holds the string denoting the given_credentials edge name in mutations.
-	EdgeGivenCredentials = "given_credentials"
+	// EdgeValidationCaseLogs holds the string denoting the validation_case_logs edge name in mutations.
+	EdgeValidationCaseLogs = "validation_case_logs"
+	// EdgeConsultationRequests holds the string denoting the consultation_requests edge name in mutations.
+	EdgeConsultationRequests = "consultation_requests"
+	// EdgeFinalOffers holds the string denoting the final_offers edge name in mutations.
+	EdgeFinalOffers = "final_offers"
+	// EdgeArtifactSubmissions holds the string denoting the artifact_submissions edge name in mutations.
+	EdgeArtifactSubmissions = "artifact_submissions"
+	// EdgeEndorsements holds the string denoting the endorsements edge name in mutations.
+	EdgeEndorsements = "endorsements"
 	// EdgePrimaryBadge holds the string denoting the primary_badge edge name in mutations.
 	EdgePrimaryBadge = "primary_badge"
 	// Table holds the table name of the user in the database.
@@ -121,13 +129,13 @@ const (
 	BackupCodesInverseTable = "backup_codes"
 	// BackupCodesColumn is the table column denoting the backup_codes relation/edge.
 	BackupCodesColumn = "user_id"
-	// ThreadsTable is the table that holds the threads relation/edge.
-	ThreadsTable = "threads"
-	// ThreadsInverseTable is the table name for the Thread entity.
-	// It exists in this package in order to avoid circular dependency with the "thread" package.
-	ThreadsInverseTable = "threads"
-	// ThreadsColumn is the table column denoting the threads relation/edge.
-	ThreadsColumn = "user_id"
+	// ValidationCasesTable is the table that holds the validation_cases relation/edge.
+	ValidationCasesTable = "validation_cases"
+	// ValidationCasesInverseTable is the table name for the ValidationCase entity.
+	// It exists in this package in order to avoid circular dependency with the "validationcase" package.
+	ValidationCasesInverseTable = "validation_cases"
+	// ValidationCasesColumn is the table column denoting the validation_cases relation/edge.
+	ValidationCasesColumn = "user_id"
 	// UserBadgesTable is the table that holds the user_badges relation/edge.
 	UserBadgesTable = "user_badges"
 	// UserBadgesInverseTable is the table name for the UserBadge entity.
@@ -198,13 +206,41 @@ const (
 	SudoSessionsInverseTable = "sudo_sessions"
 	// SudoSessionsColumn is the table column denoting the sudo_sessions relation/edge.
 	SudoSessionsColumn = "user_id"
-	// GivenCredentialsTable is the table that holds the given_credentials relation/edge.
-	GivenCredentialsTable = "thread_credentials"
-	// GivenCredentialsInverseTable is the table name for the ThreadCredential entity.
-	// It exists in this package in order to avoid circular dependency with the "threadcredential" package.
-	GivenCredentialsInverseTable = "thread_credentials"
-	// GivenCredentialsColumn is the table column denoting the given_credentials relation/edge.
-	GivenCredentialsColumn = "user_id"
+	// ValidationCaseLogsTable is the table that holds the validation_case_logs relation/edge.
+	ValidationCaseLogsTable = "validation_case_logs"
+	// ValidationCaseLogsInverseTable is the table name for the ValidationCaseLog entity.
+	// It exists in this package in order to avoid circular dependency with the "validationcaselog" package.
+	ValidationCaseLogsInverseTable = "validation_case_logs"
+	// ValidationCaseLogsColumn is the table column denoting the validation_case_logs relation/edge.
+	ValidationCaseLogsColumn = "actor_user_id"
+	// ConsultationRequestsTable is the table that holds the consultation_requests relation/edge.
+	ConsultationRequestsTable = "consultation_requests"
+	// ConsultationRequestsInverseTable is the table name for the ConsultationRequest entity.
+	// It exists in this package in order to avoid circular dependency with the "consultationrequest" package.
+	ConsultationRequestsInverseTable = "consultation_requests"
+	// ConsultationRequestsColumn is the table column denoting the consultation_requests relation/edge.
+	ConsultationRequestsColumn = "validator_user_id"
+	// FinalOffersTable is the table that holds the final_offers relation/edge.
+	FinalOffersTable = "final_offers"
+	// FinalOffersInverseTable is the table name for the FinalOffer entity.
+	// It exists in this package in order to avoid circular dependency with the "finaloffer" package.
+	FinalOffersInverseTable = "final_offers"
+	// FinalOffersColumn is the table column denoting the final_offers relation/edge.
+	FinalOffersColumn = "validator_user_id"
+	// ArtifactSubmissionsTable is the table that holds the artifact_submissions relation/edge.
+	ArtifactSubmissionsTable = "artifact_submissions"
+	// ArtifactSubmissionsInverseTable is the table name for the ArtifactSubmission entity.
+	// It exists in this package in order to avoid circular dependency with the "artifactsubmission" package.
+	ArtifactSubmissionsInverseTable = "artifact_submissions"
+	// ArtifactSubmissionsColumn is the table column denoting the artifact_submissions relation/edge.
+	ArtifactSubmissionsColumn = "validator_user_id"
+	// EndorsementsTable is the table that holds the endorsements relation/edge.
+	EndorsementsTable = "endorsements"
+	// EndorsementsInverseTable is the table name for the Endorsement entity.
+	// It exists in this package in order to avoid circular dependency with the "endorsement" package.
+	EndorsementsInverseTable = "endorsements"
+	// EndorsementsColumn is the table column denoting the endorsements relation/edge.
+	EndorsementsColumn = "validator_user_id"
 	// PrimaryBadgeTable is the table that holds the primary_badge relation/edge.
 	PrimaryBadgeTable = "users"
 	// PrimaryBadgeInverseTable is the table name for the Badge entity.
@@ -467,17 +503,17 @@ func ByBackupCodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByThreadsCount orders the results by threads count.
-func ByThreadsCount(opts ...sql.OrderTermOption) OrderOption {
+// ByValidationCasesCount orders the results by validation_cases count.
+func ByValidationCasesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newThreadsStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newValidationCasesStep(), opts...)
 	}
 }
 
-// ByThreads orders the results by threads terms.
-func ByThreads(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByValidationCases orders the results by validation_cases terms.
+func ByValidationCases(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newThreadsStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newValidationCasesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -621,17 +657,73 @@ func BySudoSessions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByGivenCredentialsCount orders the results by given_credentials count.
-func ByGivenCredentialsCount(opts ...sql.OrderTermOption) OrderOption {
+// ByValidationCaseLogsCount orders the results by validation_case_logs count.
+func ByValidationCaseLogsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newGivenCredentialsStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newValidationCaseLogsStep(), opts...)
 	}
 }
 
-// ByGivenCredentials orders the results by given_credentials terms.
-func ByGivenCredentials(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByValidationCaseLogs orders the results by validation_case_logs terms.
+func ByValidationCaseLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newGivenCredentialsStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newValidationCaseLogsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByConsultationRequestsCount orders the results by consultation_requests count.
+func ByConsultationRequestsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newConsultationRequestsStep(), opts...)
+	}
+}
+
+// ByConsultationRequests orders the results by consultation_requests terms.
+func ByConsultationRequests(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConsultationRequestsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByFinalOffersCount orders the results by final_offers count.
+func ByFinalOffersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newFinalOffersStep(), opts...)
+	}
+}
+
+// ByFinalOffers orders the results by final_offers terms.
+func ByFinalOffers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newFinalOffersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByArtifactSubmissionsCount orders the results by artifact_submissions count.
+func ByArtifactSubmissionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newArtifactSubmissionsStep(), opts...)
+	}
+}
+
+// ByArtifactSubmissions orders the results by artifact_submissions terms.
+func ByArtifactSubmissions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newArtifactSubmissionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByEndorsementsCount orders the results by endorsements count.
+func ByEndorsementsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEndorsementsStep(), opts...)
+	}
+}
+
+// ByEndorsements orders the results by endorsements terms.
+func ByEndorsements(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEndorsementsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -662,11 +754,11 @@ func newBackupCodesStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, BackupCodesTable, BackupCodesColumn),
 	)
 }
-func newThreadsStep() *sqlgraph.Step {
+func newValidationCasesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ThreadsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ThreadsTable, ThreadsColumn),
+		sqlgraph.To(ValidationCasesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ValidationCasesTable, ValidationCasesColumn),
 	)
 }
 func newUserBadgesStep() *sqlgraph.Step {
@@ -739,11 +831,39 @@ func newSudoSessionsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, SudoSessionsTable, SudoSessionsColumn),
 	)
 }
-func newGivenCredentialsStep() *sqlgraph.Step {
+func newValidationCaseLogsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(GivenCredentialsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, GivenCredentialsTable, GivenCredentialsColumn),
+		sqlgraph.To(ValidationCaseLogsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ValidationCaseLogsTable, ValidationCaseLogsColumn),
+	)
+}
+func newConsultationRequestsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConsultationRequestsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ConsultationRequestsTable, ConsultationRequestsColumn),
+	)
+}
+func newFinalOffersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(FinalOffersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, FinalOffersTable, FinalOffersColumn),
+	)
+}
+func newArtifactSubmissionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ArtifactSubmissionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ArtifactSubmissionsTable, ArtifactSubmissionsColumn),
+	)
+}
+func newEndorsementsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EndorsementsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EndorsementsTable, EndorsementsColumn),
 	)
 }
 func newPrimaryBadgeStep() *sqlgraph.Step {

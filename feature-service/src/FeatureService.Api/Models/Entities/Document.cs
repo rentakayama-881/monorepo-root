@@ -74,6 +74,13 @@ public class Document
     public string Visibility { get; set; } = DocumentVisibility.Private;
 
     /// <summary>
+    /// Explicit share list for private documents (in addition to owner/admin).
+    /// Used for Validation Case workflows (Artifact Submission, arbitration access).
+    /// </summary>
+    [BsonElement("sharedWithUserIds")]
+    public List<uint> SharedWithUserIds { get; set; } = new();
+
+    /// <summary>
     /// Document category: whitepaper, article, research, other
     /// </summary>
     [BsonElement("category")]

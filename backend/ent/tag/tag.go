@@ -34,15 +34,15 @@ const (
 	FieldIsActive = "is_active"
 	// FieldOrder holds the string denoting the order field in the database.
 	FieldOrder = "order"
-	// EdgeThreads holds the string denoting the threads edge name in mutations.
-	EdgeThreads = "threads"
+	// EdgeValidationCases holds the string denoting the validation_cases edge name in mutations.
+	EdgeValidationCases = "validation_cases"
 	// Table holds the table name of the tag in the database.
 	Table = "tags"
-	// ThreadsTable is the table that holds the threads relation/edge. The primary key declared below.
-	ThreadsTable = "tag_threads"
-	// ThreadsInverseTable is the table name for the Thread entity.
-	// It exists in this package in order to avoid circular dependency with the "thread" package.
-	ThreadsInverseTable = "threads"
+	// ValidationCasesTable is the table that holds the validation_cases relation/edge. The primary key declared below.
+	ValidationCasesTable = "tag_validation_cases"
+	// ValidationCasesInverseTable is the table name for the ValidationCase entity.
+	// It exists in this package in order to avoid circular dependency with the "validationcase" package.
+	ValidationCasesInverseTable = "validation_cases"
 )
 
 // Columns holds all SQL columns for tag fields.
@@ -61,9 +61,9 @@ var Columns = []string{
 }
 
 var (
-	// ThreadsPrimaryKey and ThreadsColumn2 are the table columns denoting the
-	// primary key for the threads relation (M2M).
-	ThreadsPrimaryKey = []string{"tag_id", "thread_id"}
+	// ValidationCasesPrimaryKey and ValidationCasesColumn2 are the table columns denoting the
+	// primary key for the validation_cases relation (M2M).
+	ValidationCasesPrimaryKey = []string{"tag_id", "validation_case_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -157,23 +157,23 @@ func ByOrder(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOrder, opts...).ToFunc()
 }
 
-// ByThreadsCount orders the results by threads count.
-func ByThreadsCount(opts ...sql.OrderTermOption) OrderOption {
+// ByValidationCasesCount orders the results by validation_cases count.
+func ByValidationCasesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newThreadsStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newValidationCasesStep(), opts...)
 	}
 }
 
-// ByThreads orders the results by threads terms.
-func ByThreads(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByValidationCases orders the results by validation_cases terms.
+func ByValidationCases(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newThreadsStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newValidationCasesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newThreadsStep() *sqlgraph.Step {
+func newValidationCasesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ThreadsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, false, ThreadsTable, ThreadsPrimaryKey...),
+		sqlgraph.To(ValidationCasesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, ValidationCasesTable, ValidationCasesPrimaryKey...),
 	)
 }

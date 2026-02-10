@@ -1,10 +1,10 @@
 # Tags Taxonomy (Harvard-style)
 
-Dokumen ini mendefinisikan sistem tags untuk thread validasi hasil kerja AI agar:
+Dokumen ini mendefinisikan sistem tags untuk Validation Case (validasi hasil kerja AI) agar:
 
 - **Separable untuk filter** (tidak tumpang tindih antar dimensi)
 - **Jumlah wajar** (target total 12–24 tags)
-- **Pemilihan sederhana** (target 2–4 tags per thread)
+- **Pemilihan sederhana** (target 2–4 tags per Validation Case)
 - **Modern & konsisten** (icon modern, warna mengikuti theme `globals.css`)
 
 ## 1) Dimensi (jangan dicampur)
@@ -18,17 +18,17 @@ Sistem ini memisahkan tags ke 4 dimensi. Dimensi dikodekan lewat prefix pada `sl
 
 Tujuan prefix: filter jadi “separable” dan tidak bocor definisinya.
 
-## 2) Aturan pemilihan tags (Create Thread)
+## 2) Aturan pemilihan tags (Create Validation Case)
 
 Aturan (frontend, saat tags tersedia dari API):
 
 - **Minimal 2 tags**
 - **Maksimal 4 tags**
-- **Single-per-dimension** untuk tag yang punya prefix di atas (contoh: hanya 1 `domain-*` per thread)
+- **Single-per-dimension** untuk tag yang punya prefix di atas (contoh: hanya 1 `domain-*` per Validation Case)
 
 Rasional singkat:
 
-- 2 tags minimum mencegah thread “tanpa metadata” sehingga filter tidak efektif.
+- 2 tags minimum mencegah kasus “tanpa metadata” sehingga filter tidak efektif.
 - 4 tags maksimum menahan ledakan kombinasi & noise.
 - Single-per-dimension menjaga separability (tidak ada 2 domain sekaligus).
 
@@ -40,14 +40,14 @@ Format: **Nama (1–2 kata)**, deskripsi 1 kalimat, rule, contoh cocok/tidak.
 
 | Slug | Name | Deskripsi | Rule (kapan dipakai) | Contoh cocok | Contoh tidak cocok |
 |---|---|---|---|---|---|
-| `artifact-specification` | Specification | Kebutuhan/kontrak output: scope, acceptance criteria, API/UX spec. | Thread utama berisi spesifikasi/requirements. | “Tolong validasi spec API escrow v2” | “Bug button login tidak bisa klik” |
+| `artifact-specification` | Specification | Kebutuhan/kontrak output: scope, acceptance criteria, API/UX spec. | Validation Case record berisi spesifikasi/requirements. | “Tolong validasi spec API escrow v2” | “Bug button login tidak bisa klik” |
 | `artifact-patch` | Patch | Perubahan kecil untuk memperbaiki bug/behavior spesifik. | Ada perubahan kecil yang bisa diterapkan segera. | “Fix null pointer di handler X” | “Rombak arsitektur auth total” |
 | `artifact-refactor` | Refactor | Perubahan struktur internal tanpa mengubah output fungsional utama. | Fokus pada maintainability, bukan fitur baru. | “Refactor hook autosave agar aman” | “Tambah fitur baru pembayaran” |
 | `artifact-deployment` | Deployment | Rilis, konfigurasi, atau perubahan infra untuk deploy. | Berkaitan dengan deploy/release/config prod. | “Set env vars, rollout, dan rollback plan” | “Desain UI tag pills” |
 | `artifact-incident` | Incident | Gangguan produksi: outage, degradation, atau bug kritikal. | Ada issue prod: impact, timeline, mitigasi. | “Incident report 502 spike” | “Permintaan review style guide” |
 | `artifact-review` | Review | Review kode/arsitektur/PR untuk validasi kualitas. | Tujuan utamanya evaluasi kualitas/keputusan teknis. | “Review perubahan rate limit auth” | “Write-only dokumentasi FAQ” |
 | `artifact-documentation` | Documentation | Dokumentasi, guide, atau runbook. | Output utama adalah doc. | “Runbook: rotate secrets” | “Benchmark query untuk index” |
-| `artifact-benchmark` | Benchmark | Pengukuran performa: latency, throughput, load test. | Ada metrik & cara ukur. | “Benchmark endpoint /api/threads” | “Diskusi umum tanpa data” |
+| `artifact-benchmark` | Benchmark | Pengukuran performa: latency, throughput, load test. | Ada metrik & cara ukur. | “Benchmark endpoint /api/validation-cases” | “Diskusi umum tanpa data” |
 
 ### Stage (Workflow)
 
@@ -55,7 +55,7 @@ Format: **Nama (1–2 kata)**, deskripsi 1 kalimat, rule, contoh cocok/tidak.
 |---|---|---|---|---|---|
 | `stage-draft` | Draft | Masih eksplorasi; detail bisa berubah. | Masih merumuskan masalah/solusi. | “Draft taksonomi tags v1” | “Patch siap merge” |
 | `stage-in-progress` | In Progress | Sedang dikerjakan; butuh feedback parsial. | Ada progres, belum siap final review. | “WIP UI filter tags” | “Incident sudah resolved” |
-| `stage-blocked` | Blocked | Terhenti karena dependency/akses/clarification. | Ada blocker jelas. | “Blocked karena DB migration belum siap” | “Thread selesai dengan bukti” |
+| `stage-blocked` | Blocked | Terhenti karena dependency/akses/clarification. | Ada blocker jelas. | “Blocked karena DB migration belum siap” | “Kasus selesai dengan bukti” |
 | `stage-ready` | Ready | Siap divalidasi/review; informasi sudah cukup. | Semua konteks tersedia untuk validasi. | “Siap review: PR + test steps” | “Masih brainstorming” |
 
 ### Domain
@@ -67,7 +67,7 @@ Format: **Nama (1–2 kata)**, deskripsi 1 kalimat, rule, contoh cocok/tidak.
 | `domain-devops` | DevOps | CI/CD, infra, observability, ops. | Infra/release/ops. | “Nginx config, rate limits” | “Refactor komponen React” |
 | `domain-database` | Database | Schema, query, indexing, migrations. | DB query/migration/index. | “Tambah index tags join table” | “Update copywriting UI” |
 | `domain-security` | Security | AuthZ/AuthN, exploit, hardening, threat model. | Ada aspek security utama. | “Audit token refresh flow” | “Tutorial markdown editor” |
-| `domain-auth` | Auth | Login, session, JWT, passkey, MFA. | Fokus utama auth/session. | “Fix refresh token race” | “Performance list threads” |
+| `domain-auth` | Auth | Login, session, JWT, passkey, MFA. | Fokus utama auth/session. | “Fix refresh token race” | “Performance list cases” |
 
 ### Evidence / Validation
 
@@ -102,7 +102,7 @@ Catatan: mapping “deterministik” tidak dibuat karena legacy tags tidak separ
 1) Jalankan seed taxonomy (idempotent):
    - `cd backend && go run ./cmd/seed_tags`
    - Opsional (hard delete legacy tags, berisiko): `cd backend && go run ./cmd/seed_tags --delete-legacy`
-2) Setelah legacy tags dinonaktifkan, backend hanya mengembalikan **active tags** pada response thread list/detail (jadi legacy tidak tampil di UI).
-3) Retag threads yang penting:
-   - User bisa edit tags via halaman `My Threads` (frontend sudah punya modal edit).
+2) Setelah legacy tags dinonaktifkan, backend hanya mengembalikan **active tags** pada response validation case list/detail (jadi legacy tidak tampil di UI).
+3) Retag validation cases yang penting:
+   - User bisa edit tags via halaman `My Validation Cases`.
    - Untuk retag massal, rekomendasi: buat script/command terpisah berbasis mapping manual per kategori (bukan otomatis “asal map”).

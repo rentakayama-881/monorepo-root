@@ -13,7 +13,8 @@ public record UploadDocumentRequest(
     string? Description,
     string Category,    // whitepaper, article, research, other
     string Visibility,  // public, private
-    List<string>? Tags
+    List<string>? Tags,
+    List<uint>? SharedWithUserIds = null
 );
 
 /// <summary>
@@ -67,6 +68,18 @@ public record DocumentDetailDto(
 );
 
 /// <summary>
+/// Minimal document fields for authorization checks (excludes FileData)
+/// </summary>
+public record DocumentAccessDto(
+    string Id,
+    uint UserId,
+    string Visibility,
+    List<uint>? SharedWithUserIds,
+    string FileName,
+    string FileType
+);
+
+/// <summary>
 /// Request to update document metadata
 /// </summary>
 public record UpdateDocumentRequest(
@@ -75,6 +88,13 @@ public record UpdateDocumentRequest(
     string? Visibility,
     string? Category,
     List<string>? Tags
+);
+
+/// <summary>
+/// Request to update private document sharing list
+/// </summary>
+public record UpdateDocumentSharingRequest(
+    List<uint> SharedWithUserIds
 );
 
 /// <summary>

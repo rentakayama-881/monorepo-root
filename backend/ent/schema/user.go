@@ -117,11 +117,11 @@ func (User) Fields() []ent.Field {
 		field.String("lock_reason").
 			Optional().
 			MaxLen(255),
-		// Cached from Feature-Service (MongoDB) for fast thread/profile reads
-		field.Int64("guarantee_amount").
-			Default(0),
+			// Cached from Feature-Service (MongoDB) for fast validation case/profile reads
+			field.Int64("guarantee_amount").
+				Default(0),
+		}
 	}
-}
 
 // Edges of the User.
 func (User) Edges() []ent.Edge {
@@ -129,7 +129,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("passkeys", Passkey.Type),
 		edge.To("sessions", Session.Type),
 		edge.To("backup_codes", BackupCode.Type),
-		edge.To("threads", Thread.Type),
+		edge.To("validation_cases", ValidationCase.Type),
 		edge.To("user_badges", UserBadge.Type),
 		edge.To("session_locks", SessionLock.Type),
 		edge.To("email_verification_tokens", EmailVerificationToken.Type),
@@ -140,7 +140,11 @@ func (User) Edges() []ent.Edge {
 		edge.To("device_fingerprints", DeviceFingerprint.Type),
 		edge.To("device_user_mappings", DeviceUserMapping.Type),
 		edge.To("sudo_sessions", SudoSession.Type),
-		edge.To("given_credentials", ThreadCredential.Type),
+		edge.To("validation_case_logs", ValidationCaseLog.Type),
+		edge.To("consultation_requests", ConsultationRequest.Type),
+		edge.To("final_offers", FinalOffer.Type),
+		edge.To("artifact_submissions", ArtifactSubmission.Type),
+		edge.To("endorsements", Endorsement.Type),
 		edge.To("primary_badge", Badge.Type).
 			Field("primary_badge_id").
 			Unique(),

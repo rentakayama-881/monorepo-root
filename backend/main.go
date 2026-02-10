@@ -314,10 +314,10 @@ func main() {
 	sessionServiceWrapper := services.NewSessionServiceWrapper(sessionEntService)
 	totpServiceWrapper := services.NewTOTPServiceWrapper(totpEntService)
 
-	// Use Ent-based ThreadService exclusively
-	var threadService services.ThreadServiceInterface
-	threadService = services.NewEntThreadService()
-	logger.Info("Using Ent ORM for ThreadService")
+	// Use Ent-based Validation Case service exclusively
+	var caseService services.ValidationCaseServiceInterface
+	caseService = services.NewEntValidationCaseService()
+	logger.Info("Using Ent ORM for ValidationCaseService")
 
 	// Initialize passkey service with WebAuthn config
 	rpID := strings.TrimSpace(os.Getenv("WEBAUTHN_RP_ID"))
@@ -345,8 +345,8 @@ func main() {
 
 	// Use service wrappers for handlers expecting legacy interfaces
 	authHandler := handlers.NewAuthHandler(authServiceWrapper, sessionServiceWrapper)
-	threadHandler := handlers.NewThreadHandler(threadService)
-	credentialHandler := handlers.NewCredentialHandler(database.GetEntClient())
+	caseHandler := handlers.NewValidationCaseHandler(caseService)
+	workflowHandler := handlers.NewValidationCaseWorkflowHandler(services.NewEntValidationCaseWorkflowService())
 	totpHandler := handlers.NewTOTPHandler(totpServiceWrapper, logger.GetLogger())
 	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authServiceWrapper, logger.GetLogger())
 	sudoHandler := handlers.NewEntSudoHandler(sudoEntService, logger.GetLogger())
@@ -354,7 +354,7 @@ func main() {
 	// Financial features are handled by the ASP.NET service; keep Go focused on core identity/content.
 
 	// Verify all handlers are properly initialized
-	if authHandler == nil || threadHandler == nil || userHandler == nil {
+	if authHandler == nil || caseHandler == nil || workflowHandler == nil || userHandler == nil {
 		logger.Fatal("Failed to initialize handlers")
 	}
 
@@ -497,7 +497,7 @@ func main() {
 			{
 				user.GET("/me", middleware.AuthMiddleware(), userHandler.GetUserInfo)
 				user.GET("/:username", userHandler.GetPublicUserProfile)
-				user.GET("/:username/threads", enhancedRateLimiter.SearchMiddleware(), threadHandler.GetThreadsByUsername)
+				user.GET("/:username/validation-cases", enhancedRateLimiter.SearchMiddleware(), caseHandler.GetValidationCasesByUsername)
 				user.GET("/:username/badges", handlers.GetUserBadgesHandler)
 			}
 
@@ -512,27 +512,42 @@ func main() {
 			internal.Use(middleware.InternalServiceAuth())
 			{
 				internal.PUT("/users/:id/guarantee", userHandler.UpdateGuaranteeAmount)
+				// Feature-service callback: finalize Validation Case after escrow is auto-released.
+				internal.POST("/validation-cases/escrow/released", workflowHandler.InternalMarkEscrowReleasedByTransfer)
 			}
 
-			threads := apiRateLimited.Group("/threads")
+			validationCases := apiRateLimited.Group("/validation-cases")
 			{
-				threads.GET("/categories", threadHandler.GetCategories)
-				threads.GET("/category/:slug", threadHandler.GetThreadsByCategory)
-				threads.GET("/latest", enhancedRateLimiter.SearchMiddleware(), threadHandler.GetLatestThreads)
-				threads.GET("/:id/public", threadHandler.GetPublicThreadDetail)
-				threads.GET("/:id", middleware.AuthMiddleware(), threadHandler.GetThreadDetail)
-				threads.POST("", middleware.AuthMiddleware(), threadHandler.CreateThread)
-				threads.GET("/me", middleware.AuthMiddleware(), threadHandler.GetMyThreads)
-				threads.PUT("/:id", middleware.AuthMiddleware(), threadHandler.UpdateThread)
-				threads.DELETE("/:id", middleware.AuthMiddleware(), threadHandler.DeleteThread)
-				// Thread credentials (reputation upvote)
-				threads.POST("/:id/credential", middleware.AuthMiddleware(), credentialHandler.GiveCredential)
-				threads.DELETE("/:id/credential", middleware.AuthMiddleware(), credentialHandler.RemoveCredential)
-				threads.GET("/:id/credential/count", credentialHandler.GetCredentialCount)
-				// Thread tags
-				threads.GET("/:id/tags", handlers.GetThreadTagsHandler)
-				threads.POST("/:id/tags", middleware.AuthMiddleware(), handlers.AddTagsToThreadHandler)
-				threads.DELETE("/:id/tags/:tagSlug", middleware.AuthMiddleware(), handlers.RemoveTagFromThreadHandler)
+				validationCases.GET("/categories", caseHandler.GetCategories)
+				validationCases.GET("/category/:slug", caseHandler.GetValidationCasesByCategory)
+				validationCases.GET("/latest", enhancedRateLimiter.SearchMiddleware(), caseHandler.GetLatestValidationCases)
+				validationCases.GET("/:id/public", caseHandler.GetPublicValidationCaseDetail)
+				validationCases.GET("/:id", middleware.AuthMiddleware(), caseHandler.GetValidationCaseDetail)
+				validationCases.POST("", middleware.AuthMiddleware(), caseHandler.CreateValidationCase)
+				validationCases.GET("/me", middleware.AuthMiddleware(), caseHandler.GetMyValidationCases)
+				validationCases.PUT("/:id", middleware.AuthMiddleware(), caseHandler.UpdateValidationCase)
+				validationCases.DELETE("/:id", middleware.AuthMiddleware(), caseHandler.DeleteValidationCase)
+				// Validation Case tags
+				validationCases.GET("/:id/tags", handlers.GetValidationCaseTagsHandler)
+				validationCases.POST("/:id/tags", middleware.AuthMiddleware(), handlers.AddTagsToValidationCaseHandler)
+				validationCases.DELETE("/:id/tags/:tagSlug", middleware.AuthMiddleware(), handlers.RemoveTagFromValidationCaseHandler)
+				// Validation Protocol workflow
+				validationCases.POST("/:id/consultation-requests", middleware.AuthMiddleware(), workflowHandler.RequestConsultation)
+				validationCases.GET("/:id/consultation-requests", middleware.AuthMiddleware(), workflowHandler.ListConsultationRequests)
+				validationCases.POST("/:id/consultation-requests/:requestId/approve", middleware.AuthMiddleware(), workflowHandler.ApproveConsultationRequest)
+				validationCases.POST("/:id/consultation-requests/:requestId/reject", middleware.AuthMiddleware(), workflowHandler.RejectConsultationRequest)
+				validationCases.GET("/:id/contact", middleware.AuthMiddleware(), workflowHandler.RevealContact)
+
+				validationCases.POST("/:id/final-offers", middleware.AuthMiddleware(), workflowHandler.SubmitFinalOffer)
+				validationCases.GET("/:id/final-offers", middleware.AuthMiddleware(), workflowHandler.ListFinalOffers)
+				validationCases.POST("/:id/final-offers/:offerId/accept", middleware.AuthMiddleware(), workflowHandler.AcceptFinalOffer)
+
+				validationCases.POST("/:id/lock-funds", middleware.AuthMiddleware(), workflowHandler.ConfirmLockFunds)
+				validationCases.POST("/:id/artifact-submission", middleware.AuthMiddleware(), workflowHandler.SubmitArtifact)
+				validationCases.POST("/:id/escrow/released", middleware.AuthMiddleware(), workflowHandler.MarkEscrowReleased)
+				validationCases.POST("/:id/dispute/attach", middleware.AuthMiddleware(), workflowHandler.AttachDispute)
+
+				validationCases.GET("/:id/case-log", middleware.AuthMiddleware(), workflowHandler.GetCaseLog)
 			}
 
 			// Tags endpoints
@@ -540,7 +555,7 @@ func main() {
 			{
 				tags.GET("", handlers.GetAllTagsHandler)
 				tags.GET("/:slug", handlers.GetTagBySlugHandler)
-				tags.GET("/:slug/threads", enhancedRateLimiter.SearchMiddleware(), handlers.GetThreadsByTagHandler)
+				tags.GET("/:slug/validation-cases", enhancedRateLimiter.SearchMiddleware(), handlers.GetValidationCasesByTagHandler)
 			}
 
 			// Financial endpoints are handled by the ASP.NET service; omitted here to keep responsibilities separated.
@@ -580,11 +595,12 @@ func main() {
 			adminProtected.POST("/users/:userId/badges", handlers.AssignBadgeToUser)
 			adminProtected.DELETE("/users/:userId/badges/:badgeId", handlers.RevokeBadgeFromUser)
 
-			// Thread management (admin only)
-			adminProtected.GET("/categories", handlers.AdminListCategories)
-			adminProtected.POST("/threads/:id/move", handlers.AdminMoveThread)
+				// Category management (admin only)
+				adminProtected.GET("/categories", handlers.AdminListCategories)
+				// Validation Case management (admin only)
+				adminProtected.POST("/validation-cases/:id/move", handlers.AdminMoveValidationCase)
 
-		}
+			}
 	}
 
 	// Get port from environment variable

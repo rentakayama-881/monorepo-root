@@ -367,14 +367,14 @@ func AdminLogin(email, password, totpCode string) (*Token, error) {
 
 ```go
 // Verify ownership before modification
-func (h *ThreadHandler) Update(c *gin.Context) {
-    threadID := c.Param("id")
+func (h *ValidationCaseHandler) Update(c *gin.Context) {
+    validationCaseID := c.Param("id")
     userID := c.GetInt("user_id")
     
-    thread, _ := h.service.GetThread(threadID)
+    validationCase, _ := h.service.GetValidationCase(validationCaseID)
     
     // Check ownership
-    if thread.UserID != userID {
+    if validationCase.UserID != userID {
         // Check if admin
         if !isAdmin(userID) {
             c.AbortWithStatus(403)
@@ -383,7 +383,7 @@ func (h *ThreadHandler) Update(c *gin.Context) {
     }
     
     // Proceed with update
-    h.service.UpdateThread(threadID, input)
+    h.service.UpdateValidationCase(validationCaseID, input)
 }
 ```
 
@@ -597,11 +597,11 @@ func (l *RateLimiter) Allow(key string) bool {
 func buildCORSConfig() cors.Config {
     config := cors.DefaultConfig()
     
-    // Allowed origins from environment
-    config.AllowOrigins = []string{
-        "https://aivalid.fun",
-        "https://www.aivalid.fun",
-    }
+	// Allowed origins from environment
+	config.AllowOrigins = []string{
+		"https://aivalid.id",
+		"https://www.aivalid.id",
+	}
     
     // Allowed methods
     config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
@@ -919,10 +919,10 @@ Level 3: Manual Review
 
 | Role | Contact |
 |------|---------|
-| Security Issues | security@aivalid.fun |
+| Security Issues | security@aivalid.id |
 | Bug Bounty | (Coming soon) |
-| Emergency | admin@aivalid.fun |
+| Emergency | admin@aivalid.id |
 
 ---
 
-*Dokumen ini adalah bagian dari dokumentasi teknis AIValid. Terakhir diperbarui: 15 Januari 2026.*
+*Dokumen ini adalah bagian dari dokumentasi teknis AIValid. Terakhir diperbarui: 10 Februari 2026.*

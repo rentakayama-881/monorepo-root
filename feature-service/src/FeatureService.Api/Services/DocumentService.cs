@@ -11,9 +11,11 @@ public interface IDocumentService
 {
     Task<string> UploadDocumentAsync(uint userId, UploadDocumentRequest request);
     Task<DocumentDetailDto?> GetDocumentByIdAsync(string documentId);
+    Task<DocumentAccessDto?> GetDocumentAccessAsync(string documentId);
     Task<PaginatedDocumentsResponse> GetUserDocumentsAsync(uint userId, int page, int pageSize, string? category = null);
     Task<PaginatedDocumentsResponse> GetPublicDocumentsAsync(uint userId, int page, int pageSize, string? category = null);
     Task UpdateDocumentAsync(string documentId, UpdateDocumentRequest request);
+    Task UpdateDocumentSharingAsync(string documentId, List<uint> sharedWithUserIds);
     Task DeleteDocumentAsync(string documentId);
     Task<StorageQuotaDto> GetUserQuotaAsync(uint userId);
     Task IncrementDownloadCountAsync(string documentId);
@@ -92,6 +94,7 @@ public class DocumentService : IDocumentService
             StoragePath = storagePath,
             PublicUrl = publicUrl,
             Visibility = request.Visibility,
+            SharedWithUserIds = NormalizeSharedWith(request.SharedWithUserIds),
             Category = request.Category,
             Tags = request.Tags ?? new List<string>(),
             DownloadCount = 0,
@@ -130,6 +133,31 @@ public class DocumentService : IDocumentService
             doc.CreatedAt,
             doc.UpdatedAt
         );
+    }
+
+    public async Task<DocumentAccessDto?> GetDocumentAccessAsync(string documentId)
+    {
+        var doc = await _context.Documents
+            .Find(d => d.Id == documentId && !d.IsDeleted)
+            .Project(d => new DocumentAccessDto(
+                d.Id,
+                d.UserId,
+                d.Visibility,
+                d.SharedWithUserIds,
+                d.FileName,
+                d.FileType
+            ))
+            .FirstOrDefaultAsync();
+
+        if (doc == null) return null;
+
+        // Older documents may not have sharedWithUserIds in MongoDB yet.
+        if (doc.SharedWithUserIds == null)
+        {
+            return doc with { SharedWithUserIds = new List<uint>() };
+        }
+
+        return doc;
     }
 
     public async Task<PaginatedDocumentsResponse> GetUserDocumentsAsync(uint userId, int page, int pageSize, string? category = null)
@@ -231,6 +259,16 @@ public class DocumentService : IDocumentService
         await _context.Documents.UpdateOneAsync(d => d.Id == documentId, updateBuilder);
     }
 
+    public async Task UpdateDocumentSharingAsync(string documentId, List<uint> sharedWithUserIds)
+    {
+        var normalized = NormalizeSharedWith(sharedWithUserIds);
+        var update = Builders<Document>.Update
+            .Set(d => d.SharedWithUserIds, normalized)
+            .Set(d => d.UpdatedAt, DateTime.UtcNow);
+
+        await _context.Documents.UpdateOneAsync(d => d.Id == documentId && !d.IsDeleted, update);
+    }
+
     public async Task DeleteDocumentAsync(string documentId)
     {
         var update = Builders<Document>.Update
@@ -267,5 +305,19 @@ public class DocumentService : IDocumentService
             .FirstOrDefaultAsync();
 
         return doc?.FileData;
+    }
+
+    private static List<uint> NormalizeSharedWith(IEnumerable<uint>? userIds)
+    {
+        if (userIds == null) return new List<uint>();
+
+        // Defensive: ensure > 0, distinct, stable order, reasonable limit.
+        var normalized = userIds
+            .Where(id => id > 0)
+            .Distinct()
+            .Take(100)
+            .ToList();
+
+        return normalized;
     }
 }

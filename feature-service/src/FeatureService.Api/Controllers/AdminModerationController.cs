@@ -80,7 +80,35 @@ public class AdminModerationController : ControllerBase
         {
             return NotFound(new { error = "Report not found" });
         }
-        return Ok(report);
+
+        var targetType = (report.TargetType ?? string.Empty).Trim().ToLowerInvariant();
+        if (targetType == ReportTargetType.Thread)
+        {
+            targetType = ReportTargetType.ValidationCase;
+        }
+
+        var dto = new ReportDetailDto(
+            report.Id,
+            targetType,
+            report.TargetId,
+            report.ValidationCaseId != 0 ? report.ValidationCaseId : report.LegacyThreadId,
+            report.ReportedUserId,
+            null,
+            report.ReporterUserId,
+            null,
+            report.Reason,
+            report.Description,
+            report.Status,
+            report.ActionTaken,
+            report.AdminNotes,
+            report.ReviewedByAdminId,
+            report.ReviewedAt,
+            report.CreatedAt,
+            report.UpdatedAt,
+            null
+        );
+
+        return Ok(dto);
     }
 
     /// <summary>
@@ -310,7 +338,7 @@ public class AdminModerationController : ControllerBase
     #region Content Hiding
 
     /// <summary>
-    /// Hide content (thread or reply)
+    /// Hide record (validation case)
     /// </summary>
     [HttpPost("content/hide")]
     [ProducesResponseType(typeof(ContentHiddenResponse), StatusCodes.Status200OK)]
@@ -323,8 +351,6 @@ public class AdminModerationController : ControllerBase
             var hiddenId = await _moderationService.HideContentAsync(
                 request.ContentType,
                 request.ContentId,
-                request.ThreadId,
-                request.UserId,
                 request.Reason,
                 request.ReportId,
                 adminId
@@ -377,14 +403,14 @@ public class AdminModerationController : ControllerBase
 
     #endregion
 
-    #region Thread Management
+    #region Validation Case Management
 
     /// <summary>
-    /// Transfer thread ownership to another user
+    /// Move a Validation Case (re-assign owner and/or category)
     /// </summary>
-    [HttpPost("threads/transfer")]
-    [ProducesResponseType(typeof(TransferThreadOwnershipResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> TransferThreadOwnership([FromBody] TransferThreadOwnershipRequest request)
+    [HttpPost("validation-cases/move")]
+    [ProducesResponseType(typeof(MoveValidationCaseResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> MoveValidationCase([FromBody] MoveValidationCaseRequest request)
     {
         var adminId = GetCurrentAdminId();
 
@@ -393,12 +419,12 @@ public class AdminModerationController : ControllerBase
             var authHeader = Request.Headers.Authorization.ToString();
             var requestId = Request.Headers["X-Request-Id"].ToString();
 
-            var result = await _moderationService.TransferThreadOwnershipAsync(adminId, request, authHeader, requestId);
+            var result = await _moderationService.MoveValidationCaseAsync(adminId, request, authHeader, requestId);
             return Ok(result);
         }
         catch (UpstreamApiException ex)
         {
-            _logger.LogWarning(ex, "Upstream error transferring thread ownership for thread {ThreadId}", request.ThreadId);
+            _logger.LogWarning(ex, "Upstream error moving validation case {ValidationCaseId}", request.ValidationCaseId);
 
             var contentType = ex.ContentType;
             if (string.IsNullOrWhiteSpace(contentType))
@@ -415,29 +441,8 @@ public class AdminModerationController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to transfer thread ownership for thread {ThreadId}", request.ThreadId);
-            return StatusCode(500, new { error = "Failed to transfer thread ownership" });
-        }
-    }
-
-    /// <summary>
-    /// Delete a thread (soft or hard delete)
-    /// </summary>
-    [HttpDelete("threads/{threadId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> DeleteThread(uint threadId, [FromQuery] bool hardDelete = false, [FromQuery] string? reason = null)
-    {
-        var adminId = GetCurrentAdminId();
-
-        try
-        {
-            await _moderationService.DeleteThreadAsync(adminId, new FeatureService.Api.DTOs.AdminDeleteThreadRequest(threadId, reason ?? "", hardDelete));
-            return Ok(new { message = "Thread deleted successfully", hardDelete });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to delete thread {ThreadId}", threadId);
-            return StatusCode(500, new { error = "Failed to delete thread" });
+            _logger.LogError(ex, "Failed to move validation case {ValidationCaseId}", request.ValidationCaseId);
+            return StatusCode(500, new { error = "Failed to move validation case" });
         }
     }
 
@@ -484,5 +489,5 @@ public record DeviceBanCheckResponse(bool IsBanned, string? Message);
 public record DeviceBanCreatedResponse(string BanId, string Message);
 public record CreateWarningRequest(uint UserId, string Reason, string Message, string Severity, string? ReportId);
 public record WarningCreatedResponse(string WarningId, string Message);
-public record HideContentRequest(string ContentType, string ContentId, uint ThreadId, uint UserId, string Reason, string? ReportId);
+public record HideContentRequest(string ContentType, string ContentId, string Reason, string? ReportId);
 public record ContentHiddenResponse(string HiddenId, string Message);

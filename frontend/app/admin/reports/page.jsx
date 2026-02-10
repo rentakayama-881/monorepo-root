@@ -96,8 +96,7 @@ export default function ReportsPage() {
   const getContentTypeLabel = (type) => {
     const normalized = String(type || "").toLowerCase();
     const labels = {
-      thread: "Thread",
-      reply: "Balasan",
+      validation_case: "Validation Case",
       user: "User",
     };
     return labels[normalized] || type;

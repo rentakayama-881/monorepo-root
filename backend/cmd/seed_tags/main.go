@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	deleteLegacy := flag.Bool("delete-legacy", false, "Hard-delete legacy tags (dangerous; clears thread-tag edges first)")
+	deleteLegacy := flag.Bool("delete-legacy", false, "Hard-delete legacy tags (dangerous; clears legacy Validation Case-tag edges first)")
 	flag.Parse()
 
 	// Initialize logger first
@@ -307,7 +307,7 @@ func main() {
 			}
 
 			// Clear join-table edges first to avoid FK constraint issues
-			if _, err := client.Tag.UpdateOne(existing).ClearThreads().Save(ctx); err != nil {
+			if _, err := client.Tag.UpdateOne(existing).ClearValidationCases().Save(ctx); err != nil {
 				log.Printf("Failed to clear edges for legacy tag %s: %v", slug, err)
 				continue
 			}

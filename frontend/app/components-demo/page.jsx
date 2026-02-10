@@ -153,7 +153,7 @@ function ComponentsDemoContent() {
               <h3 className="text-sm font-medium text-muted-foreground mb-4">With Character Counter</h3>
               <Textarea
                 label="Comment"
-                placeholder="Enter your comment"
+                placeholder="Enter your case note"
                 maxLength={200}
                 showCounter
                 hint="Max 200 characters"
@@ -463,11 +463,11 @@ function ComponentsDemoContent() {
           <h2 className="text-2xl font-semibold border-b pb-2">Complete Form Example</h2>
           
           <form className="max-w-2xl space-y-6 p-6 border rounded-lg bg-card">
-            <h3 className="text-lg font-semibold">Create New Thread</h3>
+            <h3 className="text-lg font-semibold">Create New Validation Case</h3>
             
             <Input
               label="Title"
-              placeholder="Enter thread title"
+              placeholder="Enter case title"
               required
               maxLength={100}
               showCounter
@@ -476,7 +476,7 @@ function ComponentsDemoContent() {
 
             <Textarea
               label="Content"
-              placeholder="Write your thread content..."
+              placeholder="Write the case record (scope, evidence, and acceptance criteria)..."
               required
               autoResize
               minRows={5}
@@ -491,10 +491,10 @@ function ComponentsDemoContent() {
               placeholder="Select a category"
               required
               options={[
-                { value: "general", label: "General Discussion" },
-                { value: "help", label: "Help & Support" },
-                { value: "showcase", label: "Showcase" },
-                { value: "feedback", label: "Feedback" },
+                { value: "academic", label: "Academic Validation" },
+                { value: "legal", label: "Legal Review" },
+                { value: "financial", label: "Financial Review" },
+                { value: "technical", label: "Technical Review" },
               ]}
             />
 
@@ -515,7 +515,7 @@ function ComponentsDemoContent() {
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" variant="default">
-                Create Thread
+                Create Validation Case
               </Button>
               <Button type="button" variant="ghost">
                 Save Draft

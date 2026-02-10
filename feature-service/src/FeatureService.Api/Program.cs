@@ -284,6 +284,7 @@ try
     builder.Services.AddScoped<ILedgerBackfillService, LedgerBackfillService>();
     builder.Services.AddScoped<ITransferService, TransferService>();
     builder.Services.AddHttpClient<ITransferService, TransferService>();
+    builder.Services.AddHostedService<TransferAutoReleaseHostedService>();
     builder.Services.AddScoped<IDisputeService, DisputeService>();
     builder.Services.AddScoped<IWithdrawalService, WithdrawalService>();
 

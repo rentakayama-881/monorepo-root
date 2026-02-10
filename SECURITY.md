@@ -18,7 +18,7 @@ We take the security of AIValid seriously. If you discover a security vulnerabil
 
 ### Do
 
-1. **Email us at:** security@aivalid.fun
+1. **Email us at:** security@aivalid.id
 2. **Include:**
    - Description of the vulnerability
    - Steps to reproduce
@@ -68,4 +68,4 @@ We appreciate responsible disclosure and may recognize reporters in our changelo
 
 ---
 
-*Last updated: January 12, 2026*
+*Last updated: February 10, 2026*

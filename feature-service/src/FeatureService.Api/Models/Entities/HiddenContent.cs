@@ -4,7 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace FeatureService.Api.Models.Entities;
 
 /// <summary>
-/// Tracks hidden content (threads or replies that are hidden by admin but not deleted).
+/// Tracks hidden records (Validation Cases) that are hidden by admin but not deleted.
 /// </summary>
 public class HiddenContent
 {
@@ -13,7 +13,7 @@ public class HiddenContent
     public string Id { get; set; } = string.Empty; // hid_xxx format using Ulid
 
     /// <summary>
-    /// Type of content: "thread" or "reply"
+    /// Type of content: "validation_case"
     /// </summary>
     [BsonElement("contentType")]
     public string ContentType { get; set; } = string.Empty;
@@ -25,10 +25,18 @@ public class HiddenContent
     public string ContentId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Thread ID (for replies, this is the parent thread)
+    /// Validation Case ID for context.
+    /// </summary>
+    [BsonElement("validationCaseId")]
+    public uint ValidationCaseId { get; set; }
+
+    /// <summary>
+    /// Legacy field: "threadId" from the old forum/thread domain.
+    /// Kept to preserve existing MongoDB documents during migration.
     /// </summary>
     [BsonElement("threadId")]
-    public uint ThreadId { get; set; }
+    [BsonIgnoreIfDefault]
+    public uint LegacyThreadId { get; set; }
 
     /// <summary>
     /// Original author user ID

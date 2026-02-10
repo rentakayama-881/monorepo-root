@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 export function useKeyboardShortcuts({
   onCommandPalette,
   onSearch,
-  onNewThread,
+  onNewValidationCase,
   onShowShortcuts,
   enabled = true,
 }) {
@@ -100,9 +100,9 @@ export function useKeyboardShortcuts({
           if (secondKey === "h" || secondKey === "H") {
             router.push("/");
           }
-          // G then T - Go to Threads
+          // G then T - Go to Validation Case Index
           else if (secondKey === "t" || secondKey === "T") {
-            router.push("/threads");
+            router.push("/validation-cases");
           }
           // G then S - Go to Settings
           else if (secondKey === "s" || secondKey === "S") {
@@ -116,11 +116,11 @@ export function useKeyboardShortcuts({
         e.preventDefault();
         addToSequence(e.key);
       }
-      // N - New thread (context-sensitive, handled by page)
+      // N - New Validation Case (context-sensitive, handled by page)
       else if (e.key === "n" || e.key === "N") {
-        if (!isInput && onNewThread) {
+        if (!isInput && onNewValidationCase) {
           e.preventDefault();
-          onNewThread();
+          onNewValidationCase();
         }
         resetSequence();
       }
@@ -138,7 +138,7 @@ export function useKeyboardShortcuts({
         clearTimeout(sequenceTimeoutRef.current);
       }
     };
-  }, [enabled, onCommandPalette, onSearch, onNewThread, onShowShortcuts, router, resetSequence, addToSequence]);
+  }, [enabled, onCommandPalette, onSearch, onNewValidationCase, onShowShortcuts, router, resetSequence, addToSequence]);
 
   return { resetSequence };
 }
@@ -158,11 +158,11 @@ export const KEYBOARD_SHORTCUTS = {
   ],
   navigation: [
     { keys: ["G", "H"], description: "Go to Home" },
-    { keys: ["G", "T"], description: "Go to Threads" },
+    { keys: ["G", "T"], description: "Go to Validation Case Index" },
     { keys: ["G", "S"], description: "Go to Settings" },
   ],
   actions: [
-    { keys: ["N"], description: "New thread (on threads page)" },
+    { keys: ["N"], description: "New Validation Case (on index page)" },
   ],
 };
 

@@ -3,9 +3,9 @@ import { Card } from "../ui/Card";
 
 const STEPS = [
   {
-    title: "Tulis konteks & kriteria",
+    title: "File Validation Case",
     description:
-      "Cantumkan tujuan, constraint, output AI, dan apa yang dianggap “benar/selesai”.",
+      "Susun Case Record yang formal: konteks, klaim, input/output AI, constraints, dan acceptance criteria. Tetapkan bounty.",
     icon: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -13,25 +13,22 @@ const STEPS = [
     ),
   },
   {
-    title: "Terima review dari ahli",
+    title: "Request Consultation",
     description:
-      "Validator memberi feedback yang terstruktur: temuan, risiko, dan rekomendasi perbaikan.",
+      "Validator mengajukan Request Consultation (stake-gated). Setelah disetujui, kontak dibuka privat dan dicatat pada Case Log.",
     icon: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4Z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 9h8" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 13h6" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
       </svg>
     ),
   },
   {
-    title: "Iterasi sampai rapi",
+    title: "Final Offer + Escrow",
     description:
-      "Revisi cepat berdasarkan catatan, lalu kunci hasil final yang paling aman dan jelas.",
+      "Validator mengajukan Final Offer. Pemilik kasus menerima lalu Lock Funds ke escrow. Validator submit Artifact Submission. Approve menghasilkan Certified Artifact; Dispute diselesaikan admin.",
     icon: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12M8 12h12M8 17h12" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7h.01M3 12h.01M3 17h.01" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
   },
@@ -67,16 +64,15 @@ export default function HowItWorks() {
 
       <div className="mt-6 flex flex-col gap-3 rounded-[var(--radius)] border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="font-semibold text-foreground">Mulai dari kategori yang tepat</div>
+          <div className="font-semibold text-foreground">Mulai intake</div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Pilih bidangnya dulu, lalu buat thread dengan kebutuhan validasi Anda.
+            Pilih tipe kasus, lalu buat Validation Case dengan bounty dan acceptance criteria.
           </p>
         </div>
-        <Button href="#categories" variant="gradient">
+        <Button href="/validation-cases/new" variant="gradient">
           Mulai Sekarang
         </Button>
       </div>
     </section>
   );
 }
-

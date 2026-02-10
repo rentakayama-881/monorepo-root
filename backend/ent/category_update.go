@@ -5,7 +5,7 @@ package ent
 import (
 	"backend-gin/ent/category"
 	"backend-gin/ent/predicate"
-	"backend-gin/ent/thread"
+	"backend-gin/ent/validationcase"
 	"context"
 	"errors"
 	"fmt"
@@ -103,19 +103,19 @@ func (_u *CategoryUpdate) ClearDescription() *CategoryUpdate {
 	return _u
 }
 
-// AddThreadIDs adds the "threads" edge to the Thread entity by IDs.
-func (_u *CategoryUpdate) AddThreadIDs(ids ...int) *CategoryUpdate {
-	_u.mutation.AddThreadIDs(ids...)
+// AddValidationCaseIDs adds the "validation_cases" edge to the ValidationCase entity by IDs.
+func (_u *CategoryUpdate) AddValidationCaseIDs(ids ...int) *CategoryUpdate {
+	_u.mutation.AddValidationCaseIDs(ids...)
 	return _u
 }
 
-// AddThreads adds the "threads" edges to the Thread entity.
-func (_u *CategoryUpdate) AddThreads(v ...*Thread) *CategoryUpdate {
+// AddValidationCases adds the "validation_cases" edges to the ValidationCase entity.
+func (_u *CategoryUpdate) AddValidationCases(v ...*ValidationCase) *CategoryUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddThreadIDs(ids...)
+	return _u.AddValidationCaseIDs(ids...)
 }
 
 // Mutation returns the CategoryMutation object of the builder.
@@ -123,25 +123,25 @@ func (_u *CategoryUpdate) Mutation() *CategoryMutation {
 	return _u.mutation
 }
 
-// ClearThreads clears all "threads" edges to the Thread entity.
-func (_u *CategoryUpdate) ClearThreads() *CategoryUpdate {
-	_u.mutation.ClearThreads()
+// ClearValidationCases clears all "validation_cases" edges to the ValidationCase entity.
+func (_u *CategoryUpdate) ClearValidationCases() *CategoryUpdate {
+	_u.mutation.ClearValidationCases()
 	return _u
 }
 
-// RemoveThreadIDs removes the "threads" edge to Thread entities by IDs.
-func (_u *CategoryUpdate) RemoveThreadIDs(ids ...int) *CategoryUpdate {
-	_u.mutation.RemoveThreadIDs(ids...)
+// RemoveValidationCaseIDs removes the "validation_cases" edge to ValidationCase entities by IDs.
+func (_u *CategoryUpdate) RemoveValidationCaseIDs(ids ...int) *CategoryUpdate {
+	_u.mutation.RemoveValidationCaseIDs(ids...)
 	return _u
 }
 
-// RemoveThreads removes "threads" edges to Thread entities.
-func (_u *CategoryUpdate) RemoveThreads(v ...*Thread) *CategoryUpdate {
+// RemoveValidationCases removes "validation_cases" edges to ValidationCase entities.
+func (_u *CategoryUpdate) RemoveValidationCases(v ...*ValidationCase) *CategoryUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveThreadIDs(ids...)
+	return _u.RemoveValidationCaseIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -228,28 +228,28 @@ func (_u *CategoryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(category.FieldDescription, field.TypeString)
 	}
-	if _u.mutation.ThreadsCleared() {
+	if _u.mutation.ValidationCasesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   category.ThreadsTable,
-			Columns: []string{category.ThreadsColumn},
+			Table:   category.ValidationCasesTable,
+			Columns: []string{category.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedThreadsIDs(); len(nodes) > 0 && !_u.mutation.ThreadsCleared() {
+	if nodes := _u.mutation.RemovedValidationCasesIDs(); len(nodes) > 0 && !_u.mutation.ValidationCasesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   category.ThreadsTable,
-			Columns: []string{category.ThreadsColumn},
+			Table:   category.ValidationCasesTable,
+			Columns: []string{category.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -257,15 +257,15 @@ func (_u *CategoryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.ThreadsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ValidationCasesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   category.ThreadsTable,
-			Columns: []string{category.ThreadsColumn},
+			Table:   category.ValidationCasesTable,
+			Columns: []string{category.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -367,19 +367,19 @@ func (_u *CategoryUpdateOne) ClearDescription() *CategoryUpdateOne {
 	return _u
 }
 
-// AddThreadIDs adds the "threads" edge to the Thread entity by IDs.
-func (_u *CategoryUpdateOne) AddThreadIDs(ids ...int) *CategoryUpdateOne {
-	_u.mutation.AddThreadIDs(ids...)
+// AddValidationCaseIDs adds the "validation_cases" edge to the ValidationCase entity by IDs.
+func (_u *CategoryUpdateOne) AddValidationCaseIDs(ids ...int) *CategoryUpdateOne {
+	_u.mutation.AddValidationCaseIDs(ids...)
 	return _u
 }
 
-// AddThreads adds the "threads" edges to the Thread entity.
-func (_u *CategoryUpdateOne) AddThreads(v ...*Thread) *CategoryUpdateOne {
+// AddValidationCases adds the "validation_cases" edges to the ValidationCase entity.
+func (_u *CategoryUpdateOne) AddValidationCases(v ...*ValidationCase) *CategoryUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddThreadIDs(ids...)
+	return _u.AddValidationCaseIDs(ids...)
 }
 
 // Mutation returns the CategoryMutation object of the builder.
@@ -387,25 +387,25 @@ func (_u *CategoryUpdateOne) Mutation() *CategoryMutation {
 	return _u.mutation
 }
 
-// ClearThreads clears all "threads" edges to the Thread entity.
-func (_u *CategoryUpdateOne) ClearThreads() *CategoryUpdateOne {
-	_u.mutation.ClearThreads()
+// ClearValidationCases clears all "validation_cases" edges to the ValidationCase entity.
+func (_u *CategoryUpdateOne) ClearValidationCases() *CategoryUpdateOne {
+	_u.mutation.ClearValidationCases()
 	return _u
 }
 
-// RemoveThreadIDs removes the "threads" edge to Thread entities by IDs.
-func (_u *CategoryUpdateOne) RemoveThreadIDs(ids ...int) *CategoryUpdateOne {
-	_u.mutation.RemoveThreadIDs(ids...)
+// RemoveValidationCaseIDs removes the "validation_cases" edge to ValidationCase entities by IDs.
+func (_u *CategoryUpdateOne) RemoveValidationCaseIDs(ids ...int) *CategoryUpdateOne {
+	_u.mutation.RemoveValidationCaseIDs(ids...)
 	return _u
 }
 
-// RemoveThreads removes "threads" edges to Thread entities.
-func (_u *CategoryUpdateOne) RemoveThreads(v ...*Thread) *CategoryUpdateOne {
+// RemoveValidationCases removes "validation_cases" edges to ValidationCase entities.
+func (_u *CategoryUpdateOne) RemoveValidationCases(v ...*ValidationCase) *CategoryUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveThreadIDs(ids...)
+	return _u.RemoveValidationCaseIDs(ids...)
 }
 
 // Where appends a list predicates to the CategoryUpdate builder.
@@ -522,28 +522,28 @@ func (_u *CategoryUpdateOne) sqlSave(ctx context.Context) (_node *Category, err 
 	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(category.FieldDescription, field.TypeString)
 	}
-	if _u.mutation.ThreadsCleared() {
+	if _u.mutation.ValidationCasesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   category.ThreadsTable,
-			Columns: []string{category.ThreadsColumn},
+			Table:   category.ValidationCasesTable,
+			Columns: []string{category.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedThreadsIDs(); len(nodes) > 0 && !_u.mutation.ThreadsCleared() {
+	if nodes := _u.mutation.RemovedValidationCasesIDs(); len(nodes) > 0 && !_u.mutation.ValidationCasesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   category.ThreadsTable,
-			Columns: []string{category.ThreadsColumn},
+			Table:   category.ValidationCasesTable,
+			Columns: []string{category.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -551,15 +551,15 @@ func (_u *CategoryUpdateOne) sqlSave(ctx context.Context) (_node *Category, err 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.ThreadsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ValidationCasesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   category.ThreadsTable,
-			Columns: []string{category.ThreadsColumn},
+			Table:   category.ValidationCasesTable,
+			Columns: []string{category.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

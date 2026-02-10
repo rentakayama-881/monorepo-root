@@ -68,12 +68,12 @@ export default function NotFound() {
         <div className="pt-8 border-t border-border animate-slide-up" style={{ animationDelay: '0.5s' }}>
           <p className="text-sm font-semibold text-muted-foreground mb-4">Mungkin Anda mencari:</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-            <Link href="/threads" className="group rounded-lg border border-border p-3 transition-all hover:border-primary hover:bg-primary/5">
+            <Link href="/validation-cases" className="group rounded-lg border border-border p-3 transition-all hover:border-primary hover:bg-primary/5">
               <div className="flex items-center gap-2 font-medium text-foreground group-hover:text-primary">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                 </svg>
-                <span>Threads</span>
+                <span>Case Index</span>
               </div>
             </Link>
             <Link href="/about-content" className="group rounded-lg border border-border p-3 transition-all hover:border-primary hover:bg-primary/5">

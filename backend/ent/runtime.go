@@ -4,14 +4,18 @@ package ent
 
 import (
 	"backend-gin/ent/admin"
+	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/badge"
 	"backend-gin/ent/category"
 	"backend-gin/ent/chaincursor"
+	"backend-gin/ent/consultationrequest"
 	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
+	"backend-gin/ent/endorsement"
+	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/schema"
@@ -20,11 +24,11 @@ import (
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
 	"backend-gin/ent/tag"
-	"backend-gin/ent/thread"
-	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
+	"backend-gin/ent/validationcase"
+	"backend-gin/ent/validationcaselog"
 	"time"
 )
 
@@ -59,6 +63,33 @@ func init() {
 	adminDescName := adminFields[2].Descriptor()
 	// admin.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	admin.NameValidator = adminDescName.Validators[0].(func(string) error)
+	artifactsubmissionMixin := schema.ArtifactSubmission{}.Mixin()
+	artifactsubmissionMixinFields0 := artifactsubmissionMixin[0].Fields()
+	_ = artifactsubmissionMixinFields0
+	artifactsubmissionFields := schema.ArtifactSubmission{}.Fields()
+	_ = artifactsubmissionFields
+	// artifactsubmissionDescCreatedAt is the schema descriptor for created_at field.
+	artifactsubmissionDescCreatedAt := artifactsubmissionMixinFields0[0].Descriptor()
+	// artifactsubmission.DefaultCreatedAt holds the default value on creation for the created_at field.
+	artifactsubmission.DefaultCreatedAt = artifactsubmissionDescCreatedAt.Default.(func() time.Time)
+	// artifactsubmissionDescUpdatedAt is the schema descriptor for updated_at field.
+	artifactsubmissionDescUpdatedAt := artifactsubmissionMixinFields0[1].Descriptor()
+	// artifactsubmission.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	artifactsubmission.DefaultUpdatedAt = artifactsubmissionDescUpdatedAt.Default.(func() time.Time)
+	// artifactsubmission.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	artifactsubmission.UpdateDefaultUpdatedAt = artifactsubmissionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// artifactsubmissionDescValidationCaseID is the schema descriptor for validation_case_id field.
+	artifactsubmissionDescValidationCaseID := artifactsubmissionFields[0].Descriptor()
+	// artifactsubmission.ValidationCaseIDValidator is a validator for the "validation_case_id" field. It is called by the builders before save.
+	artifactsubmission.ValidationCaseIDValidator = artifactsubmissionDescValidationCaseID.Validators[0].(func(int) error)
+	// artifactsubmissionDescValidatorUserID is the schema descriptor for validator_user_id field.
+	artifactsubmissionDescValidatorUserID := artifactsubmissionFields[1].Descriptor()
+	// artifactsubmission.ValidatorUserIDValidator is a validator for the "validator_user_id" field. It is called by the builders before save.
+	artifactsubmission.ValidatorUserIDValidator = artifactsubmissionDescValidatorUserID.Validators[0].(func(int) error)
+	// artifactsubmissionDescDocumentID is the schema descriptor for document_id field.
+	artifactsubmissionDescDocumentID := artifactsubmissionFields[2].Descriptor()
+	// artifactsubmission.DocumentIDValidator is a validator for the "document_id" field. It is called by the builders before save.
+	artifactsubmission.DocumentIDValidator = artifactsubmissionDescDocumentID.Validators[0].(func(string) error)
 	backupcodeMixin := schema.BackupCode{}.Mixin()
 	backupcodeMixinFields0 := backupcodeMixin[0].Fields()
 	_ = backupcodeMixinFields0
@@ -178,6 +209,35 @@ func init() {
 	chaincursor.DefaultUpdatedAt = chaincursorDescUpdatedAt.Default.(func() time.Time)
 	// chaincursor.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	chaincursor.UpdateDefaultUpdatedAt = chaincursorDescUpdatedAt.UpdateDefault.(func() time.Time)
+	consultationrequestMixin := schema.ConsultationRequest{}.Mixin()
+	consultationrequestMixinFields0 := consultationrequestMixin[0].Fields()
+	_ = consultationrequestMixinFields0
+	consultationrequestFields := schema.ConsultationRequest{}.Fields()
+	_ = consultationrequestFields
+	// consultationrequestDescCreatedAt is the schema descriptor for created_at field.
+	consultationrequestDescCreatedAt := consultationrequestMixinFields0[0].Descriptor()
+	// consultationrequest.DefaultCreatedAt holds the default value on creation for the created_at field.
+	consultationrequest.DefaultCreatedAt = consultationrequestDescCreatedAt.Default.(func() time.Time)
+	// consultationrequestDescUpdatedAt is the schema descriptor for updated_at field.
+	consultationrequestDescUpdatedAt := consultationrequestMixinFields0[1].Descriptor()
+	// consultationrequest.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	consultationrequest.DefaultUpdatedAt = consultationrequestDescUpdatedAt.Default.(func() time.Time)
+	// consultationrequest.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	consultationrequest.UpdateDefaultUpdatedAt = consultationrequestDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// consultationrequestDescValidationCaseID is the schema descriptor for validation_case_id field.
+	consultationrequestDescValidationCaseID := consultationrequestFields[0].Descriptor()
+	// consultationrequest.ValidationCaseIDValidator is a validator for the "validation_case_id" field. It is called by the builders before save.
+	consultationrequest.ValidationCaseIDValidator = consultationrequestDescValidationCaseID.Validators[0].(func(int) error)
+	// consultationrequestDescValidatorUserID is the schema descriptor for validator_user_id field.
+	consultationrequestDescValidatorUserID := consultationrequestFields[1].Descriptor()
+	// consultationrequest.ValidatorUserIDValidator is a validator for the "validator_user_id" field. It is called by the builders before save.
+	consultationrequest.ValidatorUserIDValidator = consultationrequestDescValidatorUserID.Validators[0].(func(int) error)
+	// consultationrequestDescStatus is the schema descriptor for status field.
+	consultationrequestDescStatus := consultationrequestFields[2].Descriptor()
+	// consultationrequest.DefaultStatus holds the default value on creation for the status field.
+	consultationrequest.DefaultStatus = consultationrequestDescStatus.Default.(string)
+	// consultationrequest.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	consultationrequest.StatusValidator = consultationrequestDescStatus.Validators[0].(func(string) error)
 	credentialMixin := schema.Credential{}.Mixin()
 	credentialMixinFields0 := credentialMixin[0].Fields()
 	_ = credentialMixinFields0
@@ -344,6 +404,82 @@ func init() {
 			return nil
 		}
 	}()
+	endorsementMixin := schema.Endorsement{}.Mixin()
+	endorsementMixinFields0 := endorsementMixin[0].Fields()
+	_ = endorsementMixinFields0
+	endorsementFields := schema.Endorsement{}.Fields()
+	_ = endorsementFields
+	// endorsementDescCreatedAt is the schema descriptor for created_at field.
+	endorsementDescCreatedAt := endorsementMixinFields0[0].Descriptor()
+	// endorsement.DefaultCreatedAt holds the default value on creation for the created_at field.
+	endorsement.DefaultCreatedAt = endorsementDescCreatedAt.Default.(func() time.Time)
+	// endorsementDescUpdatedAt is the schema descriptor for updated_at field.
+	endorsementDescUpdatedAt := endorsementMixinFields0[1].Descriptor()
+	// endorsement.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	endorsement.DefaultUpdatedAt = endorsementDescUpdatedAt.Default.(func() time.Time)
+	// endorsement.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	endorsement.UpdateDefaultUpdatedAt = endorsementDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// endorsementDescValidationCaseID is the schema descriptor for validation_case_id field.
+	endorsementDescValidationCaseID := endorsementFields[0].Descriptor()
+	// endorsement.ValidationCaseIDValidator is a validator for the "validation_case_id" field. It is called by the builders before save.
+	endorsement.ValidationCaseIDValidator = endorsementDescValidationCaseID.Validators[0].(func(int) error)
+	// endorsementDescValidatorUserID is the schema descriptor for validator_user_id field.
+	endorsementDescValidatorUserID := endorsementFields[1].Descriptor()
+	// endorsement.ValidatorUserIDValidator is a validator for the "validator_user_id" field. It is called by the builders before save.
+	endorsement.ValidatorUserIDValidator = endorsementDescValidatorUserID.Validators[0].(func(int) error)
+	// endorsementDescStance is the schema descriptor for stance field.
+	endorsementDescStance := endorsementFields[3].Descriptor()
+	// endorsement.DefaultStance holds the default value on creation for the stance field.
+	endorsement.DefaultStance = endorsementDescStance.Default.(string)
+	// endorsement.StanceValidator is a validator for the "stance" field. It is called by the builders before save.
+	endorsement.StanceValidator = endorsementDescStance.Validators[0].(func(string) error)
+	// endorsementDescNote is the schema descriptor for note field.
+	endorsementDescNote := endorsementFields[4].Descriptor()
+	// endorsement.DefaultNote holds the default value on creation for the note field.
+	endorsement.DefaultNote = endorsementDescNote.Default.(string)
+	finalofferMixin := schema.FinalOffer{}.Mixin()
+	finalofferMixinFields0 := finalofferMixin[0].Fields()
+	_ = finalofferMixinFields0
+	finalofferFields := schema.FinalOffer{}.Fields()
+	_ = finalofferFields
+	// finalofferDescCreatedAt is the schema descriptor for created_at field.
+	finalofferDescCreatedAt := finalofferMixinFields0[0].Descriptor()
+	// finaloffer.DefaultCreatedAt holds the default value on creation for the created_at field.
+	finaloffer.DefaultCreatedAt = finalofferDescCreatedAt.Default.(func() time.Time)
+	// finalofferDescUpdatedAt is the schema descriptor for updated_at field.
+	finalofferDescUpdatedAt := finalofferMixinFields0[1].Descriptor()
+	// finaloffer.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	finaloffer.DefaultUpdatedAt = finalofferDescUpdatedAt.Default.(func() time.Time)
+	// finaloffer.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	finaloffer.UpdateDefaultUpdatedAt = finalofferDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// finalofferDescValidationCaseID is the schema descriptor for validation_case_id field.
+	finalofferDescValidationCaseID := finalofferFields[0].Descriptor()
+	// finaloffer.ValidationCaseIDValidator is a validator for the "validation_case_id" field. It is called by the builders before save.
+	finaloffer.ValidationCaseIDValidator = finalofferDescValidationCaseID.Validators[0].(func(int) error)
+	// finalofferDescValidatorUserID is the schema descriptor for validator_user_id field.
+	finalofferDescValidatorUserID := finalofferFields[1].Descriptor()
+	// finaloffer.ValidatorUserIDValidator is a validator for the "validator_user_id" field. It is called by the builders before save.
+	finaloffer.ValidatorUserIDValidator = finalofferDescValidatorUserID.Validators[0].(func(int) error)
+	// finalofferDescAmount is the schema descriptor for amount field.
+	finalofferDescAmount := finalofferFields[2].Descriptor()
+	// finaloffer.AmountValidator is a validator for the "amount" field. It is called by the builders before save.
+	finaloffer.AmountValidator = finalofferDescAmount.Validators[0].(func(int64) error)
+	// finalofferDescHoldHours is the schema descriptor for hold_hours field.
+	finalofferDescHoldHours := finalofferFields[3].Descriptor()
+	// finaloffer.DefaultHoldHours holds the default value on creation for the hold_hours field.
+	finaloffer.DefaultHoldHours = finalofferDescHoldHours.Default.(int)
+	// finaloffer.HoldHoursValidator is a validator for the "hold_hours" field. It is called by the builders before save.
+	finaloffer.HoldHoursValidator = finalofferDescHoldHours.Validators[0].(func(int) error)
+	// finalofferDescTerms is the schema descriptor for terms field.
+	finalofferDescTerms := finalofferFields[4].Descriptor()
+	// finaloffer.DefaultTerms holds the default value on creation for the terms field.
+	finaloffer.DefaultTerms = finalofferDescTerms.Default.(string)
+	// finalofferDescStatus is the schema descriptor for status field.
+	finalofferDescStatus := finalofferFields[5].Descriptor()
+	// finaloffer.DefaultStatus holds the default value on creation for the status field.
+	finaloffer.DefaultStatus = finalofferDescStatus.Default.(string)
+	// finaloffer.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	finaloffer.StatusValidator = finalofferDescStatus.Validators[0].(func(string) error)
 	passkeyMixin := schema.Passkey{}.Mixin()
 	passkeyMixinFields0 := passkeyMixin[0].Fields()
 	_ = passkeyMixinFields0
@@ -722,66 +858,6 @@ func init() {
 	tagDescOrder := tagFields[6].Descriptor()
 	// tag.DefaultOrder holds the default value on creation for the order field.
 	tag.DefaultOrder = tagDescOrder.Default.(int)
-	threadMixin := schema.Thread{}.Mixin()
-	threadMixinFields0 := threadMixin[0].Fields()
-	_ = threadMixinFields0
-	threadFields := schema.Thread{}.Fields()
-	_ = threadFields
-	// threadDescCreatedAt is the schema descriptor for created_at field.
-	threadDescCreatedAt := threadMixinFields0[0].Descriptor()
-	// thread.DefaultCreatedAt holds the default value on creation for the created_at field.
-	thread.DefaultCreatedAt = threadDescCreatedAt.Default.(func() time.Time)
-	// threadDescUpdatedAt is the schema descriptor for updated_at field.
-	threadDescUpdatedAt := threadMixinFields0[1].Descriptor()
-	// thread.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	thread.DefaultUpdatedAt = threadDescUpdatedAt.Default.(func() time.Time)
-	// thread.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	thread.UpdateDefaultUpdatedAt = threadDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// threadDescCategoryID is the schema descriptor for category_id field.
-	threadDescCategoryID := threadFields[0].Descriptor()
-	// thread.CategoryIDValidator is a validator for the "category_id" field. It is called by the builders before save.
-	thread.CategoryIDValidator = threadDescCategoryID.Validators[0].(func(int) error)
-	// threadDescUserID is the schema descriptor for user_id field.
-	threadDescUserID := threadFields[1].Descriptor()
-	// thread.UserIDValidator is a validator for the "user_id" field. It is called by the builders before save.
-	thread.UserIDValidator = threadDescUserID.Validators[0].(func(int) error)
-	// threadDescTitle is the schema descriptor for title field.
-	threadDescTitle := threadFields[2].Descriptor()
-	// thread.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	thread.TitleValidator = threadDescTitle.Validators[0].(func(string) error)
-	// threadDescSummary is the schema descriptor for summary field.
-	threadDescSummary := threadFields[3].Descriptor()
-	// thread.DefaultSummary holds the default value on creation for the summary field.
-	thread.DefaultSummary = threadDescSummary.Default.(string)
-	// threadDescContentType is the schema descriptor for content_type field.
-	threadDescContentType := threadFields[4].Descriptor()
-	// thread.DefaultContentType holds the default value on creation for the content_type field.
-	thread.DefaultContentType = threadDescContentType.Default.(string)
-	// thread.ContentTypeValidator is a validator for the "content_type" field. It is called by the builders before save.
-	thread.ContentTypeValidator = threadDescContentType.Validators[0].(func(string) error)
-	threadcredentialMixin := schema.ThreadCredential{}.Mixin()
-	threadcredentialMixinFields0 := threadcredentialMixin[0].Fields()
-	_ = threadcredentialMixinFields0
-	threadcredentialFields := schema.ThreadCredential{}.Fields()
-	_ = threadcredentialFields
-	// threadcredentialDescCreatedAt is the schema descriptor for created_at field.
-	threadcredentialDescCreatedAt := threadcredentialMixinFields0[0].Descriptor()
-	// threadcredential.DefaultCreatedAt holds the default value on creation for the created_at field.
-	threadcredential.DefaultCreatedAt = threadcredentialDescCreatedAt.Default.(func() time.Time)
-	// threadcredentialDescUpdatedAt is the schema descriptor for updated_at field.
-	threadcredentialDescUpdatedAt := threadcredentialMixinFields0[1].Descriptor()
-	// threadcredential.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	threadcredential.DefaultUpdatedAt = threadcredentialDescUpdatedAt.Default.(func() time.Time)
-	// threadcredential.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	threadcredential.UpdateDefaultUpdatedAt = threadcredentialDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// threadcredentialDescUserID is the schema descriptor for user_id field.
-	threadcredentialDescUserID := threadcredentialFields[0].Descriptor()
-	// threadcredential.UserIDValidator is a validator for the "user_id" field. It is called by the builders before save.
-	threadcredential.UserIDValidator = threadcredentialDescUserID.Validators[0].(func(int) error)
-	// threadcredentialDescThreadID is the schema descriptor for thread_id field.
-	threadcredentialDescThreadID := threadcredentialFields[1].Descriptor()
-	// threadcredential.ThreadIDValidator is a validator for the "thread_id" field. It is called by the builders before save.
-	threadcredential.ThreadIDValidator = threadcredentialDescThreadID.Validators[0].(func(int) error)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0
@@ -892,4 +968,96 @@ func init() {
 	userbadgeDescRevokeReason := userbadgeFields[6].Descriptor()
 	// userbadge.DefaultRevokeReason holds the default value on creation for the revoke_reason field.
 	userbadge.DefaultRevokeReason = userbadgeDescRevokeReason.Default.(string)
+	validationcaseMixin := schema.ValidationCase{}.Mixin()
+	validationcaseMixinFields0 := validationcaseMixin[0].Fields()
+	_ = validationcaseMixinFields0
+	validationcaseFields := schema.ValidationCase{}.Fields()
+	_ = validationcaseFields
+	// validationcaseDescCreatedAt is the schema descriptor for created_at field.
+	validationcaseDescCreatedAt := validationcaseMixinFields0[0].Descriptor()
+	// validationcase.DefaultCreatedAt holds the default value on creation for the created_at field.
+	validationcase.DefaultCreatedAt = validationcaseDescCreatedAt.Default.(func() time.Time)
+	// validationcaseDescUpdatedAt is the schema descriptor for updated_at field.
+	validationcaseDescUpdatedAt := validationcaseMixinFields0[1].Descriptor()
+	// validationcase.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	validationcase.DefaultUpdatedAt = validationcaseDescUpdatedAt.Default.(func() time.Time)
+	// validationcase.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	validationcase.UpdateDefaultUpdatedAt = validationcaseDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// validationcaseDescCategoryID is the schema descriptor for category_id field.
+	validationcaseDescCategoryID := validationcaseFields[0].Descriptor()
+	// validationcase.CategoryIDValidator is a validator for the "category_id" field. It is called by the builders before save.
+	validationcase.CategoryIDValidator = validationcaseDescCategoryID.Validators[0].(func(int) error)
+	// validationcaseDescUserID is the schema descriptor for user_id field.
+	validationcaseDescUserID := validationcaseFields[1].Descriptor()
+	// validationcase.UserIDValidator is a validator for the "user_id" field. It is called by the builders before save.
+	validationcase.UserIDValidator = validationcaseDescUserID.Validators[0].(func(int) error)
+	// validationcaseDescTitle is the schema descriptor for title field.
+	validationcaseDescTitle := validationcaseFields[2].Descriptor()
+	// validationcase.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	validationcase.TitleValidator = validationcaseDescTitle.Validators[0].(func(string) error)
+	// validationcaseDescSummary is the schema descriptor for summary field.
+	validationcaseDescSummary := validationcaseFields[3].Descriptor()
+	// validationcase.DefaultSummary holds the default value on creation for the summary field.
+	validationcase.DefaultSummary = validationcaseDescSummary.Default.(string)
+	// validationcaseDescContentType is the schema descriptor for content_type field.
+	validationcaseDescContentType := validationcaseFields[4].Descriptor()
+	// validationcase.DefaultContentType holds the default value on creation for the content_type field.
+	validationcase.DefaultContentType = validationcaseDescContentType.Default.(string)
+	// validationcase.ContentTypeValidator is a validator for the "content_type" field. It is called by the builders before save.
+	validationcase.ContentTypeValidator = validationcaseDescContentType.Validators[0].(func(string) error)
+	// validationcaseDescBountyAmount is the schema descriptor for bounty_amount field.
+	validationcaseDescBountyAmount := validationcaseFields[7].Descriptor()
+	// validationcase.DefaultBountyAmount holds the default value on creation for the bounty_amount field.
+	validationcase.DefaultBountyAmount = validationcaseDescBountyAmount.Default.(int64)
+	// validationcaseDescStatus is the schema descriptor for status field.
+	validationcaseDescStatus := validationcaseFields[8].Descriptor()
+	// validationcase.DefaultStatus holds the default value on creation for the status field.
+	validationcase.DefaultStatus = validationcaseDescStatus.Default.(string)
+	// validationcase.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	validationcase.StatusValidator = validationcaseDescStatus.Validators[0].(func(string) error)
+	// validationcaseDescAcceptedFinalOfferID is the schema descriptor for accepted_final_offer_id field.
+	validationcaseDescAcceptedFinalOfferID := validationcaseFields[11].Descriptor()
+	// validationcase.AcceptedFinalOfferIDValidator is a validator for the "accepted_final_offer_id" field. It is called by the builders before save.
+	validationcase.AcceptedFinalOfferIDValidator = validationcaseDescAcceptedFinalOfferID.Validators[0].(func(int) error)
+	validationcaselogMixin := schema.ValidationCaseLog{}.Mixin()
+	validationcaselogMixinFields0 := validationcaselogMixin[0].Fields()
+	_ = validationcaselogMixinFields0
+	validationcaselogFields := schema.ValidationCaseLog{}.Fields()
+	_ = validationcaselogFields
+	// validationcaselogDescCreatedAt is the schema descriptor for created_at field.
+	validationcaselogDescCreatedAt := validationcaselogMixinFields0[0].Descriptor()
+	// validationcaselog.DefaultCreatedAt holds the default value on creation for the created_at field.
+	validationcaselog.DefaultCreatedAt = validationcaselogDescCreatedAt.Default.(func() time.Time)
+	// validationcaselogDescUpdatedAt is the schema descriptor for updated_at field.
+	validationcaselogDescUpdatedAt := validationcaselogMixinFields0[1].Descriptor()
+	// validationcaselog.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	validationcaselog.DefaultUpdatedAt = validationcaselogDescUpdatedAt.Default.(func() time.Time)
+	// validationcaselog.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	validationcaselog.UpdateDefaultUpdatedAt = validationcaselogDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// validationcaselogDescValidationCaseID is the schema descriptor for validation_case_id field.
+	validationcaselogDescValidationCaseID := validationcaselogFields[0].Descriptor()
+	// validationcaselog.ValidationCaseIDValidator is a validator for the "validation_case_id" field. It is called by the builders before save.
+	validationcaselog.ValidationCaseIDValidator = validationcaselogDescValidationCaseID.Validators[0].(func(int) error)
+	// validationcaselogDescActorUserID is the schema descriptor for actor_user_id field.
+	validationcaselogDescActorUserID := validationcaselogFields[1].Descriptor()
+	// validationcaselog.ActorUserIDValidator is a validator for the "actor_user_id" field. It is called by the builders before save.
+	validationcaselog.ActorUserIDValidator = validationcaselogDescActorUserID.Validators[0].(func(int) error)
+	// validationcaselogDescEventType is the schema descriptor for event_type field.
+	validationcaselogDescEventType := validationcaselogFields[2].Descriptor()
+	// validationcaselog.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
+	validationcaselog.EventTypeValidator = func() func(string) error {
+		validators := validationcaselogDescEventType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(event_type string) error {
+			for _, fn := range fns {
+				if err := fn(event_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 }

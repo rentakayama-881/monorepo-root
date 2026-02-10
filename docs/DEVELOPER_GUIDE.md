@@ -169,7 +169,7 @@ aivalid/
 | **React Components** | PascalCase | `Header.js` |
 | **CSS Classes** | kebab-case | `user-profile` |
 | **API Endpoints** | kebab-case | `/api/auth/forgot-password` |
-| **DB Tables** | snake_case (plural) | `users`, `threads` |
+| **DB Tables** | snake_case (plural) | `users`, `validation_cases` |
 | **DB Columns** | snake_case | `created_at` |
 | **MongoDB Collections** | lowercase | `wallets`, `transactions` |
 
@@ -755,18 +755,18 @@ JWT_REFRESH_EXPIRY=168h
 # Email
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
-SMTP_USER=noreply@aivalid.fun
+SMTP_USER=noreply@aivalid.id
 SMTP_PASS=your-password
 
 # Redis
 REDIS_URL=redis://localhost:6379
 
 # WebAuthn
-WEBAUTHN_RP_ID=aivalid.fun
-WEBAUTHN_RP_ORIGINS=https://aivalid.fun
+WEBAUTHN_RP_ID=aivalid.id
+WEBAUTHN_RP_ORIGINS=https://aivalid.id
 
 # Frontend
-FRONTEND_BASE_URL=https://aivalid.fun
+FRONTEND_BASE_URL=https://aivalid.id
 ```
 
 **Feature Service (.env):**
@@ -781,27 +781,28 @@ JWT__ISSUER=aivalid
 JWT__AUDIENCE=aivalid-users
 
 # CORS
-CORS__ALLOWEDORIGINS__0=https://aivalid.fun
+CORS__ALLOWEDORIGINS__0=https://aivalid.id
 ```
 
 ### 9.2 Deployment Commands
 
 ```bash
-# Backend (VPS 72.62.124.23)
-ssh deploy@72.62.124.23
-cd ~/monorepo-root
+# Backend (Go) — NOTE: host/user/path/service name harus diverifikasi per environment.
+# Referensi evidence-only: docs/FACT_MAP_REPO_RUNTIME.md
+ssh <user>@<vps-host>
+cd <deploy-dir>
 git pull origin main
 cd backend
-go build -o backend
-sudo systemctl restart backend
+go build -o app .
+sudo systemctl restart <go-backend-service>
 
-# Feature Service (VPS 203.175.11.84)
-ssh asp@203.175.11.84
-cd ~/monorepo-root
+# Feature Service (.NET) — NOTE: host/user/path/service name harus diverifikasi per environment.
+ssh <user>@<vps-host>
+cd <deploy-dir>
 git pull origin main
 cd feature-service/src/FeatureService.Api
 dotnet publish -c Release
-sudo systemctl restart featureservice
+sudo systemctl restart <feature-service-name>
 
 # Frontend (Vercel)
 # Auto-deploy dari GitHub push ke main
@@ -811,14 +812,14 @@ sudo systemctl restart featureservice
 
 ```bash
 # Backend
-curl https://api.aivalid.fun/health
+curl https://api.aivalid.id/health
 
 # Feature Service
-curl https://feature.aivalid.fun/api/v1/health
+curl https://feature.aivalid.id/api/v1/health
 
 # Check services
-sudo systemctl status backend
-sudo systemctl status featureservice
+sudo systemctl status <go-backend-service>
+sudo systemctl status <feature-service-name>
 ```
 
 ---
@@ -891,10 +892,10 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run
 
 | Role | Kontak |
 |------|--------|
-| Technical Issues | dev@aivalid.fun |
-| Security Issues | security@aivalid.fun |
-| Emergency | admin@aivalid.fun |
+| Technical Issues | dev@aivalid.id |
+| Security Issues | security@aivalid.id |
+| Emergency | admin@aivalid.id |
 
 ---
 
-*Dokumen ini adalah panduan wajib untuk pengembangan AIValid. Terakhir diperbarui: 15 Januari 2026.*
+*Dokumen ini adalah panduan wajib untuk pengembangan AIValid. Terakhir diperbarui: 10 Februari 2026.*

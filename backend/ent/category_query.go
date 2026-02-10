@@ -5,7 +5,7 @@ package ent
 import (
 	"backend-gin/ent/category"
 	"backend-gin/ent/predicate"
-	"backend-gin/ent/thread"
+	"backend-gin/ent/validationcase"
 	"context"
 	"database/sql/driver"
 	"fmt"
@@ -20,11 +20,11 @@ import (
 // CategoryQuery is the builder for querying Category entities.
 type CategoryQuery struct {
 	config
-	ctx         *QueryContext
-	order       []category.OrderOption
-	inters      []Interceptor
-	predicates  []predicate.Category
-	withThreads *ThreadQuery
+	ctx                 *QueryContext
+	order               []category.OrderOption
+	inters              []Interceptor
+	predicates          []predicate.Category
+	withValidationCases *ValidationCaseQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -61,9 +61,9 @@ func (_q *CategoryQuery) Order(o ...category.OrderOption) *CategoryQuery {
 	return _q
 }
 
-// QueryThreads chains the current query on the "threads" edge.
-func (_q *CategoryQuery) QueryThreads() *ThreadQuery {
-	query := (&ThreadClient{config: _q.config}).Query()
+// QueryValidationCases chains the current query on the "validation_cases" edge.
+func (_q *CategoryQuery) QueryValidationCases() *ValidationCaseQuery {
+	query := (&ValidationCaseClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -74,8 +74,8 @@ func (_q *CategoryQuery) QueryThreads() *ThreadQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(category.Table, category.FieldID, selector),
-			sqlgraph.To(thread.Table, thread.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, category.ThreadsTable, category.ThreadsColumn),
+			sqlgraph.To(validationcase.Table, validationcase.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, category.ValidationCasesTable, category.ValidationCasesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -270,26 +270,26 @@ func (_q *CategoryQuery) Clone() *CategoryQuery {
 		return nil
 	}
 	return &CategoryQuery{
-		config:      _q.config,
-		ctx:         _q.ctx.Clone(),
-		order:       append([]category.OrderOption{}, _q.order...),
-		inters:      append([]Interceptor{}, _q.inters...),
-		predicates:  append([]predicate.Category{}, _q.predicates...),
-		withThreads: _q.withThreads.Clone(),
+		config:              _q.config,
+		ctx:                 _q.ctx.Clone(),
+		order:               append([]category.OrderOption{}, _q.order...),
+		inters:              append([]Interceptor{}, _q.inters...),
+		predicates:          append([]predicate.Category{}, _q.predicates...),
+		withValidationCases: _q.withValidationCases.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
 }
 
-// WithThreads tells the query-builder to eager-load the nodes that are connected to
-// the "threads" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *CategoryQuery) WithThreads(opts ...func(*ThreadQuery)) *CategoryQuery {
-	query := (&ThreadClient{config: _q.config}).Query()
+// WithValidationCases tells the query-builder to eager-load the nodes that are connected to
+// the "validation_cases" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *CategoryQuery) WithValidationCases(opts ...func(*ValidationCaseQuery)) *CategoryQuery {
+	query := (&ValidationCaseClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withThreads = query
+	_q.withValidationCases = query
 	return _q
 }
 
@@ -372,7 +372,7 @@ func (_q *CategoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Cat
 		nodes       = []*Category{}
 		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			_q.withThreads != nil,
+			_q.withValidationCases != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -393,17 +393,17 @@ func (_q *CategoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Cat
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withThreads; query != nil {
-		if err := _q.loadThreads(ctx, query, nodes,
-			func(n *Category) { n.Edges.Threads = []*Thread{} },
-			func(n *Category, e *Thread) { n.Edges.Threads = append(n.Edges.Threads, e) }); err != nil {
+	if query := _q.withValidationCases; query != nil {
+		if err := _q.loadValidationCases(ctx, query, nodes,
+			func(n *Category) { n.Edges.ValidationCases = []*ValidationCase{} },
+			func(n *Category, e *ValidationCase) { n.Edges.ValidationCases = append(n.Edges.ValidationCases, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *CategoryQuery) loadThreads(ctx context.Context, query *ThreadQuery, nodes []*Category, init func(*Category), assign func(*Category, *Thread)) error {
+func (_q *CategoryQuery) loadValidationCases(ctx context.Context, query *ValidationCaseQuery, nodes []*Category, init func(*Category), assign func(*Category, *ValidationCase)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Category)
 	for i := range nodes {
@@ -414,10 +414,10 @@ func (_q *CategoryQuery) loadThreads(ctx context.Context, query *ThreadQuery, no
 		}
 	}
 	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(thread.FieldCategoryID)
+		query.ctx.AppendFieldOnce(validationcase.FieldCategoryID)
 	}
-	query.Where(predicate.Thread(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(category.ThreadsColumn), fks...))
+	query.Where(predicate.ValidationCase(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(category.ValidationCasesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

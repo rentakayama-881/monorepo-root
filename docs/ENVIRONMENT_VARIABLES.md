@@ -11,11 +11,11 @@ This document lists all required and optional environment variables for the AIVa
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `JWT_SECRET` | Secret key for signing JWT tokens (min 32 chars) | `your-super-secret-jwt-key-min-32-chars` |
-| `JWT_ISSUER` | JWT issuer (`iss`) claim (must match Feature Service `JWT__ISSUER`) | `api.aivalid.fun` |
+| `JWT_ISSUER` | JWT issuer (`iss`) claim (must match Feature Service `JWT__ISSUER`) | `api.aivalid.id` |
 | `JWT_AUDIENCE` | JWT audience (`aud`) claim (must match Feature Service `JWT__AUDIENCE`) | `aivalid-clients` |
 | `ADMIN_JWT_SECRET` | Secret key for admin JWT tokens (shared with Feature Service) | `admin-jwt-secret-key-32-chars-min` |
 | `DATABASE_URL` | Full PostgreSQL connection URL | `postgres://user:pass@host:5432/dbname?sslmode=require` |
-| `FRONTEND_BASE_URL` | Frontend URL for CORS and redirects | `https://aivalid.fun` |
+| `FRONTEND_BASE_URL` | Frontend URL for CORS and redirects | `https://aivalid.id` |
 
 ### Database (Alternative to DATABASE_URL)
 
@@ -64,7 +64,7 @@ This document lists all required and optional environment variables for the AIVa
 | Variable | Description | Example | Required |
 |----------|-------------|---------|----------|
 | `RESEND_API_KEY` | Resend API key | `re_xxxxx` | Yes (for production) |
-| `RESEND_FROM_EMAIL` | Sender email address (must be verified in Resend) | `noreply@aivalid.fun` | Yes (for production) |
+| `RESEND_FROM_EMAIL` | Sender email address (must be verified in Resend) | `noreply@aivalid.id` | Yes (for production) |
 | `RESEND_FROM_NAME` | Sender display name (shown in email client) | `AIValid` | No (defaults to "AIValid") |
 
 #### Email Configuration Best Practices
@@ -121,13 +121,13 @@ This document lists all required and optional environment variables for the AIVa
   },
   "Jwt": {
     "Secret": "same-as-go-backend-jwt-secret",
-    "Issuer": "api.aivalid.fun",
+    "Issuer": "api.aivalid.id",
     "Audience": "aivalid-clients",
     "AdminSecret": "same-as-go-backend-admin-jwt-secret"
   },
   "Cors": {
     "AllowedOrigins": [
-      "https://aivalid.fun",
+      "https://aivalid.id",
       "http://localhost:3000"
     ]
   }
@@ -155,9 +155,9 @@ This document lists all required and optional environment variables for the AIVa
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `NEXT_PUBLIC_API_BASE_URL` | Go backend API URL | `https://api.aivalid.fun` |
-| `NEXT_PUBLIC_FEATURE_SERVICE_URL` | Feature Service URL | `https://feature.aivalid.fun` |
-| `NEXT_PUBLIC_SITE_URL` | Frontend site URL | `https://aivalid.fun` |
+| `NEXT_PUBLIC_API_BASE_URL` | Go backend API URL | `https://api.aivalid.id` |
+| `NEXT_PUBLIC_FEATURE_SERVICE_URL` | Feature Service URL | `https://feature.aivalid.id` |
+| `NEXT_PUBLIC_SITE_URL` | Frontend site URL | `https://aivalid.id` |
 
 ### Optional
 

@@ -9,19 +9,21 @@ import (
 	"backend-gin/validators"
 )
 
-// ThreadServiceInterface defines the contract for thread operations.
-// EntThreadService (Ent) implements this interface.
-type ThreadServiceInterface interface {
-	CreateThread(ctx context.Context, userID uint, input validators.CreateThreadInput) (*ThreadDetailResponse, error)
-	UpdateThread(ctx context.Context, userID uint, input validators.UpdateThreadInput) error
-	DeleteThread(ctx context.Context, userID uint, threadID uint) error
-	GetThreadByID(ctx context.Context, threadID uint, viewerUserID uint) (*ThreadDetailResponse, error)
+// ValidationCaseServiceInterface defines the contract for Validation Case operations.
+// EntValidationCaseService (Ent) implements this interface.
+type ValidationCaseServiceInterface interface {
+	CreateValidationCase(ctx context.Context, ownerUserID uint, input validators.CreateValidationCaseInput) (*ValidationCaseDetailResponse, error)
+	UpdateValidationCase(ctx context.Context, ownerUserID uint, input validators.UpdateValidationCaseInput) error
+	DeleteValidationCase(ctx context.Context, ownerUserID uint, validationCaseID uint) error
+	GetValidationCaseByID(ctx context.Context, validationCaseID uint, viewerUserID uint) (*ValidationCaseDetailResponse, error)
+
 	GetCategories(ctx context.Context) ([]CategoryResponse, error)
-	ListLatestThreads(ctx context.Context, categorySlug string, limit int) ([]ThreadListItem, error)
-	ListThreadsByCategory(ctx context.Context, categorySlug string, limit int) (*CategoryWithThreadsResponse, error)
-	ListUserThreads(ctx context.Context, userID uint) ([]ThreadListItem, error)
-	ListThreadsByUsername(ctx context.Context, username string) ([]ThreadListItem, error)
+
+	ListLatestValidationCases(ctx context.Context, categorySlug string, limit int) ([]ValidationCaseListItem, error)
+	ListValidationCasesByCategory(ctx context.Context, categorySlug string, limit int) (*CategoryWithValidationCasesResponse, error)
+	ListUserValidationCases(ctx context.Context, ownerUserID uint) ([]ValidationCaseListItem, error)
+	ListValidationCasesByUsername(ctx context.Context, username string) ([]ValidationCaseListItem, error)
 }
 
-// Ensure EntThreadService satisfies interface (compile-time check)
-var _ ThreadServiceInterface = (*EntThreadService)(nil)
+// Ensure EntValidationCaseService satisfies interface (compile-time check)
+var _ ValidationCaseServiceInterface = (*EntValidationCaseService)(nil)

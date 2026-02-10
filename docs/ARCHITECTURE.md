@@ -39,20 +39,19 @@ AIValid menggunakan **Microservices Architecture** dengan tiga layer utama:
 │      GO BACKEND           │       │      FEATURE SERVICE          │
 │      (Core API)           │       │      (.NET Core)              │
 │                           │       │                               │
-│  ├─ Authentication        │       │  ├─ Social Features           │
-│  ├─ User Management       │       │  │  ├─ Replies                │
-│  ├─ Thread/Forum          │       │  │  ├─ Reactions              │
-│  ├─ Admin Panel           │       │  │  └─ Reports                │
-│                           │       │  ├─ Finance Module            │
-│  └─ Session Management    │       │  │  ├─ Wallets                │
-│                           │       │  │  ├─ Transfers (P2P)        │
-│  Database: PostgreSQL     │       │  │  ├─ Withdrawals            │
-│  Cache: Redis             │       │  │  └─ Disputes               │
-│                           │       │                               │
-│  VPS: 72.62.124.23        │       │  └─ Document Storage          │
+│  ├─ Authentication        │       │  ├─ Wallet + PIN              │
+│  ├─ User Management       │       │  ├─ Transfers (P2P/Escrow)    │
+│  ├─ Validation Cases      │       │  ├─ Withdrawals               │
+│  ├─ Admin Panel           │       │  ├─ Disputes (Arbitration)    │
+│                           │       │  ├─ Guarantees (Stake)        │
+│  └─ Session Management    │       │  ├─ Documents (Artifacts)     │
+│                           │       │  └─ Reports + Moderation      │
+│  Database: PostgreSQL     │       │                               │
+│  Cache: Redis             │       │                               │
+│  VPS: (Go backend)        │       │  VPS: (Feature service)       │
 └───────────────────────────┘       │                               │
                                     │  Database: MongoDB             │
-                                    │  VPS: 203.175.11.84            │
+                                    │                               │
                                     └───────────────────────────────┘
 ```
 
@@ -135,7 +134,7 @@ User Browser
 
 ## 3. KOMPONEN UTAMA
 
-### 3.1 Frontend (Next.js 15)
+### 3.1 Frontend (Next.js 16)
 
 ```
 frontend/
@@ -143,7 +142,7 @@ frontend/
 │   ├── (auth)/             # Auth-related pages (login, register)
 │   ├── account/            # User account settings
 │   ├── admin/              # Admin dashboard
-│   ├── thread/[slug]/      # Dynamic thread pages
+│   ├── validation-cases/   # Validation Case Index + Record
 │   ├── user/[username]/    # User profile pages
 │   ├── api/                # API routes (BFF pattern)
 │   └── layout.js           # Root layout
@@ -193,7 +192,7 @@ backend/
 ├── ent/                    # Ent ORM (Generated + Schemas)
 │   ├── schema/             # Entity definitions
 │   │   ├── user.go         # User entity
-│   │   ├── thread.go       # Thread entity
+│   │   ├── validation_case.go # Validation Case entity
 │   │   ├── session.go      # Session entity
 │   │   └── ...             # Other entities
 │   ├── client.go           # Generated client
@@ -204,7 +203,7 @@ backend/
 │   ├── auth_handler.go     # Login, register, refresh
 │   ├── passkey_handler.go  # WebAuthn endpoints
 │   ├── totp_handler.go     # 2FA endpoints
-│   ├── thread_handler.go   # Thread CRUD
+│   ├── validation_case_handler.go # Validation Case CRUD
 │   ├── user_handler.go     # User profile
 │   └── admin_handler.go    # Admin operations
 │
@@ -257,29 +256,43 @@ feature-service/
         ├── Program.cs              # Entry point, DI configuration
         │
         ├── Controllers/            # API endpoints
-        │   ├── Social/
-        │   │   ├── RepliesController.cs
-        │   │   └── ReactionsController.cs
         │   ├── Finance/
         │   │   ├── WalletsController.cs
         │   │   ├── TransfersController.cs
         │   │   ├── WithdrawalsController.cs
-        │   │   └── DisputesController.cs
+        │   │   ├── DepositsController.cs
+        │   │   ├── DisputesController.cs
+        │   │   └── GuaranteesController.cs
+        │   ├── Security/
+        │   │   └── PqcKeysController.cs
+        │   ├── AdminModerationController.cs
+        │   ├── AdminWalletsController.cs
+        │   ├── AdminDepositsController.cs
+        │   ├── AdminDisputesController.cs
         │   ├── DocumentController.cs
-        │   └── ReportController.cs
+        │   ├── ReportController.cs
+        │   ├── HealthController.cs
+        │   └── UserCleanupController.cs
         │
         ├── Services/               # Business logic
         │   ├── WalletService.cs
         │   ├── TransferService.cs
-        │   ├── ReplyService.cs
-        │   ├── ReactionService.cs
+        │   ├── DisputeService.cs
+        │   ├── DocumentService.cs
+        │   ├── ReportService.cs
+        │   ├── AdminModerationService.cs
         │   └── ...
         │
         ├── Models/
         │   └── Entities/           # MongoDB documents
         │       ├── UserWallet.cs
         │       ├── Transaction.cs
-        │       ├── Reply.cs
+        │       ├── Transfer.cs
+        │       ├── Dispute.cs
+        │       ├── Document.cs
+        │       ├── Report.cs
+        │       ├── HiddenContent.cs
+        │       ├── AdminActionLog.cs
         │       └── ...
         │
         ├── DTOs/                   # Request/Response models
@@ -301,7 +314,7 @@ feature-service/
 │  Client  │                                  │  Go Backend  │
 └────┬─────┘                                  └──────┬───────┘
      │                                               │
-     │  POST /auth/register                          │
+     │  POST /api/auth/register                      │
      │  {email, password}                            │
      │──────────────────────────────────────────────▶│
      │                                               │
@@ -316,7 +329,8 @@ feature-service/
      │  200 {user_id, message}                       │
      │◀──────────────────────────────────────────────│
      │                                               │
-     │  GET /auth/verify-email?token=xxx             │
+     │  POST /api/auth/verify/confirm                │
+     │  {token}                                      │
      │──────────────────────────────────────────────▶│
      │                                               │
      │                                   ┌───────────┴───────────┐
@@ -324,7 +338,7 @@ feature-service/
      │                                   │ Mark email verified   │
      │                                   └───────────┬───────────┘
      │                                               │
-     │  POST /auth/login                             │
+     │  POST /api/auth/login                         │
      │  {email, password}                            │
      │──────────────────────────────────────────────▶│
      │                                               │
@@ -373,7 +387,7 @@ feature-service/
 │ Sender │          │ Feature Service│          │    Receiver    │
 └───┬────┘          └───────┬────────┘          └───────┬────────┘
     │                       │                           │
-    │ POST /transfers       │                           │
+    │ POST /api/v1/wallets/transfers                    │
     │ {receiver, amount, pin, totp}                     │
     │──────────────────────▶│                           │
     │                       │                           │
@@ -389,10 +403,10 @@ feature-service/
     │ 200 {transfer, code}  │                           │
     │◀──────────────────────│                           │
     │                       │                           │
-    │                       │   GET /transfers/code/XXX │
+    │                       │   GET /api/v1/wallets/transfers/code/XXX
     │                       │◀──────────────────────────│
     │                       │                           │
-    │                       │   POST /transfers/{id}/release
+    │                       │   POST /api/v1/wallets/transfers/{id}/release
     │                       │   {pin, totp}             │
     │                       │◀──────────────────────────│
     │                       │                           │
@@ -414,7 +428,7 @@ Registration:
 │  Client  │                    │  Go Backend  │
 └────┬─────┘                    └──────┬───────┘
      │                                 │
-     │ POST /passkey/register/begin    │
+     │ POST /api/auth/passkeys/register/begin
      │ {Authorization: Bearer token}   │
      │────────────────────────────────▶│
      │                                 │
@@ -433,7 +447,7 @@ Registration:
      │ │ biometric/PIN         │       │
      │ └───────────────────────┘       │
      │                                 │
-     │ POST /passkey/register/finish   │
+     │ POST /api/auth/passkeys/register/finish
      │ {credential, session_id}        │
      │────────────────────────────────▶│
      │                                 │
@@ -471,16 +485,23 @@ CREATE TABLE users (
     deleted_at TIMESTAMP
 );
 
--- Threads table
-CREATE TABLE threads (
+-- Validation Cases table
+CREATE TABLE validation_cases (
     id SERIAL PRIMARY KEY,
     category_id INTEGER NOT NULL REFERENCES categories(id),
     user_id INTEGER NOT NULL REFERENCES users(id),
     title VARCHAR(255) NOT NULL,
-    summary TEXT,
+    summary TEXT DEFAULT '',
     content_type VARCHAR(32) DEFAULT 'table',
     content_json JSONB,
     meta JSONB,
+    bounty_amount BIGINT DEFAULT 0,
+    status VARCHAR(32) DEFAULT 'open',
+    escrow_transfer_id TEXT,
+    dispute_id TEXT,
+    accepted_final_offer_id INTEGER,
+    artifact_document_id TEXT,
+    certified_artifact_document_id TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     deleted_at TIMESTAMP
@@ -532,9 +553,8 @@ CREATE TABLE session_locks (
 {
   "_id": "wlt_01HXYZ...",
   "userId": 123,
-  "balance": 50000000,  // in smallest unit (cents)
-  "pinHash": "pbkdf2:...",
-  "pinSalt": "base64...",
+  "balance": 50000000,  // IDR (Rupiah, integer)
+  "pinHash": "pbkdf2:...", // optional (set after PIN setup)
   "pinSet": true,
   "failedPinAttempts": 0,
   "pinLockedUntil": null,
@@ -546,50 +566,69 @@ CREATE TABLE session_locks (
 {
   "_id": "txn_01HXYZ...",
   "userId": 123,
-  "type": "Transfer",  // Deposit, Withdrawal, Transfer
+  "type": 3,  // TransactionType enum (e.g. TransferOut)
   "amount": 100000,
   "balanceBefore": 50000000,
   "balanceAfter": 49900000,
   "description": "Transfer to user @john",
-  "referenceId": "tfr_01HXYZ...",
-  "referenceType": "Transfer",
+  "referenceId": "trf_01HXYZ...",
+  "referenceType": "transfer",
   "createdAt": ISODate("2026-01-15")
 }
 
 // transfers collection (escrow)
 {
-  "_id": "tfr_01HXYZ...",
+  "_id": "trf_01HXYZ...",
+  "code": "12345678",
   "senderId": 123,
+  "senderUsername": "alice",
   "receiverId": 456,
+  "receiverUsername": "bob",
   "amount": 100000,
-  "claimCode": "ABC123",
-  "claimCodeHash": "sha256:...",
-  "status": "Pending",  // Pending, Claimed, Expired, Cancelled
-  "notes": "Payment for service",
-  "expiresAt": ISODate("2026-01-22"),
-  "claimedAt": null,
-  "createdAt": ISODate("2026-01-15")
-}
-
-// replies collection
-{
-  "_id": "rpl_01HXYZ...",
-  "threadId": 789,
-  "authorId": 123,
-  "content": "Great post!",
-  "parentId": null,
-  "isHidden": false,
+  "message": "Payment for service",
+  "status": 0, // TransferStatus enum (Pending/Released/Cancelled/Rejected/Disputed/Expired)
+  "holdUntil": ISODate("2026-01-22"),
+  "releasedAt": null,
+  "cancelledAt": null,
   "createdAt": ISODate("2026-01-15"),
   "updatedAt": ISODate("2026-01-15")
 }
 
-// reactions collection
+// disputes collection (admin arbitration)
 {
-  "_id": "rxn_01HXYZ...",
-  "threadId": 789,
+  "_id": ObjectId("65d2c0f4a6e7b1c2d3e4f5a6"),
+  "transferId": "trf_01HXYZ...",
+  "initiatorId": 123,
+  "respondentId": 456,
+  "reason": "Work not delivered",
+  "status": 0, // DisputeStatus enum (Open/UnderReview/WaitingForEvidence/Resolved/Cancelled)
+  "resolution": null,
+  "createdAt": ISODate("2026-01-15"),
+  "updatedAt": ISODate("2026-01-15")
+}
+
+// documents collection (profile + workflow artifacts)
+{
   "userId": 123,
-  "type": "like",  // like, love, haha, wow, sad, angry
-  "createdAt": ISODate("2026-01-15")
+  "fileName": "report.pdf",
+  "title": "Artifact Submission",
+  "fileType": "pdf",
+  "visibility": "private",
+  "sharedWithUserIds": [456],
+  "createdAt": ISODate("2026-01-15"),
+  "updatedAt": ISODate("2026-01-15")
+}
+
+// reports collection (moderation)
+{
+  "_id": "rpt_01HXYZ...",
+  "targetType": "validation_case",
+  "targetId": "789",
+  "validationCaseId": 789,
+  "reason": "spam",
+  "status": "pending",
+  "createdAt": ISODate("2026-01-15"),
+  "updatedAt": ISODate("2026-01-15")
 }
 ```
 
@@ -597,7 +636,7 @@ CREATE TABLE session_locks (
 
 ```
 ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│      User       │       │     Thread      │       │    Category     │
+│      User       │       │ ValidationCase  │       │    Category     │
 ├─────────────────┤       ├─────────────────┤       ├─────────────────┤
 │ id (PK)         │──┐    │ id (PK)         │   ┌──▶│ id (PK)         │
 │ email           │  │    │ user_id (FK)    │───┘   │ name            │
@@ -609,9 +648,9 @@ CREATE TABLE session_locks (
         │            │            │
         ▼            │            │
 ┌─────────────────┐  │    ┌───────┴─────────┐
-│    Session      │  │    │   thread_tags   │       ┌─────────────────┐
+│    Session      │  │    │tag_validation_cases│     ┌─────────────────┐
 ├─────────────────┤  │    ├─────────────────┤       │      Tag        │
-│ id (PK)         │  │    │ thread_id (FK)  │───────│ id (PK)         │
+│ id (PK)         │  │    │ validation_case_id (FK)│─▶│ id (PK)        │
 │ user_id (FK)    │──┤    │ tag_id (FK)     │◀──────│ name            │
 │ access_jti      │  │    └─────────────────┘       │ slug            │
 │ expires_at      │  │                              └─────────────────┘
@@ -680,64 +719,98 @@ CREATE TABLE session_locks (
 
 ### 6.3 API Endpoints Summary
 
-#### Go Backend (api.aivalid.fun)
+#### Go Backend (api.aivalid.id)
 
 ```
 Auth Endpoints:
-POST   /auth/register              # Register new user
-POST   /auth/login                 # Login with email/password
-POST   /auth/refresh               # Refresh access token
-POST   /auth/logout                # Logout (revoke session)
-POST   /auth/verify-email          # Verify email token
-POST   /auth/forgot-password       # Request password reset
-POST   /auth/reset-password        # Reset password
+POST   /api/auth/register                 # Register new user
+POST   /api/auth/login                    # Login with email/password
+POST   /api/auth/login/totp               # Login with 2FA (TOTP)
+POST   /api/auth/login/backup-code        # Login with backup code
+POST   /api/auth/refresh                  # Refresh access token
+POST   /api/auth/logout                   # Logout (revoke session)
+POST   /api/auth/verify/request           # Request verification email
+POST   /api/auth/verify/confirm           # Confirm verification (token)
+POST   /api/auth/forgot-password          # Request password reset
+POST   /api/auth/reset-password           # Reset password
 
 2FA Endpoints:
-POST   /auth/totp/setup            # Begin 2FA setup
-POST   /auth/totp/verify           # Verify and enable 2FA
-POST   /auth/totp/validate         # Validate 2FA code
-DELETE /auth/totp                  # Disable 2FA
+GET    /api/auth/totp/status              # 2FA status
+POST   /api/auth/totp/setup               # Begin 2FA setup
+POST   /api/auth/totp/verify              # Verify and enable 2FA (returns backup codes)
+POST   /api/auth/totp/verify-code         # Verify code (e.g. for sensitive actions)
+POST   /api/auth/totp/disable             # Disable 2FA
+GET    /api/auth/totp/backup-codes/count  # Backup codes count
 
 WebAuthn Endpoints:
-POST   /passkey/register/begin     # Begin passkey registration
-POST   /passkey/register/finish    # Complete registration
-POST   /passkey/login/begin        # Begin passkey login
-POST   /passkey/login/finish       # Complete login
-GET    /passkey/list               # List user's passkeys
-DELETE /passkey/:id                # Delete a passkey
+POST   /api/auth/passkeys/check           # Check passkeys availability
+POST   /api/auth/passkeys/login/begin     # Begin passkey login
+POST   /api/auth/passkeys/login/finish    # Complete passkey login
+POST   /api/auth/passkeys/register/begin  # Begin passkey registration (auth)
+POST   /api/auth/passkeys/register/finish # Complete passkey registration (auth)
+GET    /api/auth/passkeys                 # List user's passkeys (auth)
+GET    /api/auth/passkeys/status          # Passkey status (auth)
+PUT    /api/auth/passkeys/:id/name        # Rename passkey (auth)
+DELETE /api/auth/passkeys/:id             # Delete passkey (auth)
 
-Thread Endpoints:
-GET    /api/threads                # List threads
-POST   /api/threads                # Create thread
-GET    /api/threads/:id            # Get thread
-PUT    /api/threads/:id            # Update thread
-DELETE /api/threads/:id            # Delete thread
+Validation Case Endpoints:
+GET    /api/validation-cases/categories                 # List case categories
+GET    /api/validation-cases/category/:slug             # List cases by category
+GET    /api/validation-cases/latest                     # Latest cases
+GET    /api/validation-cases/:id/public                 # Public case record
+GET    /api/validation-cases/:id                        # Case record (auth)
+POST   /api/validation-cases                            # Create case (auth)
+GET    /api/validation-cases/me                         # My cases (auth)
+PUT    /api/validation-cases/:id                        # Update case (auth)
+DELETE /api/validation-cases/:id                        # Delete case (auth)
+GET    /api/validation-cases/:id/tags                   # Case tags
+POST   /api/validation-cases/:id/tags                   # Add tags (auth)
+DELETE /api/validation-cases/:id/tags/:tagSlug          # Remove tag (auth)
+
+Validation Protocol Workflow (Case Record):
+POST   /api/validation-cases/:id/consultation-requests                      # Request Consultation (auth)
+GET    /api/validation-cases/:id/consultation-requests                      # List requests (auth)
+POST   /api/validation-cases/:id/consultation-requests/:requestId/approve   # Approve contact sharing (auth)
+POST   /api/validation-cases/:id/consultation-requests/:requestId/reject    # Reject (auth)
+GET    /api/validation-cases/:id/contact                                    # Reveal Telegram contact (auth)
+POST   /api/validation-cases/:id/final-offers                               # Submit Final Offer (auth)
+GET    /api/validation-cases/:id/final-offers                               # List Final Offers (auth)
+POST   /api/validation-cases/:id/final-offers/:offerId/accept               # Accept offer (auth)
+POST   /api/validation-cases/:id/lock-funds                                 # Lock Funds into escrow (auth)
+POST   /api/validation-cases/:id/artifact-submission                        # Artifact Submission (auth)
+POST   /api/validation-cases/:id/escrow/released                            # Mark escrow released (auth)
+POST   /api/validation-cases/:id/dispute/attach                             # Attach Dispute (auth)
+GET    /api/validation-cases/:id/case-log                                   # Case Log (auth)
 
 User Endpoints:
 GET    /api/user/:username         # Get user profile
+GET    /api/user/:username/validation-cases  # List user's cases
+GET    /api/user/:username/badges            # Public badges/credentials
+GET    /api/user/me                          # Current user (auth)
 PUT    /api/account                # Update own profile
 DELETE /api/account                # Delete account
 ```
 
-#### Feature Service (feature.aivalid.fun)
+#### Feature Service (feature.aivalid.id)
 
 ```
-Social Endpoints:
-GET    /api/v1/threads/:id/replies           # List replies
-POST   /api/v1/threads/:id/replies           # Create reply
-PUT    /api/v1/threads/:id/replies/:replyId  # Edit reply
-DELETE /api/v1/threads/:id/replies/:replyId  # Delete reply
-
-GET    /api/v1/threads/:id/reactions/summary # Get reactions summary
-POST   /api/v1/threads/:id/reactions         # Add reaction
-DELETE /api/v1/threads/:id/reactions         # Remove reaction
+Health:
+GET    /api/v1/health                        # Health (JSON)
+GET    /api/v1/health/live                   # Liveness
+GET    /api/v1/health/ready                  # Readiness (Mongo + Redis)
+GET    /health                               # HealthChecks endpoint
 
 Wallet Endpoints:
 GET    /api/v1/wallets/me                    # Get own wallet
+GET    /api/v1/wallets/pin/status            # PIN status (locked / set)
 POST   /api/v1/wallets/pin/set               # Set PIN (requires 2FA)
 POST   /api/v1/wallets/pin/change            # Change PIN
 POST   /api/v1/wallets/pin/verify            # Verify PIN
 GET    /api/v1/wallets/transactions          # Transaction history
+
+Deposit Endpoints:
+POST   /api/v1/wallets/deposits              # Create deposit request (requires 2FA + PQC)
+GET    /api/v1/wallets/deposits              # Deposit history
 
 Transfer Endpoints:
 GET    /api/v1/wallets/transfers             # List transfers
@@ -746,16 +819,67 @@ GET    /api/v1/wallets/transfers/:id         # Get transfer details
 GET    /api/v1/wallets/transfers/code/:code  # Find by claim code
 POST   /api/v1/wallets/transfers/:id/release # Claim transfer
 POST   /api/v1/wallets/transfers/:id/cancel  # Cancel transfer
+POST   /api/v1/wallets/transfers/:id/reject  # Reject transfer (refund)
+GET    /api/v1/wallets/transfers/search-user # Find receiver by username/email (helper)
 
 Withdrawal Endpoints:
 GET    /api/v1/wallets/withdrawals           # List withdrawals
 POST   /api/v1/wallets/withdrawals           # Create withdrawal (requires 2FA + PIN)
+GET    /api/v1/wallets/withdrawals/:id       # Withdrawal detail
 POST   /api/v1/wallets/withdrawals/:id/cancel # Cancel withdrawal
+GET    /api/v1/wallets/withdrawals/banks     # Supported banks
 
 Dispute Endpoints:
-GET    /api/v1/wallets/disputes              # List disputes
-POST   /api/v1/wallets/disputes              # Create dispute
-POST   /api/v1/wallets/disputes/:id/respond  # Respond to dispute
+POST   /api/v1/disputes                      # Create dispute (requires PQC)
+GET    /api/v1/disputes                      # List disputes
+GET    /api/v1/disputes/:id                  # Dispute detail
+POST   /api/v1/disputes/:id/messages         # Add message (requires PQC)
+POST   /api/v1/disputes/:id/evidence         # Add evidence (requires PQC)
+POST   /api/v1/disputes/:id/cancel           # Cancel dispute (requires PQC)
+POST   /api/v1/disputes/:id/mutual-refund    # Request mutual refund (requires PQC)
+
+Guarantee Endpoints:
+GET    /api/v1/guarantees/me                 # Get guarantee (auth)
+POST   /api/v1/guarantees                    # Lock guarantee (requires 2FA + PIN + PQC)
+POST   /api/v1/guarantees/release            # Release guarantee (requires 2FA + PIN + PQC)
+GET    /api/v1/guarantees/user/:userId       # Public guarantee (best-effort)
+
+Documents:
+POST   /api/v1/documents                     # Upload (auth)
+GET    /api/v1/documents/my-documents        # List own docs (auth)
+GET    /api/v1/documents/:id                 # Get doc (public/private rules)
+GET    /api/v1/documents/:id/download        # Download doc
+PATCH  /api/v1/documents/:id                 # Update metadata (auth)
+PATCH  /api/v1/documents/:id/sharing         # Update private sharing list (auth)
+DELETE /api/v1/documents/:id                 # Delete doc (auth)
+GET    /api/v1/documents/quota               # Storage quota (auth)
+GET    /api/v1/documents/user/:userId        # List public docs by user (anon)
+GET    /api/v1/documents/categories          # Allowed categories (anon)
+
+Reports:
+POST   /api/v1/reports                        # Create report (auth)
+GET    /api/v1/reports/:id                    # Get report status (auth)
+GET    /api/v1/reports/reasons                # Report reasons (anon)
+
+Admin Moderation:
+GET    /api/v1/admin/moderation/dashboard
+GET    /api/v1/admin/moderation/reports
+GET    /api/v1/admin/moderation/reports/:id
+POST   /api/v1/admin/moderation/reports/:id/action
+GET    /api/v1/admin/moderation/device-bans
+POST   /api/v1/admin/moderation/device-bans
+POST   /api/v1/admin/moderation/device-bans/check
+GET    /api/v1/admin/moderation/warnings
+POST   /api/v1/admin/moderation/warnings
+GET    /api/v1/admin/moderation/content/hidden
+POST   /api/v1/admin/moderation/content/hide
+POST   /api/v1/admin/moderation/content/unhide/:id
+POST   /api/v1/admin/moderation/validation-cases/move
+
+PQC Keys:
+POST   /api/v1/users/:userId/pqc-keys        # Register PQC public key (auth + 2FA)
+GET    /api/v1/users/:userId/pqc-keys        # Get active key
+DELETE /api/v1/users/:userId/pqc-keys        # Revoke key (auth + 2FA)
 ```
 
 ---
@@ -850,143 +974,66 @@ public class TransferValidator : AbstractValidator<CreateTransferRequest>
 
 ## 8. DEPLOYMENT ARCHITECTURE
 
-### 8.1 Current Infrastructure
+### 8.1 Observed Runtime Notes (Evidence-Based)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         PRODUCTION                               │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌─────────────────┐                                            │
-│  │     Vercel      │◀─── GitHub Actions (auto-deploy on push)   │
-│  │    Frontend     │                                            │
-│  │                 │     Domain: aivalid.fun                 │
-│  │  Next.js 15     │     SSL: Let's Encrypt (auto)              │
-│  └─────────────────┘                                            │
-│                                                                  │
-│  ┌─────────────────┐                                            │
-│  │   VPS #1        │     IP: 72.62.124.23                       │
-│  │   Go Backend    │     Domain: api.aivalid.fun             │
-│  │                 │     SSL: Caddy (auto HTTPS)                │
-│  │   User: deploy  │     Service: systemd (backend)             │
-│  │   OS: Ubuntu    │                                            │
-│  └────────┬────────┘                                            │
-│           │                                                      │
-│           │ Connect                                              │
-│           ▼                                                      │
-│  ┌─────────────────┐                                            │
-│  │  Neon Database  │     PostgreSQL 16 (Serverless)             │
-│  │                 │     Region: aws-ap-southeast-1             │
-│  └─────────────────┘                                            │
-│                                                                  │
-│  ┌─────────────────┐                                            │
-│  │   VPS #2        │     IP: 203.175.11.84                      │
-│  │  Feature Svc    │     Domain: feature.aivalid.fun         │
-│  │                 │     SSL: Caddy (auto HTTPS)                │
-│  │   User: asp     │     Service: systemd (featureservice)      │
-│  │   OS: Ubuntu    │                                            │
-│  └────────┬────────┘                                            │
-│           │                                                      │
-│           │ Connect                                              │
-│           ▼                                                      │
-│  ┌─────────────────┐                                            │
-│  │  MongoDB Atlas  │     MongoDB 7.0 (M0 Free)                  │
-│  │                 │     Cluster: ap-southeast-1                │
-│  └─────────────────┘                                            │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+Dokumen ini membedakan:
 
-### 8.2 Systemd Services
+- **Repo facts** (bisa diverifikasi dari file di repo), dan
+- **runtime facts** (harus diverifikasi dari host yang menjalankan service).
+
+Untuk runtime map yang evidence-only, lihat: `docs/FACT_MAP_REPO_RUNTIME.md`.
+
+Ringkasan runtime yang *terobservasi dari konfigurasi host* saat repo ini diperiksa:
+
+- Reverse-proxy: Nginx vhost `api.aivalid.id` -> `127.0.0.1:8080` dan `feature.aivalid.id` -> `127.0.0.1:5000` (lihat `/etc/nginx/sites-available/aivalid.conf`).
+- systemd unit files yang ditemukan:
+  - `/etc/systemd/system/alephdraad-backend.service`
+  - `/etc/systemd/system/feature-service.service`
+
+Catatan batasan verifikasi pada environment ini:
+
+- Status service via `systemctl` adalah `UNKNOWN` (akses ke systemd bus ditolak).
+- Health checks via `curl` adalah `UNKNOWN` (pembuatan socket ditolak pada environment ini).
+
+### 8.2 Systemd Services (Observed Unit Files)
+
+Unit Go backend (observed):
 
 ```ini
-# /etc/systemd/system/backend.service
-[Unit]
-Description=Go Backend Service
-After=network.target
-
+# /etc/systemd/system/alephdraad-backend.service
 [Service]
-Type=simple
-User=deploy
-WorkingDirectory=/home/deploy/monorepo-root/backend
-ExecStart=/home/deploy/monorepo-root/backend/backend
-Restart=always
-RestartSec=5
-Environment=GIN_MODE=release
-
-[Install]
-WantedBy=multi-user.target
+WorkingDirectory=/opt/alephdraad/backend
+EnvironmentFile=/opt/alephdraad/backend/.env
+ExecStart=/opt/alephdraad/backend/app
 ```
 
+Unit Feature Service (observed):
+
 ```ini
-# /etc/systemd/system/featureservice.service
-[Unit]
-Description=Feature Service (.NET)
-After=network.target
-
+# /etc/systemd/system/feature-service.service
 [Service]
-Type=simple
-User=asp
-WorkingDirectory=/home/asp/monorepo-root/feature-service/src/FeatureService.Api
-ExecStart=/usr/bin/dotnet run --configuration Release
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
+WorkingDirectory=/opt/alephdraad/feature-service
+EnvironmentFile=/opt/alephdraad/feature-service/.env
+ExecStart=/usr/bin/dotnet /opt/alephdraad/feature-service/FeatureService.Api.dll
 ```
 
 ### 8.3 CI/CD Pipeline
 
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy
+Repo memiliki pipeline CI dan deploy berbasis GitHub Actions:
 
-on:
-  push:
-    branches: [main]
+- CI: `.github/workflows/ci.yml` (frontend lint/typecheck/build, backend lint/build/test, feature-service test/build, security scans).
+- Deploy: `.github/workflows/deploy.yml` (deploy backend + feature-service via SSH menggunakan GitHub Secrets, lalu restart service + health check).
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run Go tests
-        run: cd backend && go test ./...
-      - name: Run .NET tests
-        run: cd feature-service && dotnet test
+Catatan penting:
 
-  deploy-frontend:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      # Vercel auto-deploys from GitHub
-
-  deploy-backend:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: SSH Deploy
-        run: |
-          ssh deploy@72.62.124.23 'cd ~/monorepo-root && git pull && cd backend && go build -o backend && sudo systemctl restart backend'
-
-  deploy-feature:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: SSH Deploy
-        run: |
-          ssh asp@203.175.11.84 'cd ~/monorepo-root && git pull && cd feature-service/src/FeatureService.Api && dotnet publish -c Release && sudo systemctl restart featureservice'
-```
+- Detail deploy (host/path/service name) harus diverifikasi terhadap runtime environment yang sebenarnya.
+- Pada host yang diperiksa untuk FACT MAP, unit file yang terobservasi adalah `alephdraad-backend.service` dan `feature-service.service`, sedangkan `deploy.yml` melakukan restart `backend.service` dan `featureservice.service`. Anggap sebagai `UNKNOWN` mana yang benar sampai diverifikasi langsung.
 
 ---
 
 ## 📚 REFERENSI
 
-- [Next.js 15 Documentation](https://nextjs.org/docs)
+- [Next.js 16 Documentation](https://nextjs.org/docs)
 - [Ent ORM Documentation](https://entgo.io/docs/getting-started)
 - [Gin Web Framework](https://gin-gonic.com/docs/)
 - [ASP.NET Core Documentation](https://docs.microsoft.com/aspnet/core)
@@ -995,4 +1042,4 @@ jobs:
 
 ---
 
-*Dokumen ini adalah bagian dari dokumentasi teknis AIValid. Terakhir diperbarui: 15 Januari 2026.*
+*Dokumen ini adalah bagian dari dokumentasi teknis AIValid. Terakhir diperbarui: 10 Februari 2026.*

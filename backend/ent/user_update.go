@@ -3,12 +3,16 @@
 package ent
 
 import (
+	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/badge"
+	"backend-gin/ent/consultationrequest"
 	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
+	"backend-gin/ent/endorsement"
+	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/predicate"
@@ -16,11 +20,11 @@ import (
 	"backend-gin/ent/session"
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
-	"backend-gin/ent/thread"
-	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
+	"backend-gin/ent/validationcase"
+	"backend-gin/ent/validationcaselog"
 	"context"
 	"errors"
 	"fmt"
@@ -539,19 +543,19 @@ func (_u *UserUpdate) AddBackupCodes(v ...*BackupCode) *UserUpdate {
 	return _u.AddBackupCodeIDs(ids...)
 }
 
-// AddThreadIDs adds the "threads" edge to the Thread entity by IDs.
-func (_u *UserUpdate) AddThreadIDs(ids ...int) *UserUpdate {
-	_u.mutation.AddThreadIDs(ids...)
+// AddValidationCaseIDs adds the "validation_cases" edge to the ValidationCase entity by IDs.
+func (_u *UserUpdate) AddValidationCaseIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddValidationCaseIDs(ids...)
 	return _u
 }
 
-// AddThreads adds the "threads" edges to the Thread entity.
-func (_u *UserUpdate) AddThreads(v ...*Thread) *UserUpdate {
+// AddValidationCases adds the "validation_cases" edges to the ValidationCase entity.
+func (_u *UserUpdate) AddValidationCases(v ...*ValidationCase) *UserUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddThreadIDs(ids...)
+	return _u.AddValidationCaseIDs(ids...)
 }
 
 // AddUserBadgeIDs adds the "user_badges" edge to the UserBadge entity by IDs.
@@ -704,19 +708,79 @@ func (_u *UserUpdate) AddSudoSessions(v ...*SudoSession) *UserUpdate {
 	return _u.AddSudoSessionIDs(ids...)
 }
 
-// AddGivenCredentialIDs adds the "given_credentials" edge to the ThreadCredential entity by IDs.
-func (_u *UserUpdate) AddGivenCredentialIDs(ids ...int) *UserUpdate {
-	_u.mutation.AddGivenCredentialIDs(ids...)
+// AddValidationCaseLogIDs adds the "validation_case_logs" edge to the ValidationCaseLog entity by IDs.
+func (_u *UserUpdate) AddValidationCaseLogIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddValidationCaseLogIDs(ids...)
 	return _u
 }
 
-// AddGivenCredentials adds the "given_credentials" edges to the ThreadCredential entity.
-func (_u *UserUpdate) AddGivenCredentials(v ...*ThreadCredential) *UserUpdate {
+// AddValidationCaseLogs adds the "validation_case_logs" edges to the ValidationCaseLog entity.
+func (_u *UserUpdate) AddValidationCaseLogs(v ...*ValidationCaseLog) *UserUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddGivenCredentialIDs(ids...)
+	return _u.AddValidationCaseLogIDs(ids...)
+}
+
+// AddConsultationRequestIDs adds the "consultation_requests" edge to the ConsultationRequest entity by IDs.
+func (_u *UserUpdate) AddConsultationRequestIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddConsultationRequestIDs(ids...)
+	return _u
+}
+
+// AddConsultationRequests adds the "consultation_requests" edges to the ConsultationRequest entity.
+func (_u *UserUpdate) AddConsultationRequests(v ...*ConsultationRequest) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConsultationRequestIDs(ids...)
+}
+
+// AddFinalOfferIDs adds the "final_offers" edge to the FinalOffer entity by IDs.
+func (_u *UserUpdate) AddFinalOfferIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddFinalOfferIDs(ids...)
+	return _u
+}
+
+// AddFinalOffers adds the "final_offers" edges to the FinalOffer entity.
+func (_u *UserUpdate) AddFinalOffers(v ...*FinalOffer) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddFinalOfferIDs(ids...)
+}
+
+// AddArtifactSubmissionIDs adds the "artifact_submissions" edge to the ArtifactSubmission entity by IDs.
+func (_u *UserUpdate) AddArtifactSubmissionIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddArtifactSubmissionIDs(ids...)
+	return _u
+}
+
+// AddArtifactSubmissions adds the "artifact_submissions" edges to the ArtifactSubmission entity.
+func (_u *UserUpdate) AddArtifactSubmissions(v ...*ArtifactSubmission) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddArtifactSubmissionIDs(ids...)
+}
+
+// AddEndorsementIDs adds the "endorsements" edge to the Endorsement entity by IDs.
+func (_u *UserUpdate) AddEndorsementIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddEndorsementIDs(ids...)
+	return _u
+}
+
+// AddEndorsements adds the "endorsements" edges to the Endorsement entity.
+func (_u *UserUpdate) AddEndorsements(v ...*Endorsement) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEndorsementIDs(ids...)
 }
 
 // SetPrimaryBadge sets the "primary_badge" edge to the Badge entity.
@@ -792,25 +856,25 @@ func (_u *UserUpdate) RemoveBackupCodes(v ...*BackupCode) *UserUpdate {
 	return _u.RemoveBackupCodeIDs(ids...)
 }
 
-// ClearThreads clears all "threads" edges to the Thread entity.
-func (_u *UserUpdate) ClearThreads() *UserUpdate {
-	_u.mutation.ClearThreads()
+// ClearValidationCases clears all "validation_cases" edges to the ValidationCase entity.
+func (_u *UserUpdate) ClearValidationCases() *UserUpdate {
+	_u.mutation.ClearValidationCases()
 	return _u
 }
 
-// RemoveThreadIDs removes the "threads" edge to Thread entities by IDs.
-func (_u *UserUpdate) RemoveThreadIDs(ids ...int) *UserUpdate {
-	_u.mutation.RemoveThreadIDs(ids...)
+// RemoveValidationCaseIDs removes the "validation_cases" edge to ValidationCase entities by IDs.
+func (_u *UserUpdate) RemoveValidationCaseIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveValidationCaseIDs(ids...)
 	return _u
 }
 
-// RemoveThreads removes "threads" edges to Thread entities.
-func (_u *UserUpdate) RemoveThreads(v ...*Thread) *UserUpdate {
+// RemoveValidationCases removes "validation_cases" edges to ValidationCase entities.
+func (_u *UserUpdate) RemoveValidationCases(v ...*ValidationCase) *UserUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveThreadIDs(ids...)
+	return _u.RemoveValidationCaseIDs(ids...)
 }
 
 // ClearUserBadges clears all "user_badges" edges to the UserBadge entity.
@@ -1023,25 +1087,109 @@ func (_u *UserUpdate) RemoveSudoSessions(v ...*SudoSession) *UserUpdate {
 	return _u.RemoveSudoSessionIDs(ids...)
 }
 
-// ClearGivenCredentials clears all "given_credentials" edges to the ThreadCredential entity.
-func (_u *UserUpdate) ClearGivenCredentials() *UserUpdate {
-	_u.mutation.ClearGivenCredentials()
+// ClearValidationCaseLogs clears all "validation_case_logs" edges to the ValidationCaseLog entity.
+func (_u *UserUpdate) ClearValidationCaseLogs() *UserUpdate {
+	_u.mutation.ClearValidationCaseLogs()
 	return _u
 }
 
-// RemoveGivenCredentialIDs removes the "given_credentials" edge to ThreadCredential entities by IDs.
-func (_u *UserUpdate) RemoveGivenCredentialIDs(ids ...int) *UserUpdate {
-	_u.mutation.RemoveGivenCredentialIDs(ids...)
+// RemoveValidationCaseLogIDs removes the "validation_case_logs" edge to ValidationCaseLog entities by IDs.
+func (_u *UserUpdate) RemoveValidationCaseLogIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveValidationCaseLogIDs(ids...)
 	return _u
 }
 
-// RemoveGivenCredentials removes "given_credentials" edges to ThreadCredential entities.
-func (_u *UserUpdate) RemoveGivenCredentials(v ...*ThreadCredential) *UserUpdate {
+// RemoveValidationCaseLogs removes "validation_case_logs" edges to ValidationCaseLog entities.
+func (_u *UserUpdate) RemoveValidationCaseLogs(v ...*ValidationCaseLog) *UserUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveGivenCredentialIDs(ids...)
+	return _u.RemoveValidationCaseLogIDs(ids...)
+}
+
+// ClearConsultationRequests clears all "consultation_requests" edges to the ConsultationRequest entity.
+func (_u *UserUpdate) ClearConsultationRequests() *UserUpdate {
+	_u.mutation.ClearConsultationRequests()
+	return _u
+}
+
+// RemoveConsultationRequestIDs removes the "consultation_requests" edge to ConsultationRequest entities by IDs.
+func (_u *UserUpdate) RemoveConsultationRequestIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveConsultationRequestIDs(ids...)
+	return _u
+}
+
+// RemoveConsultationRequests removes "consultation_requests" edges to ConsultationRequest entities.
+func (_u *UserUpdate) RemoveConsultationRequests(v ...*ConsultationRequest) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConsultationRequestIDs(ids...)
+}
+
+// ClearFinalOffers clears all "final_offers" edges to the FinalOffer entity.
+func (_u *UserUpdate) ClearFinalOffers() *UserUpdate {
+	_u.mutation.ClearFinalOffers()
+	return _u
+}
+
+// RemoveFinalOfferIDs removes the "final_offers" edge to FinalOffer entities by IDs.
+func (_u *UserUpdate) RemoveFinalOfferIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveFinalOfferIDs(ids...)
+	return _u
+}
+
+// RemoveFinalOffers removes "final_offers" edges to FinalOffer entities.
+func (_u *UserUpdate) RemoveFinalOffers(v ...*FinalOffer) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveFinalOfferIDs(ids...)
+}
+
+// ClearArtifactSubmissions clears all "artifact_submissions" edges to the ArtifactSubmission entity.
+func (_u *UserUpdate) ClearArtifactSubmissions() *UserUpdate {
+	_u.mutation.ClearArtifactSubmissions()
+	return _u
+}
+
+// RemoveArtifactSubmissionIDs removes the "artifact_submissions" edge to ArtifactSubmission entities by IDs.
+func (_u *UserUpdate) RemoveArtifactSubmissionIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveArtifactSubmissionIDs(ids...)
+	return _u
+}
+
+// RemoveArtifactSubmissions removes "artifact_submissions" edges to ArtifactSubmission entities.
+func (_u *UserUpdate) RemoveArtifactSubmissions(v ...*ArtifactSubmission) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveArtifactSubmissionIDs(ids...)
+}
+
+// ClearEndorsements clears all "endorsements" edges to the Endorsement entity.
+func (_u *UserUpdate) ClearEndorsements() *UserUpdate {
+	_u.mutation.ClearEndorsements()
+	return _u
+}
+
+// RemoveEndorsementIDs removes the "endorsements" edge to Endorsement entities by IDs.
+func (_u *UserUpdate) RemoveEndorsementIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveEndorsementIDs(ids...)
+	return _u
+}
+
+// RemoveEndorsements removes "endorsements" edges to Endorsement entities.
+func (_u *UserUpdate) RemoveEndorsements(v ...*Endorsement) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEndorsementIDs(ids...)
 }
 
 // ClearPrimaryBadge clears the "primary_badge" edge to the Badge entity.
@@ -1384,28 +1532,28 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.ThreadsCleared() {
+	if _u.mutation.ValidationCasesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.ThreadsTable,
-			Columns: []string{user.ThreadsColumn},
+			Table:   user.ValidationCasesTable,
+			Columns: []string{user.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedThreadsIDs(); len(nodes) > 0 && !_u.mutation.ThreadsCleared() {
+	if nodes := _u.mutation.RemovedValidationCasesIDs(); len(nodes) > 0 && !_u.mutation.ValidationCasesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.ThreadsTable,
-			Columns: []string{user.ThreadsColumn},
+			Table:   user.ValidationCasesTable,
+			Columns: []string{user.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1413,15 +1561,15 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.ThreadsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ValidationCasesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.ThreadsTable,
-			Columns: []string{user.ThreadsColumn},
+			Table:   user.ValidationCasesTable,
+			Columns: []string{user.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1879,28 +2027,28 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.GivenCredentialsCleared() {
+	if _u.mutation.ValidationCaseLogsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.GivenCredentialsTable,
-			Columns: []string{user.GivenCredentialsColumn},
+			Table:   user.ValidationCaseLogsTable,
+			Columns: []string{user.ValidationCaseLogsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcaselog.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedGivenCredentialsIDs(); len(nodes) > 0 && !_u.mutation.GivenCredentialsCleared() {
+	if nodes := _u.mutation.RemovedValidationCaseLogsIDs(); len(nodes) > 0 && !_u.mutation.ValidationCaseLogsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.GivenCredentialsTable,
-			Columns: []string{user.GivenCredentialsColumn},
+			Table:   user.ValidationCaseLogsTable,
+			Columns: []string{user.ValidationCaseLogsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcaselog.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1908,15 +2056,195 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.GivenCredentialsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ValidationCaseLogsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.GivenCredentialsTable,
-			Columns: []string{user.GivenCredentialsColumn},
+			Table:   user.ValidationCaseLogsTable,
+			Columns: []string{user.ValidationCaseLogsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcaselog.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsultationRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsultationRequestsTable,
+			Columns: []string{user.ConsultationRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consultationrequest.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConsultationRequestsIDs(); len(nodes) > 0 && !_u.mutation.ConsultationRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsultationRequestsTable,
+			Columns: []string{user.ConsultationRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consultationrequest.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsultationRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsultationRequestsTable,
+			Columns: []string{user.ConsultationRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consultationrequest.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.FinalOffersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FinalOffersTable,
+			Columns: []string{user.FinalOffersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(finaloffer.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedFinalOffersIDs(); len(nodes) > 0 && !_u.mutation.FinalOffersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FinalOffersTable,
+			Columns: []string{user.FinalOffersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(finaloffer.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.FinalOffersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FinalOffersTable,
+			Columns: []string{user.FinalOffersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(finaloffer.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ArtifactSubmissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ArtifactSubmissionsTable,
+			Columns: []string{user.ArtifactSubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedArtifactSubmissionsIDs(); len(nodes) > 0 && !_u.mutation.ArtifactSubmissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ArtifactSubmissionsTable,
+			Columns: []string{user.ArtifactSubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ArtifactSubmissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ArtifactSubmissionsTable,
+			Columns: []string{user.ArtifactSubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EndorsementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EndorsementsTable,
+			Columns: []string{user.EndorsementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEndorsementsIDs(); len(nodes) > 0 && !_u.mutation.EndorsementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EndorsementsTable,
+			Columns: []string{user.EndorsementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EndorsementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EndorsementsTable,
+			Columns: []string{user.EndorsementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -2468,19 +2796,19 @@ func (_u *UserUpdateOne) AddBackupCodes(v ...*BackupCode) *UserUpdateOne {
 	return _u.AddBackupCodeIDs(ids...)
 }
 
-// AddThreadIDs adds the "threads" edge to the Thread entity by IDs.
-func (_u *UserUpdateOne) AddThreadIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.AddThreadIDs(ids...)
+// AddValidationCaseIDs adds the "validation_cases" edge to the ValidationCase entity by IDs.
+func (_u *UserUpdateOne) AddValidationCaseIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddValidationCaseIDs(ids...)
 	return _u
 }
 
-// AddThreads adds the "threads" edges to the Thread entity.
-func (_u *UserUpdateOne) AddThreads(v ...*Thread) *UserUpdateOne {
+// AddValidationCases adds the "validation_cases" edges to the ValidationCase entity.
+func (_u *UserUpdateOne) AddValidationCases(v ...*ValidationCase) *UserUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddThreadIDs(ids...)
+	return _u.AddValidationCaseIDs(ids...)
 }
 
 // AddUserBadgeIDs adds the "user_badges" edge to the UserBadge entity by IDs.
@@ -2633,19 +2961,79 @@ func (_u *UserUpdateOne) AddSudoSessions(v ...*SudoSession) *UserUpdateOne {
 	return _u.AddSudoSessionIDs(ids...)
 }
 
-// AddGivenCredentialIDs adds the "given_credentials" edge to the ThreadCredential entity by IDs.
-func (_u *UserUpdateOne) AddGivenCredentialIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.AddGivenCredentialIDs(ids...)
+// AddValidationCaseLogIDs adds the "validation_case_logs" edge to the ValidationCaseLog entity by IDs.
+func (_u *UserUpdateOne) AddValidationCaseLogIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddValidationCaseLogIDs(ids...)
 	return _u
 }
 
-// AddGivenCredentials adds the "given_credentials" edges to the ThreadCredential entity.
-func (_u *UserUpdateOne) AddGivenCredentials(v ...*ThreadCredential) *UserUpdateOne {
+// AddValidationCaseLogs adds the "validation_case_logs" edges to the ValidationCaseLog entity.
+func (_u *UserUpdateOne) AddValidationCaseLogs(v ...*ValidationCaseLog) *UserUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddGivenCredentialIDs(ids...)
+	return _u.AddValidationCaseLogIDs(ids...)
+}
+
+// AddConsultationRequestIDs adds the "consultation_requests" edge to the ConsultationRequest entity by IDs.
+func (_u *UserUpdateOne) AddConsultationRequestIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddConsultationRequestIDs(ids...)
+	return _u
+}
+
+// AddConsultationRequests adds the "consultation_requests" edges to the ConsultationRequest entity.
+func (_u *UserUpdateOne) AddConsultationRequests(v ...*ConsultationRequest) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConsultationRequestIDs(ids...)
+}
+
+// AddFinalOfferIDs adds the "final_offers" edge to the FinalOffer entity by IDs.
+func (_u *UserUpdateOne) AddFinalOfferIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddFinalOfferIDs(ids...)
+	return _u
+}
+
+// AddFinalOffers adds the "final_offers" edges to the FinalOffer entity.
+func (_u *UserUpdateOne) AddFinalOffers(v ...*FinalOffer) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddFinalOfferIDs(ids...)
+}
+
+// AddArtifactSubmissionIDs adds the "artifact_submissions" edge to the ArtifactSubmission entity by IDs.
+func (_u *UserUpdateOne) AddArtifactSubmissionIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddArtifactSubmissionIDs(ids...)
+	return _u
+}
+
+// AddArtifactSubmissions adds the "artifact_submissions" edges to the ArtifactSubmission entity.
+func (_u *UserUpdateOne) AddArtifactSubmissions(v ...*ArtifactSubmission) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddArtifactSubmissionIDs(ids...)
+}
+
+// AddEndorsementIDs adds the "endorsements" edge to the Endorsement entity by IDs.
+func (_u *UserUpdateOne) AddEndorsementIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddEndorsementIDs(ids...)
+	return _u
+}
+
+// AddEndorsements adds the "endorsements" edges to the Endorsement entity.
+func (_u *UserUpdateOne) AddEndorsements(v ...*Endorsement) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEndorsementIDs(ids...)
 }
 
 // SetPrimaryBadge sets the "primary_badge" edge to the Badge entity.
@@ -2721,25 +3109,25 @@ func (_u *UserUpdateOne) RemoveBackupCodes(v ...*BackupCode) *UserUpdateOne {
 	return _u.RemoveBackupCodeIDs(ids...)
 }
 
-// ClearThreads clears all "threads" edges to the Thread entity.
-func (_u *UserUpdateOne) ClearThreads() *UserUpdateOne {
-	_u.mutation.ClearThreads()
+// ClearValidationCases clears all "validation_cases" edges to the ValidationCase entity.
+func (_u *UserUpdateOne) ClearValidationCases() *UserUpdateOne {
+	_u.mutation.ClearValidationCases()
 	return _u
 }
 
-// RemoveThreadIDs removes the "threads" edge to Thread entities by IDs.
-func (_u *UserUpdateOne) RemoveThreadIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.RemoveThreadIDs(ids...)
+// RemoveValidationCaseIDs removes the "validation_cases" edge to ValidationCase entities by IDs.
+func (_u *UserUpdateOne) RemoveValidationCaseIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveValidationCaseIDs(ids...)
 	return _u
 }
 
-// RemoveThreads removes "threads" edges to Thread entities.
-func (_u *UserUpdateOne) RemoveThreads(v ...*Thread) *UserUpdateOne {
+// RemoveValidationCases removes "validation_cases" edges to ValidationCase entities.
+func (_u *UserUpdateOne) RemoveValidationCases(v ...*ValidationCase) *UserUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveThreadIDs(ids...)
+	return _u.RemoveValidationCaseIDs(ids...)
 }
 
 // ClearUserBadges clears all "user_badges" edges to the UserBadge entity.
@@ -2952,25 +3340,109 @@ func (_u *UserUpdateOne) RemoveSudoSessions(v ...*SudoSession) *UserUpdateOne {
 	return _u.RemoveSudoSessionIDs(ids...)
 }
 
-// ClearGivenCredentials clears all "given_credentials" edges to the ThreadCredential entity.
-func (_u *UserUpdateOne) ClearGivenCredentials() *UserUpdateOne {
-	_u.mutation.ClearGivenCredentials()
+// ClearValidationCaseLogs clears all "validation_case_logs" edges to the ValidationCaseLog entity.
+func (_u *UserUpdateOne) ClearValidationCaseLogs() *UserUpdateOne {
+	_u.mutation.ClearValidationCaseLogs()
 	return _u
 }
 
-// RemoveGivenCredentialIDs removes the "given_credentials" edge to ThreadCredential entities by IDs.
-func (_u *UserUpdateOne) RemoveGivenCredentialIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.RemoveGivenCredentialIDs(ids...)
+// RemoveValidationCaseLogIDs removes the "validation_case_logs" edge to ValidationCaseLog entities by IDs.
+func (_u *UserUpdateOne) RemoveValidationCaseLogIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveValidationCaseLogIDs(ids...)
 	return _u
 }
 
-// RemoveGivenCredentials removes "given_credentials" edges to ThreadCredential entities.
-func (_u *UserUpdateOne) RemoveGivenCredentials(v ...*ThreadCredential) *UserUpdateOne {
+// RemoveValidationCaseLogs removes "validation_case_logs" edges to ValidationCaseLog entities.
+func (_u *UserUpdateOne) RemoveValidationCaseLogs(v ...*ValidationCaseLog) *UserUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveGivenCredentialIDs(ids...)
+	return _u.RemoveValidationCaseLogIDs(ids...)
+}
+
+// ClearConsultationRequests clears all "consultation_requests" edges to the ConsultationRequest entity.
+func (_u *UserUpdateOne) ClearConsultationRequests() *UserUpdateOne {
+	_u.mutation.ClearConsultationRequests()
+	return _u
+}
+
+// RemoveConsultationRequestIDs removes the "consultation_requests" edge to ConsultationRequest entities by IDs.
+func (_u *UserUpdateOne) RemoveConsultationRequestIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveConsultationRequestIDs(ids...)
+	return _u
+}
+
+// RemoveConsultationRequests removes "consultation_requests" edges to ConsultationRequest entities.
+func (_u *UserUpdateOne) RemoveConsultationRequests(v ...*ConsultationRequest) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConsultationRequestIDs(ids...)
+}
+
+// ClearFinalOffers clears all "final_offers" edges to the FinalOffer entity.
+func (_u *UserUpdateOne) ClearFinalOffers() *UserUpdateOne {
+	_u.mutation.ClearFinalOffers()
+	return _u
+}
+
+// RemoveFinalOfferIDs removes the "final_offers" edge to FinalOffer entities by IDs.
+func (_u *UserUpdateOne) RemoveFinalOfferIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveFinalOfferIDs(ids...)
+	return _u
+}
+
+// RemoveFinalOffers removes "final_offers" edges to FinalOffer entities.
+func (_u *UserUpdateOne) RemoveFinalOffers(v ...*FinalOffer) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveFinalOfferIDs(ids...)
+}
+
+// ClearArtifactSubmissions clears all "artifact_submissions" edges to the ArtifactSubmission entity.
+func (_u *UserUpdateOne) ClearArtifactSubmissions() *UserUpdateOne {
+	_u.mutation.ClearArtifactSubmissions()
+	return _u
+}
+
+// RemoveArtifactSubmissionIDs removes the "artifact_submissions" edge to ArtifactSubmission entities by IDs.
+func (_u *UserUpdateOne) RemoveArtifactSubmissionIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveArtifactSubmissionIDs(ids...)
+	return _u
+}
+
+// RemoveArtifactSubmissions removes "artifact_submissions" edges to ArtifactSubmission entities.
+func (_u *UserUpdateOne) RemoveArtifactSubmissions(v ...*ArtifactSubmission) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveArtifactSubmissionIDs(ids...)
+}
+
+// ClearEndorsements clears all "endorsements" edges to the Endorsement entity.
+func (_u *UserUpdateOne) ClearEndorsements() *UserUpdateOne {
+	_u.mutation.ClearEndorsements()
+	return _u
+}
+
+// RemoveEndorsementIDs removes the "endorsements" edge to Endorsement entities by IDs.
+func (_u *UserUpdateOne) RemoveEndorsementIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveEndorsementIDs(ids...)
+	return _u
+}
+
+// RemoveEndorsements removes "endorsements" edges to Endorsement entities.
+func (_u *UserUpdateOne) RemoveEndorsements(v ...*Endorsement) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEndorsementIDs(ids...)
 }
 
 // ClearPrimaryBadge clears the "primary_badge" edge to the Badge entity.
@@ -3343,28 +3815,28 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.ThreadsCleared() {
+	if _u.mutation.ValidationCasesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.ThreadsTable,
-			Columns: []string{user.ThreadsColumn},
+			Table:   user.ValidationCasesTable,
+			Columns: []string{user.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedThreadsIDs(); len(nodes) > 0 && !_u.mutation.ThreadsCleared() {
+	if nodes := _u.mutation.RemovedValidationCasesIDs(); len(nodes) > 0 && !_u.mutation.ValidationCasesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.ThreadsTable,
-			Columns: []string{user.ThreadsColumn},
+			Table:   user.ValidationCasesTable,
+			Columns: []string{user.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -3372,15 +3844,15 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.ThreadsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ValidationCasesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.ThreadsTable,
-			Columns: []string{user.ThreadsColumn},
+			Table:   user.ValidationCasesTable,
+			Columns: []string{user.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -3838,28 +4310,28 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.GivenCredentialsCleared() {
+	if _u.mutation.ValidationCaseLogsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.GivenCredentialsTable,
-			Columns: []string{user.GivenCredentialsColumn},
+			Table:   user.ValidationCaseLogsTable,
+			Columns: []string{user.ValidationCaseLogsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcaselog.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedGivenCredentialsIDs(); len(nodes) > 0 && !_u.mutation.GivenCredentialsCleared() {
+	if nodes := _u.mutation.RemovedValidationCaseLogsIDs(); len(nodes) > 0 && !_u.mutation.ValidationCaseLogsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.GivenCredentialsTable,
-			Columns: []string{user.GivenCredentialsColumn},
+			Table:   user.ValidationCaseLogsTable,
+			Columns: []string{user.ValidationCaseLogsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcaselog.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -3867,15 +4339,195 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.GivenCredentialsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ValidationCaseLogsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.GivenCredentialsTable,
-			Columns: []string{user.GivenCredentialsColumn},
+			Table:   user.ValidationCaseLogsTable,
+			Columns: []string{user.ValidationCaseLogsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcaselog.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsultationRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsultationRequestsTable,
+			Columns: []string{user.ConsultationRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consultationrequest.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConsultationRequestsIDs(); len(nodes) > 0 && !_u.mutation.ConsultationRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsultationRequestsTable,
+			Columns: []string{user.ConsultationRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consultationrequest.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsultationRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsultationRequestsTable,
+			Columns: []string{user.ConsultationRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consultationrequest.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.FinalOffersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FinalOffersTable,
+			Columns: []string{user.FinalOffersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(finaloffer.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedFinalOffersIDs(); len(nodes) > 0 && !_u.mutation.FinalOffersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FinalOffersTable,
+			Columns: []string{user.FinalOffersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(finaloffer.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.FinalOffersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FinalOffersTable,
+			Columns: []string{user.FinalOffersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(finaloffer.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ArtifactSubmissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ArtifactSubmissionsTable,
+			Columns: []string{user.ArtifactSubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedArtifactSubmissionsIDs(); len(nodes) > 0 && !_u.mutation.ArtifactSubmissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ArtifactSubmissionsTable,
+			Columns: []string{user.ArtifactSubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ArtifactSubmissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ArtifactSubmissionsTable,
+			Columns: []string{user.ArtifactSubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EndorsementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EndorsementsTable,
+			Columns: []string{user.EndorsementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEndorsementsIDs(); len(nodes) > 0 && !_u.mutation.EndorsementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EndorsementsTable,
+			Columns: []string{user.EndorsementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EndorsementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EndorsementsTable,
+			Columns: []string{user.EndorsementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -3,23 +3,27 @@
 package ent
 
 import (
+	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/badge"
+	"backend-gin/ent/consultationrequest"
 	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
+	"backend-gin/ent/endorsement"
+	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/securityevent"
 	"backend-gin/ent/session"
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
-	"backend-gin/ent/thread"
-	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
+	"backend-gin/ent/validationcase"
+	"backend-gin/ent/validationcaselog"
 	"context"
 	"errors"
 	"fmt"
@@ -421,19 +425,19 @@ func (_c *UserCreate) AddBackupCodes(v ...*BackupCode) *UserCreate {
 	return _c.AddBackupCodeIDs(ids...)
 }
 
-// AddThreadIDs adds the "threads" edge to the Thread entity by IDs.
-func (_c *UserCreate) AddThreadIDs(ids ...int) *UserCreate {
-	_c.mutation.AddThreadIDs(ids...)
+// AddValidationCaseIDs adds the "validation_cases" edge to the ValidationCase entity by IDs.
+func (_c *UserCreate) AddValidationCaseIDs(ids ...int) *UserCreate {
+	_c.mutation.AddValidationCaseIDs(ids...)
 	return _c
 }
 
-// AddThreads adds the "threads" edges to the Thread entity.
-func (_c *UserCreate) AddThreads(v ...*Thread) *UserCreate {
+// AddValidationCases adds the "validation_cases" edges to the ValidationCase entity.
+func (_c *UserCreate) AddValidationCases(v ...*ValidationCase) *UserCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _c.AddThreadIDs(ids...)
+	return _c.AddValidationCaseIDs(ids...)
 }
 
 // AddUserBadgeIDs adds the "user_badges" edge to the UserBadge entity by IDs.
@@ -586,19 +590,79 @@ func (_c *UserCreate) AddSudoSessions(v ...*SudoSession) *UserCreate {
 	return _c.AddSudoSessionIDs(ids...)
 }
 
-// AddGivenCredentialIDs adds the "given_credentials" edge to the ThreadCredential entity by IDs.
-func (_c *UserCreate) AddGivenCredentialIDs(ids ...int) *UserCreate {
-	_c.mutation.AddGivenCredentialIDs(ids...)
+// AddValidationCaseLogIDs adds the "validation_case_logs" edge to the ValidationCaseLog entity by IDs.
+func (_c *UserCreate) AddValidationCaseLogIDs(ids ...int) *UserCreate {
+	_c.mutation.AddValidationCaseLogIDs(ids...)
 	return _c
 }
 
-// AddGivenCredentials adds the "given_credentials" edges to the ThreadCredential entity.
-func (_c *UserCreate) AddGivenCredentials(v ...*ThreadCredential) *UserCreate {
+// AddValidationCaseLogs adds the "validation_case_logs" edges to the ValidationCaseLog entity.
+func (_c *UserCreate) AddValidationCaseLogs(v ...*ValidationCaseLog) *UserCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _c.AddGivenCredentialIDs(ids...)
+	return _c.AddValidationCaseLogIDs(ids...)
+}
+
+// AddConsultationRequestIDs adds the "consultation_requests" edge to the ConsultationRequest entity by IDs.
+func (_c *UserCreate) AddConsultationRequestIDs(ids ...int) *UserCreate {
+	_c.mutation.AddConsultationRequestIDs(ids...)
+	return _c
+}
+
+// AddConsultationRequests adds the "consultation_requests" edges to the ConsultationRequest entity.
+func (_c *UserCreate) AddConsultationRequests(v ...*ConsultationRequest) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddConsultationRequestIDs(ids...)
+}
+
+// AddFinalOfferIDs adds the "final_offers" edge to the FinalOffer entity by IDs.
+func (_c *UserCreate) AddFinalOfferIDs(ids ...int) *UserCreate {
+	_c.mutation.AddFinalOfferIDs(ids...)
+	return _c
+}
+
+// AddFinalOffers adds the "final_offers" edges to the FinalOffer entity.
+func (_c *UserCreate) AddFinalOffers(v ...*FinalOffer) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddFinalOfferIDs(ids...)
+}
+
+// AddArtifactSubmissionIDs adds the "artifact_submissions" edge to the ArtifactSubmission entity by IDs.
+func (_c *UserCreate) AddArtifactSubmissionIDs(ids ...int) *UserCreate {
+	_c.mutation.AddArtifactSubmissionIDs(ids...)
+	return _c
+}
+
+// AddArtifactSubmissions adds the "artifact_submissions" edges to the ArtifactSubmission entity.
+func (_c *UserCreate) AddArtifactSubmissions(v ...*ArtifactSubmission) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddArtifactSubmissionIDs(ids...)
+}
+
+// AddEndorsementIDs adds the "endorsements" edge to the Endorsement entity by IDs.
+func (_c *UserCreate) AddEndorsementIDs(ids ...int) *UserCreate {
+	_c.mutation.AddEndorsementIDs(ids...)
+	return _c
+}
+
+// AddEndorsements adds the "endorsements" edges to the Endorsement entity.
+func (_c *UserCreate) AddEndorsements(v ...*Endorsement) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEndorsementIDs(ids...)
 }
 
 // SetPrimaryBadge sets the "primary_badge" edge to the Badge entity.
@@ -914,15 +978,15 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.ThreadsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ValidationCasesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.ThreadsTable,
-			Columns: []string{user.ThreadsColumn},
+			Table:   user.ValidationCasesTable,
+			Columns: []string{user.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1090,15 +1154,79 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.GivenCredentialsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ValidationCaseLogsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   user.GivenCredentialsTable,
-			Columns: []string{user.GivenCredentialsColumn},
+			Table:   user.ValidationCaseLogsTable,
+			Columns: []string{user.ValidationCaseLogsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(threadcredential.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcaselog.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConsultationRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsultationRequestsTable,
+			Columns: []string{user.ConsultationRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consultationrequest.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.FinalOffersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FinalOffersTable,
+			Columns: []string{user.FinalOffersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(finaloffer.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ArtifactSubmissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ArtifactSubmissionsTable,
+			Columns: []string{user.ArtifactSubmissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EndorsementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EndorsementsTable,
+			Columns: []string{user.EndorsementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

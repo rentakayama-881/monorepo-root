@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -14,14 +15,13 @@ namespace FeatureService.Api.Services;
 public interface IAdminModerationService
 {
     Task<AdminDashboardStatsDto> GetDashboardStatsAsync();
-    Task<string> HideContentAsync(string contentType, string contentId, uint threadId, uint userId, string reason, string? reportId, uint adminId);
+    Task<string> HideContentAsync(string contentType, string contentId, string reason, string? reportId, uint adminId);
     Task UnhideContentAsync(string hiddenContentId, uint adminId);
     Task<PaginatedHiddenContentResponse> GetHiddenContentAsync(int page, int pageSize);
     Task<string> LogAdminActionAsync(uint adminId, string? adminEmail, string actionType, string targetType, string targetId, object? actionDetails, string? ipAddress, string? userAgent);
     Task<PaginatedAdminActionLogResponse> GetAdminActionLogsAsync(int page, int pageSize, string? actionType);
-    // Thread management (these call Go backend via HTTP)
-    Task<TransferThreadOwnershipResponse> TransferThreadOwnershipAsync(uint adminId, TransferThreadOwnershipRequest request, string? authorizationHeader, string? requestId);
-    Task DeleteThreadAsync(uint adminId, AdminDeleteThreadRequest request);
+    // Validation Case management (calls Go backend via HTTP)
+    Task<MoveValidationCaseResponse> MoveValidationCaseAsync(uint adminId, MoveValidationCaseRequest request, string? authorizationHeader, string? requestId);
 }
 
 public class AdminModerationService : IAdminModerationService
@@ -81,11 +81,46 @@ public class AdminModerationService : IAdminModerationService
         );
     }
 
-    public async Task<string> HideContentAsync(string contentType, string contentId, uint threadId, uint userId, string reason, string? reportId, uint adminId)
+    public async Task<string> HideContentAsync(string contentType, string contentId, string reason, string? reportId, uint adminId)
     {
+        contentType = (contentType ?? string.Empty).Trim();
+        contentId = (contentId ?? string.Empty).Trim();
+        reason = (reason ?? string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(contentId))
+        {
+            throw new ArgumentException("ContentId is required", nameof(contentId));
+        }
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Reason is required", nameof(reason));
+        }
+
+        // Domain migration: "thread" is a legacy alias for validation_case.
+        var normalizedType = contentType.ToLowerInvariant();
+        if (normalizedType == "thread")
+        {
+            normalizedType = "validation_case";
+        }
+        if (normalizedType != "validation_case")
+        {
+            throw new ArgumentException("Unsupported content type. Must be 'validation_case'", nameof(contentType));
+        }
+
+        if (!uint.TryParse(contentId, out var validationCaseId) || validationCaseId == 0)
+        {
+            throw new ArgumentException("ContentId must be a numeric ValidationCaseId", nameof(contentId));
+        }
+
+        var ownerUserId = await TryResolveValidationCaseOwnerUserIdAsync(validationCaseId);
+        if (!ownerUserId.HasValue || ownerUserId.Value == 0)
+        {
+            throw new KeyNotFoundException("Validation Case not found");
+        }
+
         // Check if already hidden
         var existing = await _context.HiddenContents
-            .Find(h => h.ContentType == contentType && h.ContentId == contentId && h.IsActive)
+            .Find(h => h.ContentType == normalizedType && h.ContentId == contentId && h.IsActive)
             .FirstOrDefaultAsync();
 
         if (existing != null)
@@ -96,10 +131,10 @@ public class AdminModerationService : IAdminModerationService
         var hidden = new HiddenContent
         {
             Id = $"hid_{Ulid.NewUlid()}",
-            ContentType = contentType,
+            ContentType = normalizedType,
             ContentId = contentId,
-            ThreadId = threadId,
-            UserId = userId,
+            ValidationCaseId = validationCaseId,
+            UserId = ownerUserId.Value,
             Reason = reason,
             ReportId = reportId,
             HiddenByAdminId = adminId,
@@ -112,11 +147,45 @@ public class AdminModerationService : IAdminModerationService
 
         // Log admin action
         await LogAdminActionAsync(adminId, null, AdminActionType.HideContent, AdminActionTargetType.Content, hidden.Id,
-            new { contentType, contentId, threadId, reason }, null, null);
+            new { contentType = normalizedType, contentId, validationCaseId, reason }, null, null);
 
         _logger.LogInformation("Content hidden: {Type} {Id} by admin {AdminId}", contentType, contentId, adminId);
 
         return hidden.Id;
+    }
+
+    private async Task<uint?> TryResolveValidationCaseOwnerUserIdAsync(uint validationCaseId)
+    {
+        var goBackendUrl = (_configuration["GoBackend:BaseUrl"] ?? "http://127.0.0.1:8080").TrimEnd('/');
+        var url = $"{goBackendUrl}/api/validation-cases/{validationCaseId}/public";
+
+        try
+        {
+            using var response = await _httpClient.GetAsync(url);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("owner", out var owner)
+                && owner.TryGetProperty("id", out var ownerIdEl)
+                && ownerIdEl.TryGetUInt32(out var ownerId)
+                && ownerId > 0)
+            {
+                return ownerId;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to resolve validation case owner via Go backend. ValidationCaseId: {ValidationCaseId}", validationCaseId);
+            return null;
+        }
     }
 
     public async Task UnhideContentAsync(string hiddenContentId, uint adminId)
@@ -167,7 +236,7 @@ public class AdminModerationService : IAdminModerationService
             h.Id,
             h.ContentType,
             h.ContentId,
-            h.ThreadId,
+            h.ValidationCaseId != 0 ? h.ValidationCaseId : h.LegacyThreadId,
             h.UserId,
             null, // Username fetched from Go backend
             h.Reason,
@@ -233,19 +302,19 @@ public class AdminModerationService : IAdminModerationService
         return new PaginatedAdminActionLogResponse(dtos, (int)totalCount, page, pageSize);
     }
 
-    public async Task<TransferThreadOwnershipResponse> TransferThreadOwnershipAsync(uint adminId, TransferThreadOwnershipRequest request, string? authorizationHeader, string? requestId)
+    public async Task<MoveValidationCaseResponse> MoveValidationCaseAsync(uint adminId, MoveValidationCaseRequest request, string? authorizationHeader, string? requestId)
     {
-        // Call Go backend to transfer/move thread (single-writer lives in Go backend)
+        // Call Go backend to move Validation Case (single-writer lives in Go backend)
         var goBackendUrl = (_configuration["GoBackend:BaseUrl"] ?? "http://127.0.0.1:8080").TrimEnd('/');
 
-        var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{goBackendUrl}/admin/threads/{request.ThreadId}/move");
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{goBackendUrl}/admin/validation-cases/{request.ValidationCaseId}/move");
         httpRequest.Content = new StringContent(
             JsonSerializer.Serialize(new Dictionary<string, object?>
             {
                 ["new_owner_user_id"] = request.NewOwnerUserId,
-                ["new_category_id"] = null, // feature-service endpoint doesn't expose category move (yet)
+                ["new_category_id"] = request.NewCategoryId,
                 ["reason"] = request.Reason ?? string.Empty,
-                ["dry_run"] = false
+                ["dry_run"] = request.DryRun
             }),
             Encoding.UTF8,
             "application/json");
@@ -261,14 +330,14 @@ public class AdminModerationService : IAdminModerationService
         }
 
         var response = await _httpClient.SendAsync(httpRequest);
-        
+
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
             throw new UpstreamApiException((int)response.StatusCode, error, response.Content.Headers.ContentType?.ToString());
         }
 
-        var goResult = await response.Content.ReadFromJsonAsync<GoAdminMoveThreadEnvelope>();
+        var goResult = await response.Content.ReadFromJsonAsync<GoAdminMoveValidationCaseEnvelope>();
         if (goResult?.Data == null)
         {
             throw new UpstreamApiException(500, "{\"code\":\"SRV001\",\"message\":\"Invalid response from Go backend\"}", "application/json");
@@ -276,65 +345,42 @@ public class AdminModerationService : IAdminModerationService
 
         var previousOwnerUserId = goResult.Data.OldOwner?.Id ?? 0;
 
-        // Record transfer in MongoDB for audit
-        var transfer = new ThreadOwnershipTransfer
+        // Record move in MongoDB for audit (best-effort; do not block the upstream success).
+        try
         {
-            Id = $"trf_{Ulid.NewUlid()}",
-            ThreadId = request.ThreadId,
-            ThreadTitle = null,
-            PreviousOwnerUserId = previousOwnerUserId,
-            PreviousOwnerUsername = goResult.Data.OldOwner?.Username,
-            NewOwnerUserId = request.NewOwnerUserId,
-            NewOwnerUsername = goResult.Data.NewOwner?.Username,
-            TransferredByAdminId = adminId,
-            Reason = request.Reason,
-            CreatedAt = DateTime.UtcNow
-        };
+            var transfer = new ValidationCaseOwnershipTransfer
+            {
+                Id = $"trf_{Ulid.NewUlid()}",
+                ValidationCaseId = request.ValidationCaseId,
+                ValidationCaseTitle = null,
+                PreviousOwnerUserId = previousOwnerUserId,
+                PreviousOwnerUsername = goResult.Data.OldOwner?.Username,
+                NewOwnerUserId = request.NewOwnerUserId,
+                NewOwnerUsername = goResult.Data.NewOwner?.Username,
+                TransferredByAdminId = adminId,
+                Reason = request.Reason,
+                CreatedAt = DateTime.UtcNow
+            };
 
-        await _context.ThreadOwnershipTransfers.InsertOneAsync(transfer);
-
-        // Log admin action
-        await LogAdminActionAsync(adminId, null, AdminActionType.ThreadTransfer, AdminActionTargetType.Thread, request.ThreadId.ToString(),
-            new { previousOwner = transfer.PreviousOwnerUserId, newOwner = request.NewOwnerUserId, reason = request.Reason }, null, null);
-
-        _logger.LogInformation("Thread {ThreadId} ownership transferred from {From} to {To} by admin {AdminId}",
-            request.ThreadId, transfer.PreviousOwnerUserId, request.NewOwnerUserId, adminId);
-
-        return new TransferThreadOwnershipResponse(
-            request.ThreadId,
-            transfer.PreviousOwnerUserId,
-            request.NewOwnerUserId,
-            goResult.Message ?? "Thread ownership transferred successfully"
-        );
-    }
-
-    public async Task DeleteThreadAsync(uint adminId, AdminDeleteThreadRequest request)
-    {
-        // Call Go backend to delete thread
-        var goBackendUrl = _configuration["GoBackend:BaseUrl"] ?? "http://localhost:8080";
-        
-        var httpRequest = new HttpRequestMessage(HttpMethod.Delete, $"{goBackendUrl}/admin/internal/threads/{request.ThreadId}");
-        httpRequest.Content = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(new { hardDelete = request.HardDelete, reason = request.Reason }),
-            System.Text.Encoding.UTF8,
-            "application/json"
-        );
-        httpRequest.Headers.Add("X-Internal-Api-Key", _configuration["GoBackend:InternalApiKey"]);
-
-        var response = await _httpClient.SendAsync(httpRequest);
-        
-        if (!response.IsSuccessStatusCode)
+            await _context.ValidationCaseOwnershipTransfers.InsertOneAsync(transfer);
+        }
+        catch (Exception ex)
         {
-            var error = await response.Content.ReadAsStringAsync();
-            throw new Exception($"Failed to delete thread: {error}");
+            _logger.LogWarning(ex, "Failed to record validation case move history (best effort). ValidationCaseId: {ValidationCaseId}", request.ValidationCaseId);
         }
 
-        // Log admin action
-        await LogAdminActionAsync(adminId, null, AdminActionType.ThreadDelete, AdminActionTargetType.Thread, request.ThreadId.ToString(),
-            new { hardDelete = request.HardDelete, reason = request.Reason }, null, null);
+        await LogAdminActionAsync(adminId, null, AdminActionType.ValidationCaseMove, AdminActionTargetType.ValidationCase, request.ValidationCaseId.ToString(),
+            new { previousOwner = previousOwnerUserId, newOwner = request.NewOwnerUserId, newCategoryId = request.NewCategoryId, reason = request.Reason }, null, null);
 
-        _logger.LogWarning("Thread {ThreadId} deleted by admin {AdminId}. HardDelete: {HardDelete}",
-            request.ThreadId, adminId, request.HardDelete);
+        _logger.LogInformation("Validation case {ValidationCaseId} moved from {From} to {To} by admin {AdminId}",
+            request.ValidationCaseId, previousOwnerUserId, request.NewOwnerUserId, adminId);
+
+        return new MoveValidationCaseResponse(
+            request.ValidationCaseId,
+            previousOwnerUserId,
+            request.NewOwnerUserId,
+            goResult.Message ?? "Validation case moved successfully"
+        );
     }
 }
 
@@ -353,31 +399,31 @@ public sealed class UpstreamApiException : Exception
     }
 }
 
-internal sealed class GoAdminMoveThreadEnvelope
+internal sealed class GoAdminMoveValidationCaseEnvelope
 {
     [JsonPropertyName("message")]
     public string? Message { get; set; }
 
     [JsonPropertyName("data")]
-    public GoAdminMoveThreadData? Data { get; set; }
+    public GoAdminMoveValidationCaseData? Data { get; set; }
 }
 
-internal sealed class GoAdminMoveThreadData
+internal sealed class GoAdminMoveValidationCaseData
 {
-    [JsonPropertyName("thread_id")]
-    public uint ThreadId { get; set; }
+    [JsonPropertyName("validation_case_id")]
+    public uint ValidationCaseId { get; set; }
 
     [JsonPropertyName("old_owner")]
-    public GoAdminMoveThreadUserSnapshot? OldOwner { get; set; }
+    public GoAdminMoveValidationCaseUserSnapshot? OldOwner { get; set; }
 
     [JsonPropertyName("new_owner")]
-    public GoAdminMoveThreadUserSnapshot? NewOwner { get; set; }
+    public GoAdminMoveValidationCaseUserSnapshot? NewOwner { get; set; }
 
     [JsonPropertyName("request_id")]
     public string? RequestId { get; set; }
 }
 
-internal sealed class GoAdminMoveThreadUserSnapshot
+internal sealed class GoAdminMoveValidationCaseUserSnapshot
 {
     [JsonPropertyName("id")]
     public uint Id { get; set; }

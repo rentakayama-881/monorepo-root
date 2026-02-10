@@ -640,21 +640,21 @@ func OrderLTE(v int) predicate.Tag {
 	return predicate.Tag(sql.FieldLTE(FieldOrder, v))
 }
 
-// HasThreads applies the HasEdge predicate on the "threads" edge.
-func HasThreads() predicate.Tag {
+// HasValidationCases applies the HasEdge predicate on the "validation_cases" edge.
+func HasValidationCases() predicate.Tag {
 	return predicate.Tag(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, ThreadsTable, ThreadsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2M, false, ValidationCasesTable, ValidationCasesPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasThreadsWith applies the HasEdge predicate on the "threads" edge with a given conditions (other predicates).
-func HasThreadsWith(preds ...predicate.Thread) predicate.Tag {
+// HasValidationCasesWith applies the HasEdge predicate on the "validation_cases" edge with a given conditions (other predicates).
+func HasValidationCasesWith(preds ...predicate.ValidationCase) predicate.Tag {
 	return predicate.Tag(func(s *sql.Selector) {
-		step := newThreadsStep()
+		step := newValidationCasesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

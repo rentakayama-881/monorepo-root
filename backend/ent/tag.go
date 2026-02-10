@@ -45,20 +45,20 @@ type Tag struct {
 
 // TagEdges holds the relations/edges for other nodes in the graph.
 type TagEdges struct {
-	// Threads holds the value of the threads edge.
-	Threads []*Thread `json:"threads,omitempty"`
+	// ValidationCases holds the value of the validation_cases edge.
+	ValidationCases []*ValidationCase `json:"validation_cases,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
-// ThreadsOrErr returns the Threads value or an error if the edge
+// ValidationCasesOrErr returns the ValidationCases value or an error if the edge
 // was not loaded in eager-loading.
-func (e TagEdges) ThreadsOrErr() ([]*Thread, error) {
+func (e TagEdges) ValidationCasesOrErr() ([]*ValidationCase, error) {
 	if e.loadedTypes[0] {
-		return e.Threads, nil
+		return e.ValidationCases, nil
 	}
-	return nil, &NotLoadedError{edge: "threads"}
+	return nil, &NotLoadedError{edge: "validation_cases"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -169,9 +169,9 @@ func (_m *Tag) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryThreads queries the "threads" edge of the Tag entity.
-func (_m *Tag) QueryThreads() *ThreadQuery {
-	return NewTagClient(_m.config).QueryThreads(_m)
+// QueryValidationCases queries the "validation_cases" edge of the Tag entity.
+func (_m *Tag) QueryValidationCases() *ValidationCaseQuery {
+	return NewTagClient(_m.config).QueryValidationCases(_m)
 }
 
 // Update returns a builder for updating this Tag.

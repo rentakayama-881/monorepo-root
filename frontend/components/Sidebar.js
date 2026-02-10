@@ -166,7 +166,7 @@ export default function Sidebar({ open, onClose }) {
           {/* Quick nav */}
           <nav className="flex gap-2 text-sm font-medium text-foreground">
             <Link href="/" className="flex-1 rounded-[var(--radius)] border px-3 py-2 text-center hover:border-muted-foreground hover:bg-accent transition-all" onClick={handleClose}>Home</Link>
-            <Link href="/threads" className="flex-1 rounded-[var(--radius)] border px-3 py-2 text-center hover:border-muted-foreground hover:bg-accent transition-all" onClick={handleClose}>Threads</Link>
+            <Link href="/validation-cases" className="flex-1 rounded-[var(--radius)] border px-3 py-2 text-center hover:border-muted-foreground hover:bg-accent transition-all" onClick={handleClose}>Case Index</Link>
           </nav>
 
           {/* Search kategori */}
@@ -178,24 +178,24 @@ export default function Sidebar({ open, onClose }) {
             <input
               type="text"
               className="w-full rounded-[var(--radius)] border bg-card px-10 py-2 text-sm text-foreground placeholder:text-muted-foreground transition-all focus:border-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              placeholder="Cari kategori thread…"
+              placeholder="Cari tipe kasus…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              aria-label="Cari kategori thread"
+              aria-label="Cari tipe kasus"
             />
           </div>
         </div>
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-6 pb-4 pt-5 scrollbar-thin" style={{ overscrollBehavior: "contain" }}>
-          {/* Kategori threads */}
+          {/* Kategori validation cases */}
           <section className="rounded-[var(--radius)] border bg-card p-4">
-            <div className={`${sectionHeading} mb-3`}>Kategori Threads</div>
+            <div className={`${sectionHeading} mb-3`}>Case Types</div>
             <nav className="flex flex-col divide-y divide-border text-sm stagger-children">
               {loadingCategories ? (
                 <div className="flex items-center gap-2 px-1 py-2 text-muted-foreground">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" />
-                  Memuat kategori…
+                  Memuat tipe…
                 </div>
               ) : filteredCategories.length === 0 ? (
                 <div className="px-1 py-2 text-muted-foreground">Tidak ditemukan…</div>

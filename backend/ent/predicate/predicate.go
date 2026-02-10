@@ -9,6 +9,9 @@ import (
 // Admin is the predicate function for admin builders.
 type Admin func(*sql.Selector)
 
+// ArtifactSubmission is the predicate function for artifactsubmission builders.
+type ArtifactSubmission func(*sql.Selector)
+
 // BackupCode is the predicate function for backupcode builders.
 type BackupCode func(*sql.Selector)
 
@@ -21,6 +24,9 @@ type Category func(*sql.Selector)
 // ChainCursor is the predicate function for chaincursor builders.
 type ChainCursor func(*sql.Selector)
 
+// ConsultationRequest is the predicate function for consultationrequest builders.
+type ConsultationRequest func(*sql.Selector)
+
 // Credential is the predicate function for credential builders.
 type Credential func(*sql.Selector)
 
@@ -32,6 +38,12 @@ type DeviceUserMapping func(*sql.Selector)
 
 // EmailVerificationToken is the predicate function for emailverificationtoken builders.
 type EmailVerificationToken func(*sql.Selector)
+
+// Endorsement is the predicate function for endorsement builders.
+type Endorsement func(*sql.Selector)
+
+// FinalOffer is the predicate function for finaloffer builders.
+type FinalOffer func(*sql.Selector)
 
 // Passkey is the predicate function for passkey builders.
 type Passkey func(*sql.Selector)
@@ -57,14 +69,14 @@ type TOTPPendingToken func(*sql.Selector)
 // Tag is the predicate function for tag builders.
 type Tag func(*sql.Selector)
 
-// Thread is the predicate function for thread builders.
-type Thread func(*sql.Selector)
-
-// ThreadCredential is the predicate function for threadcredential builders.
-type ThreadCredential func(*sql.Selector)
-
 // User is the predicate function for user builders.
 type User func(*sql.Selector)
 
 // UserBadge is the predicate function for userbadge builders.
 type UserBadge func(*sql.Selector)
+
+// ValidationCase is the predicate function for validationcase builders.
+type ValidationCase func(*sql.Selector)
+
+// ValidationCaseLog is the predicate function for validationcaselog builders.
+type ValidationCaseLog func(*sql.Selector)

@@ -49,10 +49,10 @@ export default function Avatar({
 
   const sizes = {
     xxs: "h-5 w-5 text-[9px]",      // 20px - untuk inline mentions
-    xs: "h-6 w-6 text-[10px]",       // 24px - untuk header, thread list
-    sm: "h-8 w-8 text-xs",           // 32px - untuk comments
+    xs: "h-6 w-6 text-[10px]",       // 24px - untuk header, Validation Case Index
+    sm: "h-8 w-8 text-xs",           // 32px - untuk Case Log rows / tables
     md: "h-10 w-10 text-sm",         // 40px - default
-    lg: "h-16 w-16 text-lg",         // 64px - untuk cards
+    lg: "h-16 w-16 text-lg",         // 64px - untuk cards/hero
     xl: "h-20 w-20 text-xl",         // 80px - untuk profile preview
     "2xl": "h-64 w-64 text-5xl",     // 256px - untuk profile page
   };

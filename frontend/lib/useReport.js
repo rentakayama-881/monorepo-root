@@ -23,8 +23,7 @@ export const REPORT_REASONS = [
  * Report target types
  */
 export const REPORT_TARGET_TYPES = {
-  THREAD: "thread",
-  USER: "user",
+  VALIDATION_CASE: "validation_case",
 };
 
 /**
@@ -36,7 +35,7 @@ export function useSubmitReport() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const submitReport = useCallback(async ({ targetType, targetId, threadId, reason, description = "" }) => {
+  const submitReport = useCallback(async ({ targetType, targetId, validationCaseId, reason, description = "" }) => {
     const token = getToken();
     if (!token) {
       const err = new Error("Authentication required to submit a report");
@@ -59,9 +58,9 @@ export function useSubmitReport() {
       throw err;
     }
 
-    const parsedThreadId = Number(threadId);
-    if (!Number.isFinite(parsedThreadId) || parsedThreadId <= 0) {
-      const err = new Error("Invalid thread ID");
+    const parsedValidationCaseId = Number(validationCaseId);
+    if (!Number.isFinite(parsedValidationCaseId) || parsedValidationCaseId <= 0) {
+      const err = new Error("Invalid validation case ID");
       setError(err.message);
       throw err;
     }
@@ -73,8 +72,8 @@ export function useSubmitReport() {
     try {
       const body = {
         targetType,
-        targetId,
-        threadId: parsedThreadId,
+        targetId: targetId ?? String(parsedValidationCaseId),
+        validationCaseId: parsedValidationCaseId,
         reason,
       };
 

@@ -272,8 +272,7 @@ export default function WarningsPage() {
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   >
                     <option value="">-</option>
-                    <option value="thread">Thread</option>
-                    <option value="reply">Reply</option>
+                    <option value="validation_case">Validation Case</option>
                   </select>
                 </div>
                 <div>

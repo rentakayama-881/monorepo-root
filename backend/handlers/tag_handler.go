@@ -7,7 +7,7 @@ import (
 	"backend-gin/database"
 	"backend-gin/ent"
 	"backend-gin/ent/tag"
-	"backend-gin/ent/thread"
+	"backend-gin/ent/validationcase"
 
 	"github.com/gin-gonic/gin"
 )
@@ -67,9 +67,9 @@ func GetTagBySlugHandler(c *gin.Context) {
 	})
 }
 
-// GetThreadsByTagHandler returns all threads with a specific tag
-// GET /api/tags/:slug/threads
-func GetThreadsByTagHandler(c *gin.Context) {
+// GetValidationCasesByTagHandler returns all Validation Cases with a specific tag
+// GET /api/tags/:slug/validation-cases
+func GetValidationCasesByTagHandler(c *gin.Context) {
 	slug := c.Param("slug")
 	ctx := c.Request.Context()
 	client := database.GetEntClient()
@@ -83,44 +83,44 @@ func GetThreadsByTagHandler(c *gin.Context) {
 		return
 	}
 
-	// Get threads with this tag
-	threads, err := client.Thread.Query().
-		Where(thread.HasTagsWith(tag.IDEQ(t.ID))).
+	// Get validation cases with this tag
+	cases, err := client.ValidationCase.Query().
+		Where(validationcase.HasTagsWith(tag.IDEQ(t.ID))).
 		WithUser().
 		WithCategory().
 		WithTags(func(q *ent.TagQuery) {
 			q.Where(tag.IsActiveEQ(true))
 		}).
-		Order(ent.Desc(thread.FieldCreatedAt)).
+		Order(ent.Desc(validationcase.FieldCreatedAt)).
 		Limit(50).
 		All(ctx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membaca threads"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membaca validation cases"})
 		return
 	}
 
-	res := make([]gin.H, 0, len(threads))
-	for _, th := range threads {
+	res := make([]gin.H, 0, len(cases))
+	for _, vc := range cases {
 		// Build user info
 		var username string
 		var avatarURL string
-		if th.Edges.User != nil {
-			if th.Edges.User.Username != nil {
-				username = *th.Edges.User.Username
+		if vc.Edges.User != nil {
+			if vc.Edges.User.Username != nil {
+				username = *vc.Edges.User.Username
 			}
-			avatarURL = th.Edges.User.AvatarURL
+			avatarURL = vc.Edges.User.AvatarURL
 		}
 
 		// Build category info
 		var categoryName, categorySlug string
-		if th.Edges.Category != nil {
-			categoryName = th.Edges.Category.Name
-			categorySlug = th.Edges.Category.Slug
+		if vc.Edges.Category != nil {
+			categoryName = vc.Edges.Category.Name
+			categorySlug = vc.Edges.Category.Slug
 		}
 
 		// Build tags list
 		tagList := make([]gin.H, 0)
-		for _, tg := range th.Edges.Tags {
+		for _, tg := range vc.Edges.Tags {
 			tagList = append(tagList, gin.H{
 				"id":    tg.ID,
 				"slug":  tg.Slug,
@@ -130,10 +130,12 @@ func GetThreadsByTagHandler(c *gin.Context) {
 		}
 
 		res = append(res, gin.H{
-			"id":            th.ID,
-			"title":         th.Title,
-			"summary":       th.Summary,
-			"created_at":    th.CreatedAt.Unix(),
+			"id":            vc.ID,
+			"title":         vc.Title,
+			"summary":       vc.Summary,
+			"status":        vc.Status,
+			"bounty_amount": vc.BountyAmount,
+			"created_at":    vc.CreatedAt.Unix(),
 			"username":      username,
 			"avatar_url":    avatarURL,
 			"category_name": categoryName,
@@ -150,15 +152,15 @@ func GetThreadsByTagHandler(c *gin.Context) {
 			"description": t.Description,
 			"color":       t.Color,
 		},
-		"threads": res,
+		"validation_cases": res,
 	})
 }
 
-// GetThreadTagsHandler returns tags for a specific thread
-// GET /api/threads/:id/tags
-func GetThreadTagsHandler(c *gin.Context) {
+// GetValidationCaseTagsHandler returns tags for a specific Validation Case
+// GET /api/validation-cases/:id/tags
+func GetValidationCaseTagsHandler(c *gin.Context) {
 	idStr := c.Param("id")
-	threadID, err := strconv.Atoi(idStr)
+	validationCaseID, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
 		return
@@ -167,20 +169,20 @@ func GetThreadTagsHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	client := database.GetEntClient()
 
-	// Get thread with tags
-	th, err := client.Thread.Query().
-		Where(thread.IDEQ(threadID)).
+	// Get Validation Case with tags
+	vc, err := client.ValidationCase.Query().
+		Where(validationcase.IDEQ(validationCaseID)).
 		WithTags(func(q *ent.TagQuery) {
 			q.Where(tag.IsActiveEQ(true))
 		}).
 		Only(ctx)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "thread tidak ditemukan"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "validation case tidak ditemukan"})
 		return
 	}
 
 	res := make([]gin.H, 0)
-	for _, t := range th.Edges.Tags {
+	for _, t := range vc.Edges.Tags {
 		res = append(res, gin.H{
 			"id":    t.ID,
 			"slug":  t.Slug,
@@ -193,14 +195,14 @@ func GetThreadTagsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": res})
 }
 
-// AddTagToThreadRequest is the request body for adding tags
-type AddTagToThreadRequest struct {
+// AddTagToValidationCaseRequest is the request body for adding tags
+type AddTagToValidationCaseRequest struct {
 	TagIDs []int `json:"tag_ids" binding:"required"`
 }
 
-// AddTagsToThreadHandler adds tags to a thread (owner only)
-// POST /api/threads/:id/tags
-func AddTagsToThreadHandler(c *gin.Context) {
+// AddTagsToValidationCaseHandler adds tags to a Validation Case (owner only)
+// POST /api/validation-cases/:id/tags
+func AddTagsToValidationCaseHandler(c *gin.Context) {
 	userIfc, ok := c.Get("user")
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -209,13 +211,13 @@ func AddTagsToThreadHandler(c *gin.Context) {
 	user := userIfc.(*ent.User)
 
 	idStr := c.Param("id")
-	threadID, err := strconv.Atoi(idStr)
+	validationCaseID, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
 		return
 	}
 
-	var req AddTagToThreadRequest
+	var req AddTagToValidationCaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "request tidak valid"})
 		return
@@ -224,17 +226,17 @@ func AddTagsToThreadHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	client := database.GetEntClient()
 
-	// Get thread and verify ownership
-	th, err := client.Thread.Query().
-		Where(thread.IDEQ(threadID)).
+	// Get Validation Case and verify ownership
+	vc, err := client.ValidationCase.Query().
+		Where(validationcase.IDEQ(validationCaseID)).
 		Only(ctx)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "thread tidak ditemukan"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "validation case tidak ditemukan"})
 		return
 	}
 
-	if th.UserID != user.ID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Anda tidak memiliki akses untuk mengedit thread ini"})
+	if vc.UserID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Anda tidak memiliki akses untuk mengedit validation case ini"})
 		return
 	}
 
@@ -252,14 +254,14 @@ func AddTagsToThreadHandler(c *gin.Context) {
 		return
 	}
 
-	// Limit to max 5 tags per thread
+	// Limit to max 5 tags per validation case
 	if len(tags) > 5 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "maksimal 5 tag per thread"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "maksimal 5 tag per validation case"})
 		return
 	}
 
-	// Add tags to thread
-	_, err = client.Thread.UpdateOneID(threadID).
+	// Add tags to validation case
+	_, err = client.ValidationCase.UpdateOneID(validationCaseID).
 		ClearTags().
 		AddTags(tags...).
 		Save(ctx)
@@ -282,9 +284,9 @@ func AddTagsToThreadHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": res})
 }
 
-// RemoveTagFromThreadHandler removes a tag from a thread (owner only)
-// DELETE /api/threads/:id/tags/:tagSlug
-func RemoveTagFromThreadHandler(c *gin.Context) {
+// RemoveTagFromValidationCaseHandler removes a tag from a Validation Case (owner only)
+// DELETE /api/validation-cases/:id/tags/:tagSlug
+func RemoveTagFromValidationCaseHandler(c *gin.Context) {
 	userIfc, ok := c.Get("user")
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -293,7 +295,7 @@ func RemoveTagFromThreadHandler(c *gin.Context) {
 	user := userIfc.(*ent.User)
 
 	idStr := c.Param("id")
-	threadID, err := strconv.Atoi(idStr)
+	validationCaseID, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
 		return
@@ -308,17 +310,17 @@ func RemoveTagFromThreadHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	client := database.GetEntClient()
 
-	// Get thread and verify ownership
-	th, err := client.Thread.Query().
-		Where(thread.IDEQ(threadID)).
+	// Get Validation Case and verify ownership
+	vc, err := client.ValidationCase.Query().
+		Where(validationcase.IDEQ(validationCaseID)).
 		Only(ctx)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "thread tidak ditemukan"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "validation case tidak ditemukan"})
 		return
 	}
 
-	if th.UserID != user.ID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Anda tidak memiliki akses untuk mengedit thread ini"})
+	if vc.UserID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Anda tidak memiliki akses untuk mengedit validation case ini"})
 		return
 	}
 
@@ -331,8 +333,8 @@ func RemoveTagFromThreadHandler(c *gin.Context) {
 		return
 	}
 
-	// Remove tag from thread
-	_, err = client.Thread.UpdateOneID(threadID).
+	// Remove tag from validation case
+	_, err = client.ValidationCase.UpdateOneID(validationCaseID).
 		RemoveTags(t).
 		Save(ctx)
 	if err != nil {

@@ -39,7 +39,7 @@ go tool cover -html=coverage.out
 | auth_service_ent.go | Partial | Critical |
 | passkey_service_ent.go | Missing | Critical |
 | session_service_ent.go | Partial | High |
-| thread_service_ent.go | Missing | Medium |
+| validation_case_service_ent.go | Missing | Medium |
 | All handlers | Partial | High |
 
 **Rekomendasi:**
@@ -187,39 +187,39 @@ type CacheService struct {
     redis *redis.Client
 }
 
-func (c *CacheService) GetThread(id int) (*ent.Thread, error) {
-    key := fmt.Sprintf("thread:%d", id)
+func (c *CacheService) GetValidationCase(id int) (*ent.ValidationCase, error) {
+    key := fmt.Sprintf("validation_case:%d", id)
     
     // Try cache first
     cached, err := c.redis.Get(ctx, key).Result()
     if err == nil {
-        var thread ent.Thread
-        json.Unmarshal([]byte(cached), &thread)
-        return &thread, nil
+        var vc ent.ValidationCase
+        json.Unmarshal([]byte(cached), &vc)
+        return &vc, nil
     }
     
     // Cache miss - fetch from DB
-    thread, err := c.db.Thread.Get(ctx, id)
+    vc, err := c.db.ValidationCase.Get(ctx, id)
     if err != nil {
         return nil, err
     }
     
     // Store in cache (5 min TTL)
-    data, _ := json.Marshal(thread)
+    data, _ := json.Marshal(vc)
     c.redis.Set(ctx, key, data, 5*time.Minute)
     
-    return thread, nil
+    return vc, nil
 }
 ```
 
 **Cache Strategy:**
 | Data | TTL | Invalidation |
 |------|-----|--------------|
-| Thread detail | 5 min | On update |
+| Validation Case record | 5 min | On update |
 | User profile | 10 min | On update |
 | Category list | 1 hour | On change |
 | Tag list | 1 hour | On change |
-| Hot threads | 2 min | Periodic |
+| Active cases | 2 min | Periodic |
 
 ---
 
@@ -320,10 +320,10 @@ export class ThreadRoom extends DurableObject {
 ```
 
 **Use Cases:**
-- Real-time reply updates
-- Live reaction counts
-- Online user presence
-- Typing indicators
+- Validation Case status updates
+- Escrow state changes (Lock Funds / release)
+- Dispute decision notifications
+- Case Log append events
 
 ---
 
@@ -334,17 +334,18 @@ export class ThreadRoom extends DurableObject {
 ```graphql
 # schema.graphql
 type Query {
-  thread(id: ID!): Thread
+  validationCase(id: ID!): ValidationCase
   user(username: String!): User
   wallet: Wallet
 }
 
-type Thread @key(fields: "id") {
+type ValidationCase @key(fields: "id") {
   id: ID!
   title: String!
-  author: User!
-  replies: [Reply!]!  # From Feature Service
-  reactions: ReactionSummary!  # From Feature Service
+  owner: User!
+  status: String!
+  bountyAmount: Int!
+  caseLog: [CaseLogEntry!]!
 }
 
 type User @key(fields: "id") {
@@ -366,9 +367,9 @@ supergraph:
   schema:
     subgraphs:
       core:
-        routing_url: https://api.aivalid.fun/graphql
+        routing_url: https://api.aivalid.id/graphql
       features:
-        routing_url: https://feature.aivalid.fun/graphql
+        routing_url: https://feature.aivalid.id/graphql
 ```
 
 ---
@@ -378,14 +379,14 @@ supergraph:
 ```go
 // handlers/sse_handler.go
 func (h *SSEHandler) StreamUpdates(c *gin.Context) {
-    threadID := c.Param("id")
+    validationCaseID := c.Param("id")
     
     c.Header("Content-Type", "text/event-stream")
     c.Header("Cache-Control", "no-cache")
     c.Header("Connection", "keep-alive")
     
-    ch := h.broker.Subscribe(threadID)
-    defer h.broker.Unsubscribe(threadID, ch)
+    ch := h.broker.Subscribe(validationCaseID)
+    defer h.broker.Unsubscribe(validationCaseID, ch)
     
     c.Stream(func(w io.Writer) bool {
         select {
@@ -401,14 +402,14 @@ func (h *SSEHandler) StreamUpdates(c *gin.Context) {
 
 ```javascript
 // Frontend usage
-const eventSource = new EventSource(`/api/threads/${threadId}/stream`)
+const eventSource = new EventSource(`/api/validation-cases/${validationCaseId}/stream`)
 
 eventSource.onmessage = (event) => {
     const data = JSON.parse(event.data)
-    if (data.type === 'new_reply') {
-        addReply(data.reply)
-    } else if (data.type === 'reaction_update') {
-        updateReactions(data.reactions)
+    if (data.type === 'case_log_append') {
+        appendCaseLogEntry(data.entry)
+    } else if (data.type === 'status_changed') {
+        updateStatus(data.status)
     }
 }
 ```
@@ -468,32 +469,32 @@ WebAssembly.instantiateStreaming(fetch('/crypto.wasm'), go.importObject)
 #### Index Strategy
 ```sql
 -- Composite indexes for common queries
-CREATE INDEX idx_threads_category_created 
-ON threads(category_id, created_at DESC);
+CREATE INDEX idx_validation_cases_category_created 
+ON validation_cases(category_id, created_at DESC);
 
-CREATE INDEX idx_threads_user_created 
-ON threads(user_id, created_at DESC);
+CREATE INDEX idx_validation_cases_user_created 
+ON validation_cases(user_id, created_at DESC);
 
 -- Partial index for active content
-CREATE INDEX idx_threads_active 
-ON threads(category_id, created_at DESC) 
-WHERE deleted_at IS NULL;
+CREATE INDEX idx_validation_cases_active 
+ON validation_cases(category_id, created_at DESC) 
+WHERE status IN ('open', 'offer_accepted', 'funds_locked', 'artifact_submitted', 'disputed');
 
 -- GIN index for JSONB search
-CREATE INDEX idx_threads_content_gin 
-ON threads USING GIN (content_json);
+CREATE INDEX idx_validation_cases_content_gin 
+ON validation_cases USING GIN (content_json);
 ```
 
 #### Query Optimization
 ```go
 // BEFORE: N+1 query problem
-threads, _ := client.Thread.Query().All(ctx)
-for _, t := range threads {
-    user, _ := t.QueryUser().Only(ctx)  // N queries!
+cases, _ := client.ValidationCase.Query().All(ctx)
+for _, vc := range cases {
+    user, _ := vc.QueryUser().Only(ctx)  // N queries!
 }
 
 // AFTER: Eager loading
-threads, _ := client.Thread.Query().
+cases, _ := client.ValidationCase.Query().
     WithUser().
     WithCategory().
     WithTags().
@@ -507,7 +508,7 @@ threads, _ := client.Thread.Query().
 module.exports = {
   images: {
     remotePatterns: [
-      { hostname: 'cdn.aivalid.fun' },
+      { hostname: 'cdn.aivalid.id' },
     ],
   },
   async headers() {
@@ -703,14 +704,14 @@ spec:
 │  Shard 0 (user_id % 4 == 0)    Shard 1 (user_id % 4 == 1)       │
 │  ┌────────────────────────┐    ┌────────────────────────┐       │
 │  │ Users: 0, 4, 8, 12...  │    │ Users: 1, 5, 9, 13...  │       │
-│  │ Their threads          │    │ Their threads          │       │
+│  │ Their validation cases │    │ Their validation cases │       │
 │  │ Their sessions         │    │ Their sessions         │       │
 │  └────────────────────────┘    └────────────────────────┘       │
 │                                                                  │
 │  Shard 2 (user_id % 4 == 2)    Shard 3 (user_id % 4 == 3)       │
 │  ┌────────────────────────┐    ┌────────────────────────┐       │
 │  │ Users: 2, 6, 10, 14... │    │ Users: 3, 7, 11, 15... │       │
-│  │ Their threads          │    │ Their threads          │       │
+│  │ Their validation cases │    │ Their validation cases │       │
 │  │ Their sessions         │    │ Their sessions         │       │
 │  └────────────────────────┘    └────────────────────────┘       │
 │                                                                  │
@@ -799,7 +800,7 @@ cd backend
 go generate ./ent
 
 # Generate TypeScript types from OpenAPI
-npx openapi-typescript https://api.aivalid.fun/swagger.json -o frontend/types/api.d.ts
+npx openapi-typescript https://api.aivalid.id/swagger.json -o frontend/types/api.d.ts
 ```
 
 ### 6.3 Pre-commit Hooks

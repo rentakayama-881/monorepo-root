@@ -4,7 +4,7 @@ package ent
 
 import (
 	"backend-gin/ent/tag"
-	"backend-gin/ent/thread"
+	"backend-gin/ent/validationcase"
 	"context"
 	"errors"
 	"fmt"
@@ -145,19 +145,19 @@ func (_c *TagCreate) SetNillableOrder(v *int) *TagCreate {
 	return _c
 }
 
-// AddThreadIDs adds the "threads" edge to the Thread entity by IDs.
-func (_c *TagCreate) AddThreadIDs(ids ...int) *TagCreate {
-	_c.mutation.AddThreadIDs(ids...)
+// AddValidationCaseIDs adds the "validation_cases" edge to the ValidationCase entity by IDs.
+func (_c *TagCreate) AddValidationCaseIDs(ids ...int) *TagCreate {
+	_c.mutation.AddValidationCaseIDs(ids...)
 	return _c
 }
 
-// AddThreads adds the "threads" edges to the Thread entity.
-func (_c *TagCreate) AddThreads(v ...*Thread) *TagCreate {
+// AddValidationCases adds the "validation_cases" edges to the ValidationCase entity.
+func (_c *TagCreate) AddValidationCases(v ...*ValidationCase) *TagCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _c.AddThreadIDs(ids...)
+	return _c.AddValidationCaseIDs(ids...)
 }
 
 // Mutation returns the TagMutation object of the builder.
@@ -321,15 +321,15 @@ func (_c *TagCreate) createSpec() (*Tag, *sqlgraph.CreateSpec) {
 		_spec.SetField(tag.FieldOrder, field.TypeInt, value)
 		_node.Order = value
 	}
-	if nodes := _c.mutation.ThreadsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ValidationCasesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   tag.ThreadsTable,
-			Columns: tag.ThreadsPrimaryKey,
+			Table:   tag.ValidationCasesTable,
+			Columns: tag.ValidationCasesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

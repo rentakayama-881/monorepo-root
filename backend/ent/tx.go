@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// Admin is the client for interacting with the Admin builders.
 	Admin *AdminClient
+	// ArtifactSubmission is the client for interacting with the ArtifactSubmission builders.
+	ArtifactSubmission *ArtifactSubmissionClient
 	// BackupCode is the client for interacting with the BackupCode builders.
 	BackupCode *BackupCodeClient
 	// Badge is the client for interacting with the Badge builders.
@@ -22,6 +24,8 @@ type Tx struct {
 	Category *CategoryClient
 	// ChainCursor is the client for interacting with the ChainCursor builders.
 	ChainCursor *ChainCursorClient
+	// ConsultationRequest is the client for interacting with the ConsultationRequest builders.
+	ConsultationRequest *ConsultationRequestClient
 	// Credential is the client for interacting with the Credential builders.
 	Credential *CredentialClient
 	// DeviceFingerprint is the client for interacting with the DeviceFingerprint builders.
@@ -30,6 +34,10 @@ type Tx struct {
 	DeviceUserMapping *DeviceUserMappingClient
 	// EmailVerificationToken is the client for interacting with the EmailVerificationToken builders.
 	EmailVerificationToken *EmailVerificationTokenClient
+	// Endorsement is the client for interacting with the Endorsement builders.
+	Endorsement *EndorsementClient
+	// FinalOffer is the client for interacting with the FinalOffer builders.
+	FinalOffer *FinalOfferClient
 	// Passkey is the client for interacting with the Passkey builders.
 	Passkey *PasskeyClient
 	// PasswordResetToken is the client for interacting with the PasswordResetToken builders.
@@ -46,14 +54,14 @@ type Tx struct {
 	TOTPPendingToken *TOTPPendingTokenClient
 	// Tag is the client for interacting with the Tag builders.
 	Tag *TagClient
-	// Thread is the client for interacting with the Thread builders.
-	Thread *ThreadClient
-	// ThreadCredential is the client for interacting with the ThreadCredential builders.
-	ThreadCredential *ThreadCredentialClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 	// UserBadge is the client for interacting with the UserBadge builders.
 	UserBadge *UserBadgeClient
+	// ValidationCase is the client for interacting with the ValidationCase builders.
+	ValidationCase *ValidationCaseClient
+	// ValidationCaseLog is the client for interacting with the ValidationCaseLog builders.
+	ValidationCaseLog *ValidationCaseLogClient
 
 	// lazily loaded.
 	client     *Client
@@ -186,14 +194,18 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Admin = NewAdminClient(tx.config)
+	tx.ArtifactSubmission = NewArtifactSubmissionClient(tx.config)
 	tx.BackupCode = NewBackupCodeClient(tx.config)
 	tx.Badge = NewBadgeClient(tx.config)
 	tx.Category = NewCategoryClient(tx.config)
 	tx.ChainCursor = NewChainCursorClient(tx.config)
+	tx.ConsultationRequest = NewConsultationRequestClient(tx.config)
 	tx.Credential = NewCredentialClient(tx.config)
 	tx.DeviceFingerprint = NewDeviceFingerprintClient(tx.config)
 	tx.DeviceUserMapping = NewDeviceUserMappingClient(tx.config)
 	tx.EmailVerificationToken = NewEmailVerificationTokenClient(tx.config)
+	tx.Endorsement = NewEndorsementClient(tx.config)
+	tx.FinalOffer = NewFinalOfferClient(tx.config)
 	tx.Passkey = NewPasskeyClient(tx.config)
 	tx.PasswordResetToken = NewPasswordResetTokenClient(tx.config)
 	tx.SecurityEvent = NewSecurityEventClient(tx.config)
@@ -202,10 +214,10 @@ func (tx *Tx) init() {
 	tx.SudoSession = NewSudoSessionClient(tx.config)
 	tx.TOTPPendingToken = NewTOTPPendingTokenClient(tx.config)
 	tx.Tag = NewTagClient(tx.config)
-	tx.Thread = NewThreadClient(tx.config)
-	tx.ThreadCredential = NewThreadCredentialClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserBadge = NewUserBadgeClient(tx.config)
+	tx.ValidationCase = NewValidationCaseClient(tx.config)
+	tx.ValidationCaseLog = NewValidationCaseLogClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

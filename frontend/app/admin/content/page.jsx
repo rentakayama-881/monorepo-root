@@ -25,7 +25,7 @@ export default function HiddenContentPage() {
   const [showHideModal, setShowHideModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [form, setForm] = useState({
-    contentType: "thread",
+    contentType: "validation_case",
     contentId: "",
     reason: "",
   });
@@ -84,7 +84,7 @@ export default function HiddenContentPage() {
       );
       if (!res.ok) throw new Error("Gagal menyembunyikan konten");
       setShowHideModal(false);
-      setForm({ contentType: "thread", contentId: "", reason: "" });
+      setForm({ contentType: "validation_case", contentId: "", reason: "" });
       fetchContents();
     } catch (e) {
       alert(e.message);
@@ -121,8 +121,7 @@ export default function HiddenContentPage() {
   const getContentTypeLabel = (type) => {
     const normalized = String(type || "").toLowerCase();
     const labels = {
-      thread: "Thread",
-      reply: "Balasan",
+      validation_case: "Validation Case",
     };
     return labels[normalized] || type;
   };
@@ -137,9 +136,9 @@ export default function HiddenContentPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Hidden Content</h1>
+        <h1 className="text-2xl font-bold text-foreground">Hidden Records</h1>
         <Button onClick={() => setShowHideModal(true)}>
-          + Hide Content
+          + Hide Record
         </Button>
       </div>
 
@@ -155,7 +154,7 @@ export default function HiddenContentPage() {
         </div>
       ) : contents.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          Tidak ada konten tersembunyi
+          Tidak ada record tersembunyi
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -206,7 +205,7 @@ export default function HiddenContentPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-card rounded-lg max-w-md w-full">
             <div className="p-6 border-b border-border">
-              <h2 className="text-xl font-semibold text-foreground">Hide Content</h2>
+              <h2 className="text-xl font-semibold text-foreground">Hide Record</h2>
             </div>
 
             <form onSubmit={handleHide} className="p-6 space-y-4">
@@ -219,8 +218,7 @@ export default function HiddenContentPage() {
                   onChange={(e) => setForm({ ...form, contentType: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 >
-                  <option value="thread">Thread</option>
-                  <option value="reply">Reply</option>
+                  <option value="validation_case">Validation Case</option>
                 </select>
               </div>
 
@@ -259,7 +257,7 @@ export default function HiddenContentPage() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={actionLoading}>
-                  {actionLoading ? "Hiding..." : "Hide Content"}
+                  {actionLoading ? "Hiding..." : "Hide Record"}
                 </Button>
               </div>
             </form>

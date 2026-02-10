@@ -7,7 +7,7 @@ import { TagIcon } from './TagIcons';
 
 /**
  * GitHub-style Tag Selector Component
- * Multi-select dropdown untuk memilih tags pada thread
+ * Multi-select dropdown untuk memilih tags pada Validation Case
  */
 export default function TagSelector({ 
   selectedTags = [], 

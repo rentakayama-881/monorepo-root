@@ -33,7 +33,9 @@ public class MongoDbContext
     public IMongoCollection<UserWarning> UserWarnings => _database.GetCollection<UserWarning>("user_warnings");
     public IMongoCollection<HiddenContent> HiddenContents => _database.GetCollection<HiddenContent>("hidden_contents");
     public IMongoCollection<AdminActionLog> AdminActionLogs => _database.GetCollection<AdminActionLog>("admin_action_logs");
-    public IMongoCollection<ThreadOwnershipTransfer> ThreadOwnershipTransfers => _database.GetCollection<ThreadOwnershipTransfer>("thread_ownership_transfers");
+    // Note: collection name is still legacy ("thread_ownership_transfers") for backward compatibility.
+    // New documents should use Validation Case terminology.
+    public IMongoCollection<ValidationCaseOwnershipTransfer> ValidationCaseOwnershipTransfers => _database.GetCollection<ValidationCaseOwnershipTransfer>("thread_ownership_transfers");
 
     #endregion
 

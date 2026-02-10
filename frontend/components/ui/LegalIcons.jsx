@@ -367,7 +367,7 @@ export function CardSection({ children, className = "" }) {
 }
 
 /**
- * Page Skeleton Loading Component - Matches thread loading style
+ * Page Skeleton Loading Component - Matches validation case record loading style
  */
 export function PageSkeleton() {
   return (

@@ -5,7 +5,7 @@ export default function Hero() {
   return (
     <section className="relative border-b overflow-hidden">
       {/* Subtle background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/40 pointer-events-none" />
       
       {/* Subtle grid pattern */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
@@ -17,24 +17,22 @@ export default function Hero() {
         <div className="mx-auto max-w-4xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
             <span className="inline-flex h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
-            Platform validasi hasil kerja berbasis AI
+            Validation Protocol (escrow-backed, stake-gated)
           </div>
 
           <h1 className="mt-5 text-balance animate-slide-up text-3xl font-bold tracking-tighter text-foreground sm:text-4xl md:text-5xl lg:text-6xl">
-            Validasi hasil AI,{" "}
-            <span className="text-primary">lebih cepat</span>,{" "}
-            <span className="text-primary">lebih jelas</span>,{" "}
-            <span className="text-primary">lebih bisa dipertanggungjawabkan</span>.
+            Validation Case untuk hasil kerja berbasis AI,
+            <span className="text-primary"> dapat dipertanggungjawabkan</span>.
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl animate-slide-up text-base text-muted-foreground sm:text-lg" style={{ animationDelay: "0.1s" }}>
-            Buat thread dengan konteks dan kriteria. Dapatkan review dari validator sesuai bidangnya—coding, data, desain, penulisan, keamanan, dan lainnya.
+            Susun Validation Case Record, tetapkan bounty, terima Final Offer, lalu Lock Funds ke escrow. Output akhir diterbitkan sebagai Certified Artifact, dengan Case Log sebagai audit trail.
           </p>
 
           {/* CTA Buttons */}
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center animate-slide-up" style={{ animationDelay: "0.2s" }}>
             <Button
-              href="#categories"
+              href="/validation-cases"
               size="lg"
               variant="gradient"
               iconRight={
@@ -43,20 +41,19 @@ export default function Hero() {
                 </svg>
               }
             >
-              Mulai dari Kategori
+              Open Case Index
             </Button>
             <Button
-              href="#latest"
+              href="/validation-cases/new"
               size="lg"
               variant="outline"
               iconRight={
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
               }
             >
-              Lihat Thread Terbaru
+              Create Validation Case
             </Button>
           </div>
 
@@ -70,9 +67,9 @@ export default function Hero() {
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold text-foreground">Buat Thread</div>
+                  <div className="font-semibold text-foreground">Validation Case</div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Jelaskan tujuan, input/output AI, batasan, dan kriteria “selesai”.
+                    Case Record berisi konteks, klaim, batasan, dan acceptance criteria yang dapat diaudit.
                   </p>
                 </div>
               </div>
@@ -86,9 +83,9 @@ export default function Hero() {
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold text-foreground">Validator Menawarkan</div>
+                  <div className="font-semibold text-foreground">Final Offer</div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Profesional bisa menawarkan validasi sesuai keahlian dan pendekatan kerja.
+                    Validator mengajukan terms dan amount. Pemilik kasus menerima satu Final Offer sebelum Lock Funds.
                   </p>
                 </div>
               </div>
@@ -102,9 +99,9 @@ export default function Hero() {
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold text-foreground">Hasil Lebih Rapi</div>
+                  <div className="font-semibold text-foreground">Escrow + Case Log</div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Checklist, catatan risiko, dan rekomendasi perbaikan yang bisa Anda tindaklanjuti.
+                    Semua dana melalui escrow, dan semua event protokol dicatat sebagai Case Log.
                   </p>
                 </div>
               </div>

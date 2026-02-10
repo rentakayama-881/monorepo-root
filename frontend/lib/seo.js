@@ -4,36 +4,30 @@
  */
 
 /**
- * Generate JSON-LD structured data for a thread
- * @param {Object} thread - Thread data
+ * Generate JSON-LD structured data for a Validation Case
+ * @param {Object} validationCase - Validation Case data
  * @returns {Object} - JSON-LD object
  */
-export function generateThreadStructuredData(thread) {
-  if (!thread) return null;
+export function generateValidationCaseStructuredData(validationCase) {
+  if (!validationCase) return null;
+
+  const createdAtUnix = validationCase?.created_at ?? validationCase?.createdAt;
+  const createdAt =
+    typeof createdAtUnix === "number"
+      ? new Date(createdAtUnix * 1000).toISOString()
+      : undefined;
 
   return {
     "@context": "https://schema.org",
-    "@type": "DiscussionForumPosting",
-    headline: thread.title,
-    text: thread.content || thread.description,
+    // Not a forum/discussion post. Use a neutral type.
+    "@type": "CreativeWork",
+    name: validationCase.title,
+    description: validationCase.summary || "",
     author: {
       "@type": "Person",
-      name: thread.author?.username || thread.author_name || "Anonymous",
+      name: validationCase.owner?.username || "Anonymous",
     },
-    datePublished: thread.created_at,
-    dateModified: thread.updated_at || thread.created_at,
-    interactionStatistic: [
-      {
-        "@type": "InteractionCounter",
-        interactionType: "https://schema.org/CommentAction",
-        userInteractionCount: thread.reply_count || 0,
-      },
-      {
-        "@type": "InteractionCounter",
-        interactionType: "https://schema.org/LikeAction",
-        userInteractionCount: thread.upvotes || 0,
-      },
-    ],
+    dateCreated: createdAt,
   };
 }
 

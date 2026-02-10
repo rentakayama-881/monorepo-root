@@ -8,7 +8,7 @@ using System.Security.Claims;
 namespace FeatureService.Api.Controllers;
 
 /// <summary>
-/// Handles user report submission for threads and replies
+/// Handles user report submission for Validation Cases
 /// </summary>
 [ApiController]
 [Route("api/v1/reports")]
@@ -25,7 +25,7 @@ public class ReportController : ControllerBase
     }
 
     /// <summary>
-    /// Submit a report for a thread or reply
+    /// Submit a report for a Validation Case
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(ReportCreatedResponse), StatusCodes.Status201Created)]
@@ -40,9 +40,9 @@ public class ReportController : ControllerBase
         }
 
         // Validate target type
-        if (request.TargetType != ReportTargetType.Thread)
+        if (request.TargetType != ReportTargetType.ValidationCase)
         {
-            return BadRequest(new { error = "Invalid target type. Must be 'thread'" });
+            return BadRequest(new { error = "Invalid target type. Must be 'validation_case'" });
         }
 
         // Validate reason
@@ -64,7 +64,7 @@ public class ReportController : ControllerBase
                 reporterUserId: userId,
                 targetType: request.TargetType,
                 targetId: request.TargetId,
-                threadId: request.ThreadId,
+                validationCaseId: request.ValidationCaseId,
                 reason: request.Reason,
                 description: request.Description
             );

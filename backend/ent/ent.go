@@ -4,14 +4,18 @@ package ent
 
 import (
 	"backend-gin/ent/admin"
+	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/badge"
 	"backend-gin/ent/category"
 	"backend-gin/ent/chaincursor"
+	"backend-gin/ent/consultationrequest"
 	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
+	"backend-gin/ent/endorsement"
+	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/securityevent"
@@ -19,11 +23,11 @@ import (
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
 	"backend-gin/ent/tag"
-	"backend-gin/ent/thread"
-	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
+	"backend-gin/ent/validationcase"
+	"backend-gin/ent/validationcaselog"
 	"context"
 	"errors"
 	"fmt"
@@ -94,14 +98,18 @@ func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			admin.Table:                  admin.ValidColumn,
+			artifactsubmission.Table:     artifactsubmission.ValidColumn,
 			backupcode.Table:             backupcode.ValidColumn,
 			badge.Table:                  badge.ValidColumn,
 			category.Table:               category.ValidColumn,
 			chaincursor.Table:            chaincursor.ValidColumn,
+			consultationrequest.Table:    consultationrequest.ValidColumn,
 			credential.Table:             credential.ValidColumn,
 			devicefingerprint.Table:      devicefingerprint.ValidColumn,
 			deviceusermapping.Table:      deviceusermapping.ValidColumn,
 			emailverificationtoken.Table: emailverificationtoken.ValidColumn,
+			endorsement.Table:            endorsement.ValidColumn,
+			finaloffer.Table:             finaloffer.ValidColumn,
 			passkey.Table:                passkey.ValidColumn,
 			passwordresettoken.Table:     passwordresettoken.ValidColumn,
 			securityevent.Table:          securityevent.ValidColumn,
@@ -110,10 +118,10 @@ func checkColumn(t, c string) error {
 			sudosession.Table:            sudosession.ValidColumn,
 			totppendingtoken.Table:       totppendingtoken.ValidColumn,
 			tag.Table:                    tag.ValidColumn,
-			thread.Table:                 thread.ValidColumn,
-			threadcredential.Table:       threadcredential.ValidColumn,
 			user.Table:                   user.ValidColumn,
 			userbadge.Table:              userbadge.ValidColumn,
+			validationcase.Table:         validationcase.ValidColumn,
+			validationcaselog.Table:      validationcaselog.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

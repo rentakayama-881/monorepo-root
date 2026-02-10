@@ -6,9 +6,9 @@ namespace FeatureService.Api.DTOs;
 /// Request to create a new report
 /// </summary>
 public record CreateReportRequest(
-    string TargetType,  // "thread" or "reply"
-    string TargetId,    // Thread ID or Reply ID
-    uint ThreadId,      // Parent thread ID (for context)
+    string TargetType,  // "validation_case"
+    string TargetId,    // Validation Case ID (string)
+    uint ValidationCaseId,
     string Reason,      // harassment, spam, inappropriate, hate_speech, misinformation, other
     string? Description // Optional additional details
 );
@@ -25,7 +25,7 @@ public record ReportSummaryDto(
     string Id,
     string TargetType,
     string TargetId,
-    uint ThreadId,
+    uint ValidationCaseId,
     uint ReportedUserId,
     string? ReportedUsername,
     uint ReporterUserId,
@@ -44,7 +44,7 @@ public record ReportDetailDto(
     string Id,
     string TargetType,
     string TargetId,
-    uint ThreadId,
+    uint ValidationCaseId,
     uint ReportedUserId,
     string? ReportedUsername,
     uint ReporterUserId,
@@ -59,7 +59,7 @@ public record ReportDetailDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     // Additional context
-    object? ContentPreview // Thread title or reply content
+    object? ContentPreview // Validation Case title (best effort)
 );
 
 /// <summary>

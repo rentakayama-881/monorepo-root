@@ -92,7 +92,7 @@ export default function PrivacyPage() {
               <span><strong className="text-foreground">Informasi profil:</strong> foto profil, bio, tautan media sosial</span>
             </ListItem>
             <ListItem icon={EditIcon}>
-              <span><strong className="text-foreground">Konten yang Anda unggah:</strong> thread, komentar, pesan</span>
+              <span><strong className="text-foreground">Konten yang Anda unggah:</strong> Validation Case, Final Offer (jika Anda validator), Artifact Submission (dokumen), dan Dispute/evidence (jika ada)</span>
             </ListItem>
             <ListItem icon={LockIcon}>
               <span><strong className="text-foreground">Informasi transaksi:</strong> untuk keperluan escrow dan pembayaran</span>

@@ -5,7 +5,7 @@ package ent
 import (
 	"backend-gin/ent/predicate"
 	"backend-gin/ent/tag"
-	"backend-gin/ent/thread"
+	"backend-gin/ent/validationcase"
 	"context"
 	"database/sql/driver"
 	"fmt"
@@ -20,11 +20,11 @@ import (
 // TagQuery is the builder for querying Tag entities.
 type TagQuery struct {
 	config
-	ctx         *QueryContext
-	order       []tag.OrderOption
-	inters      []Interceptor
-	predicates  []predicate.Tag
-	withThreads *ThreadQuery
+	ctx                 *QueryContext
+	order               []tag.OrderOption
+	inters              []Interceptor
+	predicates          []predicate.Tag
+	withValidationCases *ValidationCaseQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -61,9 +61,9 @@ func (_q *TagQuery) Order(o ...tag.OrderOption) *TagQuery {
 	return _q
 }
 
-// QueryThreads chains the current query on the "threads" edge.
-func (_q *TagQuery) QueryThreads() *ThreadQuery {
-	query := (&ThreadClient{config: _q.config}).Query()
+// QueryValidationCases chains the current query on the "validation_cases" edge.
+func (_q *TagQuery) QueryValidationCases() *ValidationCaseQuery {
+	query := (&ValidationCaseClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -74,8 +74,8 @@ func (_q *TagQuery) QueryThreads() *ThreadQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(tag.Table, tag.FieldID, selector),
-			sqlgraph.To(thread.Table, thread.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, tag.ThreadsTable, tag.ThreadsPrimaryKey...),
+			sqlgraph.To(validationcase.Table, validationcase.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, tag.ValidationCasesTable, tag.ValidationCasesPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -270,26 +270,26 @@ func (_q *TagQuery) Clone() *TagQuery {
 		return nil
 	}
 	return &TagQuery{
-		config:      _q.config,
-		ctx:         _q.ctx.Clone(),
-		order:       append([]tag.OrderOption{}, _q.order...),
-		inters:      append([]Interceptor{}, _q.inters...),
-		predicates:  append([]predicate.Tag{}, _q.predicates...),
-		withThreads: _q.withThreads.Clone(),
+		config:              _q.config,
+		ctx:                 _q.ctx.Clone(),
+		order:               append([]tag.OrderOption{}, _q.order...),
+		inters:              append([]Interceptor{}, _q.inters...),
+		predicates:          append([]predicate.Tag{}, _q.predicates...),
+		withValidationCases: _q.withValidationCases.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
 }
 
-// WithThreads tells the query-builder to eager-load the nodes that are connected to
-// the "threads" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *TagQuery) WithThreads(opts ...func(*ThreadQuery)) *TagQuery {
-	query := (&ThreadClient{config: _q.config}).Query()
+// WithValidationCases tells the query-builder to eager-load the nodes that are connected to
+// the "validation_cases" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TagQuery) WithValidationCases(opts ...func(*ValidationCaseQuery)) *TagQuery {
+	query := (&ValidationCaseClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withThreads = query
+	_q.withValidationCases = query
 	return _q
 }
 
@@ -372,7 +372,7 @@ func (_q *TagQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Tag, err
 		nodes       = []*Tag{}
 		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			_q.withThreads != nil,
+			_q.withValidationCases != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -393,17 +393,17 @@ func (_q *TagQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Tag, err
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withThreads; query != nil {
-		if err := _q.loadThreads(ctx, query, nodes,
-			func(n *Tag) { n.Edges.Threads = []*Thread{} },
-			func(n *Tag, e *Thread) { n.Edges.Threads = append(n.Edges.Threads, e) }); err != nil {
+	if query := _q.withValidationCases; query != nil {
+		if err := _q.loadValidationCases(ctx, query, nodes,
+			func(n *Tag) { n.Edges.ValidationCases = []*ValidationCase{} },
+			func(n *Tag, e *ValidationCase) { n.Edges.ValidationCases = append(n.Edges.ValidationCases, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *TagQuery) loadThreads(ctx context.Context, query *ThreadQuery, nodes []*Tag, init func(*Tag), assign func(*Tag, *Thread)) error {
+func (_q *TagQuery) loadValidationCases(ctx context.Context, query *ValidationCaseQuery, nodes []*Tag, init func(*Tag), assign func(*Tag, *ValidationCase)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[int]*Tag)
 	nids := make(map[int]map[*Tag]struct{})
@@ -415,11 +415,11 @@ func (_q *TagQuery) loadThreads(ctx context.Context, query *ThreadQuery, nodes [
 		}
 	}
 	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(tag.ThreadsTable)
-		s.Join(joinT).On(s.C(thread.FieldID), joinT.C(tag.ThreadsPrimaryKey[1]))
-		s.Where(sql.InValues(joinT.C(tag.ThreadsPrimaryKey[0]), edgeIDs...))
+		joinT := sql.Table(tag.ValidationCasesTable)
+		s.Join(joinT).On(s.C(validationcase.FieldID), joinT.C(tag.ValidationCasesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(tag.ValidationCasesPrimaryKey[0]), edgeIDs...))
 		columns := s.SelectedColumns()
-		s.Select(joinT.C(tag.ThreadsPrimaryKey[0]))
+		s.Select(joinT.C(tag.ValidationCasesPrimaryKey[0]))
 		s.AppendSelect(columns...)
 		s.SetDistinct(false)
 	})
@@ -449,14 +449,14 @@ func (_q *TagQuery) loadThreads(ctx context.Context, query *ThreadQuery, nodes [
 			}
 		})
 	})
-	neighbors, err := withInterceptors[[]*Thread](ctx, query, qr, query.inters)
+	neighbors, err := withInterceptors[[]*ValidationCase](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
 		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "threads" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "validation_cases" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)

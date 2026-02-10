@@ -26,17 +26,17 @@ const (
 	FieldName = "name"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
-	// EdgeThreads holds the string denoting the threads edge name in mutations.
-	EdgeThreads = "threads"
+	// EdgeValidationCases holds the string denoting the validation_cases edge name in mutations.
+	EdgeValidationCases = "validation_cases"
 	// Table holds the table name of the category in the database.
 	Table = "categories"
-	// ThreadsTable is the table that holds the threads relation/edge.
-	ThreadsTable = "threads"
-	// ThreadsInverseTable is the table name for the Thread entity.
-	// It exists in this package in order to avoid circular dependency with the "thread" package.
-	ThreadsInverseTable = "threads"
-	// ThreadsColumn is the table column denoting the threads relation/edge.
-	ThreadsColumn = "category_id"
+	// ValidationCasesTable is the table that holds the validation_cases relation/edge.
+	ValidationCasesTable = "validation_cases"
+	// ValidationCasesInverseTable is the table name for the ValidationCase entity.
+	// It exists in this package in order to avoid circular dependency with the "validationcase" package.
+	ValidationCasesInverseTable = "validation_cases"
+	// ValidationCasesColumn is the table column denoting the validation_cases relation/edge.
+	ValidationCasesColumn = "category_id"
 )
 
 // Columns holds all SQL columns for category fields.
@@ -113,23 +113,23 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
-// ByThreadsCount orders the results by threads count.
-func ByThreadsCount(opts ...sql.OrderTermOption) OrderOption {
+// ByValidationCasesCount orders the results by validation_cases count.
+func ByValidationCasesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newThreadsStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newValidationCasesStep(), opts...)
 	}
 }
 
-// ByThreads orders the results by threads terms.
-func ByThreads(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByValidationCases orders the results by validation_cases terms.
+func ByValidationCases(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newThreadsStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newValidationCasesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newThreadsStep() *sqlgraph.Step {
+func newValidationCasesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ThreadsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ThreadsTable, ThreadsColumn),
+		sqlgraph.To(ValidationCasesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ValidationCasesTable, ValidationCasesColumn),
 	)
 }

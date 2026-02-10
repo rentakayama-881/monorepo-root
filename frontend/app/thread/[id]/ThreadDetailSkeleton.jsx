@@ -12,7 +12,7 @@ export default function ThreadDetailSkeleton({ threadId }) {
         <span>/</span>
         <SkeletonText width="w-24" height="h-4" />
         <span>/</span>
-        <span className="text-foreground">{threadId ? `Thread #${threadId}` : "Thread"}</span>
+        <span className="text-foreground">{threadId ? `Validation Case #${threadId}` : "Validation Case"}</span>
       </nav>
 
       <article className="rounded-lg border border-border bg-card dark:bg-background">
@@ -75,4 +75,3 @@ export default function ThreadDetailSkeleton({ threadId }) {
     </main>
   );
 }
-

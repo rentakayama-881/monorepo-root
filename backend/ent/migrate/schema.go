@@ -32,6 +32,48 @@ var (
 			},
 		},
 	}
+	// ArtifactSubmissionsColumns holds the columns for the "artifact_submissions" table.
+	ArtifactSubmissionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "document_id", Type: field.TypeString},
+		{Name: "validator_user_id", Type: field.TypeInt},
+		{Name: "validation_case_id", Type: field.TypeInt},
+	}
+	// ArtifactSubmissionsTable holds the schema information for the "artifact_submissions" table.
+	ArtifactSubmissionsTable = &schema.Table{
+		Name:       "artifact_submissions",
+		Columns:    ArtifactSubmissionsColumns,
+		PrimaryKey: []*schema.Column{ArtifactSubmissionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "artifact_submissions_users_artifact_submissions",
+				Columns:    []*schema.Column{ArtifactSubmissionsColumns[5]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "artifact_submissions_validation_cases_artifact_submissions",
+				Columns:    []*schema.Column{ArtifactSubmissionsColumns[6]},
+				RefColumns: []*schema.Column{ValidationCasesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "artifactsubmission_validation_case_id",
+				Unique:  true,
+				Columns: []*schema.Column{ArtifactSubmissionsColumns[6]},
+			},
+			{
+				Name:    "artifactsubmission_validator_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{ArtifactSubmissionsColumns[5]},
+			},
+		},
+	}
 	// BackupCodesColumns holds the columns for the "backup_codes" table.
 	BackupCodesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -130,6 +172,60 @@ var (
 				Name:    "chaincursor_name_chain_id",
 				Unique:  true,
 				Columns: []*schema.Column{ChainCursorsColumns[1], ChainCursorsColumns[2]},
+			},
+		},
+	}
+	// ConsultationRequestsColumns holds the columns for the "consultation_requests" table.
+	ConsultationRequestsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "status", Type: field.TypeString, Size: 32, Default: "pending"},
+		{Name: "approved_at", Type: field.TypeTime, Nullable: true},
+		{Name: "rejected_at", Type: field.TypeTime, Nullable: true},
+		{Name: "validator_user_id", Type: field.TypeInt},
+		{Name: "validation_case_id", Type: field.TypeInt},
+	}
+	// ConsultationRequestsTable holds the schema information for the "consultation_requests" table.
+	ConsultationRequestsTable = &schema.Table{
+		Name:       "consultation_requests",
+		Columns:    ConsultationRequestsColumns,
+		PrimaryKey: []*schema.Column{ConsultationRequestsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "consultation_requests_users_consultation_requests",
+				Columns:    []*schema.Column{ConsultationRequestsColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "consultation_requests_validation_cases_consultation_requests",
+				Columns:    []*schema.Column{ConsultationRequestsColumns[8]},
+				RefColumns: []*schema.Column{ValidationCasesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "consultationrequest_validation_case_id_validator_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{ConsultationRequestsColumns[8], ConsultationRequestsColumns[7]},
+			},
+			{
+				Name:    "consultationrequest_validation_case_id",
+				Unique:  false,
+				Columns: []*schema.Column{ConsultationRequestsColumns[8]},
+			},
+			{
+				Name:    "consultationrequest_validator_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{ConsultationRequestsColumns[7]},
+			},
+			{
+				Name:    "consultationrequest_status",
+				Unique:  false,
+				Columns: []*schema.Column{ConsultationRequestsColumns[4]},
 			},
 		},
 	}
@@ -271,6 +367,102 @@ var (
 				Name:    "emailverificationtoken_token_hash",
 				Unique:  true,
 				Columns: []*schema.Column{EmailVerificationTokensColumns[4]},
+			},
+		},
+	}
+	// EndorsementsColumns holds the columns for the "endorsements" table.
+	EndorsementsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "certified_artifact_document_id", Type: field.TypeString, Nullable: true},
+		{Name: "stance", Type: field.TypeString, Nullable: true, Size: 32, Default: "endorse"},
+		{Name: "note", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
+		{Name: "validator_user_id", Type: field.TypeInt},
+		{Name: "validation_case_id", Type: field.TypeInt},
+	}
+	// EndorsementsTable holds the schema information for the "endorsements" table.
+	EndorsementsTable = &schema.Table{
+		Name:       "endorsements",
+		Columns:    EndorsementsColumns,
+		PrimaryKey: []*schema.Column{EndorsementsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "endorsements_users_endorsements",
+				Columns:    []*schema.Column{EndorsementsColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "endorsements_validation_cases_endorsements",
+				Columns:    []*schema.Column{EndorsementsColumns[8]},
+				RefColumns: []*schema.Column{ValidationCasesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "endorsement_validation_case_id_validator_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{EndorsementsColumns[8], EndorsementsColumns[7]},
+			},
+		},
+	}
+	// FinalOffersColumns holds the columns for the "final_offers" table.
+	FinalOffersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "amount", Type: field.TypeInt64},
+		{Name: "hold_hours", Type: field.TypeInt, Default: 168},
+		{Name: "terms", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
+		{Name: "status", Type: field.TypeString, Size: 32, Default: "submitted"},
+		{Name: "accepted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "rejected_at", Type: field.TypeTime, Nullable: true},
+		{Name: "validator_user_id", Type: field.TypeInt},
+		{Name: "validation_case_id", Type: field.TypeInt},
+	}
+	// FinalOffersTable holds the schema information for the "final_offers" table.
+	FinalOffersTable = &schema.Table{
+		Name:       "final_offers",
+		Columns:    FinalOffersColumns,
+		PrimaryKey: []*schema.Column{FinalOffersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "final_offers_users_final_offers",
+				Columns:    []*schema.Column{FinalOffersColumns[10]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "final_offers_validation_cases_final_offers",
+				Columns:    []*schema.Column{FinalOffersColumns[11]},
+				RefColumns: []*schema.Column{ValidationCasesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "finaloffer_validation_case_id",
+				Unique:  false,
+				Columns: []*schema.Column{FinalOffersColumns[11]},
+			},
+			{
+				Name:    "finaloffer_validator_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{FinalOffersColumns[10]},
+			},
+			{
+				Name:    "finaloffer_validation_case_id_validator_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{FinalOffersColumns[11], FinalOffersColumns[10]},
+			},
+			{
+				Name:    "finaloffer_status",
+				Unique:  false,
+				Columns: []*schema.Column{FinalOffersColumns[7]},
 			},
 		},
 	}
@@ -587,98 +779,6 @@ var (
 			},
 		},
 	}
-	// ThreadsColumns holds the columns for the "threads" table.
-	ThreadsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "title", Type: field.TypeString},
-		{Name: "summary", Type: field.TypeString, Nullable: true, Default: ""},
-		{Name: "content_type", Type: field.TypeString, Size: 32, Default: "table"},
-		{Name: "content_json", Type: field.TypeJSON, Nullable: true},
-		{Name: "meta", Type: field.TypeJSON, Nullable: true},
-		{Name: "category_id", Type: field.TypeInt},
-		{Name: "user_id", Type: field.TypeInt},
-	}
-	// ThreadsTable holds the schema information for the "threads" table.
-	ThreadsTable = &schema.Table{
-		Name:       "threads",
-		Columns:    ThreadsColumns,
-		PrimaryKey: []*schema.Column{ThreadsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "threads_categories_threads",
-				Columns:    []*schema.Column{ThreadsColumns[9]},
-				RefColumns: []*schema.Column{CategoriesColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "threads_users_threads",
-				Columns:    []*schema.Column{ThreadsColumns[10]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "thread_category_id",
-				Unique:  false,
-				Columns: []*schema.Column{ThreadsColumns[9]},
-			},
-			{
-				Name:    "thread_user_id",
-				Unique:  false,
-				Columns: []*schema.Column{ThreadsColumns[10]},
-			},
-		},
-	}
-	// ThreadCredentialsColumns holds the columns for the "thread_credentials" table.
-	ThreadCredentialsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "thread_id", Type: field.TypeInt},
-		{Name: "user_id", Type: field.TypeInt},
-	}
-	// ThreadCredentialsTable holds the schema information for the "thread_credentials" table.
-	ThreadCredentialsTable = &schema.Table{
-		Name:       "thread_credentials",
-		Columns:    ThreadCredentialsColumns,
-		PrimaryKey: []*schema.Column{ThreadCredentialsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "thread_credentials_threads_received_credentials",
-				Columns:    []*schema.Column{ThreadCredentialsColumns[4]},
-				RefColumns: []*schema.Column{ThreadsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "thread_credentials_users_given_credentials",
-				Columns:    []*schema.Column{ThreadCredentialsColumns[5]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "threadcredential_user_id_thread_id",
-				Unique:  true,
-				Columns: []*schema.Column{ThreadCredentialsColumns[5], ThreadCredentialsColumns[4]},
-			},
-			{
-				Name:    "threadcredential_thread_id",
-				Unique:  false,
-				Columns: []*schema.Column{ThreadCredentialsColumns[4]},
-			},
-			{
-				Name:    "threadcredential_user_id",
-				Unique:  false,
-				Columns: []*schema.Column{ThreadCredentialsColumns[5]},
-			},
-		},
-	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -787,27 +887,133 @@ var (
 			},
 		},
 	}
-	// TagThreadsColumns holds the columns for the "tag_threads" table.
-	TagThreadsColumns = []*schema.Column{
-		{Name: "tag_id", Type: field.TypeInt},
-		{Name: "thread_id", Type: field.TypeInt},
+	// ValidationCasesColumns holds the columns for the "validation_cases" table.
+	ValidationCasesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "title", Type: field.TypeString},
+		{Name: "summary", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "content_type", Type: field.TypeString, Size: 32, Default: "table"},
+		{Name: "content_json", Type: field.TypeJSON, Nullable: true},
+		{Name: "meta", Type: field.TypeJSON, Nullable: true},
+		{Name: "bounty_amount", Type: field.TypeInt64, Default: 0},
+		{Name: "status", Type: field.TypeString, Size: 32, Default: "open"},
+		{Name: "escrow_transfer_id", Type: field.TypeString, Nullable: true},
+		{Name: "dispute_id", Type: field.TypeString, Nullable: true},
+		{Name: "accepted_final_offer_id", Type: field.TypeInt, Nullable: true},
+		{Name: "artifact_document_id", Type: field.TypeString, Nullable: true},
+		{Name: "certified_artifact_document_id", Type: field.TypeString, Nullable: true},
+		{Name: "category_id", Type: field.TypeInt},
+		{Name: "user_id", Type: field.TypeInt},
 	}
-	// TagThreadsTable holds the schema information for the "tag_threads" table.
-	TagThreadsTable = &schema.Table{
-		Name:       "tag_threads",
-		Columns:    TagThreadsColumns,
-		PrimaryKey: []*schema.Column{TagThreadsColumns[0], TagThreadsColumns[1]},
+	// ValidationCasesTable holds the schema information for the "validation_cases" table.
+	ValidationCasesTable = &schema.Table{
+		Name:       "validation_cases",
+		Columns:    ValidationCasesColumns,
+		PrimaryKey: []*schema.Column{ValidationCasesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "tag_threads_tag_id",
-				Columns:    []*schema.Column{TagThreadsColumns[0]},
+				Symbol:     "validation_cases_categories_validation_cases",
+				Columns:    []*schema.Column{ValidationCasesColumns[16]},
+				RefColumns: []*schema.Column{CategoriesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "validation_cases_users_validation_cases",
+				Columns:    []*schema.Column{ValidationCasesColumns[17]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "validationcase_category_id",
+				Unique:  false,
+				Columns: []*schema.Column{ValidationCasesColumns[16]},
+			},
+			{
+				Name:    "validationcase_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{ValidationCasesColumns[17]},
+			},
+			{
+				Name:    "validationcase_status",
+				Unique:  false,
+				Columns: []*schema.Column{ValidationCasesColumns[10]},
+			},
+		},
+	}
+	// ValidationCaseLogsColumns holds the columns for the "validation_case_logs" table.
+	ValidationCaseLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "event_type", Type: field.TypeString, Size: 64},
+		{Name: "detail_json", Type: field.TypeJSON, Nullable: true},
+		{Name: "actor_user_id", Type: field.TypeInt, Nullable: true},
+		{Name: "validation_case_id", Type: field.TypeInt},
+	}
+	// ValidationCaseLogsTable holds the schema information for the "validation_case_logs" table.
+	ValidationCaseLogsTable = &schema.Table{
+		Name:       "validation_case_logs",
+		Columns:    ValidationCaseLogsColumns,
+		PrimaryKey: []*schema.Column{ValidationCaseLogsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "validation_case_logs_users_validation_case_logs",
+				Columns:    []*schema.Column{ValidationCaseLogsColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "validation_case_logs_validation_cases_case_logs",
+				Columns:    []*schema.Column{ValidationCaseLogsColumns[7]},
+				RefColumns: []*schema.Column{ValidationCasesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "validationcaselog_validation_case_id",
+				Unique:  false,
+				Columns: []*schema.Column{ValidationCaseLogsColumns[7]},
+			},
+			{
+				Name:    "validationcaselog_actor_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{ValidationCaseLogsColumns[6]},
+			},
+			{
+				Name:    "validationcaselog_event_type",
+				Unique:  false,
+				Columns: []*schema.Column{ValidationCaseLogsColumns[4]},
+			},
+		},
+	}
+	// TagValidationCasesColumns holds the columns for the "tag_validation_cases" table.
+	TagValidationCasesColumns = []*schema.Column{
+		{Name: "tag_id", Type: field.TypeInt},
+		{Name: "validation_case_id", Type: field.TypeInt},
+	}
+	// TagValidationCasesTable holds the schema information for the "tag_validation_cases" table.
+	TagValidationCasesTable = &schema.Table{
+		Name:       "tag_validation_cases",
+		Columns:    TagValidationCasesColumns,
+		PrimaryKey: []*schema.Column{TagValidationCasesColumns[0], TagValidationCasesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "tag_validation_cases_tag_id",
+				Columns:    []*schema.Column{TagValidationCasesColumns[0]},
 				RefColumns: []*schema.Column{TagsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "tag_threads_thread_id",
-				Columns:    []*schema.Column{TagThreadsColumns[1]},
-				RefColumns: []*schema.Column{ThreadsColumns[0]},
+				Symbol:     "tag_validation_cases_validation_case_id",
+				Columns:    []*schema.Column{TagValidationCasesColumns[1]},
+				RefColumns: []*schema.Column{ValidationCasesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -815,14 +1021,18 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AdminsTable,
+		ArtifactSubmissionsTable,
 		BackupCodesTable,
 		BadgesTable,
 		CategoriesTable,
 		ChainCursorsTable,
+		ConsultationRequestsTable,
 		CredentialsTable,
 		DeviceFingerprintsTable,
 		DeviceUserMappingsTable,
 		EmailVerificationTokensTable,
+		EndorsementsTable,
+		FinalOffersTable,
 		PasskeysTable,
 		PasswordResetTokensTable,
 		SecurityEventsTable,
@@ -831,17 +1041,22 @@ var (
 		SudoSessionsTable,
 		TotpPendingTokensTable,
 		TagsTable,
-		ThreadsTable,
-		ThreadCredentialsTable,
 		UsersTable,
 		UserBadgesTable,
-		TagThreadsTable,
+		ValidationCasesTable,
+		ValidationCaseLogsTable,
+		TagValidationCasesTable,
 	}
 )
 
 func init() {
 	AdminsTable.Annotation = &entsql.Annotation{
 		Table: "admins",
+	}
+	ArtifactSubmissionsTable.ForeignKeys[0].RefTable = UsersTable
+	ArtifactSubmissionsTable.ForeignKeys[1].RefTable = ValidationCasesTable
+	ArtifactSubmissionsTable.Annotation = &entsql.Annotation{
+		Table: "artifact_submissions",
 	}
 	BackupCodesTable.ForeignKeys[0].RefTable = UsersTable
 	BackupCodesTable.Annotation = &entsql.Annotation{
@@ -855,6 +1070,11 @@ func init() {
 	}
 	ChainCursorsTable.Annotation = &entsql.Annotation{
 		Table: "chain_cursors",
+	}
+	ConsultationRequestsTable.ForeignKeys[0].RefTable = UsersTable
+	ConsultationRequestsTable.ForeignKeys[1].RefTable = ValidationCasesTable
+	ConsultationRequestsTable.Annotation = &entsql.Annotation{
+		Table: "consultation_requests",
 	}
 	CredentialsTable.ForeignKeys[0].RefTable = UsersTable
 	CredentialsTable.Annotation = &entsql.Annotation{
@@ -871,6 +1091,16 @@ func init() {
 	EmailVerificationTokensTable.ForeignKeys[0].RefTable = UsersTable
 	EmailVerificationTokensTable.Annotation = &entsql.Annotation{
 		Table: "email_verification_tokens",
+	}
+	EndorsementsTable.ForeignKeys[0].RefTable = UsersTable
+	EndorsementsTable.ForeignKeys[1].RefTable = ValidationCasesTable
+	EndorsementsTable.Annotation = &entsql.Annotation{
+		Table: "endorsements",
+	}
+	FinalOffersTable.ForeignKeys[0].RefTable = UsersTable
+	FinalOffersTable.ForeignKeys[1].RefTable = ValidationCasesTable
+	FinalOffersTable.Annotation = &entsql.Annotation{
+		Table: "final_offers",
 	}
 	PasskeysTable.ForeignKeys[0].RefTable = UsersTable
 	PasskeysTable.Annotation = &entsql.Annotation{
@@ -903,16 +1133,6 @@ func init() {
 	TagsTable.Annotation = &entsql.Annotation{
 		Table: "tags",
 	}
-	ThreadsTable.ForeignKeys[0].RefTable = CategoriesTable
-	ThreadsTable.ForeignKeys[1].RefTable = UsersTable
-	ThreadsTable.Annotation = &entsql.Annotation{
-		Table: "threads",
-	}
-	ThreadCredentialsTable.ForeignKeys[0].RefTable = ThreadsTable
-	ThreadCredentialsTable.ForeignKeys[1].RefTable = UsersTable
-	ThreadCredentialsTable.Annotation = &entsql.Annotation{
-		Table: "thread_credentials",
-	}
 	UsersTable.ForeignKeys[0].RefTable = BadgesTable
 	UsersTable.Annotation = &entsql.Annotation{
 		Table: "users",
@@ -923,6 +1143,16 @@ func init() {
 	UserBadgesTable.Annotation = &entsql.Annotation{
 		Table: "user_badges",
 	}
-	TagThreadsTable.ForeignKeys[0].RefTable = TagsTable
-	TagThreadsTable.ForeignKeys[1].RefTable = ThreadsTable
+	ValidationCasesTable.ForeignKeys[0].RefTable = CategoriesTable
+	ValidationCasesTable.ForeignKeys[1].RefTable = UsersTable
+	ValidationCasesTable.Annotation = &entsql.Annotation{
+		Table: "validation_cases",
+	}
+	ValidationCaseLogsTable.ForeignKeys[0].RefTable = UsersTable
+	ValidationCaseLogsTable.ForeignKeys[1].RefTable = ValidationCasesTable
+	ValidationCaseLogsTable.Annotation = &entsql.Annotation{
+		Table: "validation_case_logs",
+	}
+	TagValidationCasesTable.ForeignKeys[0].RefTable = TagsTable
+	TagValidationCasesTable.ForeignKeys[1].RefTable = ValidationCasesTable
 }

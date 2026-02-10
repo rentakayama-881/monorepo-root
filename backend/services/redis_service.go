@@ -260,8 +260,8 @@ func ReleaseLock(ctx context.Context, key string) error {
 
 const (
 	// Cache key prefixes
-	CacheKeyThreads      = "threads"
-	CacheKeyThread       = "thread"
+	CacheKeyValidationCases = "validation_cases"
+	CacheKeyValidationCase  = "validation_case"
 	CacheKeyUser         = "user"
 	CacheKeyCategories   = "categories"
 	CacheKeyUserProfile  = "user_profile"
@@ -273,14 +273,14 @@ const (
 	CacheTTLSession = 24 * time.Hour
 )
 
-// ThreadCacheKey generates cache key for a thread
-func ThreadCacheKey(threadID string) string {
-	return fmt.Sprintf("%s:%s", CacheKeyThread, threadID)
+// ValidationCaseCacheKey generates cache key for a Validation Case.
+func ValidationCaseCacheKey(validationCaseID string) string {
+	return fmt.Sprintf("%s:%s", CacheKeyValidationCase, validationCaseID)
 }
 
-// ThreadListCacheKey generates cache key for thread list
-func ThreadListCacheKey(page, limit int, category string) string {
-	return fmt.Sprintf("%s:list:%s:%d:%d", CacheKeyThreads, category, page, limit)
+// ValidationCaseListCacheKey generates cache key for Validation Case Index (filtered list).
+func ValidationCaseListCacheKey(page, limit int, category string) string {
+	return fmt.Sprintf("%s:list:%s:%d:%d", CacheKeyValidationCases, category, page, limit)
 }
 
 // UserProfileCacheKey generates cache key for user profile
@@ -288,19 +288,19 @@ func UserProfileCacheKey(userID string) string {
 	return fmt.Sprintf("%s:%s", CacheKeyUserProfile, userID)
 }
 
-// InvalidateThreadCache removes thread-related cache entries
-func InvalidateThreadCache(ctx context.Context, threadID string) error {
+// InvalidateValidationCaseCache removes Validation Case-related cache entries.
+func InvalidateValidationCaseCache(ctx context.Context, validationCaseID string) error {
 	if RedisClient == nil {
 		return nil
 	}
-	
-	// Delete specific thread cache
-	if err := CacheDelete(ctx, ThreadCacheKey(threadID)); err != nil {
+
+	// Delete specific validation case cache
+	if err := CacheDelete(ctx, ValidationCaseCacheKey(validationCaseID)); err != nil {
 		return err
 	}
-	
-	// Delete thread list caches (pattern-based)
-	pattern := fmt.Sprintf("%s:list:*", CacheKeyThreads)
+
+	// Delete validation case list caches (pattern-based)
+	pattern := fmt.Sprintf("%s:list:*", CacheKeyValidationCases)
 	keys, err := RedisClient.Keys(ctx, pattern).Result()
 	if err != nil {
 		return err

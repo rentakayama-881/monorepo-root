@@ -29,7 +29,8 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-source-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -52,6 +53,14 @@
   html,
   body {
     height: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
   }
 
   /* ===== Theme Init (avoid visible transitions on first paint) ===== */
@@ -140,28 +149,28 @@
      Semantic tokens (LIGHT)
      (tidak merusak logika komponen kamu)
      ========================= */
-  --background: oklch(1 0 0); /* tetap clean putih */
+  /* Paper-like background for institutional tone */
+  --background: oklch(0.99 0.008 85);
   --foreground: var(--color-space-indigo-950);
 
-  --card: oklch(1 0 0);
+  --card: oklch(1 0.004 85);
   --card-foreground: var(--foreground);
 
-  --popover: oklch(1 0 0);
+  --popover: oklch(1 0.004 85);
   --popover-foreground: var(--foreground);
 
   /* Brand actions */
-  --primary: var(--color-space-indigo-700);
+  --primary: #a51c30; /* Harvard Crimson */
   --primary-foreground: oklch(1 0 0);
 
   /* Surfaces */
-  --secondary: var(--color-silver-50);
+  --secondary: oklch(0.975 0.008 85);
   --secondary-foreground: var(--color-space-indigo-950);
 
-  --muted: var(--color-silver-50);
-  --muted-foreground: var(--color-space-indigo-700);
+  --muted: oklch(0.975 0.008 85);
+  --muted-foreground: oklch(0.45 0.03 275);
 
-  /* Accent = fuchsia plum (branding highlight) */
-  --accent: var(--color-fuchsia-plum-50);
+  --accent: oklch(0.985 0.006 85);
   --accent-foreground: var(--color-space-indigo-950);
 
   /* Destructive tetap merah (punya kamu sudah benar) */
@@ -169,11 +178,11 @@
   --destructive-foreground: oklch(1 0 0);
 
   /* Borders / inputs: pakai silver agar tidak “ungu neon” seperti sebelumnya */
-  --border: var(--color-silver-200);
-  --input: var(--color-silver-200);
+  --border: oklch(0.9 0.01 85);
+  --input: oklch(0.9 0.01 85);
 
   /* Focus ring: space-indigo agar identitas konsisten */
-  --ring: var(--color-space-indigo-400);
+  --ring: var(--primary);
 
   /* Status colors (keep) */
   --success: oklch(0.65 0.2 145);
@@ -221,9 +230,9 @@
   --popover: var(--color-space-indigo-900);
   --popover-foreground: var(--foreground);
 
-  /* Di dark mode: primary jadi terang agar tombol kontras */
-  --primary: var(--color-space-indigo-200);
-  --primary-foreground: var(--color-space-indigo-950);
+  /* In dark mode, keep the same institutional crimson but lift it for contrast. */
+  --primary: #d34b5b;
+  --primary-foreground: oklch(1 0 0);
 
   --secondary: var(--color-space-indigo-900);
   --secondary-foreground: var(--foreground);
@@ -231,7 +240,7 @@
   --muted: var(--color-space-indigo-900);
   --muted-foreground: var(--color-silver-300);
 
-  /* Accent hover/spotlight tetap punya “plum” */
+  /* Accent surfaces remain restrained. */
   --accent: var(--color-space-indigo-800);
   --accent-foreground: var(--foreground);
 
@@ -241,7 +250,7 @@
   --border: var(--color-space-indigo-800);
   --input: var(--color-space-indigo-800);
 
-  --ring: var(--color-fuchsia-plum-400);
+  --ring: var(--primary);
 
   /* Status colors (dark mode keep) */
   --success: oklch(0.75 0.2 145);
@@ -267,9 +276,9 @@
       --popover: var(--color-space-indigo-900);
       --popover-foreground: var(--foreground);
 
-      /* Di dark mode: primary jadi terang agar tombol kontras */
-      --primary: var(--color-space-indigo-200);
-      --primary-foreground: var(--color-space-indigo-950);
+      /* In dark mode, keep the same institutional crimson but lift it for contrast. */
+      --primary: #d34b5b;
+      --primary-foreground: oklch(1 0 0);
 
       --secondary: var(--color-space-indigo-900);
       --secondary-foreground: var(--foreground);
@@ -277,7 +286,7 @@
       --muted: var(--color-space-indigo-900);
       --muted-foreground: var(--color-silver-300);
 
-      /* Accent hover/spotlight tetap punya “plum” */
+      /* Accent surfaces remain restrained. */
       --accent: var(--color-space-indigo-800);
       --accent-foreground: var(--foreground);
 
@@ -287,7 +296,7 @@
       --border: var(--color-space-indigo-800);
       --input: var(--color-space-indigo-800);
 
-      --ring: var(--color-fuchsia-plum-400);
+      --ring: var(--primary);
 
       /* Status colors (dark mode keep) */
       --success: oklch(0.75 0.2 145);
@@ -1069,31 +1078,6 @@ html {
 }
 
 /* ===== Phase 4: Content Display Component Utilities ===== */
-
-.dark .thread-card {
-  background-color: var(--background);
-}
-
-/* Reply threading lines */
-.reply-thread-line {
-  position: absolute;
-  left: 1.25rem; /* 20px - matches spacing-5 */
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--border);
-}
-
-/* Reaction pop animation */
-@keyframes reaction-pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3); }
-  100% { transform: scale(1); }
-}
-
-.reaction-active {
-  animation: reaction-pop 0.3s ease;
-}
 
 /* Number increment animation */
 @keyframes count-up {

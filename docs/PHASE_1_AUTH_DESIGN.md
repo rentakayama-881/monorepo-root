@@ -1091,7 +1091,7 @@ func TestRequestIDMiddleware(t *testing.T) {
 # test/load/auth-refresh.yml
 
 config:
-  target: 'https://api.aivalid.fun'
+  target: 'https://api.aivalid.id'
   phases:
     - duration: 60
       arrivalRate: 50  # 50 users per second
@@ -1120,7 +1120,7 @@ scenarios:
             headers:
               Authorization: "Bearer {{ token }}"
         - get:
-            url: "/api/threads/my"
+            url: "/api/validation-cases/me"
             headers:
               Authorization: "Bearer {{ token }}"
         # ... 8 more concurrent requests

@@ -96,8 +96,23 @@ export default function AuditLogsPage() {
       warning_issued: "border-warning/20 bg-warning/10 text-warning",
       content_hidden: "border-warning/20 bg-warning/10 text-warning",
       content_unhidden: "border-success/20 bg-success/10 text-success",
+      validation_case_move: "border-border bg-accent text-accent-foreground",
+      // Legacy (deprecated)
       thread_deleted: "border-destructive/20 bg-destructive/10 text-destructive",
       thread_transferred: "border-border bg-accent text-accent-foreground",
+    };
+
+    const labels = {
+      report_action: "Report Action",
+      device_ban: "Device Ban",
+      device_unban: "Device Unban",
+      warning_issued: "Warning Issued",
+      content_hidden: "Record Hidden",
+      content_unhidden: "Record Unhidden",
+      validation_case_move: "Validation Case Moved",
+      // Legacy (deprecated)
+      thread_transferred: "Validation Case Moved (legacy)",
+      thread_deleted: "Record Deleted (legacy)",
     };
     return (
       <span
@@ -105,7 +120,7 @@ export default function AuditLogsPage() {
           styles[normalizedAction] || "border-border bg-muted/60 text-muted-foreground"
         }`}
       >
-        {normalizedAction.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+        {labels[normalizedAction] || normalizedAction.replace(/_/g, " ")}
       </span>
     );
   };
@@ -125,8 +140,7 @@ export default function AuditLogsPage() {
     { value: "warning_issued", label: "Warning Issued" },
     { value: "content_hidden", label: "Content Hidden" },
     { value: "content_unhidden", label: "Content Unhidden" },
-    { value: "thread_deleted", label: "Thread Deleted" },
-    { value: "thread_transferred", label: "Thread Transferred" },
+    { value: "validation_case_move", label: "Validation Case Moved" },
   ];
 
   return (

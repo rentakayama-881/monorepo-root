@@ -173,7 +173,22 @@ func (tc *TestClient) CleanupTables(ctx context.Context) error {
 	if _, err := tc.UserBadge.Delete().Exec(ctx); err != nil {
 		return err
 	}
-	if _, err := tc.Thread.Delete().Exec(ctx); err != nil {
+	if _, err := tc.Endorsement.Delete().Exec(ctx); err != nil {
+		return err
+	}
+	if _, err := tc.ArtifactSubmission.Delete().Exec(ctx); err != nil {
+		return err
+	}
+	if _, err := tc.FinalOffer.Delete().Exec(ctx); err != nil {
+		return err
+	}
+	if _, err := tc.ConsultationRequest.Delete().Exec(ctx); err != nil {
+		return err
+	}
+	if _, err := tc.ValidationCaseLog.Delete().Exec(ctx); err != nil {
+		return err
+	}
+	if _, err := tc.ValidationCase.Delete().Exec(ctx); err != nil {
 		return err
 	}
 	if _, err := tc.User.Delete().Exec(ctx); err != nil {

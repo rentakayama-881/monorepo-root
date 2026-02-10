@@ -616,8 +616,8 @@ function AccountPageContent() {
                 />
               </div>
               <Input
-                label="Contact Telegram"
-                placeholder="@username"
+                label="Telegram (Private Consultation Contact)"
+                placeholder="@username (tidak ditampilkan publik)"
                 value={form.telegram}
                 onChange={e => setForm(f => ({ ...f, telegram: e.target.value }))}
               />
@@ -759,7 +759,7 @@ function DeleteAccountSection({ API, router }) {
         Zona Berbahaya
       </h3>
       <p className="mt-2 text-xs text-destructive/80">
-        Menghapus akun akan menghapus semua data Anda secara permanen termasuk semua thread yang pernah dibuat.
+        Menghapus akun akan menghapus semua data Anda secara permanen termasuk semua Validation Case yang pernah dibuat.
         Aksi ini tidak dapat dibatalkan.
       </p>
 

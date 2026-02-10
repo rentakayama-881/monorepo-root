@@ -14,31 +14,24 @@ public record AdminDashboardStatsDto(
 );
 
 /// <summary>
-/// Request to transfer thread ownership (admin)
+/// Request to move a Validation Case (admin)
 /// </summary>
-public record TransferThreadOwnershipRequest(
-    uint ThreadId,
+public record MoveValidationCaseRequest(
+    uint ValidationCaseId,
     uint NewOwnerUserId,
-    string? Reason
+    uint? NewCategoryId,
+    string? Reason,
+    bool DryRun = false
 );
 
 /// <summary>
-/// Response after transferring thread ownership
+/// Response after moving a Validation Case
 /// </summary>
-public record TransferThreadOwnershipResponse(
-    uint ThreadId,
+public record MoveValidationCaseResponse(
+    uint ValidationCaseId,
     uint PreviousOwnerUserId,
     uint NewOwnerUserId,
     string Message
-);
-
-/// <summary>
-/// Request to delete a thread (admin)
-/// </summary>
-public record AdminDeleteThreadRequest(
-    uint ThreadId,
-    string Reason,
-    bool HardDelete  // true = permanent, false = soft delete
 );
 
 /// <summary>
@@ -48,7 +41,7 @@ public record HiddenContentDto(
     string Id,
     string ContentType,
     string ContentId,
-    uint ThreadId,
+    uint ValidationCaseId,
     uint UserId,
     string? Username,
     string Reason,
@@ -74,12 +67,12 @@ public record PaginatedHiddenContentResponse(
 public record UnhideContentRequest(string ContentId);
 
 /// <summary>
-/// Thread ownership transfer history item
+/// Validation Case ownership move history item
 /// </summary>
-public record ThreadOwnershipTransferDto(
+public record ValidationCaseOwnershipTransferDto(
     string Id,
-    uint ThreadId,
-    string? ThreadTitle,
+    uint ValidationCaseId,
+    string? ValidationCaseTitle,
     uint PreviousOwnerUserId,
     string? PreviousOwnerUsername,
     uint NewOwnerUserId,
@@ -96,8 +89,8 @@ public record AdminActionLogDto(
     string Id,
     uint AdminId,
     string? AdminEmail,
-    string ActionType,  // report_action, thread_transfer, thread_delete, ban_device, unban_device, hide_content, unhide_content
-    string TargetType,  // report, thread, device, content
+    string ActionType,  // report_action, validation_case_move, ban_device, unban_device, hide_content, unhide_content
+    string TargetType,  // report, validation_case, device, content, user
     string TargetId,
     object? ActionDetails,
     DateTime CreatedAt

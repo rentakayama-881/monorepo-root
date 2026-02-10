@@ -420,21 +420,21 @@ func DescriptionContainsFold(v string) predicate.Category {
 	return predicate.Category(sql.FieldContainsFold(FieldDescription, v))
 }
 
-// HasThreads applies the HasEdge predicate on the "threads" edge.
-func HasThreads() predicate.Category {
+// HasValidationCases applies the HasEdge predicate on the "validation_cases" edge.
+func HasValidationCases() predicate.Category {
 	return predicate.Category(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ThreadsTable, ThreadsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, ValidationCasesTable, ValidationCasesColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasThreadsWith applies the HasEdge predicate on the "threads" edge with a given conditions (other predicates).
-func HasThreadsWith(preds ...predicate.Thread) predicate.Category {
+// HasValidationCasesWith applies the HasEdge predicate on the "validation_cases" edge with a given conditions (other predicates).
+func HasValidationCasesWith(preds ...predicate.ValidationCase) predicate.Category {
 	return predicate.Category(func(s *sql.Selector) {
-		step := newThreadsStep()
+		step := newValidationCasesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

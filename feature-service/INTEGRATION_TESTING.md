@@ -1,306 +1,234 @@
-# Integration Testing Guide
+# Integration Testing Guide — Feature Service
 
-This document provides examples of how to test the Feature Service API endpoints.
+Dokumen ini berisi contoh request untuk Feature Service sesuai domain saat ini:
+
+- wallet
+- escrow transfers
+- disputes (admin arbitration)
+- documents
+- reports + admin moderation
+
+Tidak ada fitur forum/sosial (tidak ada replies/reactions/likes/stars).
+
+## Base URLs
+
+- Local: `http://localhost:5000`
+- Production (reverse-proxy): `https://feature.aivalid.id`
 
 ## Prerequisites
-- Feature Service running (via Docker or directly)
-- MongoDB running and accessible
-- Valid JWT token from the Gin backend
 
-## Getting a JWT Token
+- Feature Service berjalan + MongoDB + Redis.
+- JWT access token dari Go backend (`api.aivalid.id`).
+- Untuk operasi finansial: akun harus punya 2FA (TOTP) enabled + PIN.
+- Beberapa endpoint finansial memakai PQC signature middleware (lihat bagian “PQC Signature”).
 
-First, authenticate with the Core API (Gin backend) to get a JWT token:
+## Get JWT Token (Go Backend)
+
+Feature Service memvalidasi JWT yang diterbitkan oleh Go backend.
 
 ```bash
-# Login to get JWT token
-curl -X POST https://api.aivalid.fun/auth/login \
+curl -sS -X POST https://api.aivalid.id/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
     "password": "your-password"
   }'
 
-# Response will contain access_token
-# Save it as TOKEN variable
+# Simpan access token sebagai environment variable
 TOKEN="eyJhbGc..."
 ```
 
-## Health Check (No Auth Required)
+## Health
 
 ```bash
-curl http://localhost:5000/health
-# or
-curl https://feature.aivalid.fun/health
+curl -sS https://feature.aivalid.id/api/v1/health
+curl -sS https://feature.aivalid.id/api/v1/health/ready
 
-# Expected response:
-# {
-#   "status": "healthy",
-#   "timestamp": "2026-01-05T10:00:00Z",
-#   "service": "feature-service"
-# }
+# HealthChecks endpoint (ASP.NET HealthChecks)
+curl -sS https://feature.aivalid.id/health
 ```
 
-## Social Service - Replies
+## PQC Signature (Untuk Endpoint Finansial)
 
-### List Replies (No Auth Required)
+Beberapa endpoint finansial ditandai dengan `[RequiresPqcSignature]` dan memerlukan header:
+
+- `X-PQC-Signature` (Base64)
+- `X-PQC-Key-Id`
+- `X-PQC-Timestamp` (ISO 8601 UTC, suffix `Z` atau `+00:00`)
+- `X-Idempotency-Key` (wajib untuk operasi yang mengubah state jika `RequireIdempotencyKey=true`)
+
+Payload yang di-sign (urutan konkatenasi) mengikuti middleware:
+
+1. `HTTP_METHOD`
+2. `PATH` (tanpa host)
+3. `QUERY_STRING` (jika ada)
+4. `X-PQC-Timestamp` (jika ada)
+5. `X-Idempotency-Key` (jika ada)
+6. raw request body (jika endpoint include body dan content-length > 0)
+
+Catatan kompatibilitas:
+
+- Jika user belum punya PQC key aktif, middleware akan *melewati* verifikasi signature, namun tetap mewajibkan `X-Idempotency-Key` bila endpoint mengharuskannya.
+- Jika user punya PQC key aktif, verifikasi signature wajib lolos.
+
+## Wallet (Read)
 
 ```bash
-# Get replies for thread ID 1
-curl http://localhost:5000/api/v1/threads/1/replies
+curl -sS https://feature.aivalid.id/api/v1/wallets/me \
+  -H "Authorization: Bearer $TOKEN"
 
-# With pagination
-curl "http://localhost:5000/api/v1/threads/1/replies?limit=10&cursor=2026-01-05T10:00:00.000Z"
+curl -sS https://feature.aivalid.id/api/v1/wallets/pin/status \
+  -H "Authorization: Bearer $TOKEN"
 
-# Expected response:
-# {
-#   "success": true,
-#   "data": [
-#     {
-#       "id": "rpl_01HN5ZYAQT8XKQVFPQM2XJWK9T",
-#       "threadId": 1,
-#       "userId": 123,
-#       "username": "johndoe",
-#       "content": "Great post!",
-#       "parentReplyId": null,
-#       "depth": 0,
-#       "isDeleted": false,
-#       "createdAt": "2026-01-05T10:00:00Z",
-#       "updatedAt": "2026-01-05T10:00:00Z"
-#     }
-#   ],
-#   "meta": {
-#     "count": 1,
-#     "hasMore": false,
-#     "nextCursor": null,
-#     "requestId": "req_xyz",
-#     "timestamp": "2026-01-05T10:00:00Z"
-#   }
-# }
+curl -sS "https://feature.aivalid.id/api/v1/wallets/transactions?page=1&pageSize=20" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-### Create Reply (Auth Required)
+## Set PIN (2FA Required + Idempotency)
 
 ```bash
-# Create top-level reply
-curl -X POST http://localhost:5000/api/v1/threads/1/replies \
+IDEMP="pinset_$(date +%s)"
+
+curl -sS -X POST https://feature.aivalid.id/api/v1/wallets/pin/set \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: $IDEMP" \
   -d '{
-    "content": "This is my reply to the thread"
-  }'
-
-# Create nested reply (reply to another reply)
-curl -X POST http://localhost:5000/api/v1/threads/1/replies \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "This is my reply to your comment",
-    "parentReplyId": "rpl_01HN5ZYAQT8XKQVFPQM2XJWK9T"
-  }'
-
-# Expected response:
-# {
-#   "id": "rpl_01HN5ZYAQT8XKQVFPQM2XJWK9T",
-#   "threadId": 1,
-#   "userId": 123,
-#   "username": "johndoe",
-#   "content": "This is my reply to the thread",
-#   "parentReplyId": null,
-#   "depth": 0,
-#   "isDeleted": false,
-#   "createdAt": "2026-01-05T10:00:00Z",
-#   "updatedAt": "2026-01-05T10:00:00Z"
-# }
-```
-
-### Update Reply (Auth Required, Author Only)
-
-```bash
-curl -X PATCH http://localhost:5000/api/v1/threads/1/replies/rpl_01HN5ZYAQT8XKQVFPQM2XJWK9T \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "Updated content for my reply"
+    "pin": "123456",
+    "confirmPin": "123456"
   }'
 ```
 
-### Delete Reply (Auth Required, Author Only)
+## Escrow Transfers
+
+### Create Transfer (2FA + PIN + Idempotency)
 
 ```bash
-curl -X DELETE http://localhost:5000/api/v1/threads/1/replies/rpl_01HN5ZYAQT8XKQVFPQM2XJWK9T \
-  -H "Authorization: Bearer $TOKEN"
+IDEMP="transfer_$(date +%s)"
 
-# Expected: 204 No Content
+curl -sS -X POST https://feature.aivalid.id/api/v1/wallets/transfers \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: $IDEMP" \
+  -d '{
+    "receiverUsername": "bob",
+    "amount": 100000,
+    "message": "Final Offer accepted, locking funds",
+    "pin": "123456",
+    "holdHours": 168
+  }'
 ```
 
-## Social Service - Reactions
-
-### Add/Update Reaction (Auth Required)
+### Release Transfer (Receiver)
 
 ```bash
-# Add a "like" reaction to thread 1
-curl -X POST http://localhost:5000/api/v1/threads/1/reactions \
+IDEMP="release_$(date +%s)"
+TRANSFER_ID="trf_01HXYZ..."
+
+curl -sS -X POST "https://feature.aivalid.id/api/v1/wallets/transfers/${TRANSFER_ID}/release" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: $IDEMP" \
+  -d '{
+    "pin": "123456"
+  }'
+```
+
+## Disputes (Global Dispute Center)
+
+### Create Dispute
+
+```bash
+IDEMP="dispute_$(date +%s)"
+TRANSFER_ID="trf_01HXYZ..."
+
+curl -sS -X POST https://feature.aivalid.id/api/v1/disputes \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: $IDEMP" \
+  -d '{
+    "transferId": "'"$TRANSFER_ID"'",
+    "reason": "Validator did not submit the agreed artifact. Requesting arbitration.",
+    "category": "Other"
+  }'
+```
+
+### Get Dispute / List Disputes
+
+```bash
+DISPUTE_ID="65d2c0f4a6e7b1c2d3e4f5a6"
+
+curl -sS "https://feature.aivalid.id/api/v1/disputes/${DISPUTE_ID}" \
+  -H "Authorization: Bearer $TOKEN"
+
+curl -sS "https://feature.aivalid.id/api/v1/disputes?status=Open" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## Documents (Profile + Workflow Artifacts)
+
+### Upload Document (PDF/DOCX)
+
+```bash
+curl -sS -X POST https://feature.aivalid.id/api/v1/documents \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@./artifact.pdf" \
+  -F "title=Artifact Submission" \
+  -F "description=Full deliverable for Validation Case #123" \
+  -F "category=research" \
+  -F "visibility=private"
+```
+
+### Download Document
+
+```bash
+DOC_ID="doc_01HXYZ..."
+
+curl -sS -L "https://feature.aivalid.id/api/v1/documents/${DOC_ID}/download" \
+  -H "Authorization: Bearer $TOKEN" \
+  -o artifact.pdf
+```
+
+## Reports + Admin Moderation
+
+### Create Report (User)
+
+```bash
+curl -sS -X POST https://feature.aivalid.id/api/v1/reports \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "reactionType": "like"
+    "targetType": "validation_case",
+    "targetId": "123",
+    "validationCaseId": 123,
+    "reason": "spam",
+    "description": "Case appears fraudulent / irrelevant."
   }'
-
-# Change to "love" reaction (updates existing)
-curl -X POST http://localhost:5000/api/v1/threads/1/reactions \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "reactionType": "love"
-  }'
-
-# Valid reaction types: like, love, fire, sad, laugh
-
-# Expected response:
-# {
-#   "success": true,
-#   "message": "Reaction added successfully",
-#   "meta": {
-#     "requestId": "req_xyz",
-#     "timestamp": "2026-01-05T10:00:00Z"
-#   }
-# }
 ```
 
-### Remove Reaction (Auth Required)
+### List Pending Reports (Admin)
 
 ```bash
-curl -X DELETE http://localhost:5000/api/v1/threads/1/reactions \
-  -H "Authorization: Bearer $TOKEN"
-
-# Expected response:
-# {
-#   "success": true,
-#   "message": "Reaction removed successfully",
-#   "meta": {
-#     "requestId": "req_xyz",
-#     "timestamp": "2026-01-05T10:00:00Z"
-#   }
-# }
-```
-
-### Get Reaction Summary (No Auth Required)
-
-```bash
-# Get reaction counts for thread 1
-curl http://localhost:5000/api/v1/threads/1/reactions/summary
-
-# If authenticated, also shows your reaction
-curl http://localhost:5000/api/v1/threads/1/reactions/summary \
-  -H "Authorization: Bearer $TOKEN"
-
-# Expected response:
-# {
-#   "success": true,
-#   "data": {
-#     "counts": {
-#       "like": 42,
-#       "love": 18,
-#       "fire": 7,
-#       "sad": 2,
-#       "laugh": 15
-#     },
-#     "totalCount": 84,
-#     "userReaction": "like"  // only if authenticated
-#   },
-#   "meta": {
-#     "requestId": "req_xyz",
-#     "timestamp": "2026-01-05T10:00:00Z"
-#   }
-# }
-```
-
-## Finance Service (Phase 2 - Not Yet Implemented)
-
-All finance endpoints currently return 501 Not Implemented:
-
-```bash
-# Get wallet (501)
-curl http://localhost:5000/api/v1/wallets/me \
-  -H "Authorization: Bearer $TOKEN"
-
-# Create transfer (501)
-curl -X POST http://localhost:5000/api/v1/wallets/transfers \
-  -H "Authorization: Bearer $TOKEN"
-
-# Create withdrawal (501)
-curl -X POST http://localhost:5000/api/v1/wallets/withdrawals \
-  -H "Authorization: Bearer $TOKEN"
-
-# Create dispute (501)
-curl -X POST http://localhost:5000/api/v1/disputes \
+curl -sS "https://feature.aivalid.id/api/v1/admin/moderation/reports?page=1&pageSize=20" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-## Error Responses
+## Error Response Format
 
-All errors follow this consistent format:
+Feature Service menggunakan format error terstandardisasi:
 
 ```json
 {
   "success": false,
   "error": {
     "code": "VALIDATION_ERROR",
-    "message": "Content must be between 1 and 5000 characters",
-    "details": ["Content is required"]
+    "message": "Data tidak valid",
+    "details": null
   },
   "meta": {
-    "requestId": "req_xyz789",
-    "timestamp": "2026-01-05T10:30:00Z"
+    "requestId": "req_xyz",
+    "timestamp": "2026-02-10T00:00:00Z"
   }
 }
 ```
 
-Common error codes:
-- `VALIDATION_ERROR` (400) - Input validation failed
-- `UNAUTHORIZED` (401) - Authentication required or failed
-- `NOT_FOUND` (404) - Resource not found
-- `INVALID_OPERATION` (400) - Operation not allowed
-- `INTERNAL_ERROR` (500) - Server error
-
-## Testing with Swagger
-
-When running locally, access Swagger UI at:
-- http://localhost:5000/swagger
-
-Swagger provides interactive API documentation and testing capabilities.
-
-## Load Testing
-
-Example using `hey` tool:
-
-```bash
-# Install hey
-go install github.com/rakyll/hey@latest
-
-# Load test replies endpoint (target: 100 req/s)
-hey -z 30s -c 10 -q 10 \
-  http://localhost:5000/api/v1/threads/1/replies
-
-# Load test with authentication
-hey -z 30s -c 10 -q 10 \
-  -H "Authorization: Bearer $TOKEN" \
-  http://localhost:5000/api/v1/threads/1/replies
-```
-
-## Docker Testing
-
-```bash
-# Start services with docker-compose
-cd feature-service
-docker-compose up -d
-
-# Check logs
-docker-compose logs -f feature-api
-
-# Test health endpoint
-curl http://localhost:5000/health
-
-# Stop services
-docker-compose down
-```

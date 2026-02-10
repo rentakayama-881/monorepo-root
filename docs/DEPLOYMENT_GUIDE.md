@@ -1,221 +1,126 @@
-# Deployment Guide
+# Deployment Guide (Evidence-First)
 
-Panduan deployment untuk AIValid setelah melakukan perubahan kode.
+Panduan deployment AIValid setelah perubahan kode.
 
-## Quick Reference
+## Fakta (Locked)
 
-| Service | VPS | SSH Command | URL |
-|---------|-----|-------------|-----|
-| Go Backend (Gin) | 72.62.124.23 | `ssh deploy@72.62.124.23` | https://api.aivalid.fun |
-| Feature Service (ASP.NET) | 203.175.11.84 | `ssh asp@203.175.11.84` | https://feature.aivalid.fun |
-| Frontend (Next.js) | Vercel | Auto-deploy | https://www.aivalid.fun |
+- Frontend dideploy di Vercel.
+  - Jangan build/test frontend di VPS.
+  - Jangan setup build frontend di VPS.
+- VPS menjalankan dua backend:
+  1. Go (Gin) backend
+  2. .NET Feature Service
 
----
+## Ringkasan Runtime yang Teramati (Evidence-Based)
+
+Sumber bukti:
+- `docs/FACT_MAP_REPO_RUNTIME.md`
+- `/etc/nginx/sites-available/aivalid.conf`
+- `/etc/systemd/system/alephdraad-backend.service`
+- `/etc/systemd/system/feature-service.service`
+
+| Komponen | Public Hostname | Upstream Lokal | systemd Unit | Artifact Path |
+|---------|------------------|----------------|--------------|---------------|
+| Go Backend (Gin) | `api.aivalid.id` | `127.0.0.1:8080` | `alephdraad-backend.service` | `/opt/alephdraad/backend/app` |
+| Feature Service (.NET) | `feature.aivalid.id` | `127.0.0.1:5000` | `feature-service.service` | `/opt/alephdraad/feature-service/FeatureService.Api.dll` |
+| Frontend (Next.js) | `UNKNOWN` | N/A | N/A | Vercel |
+
+Health endpoints (dari kode):
+- Go Backend: `GET /health` (juga tersedia `GET /api/v1/health`)
+- Feature Service: `GET /api/v1/health`
 
 ## 1. Frontend (Next.js) - Vercel
 
-**Auto-deploy**: Tidak perlu aksi manual. Push ke `main` branch → Vercel otomatis deploy.
+Frontend deploy melalui Vercel (sesuai fakta produk). Verifikasi branch auto-deploy dan domain di Vercel dashboard.
 
+## 2. Backends (Go + .NET) - Deployment Options
+
+### Opsi A: GitHub Actions (CI/CD)
+
+Workflow repo: `.github/workflows/deploy.yml`
+
+Trigger:
+- `push` ke `main` dengan perubahan di `backend/**` atau `feature-service/**`
+- atau `workflow_dispatch`
+
+Catatan penting:
+- Workflow membutuhkan secrets untuk SSH dan host.
+- Script deploy di workflow harus sesuai dengan layout server aktual (lihat `docs/FACT_MAP_REPO_RUNTIME.md` untuk mismatch yang sudah teridentifikasi).
+- Feature Service health check yang benar adalah `http://localhost:5000/api/v1/health` (bukan `/health`).
+
+### Opsi B: Manual Deploy (Layout `/opt/alephdraad`)
+
+Opsi ini berlaku jika runtime menggunakan artifact paths dan unit files seperti yang teramati di bagian "Ringkasan Runtime".
+
+Prerequisite:
+- Akses SSH ke VPS
+- `sudo` untuk menulis ke `/opt/alephdraad` dan restart `systemd`
+
+Langkah umum:
+
+1) Build artifacts (di mesin build, bukan di VPS jika tidak diperlukan)
+
+Go Backend (binary Linux):
 ```bash
-# Dari lokal (Windows)
-git add -A
-git commit -m "your message"
-git push renta main
-```
-
-Tunggu ~1-2 menit untuk Vercel selesai build dan deploy.
-
----
-
-## 2. Go Backend (Gin) - VPS 72.62.124.23
-
-### Langkah Deploy
-
-```bash
-# 1. SSH ke VPS
-ssh deploy@72.62.124.23
-
-# 2. Pull kode terbaru
-cd ~/monorepo-root
-git pull
-
-# 3. Build binary baru
 cd backend
-/usr/local/go/bin/go build -o app .
-
-# 4. Restart service (perlu password sudo)
-sudo systemctl restart backend
-
-# 5. Verifikasi status
-sudo systemctl status backend
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o app .
 ```
 
-### Command Singkat (One-liner)
-
+Feature Service (.NET publish):
 ```bash
-ssh deploy@72.62.124.23 "cd ~/monorepo-root && git pull && cd backend && /usr/local/go/bin/go build -o app . && sudo systemctl restart backend"
+cd feature-service/src/FeatureService.Api
+dotnet publish -c Release -o ./publish --self-contained false
 ```
 
-### Lokasi Penting
-
-| Item | Path |
-|------|------|
-| Source code | `/home/deploy/monorepo-root/backend/` |
-| Binary | `/home/deploy/monorepo-root/backend/app` |
-| Service file | `/etc/systemd/system/backend.service` |
-| Logs | `sudo journalctl -u backend -f` |
-
-### Troubleshooting
-
+2) Upload artifacts ke VPS (contoh path tujuan sementara; host/user tergantung environment kamu)
 ```bash
-# Lihat logs
-sudo journalctl -u backend -n 50 --no-pager
-
-# Cek service status
-sudo systemctl status backend
-
-# Restart manual jika gagal
-sudo systemctl stop backend
-sudo systemctl start backend
+scp ./backend/app <user>@<host>:/tmp/backend-app.new
+scp -r ./feature-service/src/FeatureService.Api/publish <user>@<host>:/tmp/feature-service-publish
 ```
 
----
-
-## 3. Feature Service (ASP.NET) - VPS 203.175.11.84
-
-### Langkah Deploy
-
-ASP.NET memerlukan build di **Windows lokal**, lalu upload ke VPS:
-
-```powershell
-# 1. Build di Windows (dari folder project)
-cd C:\Users\Aorus\aivalid\feature-service\src\FeatureService.Api
-Remove-Item -Recurse -Force ./publish -ErrorAction SilentlyContinue
-dotnet publish -c Release -o ./publish
-
-# 2. Upload ke VPS
-scp -r ./publish/* asp@203.175.11.84:/home/asp/feature-service-app/
-
-# 3. Restore appsettings.json (karena di-overwrite saat upload)
-# Lihat section "Restore appsettings.json" di bawah
-
-# 4. SSH ke VPS untuk restart
-ssh asp@203.175.11.84
-
-# 5. Restart service (perlu password sudo)
-sudo systemctl restart featureservice
-
-# 6. Verifikasi status
-sudo systemctl status featureservice
-```
-
-### Restore appsettings.json
-
-Setelah upload, `appsettings.json` perlu dikembalikan karena lokal tidak punya config `Backend:ApiUrl`:
-
+3) Backup + replace artifacts (di VPS)
 ```bash
-# Di VPS (ssh asp@203.175.11.84)
-cat > /home/asp/feature-service-app/appsettings.json << 'EOF'
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
-  "AllowedHosts": "*",
-  "MongoDB": {
-    "ConnectionString": "mongodb://127.0.0.1:27017",
-    "DatabaseName": "feature_service_db"
-  },
-  "Backend": {
-    "ApiUrl": "https://api.aivalid.fun"
-  },
-  "Jwt": {
-    "Secret": "",
-    "Issuer": "api.aivalid.fun",
-    "Audience": "aivalid-clients"
-  },
-  "Cors": {
-    "AllowedOrigins": [
-      "https://aivalid.fun",
-      "http://localhost:3000"
-    ]
-  }
-}
-EOF
+TS="$(date -u +%Y%m%dT%H%M%SZ)"
+sudo mkdir -p "/opt/alephdraad/backups/$TS"
+
+sudo cp /opt/alephdraad/backend/app \
+  "/opt/alephdraad/backups/$TS/app.bak"
+
+sudo install -m 0755 /tmp/backend-app.new /opt/alephdraad/backend/app
+
+# Untuk .NET publish folder, gunakan rsync jika tersedia. Jika tidak, fallback ke cp (catatan: tidak menghapus file lama).
+sudo rsync -a --delete /tmp/feature-service-publish/ /opt/alephdraad/feature-service/
+# Fallback jika rsync tidak ada:
+# sudo cp -a /tmp/feature-service-publish/. /opt/alephdraad/feature-service/
 ```
 
-### Lokasi Penting
-
-| Item | Path |
-|------|------|
-| App folder | `/home/asp/feature-service-app/` |
-| Config | `/home/asp/feature-service-app/appsettings.json` |
-| Service file | `/etc/systemd/system/featureservice.service` |
-| Logs | `sudo journalctl -u featureservice -f` |
-| Swagger | https://feature.aivalid.fun/swagger |
-
-### Troubleshooting
-
+4) Restart services (di VPS)
 ```bash
-# Lihat logs
-sudo journalctl -u featureservice -n 50 --no-pager
-
-# Cek service status
-sudo systemctl status featureservice
-
-# Test endpoint
-curl -s http://localhost:5000/api/v1/health
+sudo systemctl restart alephdraad-backend.service
+sudo systemctl restart feature-service.service
 ```
 
----
+5) Verifikasi (di VPS)
+```bash
+sudo systemctl status alephdraad-backend.service --no-pager
+sudo systemctl status feature-service.service --no-pager
 
-## 4. Checklist Setelah Deploy
-
-- [ ] Go Backend: `curl https://api.aivalid.fun/health` → `200 OK`
-- [ ] Feature Service: `curl https://feature.aivalid.fun/api/v1/health` → `200 OK`
-- [ ] Frontend: Buka https://www.aivalid.my.id → Load normal
-- [ ] Test fitur yang diubah
-
----
-
-## 5. Password VPS
-
-| VPS | User | Password |
-|-----|------|----------|
-| 72.62.124.23 | deploy | *(tanya admin)* |
-| 203.175.11.84 | asp | *(tanya admin)* |
-
----
-
-## 6. Diagram Arsitektur
-
-```
-┌─────────────────┐     ┌──────────────────────┐     ┌─────────────────────┐
-│   Frontend      │────▶│   Go Backend         │────▶│   PostgreSQL        │
-│   (Vercel)      │     │   (VPS 72.62.124.23) │     │   (Neon Cloud)      │
-│   Next.js 15    │     │   Gin Framework      │     │                     │
-└────────┬────────┘     └──────────────────────┘     └─────────────────────┘
-         │
-         │              ┌──────────────────────┐     ┌─────────────────────┐
-         └─────────────▶│   Feature Service    │────▶│   MongoDB           │
-                        │   (VPS 203.175.11.84)│     │   (Same VPS)        │
-                        │   ASP.NET Core 8     │     │                     │
-                        └──────────────────────┘     └─────────────────────┘
+curl -sf http://127.0.0.1:8080/health
+curl -sf http://127.0.0.1:5000/api/v1/health
 ```
 
+6) Logs (di VPS)
+```bash
+sudo journalctl -u alephdraad-backend.service -n 200 --no-pager
+sudo journalctl -u feature-service.service -n 200 --no-pager
+```
+
+## 3. Checklist Setelah Deploy
+
+- Go Backend: `curl -sf https://api.aivalid.id/health`
+- Feature Service: `curl -sf https://feature.aivalid.id/api/v1/health`
+- Frontend: verifikasi via Vercel domain yang aktif (`UNKNOWN` di repo ini)
+
 ---
 
-## 7. Kapan Deploy Mana?
-
-| Folder yang diubah | Deploy ke |
-|--------------------|-----------|
-| `frontend/` | Vercel (auto) |
-| `backend/` | Go VPS (72.62.124.23) |
-| `feature-service/` | ASP VPS (203.175.11.84) |
-| `docs/` | Tidak perlu deploy |
-
----
-
-*Last updated: 18 Januari 2026*
+Last updated: 2026-02-10

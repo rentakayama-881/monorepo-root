@@ -656,6 +656,8 @@ public class TransferService : ITransferService
                     "Auto-released transfer: {TransferId}, amount {Amount}",
                     transfer.Id, amountAfterFee
                 );
+
+                await BestEffortNotifyGoBackendEscrowAutoReleasedAsync(transfer.Id);
             }
             catch (Exception ex)
             {
@@ -674,6 +676,47 @@ public class TransferService : ITransferService
         return (_configuration["Backend:ApiUrl"]
                 ?? _configuration["GoBackend:BaseUrl"]
                 ?? "http://127.0.0.1:8080").TrimEnd('/');
+    }
+
+    private async Task BestEffortNotifyGoBackendEscrowAutoReleasedAsync(string transferId)
+    {
+        var baseUrl = GetGoBackendBaseUrl();
+        var internalKey = _configuration["GoBackend:InternalApiKey"];
+        if (string.IsNullOrWhiteSpace(internalKey))
+        {
+            _logger.LogWarning(
+                "GoBackend:InternalApiKey is not configured; skipping validation-case escrow auto-release callback. TransferId: {TransferId}",
+                transferId);
+            return;
+        }
+
+        try
+        {
+            var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                $"{baseUrl}/api/internal/validation-cases/escrow/released");
+
+            request.Headers.Add("X-Internal-Api-Key", internalKey);
+            request.Content = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(new { transfer_id = transferId }),
+                System.Text.Encoding.UTF8,
+                "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning(
+                    "Go backend escrow auto-release callback failed. Status: {StatusCode}. Body: {Body}. TransferId: {TransferId}",
+                    (int)response.StatusCode,
+                    body,
+                    transferId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error calling Go backend escrow auto-release callback. TransferId: {TransferId}", transferId);
+        }
     }
 
 	    private async Task<string?> GetUsernameFromBackend(uint userId)

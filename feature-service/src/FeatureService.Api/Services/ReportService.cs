@@ -2,7 +2,6 @@ using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
-using FeatureService.Api.Controllers;
 using System.Net;
 using System.Text.Json;
 using Ulid = NUlid.Ulid;
@@ -11,7 +10,7 @@ namespace FeatureService.Api.Services;
 
 public interface IReportService
 {
-    Task<string> CreateReportAsync(uint reporterUserId, string targetType, string targetId, uint threadId, string reason, string? description);
+    Task<string> CreateReportAsync(uint reporterUserId, string targetType, string targetId, uint validationCaseId, string reason, string? description);
     Task<Report?> GetReportByIdAsync(string reportId);
     Task<PaginatedReportsResponse> GetPendingReportsAsync(int page, int pageSize, string? status = null);
     Task<PaginatedReportsResponse> GetUserReportsAsync(uint userId, int page, int pageSize);
@@ -38,17 +37,22 @@ public class ReportService : IReportService
         _configuration = configuration;
     }
 
-    public async Task<string> CreateReportAsync(uint reporterUserId, string targetType, string targetId, uint threadId, string reason, string? description)
+    public async Task<string> CreateReportAsync(uint reporterUserId, string targetType, string targetId, uint validationCaseId, string reason, string? description)
     {
         if (string.IsNullOrWhiteSpace(targetId))
         {
             throw new ArgumentException("TargetId is required", nameof(targetId));
         }
 
-        targetType = targetType?.Trim() ?? string.Empty;
+        targetType = NormalizeTargetType(targetType?.Trim() ?? string.Empty);
         targetId = targetId.Trim();
         reason = reason?.Trim() ?? string.Empty;
         description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+
+        if (targetType != ReportTargetType.ValidationCase)
+        {
+            throw new ArgumentException($"Invalid target type. Must be '{ReportTargetType.ValidationCase}'", nameof(targetType));
+        }
 
         // Validate reason
         if (!ReportReason.All.Contains(reason))
@@ -56,28 +60,25 @@ public class ReportService : IReportService
             throw new ArgumentException($"Invalid reason. Must be one of: {string.Join(", ", ReportReason.All)}");
         }
 
-        var resolvedThreadId = threadId;
+        var resolvedValidationCaseId = validationCaseId;
         uint resolvedReportedUserId = 0;
 
-        if (string.Equals(targetType, ReportTargetType.Thread, StringComparison.OrdinalIgnoreCase))
+        if (resolvedValidationCaseId == 0)
         {
-            if (resolvedThreadId == 0)
+            if (!uint.TryParse(targetId, out resolvedValidationCaseId) || resolvedValidationCaseId == 0)
             {
-                if (!uint.TryParse(targetId, out resolvedThreadId) || resolvedThreadId == 0)
-                {
-                    throw new ArgumentException("ThreadId is required for thread reports", nameof(threadId));
-                }
-            }
-
-            var ownerId = await TryResolveThreadOwnerUserIdAsync(resolvedThreadId);
-            if (ownerId.HasValue)
-            {
-                resolvedReportedUserId = ownerId.Value;
+                throw new ArgumentException("ValidationCaseId is required for validation case reports", nameof(validationCaseId));
             }
         }
-        if (resolvedThreadId == 0)
+
+        var ownerId = await TryResolveValidationCaseOwnerUserIdAsync(resolvedValidationCaseId);
+        if (ownerId.HasValue)
         {
-            throw new ArgumentException("ThreadId is required", nameof(threadId));
+            resolvedReportedUserId = ownerId.Value;
+        }
+        if (resolvedValidationCaseId == 0)
+        {
+            throw new ArgumentException("ValidationCaseId is required", nameof(validationCaseId));
         }
 
         // Check if user already reported this content
@@ -91,7 +92,7 @@ public class ReportService : IReportService
             Id = $"rpt_{Ulid.NewUlid()}",
             TargetType = targetType,
             TargetId = targetId,
-            ThreadId = resolvedThreadId,
+            ValidationCaseId = resolvedValidationCaseId,
             ReportedUserId = resolvedReportedUserId,
             ReporterUserId = reporterUserId,
             Reason = reason,
@@ -108,10 +109,10 @@ public class ReportService : IReportService
         return report.Id;
     }
 
-    private async Task<uint?> TryResolveThreadOwnerUserIdAsync(uint threadId)
+    private async Task<uint?> TryResolveValidationCaseOwnerUserIdAsync(uint validationCaseId)
     {
         var goBackendUrl = (_configuration["GoBackend:BaseUrl"] ?? "http://127.0.0.1:8080").TrimEnd('/');
-        var url = $"{goBackendUrl}/api/threads/{threadId}/public";
+        var url = $"{goBackendUrl}/api/validation-cases/{validationCaseId}/public";
 
         try
         {
@@ -127,21 +128,21 @@ public class ReportService : IReportService
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
-            var thread = JsonSerializer.Deserialize<GoThreadDetailResponse>(json, new JsonSerializerOptions
+            var validationCase = JsonSerializer.Deserialize<GoValidationCaseDetailResponse>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
 
-            if (thread?.User?.Id is > 0)
+            if (validationCase?.Owner?.Id is > 0)
             {
-                return thread.User.Id;
+                return validationCase.Owner.Id;
             }
 
             return null;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to resolve thread owner via Go backend for thread {ThreadId}", threadId);
+            _logger.LogWarning(ex, "Failed to resolve validation case owner via Go backend for validation case {ValidationCaseId}", validationCaseId);
             return null;
         }
     }
@@ -171,9 +172,9 @@ public class ReportService : IReportService
 
         var summaries = reports.Select(r => new ReportSummaryDto(
             r.Id,
-            r.TargetType,
+            NormalizeTargetType(r.TargetType),
             r.TargetId,
-            r.ThreadId,
+            r.ValidationCaseId != 0 ? r.ValidationCaseId : r.LegacyThreadId,
             r.ReportedUserId,
             null, // Username fetched from Go backend
             r.ReporterUserId,
@@ -203,9 +204,9 @@ public class ReportService : IReportService
 
         var summaries = reports.Select(r => new ReportSummaryDto(
             r.Id,
-            r.TargetType,
+            NormalizeTargetType(r.TargetType),
             r.TargetId,
-            r.ThreadId,
+            r.ValidationCaseId != 0 ? r.ValidationCaseId : r.LegacyThreadId,
             r.ReportedUserId,
             null,
             r.ReporterUserId,
@@ -249,23 +250,49 @@ public class ReportService : IReportService
 
     public async Task<bool> HasUserReportedContentAsync(uint userId, string targetType, string targetId)
     {
+        targetType = NormalizeTargetType(targetType?.Trim() ?? string.Empty);
+
+        // Domain migration: legacy "thread" reports are treated as validation_case.
+        // For duplicate detection we match both "validation_case" and "thread".
+        var targetTypes = targetType == ReportTargetType.ValidationCase
+            ? new[] { ReportTargetType.ValidationCase, ReportTargetType.Thread }
+            : new[] { targetType };
+
         var filter = Builders<Report>.Filter.And(
             Builders<Report>.Filter.Eq(r => r.ReporterUserId, userId),
-            Builders<Report>.Filter.Eq(r => r.TargetType, targetType),
+            Builders<Report>.Filter.In(r => r.TargetType, targetTypes),
             Builders<Report>.Filter.Eq(r => r.TargetId, targetId)
         );
 
         var count = await _context.Reports.CountDocumentsAsync(filter);
         return count > 0;
     }
+
+    private static string NormalizeTargetType(string targetType)
+    {
+        if (string.IsNullOrWhiteSpace(targetType))
+        {
+            return string.Empty;
+        }
+
+        targetType = targetType.Trim().ToLowerInvariant();
+
+        // Canonical domain term is "validation_case".
+        if (targetType == ReportTargetType.Thread)
+        {
+            return ReportTargetType.ValidationCase;
+        }
+
+        return targetType;
+    }
 }
 
-internal sealed class GoThreadDetailResponse
+internal sealed class GoValidationCaseDetailResponse
 {
-    public GoThreadUser? User { get; set; }
+    public GoValidationCaseOwner? Owner { get; set; }
 }
 
-internal sealed class GoThreadUser
+internal sealed class GoValidationCaseOwner
 {
     public uint Id { get; set; }
     public string? Username { get; set; }

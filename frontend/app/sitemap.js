@@ -40,11 +40,11 @@ export default async function sitemap() {
     },
   ];
 
-  // TODO: Fetch dynamic pages from API (threads, categories, etc.)
-  // const threads = await fetchThreadsForSitemap();
-  // const threadPages = threads.map((thread) => ({
-  //   url: `${BASE_URL}/thread/${thread.id}`,
-  //   lastModified: new Date(thread.updated_at),
+  // TODO: Fetch dynamic pages from API (validation cases, categories, etc.)
+  // const cases = await fetchValidationCasesForSitemap();
+  // const casePages = cases.map((vc) => ({
+  //   url: `${BASE_URL}/validation-cases/${vc.id}`,
+  //   lastModified: new Date(vc.updated_at),
   //   changeFrequency: "weekly",
   //   priority: 0.6,
   // }));

@@ -3,17 +3,17 @@ import Hero from "../components/home/Hero";
 import HowItWorks from "../components/home/HowItWorks";
 import FocusAreas from "../components/home/FocusAreas";
 import CategoryGrid from "../components/home/CategoryGrid";
-import LatestThreads from "../components/home/LatestThreads";
+import LatestValidationCases from "../components/home/LatestValidationCases";
 import Skeleton from "../components/ui/Skeleton";
 
 export const metadata = {
   title: "Beranda",
   description:
-    "AIvalid - Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.",
+    "AIValid - Validation Protocol untuk hasil kerja berbasis AI: escrow-backed, stake-gated, dan dapat diaudit.",
   openGraph: {
     title: "AIvalid - Validasi Hasil AI",
     description:
-      "Buat thread, jelaskan konteks, dan dapatkan review terstruktur dari validator sesuai bidangnya.",
+      "Buat Validation Case, tetapkan bounty, dan jalankan alur escrow + stake + admin arbitration.",
   },
 };
 
@@ -30,7 +30,7 @@ export default function Home() {
 
           <div id="latest" className="scroll-mt-16">
             <Suspense fallback={<ListSkeleton />}>
-              <LatestThreads />
+              <LatestValidationCases />
             </Suspense>
           </div>
 

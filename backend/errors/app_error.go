@@ -71,11 +71,11 @@ var (
 	ErrUnauthorized     = NewAppError("USER002", "Tidak memiliki akses", http.StatusUnauthorized)
 	ErrInvalidUserInput = NewAppError("USER003", "Username harus menggunakan huruf kecil, tanpa spasi, dan minimal 7 character", http.StatusBadRequest)
 
-	// Thread errors
-	ErrThreadNotFound    = NewAppError("THREAD001", "Thread tidak ditemukan", http.StatusNotFound)
-	ErrCategoryNotFound  = NewAppError("THREAD002", "Kategori tidak ditemukan", http.StatusNotFound)
-	ErrInvalidThreadData = NewAppError("THREAD003", "Data thread tidak valid", http.StatusBadRequest)
-	ErrThreadOwnership   = NewAppError("THREAD004", "Anda tidak memiliki akses ke thread ini", http.StatusForbidden)
+	// Validation Case errors (domain replacement for legacy "Thread")
+	ErrValidationCaseNotFound    = NewAppError("CASE001", "Validation Case tidak ditemukan", http.StatusNotFound)
+	ErrCategoryNotFound          = NewAppError("CASE002", "Kategori tidak ditemukan", http.StatusNotFound)
+	ErrInvalidValidationCaseData = NewAppError("CASE003", "Data Validation Case tidak valid", http.StatusBadRequest)
+	ErrValidationCaseOwnership   = NewAppError("CASE004", "Anda tidak memiliki akses ke Validation Case ini", http.StatusForbidden)
 
 	// Order errors
 	ErrOrderNotFound      = NewAppError("ORDER001", "Order tidak ditemukan", http.StatusNotFound)

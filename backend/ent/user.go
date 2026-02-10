@@ -85,8 +85,8 @@ type UserEdges struct {
 	Sessions []*Session `json:"sessions,omitempty"`
 	// BackupCodes holds the value of the backup_codes edge.
 	BackupCodes []*BackupCode `json:"backup_codes,omitempty"`
-	// Threads holds the value of the threads edge.
-	Threads []*Thread `json:"threads,omitempty"`
+	// ValidationCases holds the value of the validation_cases edge.
+	ValidationCases []*ValidationCase `json:"validation_cases,omitempty"`
 	// UserBadges holds the value of the user_badges edge.
 	UserBadges []*UserBadge `json:"user_badges,omitempty"`
 	// SessionLocks holds the value of the session_locks edge.
@@ -107,13 +107,21 @@ type UserEdges struct {
 	DeviceUserMappings []*DeviceUserMapping `json:"device_user_mappings,omitempty"`
 	// SudoSessions holds the value of the sudo_sessions edge.
 	SudoSessions []*SudoSession `json:"sudo_sessions,omitempty"`
-	// GivenCredentials holds the value of the given_credentials edge.
-	GivenCredentials []*ThreadCredential `json:"given_credentials,omitempty"`
+	// ValidationCaseLogs holds the value of the validation_case_logs edge.
+	ValidationCaseLogs []*ValidationCaseLog `json:"validation_case_logs,omitempty"`
+	// ConsultationRequests holds the value of the consultation_requests edge.
+	ConsultationRequests []*ConsultationRequest `json:"consultation_requests,omitempty"`
+	// FinalOffers holds the value of the final_offers edge.
+	FinalOffers []*FinalOffer `json:"final_offers,omitempty"`
+	// ArtifactSubmissions holds the value of the artifact_submissions edge.
+	ArtifactSubmissions []*ArtifactSubmission `json:"artifact_submissions,omitempty"`
+	// Endorsements holds the value of the endorsements edge.
+	Endorsements []*Endorsement `json:"endorsements,omitempty"`
 	// PrimaryBadge holds the value of the primary_badge edge.
 	PrimaryBadge *Badge `json:"primary_badge,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [16]bool
+	loadedTypes [20]bool
 }
 
 // PasskeysOrErr returns the Passkeys value or an error if the edge
@@ -143,13 +151,13 @@ func (e UserEdges) BackupCodesOrErr() ([]*BackupCode, error) {
 	return nil, &NotLoadedError{edge: "backup_codes"}
 }
 
-// ThreadsOrErr returns the Threads value or an error if the edge
+// ValidationCasesOrErr returns the ValidationCases value or an error if the edge
 // was not loaded in eager-loading.
-func (e UserEdges) ThreadsOrErr() ([]*Thread, error) {
+func (e UserEdges) ValidationCasesOrErr() ([]*ValidationCase, error) {
 	if e.loadedTypes[3] {
-		return e.Threads, nil
+		return e.ValidationCases, nil
 	}
-	return nil, &NotLoadedError{edge: "threads"}
+	return nil, &NotLoadedError{edge: "validation_cases"}
 }
 
 // UserBadgesOrErr returns the UserBadges value or an error if the edge
@@ -242,13 +250,49 @@ func (e UserEdges) SudoSessionsOrErr() ([]*SudoSession, error) {
 	return nil, &NotLoadedError{edge: "sudo_sessions"}
 }
 
-// GivenCredentialsOrErr returns the GivenCredentials value or an error if the edge
+// ValidationCaseLogsOrErr returns the ValidationCaseLogs value or an error if the edge
 // was not loaded in eager-loading.
-func (e UserEdges) GivenCredentialsOrErr() ([]*ThreadCredential, error) {
+func (e UserEdges) ValidationCaseLogsOrErr() ([]*ValidationCaseLog, error) {
 	if e.loadedTypes[14] {
-		return e.GivenCredentials, nil
+		return e.ValidationCaseLogs, nil
 	}
-	return nil, &NotLoadedError{edge: "given_credentials"}
+	return nil, &NotLoadedError{edge: "validation_case_logs"}
+}
+
+// ConsultationRequestsOrErr returns the ConsultationRequests value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) ConsultationRequestsOrErr() ([]*ConsultationRequest, error) {
+	if e.loadedTypes[15] {
+		return e.ConsultationRequests, nil
+	}
+	return nil, &NotLoadedError{edge: "consultation_requests"}
+}
+
+// FinalOffersOrErr returns the FinalOffers value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) FinalOffersOrErr() ([]*FinalOffer, error) {
+	if e.loadedTypes[16] {
+		return e.FinalOffers, nil
+	}
+	return nil, &NotLoadedError{edge: "final_offers"}
+}
+
+// ArtifactSubmissionsOrErr returns the ArtifactSubmissions value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) ArtifactSubmissionsOrErr() ([]*ArtifactSubmission, error) {
+	if e.loadedTypes[17] {
+		return e.ArtifactSubmissions, nil
+	}
+	return nil, &NotLoadedError{edge: "artifact_submissions"}
+}
+
+// EndorsementsOrErr returns the Endorsements value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) EndorsementsOrErr() ([]*Endorsement, error) {
+	if e.loadedTypes[18] {
+		return e.Endorsements, nil
+	}
+	return nil, &NotLoadedError{edge: "endorsements"}
 }
 
 // PrimaryBadgeOrErr returns the PrimaryBadge value or an error if the edge
@@ -256,7 +300,7 @@ func (e UserEdges) GivenCredentialsOrErr() ([]*ThreadCredential, error) {
 func (e UserEdges) PrimaryBadgeOrErr() (*Badge, error) {
 	if e.PrimaryBadge != nil {
 		return e.PrimaryBadge, nil
-	} else if e.loadedTypes[15] {
+	} else if e.loadedTypes[19] {
 		return nil, &NotFoundError{label: badge.Label}
 	}
 	return nil, &NotLoadedError{edge: "primary_badge"}
@@ -493,9 +537,9 @@ func (_m *User) QueryBackupCodes() *BackupCodeQuery {
 	return NewUserClient(_m.config).QueryBackupCodes(_m)
 }
 
-// QueryThreads queries the "threads" edge of the User entity.
-func (_m *User) QueryThreads() *ThreadQuery {
-	return NewUserClient(_m.config).QueryThreads(_m)
+// QueryValidationCases queries the "validation_cases" edge of the User entity.
+func (_m *User) QueryValidationCases() *ValidationCaseQuery {
+	return NewUserClient(_m.config).QueryValidationCases(_m)
 }
 
 // QueryUserBadges queries the "user_badges" edge of the User entity.
@@ -548,9 +592,29 @@ func (_m *User) QuerySudoSessions() *SudoSessionQuery {
 	return NewUserClient(_m.config).QuerySudoSessions(_m)
 }
 
-// QueryGivenCredentials queries the "given_credentials" edge of the User entity.
-func (_m *User) QueryGivenCredentials() *ThreadCredentialQuery {
-	return NewUserClient(_m.config).QueryGivenCredentials(_m)
+// QueryValidationCaseLogs queries the "validation_case_logs" edge of the User entity.
+func (_m *User) QueryValidationCaseLogs() *ValidationCaseLogQuery {
+	return NewUserClient(_m.config).QueryValidationCaseLogs(_m)
+}
+
+// QueryConsultationRequests queries the "consultation_requests" edge of the User entity.
+func (_m *User) QueryConsultationRequests() *ConsultationRequestQuery {
+	return NewUserClient(_m.config).QueryConsultationRequests(_m)
+}
+
+// QueryFinalOffers queries the "final_offers" edge of the User entity.
+func (_m *User) QueryFinalOffers() *FinalOfferQuery {
+	return NewUserClient(_m.config).QueryFinalOffers(_m)
+}
+
+// QueryArtifactSubmissions queries the "artifact_submissions" edge of the User entity.
+func (_m *User) QueryArtifactSubmissions() *ArtifactSubmissionQuery {
+	return NewUserClient(_m.config).QueryArtifactSubmissions(_m)
+}
+
+// QueryEndorsements queries the "endorsements" edge of the User entity.
+func (_m *User) QueryEndorsements() *EndorsementQuery {
+	return NewUserClient(_m.config).QueryEndorsements(_m)
 }
 
 // QueryPrimaryBadge queries the "primary_badge" edge of the User entity.

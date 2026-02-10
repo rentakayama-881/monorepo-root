@@ -59,15 +59,15 @@
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        CLOUDFLARE (DNS + WAF + CDN)                          │
-│                         aivalid.fun (root domain)                         │
+│                         aivalid.id (root domain)                         │
 └────────────┬────────────────────┬────────────────────┬─────────────────────┘
              │                    │                    │
              ▼                    ▼                    ▼
 ┌────────────────────┐ ┌───────────────────┐ ┌────────────────────────────┐
 │  FRONTEND (Vercel) │ │  GO BACKEND (VPS) │ │ FEATURE SERVICE (VPS)      │
-│  www.aivalid.fun│ │ api.aivalid.fun│ │ feature.aivalid.fun     │
+│  www.aivalid.id│ │ api.aivalid.id│ │ feature.aivalid.id     │
 │                    │ │                   │ │                            │
-│  • Next.js 15      │ │  • Gin Framework  │ │  • ASP.NET Core 8          │
+│  • Next.js 16      │ │  • Gin Framework  │ │  • ASP.NET Core 8          │
 │  • React 19        │ │  • Ent ORM        │ │  • MongoDB Driver          │
 │  • SWR             │ │  • Redis Cache    │ │  • Redis Cache             │
 │  • Tailwind CSS 4  │ │  • Resend Email   │ │  • BouncyCastle PQC        │
@@ -79,9 +79,9 @@
            │  PostgreSQL     │   │    Redis     │  │    MongoDB      │
            │  (Neon Cloud)   │   │  (VPS Local) │  │   (Atlas)       │
            │                 │   │              │  │                 │
-           │  Users, Threads │   │  Sessions    │  │  Replies,       │
-           │  Sessions, Auth │   │  Rate Limits │  │  Wallets,       │
-           │  Categories     │   │  WebAuthn    │  │  Transfers      │
+           │  Users,         │   │  Sessions    │  │  Wallets,       │
+           │  Validation     │   │  Rate Limits │  │  Transfers,     │
+           │  Cases, Tags    │   │  WebAuthn    │  │  Disputes, Docs │
            └─────────────────┘   └──────────────┘  └─────────────────┘
 ```
 
@@ -96,7 +96,7 @@
 
 ### Kelebihan Arsitektur
 
-1. **Separation of Concerns** - Go untuk core auth/threads, .NET untuk fitur kompleks
+1. **Separation of Concerns** - Go untuk core auth/validation-cases, .NET untuk fitur finansial & admin
 2. **Database Per Service** - PostgreSQL untuk relational, MongoDB untuk documents
 3. **Shared JWT** - Single sign-on across services
 4. **Independent Scaling** - Bisa scale per service
@@ -131,15 +131,13 @@
 | Session Management | `backend/handlers/session.go` | ✅ |
 | Multi-device Sessions | `backend/services/session_service.go` | ✅ |
 
-#### 📝 Forum/Threads
+#### 📝 Validation Cases
 | Fitur | Lokasi | Status |
 |-------|--------|--------|
-| Create Thread | `backend/handlers/thread.go` | ✅ |
-| Edit/Delete Thread | `backend/handlers/thread.go` | ✅ |
+| Create Validation Case | `backend/handlers/validation_case_handler.go` | ✅ |
+| Edit/Delete Validation Case | `backend/handlers/validation_case_handler.go` | ✅ |
 | Categories | `backend/handlers/category_handler.go` | ✅ |
 | Tags | `backend/handlers/tag_handler.go` | ✅ |
-| Nested Replies (depth 3) | `feature-service/.../RepliesController.cs` | ✅ |
-| Reactions (5 types) | `feature-service/.../ReactionsController.cs` | ✅ |
 | Content Reporting | `feature-service/.../ReportsController.cs` | ✅ |
 
 #### 💰 Financial/Wallet
@@ -259,18 +257,22 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 
 | Service | Test Files | Coverage Target | Status |
 |---------|------------|-----------------|--------|
-| **Go Backend** | 5 test files | 60% | ⚠️ Perlu improvement |
+| **Go Backend** | 9 test files (repo scan) | 60% | ⚠️ Perlu improvement |
 | **Feature Service** | Test project exists | 50% | ⚠️ Perlu improvement |
 | **Frontend** | 0 test files | - | ❌ **Critical gap** |
 
 ### Test Files Ditemukan
 
 **Backend:**
-- `tests/auth_validation_test.go`
-- `tests/thread_validation_test.go`
-- `tests/sanitization_test.go`
-- `tests/security_test.go`
-- `services/auth_service_test.go`
+- `middleware/auth_header_test.go`
+- `middleware/enhanced_rate_limit_test.go`
+- `services/passkey_service_ent_test.go`
+- `services/totp_service_ent_test.go`
+- `tests/services/auth_service_ent_test.go`
+- `utils/input_security_test.go`
+- `utils/sanitize_test.go`
+- `validators/auth_validator_test.go`
+- `validators/validation_case_validator_test.go`
 
 **Feature Service:**
 - `tests/FeatureService.Api.Tests/` (project exists)
@@ -309,9 +311,7 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 
 - [x] User registration & authentication
 - [x] Multi-factor authentication (TOTP, WebAuthn)
-- [x] Forum/thread system
-- [x] Reply system dengan nesting
-- [x] Reaction system
+- [x] Validation Case system
 - [x] Content reporting & moderation
 - [x] Wallet & PIN system
 - [x] P2P transfer dengan escrow

@@ -81,12 +81,12 @@ The system automatically formats sender as:
 ```bash
 # ✅ Good - Full configuration
 RESEND_FROM_NAME=AIValid
-RESEND_FROM_EMAIL=noreply@aivalid.fun
-# Results in: "AIValid <noreply@aivalid.fun>"
+RESEND_FROM_EMAIL=noreply@aivalid.id
+# Results in: "AIValid <noreply@aivalid.id>"
 
 # ⚠️ Acceptable - Using default name
-RESEND_FROM_EMAIL=noreply@aivalid.fun
-# Results in: "AIValid <noreply@aivalid.fun>" (uses default)
+RESEND_FROM_EMAIL=noreply@aivalid.id
+# Results in: "AIValid <noreply@aivalid.id>" (uses default)
 
 # ❌ Bad - Using test email in production
 RESEND_FROM_EMAIL=onboarding@resend.dev

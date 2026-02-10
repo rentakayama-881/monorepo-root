@@ -37,11 +37,11 @@ export const API_ENDPOINTS = {
     MESSAGE: (id) => `/api/disputes/${id}/message`,
     EVIDENCE: (id) => `/api/disputes/${id}/evidence`,
   },
-  // Threads
-  THREADS: {
-    LIST: "/api/threads",
-    CREATE: "/api/threads",
-    DETAIL: (id) => `/api/threads/${id}`,
+  // Validation Cases
+  VALIDATION_CASES: {
+    LIST: "/api/validation-cases",
+    CREATE: "/api/validation-cases",
+    DETAIL: (id) => `/api/validation-cases/${id}`,
   },
   // Health
   HEALTH: "/api/health",
@@ -166,7 +166,7 @@ export const STORAGE_KEYS = {
   RECENT_SEARCHES: "recentSearches",
 };
 
-// Locked Categories (cannot create new threads)
+// Locked Categories (intake closed; cannot create new Validation Cases)
 export const LOCKED_CATEGORIES = [
   "kolaborator-phd",
   "drama-korea",

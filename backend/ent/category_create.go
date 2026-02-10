@@ -4,7 +4,7 @@ package ent
 
 import (
 	"backend-gin/ent/category"
-	"backend-gin/ent/thread"
+	"backend-gin/ent/validationcase"
 	"context"
 	"errors"
 	"fmt"
@@ -89,19 +89,19 @@ func (_c *CategoryCreate) SetNillableDescription(v *string) *CategoryCreate {
 	return _c
 }
 
-// AddThreadIDs adds the "threads" edge to the Thread entity by IDs.
-func (_c *CategoryCreate) AddThreadIDs(ids ...int) *CategoryCreate {
-	_c.mutation.AddThreadIDs(ids...)
+// AddValidationCaseIDs adds the "validation_cases" edge to the ValidationCase entity by IDs.
+func (_c *CategoryCreate) AddValidationCaseIDs(ids ...int) *CategoryCreate {
+	_c.mutation.AddValidationCaseIDs(ids...)
 	return _c
 }
 
-// AddThreads adds the "threads" edges to the Thread entity.
-func (_c *CategoryCreate) AddThreads(v ...*Thread) *CategoryCreate {
+// AddValidationCases adds the "validation_cases" edges to the ValidationCase entity.
+func (_c *CategoryCreate) AddValidationCases(v ...*ValidationCase) *CategoryCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _c.AddThreadIDs(ids...)
+	return _c.AddValidationCaseIDs(ids...)
 }
 
 // Mutation returns the CategoryMutation object of the builder.
@@ -227,15 +227,15 @@ func (_c *CategoryCreate) createSpec() (*Category, *sqlgraph.CreateSpec) {
 		_spec.SetField(category.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if nodes := _c.mutation.ThreadsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ValidationCasesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   category.ThreadsTable,
-			Columns: []string{category.ThreadsColumn},
+			Table:   category.ValidationCasesTable,
+			Columns: []string{category.ValidationCasesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(thread.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(validationcase.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

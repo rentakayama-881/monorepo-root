@@ -6,7 +6,7 @@ import Link from "next/link";
 import { getApiBase } from "@/lib/api";
 import Avatar from "@/components/ui/Avatar";
 import { Badge, BadgeChip } from "@/components/ui/Badge";
-import ThreadCard, { ThreadCardSkeleton } from "@/components/ui/ThreadCard";
+import ValidationCaseTable from "@/components/ui/ValidationCaseTable";
 import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton";
 
 const SOCIAL_ICONS = {
@@ -70,9 +70,9 @@ export default function UserProfilePage() {
   const { username } = useParams();
   const [profile, setProfile] = useState(null);
   const [badges, setBadges] = useState([]);
-  const [threads, setThreads] = useState([]);
+  const [validationCases, setValidationCases] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("threads");
+  const [activeTab, setActiveTab] = useState("validation_cases");
   const [loadingContent, setLoadingContent] = useState(false);
 
   const API = getApiBase();
@@ -98,11 +98,11 @@ export default function UserProfilePage() {
     const loadTabContent = async () => {
       setLoadingContent(true);
       try {
-        if (activeTab === "threads") {
-          const res = await fetch(`${API}/api/user/${username}/threads`);
+        if (activeTab === "validation_cases") {
+          const res = await fetch(`${API}/api/user/${username}/validation-cases`);
           if (res.ok) {
             const data = await res.json();
-            setThreads(data.threads || []);
+            setValidationCases(data.validation_cases || []);
           }
         }
       } catch (err) {
@@ -150,8 +150,8 @@ export default function UserProfilePage() {
 
         {/* Content Skeleton */}
         <div className="space-y-4">
-          <ThreadCardSkeleton variant="default" />
-          <ThreadCardSkeleton variant="default" />
+          <Skeleton className="h-20 w-full rounded-lg border border-border" />
+          <Skeleton className="h-20 w-full rounded-lg border border-border" />
         </div>
       </section>
     );
@@ -160,7 +160,7 @@ export default function UserProfilePage() {
   if (!profile || profile.error) return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="text-center py-12">
-        <div className="text-4xl mb-4">👤</div>
+        <div className="mx-auto mb-4 h-12 w-12 rounded-full border border-border bg-secondary/60" aria-hidden="true" />
         <h2 className="text-xl font-semibold text-foreground mb-2">User Not Found</h2>
         <p className="text-muted-foreground">The user @{username} does not exist or has been removed.</p>
         <Link href="/" className="inline-block mt-4 text-primary hover:underline">
@@ -230,28 +230,21 @@ export default function UserProfilePage() {
               </p>
             )}
 
-            {Number(profile.credential_score) > 0 && (
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="inline-flex items-center gap-1 text-sm font-semibold text-amber-600 dark:text-amber-400">
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-                  </svg>
-                  {profile.credential_score} Credentials
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+              <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 font-semibold text-foreground">
+                Validation Cases: {Number(profile.validation_case_count || 0)}
+              </span>
+              {Number(profile.guarantee_amount) > 0 ? (
+                <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 font-semibold text-foreground">
+                  Active Stake: Rp {Number(profile.guarantee_amount || 0).toLocaleString("id-ID")}
                 </span>
-              </div>
-            )}
+              ) : (
+                <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 font-semibold text-muted-foreground">
+                  Active Stake: Rp 0
+                </span>
+              )}
+            </div>
 
-            {Number(profile.guarantee_amount) > 0 && (
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="9" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 9.5c-.5-1-1.5-1.5-2.5-1.5-1.5 0-2.5 1-2.5 2.25s1 2.25 2.5 2.25c1.5 0 2.5 1 2.5 2.25S13.5 17 12 17c-1 0-2-.5-2.5-1.5M12 6.5v1M12 16.5v1" />
-                  </svg>
-                  Jaminan Rp {profile.guarantee_amount.toLocaleString("id-ID")}
-                </span>
-              </div>
-            )}
           </div>
         </div>
         
@@ -263,7 +256,7 @@ export default function UserProfilePage() {
         )}
 
         {/* Meta info */}
-        {(profile.company || profile.telegram || pronouns || normalizedSocials.length > 0) && (
+        {(profile.company || pronouns || normalizedSocials.length > 0) && (
           <div className="flex flex-wrap gap-4 text-sm">
             {pronouns && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -282,19 +275,6 @@ export default function UserProfilePage() {
                 </svg>
                 <span>{profile.company}</span>
               </div>
-            )}
-            {profile.telegram && (
-              <a
-                href={`https://t.me/${profile.telegram.replace(/^@/, "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
-              >
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
-                </svg>
-                <span>{profile.telegram}</span>
-              </a>
             )}
             {normalizedSocials.map((social) => (
               <a
@@ -324,15 +304,15 @@ export default function UserProfilePage() {
       {/* Tabs */}
       <nav className="flex gap-1 border-b border-border mb-6">
         <button 
-          onClick={() => setActiveTab("threads")}
+          onClick={() => setActiveTab("validation_cases")}
           className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-            activeTab === "threads" 
+            activeTab === "validation_cases" 
               ? "text-primary" 
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Threads
-          {activeTab === "threads" && (
+          Validation Cases
+          {activeTab === "validation_cases" && (
             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
           )}
         </button>
@@ -355,10 +335,10 @@ export default function UserProfilePage() {
       <div className="min-h-[200px]">
         {loadingContent ? (
           <div className="space-y-4 py-2">
-            {activeTab === "threads" && (
+            {activeTab === "validation_cases" && (
               <>
-                <ThreadCardSkeleton variant="default" />
-                <ThreadCardSkeleton variant="default" />
+                <Skeleton className="h-20 w-full rounded-lg border border-border" />
+                <Skeleton className="h-20 w-full rounded-lg border border-border" />
               </>
             )}
             {activeTab === "badges" && (
@@ -371,22 +351,10 @@ export default function UserProfilePage() {
           </div>
         ) : (
           <>
-            {/* Threads Tab */}
-            {activeTab === "threads" && (
-              <div className="space-y-4">
-                {threads.length > 0 ? (
-                  threads.map(thread => (
-                    <ThreadCard
-                      key={thread.id}
-                      thread={thread}
-                      showAuthor={false}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <p>No threads posted yet</p>
-                  </div>
-                )}
+            {/* Validation Cases Tab */}
+            {activeTab === "validation_cases" && (
+              <div>
+                <ValidationCaseTable cases={validationCases} />
               </div>
             )}
 
@@ -397,7 +365,7 @@ export default function UserProfilePage() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {badges.map(b => (
                       <div key={b.id} className="rounded-lg border border-border bg-card p-4 text-center">
-                        <div className="text-3xl mb-2">{b.icon || "🏅"}</div>
+                        <div className="mx-auto mb-2 h-10 w-10 rounded-full bg-secondary/60 border border-border" aria-hidden="true" />
                         <div className="font-medium text-foreground text-sm">{b.name}</div>
                         {b.description && (
                           <div className="text-xs text-muted-foreground mt-1 line-clamp-2">

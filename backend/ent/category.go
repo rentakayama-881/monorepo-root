@@ -37,20 +37,20 @@ type Category struct {
 
 // CategoryEdges holds the relations/edges for other nodes in the graph.
 type CategoryEdges struct {
-	// Threads holds the value of the threads edge.
-	Threads []*Thread `json:"threads,omitempty"`
+	// ValidationCases holds the value of the validation_cases edge.
+	ValidationCases []*ValidationCase `json:"validation_cases,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
-// ThreadsOrErr returns the Threads value or an error if the edge
+// ValidationCasesOrErr returns the ValidationCases value or an error if the edge
 // was not loaded in eager-loading.
-func (e CategoryEdges) ThreadsOrErr() ([]*Thread, error) {
+func (e CategoryEdges) ValidationCasesOrErr() ([]*ValidationCase, error) {
 	if e.loadedTypes[0] {
-		return e.Threads, nil
+		return e.ValidationCases, nil
 	}
-	return nil, &NotLoadedError{edge: "threads"}
+	return nil, &NotLoadedError{edge: "validation_cases"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -135,9 +135,9 @@ func (_m *Category) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryThreads queries the "threads" edge of the Category entity.
-func (_m *Category) QueryThreads() *ThreadQuery {
-	return NewCategoryClient(_m.config).QueryThreads(_m)
+// QueryValidationCases queries the "validation_cases" edge of the Category entity.
+func (_m *Category) QueryValidationCases() *ValidationCaseQuery {
+	return NewCategoryClient(_m.config).QueryValidationCases(_m)
 }
 
 // Update returns a builder for updating this Category.

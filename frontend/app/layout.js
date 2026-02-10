@@ -1,5 +1,4 @@
 import "./globals.css";
-import { Inter, Geist_Mono, Aref_Ruqaa } from "next/font/google";
 import Script from "next/script";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -12,28 +11,9 @@ import { CommandPaletteProvider } from "../components/CommandPaletteProvider";
 import GlobalKeyboardShortcuts from "../components/GlobalKeyboardShortcuts";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const arefRuqaa = Aref_Ruqaa({
-  weight: ["400", "700"],
-  subsets: ["arabic", "latin"],
-  variable: "--font-aref-ruqaa", // Kita buat variable CSS-nya
-  display: "swap",
-});
-
-// Load fonts (prompts.chat style)
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-  display: "swap",
-});
-
-const siteName = "AIvalid";
-const siteDescription = "Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.";
+const siteName = "AIValid";
+const siteDescription =
+  "Validation Protocol untuk hasil kerja berbasis AI: escrow-backed, stake-gated, dan dapat diaudit dengan admin arbitration.";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
 export const metadata = {
   metadataBase: new URL(siteUrl),
@@ -42,7 +22,7 @@ export const metadata = {
     template: `%s | ${siteName}`,
   },
   description: siteDescription,
-  keywords: ["escrow", "transaksi aman", "komunitas", "forum", "Indonesia", "payment"],
+  keywords: ["validation protocol", "validation case", "escrow", "audit trail", "arbitration", "Indonesia", "wallet"],
   authors: [{ name: "AIvalid Team" }],
   creator: "AIvalid",
   publisher: "AIvalid",
@@ -110,10 +90,8 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
-  const htmlClassName = `${inter.variable} ${geistMono.variable} ${arefRuqaa.variable}`.trim();
-
   return (
-    <html lang="id" suppressHydrationWarning className={htmlClassName}>
+    <html lang="id" suppressHydrationWarning>
       <body className="flex min-h-dvh flex-col antialiased bg-background text-foreground">
         <Script id="theme-init" strategy="beforeInteractive">{`
 (() => {

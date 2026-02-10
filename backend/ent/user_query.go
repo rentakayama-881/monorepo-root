@@ -3,12 +3,16 @@
 package ent
 
 import (
+	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/badge"
+	"backend-gin/ent/consultationrequest"
 	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
+	"backend-gin/ent/endorsement"
+	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/predicate"
@@ -16,11 +20,11 @@ import (
 	"backend-gin/ent/session"
 	"backend-gin/ent/sessionlock"
 	"backend-gin/ent/sudosession"
-	"backend-gin/ent/thread"
-	"backend-gin/ent/threadcredential"
 	"backend-gin/ent/totppendingtoken"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
+	"backend-gin/ent/validationcase"
+	"backend-gin/ent/validationcaselog"
 	"context"
 	"database/sql/driver"
 	"fmt"
@@ -42,7 +46,7 @@ type UserQuery struct {
 	withPasskeys                *PasskeyQuery
 	withSessions                *SessionQuery
 	withBackupCodes             *BackupCodeQuery
-	withThreads                 *ThreadQuery
+	withValidationCases         *ValidationCaseQuery
 	withUserBadges              *UserBadgeQuery
 	withSessionLocks            *SessionLockQuery
 	withEmailVerificationTokens *EmailVerificationTokenQuery
@@ -53,7 +57,11 @@ type UserQuery struct {
 	withDeviceFingerprints      *DeviceFingerprintQuery
 	withDeviceUserMappings      *DeviceUserMappingQuery
 	withSudoSessions            *SudoSessionQuery
-	withGivenCredentials        *ThreadCredentialQuery
+	withValidationCaseLogs      *ValidationCaseLogQuery
+	withConsultationRequests    *ConsultationRequestQuery
+	withFinalOffers             *FinalOfferQuery
+	withArtifactSubmissions     *ArtifactSubmissionQuery
+	withEndorsements            *EndorsementQuery
 	withPrimaryBadge            *BadgeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -157,9 +165,9 @@ func (_q *UserQuery) QueryBackupCodes() *BackupCodeQuery {
 	return query
 }
 
-// QueryThreads chains the current query on the "threads" edge.
-func (_q *UserQuery) QueryThreads() *ThreadQuery {
-	query := (&ThreadClient{config: _q.config}).Query()
+// QueryValidationCases chains the current query on the "validation_cases" edge.
+func (_q *UserQuery) QueryValidationCases() *ValidationCaseQuery {
+	query := (&ValidationCaseClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -170,8 +178,8 @@ func (_q *UserQuery) QueryThreads() *ThreadQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(thread.Table, thread.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.ThreadsTable, user.ThreadsColumn),
+			sqlgraph.To(validationcase.Table, validationcase.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ValidationCasesTable, user.ValidationCasesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -399,9 +407,9 @@ func (_q *UserQuery) QuerySudoSessions() *SudoSessionQuery {
 	return query
 }
 
-// QueryGivenCredentials chains the current query on the "given_credentials" edge.
-func (_q *UserQuery) QueryGivenCredentials() *ThreadCredentialQuery {
-	query := (&ThreadCredentialClient{config: _q.config}).Query()
+// QueryValidationCaseLogs chains the current query on the "validation_case_logs" edge.
+func (_q *UserQuery) QueryValidationCaseLogs() *ValidationCaseLogQuery {
+	query := (&ValidationCaseLogClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -412,8 +420,96 @@ func (_q *UserQuery) QueryGivenCredentials() *ThreadCredentialQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(threadcredential.Table, threadcredential.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.GivenCredentialsTable, user.GivenCredentialsColumn),
+			sqlgraph.To(validationcaselog.Table, validationcaselog.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ValidationCaseLogsTable, user.ValidationCaseLogsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryConsultationRequests chains the current query on the "consultation_requests" edge.
+func (_q *UserQuery) QueryConsultationRequests() *ConsultationRequestQuery {
+	query := (&ConsultationRequestClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(consultationrequest.Table, consultationrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ConsultationRequestsTable, user.ConsultationRequestsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryFinalOffers chains the current query on the "final_offers" edge.
+func (_q *UserQuery) QueryFinalOffers() *FinalOfferQuery {
+	query := (&FinalOfferClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(finaloffer.Table, finaloffer.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.FinalOffersTable, user.FinalOffersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryArtifactSubmissions chains the current query on the "artifact_submissions" edge.
+func (_q *UserQuery) QueryArtifactSubmissions() *ArtifactSubmissionQuery {
+	query := (&ArtifactSubmissionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(artifactsubmission.Table, artifactsubmission.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ArtifactSubmissionsTable, user.ArtifactSubmissionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEndorsements chains the current query on the "endorsements" edge.
+func (_q *UserQuery) QueryEndorsements() *EndorsementQuery {
+	query := (&EndorsementClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(endorsement.Table, endorsement.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.EndorsementsTable, user.EndorsementsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -638,7 +734,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withPasskeys:                _q.withPasskeys.Clone(),
 		withSessions:                _q.withSessions.Clone(),
 		withBackupCodes:             _q.withBackupCodes.Clone(),
-		withThreads:                 _q.withThreads.Clone(),
+		withValidationCases:         _q.withValidationCases.Clone(),
 		withUserBadges:              _q.withUserBadges.Clone(),
 		withSessionLocks:            _q.withSessionLocks.Clone(),
 		withEmailVerificationTokens: _q.withEmailVerificationTokens.Clone(),
@@ -649,7 +745,11 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withDeviceFingerprints:      _q.withDeviceFingerprints.Clone(),
 		withDeviceUserMappings:      _q.withDeviceUserMappings.Clone(),
 		withSudoSessions:            _q.withSudoSessions.Clone(),
-		withGivenCredentials:        _q.withGivenCredentials.Clone(),
+		withValidationCaseLogs:      _q.withValidationCaseLogs.Clone(),
+		withConsultationRequests:    _q.withConsultationRequests.Clone(),
+		withFinalOffers:             _q.withFinalOffers.Clone(),
+		withArtifactSubmissions:     _q.withArtifactSubmissions.Clone(),
+		withEndorsements:            _q.withEndorsements.Clone(),
 		withPrimaryBadge:            _q.withPrimaryBadge.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -690,14 +790,14 @@ func (_q *UserQuery) WithBackupCodes(opts ...func(*BackupCodeQuery)) *UserQuery 
 	return _q
 }
 
-// WithThreads tells the query-builder to eager-load the nodes that are connected to
-// the "threads" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *UserQuery) WithThreads(opts ...func(*ThreadQuery)) *UserQuery {
-	query := (&ThreadClient{config: _q.config}).Query()
+// WithValidationCases tells the query-builder to eager-load the nodes that are connected to
+// the "validation_cases" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithValidationCases(opts ...func(*ValidationCaseQuery)) *UserQuery {
+	query := (&ValidationCaseClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withThreads = query
+	_q.withValidationCases = query
 	return _q
 }
 
@@ -811,14 +911,58 @@ func (_q *UserQuery) WithSudoSessions(opts ...func(*SudoSessionQuery)) *UserQuer
 	return _q
 }
 
-// WithGivenCredentials tells the query-builder to eager-load the nodes that are connected to
-// the "given_credentials" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *UserQuery) WithGivenCredentials(opts ...func(*ThreadCredentialQuery)) *UserQuery {
-	query := (&ThreadCredentialClient{config: _q.config}).Query()
+// WithValidationCaseLogs tells the query-builder to eager-load the nodes that are connected to
+// the "validation_case_logs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithValidationCaseLogs(opts ...func(*ValidationCaseLogQuery)) *UserQuery {
+	query := (&ValidationCaseLogClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withGivenCredentials = query
+	_q.withValidationCaseLogs = query
+	return _q
+}
+
+// WithConsultationRequests tells the query-builder to eager-load the nodes that are connected to
+// the "consultation_requests" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithConsultationRequests(opts ...func(*ConsultationRequestQuery)) *UserQuery {
+	query := (&ConsultationRequestClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConsultationRequests = query
+	return _q
+}
+
+// WithFinalOffers tells the query-builder to eager-load the nodes that are connected to
+// the "final_offers" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithFinalOffers(opts ...func(*FinalOfferQuery)) *UserQuery {
+	query := (&FinalOfferClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withFinalOffers = query
+	return _q
+}
+
+// WithArtifactSubmissions tells the query-builder to eager-load the nodes that are connected to
+// the "artifact_submissions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithArtifactSubmissions(opts ...func(*ArtifactSubmissionQuery)) *UserQuery {
+	query := (&ArtifactSubmissionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withArtifactSubmissions = query
+	return _q
+}
+
+// WithEndorsements tells the query-builder to eager-load the nodes that are connected to
+// the "endorsements" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithEndorsements(opts ...func(*EndorsementQuery)) *UserQuery {
+	query := (&EndorsementClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEndorsements = query
 	return _q
 }
 
@@ -911,11 +1055,11 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [16]bool{
+		loadedTypes = [20]bool{
 			_q.withPasskeys != nil,
 			_q.withSessions != nil,
 			_q.withBackupCodes != nil,
-			_q.withThreads != nil,
+			_q.withValidationCases != nil,
 			_q.withUserBadges != nil,
 			_q.withSessionLocks != nil,
 			_q.withEmailVerificationTokens != nil,
@@ -926,7 +1070,11 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withDeviceFingerprints != nil,
 			_q.withDeviceUserMappings != nil,
 			_q.withSudoSessions != nil,
-			_q.withGivenCredentials != nil,
+			_q.withValidationCaseLogs != nil,
+			_q.withConsultationRequests != nil,
+			_q.withFinalOffers != nil,
+			_q.withArtifactSubmissions != nil,
+			_q.withEndorsements != nil,
 			_q.withPrimaryBadge != nil,
 		}
 	)
@@ -969,10 +1117,10 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
-	if query := _q.withThreads; query != nil {
-		if err := _q.loadThreads(ctx, query, nodes,
-			func(n *User) { n.Edges.Threads = []*Thread{} },
-			func(n *User, e *Thread) { n.Edges.Threads = append(n.Edges.Threads, e) }); err != nil {
+	if query := _q.withValidationCases; query != nil {
+		if err := _q.loadValidationCases(ctx, query, nodes,
+			func(n *User) { n.Edges.ValidationCases = []*ValidationCase{} },
+			func(n *User, e *ValidationCase) { n.Edges.ValidationCases = append(n.Edges.ValidationCases, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1054,10 +1202,44 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
-	if query := _q.withGivenCredentials; query != nil {
-		if err := _q.loadGivenCredentials(ctx, query, nodes,
-			func(n *User) { n.Edges.GivenCredentials = []*ThreadCredential{} },
-			func(n *User, e *ThreadCredential) { n.Edges.GivenCredentials = append(n.Edges.GivenCredentials, e) }); err != nil {
+	if query := _q.withValidationCaseLogs; query != nil {
+		if err := _q.loadValidationCaseLogs(ctx, query, nodes,
+			func(n *User) { n.Edges.ValidationCaseLogs = []*ValidationCaseLog{} },
+			func(n *User, e *ValidationCaseLog) {
+				n.Edges.ValidationCaseLogs = append(n.Edges.ValidationCaseLogs, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withConsultationRequests; query != nil {
+		if err := _q.loadConsultationRequests(ctx, query, nodes,
+			func(n *User) { n.Edges.ConsultationRequests = []*ConsultationRequest{} },
+			func(n *User, e *ConsultationRequest) {
+				n.Edges.ConsultationRequests = append(n.Edges.ConsultationRequests, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withFinalOffers; query != nil {
+		if err := _q.loadFinalOffers(ctx, query, nodes,
+			func(n *User) { n.Edges.FinalOffers = []*FinalOffer{} },
+			func(n *User, e *FinalOffer) { n.Edges.FinalOffers = append(n.Edges.FinalOffers, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withArtifactSubmissions; query != nil {
+		if err := _q.loadArtifactSubmissions(ctx, query, nodes,
+			func(n *User) { n.Edges.ArtifactSubmissions = []*ArtifactSubmission{} },
+			func(n *User, e *ArtifactSubmission) {
+				n.Edges.ArtifactSubmissions = append(n.Edges.ArtifactSubmissions, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEndorsements; query != nil {
+		if err := _q.loadEndorsements(ctx, query, nodes,
+			func(n *User) { n.Edges.Endorsements = []*Endorsement{} },
+			func(n *User, e *Endorsement) { n.Edges.Endorsements = append(n.Edges.Endorsements, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1160,7 +1342,7 @@ func (_q *UserQuery) loadBackupCodes(ctx context.Context, query *BackupCodeQuery
 	}
 	return nil
 }
-func (_q *UserQuery) loadThreads(ctx context.Context, query *ThreadQuery, nodes []*User, init func(*User), assign func(*User, *Thread)) error {
+func (_q *UserQuery) loadValidationCases(ctx context.Context, query *ValidationCaseQuery, nodes []*User, init func(*User), assign func(*User, *ValidationCase)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*User)
 	for i := range nodes {
@@ -1171,10 +1353,10 @@ func (_q *UserQuery) loadThreads(ctx context.Context, query *ThreadQuery, nodes 
 		}
 	}
 	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(thread.FieldUserID)
+		query.ctx.AppendFieldOnce(validationcase.FieldUserID)
 	}
-	query.Where(predicate.Thread(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(user.ThreadsColumn), fks...))
+	query.Where(predicate.ValidationCase(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ValidationCasesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -1493,7 +1675,7 @@ func (_q *UserQuery) loadSudoSessions(ctx context.Context, query *SudoSessionQue
 	}
 	return nil
 }
-func (_q *UserQuery) loadGivenCredentials(ctx context.Context, query *ThreadCredentialQuery, nodes []*User, init func(*User), assign func(*User, *ThreadCredential)) error {
+func (_q *UserQuery) loadValidationCaseLogs(ctx context.Context, query *ValidationCaseLogQuery, nodes []*User, init func(*User), assign func(*User, *ValidationCaseLog)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*User)
 	for i := range nodes {
@@ -1504,20 +1686,143 @@ func (_q *UserQuery) loadGivenCredentials(ctx context.Context, query *ThreadCred
 		}
 	}
 	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(threadcredential.FieldUserID)
+		query.ctx.AppendFieldOnce(validationcaselog.FieldActorUserID)
 	}
-	query.Where(predicate.ThreadCredential(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(user.GivenCredentialsColumn), fks...))
+	query.Where(predicate.ValidationCaseLog(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ValidationCaseLogsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.UserID
+		fk := n.ActorUserID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "actor_user_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "actor_user_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadConsultationRequests(ctx context.Context, query *ConsultationRequestQuery, nodes []*User, init func(*User), assign func(*User, *ConsultationRequest)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(consultationrequest.FieldValidatorUserID)
+	}
+	query.Where(predicate.ConsultationRequest(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ConsultationRequestsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ValidatorUserID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "validator_user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadFinalOffers(ctx context.Context, query *FinalOfferQuery, nodes []*User, init func(*User), assign func(*User, *FinalOffer)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(finaloffer.FieldValidatorUserID)
+	}
+	query.Where(predicate.FinalOffer(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.FinalOffersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ValidatorUserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "validator_user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadArtifactSubmissions(ctx context.Context, query *ArtifactSubmissionQuery, nodes []*User, init func(*User), assign func(*User, *ArtifactSubmission)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(artifactsubmission.FieldValidatorUserID)
+	}
+	query.Where(predicate.ArtifactSubmission(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ArtifactSubmissionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ValidatorUserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "validator_user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadEndorsements(ctx context.Context, query *EndorsementQuery, nodes []*User, init func(*User), assign func(*User, *Endorsement)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(endorsement.FieldValidatorUserID)
+	}
+	query.Where(predicate.Endorsement(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.EndorsementsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ValidatorUserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "validator_user_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

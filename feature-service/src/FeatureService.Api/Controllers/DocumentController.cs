@@ -138,17 +138,27 @@ public class DocumentController : ControllerBase
     public async Task<IActionResult> GetDocument(string id)
     {
         var currentUserId = GetCurrentUserId();
-        var document = await _documentService.GetDocumentByIdAsync(id);
+        var isAdmin = IsCurrentUserAdmin();
+        var access = await _documentService.GetDocumentAccessAsync(id);
 
-        if (document == null)
+        if (access == null)
         {
             return NotFound(new { error = "Document not found" });
         }
 
         // Check access permissions
-        if (document.Visibility == DocumentVisibility.Private && document.UserId != currentUserId)
+        if (access.Visibility == DocumentVisibility.Private
+            && access.UserId != currentUserId
+            && !isAdmin
+            && !(access.SharedWithUserIds?.Contains(currentUserId) ?? false))
         {
             return Forbid();
+        }
+
+        var document = await _documentService.GetDocumentByIdAsync(id);
+        if (document == null)
+        {
+            return NotFound(new { error = "Document not found" });
         }
 
         return Ok(document);
@@ -165,15 +175,19 @@ public class DocumentController : ControllerBase
     public async Task<IActionResult> DownloadDocument(string id)
     {
         var currentUserId = GetCurrentUserId();
-        var document = await _documentService.GetDocumentByIdAsync(id);
+        var isAdmin = IsCurrentUserAdmin();
+        var access = await _documentService.GetDocumentAccessAsync(id);
 
-        if (document == null)
+        if (access == null)
         {
             return NotFound(new { error = "Document not found" });
         }
 
         // Check access permissions
-        if (document.Visibility == DocumentVisibility.Private && document.UserId != currentUserId)
+        if (access.Visibility == DocumentVisibility.Private
+            && access.UserId != currentUserId
+            && !isAdmin
+            && !(access.SharedWithUserIds?.Contains(currentUserId) ?? false))
         {
             return Forbid();
         }
@@ -187,8 +201,8 @@ public class DocumentController : ControllerBase
         // Increment download count
         await _documentService.IncrementDownloadCountAsync(id);
 
-        var contentType = document.FileType == "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-        return File(fileData, contentType, document.FileName);
+        var contentType = access.FileType == "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        return File(fileData, contentType, access.FileName);
     }
 
     /// <summary>
@@ -227,6 +241,36 @@ public class DocumentController : ControllerBase
 
         await _documentService.UpdateDocumentAsync(id, request);
         return Ok(new { message = "Document updated successfully" });
+    }
+
+    /// <summary>
+    /// Update private document sharing list (owner/admin)
+    /// </summary>
+    [HttpPatch("{id}/sharing")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateDocumentSharing(string id, [FromBody] UpdateDocumentSharingRequest request)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == 0)
+        {
+            return Unauthorized(new { error = "User not authenticated" });
+        }
+
+        var access = await _documentService.GetDocumentAccessAsync(id);
+        if (access == null)
+        {
+            return NotFound(new { error = "Document not found" });
+        }
+
+        if (access.UserId != userId && !IsCurrentUserAdmin())
+        {
+            return Forbid();
+        }
+
+        await _documentService.UpdateDocumentSharingAsync(id, request.SharedWithUserIds);
+        return Ok(new { message = "Document sharing updated successfully" });
     }
 
     /// <summary>

@@ -49,8 +49,15 @@ func TestEnhancedRateLimiter_UserLimitWithUserID(t *testing.T) {
 	req2 := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rec2 := httptest.NewRecorder()
 	router.ServeHTTP(rec2, req2)
-	if rec2.Code != http.StatusTooManyRequests {
-		t.Fatalf("second request should be rate limited, got status %d", rec2.Code)
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("second request should pass (authenticated users have higher limit), got status %d", rec2.Code)
+	}
+
+	req3 := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rec3 := httptest.NewRecorder()
+	router.ServeHTTP(rec3, req3)
+	if rec3.Code != http.StatusTooManyRequests {
+		t.Fatalf("third request should be rate limited, got status %d", rec3.Code)
 	}
 }
 
@@ -80,8 +87,15 @@ func TestEnhancedRateLimiter_UserLimitWithLegacyUserID(t *testing.T) {
 	req2 := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rec2 := httptest.NewRecorder()
 	router.ServeHTTP(rec2, req2)
-	if rec2.Code != http.StatusTooManyRequests {
-		t.Fatalf("second request should be rate limited, got status %d", rec2.Code)
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("second request should pass (authenticated users have higher limit), got status %d", rec2.Code)
+	}
+
+	req3 := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rec3 := httptest.NewRecorder()
+	router.ServeHTTP(rec3, req3)
+	if rec3.Code != http.StatusTooManyRequests {
+		t.Fatalf("third request should be rate limited, got status %d", rec3.Code)
 	}
 }
 

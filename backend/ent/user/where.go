@@ -1609,21 +1609,21 @@ func HasBackupCodesWith(preds ...predicate.BackupCode) predicate.User {
 	})
 }
 
-// HasThreads applies the HasEdge predicate on the "threads" edge.
-func HasThreads() predicate.User {
+// HasValidationCases applies the HasEdge predicate on the "validation_cases" edge.
+func HasValidationCases() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ThreadsTable, ThreadsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, ValidationCasesTable, ValidationCasesColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasThreadsWith applies the HasEdge predicate on the "threads" edge with a given conditions (other predicates).
-func HasThreadsWith(preds ...predicate.Thread) predicate.User {
+// HasValidationCasesWith applies the HasEdge predicate on the "validation_cases" edge with a given conditions (other predicates).
+func HasValidationCasesWith(preds ...predicate.ValidationCase) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
-		step := newThreadsStep()
+		step := newValidationCasesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -1862,21 +1862,113 @@ func HasSudoSessionsWith(preds ...predicate.SudoSession) predicate.User {
 	})
 }
 
-// HasGivenCredentials applies the HasEdge predicate on the "given_credentials" edge.
-func HasGivenCredentials() predicate.User {
+// HasValidationCaseLogs applies the HasEdge predicate on the "validation_case_logs" edge.
+func HasValidationCaseLogs() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, GivenCredentialsTable, GivenCredentialsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, ValidationCaseLogsTable, ValidationCaseLogsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasGivenCredentialsWith applies the HasEdge predicate on the "given_credentials" edge with a given conditions (other predicates).
-func HasGivenCredentialsWith(preds ...predicate.ThreadCredential) predicate.User {
+// HasValidationCaseLogsWith applies the HasEdge predicate on the "validation_case_logs" edge with a given conditions (other predicates).
+func HasValidationCaseLogsWith(preds ...predicate.ValidationCaseLog) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
-		step := newGivenCredentialsStep()
+		step := newValidationCaseLogsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasConsultationRequests applies the HasEdge predicate on the "consultation_requests" edge.
+func HasConsultationRequests() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ConsultationRequestsTable, ConsultationRequestsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConsultationRequestsWith applies the HasEdge predicate on the "consultation_requests" edge with a given conditions (other predicates).
+func HasConsultationRequestsWith(preds ...predicate.ConsultationRequest) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newConsultationRequestsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasFinalOffers applies the HasEdge predicate on the "final_offers" edge.
+func HasFinalOffers() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, FinalOffersTable, FinalOffersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasFinalOffersWith applies the HasEdge predicate on the "final_offers" edge with a given conditions (other predicates).
+func HasFinalOffersWith(preds ...predicate.FinalOffer) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newFinalOffersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasArtifactSubmissions applies the HasEdge predicate on the "artifact_submissions" edge.
+func HasArtifactSubmissions() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ArtifactSubmissionsTable, ArtifactSubmissionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasArtifactSubmissionsWith applies the HasEdge predicate on the "artifact_submissions" edge with a given conditions (other predicates).
+func HasArtifactSubmissionsWith(preds ...predicate.ArtifactSubmission) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newArtifactSubmissionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEndorsements applies the HasEdge predicate on the "endorsements" edge.
+func HasEndorsements() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EndorsementsTable, EndorsementsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEndorsementsWith applies the HasEdge predicate on the "endorsements" edge with a given conditions (other predicates).
+func HasEndorsementsWith(preds ...predicate.Endorsement) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newEndorsementsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

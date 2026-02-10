@@ -43,7 +43,7 @@ func (Category) Fields() []ent.Field {
 // Edges of the Category.
 func (Category) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("threads", Thread.Type),
+		edge.To("validation_cases", ValidationCase.Type),
 	}
 }
 

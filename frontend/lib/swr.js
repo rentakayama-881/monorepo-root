@@ -154,12 +154,12 @@ export function useWallet() {
 }
 
 /**
- * Hook for fetching thread detail
- * @param {string|null} threadId - Thread ID to fetch
+ * Hook for fetching Validation Case record (public)
+ * @param {string|null} validationCaseId - Validation Case ID to fetch
  */
-export function useThread(threadId) {
+export function useValidationCase(validationCaseId) {
   const { data, error, isLoading, mutate } = useSWR(
-    threadId ? `${getApiBase()}/api/threads/${threadId}` : null,
+    validationCaseId ? `${getApiBase()}/api/validation-cases/${validationCaseId}/public` : null,
     publicFetcher,
     {
       ...swrConfig,
@@ -168,7 +168,7 @@ export function useThread(threadId) {
   );
 
   return {
-    thread: data,
+    validationCase: data,
     isLoading,
     error,
     mutate,
@@ -176,13 +176,13 @@ export function useThread(threadId) {
 }
 
 /**
- * Hook for fetching user's threads (My Threads page)
+ * Hook for fetching user's Validation Cases (My Validation Cases page)
  */
-export function useMyThreads() {
+export function useMyValidationCases() {
   const token = getToken();
   
   const { data, error, isLoading, mutate } = useSWR(
-    token ? `${getApiBase()}/api/threads/my` : null,
+    token ? `${getApiBase()}/api/validation-cases/me` : null,
     authFetcher,
     {
       ...swrConfig,
@@ -191,7 +191,7 @@ export function useMyThreads() {
   );
 
   return {
-    threads: data?.threads || [],
+    validationCases: data?.validation_cases || [],
     isLoading,
     error,
     mutate,
@@ -199,11 +199,11 @@ export function useMyThreads() {
 }
 
 /**
- * Hook for fetching categories
+ * Hook for fetching Validation Case types (categories)
  */
-export function useCategories() {
+export function useValidationCaseCategories() {
   const { data, error, isLoading } = useSWR(
-    `${getApiBase()}/api/threads/categories`,
+    `${getApiBase()}/api/validation-cases/categories`,
     publicFetcher,
     {
       ...swrConfig,
@@ -293,21 +293,21 @@ export function invalidateUserData() {
   const featureBase = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
   globalMutate(`${base}/api/account/me`);
   globalMutate(`${featureBase}/api/v1/wallets/me`);
-  globalMutate(`${base}/api/threads/my`);
+  globalMutate(`${base}/api/validation-cases/me`);
   globalMutate(`${base}/api/auth/totp/status`);
   globalMutate(`${base}/api/account/can-delete`);
 }
 
 /**
- * Invalidate thread-related data
- * Call this after creating/editing/deleting threads
+ * Invalidate Validation Case-related data
+ * Call this after creating/updating/deleting Validation Cases
  */
-export function invalidateThreads() {
+export function invalidateValidationCases() {
   const base = getApiBase();
-  globalMutate(`${base}/api/threads/my`);
-  // Also invalidate any matching thread list patterns
+  globalMutate(`${base}/api/validation-cases/me`);
+  // Also invalidate any matching list patterns
   globalMutate(
-    (key) => typeof key === 'string' && key.includes('/api/threads'),
+    (key) => typeof key === 'string' && key.includes("/api/validation-cases"),
     undefined,
     { revalidate: true }
   );

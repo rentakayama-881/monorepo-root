@@ -4,7 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace FeatureService.Api.Models.Entities;
 
 /// <summary>
-/// Represents a user report for threads or replies.
+/// Represents a user report for Validation Cases.
 /// Reports are reviewed by admins who can take moderation actions.
 /// </summary>
 public class Report
@@ -14,22 +14,30 @@ public class Report
     public string Id { get; set; } = string.Empty; // rpt_xxx format using Ulid
 
     /// <summary>
-    /// Type of content being reported: "thread" or "reply"
+    /// Type of content being reported: "validation_case"
     /// </summary>
     [BsonElement("targetType")]
     public string TargetType { get; set; } = string.Empty;
 
     /// <summary>
-    /// ID of the reported content (ThreadId as uint or ReplyId as string)
+    /// ID of the reported content (Validation Case ID as string)
     /// </summary>
     [BsonElement("targetId")]
     public string TargetId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Thread ID for context (for replies, this is the parent thread)
+    /// Validation Case ID for context.
+    /// </summary>
+    [BsonElement("validationCaseId")]
+    public uint ValidationCaseId { get; set; }
+
+    /// <summary>
+    /// Legacy field: "threadId" from the old forum/thread domain.
+    /// Kept to preserve existing MongoDB documents during migration.
     /// </summary>
     [BsonElement("threadId")]
-    public uint ThreadId { get; set; }
+    [BsonIgnoreIfDefault]
+    public uint LegacyThreadId { get; set; }
 
     /// <summary>
     /// User ID of the person being reported (content owner)
@@ -97,6 +105,9 @@ public class Report
 /// </summary>
 public static class ReportTargetType
 {
+    public const string ValidationCase = "validation_case";
+
+    // Legacy alias (deprecated): old thread-based domain.
     public const string Thread = "thread";
 }
 
