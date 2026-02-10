@@ -1621,29 +1621,51 @@ function ContentTable({ content }) {
 function Table({ rows, headerLeft = "Kolom", headerRight = "Detail", compact = false }) {
   const tdClass = compact ? "px-3 py-2 text-xs" : "px-4 py-3 text-sm";
   const thClass = compact ? "px-3 py-2 text-[11px]" : "px-4 py-2.5 text-[11px]";
+  const mobileValueClass = compact ? "mt-1 text-xs text-foreground" : "mt-2 text-sm text-foreground";
 
   return (
     <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
-      <table className="w-full table-fixed border-collapse">
-        <thead className="bg-secondary/40">
-          <tr>
-            <th className={`w-56 text-left font-semibold uppercase tracking-[0.14em] text-muted-foreground ${thClass}`}>
-              {headerLeft}
-            </th>
-            <th className={`text-left font-semibold uppercase tracking-[0.14em] text-muted-foreground ${thClass}`}>
-              {headerRight}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/80">
+      <div className="md:hidden">
+        <div className="border-b border-border/80 bg-secondary/40 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          {headerLeft} / {headerRight}
+        </div>
+        <div className={compact ? "space-y-2 p-2.5" : "space-y-2.5 p-3"}>
           {rows.map((r, idx) => (
-            <tr key={idx} className="align-top transition-colors hover:bg-secondary/15">
-              <td className={`${tdClass} font-semibold text-foreground`}>{prettifyKey(r.label)}</td>
-              <td className={`${tdClass} text-muted-foreground`}>{renderValue(r.value)}</td>
-            </tr>
+            <article
+              key={idx}
+              className="rounded-lg border border-border/70 bg-secondary/[0.18] p-3"
+            >
+              <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                {prettifyKey(r.label)}
+              </h4>
+              <div className={mobileValueClass}>{renderValue(r.value)}</div>
+            </article>
           ))}
-        </tbody>
-      </table>
+        </div>
+      </div>
+
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full table-fixed border-collapse">
+          <thead className="bg-secondary/40">
+            <tr>
+              <th className={`w-56 text-left font-semibold uppercase tracking-[0.14em] text-muted-foreground ${thClass}`}>
+                {headerLeft}
+              </th>
+              <th className={`text-left font-semibold uppercase tracking-[0.14em] text-muted-foreground ${thClass}`}>
+                {headerRight}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/80">
+            {rows.map((r, idx) => (
+              <tr key={idx} className="align-top transition-colors hover:bg-secondary/15">
+                <td className={`${tdClass} font-semibold text-foreground`}>{prettifyKey(r.label)}</td>
+                <td className={`${tdClass} text-muted-foreground`}>{renderValue(r.value)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
