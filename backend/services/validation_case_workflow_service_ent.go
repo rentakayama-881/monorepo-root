@@ -291,7 +291,8 @@ func (s *EntValidationCaseWorkflowService) RevealOwnerTelegramContact(ctx contex
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return "", apperrors.ErrUnauthorized.WithDetails("Consultation Request belum disetujui")
+			// Authenticated validator, but not authorized to reveal contact until owner approves.
+			return "", apperrors.ErrConsultationNotApproved
 		}
 		return "", apperrors.ErrDatabase
 	}
@@ -321,10 +322,10 @@ func (s *EntValidationCaseWorkflowService) RevealOwnerTelegramContact(ctx contex
 	if err == nil && !alreadyLogged {
 		actorID := int(validatorUserID)
 		s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, "contact_revealed", map[string]interface{}{
-			"channel":        "telegram",
-			"owner_user_id":  vc.UserID,
+			"channel":           "telegram",
+			"owner_user_id":     vc.UserID,
 			"validator_user_id": validatorUserID,
-			"telegram":       telegram,
+			"telegram":          telegram,
 		})
 	}
 
@@ -356,7 +357,8 @@ func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context,
 		return 0, apperrors.ErrDatabase
 	}
 	if !approved {
-		return 0, apperrors.ErrUnauthorized.WithDetails("Final Offer hanya dapat diajukan setelah Consultation disetujui")
+		// Authenticated validator, but not authorized to submit an offer until consultation is approved.
+		return 0, apperrors.ErrFinalOfferRequiresApproval
 	}
 
 	if amount <= 0 {
@@ -506,11 +508,11 @@ func (s *EntValidationCaseWorkflowService) AcceptFinalOffer(ctx context.Context,
 
 	actorID := int(ownerUserID)
 	s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, "final_offer_accepted", map[string]interface{}{
-		"final_offer_id":      offer.ID,
-		"validator_user_id":   offer.ValidatorUserID,
-		"amount":              offer.Amount,
-		"hold_hours":          offer.HoldHours,
-		"accepted_at_unix":    now.Unix(),
+		"final_offer_id":    offer.ID,
+		"validator_user_id": offer.ValidatorUserID,
+		"amount":            offer.Amount,
+		"hold_hours":        offer.HoldHours,
+		"accepted_at_unix":  now.Unix(),
 	})
 
 	return &EscrowDraft{
@@ -528,25 +530,25 @@ type featureServiceError struct {
 }
 
 type featureServiceResponse[T any] struct {
-	Success bool               `json:"success"`
-	Data    *T                 `json:"data"`
+	Success bool                 `json:"success"`
+	Data    *T                   `json:"data"`
 	Error   *featureServiceError `json:"error"`
-	Message string             `json:"message"`
+	Message string               `json:"message"`
 }
 
 type featureTransferDto struct {
-	ID        string     `json:"id"`
-	SenderID  uint       `json:"senderId"`
-	ReceiverID uint      `json:"receiverId"`
-	Amount    int64      `json:"amount"`
-	Status    string     `json:"status"`
-	HoldUntil *time.Time `json:"holdUntil"`
+	ID         string     `json:"id"`
+	SenderID   uint       `json:"senderId"`
+	ReceiverID uint       `json:"receiverId"`
+	Amount     int64      `json:"amount"`
+	Status     string     `json:"status"`
+	HoldUntil  *time.Time `json:"holdUntil"`
 }
 
 type featureDisputeDto struct {
-	ID        string `json:"id"`
+	ID         string `json:"id"`
 	TransferID string `json:"transferId"`
-	Status    string `json:"status"`
+	Status     string `json:"status"`
 }
 
 func (s *EntValidationCaseWorkflowService) getFeatureTransfer(ctx context.Context, authHeader string, transferID string) (*featureTransferDto, error) {
@@ -705,7 +707,8 @@ func (s *EntValidationCaseWorkflowService) SubmitArtifact(ctx context.Context, v
 		return apperrors.ErrDatabase
 	}
 	if uint(offer.ValidatorUserID) != validatorUserID {
-		return apperrors.ErrUnauthorized.WithDetails("hanya validator yang disetujui yang dapat mengunggah Artifact Submission")
+		// Authenticated user, but only the accepted validator may upload the artifact.
+		return apperrors.ErrArtifactSubmissionAccessDenied
 	}
 
 	// Share the document with the case owner in Feature Service (validator must be the document owner).
@@ -911,8 +914,8 @@ func (s *EntValidationCaseWorkflowService) AttachDispute(ctx context.Context, va
 
 	actorID := int(ownerUserID)
 	s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, "dispute_attached", map[string]interface{}{
-		"dispute_id": disputeID,
-		"transfer_id": strings.TrimSpace(*vc.EscrowTransferID),
+		"dispute_id":     disputeID,
+		"transfer_id":    strings.TrimSpace(*vc.EscrowTransferID),
 		"dispute_status": fd.Status,
 	})
 
@@ -941,7 +944,8 @@ func (s *EntValidationCaseWorkflowService) GetCaseLog(ctx context.Context, valid
 			return nil, apperrors.ErrDatabase
 		}
 		if !approved {
-			return nil, apperrors.ErrUnauthorized
+			// Authenticated viewer, but Case Log is restricted to owner or approved validators.
+			return nil, apperrors.ErrCaseLogAccessDenied
 		}
 	}
 

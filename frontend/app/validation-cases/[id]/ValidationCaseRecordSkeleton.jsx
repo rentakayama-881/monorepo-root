@@ -53,29 +53,31 @@ export default function ValidationCaseRecordSkeleton() {
           </section>
         </div>
 
-        <aside className="lg:col-span-4 space-y-4">
+        <aside className="lg:col-span-4 space-y-6">
           <SkeletonText width="w-28" height="h-3" />
-          <div className="overflow-hidden rounded-[var(--radius)] bg-secondary/20">
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <SkeletonCircle size="h-9 w-9" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <SkeletonText width="w-32" height="h-4" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                <SkeletonText width="w-20" height="h-3" />
+              </div>
+            </div>
+
             <div className="divide-y divide-border">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="grid grid-cols-12">
-                  <div className="col-span-4 bg-secondary/40 px-4 py-3">
-                    <SkeletonText width="w-16" height="h-3" />
-                  </div>
-                  <div className="col-span-8 px-4 py-3">
-                    {i === 5 ? (
-                      <div className="flex items-center gap-2">
-                        <SkeletonCircle size="h-7 w-7" />
-                        <SkeletonText width="w-28" height="h-4" />
-                      </div>
-                    ) : (
-                      <SkeletonText width="w-28" height="h-4" />
-                    )}
-                  </div>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between gap-4 py-2">
+                  <SkeletonText width="w-20" height="h-3" />
+                  <SkeletonText width="w-28" height="h-4" />
                 </div>
               ))}
             </div>
           </div>
+
           <SkeletonText width="w-full max-w-sm" height="h-3" />
           <SkeletonText width="w-full max-w-xs" height="h-3" />
         </aside>

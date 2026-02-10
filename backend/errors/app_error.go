@@ -76,6 +76,11 @@ var (
 	ErrCategoryNotFound          = NewAppError("CASE002", "Kategori tidak ditemukan", http.StatusNotFound)
 	ErrInvalidValidationCaseData = NewAppError("CASE003", "Data Validation Case tidak valid", http.StatusBadRequest)
 	ErrValidationCaseOwnership   = NewAppError("CASE004", "Anda tidak memiliki akses ke Validation Case ini", http.StatusForbidden)
+	// Workflow permission errors (authenticated, but not authorized for a specific protocol step)
+	ErrCaseLogAccessDenied            = NewAppError("CASE005", "Case Log hanya tersedia untuk pemilik kasus atau validator yang telah disetujui", http.StatusForbidden)
+	ErrConsultationNotApproved        = NewAppError("CASE006", "Consultation Request belum disetujui oleh pemilik kasus", http.StatusForbidden)
+	ErrFinalOfferRequiresApproval     = NewAppError("CASE007", "Final Offer hanya dapat diajukan setelah Consultation disetujui", http.StatusForbidden)
+	ErrArtifactSubmissionAccessDenied = NewAppError("CASE008", "Artifact Submission hanya dapat diunggah oleh validator yang Final Offer-nya diterima", http.StatusForbidden)
 
 	// Order errors
 	ErrOrderNotFound      = NewAppError("ORDER001", "Order tidak ditemukan", http.StatusNotFound)

@@ -1163,77 +1163,62 @@ export default function ValidationCaseRecordPage() {
           </CaseSection>
           </div>
 
-          <aside className="lg:col-span-4 lg:sticky lg:top-24 h-fit space-y-4">
+          <aside className="lg:col-span-4 lg:sticky lg:top-24 h-fit space-y-6">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Case File
-              </div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Case File</div>
 
-              <div className="mt-3 overflow-hidden rounded-[var(--radius)] bg-secondary/20">
-                <table className="w-full text-sm">
-                  <tbody className="divide-y divide-border">
-                    <tr>
-                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Case
-                      </th>
-                      <td className="px-4 py-3 font-mono text-xs text-foreground">#{String(id)}</td>
-                    </tr>
-                    <tr>
-                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Status
-                      </th>
-                      <td className="px-4 py-3 font-semibold text-foreground">{status || "unknown"}</td>
-                    </tr>
-                    <tr>
-                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Workflow
-                      </th>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {certifiedId
-                          ? "Certified Artifact Issued"
-                          : disputeId
-                            ? "Dispute Attached"
-                            : artifactId
-                              ? "Artifact Submitted"
-                              : transferId
-                                ? "Funds Locked (Escrow)"
-                                : vc?.accepted_final_offer_id ?? vc?.acceptedFinalOfferId
-                                  ? "Final Offer Accepted"
-                                  : "Open"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Bounty
-                      </th>
-                      <td className="px-4 py-3 font-semibold text-foreground">{formatIDR(vc?.bounty_amount)}</td>
-                    </tr>
-                    <tr>
-                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Filed
-                      </th>
-                      <td className="px-4 py-3 text-muted-foreground">{formatDateTime(vc?.created_at)}</td>
-                    </tr>
-                    <tr>
-                      <th className="w-32 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Owner
-                      </th>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Avatar src={owner?.avatar_url} name={owner?.username || ""} size="xs" />
-                          <Link
-                            href={owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "#"}
-                            prefetch={false}
-                            className="text-sm font-semibold text-foreground hover:underline"
-                          >
-                            @{owner?.username || "-"}
-                          </Link>
-                          {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div className="mt-3 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Avatar src={owner?.avatar_url} name={owner?.username || ""} size="sm" />
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <Link
+                        href={owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "#"}
+                        prefetch={false}
+                        className="truncate text-sm font-semibold text-foreground hover:underline"
+                      >
+                        @{owner?.username || "-"}
+                      </Link>
+                      {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Case Owner</div>
+                  </div>
+                </div>
+
+                <dl className="divide-y divide-border text-sm">
+                  <div className="flex items-center justify-between gap-4 py-2">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Case</dt>
+                    <dd className="font-mono text-xs text-foreground">#{String(id)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 py-2">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Status</dt>
+                    <dd className="font-semibold text-foreground">{status || "unknown"}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 py-2">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Workflow</dt>
+                    <dd className="text-right text-muted-foreground">
+                      {certifiedId
+                        ? "Certified Artifact Issued"
+                        : disputeId
+                          ? "Dispute Attached"
+                          : artifactId
+                            ? "Artifact Submitted"
+                            : transferId
+                              ? "Funds Locked (Escrow)"
+                              : vc?.accepted_final_offer_id ?? vc?.acceptedFinalOfferId
+                                ? "Final Offer Accepted"
+                                : "Open"}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 py-2">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Bounty</dt>
+                    <dd className="font-semibold text-foreground">{formatIDR(vc?.bounty_amount)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 py-2">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Filed</dt>
+                    <dd className="text-right text-muted-foreground">{formatDateTime(vc?.created_at)}</dd>
+                  </div>
+                </dl>
               </div>
             </div>
 
