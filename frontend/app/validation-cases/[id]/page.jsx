@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { isValidElement, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
@@ -752,27 +752,26 @@ export default function ValidationCaseRecordPage() {
             </header>
 
           <CaseSection title="Overview" subtitle="Record">
-            <div className="overflow-hidden rounded-[var(--radius)] bg-card">
-              <table className="w-full text-sm">
-                <tbody className="divide-y divide-border">
-                  <tr>
-                    <th className="w-40 bg-secondary/40 px-4 py-3 align-top text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                      Case Record
-                    </th>
-                    <td className="px-4 py-3 align-top">
-                      <div className="max-h-[420px] overflow-auto pr-3 md:max-h-[520px]">
-                        <div className="prose prose-neutral max-w-none">
-                          {vc?.content_type === "text" ? (
-                            <MarkdownPreview content={contentAsText(vc?.content)} />
-                          ) : (
-                            <ContentTable content={vc?.content} />
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+              <div className="border-b border-border/80 bg-secondary/35 px-4 py-3">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Case Record
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Ringkasan terstruktur agar konteks mudah dibaca sebelum masuk workflow.
+                </div>
+              </div>
+              <div className="px-4 py-4">
+                <div className="max-h-[420px] overflow-auto md:max-h-[560px]">
+                  <div className="prose prose-neutral max-w-none">
+                    {vc?.content_type === "text" ? (
+                      <MarkdownPreview content={contentAsText(vc?.content)} />
+                    ) : (
+                      <ContentTable content={vc?.content} />
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </CaseSection>
 
@@ -1619,15 +1618,28 @@ function ContentTable({ content }) {
   return <Table rows={rows} />;
 }
 
-function Table({ rows }) {
+function Table({ rows, headerLeft = "Kolom", headerRight = "Detail", compact = false }) {
+  const tdClass = compact ? "px-3 py-2 text-xs" : "px-4 py-3 text-sm";
+  const thClass = compact ? "px-3 py-2 text-[11px]" : "px-4 py-2.5 text-[11px]";
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <tbody className="divide-y divide-border">
-          {rows.map((r, i) => (
-            <tr key={i} className={i % 2 === 0 ? "bg-card" : "bg-secondary/40"}>
-              <td className="w-52 px-4 py-3 align-top font-semibold text-foreground">{prettifyKey(r.label)}</td>
-              <td className="px-4 py-3 align-top text-muted-foreground">{renderValue(r.value)}</td>
+    <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+      <table className="w-full table-fixed border-collapse">
+        <thead className="bg-secondary/40">
+          <tr>
+            <th className={`w-56 text-left font-semibold uppercase tracking-[0.14em] text-muted-foreground ${thClass}`}>
+              {headerLeft}
+            </th>
+            <th className={`text-left font-semibold uppercase tracking-[0.14em] text-muted-foreground ${thClass}`}>
+              {headerRight}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border/80">
+          {rows.map((r, idx) => (
+            <tr key={idx} className="align-top transition-colors hover:bg-secondary/15">
+              <td className={`${tdClass} font-semibold text-foreground`}>{prettifyKey(r.label)}</td>
+              <td className={`${tdClass} text-muted-foreground`}>{renderValue(r.value)}</td>
             </tr>
           ))}
         </tbody>
@@ -1638,6 +1650,7 @@ function Table({ rows }) {
 
 function renderValue(v) {
   if (v == null) return "";
+  if (isValidElement(v)) return v;
   if (typeof v === "string") return v;
   if (typeof v === "number" || typeof v === "boolean") return String(v);
   if (Array.isArray(v))
@@ -1652,22 +1665,24 @@ function renderValue(v) {
     const entries = Object.entries(v);
     if (!entries.length) return "-";
     return (
-      <dl className="space-y-2">
-        {entries.map(([key, value]) => (
-          <div key={key} className="grid grid-cols-1 gap-1 md:grid-cols-[220px,1fr]">
-            <dt className="text-xs font-semibold text-foreground">{prettifyKey(key)}</dt>
-            <dd className="text-xs text-muted-foreground">
-              {typeof value === "object" && value !== null && !Array.isArray(value) ? (
-                <pre className="whitespace-pre-wrap break-words rounded-[var(--radius)] bg-secondary/30 p-2 text-[11px]">
+      <div className="mt-1">
+        <Table
+          rows={entries.map(([key, value]) => ({
+            label: key,
+            value:
+              typeof value === "object" && value !== null && !Array.isArray(value) ? (
+                <pre className="whitespace-pre-wrap break-words rounded-lg bg-secondary/30 p-2 text-[11px]">
                   {safeJson(value)}
                 </pre>
               ) : (
                 renderInlineValue(value)
-              )}
-            </dd>
-          </div>
-        ))}
-      </dl>
+              ),
+          }))}
+          headerLeft="Atribut"
+          headerRight="Nilai"
+          compact={true}
+        />
+      </div>
     );
   }
   try {
