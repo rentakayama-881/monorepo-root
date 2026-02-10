@@ -22,6 +22,8 @@ function statusLabel(statusRaw) {
   if (!s) return "Unknown";
   const map = {
     open: "Open",
+    waiting_owner_response: "Waiting Owner Response",
+    on_hold_owner_inactive: "On Hold (Owner Inactive)",
     offer_accepted: "Offer Accepted",
     funds_locked: "Funds Locked",
     artifact_submitted: "Artifact Submitted",
@@ -38,6 +40,10 @@ function statusStyle(statusRaw) {
       return "border-emerald-200 bg-emerald-50 text-emerald-900";
     case "disputed":
       return "border-red-200 bg-red-50 text-red-900";
+    case "on_hold_owner_inactive":
+      return "border-orange-200 bg-orange-50 text-orange-900";
+    case "waiting_owner_response":
+      return "border-blue-200 bg-blue-50 text-blue-900";
     case "funds_locked":
       return "border-amber-200 bg-amber-50 text-amber-900";
     case "artifact_submitted":

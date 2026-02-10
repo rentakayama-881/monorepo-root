@@ -41,6 +41,19 @@ func (ConsultationRequest) Fields() []ent.Field {
 		field.Time("rejected_at").
 			Optional().
 			Nillable(),
+		field.Time("expires_at").
+			Optional().
+			Nillable(),
+		field.Time("owner_response_due_at").
+			Optional().
+			Nillable(),
+		field.Int("reminder_count").
+			NonNegative().
+			Default(0),
+		field.String("auto_closed_reason").
+			MaxLen(128).
+			Optional().
+			Nillable(),
 	}
 }
 
@@ -66,6 +79,6 @@ func (ConsultationRequest) Indexes() []ent.Index {
 		index.Fields("validation_case_id"),
 		index.Fields("validator_user_id"),
 		index.Fields("status"),
+		index.Fields("owner_response_due_at"),
 	}
 }
-

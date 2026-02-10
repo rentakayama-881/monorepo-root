@@ -35,6 +35,14 @@ type ConsultationRequest struct {
 	ApprovedAt *time.Time `json:"approved_at,omitempty"`
 	// RejectedAt holds the value of the "rejected_at" field.
 	RejectedAt *time.Time `json:"rejected_at,omitempty"`
+	// ExpiresAt holds the value of the "expires_at" field.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	// OwnerResponseDueAt holds the value of the "owner_response_due_at" field.
+	OwnerResponseDueAt *time.Time `json:"owner_response_due_at,omitempty"`
+	// ReminderCount holds the value of the "reminder_count" field.
+	ReminderCount int `json:"reminder_count,omitempty"`
+	// AutoClosedReason holds the value of the "auto_closed_reason" field.
+	AutoClosedReason *string `json:"auto_closed_reason,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ConsultationRequestQuery when eager-loading is set.
 	Edges        ConsultationRequestEdges `json:"edges"`
@@ -79,11 +87,11 @@ func (*ConsultationRequest) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case consultationrequest.FieldID, consultationrequest.FieldValidationCaseID, consultationrequest.FieldValidatorUserID:
+		case consultationrequest.FieldID, consultationrequest.FieldValidationCaseID, consultationrequest.FieldValidatorUserID, consultationrequest.FieldReminderCount:
 			values[i] = new(sql.NullInt64)
-		case consultationrequest.FieldStatus:
+		case consultationrequest.FieldStatus, consultationrequest.FieldAutoClosedReason:
 			values[i] = new(sql.NullString)
-		case consultationrequest.FieldCreatedAt, consultationrequest.FieldUpdatedAt, consultationrequest.FieldDeletedAt, consultationrequest.FieldApprovedAt, consultationrequest.FieldRejectedAt:
+		case consultationrequest.FieldCreatedAt, consultationrequest.FieldUpdatedAt, consultationrequest.FieldDeletedAt, consultationrequest.FieldApprovedAt, consultationrequest.FieldRejectedAt, consultationrequest.FieldExpiresAt, consultationrequest.FieldOwnerResponseDueAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -156,6 +164,33 @@ func (_m *ConsultationRequest) assignValues(columns []string, values []any) erro
 			} else if value.Valid {
 				_m.RejectedAt = new(time.Time)
 				*_m.RejectedAt = value.Time
+			}
+		case consultationrequest.FieldExpiresAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field expires_at", values[i])
+			} else if value.Valid {
+				_m.ExpiresAt = new(time.Time)
+				*_m.ExpiresAt = value.Time
+			}
+		case consultationrequest.FieldOwnerResponseDueAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field owner_response_due_at", values[i])
+			} else if value.Valid {
+				_m.OwnerResponseDueAt = new(time.Time)
+				*_m.OwnerResponseDueAt = value.Time
+			}
+		case consultationrequest.FieldReminderCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field reminder_count", values[i])
+			} else if value.Valid {
+				_m.ReminderCount = int(value.Int64)
+			}
+		case consultationrequest.FieldAutoClosedReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field auto_closed_reason", values[i])
+			} else if value.Valid {
+				_m.AutoClosedReason = new(string)
+				*_m.AutoClosedReason = value.String
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -231,6 +266,24 @@ func (_m *ConsultationRequest) String() string {
 	if v := _m.RejectedAt; v != nil {
 		builder.WriteString("rejected_at=")
 		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.ExpiresAt; v != nil {
+		builder.WriteString("expires_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.OwnerResponseDueAt; v != nil {
+		builder.WriteString("owner_response_due_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("reminder_count=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ReminderCount))
+	builder.WriteString(", ")
+	if v := _m.AutoClosedReason; v != nil {
+		builder.WriteString("auto_closed_reason=")
+		builder.WriteString(*v)
 	}
 	builder.WriteByte(')')
 	return builder.String()

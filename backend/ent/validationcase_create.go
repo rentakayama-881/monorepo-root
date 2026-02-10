@@ -156,6 +156,62 @@ func (_c *ValidationCaseCreate) SetNillableStatus(v *string) *ValidationCaseCrea
 	return _c
 }
 
+// SetSensitivityLevel sets the "sensitivity_level" field.
+func (_c *ValidationCaseCreate) SetSensitivityLevel(v string) *ValidationCaseCreate {
+	_c.mutation.SetSensitivityLevel(v)
+	return _c
+}
+
+// SetNillableSensitivityLevel sets the "sensitivity_level" field if the given value is not nil.
+func (_c *ValidationCaseCreate) SetNillableSensitivityLevel(v *string) *ValidationCaseCreate {
+	if v != nil {
+		_c.SetSensitivityLevel(*v)
+	}
+	return _c
+}
+
+// SetIntakeSchemaVersion sets the "intake_schema_version" field.
+func (_c *ValidationCaseCreate) SetIntakeSchemaVersion(v string) *ValidationCaseCreate {
+	_c.mutation.SetIntakeSchemaVersion(v)
+	return _c
+}
+
+// SetNillableIntakeSchemaVersion sets the "intake_schema_version" field if the given value is not nil.
+func (_c *ValidationCaseCreate) SetNillableIntakeSchemaVersion(v *string) *ValidationCaseCreate {
+	if v != nil {
+		_c.SetIntakeSchemaVersion(*v)
+	}
+	return _c
+}
+
+// SetClarificationState sets the "clarification_state" field.
+func (_c *ValidationCaseCreate) SetClarificationState(v string) *ValidationCaseCreate {
+	_c.mutation.SetClarificationState(v)
+	return _c
+}
+
+// SetNillableClarificationState sets the "clarification_state" field if the given value is not nil.
+func (_c *ValidationCaseCreate) SetNillableClarificationState(v *string) *ValidationCaseCreate {
+	if v != nil {
+		_c.SetClarificationState(*v)
+	}
+	return _c
+}
+
+// SetOwnerInactivityCount sets the "owner_inactivity_count" field.
+func (_c *ValidationCaseCreate) SetOwnerInactivityCount(v int) *ValidationCaseCreate {
+	_c.mutation.SetOwnerInactivityCount(v)
+	return _c
+}
+
+// SetNillableOwnerInactivityCount sets the "owner_inactivity_count" field if the given value is not nil.
+func (_c *ValidationCaseCreate) SetNillableOwnerInactivityCount(v *int) *ValidationCaseCreate {
+	if v != nil {
+		_c.SetOwnerInactivityCount(*v)
+	}
+	return _c
+}
+
 // SetEscrowTransferID sets the "escrow_transfer_id" field.
 func (_c *ValidationCaseCreate) SetEscrowTransferID(v string) *ValidationCaseCreate {
 	_c.mutation.SetEscrowTransferID(v)
@@ -385,6 +441,22 @@ func (_c *ValidationCaseCreate) defaults() {
 		v := validationcase.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.SensitivityLevel(); !ok {
+		v := validationcase.DefaultSensitivityLevel
+		_c.mutation.SetSensitivityLevel(v)
+	}
+	if _, ok := _c.mutation.IntakeSchemaVersion(); !ok {
+		v := validationcase.DefaultIntakeSchemaVersion
+		_c.mutation.SetIntakeSchemaVersion(v)
+	}
+	if _, ok := _c.mutation.ClarificationState(); !ok {
+		v := validationcase.DefaultClarificationState
+		_c.mutation.SetClarificationState(v)
+	}
+	if _, ok := _c.mutation.OwnerInactivityCount(); !ok {
+		v := validationcase.DefaultOwnerInactivityCount
+		_c.mutation.SetOwnerInactivityCount(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -436,6 +508,38 @@ func (_c *ValidationCaseCreate) check() error {
 	if v, ok := _c.mutation.Status(); ok {
 		if err := validationcase.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.status": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.SensitivityLevel(); !ok {
+		return &ValidationError{Name: "sensitivity_level", err: errors.New(`ent: missing required field "ValidationCase.sensitivity_level"`)}
+	}
+	if v, ok := _c.mutation.SensitivityLevel(); ok {
+		if err := validationcase.SensitivityLevelValidator(v); err != nil {
+			return &ValidationError{Name: "sensitivity_level", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.sensitivity_level": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.IntakeSchemaVersion(); !ok {
+		return &ValidationError{Name: "intake_schema_version", err: errors.New(`ent: missing required field "ValidationCase.intake_schema_version"`)}
+	}
+	if v, ok := _c.mutation.IntakeSchemaVersion(); ok {
+		if err := validationcase.IntakeSchemaVersionValidator(v); err != nil {
+			return &ValidationError{Name: "intake_schema_version", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.intake_schema_version": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ClarificationState(); !ok {
+		return &ValidationError{Name: "clarification_state", err: errors.New(`ent: missing required field "ValidationCase.clarification_state"`)}
+	}
+	if v, ok := _c.mutation.ClarificationState(); ok {
+		if err := validationcase.ClarificationStateValidator(v); err != nil {
+			return &ValidationError{Name: "clarification_state", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.clarification_state": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.OwnerInactivityCount(); !ok {
+		return &ValidationError{Name: "owner_inactivity_count", err: errors.New(`ent: missing required field "ValidationCase.owner_inactivity_count"`)}
+	}
+	if v, ok := _c.mutation.OwnerInactivityCount(); ok {
+		if err := validationcase.OwnerInactivityCountValidator(v); err != nil {
+			return &ValidationError{Name: "owner_inactivity_count", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.owner_inactivity_count": %w`, err)}
 		}
 	}
 	if v, ok := _c.mutation.AcceptedFinalOfferID(); ok {
@@ -514,6 +618,22 @@ func (_c *ValidationCaseCreate) createSpec() (*ValidationCase, *sqlgraph.CreateS
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(validationcase.FieldStatus, field.TypeString, value)
 		_node.Status = value
+	}
+	if value, ok := _c.mutation.SensitivityLevel(); ok {
+		_spec.SetField(validationcase.FieldSensitivityLevel, field.TypeString, value)
+		_node.SensitivityLevel = value
+	}
+	if value, ok := _c.mutation.IntakeSchemaVersion(); ok {
+		_spec.SetField(validationcase.FieldIntakeSchemaVersion, field.TypeString, value)
+		_node.IntakeSchemaVersion = value
+	}
+	if value, ok := _c.mutation.ClarificationState(); ok {
+		_spec.SetField(validationcase.FieldClarificationState, field.TypeString, value)
+		_node.ClarificationState = value
+	}
+	if value, ok := _c.mutation.OwnerInactivityCount(); ok {
+		_spec.SetField(validationcase.FieldOwnerInactivityCount, field.TypeInt, value)
+		_node.OwnerInactivityCount = value
 	}
 	if value, ok := _c.mutation.EscrowTransferID(); ok {
 		_spec.SetField(validationcase.FieldEscrowTransferID, field.TypeString, value)

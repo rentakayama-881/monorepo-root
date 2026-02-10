@@ -95,6 +95,26 @@ func RejectedAt(v time.Time) predicate.ConsultationRequest {
 	return predicate.ConsultationRequest(sql.FieldEQ(FieldRejectedAt, v))
 }
 
+// ExpiresAt applies equality check predicate on the "expires_at" field. It's identical to ExpiresAtEQ.
+func ExpiresAt(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldEQ(FieldExpiresAt, v))
+}
+
+// OwnerResponseDueAt applies equality check predicate on the "owner_response_due_at" field. It's identical to OwnerResponseDueAtEQ.
+func OwnerResponseDueAt(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldEQ(FieldOwnerResponseDueAt, v))
+}
+
+// ReminderCount applies equality check predicate on the "reminder_count" field. It's identical to ReminderCountEQ.
+func ReminderCount(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldEQ(FieldReminderCount, v))
+}
+
+// AutoClosedReason applies equality check predicate on the "auto_closed_reason" field. It's identical to AutoClosedReasonEQ.
+func AutoClosedReason(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldEQ(FieldAutoClosedReason, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.ConsultationRequest {
 	return predicate.ConsultationRequest(sql.FieldEQ(FieldCreatedAt, v))
@@ -428,6 +448,221 @@ func RejectedAtIsNil() predicate.ConsultationRequest {
 // RejectedAtNotNil applies the NotNil predicate on the "rejected_at" field.
 func RejectedAtNotNil() predicate.ConsultationRequest {
 	return predicate.ConsultationRequest(sql.FieldNotNull(FieldRejectedAt))
+}
+
+// ExpiresAtEQ applies the EQ predicate on the "expires_at" field.
+func ExpiresAtEQ(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldEQ(FieldExpiresAt, v))
+}
+
+// ExpiresAtNEQ applies the NEQ predicate on the "expires_at" field.
+func ExpiresAtNEQ(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNEQ(FieldExpiresAt, v))
+}
+
+// ExpiresAtIn applies the In predicate on the "expires_at" field.
+func ExpiresAtIn(vs ...time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldIn(FieldExpiresAt, vs...))
+}
+
+// ExpiresAtNotIn applies the NotIn predicate on the "expires_at" field.
+func ExpiresAtNotIn(vs ...time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNotIn(FieldExpiresAt, vs...))
+}
+
+// ExpiresAtGT applies the GT predicate on the "expires_at" field.
+func ExpiresAtGT(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldGT(FieldExpiresAt, v))
+}
+
+// ExpiresAtGTE applies the GTE predicate on the "expires_at" field.
+func ExpiresAtGTE(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldGTE(FieldExpiresAt, v))
+}
+
+// ExpiresAtLT applies the LT predicate on the "expires_at" field.
+func ExpiresAtLT(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldLT(FieldExpiresAt, v))
+}
+
+// ExpiresAtLTE applies the LTE predicate on the "expires_at" field.
+func ExpiresAtLTE(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldLTE(FieldExpiresAt, v))
+}
+
+// ExpiresAtIsNil applies the IsNil predicate on the "expires_at" field.
+func ExpiresAtIsNil() predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldIsNull(FieldExpiresAt))
+}
+
+// ExpiresAtNotNil applies the NotNil predicate on the "expires_at" field.
+func ExpiresAtNotNil() predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNotNull(FieldExpiresAt))
+}
+
+// OwnerResponseDueAtEQ applies the EQ predicate on the "owner_response_due_at" field.
+func OwnerResponseDueAtEQ(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldEQ(FieldOwnerResponseDueAt, v))
+}
+
+// OwnerResponseDueAtNEQ applies the NEQ predicate on the "owner_response_due_at" field.
+func OwnerResponseDueAtNEQ(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNEQ(FieldOwnerResponseDueAt, v))
+}
+
+// OwnerResponseDueAtIn applies the In predicate on the "owner_response_due_at" field.
+func OwnerResponseDueAtIn(vs ...time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldIn(FieldOwnerResponseDueAt, vs...))
+}
+
+// OwnerResponseDueAtNotIn applies the NotIn predicate on the "owner_response_due_at" field.
+func OwnerResponseDueAtNotIn(vs ...time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNotIn(FieldOwnerResponseDueAt, vs...))
+}
+
+// OwnerResponseDueAtGT applies the GT predicate on the "owner_response_due_at" field.
+func OwnerResponseDueAtGT(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldGT(FieldOwnerResponseDueAt, v))
+}
+
+// OwnerResponseDueAtGTE applies the GTE predicate on the "owner_response_due_at" field.
+func OwnerResponseDueAtGTE(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldGTE(FieldOwnerResponseDueAt, v))
+}
+
+// OwnerResponseDueAtLT applies the LT predicate on the "owner_response_due_at" field.
+func OwnerResponseDueAtLT(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldLT(FieldOwnerResponseDueAt, v))
+}
+
+// OwnerResponseDueAtLTE applies the LTE predicate on the "owner_response_due_at" field.
+func OwnerResponseDueAtLTE(v time.Time) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldLTE(FieldOwnerResponseDueAt, v))
+}
+
+// OwnerResponseDueAtIsNil applies the IsNil predicate on the "owner_response_due_at" field.
+func OwnerResponseDueAtIsNil() predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldIsNull(FieldOwnerResponseDueAt))
+}
+
+// OwnerResponseDueAtNotNil applies the NotNil predicate on the "owner_response_due_at" field.
+func OwnerResponseDueAtNotNil() predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNotNull(FieldOwnerResponseDueAt))
+}
+
+// ReminderCountEQ applies the EQ predicate on the "reminder_count" field.
+func ReminderCountEQ(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldEQ(FieldReminderCount, v))
+}
+
+// ReminderCountNEQ applies the NEQ predicate on the "reminder_count" field.
+func ReminderCountNEQ(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNEQ(FieldReminderCount, v))
+}
+
+// ReminderCountIn applies the In predicate on the "reminder_count" field.
+func ReminderCountIn(vs ...int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldIn(FieldReminderCount, vs...))
+}
+
+// ReminderCountNotIn applies the NotIn predicate on the "reminder_count" field.
+func ReminderCountNotIn(vs ...int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNotIn(FieldReminderCount, vs...))
+}
+
+// ReminderCountGT applies the GT predicate on the "reminder_count" field.
+func ReminderCountGT(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldGT(FieldReminderCount, v))
+}
+
+// ReminderCountGTE applies the GTE predicate on the "reminder_count" field.
+func ReminderCountGTE(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldGTE(FieldReminderCount, v))
+}
+
+// ReminderCountLT applies the LT predicate on the "reminder_count" field.
+func ReminderCountLT(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldLT(FieldReminderCount, v))
+}
+
+// ReminderCountLTE applies the LTE predicate on the "reminder_count" field.
+func ReminderCountLTE(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldLTE(FieldReminderCount, v))
+}
+
+// AutoClosedReasonEQ applies the EQ predicate on the "auto_closed_reason" field.
+func AutoClosedReasonEQ(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldEQ(FieldAutoClosedReason, v))
+}
+
+// AutoClosedReasonNEQ applies the NEQ predicate on the "auto_closed_reason" field.
+func AutoClosedReasonNEQ(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNEQ(FieldAutoClosedReason, v))
+}
+
+// AutoClosedReasonIn applies the In predicate on the "auto_closed_reason" field.
+func AutoClosedReasonIn(vs ...string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldIn(FieldAutoClosedReason, vs...))
+}
+
+// AutoClosedReasonNotIn applies the NotIn predicate on the "auto_closed_reason" field.
+func AutoClosedReasonNotIn(vs ...string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNotIn(FieldAutoClosedReason, vs...))
+}
+
+// AutoClosedReasonGT applies the GT predicate on the "auto_closed_reason" field.
+func AutoClosedReasonGT(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldGT(FieldAutoClosedReason, v))
+}
+
+// AutoClosedReasonGTE applies the GTE predicate on the "auto_closed_reason" field.
+func AutoClosedReasonGTE(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldGTE(FieldAutoClosedReason, v))
+}
+
+// AutoClosedReasonLT applies the LT predicate on the "auto_closed_reason" field.
+func AutoClosedReasonLT(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldLT(FieldAutoClosedReason, v))
+}
+
+// AutoClosedReasonLTE applies the LTE predicate on the "auto_closed_reason" field.
+func AutoClosedReasonLTE(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldLTE(FieldAutoClosedReason, v))
+}
+
+// AutoClosedReasonContains applies the Contains predicate on the "auto_closed_reason" field.
+func AutoClosedReasonContains(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldContains(FieldAutoClosedReason, v))
+}
+
+// AutoClosedReasonHasPrefix applies the HasPrefix predicate on the "auto_closed_reason" field.
+func AutoClosedReasonHasPrefix(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldHasPrefix(FieldAutoClosedReason, v))
+}
+
+// AutoClosedReasonHasSuffix applies the HasSuffix predicate on the "auto_closed_reason" field.
+func AutoClosedReasonHasSuffix(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldHasSuffix(FieldAutoClosedReason, v))
+}
+
+// AutoClosedReasonIsNil applies the IsNil predicate on the "auto_closed_reason" field.
+func AutoClosedReasonIsNil() predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldIsNull(FieldAutoClosedReason))
+}
+
+// AutoClosedReasonNotNil applies the NotNil predicate on the "auto_closed_reason" field.
+func AutoClosedReasonNotNil() predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNotNull(FieldAutoClosedReason))
+}
+
+// AutoClosedReasonEqualFold applies the EqualFold predicate on the "auto_closed_reason" field.
+func AutoClosedReasonEqualFold(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldEqualFold(FieldAutoClosedReason, v))
+}
+
+// AutoClosedReasonContainsFold applies the ContainsFold predicate on the "auto_closed_reason" field.
+func AutoClosedReasonContainsFold(v string) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldContainsFold(FieldAutoClosedReason, v))
 }
 
 // HasValidationCase applies the HasEdge predicate on the "validation_case" edge.

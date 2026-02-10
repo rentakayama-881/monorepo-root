@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"backend-gin/database"
 	"backend-gin/ent"
@@ -11,6 +12,22 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func tagGroupBySlug(slug string) string {
+	normalized := strings.ToLower(strings.TrimSpace(slug))
+	switch {
+	case strings.HasPrefix(normalized, "artifact-"):
+		return "artifact"
+	case strings.HasPrefix(normalized, "stage-"):
+		return "stage"
+	case strings.HasPrefix(normalized, "domain-"):
+		return "domain"
+	case strings.HasPrefix(normalized, "evidence-"):
+		return "evidence"
+	default:
+		return ""
+	}
+}
 
 // GetAllTagsHandler returns all active tags
 // GET /api/tags
@@ -254,9 +271,31 @@ func AddTagsToValidationCaseHandler(c *gin.Context) {
 		return
 	}
 
-	// Limit to max 5 tags per validation case
-	if len(tags) > 5 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "maksimal 5 tag per validation case"})
+	// Protocol taxonomy: min 2, max 4, single-per-dimension.
+	if len(tags) < 2 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "minimal 2 tag per validation case"})
+		return
+	}
+	if len(tags) > 4 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "maksimal 4 tag per validation case"})
+		return
+	}
+	seenGroup := map[string]string{}
+	for _, t := range tags {
+		group := tagGroupBySlug(t.Slug)
+		if group == "" {
+			continue
+		}
+		if existing, ok := seenGroup[group]; ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "hanya boleh satu tag per dimensi taxonomy", "details": group + " (" + existing + ", " + t.Slug + ")"})
+			return
+		}
+		seenGroup[group] = t.Slug
+	}
+
+	// Ensure all provided IDs are valid/active.
+	if len(tags) != len(req.TagIDs) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "terdapat tag tidak valid atau tidak aktif"})
 		return
 	}
 
@@ -330,6 +369,19 @@ func RemoveTagFromValidationCaseHandler(c *gin.Context) {
 		Only(ctx)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "tag tidak ditemukan"})
+		return
+	}
+
+	currentTags, err := client.ValidationCase.Query().
+		Where(validationcase.IDEQ(validationCaseID)).
+		QueryTags().
+		All(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membaca tags"})
+		return
+	}
+	if len(currentTags) <= 2 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "minimal 2 tag per validation case"})
 		return
 	}
 

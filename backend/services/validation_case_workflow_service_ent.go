@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +18,7 @@ import (
 	"backend-gin/ent"
 	"backend-gin/ent/consultationrequest"
 	"backend-gin/ent/finaloffer"
+	"backend-gin/ent/tag"
 	"backend-gin/ent/user"
 	"backend-gin/ent/validationcase"
 	"backend-gin/ent/validationcaselog"
@@ -34,6 +37,33 @@ type EntValidationCaseWorkflowService struct {
 func NewEntValidationCaseWorkflowService() *EntValidationCaseWorkflowService {
 	return &EntValidationCaseWorkflowService{client: database.GetEntClient()}
 }
+
+const (
+	caseStatusOpen                 = "open"
+	caseStatusWaitingOwnerResponse = "waiting_owner_response"
+	caseStatusOnHoldOwnerInactive  = "on_hold_owner_inactive"
+
+	clarificationStateNone                    = "none"
+	clarificationStateWaitingOwnerResponse    = "waiting_owner_response"
+	clarificationStateAssumptionPending       = "assumption_pending_owner_decision"
+	clarificationStateOwnerResponded          = "owner_responded"
+	clarificationStateAssumptionApproved      = "assumption_approved"
+	clarificationStateAssumptionRejected      = "assumption_rejected"
+	clarificationStateOwnerInactiveSLAExpired = "owner_inactive_sla_expired"
+
+	consultationStatusPending              = "pending"
+	consultationStatusApproved             = "approved"
+	consultationStatusRejected             = "rejected"
+	consultationStatusWaitingOwnerResponse = "waiting_owner_response"
+	consultationStatusOwnerTimeout         = "owner_timeout"
+
+	clarificationModeQuestion   = "question"
+	clarificationModeAssumption = "assumption"
+
+	ownerResponseSLAHours   = 12
+	ownerReminderFirstHour  = 2
+	ownerReminderSecondHour = 8
+)
 
 // minCredibilityStakeIDR returns minimum required active guarantee/stake for validators to request consultation.
 //
@@ -63,6 +93,240 @@ func unixPtr(t *time.Time) *int64 {
 	}
 	v := t.Unix()
 	return &v
+}
+
+func valueOrEmpty(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
+}
+
+func dueTimeFromNow(now time.Time) time.Time {
+	return now.Add(ownerResponseSLAHours * time.Hour)
+}
+
+func reminderScheduleHours() []int {
+	return []int{ownerReminderFirstHour, ownerReminderSecondHour}
+}
+
+func clampScore(v int) int {
+	if v < 0 {
+		return 0
+	}
+	if v > 100 {
+		return 100
+	}
+	return v
+}
+
+func overlapScore(caseTags map[string]struct{}, historyTags map[string]struct{}) int {
+	if len(caseTags) == 0 {
+		return 50
+	}
+	if len(historyTags) == 0 {
+		return 0
+	}
+	matches := 0
+	for slug := range caseTags {
+		if _, ok := historyTags[slug]; ok {
+			matches++
+		}
+	}
+	return clampScore(int(math.Round(float64(matches) * 100 / float64(len(caseTags)))))
+}
+
+func extractTagSetByPrefix(tags []*ent.Tag, prefix string) map[string]struct{} {
+	out := map[string]struct{}{}
+	for _, t := range tags {
+		slug := strings.ToLower(strings.TrimSpace(t.Slug))
+		if slug == "" {
+			continue
+		}
+		if strings.HasPrefix(slug, prefix) {
+			out[slug] = struct{}{}
+		}
+	}
+	return out
+}
+
+func stakeGuaranteeScore(guaranteeAmount int64) int {
+	required := minCredibilityStakeIDR()
+	if required <= 0 {
+		required = 100_000
+	}
+	if guaranteeAmount <= 0 {
+		return 0
+	}
+	ratio := float64(guaranteeAmount) / float64(required)
+	switch {
+	case ratio >= 3.0:
+		return 100
+	case ratio >= 2.0:
+		return 85
+	case ratio >= 1.5:
+		return 70
+	case ratio >= 1.0:
+		return 55
+	default:
+		return 35
+	}
+}
+
+func responsivenessSLAScore(approvedReqs []*ent.ConsultationRequest, firstOfferByCase map[int]time.Time, now time.Time) int {
+	if len(approvedReqs) == 0 {
+		return 50
+	}
+
+	total := 0
+	count := 0
+	for _, req := range approvedReqs {
+		if req.ApprovedAt == nil {
+			continue
+		}
+		approvedAt := *req.ApprovedAt
+		offerAt, hasOffer := firstOfferByCase[req.ValidationCaseID]
+		score := 50
+		if hasOffer {
+			if offerAt.Before(approvedAt) {
+				offerAt = approvedAt
+			}
+			lag := offerAt.Sub(approvedAt)
+			switch {
+			case lag <= 2*time.Hour:
+				score = 100
+			case lag <= 8*time.Hour:
+				score = 80
+			case lag <= 24*time.Hour:
+				score = 60
+			default:
+				score = 30
+			}
+		} else {
+			if now.Sub(approvedAt) > 24*time.Hour {
+				score = 0
+			}
+		}
+		total += score
+		count++
+	}
+
+	if count == 0 {
+		return 50
+	}
+	return clampScore(int(math.Round(float64(total) / float64(count))))
+}
+
+func (s *EntValidationCaseWorkflowService) buildMatchingScore(
+	ctx context.Context,
+	vc *ent.ValidationCase,
+	validatorUserID int,
+	guaranteeAmount int64,
+) (*MatchingScoreBreakdown, error) {
+	caseDomain := extractTagSetByPrefix(vc.Edges.Tags, "domain-")
+	caseEvidence := extractTagSetByPrefix(vc.Edges.Tags, "evidence-")
+
+	offers, err := s.client.FinalOffer.Query().
+		Where(finaloffer.ValidatorUserIDEQ(validatorUserID)).
+		Order(ent.Desc(finaloffer.FieldCreatedAt)).
+		Limit(300).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	caseIDs := make([]int, 0, len(offers))
+	seenCase := make(map[int]struct{})
+	firstOfferByCase := make(map[int]time.Time)
+	for _, offer := range offers {
+		if _, ok := seenCase[offer.ValidationCaseID]; !ok {
+			seenCase[offer.ValidationCaseID] = struct{}{}
+			caseIDs = append(caseIDs, offer.ValidationCaseID)
+		}
+		if current, ok := firstOfferByCase[offer.ValidationCaseID]; !ok || offer.CreatedAt.Before(current) {
+			firstOfferByCase[offer.ValidationCaseID] = offer.CreatedAt
+		}
+	}
+
+	var historyCases []*ent.ValidationCase
+	if len(caseIDs) > 0 {
+		historyCases, err = s.client.ValidationCase.Query().
+			Where(validationcase.IDIn(caseIDs...)).
+			WithTags(func(q *ent.TagQuery) {
+				q.Where(tag.IsActiveEQ(true))
+			}).
+			All(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	historyDomain := map[string]struct{}{}
+	historyEvidence := map[string]struct{}{}
+	disputedCount := 0
+	for _, hc := range historyCases {
+		for slug := range extractTagSetByPrefix(hc.Edges.Tags, "domain-") {
+			historyDomain[slug] = struct{}{}
+		}
+		for slug := range extractTagSetByPrefix(hc.Edges.Tags, "evidence-") {
+			historyEvidence[slug] = struct{}{}
+		}
+		if normalizeStatus(hc.Status) == "disputed" {
+			disputedCount++
+		}
+	}
+
+	domainScore := overlapScore(caseDomain, historyDomain)
+	evidenceScore := overlapScore(caseEvidence, historyEvidence)
+
+	historyDisputeScore := 50
+	if len(historyCases) > 0 {
+		historyDisputeScore = clampScore(int(math.Round((1 - float64(disputedCount)/float64(len(historyCases))) * 100)))
+	}
+
+	approvedReqs, err := s.client.ConsultationRequest.Query().
+		Where(
+			consultationrequest.ValidatorUserIDEQ(validatorUserID),
+			consultationrequest.ApprovedAtNotNil(),
+		).
+		Limit(200).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	responsivenessScore := responsivenessSLAScore(approvedReqs, firstOfferByCase, time.Now())
+
+	stakeScore := stakeGuaranteeScore(guaranteeAmount)
+	total := clampScore(int(math.Round(float64(domainScore+evidenceScore+historyDisputeScore+responsivenessScore+stakeScore) / 5)))
+
+	return &MatchingScoreBreakdown{
+		Total:             total,
+		DomainFit:         domainScore,
+		EvidenceFit:       evidenceScore,
+		HistoryDispute:    historyDisputeScore,
+		ResponsivenessSLA: responsivenessScore,
+		StakeGuarantee:    stakeScore,
+	}, nil
+}
+
+func sanitizeAssumptionItems(items []AssumptionItem) []map[string]string {
+	out := make([]map[string]string, 0, len(items))
+	for _, item := range items {
+		label := strings.TrimSpace(item.Item)
+		if label == "" {
+			continue
+		}
+		out = append(out, map[string]string{
+			"item":      label,
+			"rationale": strings.TrimSpace(item.Rationale),
+			"impact":    strings.TrimSpace(item.Impact),
+		})
+	}
+	return out
+}
+
+func isConsultationApprovedStatus(status string) bool {
+	return normalizeStatus(status) == consultationStatusApproved
 }
 
 func (s *EntValidationCaseWorkflowService) appendCaseLogBestEffort(ctx context.Context, validationCaseID int, actorUserID *int, eventType string, detail map[string]interface{}) {
@@ -95,6 +359,14 @@ func (s *EntValidationCaseWorkflowService) RequestConsultation(ctx context.Conte
 	if vc.UserID == int(validatorUserID) {
 		return 0, apperrors.ErrInvalidInput.WithDetails("pemilik kasus tidak dapat Request Consultation pada kasusnya sendiri")
 	}
+	switch normalizeStatus(vc.Status) {
+	case caseStatusOpen:
+		// allowed
+	case caseStatusWaitingOwnerResponse, caseStatusOnHoldOwnerInactive:
+		return 0, apperrors.ErrInvalidInput.WithDetails("kasus sedang menunggu respons owner. Tidak dapat menerima validator baru.")
+	default:
+		return 0, apperrors.ErrInvalidInput.WithDetails("Request Consultation hanya dapat diajukan saat status kasus masih open")
+	}
 
 	validator, err := s.client.User.Get(ctx, int(validatorUserID))
 	if err != nil {
@@ -126,7 +398,8 @@ func (s *EntValidationCaseWorkflowService) RequestConsultation(ctx context.Conte
 		Create().
 		SetValidationCaseID(int(validationCaseID)).
 		SetValidatorUserID(int(validatorUserID)).
-		SetStatus("pending").
+		SetStatus(consultationStatusPending).
+		SetReminderCount(0).
 		Save(ctx)
 	if err != nil {
 		return 0, apperrors.ErrDatabase
@@ -142,7 +415,12 @@ func (s *EntValidationCaseWorkflowService) RequestConsultation(ctx context.Conte
 }
 
 func (s *EntValidationCaseWorkflowService) ListConsultationRequestsForOwner(ctx context.Context, validationCaseID uint, ownerUserID uint) ([]ConsultationRequestItem, error) {
-	vc, err := s.client.ValidationCase.Get(ctx, int(validationCaseID))
+	vc, err := s.client.ValidationCase.Query().
+		Where(validationcase.IDEQ(int(validationCaseID))).
+		WithTags(func(q *ent.TagQuery) {
+			q.Where(tag.IsActiveEQ(true))
+		}).
+		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, apperrors.ErrValidationCaseNotFound
@@ -165,18 +443,52 @@ func (s *EntValidationCaseWorkflowService) ListConsultationRequestsForOwner(ctx 
 	}
 
 	out := make([]ConsultationRequestItem, 0, len(items))
+	scoreCache := make(map[int]*MatchingScoreBreakdown)
 	for _, it := range items {
 		validator := buildUserSummaryFromEnt(it.Edges.ValidatorUser)
+		score, cached := scoreCache[it.ValidatorUserID]
+		if !cached {
+			scored, scoreErr := s.buildMatchingScore(ctx, vc, it.ValidatorUserID, validator.GuaranteeAmount)
+			if scoreErr != nil {
+				logger.Warn("Failed to compute validator matching score",
+					zap.Error(scoreErr),
+					zap.Int("validation_case_id", vc.ID),
+					zap.Int("validator_user_id", it.ValidatorUserID),
+				)
+			}
+			score = scored
+			scoreCache[it.ValidatorUserID] = score
+		}
 		out = append(out, ConsultationRequestItem{
-			ID:               uint(it.ID),
-			ValidationCaseID: validationCaseID,
-			Validator:        validator,
-			Status:           it.Status,
-			ApprovedAt:       unixPtr(it.ApprovedAt),
-			RejectedAt:       unixPtr(it.RejectedAt),
-			CreatedAt:        it.CreatedAt.Unix(),
+			ID:                 uint(it.ID),
+			ValidationCaseID:   validationCaseID,
+			Validator:          validator,
+			Status:             it.Status,
+			ApprovedAt:         unixPtr(it.ApprovedAt),
+			RejectedAt:         unixPtr(it.RejectedAt),
+			ExpiresAt:          unixPtr(it.ExpiresAt),
+			OwnerResponseDueAt: unixPtr(it.OwnerResponseDueAt),
+			ReminderCount:      it.ReminderCount,
+			AutoClosedReason:   strings.TrimSpace(valueOrEmpty(it.AutoClosedReason)),
+			MatchingScore:      score,
+			CreatedAt:          it.CreatedAt.Unix(),
 		})
 	}
+	sort.SliceStable(out, func(i, j int) bool {
+		si := -1
+		sj := -1
+		if out[i].MatchingScore != nil {
+			si = out[i].MatchingScore.Total
+		}
+		if out[j].MatchingScore != nil {
+			sj = out[j].MatchingScore.Total
+		}
+		if si == sj {
+			return out[i].CreatedAt > out[j].CreatedAt
+		}
+		return si > sj
+	})
+
 	return out, nil
 }
 
@@ -205,15 +517,19 @@ func (s *EntValidationCaseWorkflowService) ApproveConsultationRequest(ctx contex
 		return apperrors.ErrDatabase
 	}
 
-	if normalizeStatus(req.Status) != "pending" {
+	if normalizeStatus(req.Status) != consultationStatusPending {
 		return apperrors.ErrInvalidInput.WithDetails("Consultation Request tidak dalam status pending")
 	}
 
 	now := time.Now()
 	if _, err := s.client.ConsultationRequest.UpdateOneID(req.ID).
-		SetStatus("approved").
+		SetStatus(consultationStatusApproved).
 		SetApprovedAt(now).
 		ClearRejectedAt().
+		ClearOwnerResponseDueAt().
+		ClearExpiresAt().
+		SetReminderCount(0).
+		ClearAutoClosedReason().
 		Save(ctx); err != nil {
 		return apperrors.ErrDatabase
 	}
@@ -251,15 +567,19 @@ func (s *EntValidationCaseWorkflowService) RejectConsultationRequest(ctx context
 		return apperrors.ErrDatabase
 	}
 
-	if normalizeStatus(req.Status) != "pending" {
+	if normalizeStatus(req.Status) != consultationStatusPending {
 		return apperrors.ErrInvalidInput.WithDetails("Consultation Request tidak dalam status pending")
 	}
 
 	now := time.Now()
 	if _, err := s.client.ConsultationRequest.UpdateOneID(req.ID).
-		SetStatus("rejected").
+		SetStatus(consultationStatusRejected).
 		SetRejectedAt(now).
 		ClearApprovedAt().
+		ClearOwnerResponseDueAt().
+		ClearExpiresAt().
+		SetReminderCount(0).
+		ClearAutoClosedReason().
 		Save(ctx); err != nil {
 		return apperrors.ErrDatabase
 	}
@@ -273,6 +593,336 @@ func (s *EntValidationCaseWorkflowService) RejectConsultationRequest(ctx context
 	return nil
 }
 
+func (s *EntValidationCaseWorkflowService) RequestOwnerClarification(
+	ctx context.Context,
+	validationCaseID uint,
+	requestID uint,
+	validatorUserID uint,
+	input ClarificationRequestInput,
+) error {
+	vc, err := s.client.ValidationCase.Get(ctx, int(validationCaseID))
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return apperrors.ErrValidationCaseNotFound
+		}
+		return apperrors.ErrDatabase
+	}
+
+	req, err := s.client.ConsultationRequest.Query().
+		Where(
+			consultationrequest.IDEQ(int(requestID)),
+			consultationrequest.ValidationCaseIDEQ(int(validationCaseID)),
+		).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return apperrors.ErrInvalidInput.WithDetails("Consultation Request tidak ditemukan")
+		}
+		return apperrors.ErrDatabase
+	}
+	if req.ValidatorUserID != int(validatorUserID) {
+		return apperrors.ErrValidationCaseOwnership
+	}
+	if !isConsultationApprovedStatus(req.Status) {
+		return apperrors.ErrInvalidInput.WithDetails("Clarification hanya bisa diajukan setelah Consultation disetujui")
+	}
+
+	mode := normalizeStatus(input.Mode)
+	if mode == "" {
+		mode = clarificationModeQuestion
+	}
+	if mode != clarificationModeQuestion && mode != clarificationModeAssumption {
+		return apperrors.ErrInvalidInput.WithDetails("mode harus 'question' atau 'assumption'")
+	}
+
+	message := strings.TrimSpace(input.Message)
+	if len(message) < 8 {
+		return apperrors.ErrInvalidInput.WithDetails("message minimal 8 karakter")
+	}
+
+	assumptions := sanitizeAssumptionItems(input.Assumptions)
+	caseClarificationState := clarificationStateWaitingOwnerResponse
+	eventType := "clarification_requested"
+	if mode == clarificationModeAssumption {
+		if len(assumptions) == 0 {
+			return apperrors.ErrInvalidInput.WithDetails("assumptions minimal 1 item untuk mode assumption")
+		}
+		caseClarificationState = clarificationStateAssumptionPending
+		eventType = "assumption_mode_submitted"
+	}
+
+	now := time.Now()
+	due := dueTimeFromNow(now)
+	if _, err := s.client.ConsultationRequest.UpdateOneID(req.ID).
+		SetStatus(consultationStatusWaitingOwnerResponse).
+		SetOwnerResponseDueAt(due).
+		SetExpiresAt(due).
+		SetReminderCount(0).
+		ClearAutoClosedReason().
+		Save(ctx); err != nil {
+		return apperrors.ErrDatabase
+	}
+
+	previousStatus := normalizeStatus(vc.Status)
+	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
+		SetStatus(caseStatusWaitingOwnerResponse).
+		SetClarificationState(caseClarificationState).
+		Save(ctx); err != nil {
+		return apperrors.ErrDatabase
+	}
+
+	actorID := int(validatorUserID)
+	s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, eventType, map[string]interface{}{
+		"consultation_request_id": req.ID,
+		"mode":                    mode,
+		"message":                 message,
+		"assumptions":             assumptions,
+		"owner_response_due_at":   due.Unix(),
+		"sla_reminder_hours":      reminderScheduleHours(),
+	})
+	if previousStatus != caseStatusWaitingOwnerResponse {
+		s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, "case_status_changed", map[string]interface{}{
+			"from":   previousStatus,
+			"to":     caseStatusWaitingOwnerResponse,
+			"reason": "validator_requested_owner_response",
+		})
+	}
+
+	return nil
+}
+
+func (s *EntValidationCaseWorkflowService) RequestOwnerClarificationForValidator(
+	ctx context.Context,
+	validationCaseID uint,
+	validatorUserID uint,
+	input ClarificationRequestInput,
+) error {
+	req, err := s.client.ConsultationRequest.Query().
+		Where(
+			consultationrequest.ValidationCaseIDEQ(int(validationCaseID)),
+			consultationrequest.ValidatorUserIDEQ(int(validatorUserID)),
+			consultationrequest.StatusEQ(consultationStatusApproved),
+		).
+		Order(ent.Desc(consultationrequest.FieldCreatedAt)).
+		First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return apperrors.ErrInvalidInput.WithDetails("Anda belum memiliki Consultation Request yang disetujui untuk kasus ini")
+		}
+		return apperrors.ErrDatabase
+	}
+	return s.RequestOwnerClarification(ctx, validationCaseID, uint(req.ID), validatorUserID, input)
+}
+
+func (s *EntValidationCaseWorkflowService) RespondOwnerClarification(
+	ctx context.Context,
+	validationCaseID uint,
+	requestID uint,
+	ownerUserID uint,
+	input ClarificationResponseInput,
+) error {
+	vc, err := s.client.ValidationCase.Get(ctx, int(validationCaseID))
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return apperrors.ErrValidationCaseNotFound
+		}
+		return apperrors.ErrDatabase
+	}
+	if vc.UserID != int(ownerUserID) {
+		return apperrors.ErrValidationCaseOwnership
+	}
+
+	req, err := s.client.ConsultationRequest.Query().
+		Where(
+			consultationrequest.IDEQ(int(requestID)),
+			consultationrequest.ValidationCaseIDEQ(int(validationCaseID)),
+		).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return apperrors.ErrInvalidInput.WithDetails("Consultation Request tidak ditemukan")
+		}
+		return apperrors.ErrDatabase
+	}
+
+	status := normalizeStatus(req.Status)
+	if status != consultationStatusWaitingOwnerResponse && status != consultationStatusOwnerTimeout {
+		return apperrors.ErrInvalidInput.WithDetails("Tidak ada request klarifikasi aktif untuk Consultation Request ini")
+	}
+
+	action := normalizeStatus(input.Action)
+	if action == "" {
+		action = "clarify"
+	}
+	switch action {
+	case "clarify", "approve", "reject":
+	default:
+		return apperrors.ErrInvalidInput.WithDetails("action harus 'clarify', 'approve', atau 'reject'")
+	}
+
+	clarification := strings.TrimSpace(input.Clarification)
+	if (action == "clarify" || action == "reject") && len(clarification) < 8 {
+		return apperrors.ErrInvalidInput.WithDetails("clarification minimal 8 karakter")
+	}
+	if action == "approve" && normalizeStatus(vc.ClarificationState) != clarificationStateAssumptionPending {
+		return apperrors.ErrInvalidInput.WithDetails("approve hanya valid untuk Assumption Mode")
+	}
+
+	now := time.Now()
+	if _, err := s.client.ConsultationRequest.UpdateOneID(req.ID).
+		SetStatus(consultationStatusApproved).
+		SetApprovedAt(now).
+		ClearRejectedAt().
+		ClearOwnerResponseDueAt().
+		ClearExpiresAt().
+		SetReminderCount(0).
+		ClearAutoClosedReason().
+		Save(ctx); err != nil {
+		return apperrors.ErrDatabase
+	}
+
+	newClarificationState := clarificationStateOwnerResponded
+	eventType := "owner_clarification_submitted"
+	switch action {
+	case "approve":
+		newClarificationState = clarificationStateAssumptionApproved
+		eventType = "assumption_mode_approved"
+	case "reject":
+		newClarificationState = clarificationStateAssumptionRejected
+		eventType = "assumption_mode_rejected"
+	}
+
+	previousStatus := normalizeStatus(vc.Status)
+	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
+		SetStatus(caseStatusOpen).
+		SetClarificationState(newClarificationState).
+		Save(ctx); err != nil {
+		return apperrors.ErrDatabase
+	}
+
+	actorID := int(ownerUserID)
+	s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, eventType, map[string]interface{}{
+		"consultation_request_id": req.ID,
+		"action":                  action,
+		"clarification":           clarification,
+	})
+	if previousStatus != caseStatusOpen {
+		s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, "case_status_changed", map[string]interface{}{
+			"from":   previousStatus,
+			"to":     caseStatusOpen,
+			"reason": "owner_response_received",
+		})
+	}
+	if previousStatus == caseStatusOnHoldOwnerInactive {
+		s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, "case_resumed_from_owner_inactive", map[string]interface{}{
+			"consultation_request_id": req.ID,
+		})
+	}
+
+	return nil
+}
+
+func (s *EntValidationCaseWorkflowService) ProcessOwnerResponseSLA(ctx context.Context) (int, int, error) {
+	now := time.Now()
+	reminderEvents := 0
+	timeoutEvents := 0
+
+	items, err := s.client.ConsultationRequest.Query().
+		Where(
+			consultationrequest.StatusEQ(consultationStatusWaitingOwnerResponse),
+			consultationrequest.OwnerResponseDueAtNotNil(),
+		).
+		All(ctx)
+	if err != nil {
+		return 0, 0, apperrors.ErrDatabase
+	}
+
+	for _, req := range items {
+		if req.OwnerResponseDueAt == nil {
+			continue
+		}
+		vc, err := s.client.ValidationCase.Get(ctx, req.ValidationCaseID)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				continue
+			}
+			return reminderEvents, timeoutEvents, apperrors.ErrDatabase
+		}
+
+		due := req.OwnerResponseDueAt
+		start := due.Add(-ownerResponseSLAHours * time.Hour)
+		elapsed := now.Sub(start)
+
+		newReminderCount := req.ReminderCount
+		if elapsed >= ownerReminderFirstHour*time.Hour && newReminderCount < 1 {
+			s.appendCaseLogBestEffort(ctx, vc.ID, nil, "owner_response_sla_reminder", map[string]interface{}{
+				"consultation_request_id": req.ID,
+				"reminder_hour":           ownerReminderFirstHour,
+				"owner_response_due_at":   due.Unix(),
+			})
+			newReminderCount = 1
+			reminderEvents++
+		}
+		if elapsed >= ownerReminderSecondHour*time.Hour && newReminderCount < 2 {
+			s.appendCaseLogBestEffort(ctx, vc.ID, nil, "owner_response_sla_reminder", map[string]interface{}{
+				"consultation_request_id": req.ID,
+				"reminder_hour":           ownerReminderSecondHour,
+				"owner_response_due_at":   due.Unix(),
+			})
+			newReminderCount = 2
+			reminderEvents++
+		}
+		if newReminderCount != req.ReminderCount {
+			_, _ = s.client.ConsultationRequest.UpdateOneID(req.ID).
+				SetReminderCount(newReminderCount).
+				Save(ctx)
+		}
+
+		if now.Before(*due) {
+			continue
+		}
+
+		if _, err := s.client.ConsultationRequest.UpdateOneID(req.ID).
+			SetStatus(consultationStatusOwnerTimeout).
+			SetReminderCount(newReminderCount).
+			SetExpiresAt(now).
+			SetAutoClosedReason("owner_inactive_sla_timeout").
+			Save(ctx); err != nil {
+			return reminderEvents, timeoutEvents, apperrors.ErrDatabase
+		}
+
+		caseUpdate := s.client.ValidationCase.UpdateOneID(vc.ID).
+			SetStatus(caseStatusOnHoldOwnerInactive).
+			SetClarificationState(clarificationStateOwnerInactiveSLAExpired)
+		if normalizeStatus(vc.Status) != caseStatusOnHoldOwnerInactive {
+			caseUpdate.AddOwnerInactivityCount(1)
+		}
+		if _, err := caseUpdate.Save(ctx); err != nil {
+			return reminderEvents, timeoutEvents, apperrors.ErrDatabase
+		}
+
+		s.appendCaseLogBestEffort(ctx, vc.ID, nil, "owner_response_sla_expired", map[string]interface{}{
+			"consultation_request_id": req.ID,
+			"owner_response_due_at":   due.Unix(),
+			"timeout_reason":          "owner_inactive_sla_timeout",
+		})
+		s.appendCaseLogBestEffort(ctx, vc.ID, nil, "case_status_changed", map[string]interface{}{
+			"from":   normalizeStatus(vc.Status),
+			"to":     caseStatusOnHoldOwnerInactive,
+			"reason": "owner_inactive_sla_timeout",
+		})
+		s.appendCaseLogBestEffort(ctx, vc.ID, nil, "validator_released_without_penalty", map[string]interface{}{
+			"validator_user_id":       req.ValidatorUserID,
+			"consultation_request_id": req.ID,
+			"reassignment":            false,
+			"reputation_impact":       "none",
+		})
+		timeoutEvents++
+	}
+
+	return reminderEvents, timeoutEvents, nil
+}
+
 func (s *EntValidationCaseWorkflowService) RevealOwnerTelegramContact(ctx context.Context, validationCaseID uint, validatorUserID uint) (string, error) {
 	vc, err := s.client.ValidationCase.Get(ctx, int(validationCaseID))
 	if err != nil {
@@ -281,12 +931,16 @@ func (s *EntValidationCaseWorkflowService) RevealOwnerTelegramContact(ctx contex
 		}
 		return "", apperrors.ErrDatabase
 	}
+	switch strings.ToUpper(strings.TrimSpace(vc.SensitivityLevel)) {
+	case "S2", "S3":
+		return "", apperrors.ErrInvalidInput.WithDetails("Sensitivity policy melarang reveal Telegram untuk tier ini")
+	}
 
 	req, err := s.client.ConsultationRequest.Query().
 		Where(
 			consultationrequest.ValidationCaseIDEQ(vc.ID),
 			consultationrequest.ValidatorUserIDEQ(int(validatorUserID)),
-			consultationrequest.StatusEQ("approved"),
+			consultationrequest.StatusEQ(consultationStatusApproved),
 		).
 		Only(ctx)
 	if err != nil {
@@ -344,13 +998,16 @@ func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context,
 	if vc.UserID == int(validatorUserID) {
 		return 0, apperrors.ErrInvalidInput.WithDetails("pemilik kasus tidak dapat mengajukan Final Offer pada kasusnya sendiri")
 	}
+	if normalizeStatus(vc.Status) != caseStatusOpen {
+		return 0, apperrors.ErrInvalidInput.WithDetails("Final Offer hanya dapat diajukan saat status kasus open")
+	}
 
 	// Require approved consultation to submit an offer.
 	approved, err := s.client.ConsultationRequest.Query().
 		Where(
 			consultationrequest.ValidationCaseIDEQ(vc.ID),
 			consultationrequest.ValidatorUserIDEQ(int(validatorUserID)),
-			consultationrequest.StatusEQ("approved"),
+			consultationrequest.StatusEQ(consultationStatusApproved),
 		).
 		Exist(ctx)
 	if err != nil {
@@ -461,6 +1118,9 @@ func (s *EntValidationCaseWorkflowService) AcceptFinalOffer(ctx context.Context,
 	}
 	if vc.UserID != int(ownerUserID) {
 		return nil, apperrors.ErrValidationCaseOwnership
+	}
+	if normalizeStatus(vc.Status) != caseStatusOpen {
+		return nil, apperrors.ErrInvalidInput.WithDetails("Final Offer hanya dapat diterima saat status kasus open")
 	}
 	if vc.EscrowTransferID != nil && strings.TrimSpace(*vc.EscrowTransferID) != "" {
 		return nil, apperrors.ErrInvalidInput.WithDetails("Lock Funds sudah dilakukan untuk kasus ini")
@@ -939,7 +1599,11 @@ func (s *EntValidationCaseWorkflowService) GetCaseLog(ctx context.Context, valid
 			Where(
 				consultationrequest.ValidationCaseIDEQ(vc.ID),
 				consultationrequest.ValidatorUserIDEQ(int(viewerUserID)),
-				consultationrequest.StatusEQ("approved"),
+				consultationrequest.StatusIn(
+					consultationStatusApproved,
+					consultationStatusWaitingOwnerResponse,
+					consultationStatusOwnerTimeout,
+				),
 			).
 			Exist(ctx)
 		if err != nil {

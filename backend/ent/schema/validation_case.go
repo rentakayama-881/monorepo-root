@@ -42,7 +42,7 @@ func (ValidationCase) Fields() []ent.Field {
 			Default(""),
 		field.String("content_type").
 			MaxLen(32).
-			Default("table"),
+			Default("json"),
 		field.JSON("content_json", map[string]interface{}{}).
 			Optional(),
 		field.JSON("meta", map[string]interface{}{}).
@@ -54,6 +54,18 @@ func (ValidationCase) Fields() []ent.Field {
 		field.String("status").
 			MaxLen(32).
 			Default("open"),
+		field.String("sensitivity_level").
+			MaxLen(8).
+			Default("S1"),
+		field.String("intake_schema_version").
+			MaxLen(64).
+			Default("quick-intake-v1"),
+		field.String("clarification_state").
+			MaxLen(64).
+			Default("none"),
+		field.Int("owner_inactivity_count").
+			NonNegative().
+			Default(0),
 
 		// Feature-service linkage (escrow/dispute/document IDs).
 		field.String("escrow_transfer_id").
@@ -104,6 +116,7 @@ func (ValidationCase) Indexes() []ent.Index {
 		index.Fields("category_id"),
 		index.Fields("user_id"),
 		index.Fields("status"),
+		index.Fields("sensitivity_level"),
+		index.Fields("clarification_state"),
 	}
 }
-

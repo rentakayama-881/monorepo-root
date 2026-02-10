@@ -243,18 +243,30 @@ func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, own
 		}
 	}
 
-	contentMap := coerceContentToMap(input.Content)
+	structuredIntake := input.StructuredIntake
+	if structuredIntake == nil {
+		structuredIntake, err = validators.ParseStructuredIntakeContent(input.Content)
+		if err != nil {
+			return nil, err
+		}
+	}
+	contentMap := validators.BuildCanonicalStructuredContent(structuredIntake)
+	autoSummary := validators.BuildAutoSummary(structuredIntake)
 
 	create := s.client.ValidationCase.
 		Create().
 		SetCategoryID(cat.ID).
 		SetUserID(int(ownerUserID)).
 		SetTitle(input.Title).
-		SetSummary(input.Summary).
-		SetContentType(input.ContentType).
+		SetSummary(autoSummary).
+		SetContentType("json").
 		SetContentJSON(contentMap).
 		SetMeta(sanitizeCaseMeta(metaMap)).
 		SetBountyAmount(input.BountyAmount).
+		SetSensitivityLevel(structuredIntake.SensitivityLevel).
+		SetIntakeSchemaVersion(validators.IntakeSchemaVersion).
+		SetClarificationState("none").
+		SetOwnerInactivityCount(0).
 		SetStatus("open")
 
 	if len(tags) > 0 {
@@ -274,7 +286,9 @@ func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, own
 		SetActorUserID(int(ownerUserID)).
 		SetEventType("validation_case_created").
 		SetDetailJSON(map[string]interface{}{
-			"bounty_amount": input.BountyAmount,
+			"bounty_amount":         input.BountyAmount,
+			"sensitivity_level":     structuredIntake.SensitivityLevel,
+			"intake_schema_version": validators.IntakeSchemaVersion,
 		}).
 		Save(ctx)
 
@@ -320,11 +334,22 @@ func (s *EntValidationCaseService) UpdateValidationCase(ctx context.Context, own
 	if input.Summary != nil {
 		update.SetSummary(*input.Summary)
 	}
-	if input.ContentType != nil {
+	if input.ContentType != nil && input.Content == nil {
 		update.SetContentType(*input.ContentType)
 	}
 	if input.Content != nil {
-		update.SetContentJSON(coerceContentToMap(input.Content))
+		structuredIntake := input.StructuredIntake
+		if structuredIntake == nil {
+			structuredIntake, err = validators.ParseStructuredIntakeContent(input.Content)
+			if err != nil {
+				return err
+			}
+		}
+		update.SetContentType("json")
+		update.SetContentJSON(validators.BuildCanonicalStructuredContent(structuredIntake))
+		update.SetSummary(validators.BuildAutoSummary(structuredIntake))
+		update.SetSensitivityLevel(structuredIntake.SensitivityLevel)
+		update.SetIntakeSchemaVersion(validators.IntakeSchemaVersion)
 	}
 	if input.Meta != nil {
 		metaJSON, err := validators.NormalizeMeta(input.Meta)
@@ -471,16 +496,19 @@ func (s *EntValidationCaseService) validationCaseToListItem(vc *ent.ValidationCa
 	tags := buildTagResponsesFromEnt(vc.Edges.Tags)
 
 	return ValidationCaseListItem{
-		ID:           uint(vc.ID),
-		Title:        vc.Title,
-		Summary:      vc.Summary,
-		Status:       vc.Status,
-		BountyAmount: vc.BountyAmount,
-		Owner:        owner,
-		Category:     cat,
-		Tags:         tags,
-		Meta:         sanitizeCaseMeta(vc.Meta),
-		CreatedAt:    vc.CreatedAt.Unix(),
+		ID:                   uint(vc.ID),
+		Title:                vc.Title,
+		Summary:              vc.Summary,
+		Status:               vc.Status,
+		SensitivityLevel:     vc.SensitivityLevel,
+		ClarificationState:   vc.ClarificationState,
+		BountyAmount:         vc.BountyAmount,
+		OwnerInactivityCount: vc.OwnerInactivityCount,
+		Owner:                owner,
+		Category:             cat,
+		Tags:                 tags,
+		Meta:                 sanitizeCaseMeta(vc.Meta),
+		CreatedAt:            vc.CreatedAt.Unix(),
 	}
 }
 
@@ -496,23 +524,27 @@ func (s *EntValidationCaseService) validationCaseToDetailResponse(vc *ent.Valida
 	}
 
 	return &ValidationCaseDetailResponse{
-		ID:            uint(vc.ID),
-		Title:         vc.Title,
-		Summary:       vc.Summary,
-		ContentType:   vc.ContentType,
-		Content:       vc.ContentJSON,
-		Meta:          sanitizeCaseMeta(vc.Meta),
-		Status:        vc.Status,
-		BountyAmount:  vc.BountyAmount,
-		EscrowTransferID: vc.EscrowTransferID,
-		DisputeID:        vc.DisputeID,
-		AcceptedFinalOfferID: acceptedOfferID,
-		ArtifactDocumentID: vc.ArtifactDocumentID,
+		ID:                          uint(vc.ID),
+		Title:                       vc.Title,
+		Summary:                     vc.Summary,
+		ContentType:                 vc.ContentType,
+		Content:                     vc.ContentJSON,
+		Meta:                        sanitizeCaseMeta(vc.Meta),
+		SensitivityLevel:            vc.SensitivityLevel,
+		IntakeSchemaVersion:         vc.IntakeSchemaVersion,
+		ClarificationState:          vc.ClarificationState,
+		OwnerInactivityCount:        vc.OwnerInactivityCount,
+		Status:                      vc.Status,
+		BountyAmount:                vc.BountyAmount,
+		EscrowTransferID:            vc.EscrowTransferID,
+		DisputeID:                   vc.DisputeID,
+		AcceptedFinalOfferID:        acceptedOfferID,
+		ArtifactDocumentID:          vc.ArtifactDocumentID,
 		CertifiedArtifactDocumentID: vc.CertifiedArtifactDocumentID,
-		CreatedAt:     vc.CreatedAt.Unix(),
-		Owner:         owner,
-		Category:      cat,
-		Tags:          tags,
+		CreatedAt:                   vc.CreatedAt.Unix(),
+		Owner:                       owner,
+		Category:                    cat,
+		Tags:                        tags,
 	}
 }
 
@@ -574,4 +606,3 @@ func buildTagResponsesFromEnt(tagsEnt []*ent.Tag) []TagResponse {
 
 // Ensure we reference validationcaselog package so unused import isn't stripped by refactors.
 var _ = validationcaselog.FieldEventType
-

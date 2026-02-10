@@ -105,6 +105,26 @@ func Status(v string) predicate.ValidationCase {
 	return predicate.ValidationCase(sql.FieldEQ(FieldStatus, v))
 }
 
+// SensitivityLevel applies equality check predicate on the "sensitivity_level" field. It's identical to SensitivityLevelEQ.
+func SensitivityLevel(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEQ(FieldSensitivityLevel, v))
+}
+
+// IntakeSchemaVersion applies equality check predicate on the "intake_schema_version" field. It's identical to IntakeSchemaVersionEQ.
+func IntakeSchemaVersion(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEQ(FieldIntakeSchemaVersion, v))
+}
+
+// ClarificationState applies equality check predicate on the "clarification_state" field. It's identical to ClarificationStateEQ.
+func ClarificationState(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEQ(FieldClarificationState, v))
+}
+
+// OwnerInactivityCount applies equality check predicate on the "owner_inactivity_count" field. It's identical to OwnerInactivityCountEQ.
+func OwnerInactivityCount(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEQ(FieldOwnerInactivityCount, v))
+}
+
 // EscrowTransferID applies equality check predicate on the "escrow_transfer_id" field. It's identical to EscrowTransferIDEQ.
 func EscrowTransferID(v string) predicate.ValidationCase {
 	return predicate.ValidationCase(sql.FieldEQ(FieldEscrowTransferID, v))
@@ -628,6 +648,241 @@ func StatusEqualFold(v string) predicate.ValidationCase {
 // StatusContainsFold applies the ContainsFold predicate on the "status" field.
 func StatusContainsFold(v string) predicate.ValidationCase {
 	return predicate.ValidationCase(sql.FieldContainsFold(FieldStatus, v))
+}
+
+// SensitivityLevelEQ applies the EQ predicate on the "sensitivity_level" field.
+func SensitivityLevelEQ(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEQ(FieldSensitivityLevel, v))
+}
+
+// SensitivityLevelNEQ applies the NEQ predicate on the "sensitivity_level" field.
+func SensitivityLevelNEQ(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldNEQ(FieldSensitivityLevel, v))
+}
+
+// SensitivityLevelIn applies the In predicate on the "sensitivity_level" field.
+func SensitivityLevelIn(vs ...string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldIn(FieldSensitivityLevel, vs...))
+}
+
+// SensitivityLevelNotIn applies the NotIn predicate on the "sensitivity_level" field.
+func SensitivityLevelNotIn(vs ...string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldNotIn(FieldSensitivityLevel, vs...))
+}
+
+// SensitivityLevelGT applies the GT predicate on the "sensitivity_level" field.
+func SensitivityLevelGT(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldGT(FieldSensitivityLevel, v))
+}
+
+// SensitivityLevelGTE applies the GTE predicate on the "sensitivity_level" field.
+func SensitivityLevelGTE(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldGTE(FieldSensitivityLevel, v))
+}
+
+// SensitivityLevelLT applies the LT predicate on the "sensitivity_level" field.
+func SensitivityLevelLT(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldLT(FieldSensitivityLevel, v))
+}
+
+// SensitivityLevelLTE applies the LTE predicate on the "sensitivity_level" field.
+func SensitivityLevelLTE(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldLTE(FieldSensitivityLevel, v))
+}
+
+// SensitivityLevelContains applies the Contains predicate on the "sensitivity_level" field.
+func SensitivityLevelContains(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldContains(FieldSensitivityLevel, v))
+}
+
+// SensitivityLevelHasPrefix applies the HasPrefix predicate on the "sensitivity_level" field.
+func SensitivityLevelHasPrefix(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldHasPrefix(FieldSensitivityLevel, v))
+}
+
+// SensitivityLevelHasSuffix applies the HasSuffix predicate on the "sensitivity_level" field.
+func SensitivityLevelHasSuffix(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldHasSuffix(FieldSensitivityLevel, v))
+}
+
+// SensitivityLevelEqualFold applies the EqualFold predicate on the "sensitivity_level" field.
+func SensitivityLevelEqualFold(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEqualFold(FieldSensitivityLevel, v))
+}
+
+// SensitivityLevelContainsFold applies the ContainsFold predicate on the "sensitivity_level" field.
+func SensitivityLevelContainsFold(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldContainsFold(FieldSensitivityLevel, v))
+}
+
+// IntakeSchemaVersionEQ applies the EQ predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionEQ(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEQ(FieldIntakeSchemaVersion, v))
+}
+
+// IntakeSchemaVersionNEQ applies the NEQ predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionNEQ(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldNEQ(FieldIntakeSchemaVersion, v))
+}
+
+// IntakeSchemaVersionIn applies the In predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionIn(vs ...string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldIn(FieldIntakeSchemaVersion, vs...))
+}
+
+// IntakeSchemaVersionNotIn applies the NotIn predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionNotIn(vs ...string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldNotIn(FieldIntakeSchemaVersion, vs...))
+}
+
+// IntakeSchemaVersionGT applies the GT predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionGT(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldGT(FieldIntakeSchemaVersion, v))
+}
+
+// IntakeSchemaVersionGTE applies the GTE predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionGTE(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldGTE(FieldIntakeSchemaVersion, v))
+}
+
+// IntakeSchemaVersionLT applies the LT predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionLT(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldLT(FieldIntakeSchemaVersion, v))
+}
+
+// IntakeSchemaVersionLTE applies the LTE predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionLTE(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldLTE(FieldIntakeSchemaVersion, v))
+}
+
+// IntakeSchemaVersionContains applies the Contains predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionContains(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldContains(FieldIntakeSchemaVersion, v))
+}
+
+// IntakeSchemaVersionHasPrefix applies the HasPrefix predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionHasPrefix(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldHasPrefix(FieldIntakeSchemaVersion, v))
+}
+
+// IntakeSchemaVersionHasSuffix applies the HasSuffix predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionHasSuffix(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldHasSuffix(FieldIntakeSchemaVersion, v))
+}
+
+// IntakeSchemaVersionEqualFold applies the EqualFold predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionEqualFold(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEqualFold(FieldIntakeSchemaVersion, v))
+}
+
+// IntakeSchemaVersionContainsFold applies the ContainsFold predicate on the "intake_schema_version" field.
+func IntakeSchemaVersionContainsFold(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldContainsFold(FieldIntakeSchemaVersion, v))
+}
+
+// ClarificationStateEQ applies the EQ predicate on the "clarification_state" field.
+func ClarificationStateEQ(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEQ(FieldClarificationState, v))
+}
+
+// ClarificationStateNEQ applies the NEQ predicate on the "clarification_state" field.
+func ClarificationStateNEQ(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldNEQ(FieldClarificationState, v))
+}
+
+// ClarificationStateIn applies the In predicate on the "clarification_state" field.
+func ClarificationStateIn(vs ...string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldIn(FieldClarificationState, vs...))
+}
+
+// ClarificationStateNotIn applies the NotIn predicate on the "clarification_state" field.
+func ClarificationStateNotIn(vs ...string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldNotIn(FieldClarificationState, vs...))
+}
+
+// ClarificationStateGT applies the GT predicate on the "clarification_state" field.
+func ClarificationStateGT(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldGT(FieldClarificationState, v))
+}
+
+// ClarificationStateGTE applies the GTE predicate on the "clarification_state" field.
+func ClarificationStateGTE(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldGTE(FieldClarificationState, v))
+}
+
+// ClarificationStateLT applies the LT predicate on the "clarification_state" field.
+func ClarificationStateLT(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldLT(FieldClarificationState, v))
+}
+
+// ClarificationStateLTE applies the LTE predicate on the "clarification_state" field.
+func ClarificationStateLTE(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldLTE(FieldClarificationState, v))
+}
+
+// ClarificationStateContains applies the Contains predicate on the "clarification_state" field.
+func ClarificationStateContains(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldContains(FieldClarificationState, v))
+}
+
+// ClarificationStateHasPrefix applies the HasPrefix predicate on the "clarification_state" field.
+func ClarificationStateHasPrefix(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldHasPrefix(FieldClarificationState, v))
+}
+
+// ClarificationStateHasSuffix applies the HasSuffix predicate on the "clarification_state" field.
+func ClarificationStateHasSuffix(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldHasSuffix(FieldClarificationState, v))
+}
+
+// ClarificationStateEqualFold applies the EqualFold predicate on the "clarification_state" field.
+func ClarificationStateEqualFold(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEqualFold(FieldClarificationState, v))
+}
+
+// ClarificationStateContainsFold applies the ContainsFold predicate on the "clarification_state" field.
+func ClarificationStateContainsFold(v string) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldContainsFold(FieldClarificationState, v))
+}
+
+// OwnerInactivityCountEQ applies the EQ predicate on the "owner_inactivity_count" field.
+func OwnerInactivityCountEQ(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEQ(FieldOwnerInactivityCount, v))
+}
+
+// OwnerInactivityCountNEQ applies the NEQ predicate on the "owner_inactivity_count" field.
+func OwnerInactivityCountNEQ(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldNEQ(FieldOwnerInactivityCount, v))
+}
+
+// OwnerInactivityCountIn applies the In predicate on the "owner_inactivity_count" field.
+func OwnerInactivityCountIn(vs ...int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldIn(FieldOwnerInactivityCount, vs...))
+}
+
+// OwnerInactivityCountNotIn applies the NotIn predicate on the "owner_inactivity_count" field.
+func OwnerInactivityCountNotIn(vs ...int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldNotIn(FieldOwnerInactivityCount, vs...))
+}
+
+// OwnerInactivityCountGT applies the GT predicate on the "owner_inactivity_count" field.
+func OwnerInactivityCountGT(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldGT(FieldOwnerInactivityCount, v))
+}
+
+// OwnerInactivityCountGTE applies the GTE predicate on the "owner_inactivity_count" field.
+func OwnerInactivityCountGTE(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldGTE(FieldOwnerInactivityCount, v))
+}
+
+// OwnerInactivityCountLT applies the LT predicate on the "owner_inactivity_count" field.
+func OwnerInactivityCountLT(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldLT(FieldOwnerInactivityCount, v))
+}
+
+// OwnerInactivityCountLTE applies the LTE predicate on the "owner_inactivity_count" field.
+func OwnerInactivityCountLTE(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldLTE(FieldOwnerInactivityCount, v))
 }
 
 // EscrowTransferIDEQ applies the EQ predicate on the "escrow_transfer_id" field.

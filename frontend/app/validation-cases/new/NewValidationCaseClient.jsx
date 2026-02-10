@@ -10,6 +10,39 @@ import TagSelector from "@/components/ui/TagSelector";
 import NewValidationCaseSkeleton from "./NewValidationCaseSkeleton";
 import Skeleton from "@/components/ui/Skeleton";
 
+const quickIntakeFields = [
+  { key: "validation_goal", label: "Tujuan Validasi" },
+  { key: "output_type", label: "Jenis Output" },
+  { key: "evidence_input", label: "Bukti / Input" },
+  { key: "pass_criteria", label: "Kriteria Lulus" },
+  { key: "constraints", label: "Batasan" },
+];
+
+const checklistItems = [
+  {
+    key: "intake_complete",
+    label: "Quick Intake sudah lengkap dan sesuai konteks.",
+  },
+  {
+    key: "evidence_attached",
+    label: "Bukti/input sudah disiapkan agar validator bisa langsung cek.",
+  },
+  {
+    key: "pass_criteria_defined",
+    label: "Kriteria lulus ditulis eksplisit dan bisa diverifikasi.",
+  },
+  {
+    key: "constraints_defined",
+    label: "Batasan dan ruang lingkup sudah jelas.",
+  },
+  {
+    key: "no_contact_in_case_record",
+    label: "Case Record tidak berisi detail kontak langsung.",
+  },
+];
+
+const sensitivityOptions = ["S0", "S1", "S2", "S3"];
+
 function formatIDR(amount) {
   const n = Number(amount || 0);
   if (!Number.isFinite(n)) return "";
@@ -20,13 +53,31 @@ function pickDefaultCategory(list) {
   const items = Array.isArray(list) ? list : [];
   if (items.length === 0) return null;
   if (items.length === 1) return items[0];
-
-  // Prefer conventional "general" slugs; fall back safely.
   return (
     items.find((c) => String(c?.slug || "").toLowerCase() === "general") ||
     items.find((c) => String(c?.slug || "").toLowerCase() === "others") ||
     items[0]
   );
+}
+
+function buildAutoSummary(quickIntake) {
+  const goal = String(quickIntake?.validation_goal || "").trim();
+  const outputType = String(quickIntake?.output_type || "").trim();
+  const passCriteria = String(quickIntake?.pass_criteria || "").trim();
+  if (!goal && !outputType && !passCriteria) return "";
+  return `Tujuan: ${goal || "-"}. Output: ${outputType || "-"}. Lulus jika: ${passCriteria || "-"}.`;
+}
+
+function buildAutoBrief(quickIntake) {
+  return {
+    objective: String(quickIntake?.validation_goal || "").trim(),
+    expected_output_type: String(quickIntake?.output_type || "").trim(),
+    evidence_scope: String(quickIntake?.evidence_input || "").trim(),
+    pass_gate: String(quickIntake?.pass_criteria || "").trim(),
+    constraints: String(quickIntake?.constraints || "").trim(),
+    sensitivity: String(quickIntake?.sensitivity || "S1").trim().toUpperCase(),
+    owner_response_sla: "Max 12 jam (reminder +2h, +8h, auto-hold +12h)",
+  };
 }
 
 export default function NewValidationCaseClient() {
@@ -40,7 +91,7 @@ export default function NewValidationCaseClient() {
     }
   }, []);
 
-  const [caseType, setCaseType] = useState(null); // { slug, name }
+  const [caseType, setCaseType] = useState(null);
   const [loadingCaseType, setLoadingCaseType] = useState(true);
 
   const [availableTags, setAvailableTags] = useState([]);
@@ -50,9 +101,23 @@ export default function NewValidationCaseClient() {
 
   const [form, setForm] = useState({
     title: "",
-    summary: "",
     bounty_amount: "10000",
-    content: "",
+    quick_intake: {
+      validation_goal: "",
+      output_type: "",
+      evidence_input: "",
+      pass_criteria: "",
+      constraints: "",
+      sensitivity: "S1",
+    },
+    case_record_text: "",
+    checklist: {
+      intake_complete: false,
+      evidence_attached: false,
+      pass_criteria_defined: false,
+      constraints_defined: false,
+      no_contact_in_case_record: false,
+    },
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -60,6 +125,8 @@ export default function NewValidationCaseClient() {
   const [ok, setOk] = useState("");
 
   const locked = Boolean(caseType?.slug && LOCKED_CATEGORIES.includes(String(caseType.slug)));
+  const autoSummary = useMemo(() => buildAutoSummary(form.quick_intake), [form.quick_intake]);
+  const autoBrief = useMemo(() => buildAutoBrief(form.quick_intake), [form.quick_intake]);
 
   useEffect(() => {
     if (!isAuthed) {
@@ -112,6 +179,26 @@ export default function NewValidationCaseClient() {
     };
   }, []);
 
+  function setQuickIntake(key, value) {
+    setForm((prev) => ({
+      ...prev,
+      quick_intake: {
+        ...prev.quick_intake,
+        [key]: value,
+      },
+    }));
+  }
+
+  function setChecklist(key, checked) {
+    setForm((prev) => ({
+      ...prev,
+      checklist: {
+        ...prev.checklist,
+        [key]: checked,
+      },
+    }));
+  }
+
   async function submit() {
     setError("");
     setOk("");
@@ -127,30 +214,62 @@ export default function NewValidationCaseClient() {
     }
 
     const title = String(form.title || "").trim();
-    const summary = String(form.summary || "").trim();
-    const content = String(form.content || "").trim();
     const bounty = Number(String(form.bounty_amount || "").replace(/[^\d]/g, ""));
+    const caseRecord = String(form.case_record_text || "").trim();
+    const sensitivity = String(form.quick_intake?.sensitivity || "S1").trim().toUpperCase();
 
     if (title.length < 3) {
       setError("Title minimal 3 karakter.");
-      return;
-    }
-    if (!content) {
-      setError("Case Record wajib diisi.");
       return;
     }
     if (!bounty || bounty < 10000) {
       setError("Bounty minimal Rp 10.000.");
       return;
     }
+    for (const item of quickIntakeFields) {
+      if (!String(form.quick_intake?.[item.key] || "").trim()) {
+        setError(`${item.label} wajib diisi.`);
+        return;
+      }
+    }
+    if (!sensitivityOptions.includes(sensitivity)) {
+      setError("Sensitivitas harus S0, S1, S2, atau S3.");
+      return;
+    }
+    if (!caseRecord) {
+      setError("Case Record wajib diisi.");
+      return;
+    }
+    if (/t\.me\/|telegram|wa\.me\/|whatsapp/i.test(caseRecord)) {
+      setError("Case Record tidak boleh memuat kontak langsung.");
+      return;
+    }
+    if (selectedTags.length < 2 || selectedTags.length > 4) {
+      setError("Tags wajib minimal 2 dan maksimal 4 sesuai taxonomy.");
+      return;
+    }
+    const unchecked = checklistItems.find((it) => !Boolean(form.checklist?.[it.key]));
+    if (unchecked) {
+      setError("Checklist protokol wajib dilengkapi sebelum submit.");
+      return;
+    }
 
     setSubmitting(true);
     try {
+      const content = {
+        quick_intake: {
+          ...form.quick_intake,
+          sensitivity,
+        },
+        checklist: { ...form.checklist },
+        case_record_text: caseRecord,
+      };
+
       const body = {
         category_slug: String(caseType.slug),
         title,
-        summary,
-        content_type: "text",
+        summary: autoSummary,
+        content_type: "json",
         content,
         bounty_amount: bounty,
         tag_slugs: selectedTags.map((t) => t.slug),
@@ -190,13 +309,12 @@ export default function NewValidationCaseClient() {
 
       <header className="mb-6">
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Intake
+          Two-layer Intake
         </div>
-        <h1 className="mt-2 text-2xl font-semibold text-foreground">
-          Create Validation Case
-        </h1>
+        <h1 className="mt-2 text-2xl font-semibold text-foreground">Create Validation Case</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Case Record bersifat formal dan dapat diaudit. Tidak ada komentar, reaksi, atau voting. Jangan sertakan info kontak di Case Record.
+          Layer 1 wajib: Quick Intake 6 field. Layer 2: Auto Validation Brief dibentuk otomatis.
+          Tidak ada chat internal; semua flow via status, SLA, dan audit log.
         </p>
       </header>
 
@@ -220,96 +338,140 @@ export default function NewValidationCaseClient() {
 
       <section className="rounded-[var(--radius)] border border-border bg-card">
         <div className="border-b border-border px-5 py-4">
-          <div className="text-sm font-semibold text-foreground">Case Record</div>
+          <div className="text-sm font-semibold text-foreground">Protocol Intake</div>
           <div className="mt-1 text-xs text-muted-foreground">
-            Semua Validation Case masuk ke Case Index. Klasifikasi gunakan Tags (artifact/stage/domain/evidence).
+            Quick Intake wajib, tags wajib minimal 2, dan Case Record tetap tersedia dalam format terkontrol.
           </div>
         </div>
 
-        <div className="space-y-5 px-5 py-5">
+        <div className="space-y-6 px-5 py-5">
           <div>
             <label className="text-xs font-semibold text-muted-foreground">Title</label>
             <input
               value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
               className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-              placeholder="Ringkas, spesifik, dapat diverifikasi."
+              placeholder="Ringkas dan spesifik."
               disabled={locked || submitting}
             />
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground">Abstract (optional)</label>
-            <textarea
-              value={form.summary}
-              onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
-              rows={3}
-              className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-              placeholder="Garis besar kebutuhan validasi, konteks, dan batasan."
-              disabled={locked || submitting}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground">Bounty (IDR)</label>
-              <input
-                value={formatIDR(form.bounty_amount)}
-                onChange={(e) => setForm((f) => ({ ...f, bounty_amount: e.target.value }))}
-                className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                inputMode="numeric"
-                disabled={locked || submitting}
-              />
-              <div className="mt-1 text-[11px] text-muted-foreground">
-                Minimal Rp 10.000. Dana akan dikunci via escrow setelah Final Offer diterima.
-              </div>
+          <div className="rounded-[var(--radius)] border border-border bg-secondary/30 p-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Layer 1 - Quick Intake (Wajib)
             </div>
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              {quickIntakeFields.map((field) => (
+                <div key={field.key} className={field.key === "evidence_input" || field.key === "constraints" ? "md:col-span-2" : ""}>
+                  <label className="text-xs font-semibold text-muted-foreground">{field.label}</label>
+                  <textarea
+                    value={form.quick_intake?.[field.key] || ""}
+                    onChange={(e) => setQuickIntake(field.key, e.target.value)}
+                    rows={field.key === "evidence_input" || field.key === "constraints" ? 3 : 2}
+                    className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                    disabled={locked || submitting}
+                  />
+                </div>
+              ))}
 
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground">Tags (optional)</label>
-              {tagsAvailable ? (
-                <TagSelector
-                  availableTags={availableTags}
-                  selectedTags={selectedTags}
-                  onTagsChange={setSelectedTags}
-                  maxTags={5}
-                  placeholder="Add tags..."
-                  enableSearch={true}
-                  singlePerGroup={true}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">Sensitivitas</label>
+                <select
+                  value={form.quick_intake?.sensitivity || "S1"}
+                  onChange={(e) => setQuickIntake("sensitivity", e.target.value)}
+                  className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                  disabled={locked || submitting}
+                >
+                  <option value="S0">S0 - Public</option>
+                  <option value="S1">S1 - Restricted</option>
+                  <option value="S2">S2 - Confidential</option>
+                  <option value="S3">S3 - Critical</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">Bounty (IDR)</label>
+                <input
+                  value={formatIDR(form.bounty_amount)}
+                  onChange={(e) => setForm((prev) => ({ ...prev, bounty_amount: e.target.value }))}
+                  className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                  inputMode="numeric"
                   disabled={locked || submitting}
                 />
-              ) : tagsLoading ? (
-                <div className="mt-1">
-                  <Skeleton className="h-[120px] w-full" />
-                </div>
-              ) : (
-                <div className="mt-1 text-sm text-muted-foreground">Tags tidak tersedia.</div>
-              )}
+                <div className="mt-1 text-[11px] text-muted-foreground">Minimal Rp 10.000.</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[var(--radius)] border border-border bg-card p-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Layer 2 - Auto Validation Brief
+            </div>
+            <div className="mt-3 overflow-x-auto rounded-[var(--radius)] border border-border">
+              <table className="w-full text-sm">
+                <tbody className="divide-y divide-border">
+                  {Object.entries(autoBrief).map(([label, value]) => (
+                    <tr key={label}>
+                      <td className="w-52 bg-secondary/40 px-3 py-2 font-semibold text-foreground">{label}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{String(value || "-")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-2 text-[11px] text-muted-foreground">Summary otomatis: {autoSummary || "-"}</div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground">Case Record (Free Text)</label>
+            <textarea
+              value={form.case_record_text}
+              onChange={(e) => setForm((prev) => ({ ...prev, case_record_text: e.target.value }))}
+              rows={8}
+              className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+              placeholder="Tambahkan konteks tambahan yang relevan. Tidak perlu narasi panjang."
+              disabled={locked || submitting}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground">Checklist Protokol (Wajib)</label>
+            <div className="mt-2 space-y-2 rounded-[var(--radius)] border border-border bg-secondary/20 p-3">
+              {checklistItems.map((item) => (
+                <label key={item.key} className="flex items-start gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(form.checklist?.[item.key])}
+                    onChange={(e) => setChecklist(item.key, e.target.checked)}
+                    disabled={locked || submitting}
+                    className="mt-0.5"
+                  />
+                  <span>{item.label}</span>
+                </label>
+              ))}
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-muted-foreground">Case Record</label>
-            <textarea
-              value={form.content}
-              onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-              rows={14}
-              className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground font-mono"
-              placeholder={[
-                "Suggested structure:",
-                "",
-                "1) Context",
-                "2) Claims / Expected Output",
-                "3) Inputs (AI output, data, code)",
-                "4) Constraints",
-                "5) Acceptance Criteria",
-                "6) Known Risks / Non-goals",
-              ].join("\\n")}
-              disabled={locked || submitting}
-            />
-            <div className="mt-2 text-[11px] text-muted-foreground">
-              Kontak Telegram tidak boleh dimasukkan. Kontak hanya dibuka via workflow Request Consultation dan dicatat pada Case Log.
-            </div>
+            <label className="text-xs font-semibold text-muted-foreground">Tags (Wajib)</label>
+            {tagsAvailable ? (
+              <TagSelector
+                availableTags={availableTags}
+                selectedTags={selectedTags}
+                onTagsChange={setSelectedTags}
+                maxTags={4}
+                placeholder="Pilih minimal 2 tags..."
+                enableSearch={true}
+                singlePerGroup={true}
+                disabled={locked || submitting}
+              />
+            ) : tagsLoading ? (
+              <div className="mt-1">
+                <Skeleton className="h-[120px] w-full" />
+              </div>
+            ) : (
+              <div className="mt-1 text-sm text-muted-foreground">Tags tidak tersedia.</div>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">

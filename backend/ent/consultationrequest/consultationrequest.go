@@ -30,6 +30,14 @@ const (
 	FieldApprovedAt = "approved_at"
 	// FieldRejectedAt holds the string denoting the rejected_at field in the database.
 	FieldRejectedAt = "rejected_at"
+	// FieldExpiresAt holds the string denoting the expires_at field in the database.
+	FieldExpiresAt = "expires_at"
+	// FieldOwnerResponseDueAt holds the string denoting the owner_response_due_at field in the database.
+	FieldOwnerResponseDueAt = "owner_response_due_at"
+	// FieldReminderCount holds the string denoting the reminder_count field in the database.
+	FieldReminderCount = "reminder_count"
+	// FieldAutoClosedReason holds the string denoting the auto_closed_reason field in the database.
+	FieldAutoClosedReason = "auto_closed_reason"
 	// EdgeValidationCase holds the string denoting the validation_case edge name in mutations.
 	EdgeValidationCase = "validation_case"
 	// EdgeValidatorUser holds the string denoting the validator_user edge name in mutations.
@@ -63,6 +71,10 @@ var Columns = []string{
 	FieldStatus,
 	FieldApprovedAt,
 	FieldRejectedAt,
+	FieldExpiresAt,
+	FieldOwnerResponseDueAt,
+	FieldReminderCount,
+	FieldAutoClosedReason,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -90,6 +102,12 @@ var (
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	StatusValidator func(string) error
+	// DefaultReminderCount holds the default value on creation for the "reminder_count" field.
+	DefaultReminderCount int
+	// ReminderCountValidator is a validator for the "reminder_count" field. It is called by the builders before save.
+	ReminderCountValidator func(int) error
+	// AutoClosedReasonValidator is a validator for the "auto_closed_reason" field. It is called by the builders before save.
+	AutoClosedReasonValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the ConsultationRequest queries.
@@ -138,6 +156,26 @@ func ByApprovedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByRejectedAt orders the results by the rejected_at field.
 func ByRejectedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRejectedAt, opts...).ToFunc()
+}
+
+// ByExpiresAt orders the results by the expires_at field.
+func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExpiresAt, opts...).ToFunc()
+}
+
+// ByOwnerResponseDueAt orders the results by the owner_response_due_at field.
+func ByOwnerResponseDueAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOwnerResponseDueAt, opts...).ToFunc()
+}
+
+// ByReminderCount orders the results by the reminder_count field.
+func ByReminderCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReminderCount, opts...).ToFunc()
+}
+
+// ByAutoClosedReason orders the results by the auto_closed_reason field.
+func ByAutoClosedReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAutoClosedReason, opts...).ToFunc()
 }
 
 // ByValidationCaseField orders the results by validation_case field.

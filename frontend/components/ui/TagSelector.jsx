@@ -14,7 +14,7 @@ export default function TagSelector({
   onTagsChange,
   availableTags = [],
   disabled = false,
-  maxTags = 5,
+  maxTags = 4,
   placeholder = "Add tags...",
   className = "",
   enableSearch = true,
@@ -244,7 +244,7 @@ export default function TagSelector({
 
       {/* Helper text */}
       <p className="mt-1.5 text-xs text-muted-foreground">
-        Pilih hingga {maxTags} tags. Ideal: 1 artifact + 1 domain + opsional stage/validation.
+        Minimal 2, maksimal {maxTags} tags. Ideal: 1 artifact + 1 domain + opsional stage/evidence.
         {selectedTags.length > 0 && ` (${selectedTags.length}/${maxTags} dipilih)`}
       </p>
     </div>

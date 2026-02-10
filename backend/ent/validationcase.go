@@ -44,6 +44,14 @@ type ValidationCase struct {
 	BountyAmount int64 `json:"bounty_amount,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
+	// SensitivityLevel holds the value of the "sensitivity_level" field.
+	SensitivityLevel string `json:"sensitivity_level,omitempty"`
+	// IntakeSchemaVersion holds the value of the "intake_schema_version" field.
+	IntakeSchemaVersion string `json:"intake_schema_version,omitempty"`
+	// ClarificationState holds the value of the "clarification_state" field.
+	ClarificationState string `json:"clarification_state,omitempty"`
+	// OwnerInactivityCount holds the value of the "owner_inactivity_count" field.
+	OwnerInactivityCount int `json:"owner_inactivity_count,omitempty"`
 	// EscrowTransferID holds the value of the "escrow_transfer_id" field.
 	EscrowTransferID *string `json:"escrow_transfer_id,omitempty"`
 	// DisputeID holds the value of the "dispute_id" field.
@@ -166,9 +174,9 @@ func (*ValidationCase) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case validationcase.FieldContentJSON, validationcase.FieldMeta:
 			values[i] = new([]byte)
-		case validationcase.FieldID, validationcase.FieldCategoryID, validationcase.FieldUserID, validationcase.FieldBountyAmount, validationcase.FieldAcceptedFinalOfferID:
+		case validationcase.FieldID, validationcase.FieldCategoryID, validationcase.FieldUserID, validationcase.FieldBountyAmount, validationcase.FieldOwnerInactivityCount, validationcase.FieldAcceptedFinalOfferID:
 			values[i] = new(sql.NullInt64)
-		case validationcase.FieldTitle, validationcase.FieldSummary, validationcase.FieldContentType, validationcase.FieldStatus, validationcase.FieldEscrowTransferID, validationcase.FieldDisputeID, validationcase.FieldArtifactDocumentID, validationcase.FieldCertifiedArtifactDocumentID:
+		case validationcase.FieldTitle, validationcase.FieldSummary, validationcase.FieldContentType, validationcase.FieldStatus, validationcase.FieldSensitivityLevel, validationcase.FieldIntakeSchemaVersion, validationcase.FieldClarificationState, validationcase.FieldEscrowTransferID, validationcase.FieldDisputeID, validationcase.FieldArtifactDocumentID, validationcase.FieldCertifiedArtifactDocumentID:
 			values[i] = new(sql.NullString)
 		case validationcase.FieldCreatedAt, validationcase.FieldUpdatedAt, validationcase.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -269,6 +277,30 @@ func (_m *ValidationCase) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = value.String
+			}
+		case validationcase.FieldSensitivityLevel:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field sensitivity_level", values[i])
+			} else if value.Valid {
+				_m.SensitivityLevel = value.String
+			}
+		case validationcase.FieldIntakeSchemaVersion:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field intake_schema_version", values[i])
+			} else if value.Valid {
+				_m.IntakeSchemaVersion = value.String
+			}
+		case validationcase.FieldClarificationState:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field clarification_state", values[i])
+			} else if value.Valid {
+				_m.ClarificationState = value.String
+			}
+		case validationcase.FieldOwnerInactivityCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field owner_inactivity_count", values[i])
+			} else if value.Valid {
+				_m.OwnerInactivityCount = int(value.Int64)
 			}
 		case validationcase.FieldEscrowTransferID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -418,6 +450,18 @@ func (_m *ValidationCase) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)
+	builder.WriteString(", ")
+	builder.WriteString("sensitivity_level=")
+	builder.WriteString(_m.SensitivityLevel)
+	builder.WriteString(", ")
+	builder.WriteString("intake_schema_version=")
+	builder.WriteString(_m.IntakeSchemaVersion)
+	builder.WriteString(", ")
+	builder.WriteString("clarification_state=")
+	builder.WriteString(_m.ClarificationState)
+	builder.WriteString(", ")
+	builder.WriteString("owner_inactivity_count=")
+	builder.WriteString(fmt.Sprintf("%v", _m.OwnerInactivityCount))
 	builder.WriteString(", ")
 	if v := _m.EscrowTransferID; v != nil {
 		builder.WriteString("escrow_transfer_id=")

@@ -9,7 +9,7 @@ import Button from "@/components/ui/Button";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import { TagList } from "@/components/ui/TagPill";
 import ValidationCaseRecordSkeleton from "./ValidationCaseRecordSkeleton";
-import { fetchJson, fetchJsonAuth, getApiBase } from "@/lib/api";
+import { fetchJson, fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
 import { useUploadDocument } from "@/lib/useDocuments";
@@ -45,6 +45,22 @@ function formatHoldWindow(hours) {
 
 function normalizeStatus(s) {
   return String(s || "").toLowerCase().trim();
+}
+
+function statusLabel(statusRaw) {
+  const s = normalizeStatus(statusRaw);
+  if (!s) return "unknown";
+  const map = {
+    open: "Open",
+    waiting_owner_response: "Waiting Owner Response",
+    on_hold_owner_inactive: "On Hold Owner Inactive",
+    offer_accepted: "Offer Accepted",
+    funds_locked: "Funds Locked",
+    artifact_submitted: "Artifact Submitted",
+    completed: "Completed",
+    disputed: "Disputed",
+  };
+  return map[s] || s.replace(/_/g, " ");
 }
 
 function contentAsText(content) {
@@ -97,6 +113,13 @@ export default function ValidationCaseRecordPage() {
   const [consultationRequests, setConsultationRequests] = useState([]);
   const [consultationLoading, setConsultationLoading] = useState(false);
   const [consultationMsg, setConsultationMsg] = useState("");
+  const [clarificationMsg, setClarificationMsg] = useState("");
+  const [clarificationSubmitting, setClarificationSubmitting] = useState(false);
+  const [clarificationForm, setClarificationForm] = useState({
+    mode: "question",
+    message: "",
+    assumptions: "",
+  });
 
   const [contactTelegram, setContactTelegram] = useState("");
   const [contactMsg, setContactMsg] = useState("");
@@ -302,6 +325,88 @@ export default function ValidationCaseRecordPage() {
     }
   }
 
+  async function requestOwnerClarification() {
+    if (!isAuthed) {
+      router.push("/login");
+      return;
+    }
+    const mode = String(clarificationForm.mode || "question").toLowerCase();
+    const message = String(clarificationForm.message || "").trim();
+    if (message.length < 8) {
+      setClarificationMsg("Message klarifikasi minimal 8 karakter.");
+      return;
+    }
+
+    let assumptions = [];
+    if (mode === "assumption") {
+      assumptions = String(clarificationForm.assumptions || "")
+        .split("\n")
+        .map((line) => String(line || "").trim())
+        .filter(Boolean)
+        .map((line) => ({ item: line }));
+      if (assumptions.length === 0) {
+        setClarificationMsg("Mode assumption memerlukan minimal 1 asumsi.");
+        return;
+      }
+    }
+
+    setClarificationMsg("");
+    setClarificationSubmitting(true);
+    try {
+      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/clarification/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          message,
+          assumptions,
+        }),
+      });
+      setClarificationMsg("Permintaan klarifikasi dikirim. Status kasus beralih ke WAITING_OWNER_RESPONSE.");
+      setClarificationForm((prev) => ({ ...prev, message: "", assumptions: "" }));
+      await reloadCase();
+      await loadNonOwnerWorkflow();
+    } catch (e) {
+      setClarificationMsg(e?.message || "Gagal mengirim klarifikasi");
+    } finally {
+      setClarificationSubmitting(false);
+    }
+  }
+
+  async function respondOwnerClarification(requestId, action) {
+    let clarification = "";
+    if (action === "clarify" || action === "reject") {
+      clarification = window.prompt("Masukkan klarifikasi (min 8 karakter):", "") || "";
+      if (!clarification.trim() || clarification.trim().length < 8) {
+        setConsultationMsg("Klarifikasi minimal 8 karakter.");
+        return;
+      }
+    }
+
+    setConsultationMsg("");
+    try {
+      await fetchJsonAuth(
+        `/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests/${encodeURIComponent(String(requestId))}/clarification/respond`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, clarification }),
+        }
+      );
+      if (action === "approve") {
+        setConsultationMsg("Assumption disetujui. Kasus kembali ke status open.");
+      } else if (action === "reject") {
+        setConsultationMsg("Assumption ditolak dengan klarifikasi owner.");
+      } else {
+        setConsultationMsg("Klarifikasi owner terkirim. Kasus kembali ke status open.");
+      }
+      await reloadCase();
+      await loadOwnerWorkflow();
+    } catch (e) {
+      setConsultationMsg(e?.message || "Gagal merespons klarifikasi");
+    }
+  }
+
   async function revealContact() {
     if (!isAuthed) {
       router.push("/login");
@@ -334,9 +439,14 @@ export default function ValidationCaseRecordPage() {
     const amountNum = Number(vc?.bounty_amount || 0);
     const holdHours = Number(offerForm.hold_hours || 168);
     const allowedHoldHours = new Set([32, 168, 720]);
+    const caseStatus = normalizeStatus(vc?.status);
 
     if (!amountNum || amountNum < 10000) {
       setOffersMsg("Bounty belum valid (minimal Rp 10.000).");
+      return;
+    }
+    if (caseStatus !== "open") {
+      setOffersMsg("Final Offer hanya dapat diajukan saat status kasus open.");
       return;
     }
     if (!allowedHoldHours.has(holdHours)) {
@@ -563,6 +673,7 @@ export default function ValidationCaseRecordPage() {
   }
 
   const status = normalizeStatus(vc?.status);
+  const consultationBlocked = status === "waiting_owner_response" || status === "on_hold_owner_inactive";
   const owner = vc?.owner || {};
   const ownerBadge = owner?.primary_badge || null;
   const transferId = vc?.escrow_transfer_id || "";
@@ -640,7 +751,8 @@ export default function ValidationCaseRecordPage() {
                 <ul className="mt-2 list-disc pl-5">
                   <li>Request Consultation hanya untuk validator dengan Credibility Stake yang memenuhi syarat.</li>
                   <li>Kontak Telegram dibuka privat setelah persetujuan pemilik kasus dan dicatat pada Case Log.</li>
-                  <li>Negosiasi harus ditutup dengan Final Offer di platform sebelum Lock Funds.</li>
+                  <li>Jika validator meminta klarifikasi, status menjadi WAITING_OWNER_RESPONSE dengan SLA owner 12 jam.</li>
+                  <li>Jika owner tidak merespons sampai SLA habis, kasus auto ON_HOLD_OWNER_INACTIVE tanpa reassignment validator.</li>
                 </ul>
               </div>
               <div className="md:border-l md:border-border md:pl-6">
@@ -658,11 +770,60 @@ export default function ValidationCaseRecordPage() {
                     Anda adalah pemilik Validation Case. Kelola permintaan konsultasi pada section berikutnya.
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <Button onClick={requestConsultation} variant="gradient">
+                  <div className="space-y-4">
+                    <Button onClick={requestConsultation} variant="gradient" disabled={consultationBlocked}>
                       Request Consultation
                     </Button>
+                    {consultationBlocked ? (
+                      <div className="text-xs text-muted-foreground">
+                        Consultation baru diblokir karena kasus menunggu respons owner atau sedang on-hold owner inactive.
+                      </div>
+                    ) : null}
                     {consultationMsg ? <div className="text-xs text-muted-foreground">{consultationMsg}</div> : null}
+
+                    <div className="h-px bg-border" />
+
+                    <div className="space-y-2">
+                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        Clarification / Assumption Mode
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-muted-foreground">Mode</label>
+                        <select
+                          value={clarificationForm.mode}
+                          onChange={(e) => setClarificationForm((f) => ({ ...f, mode: e.target.value }))}
+                          className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                        >
+                          <option value="question">Question</option>
+                          <option value="assumption">Assumption</option>
+                        </select>
+                      </div>
+                      <textarea
+                        value={clarificationForm.message}
+                        onChange={(e) => setClarificationForm((f) => ({ ...f, message: e.target.value }))}
+                        rows={3}
+                        placeholder="Jelaskan kebutuhan klarifikasi secara terstruktur."
+                        className="w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                      />
+                      {String(clarificationForm.mode) === "assumption" ? (
+                        <textarea
+                          value={clarificationForm.assumptions}
+                          onChange={(e) => setClarificationForm((f) => ({ ...f, assumptions: e.target.value }))}
+                          rows={4}
+                          placeholder="Satu asumsi per baris."
+                          className="w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                        />
+                      ) : null}
+                      <button
+                        onClick={requestOwnerClarification}
+                        disabled={clarificationSubmitting || consultationBlocked}
+                        className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60 disabled:opacity-60"
+                        type="button"
+                      >
+                        {clarificationSubmitting ? "Submitting..." : "Submit Clarification"}
+                      </button>
+                      {clarificationMsg ? <div className="text-xs text-muted-foreground">{clarificationMsg}</div> : null}
+                    </div>
 
                     <div className="h-px bg-border" />
 
@@ -699,12 +860,14 @@ export default function ValidationCaseRecordPage() {
                 <div className="text-sm text-muted-foreground">Belum ada Request Consultation.</div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-[760px] w-full text-sm">
+                  <table className="min-w-[920px] w-full text-sm">
                     <thead className="bg-secondary/60 text-muted-foreground">
                       <tr>
                         <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Validator</th>
+                        <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Match Score</th>
                         <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Status</th>
                         <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Filed</th>
+                        <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">SLA Due</th>
                         <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Action</th>
                       </tr>
                     </thead>
@@ -732,8 +895,28 @@ export default function ValidationCaseRecordPage() {
                               </div>
                             </div>
                           </td>
+                          <td className="px-4 py-3">
+                            {r?.matching_score ? (
+                              <div>
+                                <div className="font-mono text-xs font-semibold text-foreground">
+                                  {Number(r.matching_score.total || 0)}/100
+                                </div>
+                                <div className="mt-1 text-[11px] text-muted-foreground">
+                                  D:{Number(r.matching_score.domain_fit || 0)} E:{Number(r.matching_score.evidence_fit || 0)} H:{Number(r.matching_score.history_dispute || 0)} R:{Number(r.matching_score.responsiveness_sla || 0)} S:{Number(r.matching_score.stake_guarantee || 0)}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{String(r.status || "")}</td>
                           <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{formatDateTime(r.created_at)}</td>
+                          <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                            {r?.owner_response_due_at ? formatDateTime(r.owner_response_due_at) : "-"}
+                            {Number(r?.reminder_count || 0) > 0 ? (
+                              <div className="mt-1 text-[11px] text-muted-foreground">reminder: {Number(r.reminder_count)}</div>
+                            ) : null}
+                          </td>
                           <td className="px-4 py-3">
                             {normalizeStatus(r.status) === "pending" ? (
                               <div className="flex flex-wrap gap-2">
@@ -748,6 +931,27 @@ export default function ValidationCaseRecordPage() {
                                   onClick={() => rejectConsultation(r.id)}
                                 >
                                   Reject
+                                </button>
+                              </div>
+                            ) : normalizeStatus(r.status) === "waiting_owner_response" || normalizeStatus(r.status) === "owner_timeout" ? (
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  className="rounded-[var(--radius)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                                  onClick={() => respondOwnerClarification(r.id, "clarify")}
+                                >
+                                  Clarify
+                                </button>
+                                <button
+                                  className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
+                                  onClick={() => respondOwnerClarification(r.id, "approve")}
+                                >
+                                  Approve Assumption
+                                </button>
+                                <button
+                                  className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
+                                  onClick={() => respondOwnerClarification(r.id, "reject")}
+                                >
+                                  Reject Assumption
                                 </button>
                               </div>
                             ) : (
@@ -1237,12 +1441,24 @@ export default function ValidationCaseRecordPage() {
                   </div>
                   <div className="flex items-center justify-between gap-4 py-2">
                     <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Status</dt>
-                    <dd className="font-semibold text-foreground">{status || "unknown"}</dd>
+                    <dd className="font-semibold text-foreground">{statusLabel(status)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 py-2">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Sensitivity</dt>
+                    <dd className="font-mono text-xs text-muted-foreground">{String(vc?.sensitivity_level || "-")}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 py-2">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Clarification</dt>
+                    <dd className="font-mono text-xs text-muted-foreground">{String(vc?.clarification_state || "-")}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-4 py-2">
                     <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Workflow</dt>
                     <dd className="text-right text-muted-foreground">
-                      {certifiedId
+                      {status === "on_hold_owner_inactive"
+                        ? "On Hold: Owner Inactive (SLA Expired)"
+                        : status === "waiting_owner_response"
+                          ? "Waiting Owner Response (SLA Running)"
+                          : certifiedId
                         ? "Certified Artifact Issued"
                         : disputeId
                           ? "Dispute Attached"

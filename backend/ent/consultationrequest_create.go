@@ -118,6 +118,62 @@ func (_c *ConsultationRequestCreate) SetNillableRejectedAt(v *time.Time) *Consul
 	return _c
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (_c *ConsultationRequestCreate) SetExpiresAt(v time.Time) *ConsultationRequestCreate {
+	_c.mutation.SetExpiresAt(v)
+	return _c
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (_c *ConsultationRequestCreate) SetNillableExpiresAt(v *time.Time) *ConsultationRequestCreate {
+	if v != nil {
+		_c.SetExpiresAt(*v)
+	}
+	return _c
+}
+
+// SetOwnerResponseDueAt sets the "owner_response_due_at" field.
+func (_c *ConsultationRequestCreate) SetOwnerResponseDueAt(v time.Time) *ConsultationRequestCreate {
+	_c.mutation.SetOwnerResponseDueAt(v)
+	return _c
+}
+
+// SetNillableOwnerResponseDueAt sets the "owner_response_due_at" field if the given value is not nil.
+func (_c *ConsultationRequestCreate) SetNillableOwnerResponseDueAt(v *time.Time) *ConsultationRequestCreate {
+	if v != nil {
+		_c.SetOwnerResponseDueAt(*v)
+	}
+	return _c
+}
+
+// SetReminderCount sets the "reminder_count" field.
+func (_c *ConsultationRequestCreate) SetReminderCount(v int) *ConsultationRequestCreate {
+	_c.mutation.SetReminderCount(v)
+	return _c
+}
+
+// SetNillableReminderCount sets the "reminder_count" field if the given value is not nil.
+func (_c *ConsultationRequestCreate) SetNillableReminderCount(v *int) *ConsultationRequestCreate {
+	if v != nil {
+		_c.SetReminderCount(*v)
+	}
+	return _c
+}
+
+// SetAutoClosedReason sets the "auto_closed_reason" field.
+func (_c *ConsultationRequestCreate) SetAutoClosedReason(v string) *ConsultationRequestCreate {
+	_c.mutation.SetAutoClosedReason(v)
+	return _c
+}
+
+// SetNillableAutoClosedReason sets the "auto_closed_reason" field if the given value is not nil.
+func (_c *ConsultationRequestCreate) SetNillableAutoClosedReason(v *string) *ConsultationRequestCreate {
+	if v != nil {
+		_c.SetAutoClosedReason(*v)
+	}
+	return _c
+}
+
 // SetValidationCase sets the "validation_case" edge to the ValidationCase entity.
 func (_c *ConsultationRequestCreate) SetValidationCase(v *ValidationCase) *ConsultationRequestCreate {
 	return _c.SetValidationCaseID(v.ID)
@@ -175,6 +231,10 @@ func (_c *ConsultationRequestCreate) defaults() {
 		v := consultationrequest.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.ReminderCount(); !ok {
+		v := consultationrequest.DefaultReminderCount
+		_c.mutation.SetReminderCount(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -207,6 +267,19 @@ func (_c *ConsultationRequestCreate) check() error {
 	if v, ok := _c.mutation.Status(); ok {
 		if err := consultationrequest.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "ConsultationRequest.status": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ReminderCount(); !ok {
+		return &ValidationError{Name: "reminder_count", err: errors.New(`ent: missing required field "ConsultationRequest.reminder_count"`)}
+	}
+	if v, ok := _c.mutation.ReminderCount(); ok {
+		if err := consultationrequest.ReminderCountValidator(v); err != nil {
+			return &ValidationError{Name: "reminder_count", err: fmt.Errorf(`ent: validator failed for field "ConsultationRequest.reminder_count": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.AutoClosedReason(); ok {
+		if err := consultationrequest.AutoClosedReasonValidator(v); err != nil {
+			return &ValidationError{Name: "auto_closed_reason", err: fmt.Errorf(`ent: validator failed for field "ConsultationRequest.auto_closed_reason": %w`, err)}
 		}
 	}
 	if len(_c.mutation.ValidationCaseIDs()) == 0 {
@@ -264,6 +337,22 @@ func (_c *ConsultationRequestCreate) createSpec() (*ConsultationRequest, *sqlgra
 	if value, ok := _c.mutation.RejectedAt(); ok {
 		_spec.SetField(consultationrequest.FieldRejectedAt, field.TypeTime, value)
 		_node.RejectedAt = &value
+	}
+	if value, ok := _c.mutation.ExpiresAt(); ok {
+		_spec.SetField(consultationrequest.FieldExpiresAt, field.TypeTime, value)
+		_node.ExpiresAt = &value
+	}
+	if value, ok := _c.mutation.OwnerResponseDueAt(); ok {
+		_spec.SetField(consultationrequest.FieldOwnerResponseDueAt, field.TypeTime, value)
+		_node.OwnerResponseDueAt = &value
+	}
+	if value, ok := _c.mutation.ReminderCount(); ok {
+		_spec.SetField(consultationrequest.FieldReminderCount, field.TypeInt, value)
+		_node.ReminderCount = value
+	}
+	if value, ok := _c.mutation.AutoClosedReason(); ok {
+		_spec.SetField(consultationrequest.FieldAutoClosedReason, field.TypeString, value)
+		_node.AutoClosedReason = &value
 	}
 	if nodes := _c.mutation.ValidationCaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

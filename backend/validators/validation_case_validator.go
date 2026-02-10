@@ -2,36 +2,73 @@ package validators
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	apperrors "backend-gin/errors"
 	"backend-gin/utils"
 )
 
+const (
+	// IntakeSchemaVersion identifies the currently enforced quick-intake format.
+	IntakeSchemaVersion = "quick-intake-v1"
+)
+
+var (
+	validSensitivityLevels = map[string]struct{}{
+		"S0": {},
+		"S1": {},
+		"S2": {},
+		"S3": {},
+	}
+	requiredChecklistKeys = []string{
+		"intake_complete",
+		"evidence_attached",
+		"pass_criteria_defined",
+		"constraints_defined",
+		"no_contact_in_case_record",
+	}
+)
+
+// StructuredIntake is canonical normalized intake extracted from content payload.
+type StructuredIntake struct {
+	ValidationGoal   string
+	OutputType       string
+	EvidenceInput    string
+	PassCriteria     string
+	Constraints      string
+	SensitivityLevel string
+	CaseRecord       string
+	Checklist        map[string]bool
+}
+
 // CreateValidationCaseInput represents Validation Case creation input.
 type CreateValidationCaseInput struct {
-	CategorySlug string
-	Title        string
-	Summary      string
-	ContentType  string
-	Content      interface{}
-	Meta         interface{}
-	TagSlugs     []string
-	BountyAmount int64
+	CategorySlug     string
+	Title            string
+	Summary          string
+	ContentType      string
+	Content          interface{}
+	Meta             interface{}
+	TagSlugs         []string
+	BountyAmount     int64
+	StructuredIntake *StructuredIntake
 }
 
 // UpdateValidationCaseInput represents Validation Case update input.
 type UpdateValidationCaseInput struct {
 	ValidationCaseID uint
-	Title       *string
-	Summary     *string
-	ContentType *string
-	Content     interface{}
-	Meta        interface{}
-	TagSlugs    *[]string
-	BountyAmount *int64
-	Status       *string
+	Title            *string
+	Summary          *string
+	ContentType      *string
+	Content          interface{}
+	Meta             interface{}
+	TagSlugs         *[]string
+	BountyAmount     *int64
+	Status           *string
+	StructuredIntake *StructuredIntake
 }
 
 // CategorySlugInput represents category slug input
@@ -87,7 +124,7 @@ func (c *CreateValidationCaseInput) Validate() error {
 	// Validate content type
 	contentType := strings.ToLower(strings.TrimSpace(c.ContentType))
 	if contentType == "" {
-		contentType = "table" // default
+		contentType = "json"
 	}
 	validContentTypes := map[string]bool{
 		"text":  true,
@@ -103,6 +140,13 @@ func (c *CreateValidationCaseInput) Validate() error {
 	if c.Content == nil {
 		return apperrors.ErrMissingField.WithDetails("content")
 	}
+	structuredIntake, err := ParseStructuredIntakeContent(c.Content)
+	if err != nil {
+		return err
+	}
+	c.StructuredIntake = structuredIntake
+	// Enforce protocol payload as JSON object.
+	c.ContentType = "json"
 
 	// Validate meta if provided
 	if c.Meta != nil {
@@ -111,14 +155,12 @@ func (c *CreateValidationCaseInput) Validate() error {
 		}
 	}
 
-	// Normalize tag slugs if provided
-	if len(c.TagSlugs) > 0 {
-		normalized, err := normalizeTagSlugs(c.TagSlugs)
-		if err != nil {
-			return err
-		}
-		c.TagSlugs = normalized
+	// Normalize tag slugs (minimum 2 required by taxonomy).
+	normalized, err := normalizeTagSlugs(c.TagSlugs, true)
+	if err != nil {
+		return err
 	}
+	c.TagSlugs = normalized
 
 	return nil
 }
@@ -168,7 +210,7 @@ func (u *UpdateValidationCaseInput) Validate() error {
 	if u.ContentType != nil {
 		contentType := strings.ToLower(strings.TrimSpace(*u.ContentType))
 		if contentType == "" {
-			contentType = "table"
+			contentType = "json"
 		}
 		validContentTypes := map[string]bool{
 			"text":  true,
@@ -179,6 +221,13 @@ func (u *UpdateValidationCaseInput) Validate() error {
 			return apperrors.ErrInvalidInput.WithDetails("content_type harus 'text', 'table', atau 'json'")
 		}
 		*u.ContentType = contentType
+	}
+	if u.Content != nil {
+		structuredIntake, err := ParseStructuredIntakeContent(u.Content)
+		if err != nil {
+			return err
+		}
+		u.StructuredIntake = structuredIntake
 	}
 
 	// Validate meta if provided
@@ -209,7 +258,7 @@ func (u *UpdateValidationCaseInput) Validate() error {
 
 	// Normalize tag slugs if provided
 	if u.TagSlugs != nil {
-		normalized, err := normalizeTagSlugs(*u.TagSlugs)
+		normalized, err := normalizeTagSlugs(*u.TagSlugs, true)
 		if err != nil {
 			return err
 		}
@@ -255,9 +304,10 @@ func validateMeta(meta interface{}) error {
 	return nil
 }
 
-func normalizeTagSlugs(tags []string) ([]string, error) {
+func normalizeTagSlugs(tags []string, requireMinimum bool) ([]string, error) {
 	seen := make(map[string]struct{})
 	normalized := make([]string, 0, len(tags))
+	dimensions := make(map[string]string)
 
 	for _, raw := range tags {
 		slug := strings.ToLower(strings.TrimSpace(raw))
@@ -271,14 +321,337 @@ func normalizeTagSlugs(tags []string) ([]string, error) {
 			continue
 		}
 		seen[slug] = struct{}{}
+
+		if dim := tagDimensionFromSlug(slug); dim != "" {
+			if existing, ok := dimensions[dim]; ok {
+				return nil, apperrors.ErrInvalidInput.WithDetails(
+					fmt.Sprintf("tag dimensi '%s' hanya boleh satu (duplikat: %s dan %s)", dim, existing, slug),
+				)
+			}
+			dimensions[dim] = slug
+		}
 		normalized = append(normalized, slug)
 	}
 
-	if len(normalized) > 5 {
-		return nil, apperrors.ErrInvalidInput.WithDetails("maksimal 5 tag per validation case")
+	if len(normalized) > 4 {
+		return nil, apperrors.ErrInvalidInput.WithDetails("maksimal 4 tag per validation case")
+	}
+	if requireMinimum && len(normalized) < 2 {
+		return nil, apperrors.ErrInvalidInput.WithDetails("minimal 2 tag per validation case")
 	}
 
 	return normalized, nil
+}
+
+func tagDimensionFromSlug(slug string) string {
+	switch {
+	case strings.HasPrefix(slug, "artifact-"):
+		return "artifact"
+	case strings.HasPrefix(slug, "stage-"):
+		return "stage"
+	case strings.HasPrefix(slug, "domain-"):
+		return "domain"
+	case strings.HasPrefix(slug, "evidence-"):
+		return "evidence"
+	default:
+		return ""
+	}
+}
+
+// ParseStructuredIntakeContent validates and normalizes protocol payload inside content.
+func ParseStructuredIntakeContent(content interface{}) (*StructuredIntake, error) {
+	contentMap, err := toMap(content)
+	if err != nil {
+		return nil, err
+	}
+
+	quickIntakeRaw, ok := contentMap["quick_intake"]
+	if !ok {
+		return nil, apperrors.ErrMissingField.WithDetails("content.quick_intake")
+	}
+	quickIntake, err := toMap(quickIntakeRaw)
+	if err != nil {
+		return nil, apperrors.ErrInvalidInput.WithDetails("content.quick_intake harus berupa object")
+	}
+
+	intake := &StructuredIntake{}
+	if intake.ValidationGoal, err = requiredSanitizedText(quickIntake, []string{"validation_goal", "tujuan_validasi"}, "content.quick_intake.validation_goal", 12, 800); err != nil {
+		return nil, err
+	}
+	if intake.OutputType, err = requiredSanitizedText(quickIntake, []string{"output_type", "jenis_output"}, "content.quick_intake.output_type", 4, 240); err != nil {
+		return nil, err
+	}
+	if intake.EvidenceInput, err = requiredSanitizedText(quickIntake, []string{"evidence_input", "bukti_input"}, "content.quick_intake.evidence_input", 8, 2000); err != nil {
+		return nil, err
+	}
+	if intake.PassCriteria, err = requiredSanitizedText(quickIntake, []string{"pass_criteria", "kriteria_lulus"}, "content.quick_intake.pass_criteria", 8, 2000); err != nil {
+		return nil, err
+	}
+	if intake.Constraints, err = requiredSanitizedText(quickIntake, []string{"constraints", "batasan"}, "content.quick_intake.constraints", 4, 2000); err != nil {
+		return nil, err
+	}
+
+	sensitivity, err := requiredSanitizedText(quickIntake, []string{"sensitivity", "sensitivity_level", "sensitivitas"}, "content.quick_intake.sensitivity", 2, 16)
+	if err != nil {
+		return nil, err
+	}
+	sensitivity = strings.ToUpper(strings.TrimSpace(sensitivity))
+	if _, ok := validSensitivityLevels[sensitivity]; !ok {
+		return nil, apperrors.ErrInvalidInput.WithDetails("sensitivity harus salah satu: S0, S1, S2, S3")
+	}
+	intake.SensitivityLevel = sensitivity
+
+	caseRecord, err := optionalSanitizedText(contentMap, []string{"case_record_text", "case_record"}, "content.case_record_text", 4000)
+	if err != nil {
+		return nil, err
+	}
+	if caseRecord == "" {
+		return nil, apperrors.ErrMissingField.WithDetails("content.case_record_text")
+	}
+	if containsBlockedContactHint(caseRecord) {
+		return nil, apperrors.ErrInvalidInput.WithDetails("Case Record tidak boleh memuat detail kontak langsung. Gunakan protocol consultation.")
+	}
+	intake.CaseRecord = caseRecord
+
+	checklistRaw, ok := contentMap["checklist"]
+	if !ok {
+		return nil, apperrors.ErrMissingField.WithDetails("content.checklist")
+	}
+	checklistMap, err := toMap(checklistRaw)
+	if err != nil {
+		return nil, apperrors.ErrInvalidInput.WithDetails("content.checklist harus berupa object")
+	}
+
+	intake.Checklist = make(map[string]bool, len(requiredChecklistKeys))
+	for _, key := range requiredChecklistKeys {
+		v, ok := checklistMap[key]
+		if !ok {
+			return nil, apperrors.ErrMissingField.WithDetails("content.checklist." + key)
+		}
+		checked, ok := v.(bool)
+		if !ok {
+			return nil, apperrors.ErrInvalidInput.WithDetails("content.checklist." + key + " harus boolean")
+		}
+		if !checked {
+			return nil, apperrors.ErrInvalidInput.WithDetails("checklist '" + key + "' harus dicentang")
+		}
+		intake.Checklist[key] = checked
+	}
+
+	return intake, nil
+}
+
+// BuildAutoSummary generates Layer-2 summary from Quick Intake.
+func BuildAutoSummary(intake *StructuredIntake) string {
+	if intake == nil {
+		return ""
+	}
+	base := fmt.Sprintf(
+		"Tujuan: %s. Output: %s. Bukti yang diperiksa: %s. Lulus jika: %s.",
+		intake.ValidationGoal,
+		intake.OutputType,
+		intake.EvidenceInput,
+		intake.PassCriteria,
+	)
+	if len(base) <= 500 {
+		return base
+	}
+	return base[:500]
+}
+
+// BuildAutoValidationBrief returns structured brief for validators.
+func BuildAutoValidationBrief(intake *StructuredIntake) map[string]interface{} {
+	if intake == nil {
+		return map[string]interface{}{}
+	}
+	return map[string]interface{}{
+		"objective":            intake.ValidationGoal,
+		"expected_output_type": intake.OutputType,
+		"evidence_scope":       intake.EvidenceInput,
+		"pass_gate":            intake.PassCriteria,
+		"constraints":          intake.Constraints,
+		"sensitivity":          intake.SensitivityLevel,
+		"sensitivity_policy":   SensitivityPolicyByLevel(intake.SensitivityLevel),
+		"owner_response_sla": map[string]interface{}{
+			"max_hours":         12,
+			"reminder_hours":    []int{2, 8},
+			"timeout_outcome":   "on_hold_owner_inactive",
+			"reassignment":      false,
+			"validator_penalty": false,
+		},
+		"generated_at_unix": time.Now().Unix(),
+	}
+}
+
+// BuildCanonicalStructuredContent normalizes payload so validator can read without chat.
+func BuildCanonicalStructuredContent(intake *StructuredIntake) map[string]interface{} {
+	brief := BuildAutoValidationBrief(intake)
+	sections := []map[string]interface{}{
+		{
+			"title": "Layer 1 — Quick Intake (60-90 detik)",
+			"rows": []map[string]interface{}{
+				{"label": "Tujuan Validasi", "value": intake.ValidationGoal},
+				{"label": "Jenis Output", "value": intake.OutputType},
+				{"label": "Bukti / Input", "value": intake.EvidenceInput},
+				{"label": "Kriteria Lulus", "value": intake.PassCriteria},
+				{"label": "Batasan", "value": intake.Constraints},
+				{"label": "Sensitivitas", "value": intake.SensitivityLevel},
+			},
+		},
+		{
+			"title": "Layer 2 — Auto Validation Brief",
+			"rows": []map[string]interface{}{
+				{"label": "Objective", "value": brief["objective"]},
+				{"label": "Expected Output", "value": brief["expected_output_type"]},
+				{"label": "Evidence Scope", "value": brief["evidence_scope"]},
+				{"label": "Pass Gate", "value": brief["pass_gate"]},
+				{"label": "Constraints", "value": brief["constraints"]},
+				{"label": "Sensitivity Policy", "value": brief["sensitivity_policy"]},
+				{"label": "Owner Response SLA", "value": brief["owner_response_sla"]},
+			},
+		},
+		{
+			"title": "Case Record (Free Text)",
+			"rows": []map[string]interface{}{
+				{"label": "Record", "value": intake.CaseRecord},
+			},
+		},
+	}
+
+	return map[string]interface{}{
+		"schema_version": IntakeSchemaVersion,
+		"quick_intake": map[string]interface{}{
+			"validation_goal": intake.ValidationGoal,
+			"output_type":     intake.OutputType,
+			"evidence_input":  intake.EvidenceInput,
+			"pass_criteria":   intake.PassCriteria,
+			"constraints":     intake.Constraints,
+			"sensitivity":     intake.SensitivityLevel,
+		},
+		"checklist":             intake.Checklist,
+		"auto_validation_brief": brief,
+		"case_record_text":      intake.CaseRecord,
+		"sections":              sections,
+	}
+}
+
+// SensitivityPolicyByLevel defines visibility and telegram gate by tier.
+func SensitivityPolicyByLevel(level string) map[string]interface{} {
+	switch strings.ToUpper(strings.TrimSpace(level)) {
+	case "S0":
+		return map[string]interface{}{
+			"visibility":              "public",
+			"telegram_allowed":        true,
+			"requires_admin_gate":     false,
+			"requires_pre_moderation": false,
+		}
+	case "S1":
+		return map[string]interface{}{
+			"visibility":              "restricted",
+			"telegram_allowed":        true,
+			"requires_admin_gate":     false,
+			"requires_pre_moderation": false,
+		}
+	case "S2":
+		return map[string]interface{}{
+			"visibility":              "confidential",
+			"telegram_allowed":        false,
+			"requires_admin_gate":     true,
+			"requires_pre_moderation": true,
+		}
+	case "S3":
+		return map[string]interface{}{
+			"visibility":              "critical",
+			"telegram_allowed":        false,
+			"requires_admin_gate":     true,
+			"requires_pre_moderation": true,
+		}
+	default:
+		return map[string]interface{}{
+			"visibility":              "restricted",
+			"telegram_allowed":        true,
+			"requires_admin_gate":     false,
+			"requires_pre_moderation": false,
+		}
+	}
+}
+
+func requiredSanitizedText(input map[string]interface{}, keys []string, label string, minLen int, maxLen int) (string, error) {
+	var raw string
+	for _, key := range keys {
+		if v, ok := input[key]; ok {
+			if s, ok := v.(string); ok {
+				raw = s
+				break
+			}
+		}
+	}
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", apperrors.ErrMissingField.WithDetails(label)
+	}
+	if len(value) < minLen {
+		return "", apperrors.ErrInvalidInput.WithDetails(label + " terlalu pendek")
+	}
+	if maxLen > 0 && len(value) > maxLen {
+		return "", apperrors.ErrInvalidInput.WithDetails(label + " melebihi batas panjang")
+	}
+	if !utils.ValidateNoXSS(value) {
+		return "", apperrors.ErrInvalidInput.WithDetails(label + " mengandung karakter atau pola yang tidak diizinkan")
+	}
+	return utils.SanitizeText(value), nil
+}
+
+func optionalSanitizedText(input map[string]interface{}, keys []string, label string, maxLen int) (string, error) {
+	for _, key := range keys {
+		v, ok := input[key]
+		if !ok {
+			continue
+		}
+		s, ok := v.(string)
+		if !ok {
+			return "", apperrors.ErrInvalidInput.WithDetails(label + " harus string")
+		}
+		value := strings.TrimSpace(s)
+		if maxLen > 0 && len(value) > maxLen {
+			return "", apperrors.ErrInvalidInput.WithDetails(label + " melebihi batas panjang")
+		}
+		if value != "" && !utils.ValidateNoXSS(value) {
+			return "", apperrors.ErrInvalidInput.WithDetails(label + " mengandung karakter atau pola yang tidak diizinkan")
+		}
+		return value, nil
+	}
+	return "", nil
+}
+
+func containsBlockedContactHint(s string) bool {
+	lower := strings.ToLower(s)
+	blocked := []string{"t.me/", "telegram.me/", "whatsapp", "wa.me/", "line.me/", "discord.gg/", "kontak langsung"}
+	for _, needle := range blocked {
+		if strings.Contains(lower, needle) {
+			return true
+		}
+	}
+	return false
+}
+
+func toMap(v interface{}) (map[string]interface{}, error) {
+	switch typed := v.(type) {
+	case map[string]interface{}:
+		return typed, nil
+	case nil:
+		return nil, apperrors.ErrInvalidInput.WithDetails("object tidak boleh null")
+	default:
+		raw, err := json.Marshal(typed)
+		if err != nil {
+			return nil, apperrors.ErrInvalidInput.WithDetails("object tidak valid")
+		}
+		out := map[string]interface{}{}
+		if err := json.Unmarshal(raw, &out); err != nil {
+			return nil, apperrors.ErrInvalidInput.WithDetails("object tidak valid")
+		}
+		return out, nil
+	}
 }
 
 // NormalizeMeta normalizes meta fields for persistence.

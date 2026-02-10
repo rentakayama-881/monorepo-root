@@ -19,8 +19,10 @@ func TestCreateValidationCaseInput_Validate_Valid(t *testing.T) {
 			name: "Valid minimal input",
 			input: CreateValidationCaseInput{
 				CategorySlug: "jual-beli",
-				Title:        "Min",
-				Content:      []string{"test"},
+				Title:        "Validasi Ringkas",
+				ContentType:  "json",
+				Content:      validStructuredContent(),
+				TagSlugs:     []string{"artifact-review", "domain-backend"},
 				BountyAmount: 10_000,
 			},
 		},
@@ -30,13 +32,13 @@ func TestCreateValidationCaseInput_Validate_Valid(t *testing.T) {
 				CategorySlug: "diskusi",
 				Title:        "Validasi Klaim A",
 				Summary:      "Ringkasan singkat",
-				ContentType:  "text",
-				Content:      "Isi",
+				ContentType:  "json",
+				Content:      validStructuredContent(),
 				BountyAmount: 25_000,
 				Meta: map[string]interface{}{
 					"image": "https://example.com/image.jpg",
 				},
-				TagSlugs: []string{"Finance", " finance ", "AI"},
+				TagSlugs: []string{"artifact-review", "domain-backend", "stage-ready"},
 			},
 		},
 	}
@@ -46,14 +48,10 @@ func TestCreateValidationCaseInput_Validate_Valid(t *testing.T) {
 			err := tt.input.Validate()
 			assert.NoError(t, err)
 
-			if strings.TrimSpace(tt.input.ContentType) == "" {
-				assert.Equal(t, "table", tt.input.ContentType)
-			}
-			if len(tt.input.TagSlugs) > 0 {
-				for _, s := range tt.input.TagSlugs {
-					assert.Equal(t, strings.ToLower(strings.TrimSpace(s)), s)
-				}
-			}
+			assert.Equal(t, "json", tt.input.ContentType)
+			assert.NotNil(t, tt.input.StructuredIntake)
+			assert.Equal(t, "S1", tt.input.StructuredIntake.SensitivityLevel)
+			assert.GreaterOrEqual(t, len(tt.input.TagSlugs), 2)
 		})
 	}
 }
@@ -61,135 +59,134 @@ func TestCreateValidationCaseInput_Validate_Valid(t *testing.T) {
 func TestCreateValidationCaseInput_Validate_Invalid(t *testing.T) {
 	tests := []struct {
 		name        string
-		input       CreateValidationCaseInput
+		mutate      func(in *CreateValidationCaseInput)
 		expectedErr *apperrors.AppError
 	}{
 		{
 			name: "Missing category slug",
-			input: CreateValidationCaseInput{
-				CategorySlug: "",
-				Title:        "Test Title",
-				Content:      "test",
-				BountyAmount: 10_000,
+			mutate: func(in *CreateValidationCaseInput) {
+				in.CategorySlug = ""
 			},
 			expectedErr: apperrors.ErrMissingField,
 		},
 		{
 			name: "Missing bounty amount",
-			input: CreateValidationCaseInput{
-				CategorySlug: "jual-beli",
-				Title:        "Test Title",
-				Content:      "test",
-				BountyAmount: 0,
+			mutate: func(in *CreateValidationCaseInput) {
+				in.BountyAmount = 0
 			},
 			expectedErr: apperrors.ErrMissingField,
 		},
 		{
 			name: "Bounty below minimum",
-			input: CreateValidationCaseInput{
-				CategorySlug: "jual-beli",
-				Title:        "Test Title",
-				Content:      "test",
-				BountyAmount: 9_999,
+			mutate: func(in *CreateValidationCaseInput) {
+				in.BountyAmount = 9_999
 			},
 			expectedErr: apperrors.ErrInvalidInput,
 		},
 		{
 			name: "Missing title",
-			input: CreateValidationCaseInput{
-				CategorySlug: "jual-beli",
-				Title:        "",
-				Content:      "test",
-				BountyAmount: 10_000,
+			mutate: func(in *CreateValidationCaseInput) {
+				in.Title = ""
 			},
 			expectedErr: apperrors.ErrMissingField,
 		},
 		{
 			name: "Title too short",
-			input: CreateValidationCaseInput{
-				CategorySlug: "jual-beli",
-				Title:        "Ab",
-				Content:      "test",
-				BountyAmount: 10_000,
+			mutate: func(in *CreateValidationCaseInput) {
+				in.Title = "Ab"
 			},
 			expectedErr: apperrors.ErrInvalidInput,
 		},
 		{
 			name: "Title too long",
-			input: CreateValidationCaseInput{
-				CategorySlug: "jual-beli",
-				Title:        strings.Repeat("a", 201),
-				Content:      "test",
-				BountyAmount: 10_000,
+			mutate: func(in *CreateValidationCaseInput) {
+				in.Title = strings.Repeat("a", 201)
 			},
 			expectedErr: apperrors.ErrInvalidInput,
 		},
 		{
 			name: "Summary too long",
-			input: CreateValidationCaseInput{
-				CategorySlug: "jual-beli",
-				Title:        "Test Title",
-				Summary:      strings.Repeat("a", 501),
-				Content:      "test",
-				BountyAmount: 10_000,
+			mutate: func(in *CreateValidationCaseInput) {
+				in.Summary = strings.Repeat("a", 501)
 			},
 			expectedErr: apperrors.ErrInvalidInput,
 		},
 		{
 			name: "Invalid content type",
-			input: CreateValidationCaseInput{
-				CategorySlug: "jual-beli",
-				Title:        "Test Title",
-				ContentType:  "invalid",
-				Content:      "test",
-				BountyAmount: 10_000,
+			mutate: func(in *CreateValidationCaseInput) {
+				in.ContentType = "invalid"
 			},
 			expectedErr: apperrors.ErrInvalidInput,
 		},
 		{
 			name: "Missing content",
-			input: CreateValidationCaseInput{
-				CategorySlug: "jual-beli",
-				Title:        "Test Title",
-				Content:      nil,
-				BountyAmount: 10_000,
+			mutate: func(in *CreateValidationCaseInput) {
+				in.Content = nil
 			},
 			expectedErr: apperrors.ErrMissingField,
 		},
 		{
+			name: "Missing quick intake field",
+			mutate: func(in *CreateValidationCaseInput) {
+				content := validStructuredContent()
+				quick := content["quick_intake"].(map[string]interface{})
+				delete(quick, "validation_goal")
+				in.Content = content
+			},
+			expectedErr: apperrors.ErrMissingField,
+		},
+		{
+			name: "Checklist item unchecked",
+			mutate: func(in *CreateValidationCaseInput) {
+				content := validStructuredContent()
+				checklist := content["checklist"].(map[string]interface{})
+				checklist["constraints_defined"] = false
+				in.Content = content
+			},
+			expectedErr: apperrors.ErrInvalidInput,
+		},
+		{
+			name: "Invalid sensitivity",
+			mutate: func(in *CreateValidationCaseInput) {
+				content := validStructuredContent()
+				quick := content["quick_intake"].(map[string]interface{})
+				quick["sensitivity"] = "S9"
+				in.Content = content
+			},
+			expectedErr: apperrors.ErrInvalidInput,
+		},
+		{
+			name: "Not enough tags",
+			mutate: func(in *CreateValidationCaseInput) {
+				in.TagSlugs = []string{"artifact-review"}
+			},
+			expectedErr: apperrors.ErrInvalidInput,
+		},
+		{
+			name: "Duplicate taxonomy dimension",
+			mutate: func(in *CreateValidationCaseInput) {
+				in.TagSlugs = []string{"domain-backend", "domain-frontend"}
+			},
+			expectedErr: apperrors.ErrInvalidInput,
+		},
+		{
 			name: "Invalid meta type",
-			input: CreateValidationCaseInput{
-				CategorySlug: "jual-beli",
-				Title:        "Test Title",
-				Content:      "test",
-				BountyAmount: 10_000,
-				Meta:         "not a map",
+			mutate: func(in *CreateValidationCaseInput) {
+				in.Meta = "not a map"
 			},
 			expectedErr: apperrors.ErrInvalidInput,
 		},
 		{
 			name: "Meta telegram is disallowed",
-			input: CreateValidationCaseInput{
-				CategorySlug: "jual-beli",
-				Title:        "Test Title",
-				Content:      "test",
-				BountyAmount: 10_000,
-				Meta: map[string]interface{}{
-					"telegram": "@testuser",
-				},
+			mutate: func(in *CreateValidationCaseInput) {
+				in.Meta = map[string]interface{}{"telegram": "@testuser"}
 			},
 			expectedErr: apperrors.ErrInvalidInput,
 		},
 		{
 			name: "Invalid meta image URL",
-			input: CreateValidationCaseInput{
-				CategorySlug: "jual-beli",
-				Title:        "Test Title",
-				Content:      "test",
-				BountyAmount: 10_000,
-				Meta: map[string]interface{}{
-					"image": "not-a-url",
-				},
+			mutate: func(in *CreateValidationCaseInput) {
+				in.Meta = map[string]interface{}{"image": "not-a-url"}
 			},
 			expectedErr: apperrors.ErrInvalidInput,
 		},
@@ -197,7 +194,9 @@ func TestCreateValidationCaseInput_Validate_Invalid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.input.Validate()
+			in := baseValidCreateInput()
+			tt.mutate(&in)
+			err := in.Validate()
 			assert.Error(t, err)
 			if appErr, ok := err.(*apperrors.AppError); ok {
 				assert.Equal(t, tt.expectedErr.Code, appErr.Code)
@@ -223,7 +222,7 @@ func TestUpdateValidationCaseInput_Validate_Valid(t *testing.T) {
 				Title:            &title,
 				Summary:          &summary,
 				ContentType:      &contentType,
-				Content:          map[string]interface{}{"data": "updated"},
+				Content:          validStructuredContent(),
 				Meta: map[string]interface{}{
 					"image": "https://example.com/image.jpg",
 				},
@@ -468,3 +467,34 @@ func stringPtr(s string) *string {
 	return &s
 }
 
+func validStructuredContent() map[string]interface{} {
+	return map[string]interface{}{
+		"quick_intake": map[string]interface{}{
+			"validation_goal": "Memastikan output AI konsisten dengan objective user.",
+			"output_type":     "Dokumen analisis",
+			"evidence_input":  "Draft output AI, dataset ringkas, dan instruksi awal user.",
+			"pass_criteria":   "Semua klaim utama tervalidasi dengan evidence yang relevan.",
+			"constraints":     "Tidak mengubah scope, tidak menambah asumsi tanpa persetujuan.",
+			"sensitivity":     "S1",
+		},
+		"checklist": map[string]interface{}{
+			"intake_complete":           true,
+			"evidence_attached":         true,
+			"pass_criteria_defined":     true,
+			"constraints_defined":       true,
+			"no_contact_in_case_record": true,
+		},
+		"case_record_text": "Owner membutuhkan verifikasi objektif atas output AI dan tidak ingin diskusi chat panjang.",
+	}
+}
+
+func baseValidCreateInput() CreateValidationCaseInput {
+	return CreateValidationCaseInput{
+		CategorySlug: "jual-beli",
+		Title:        "Validasi Output AI",
+		ContentType:  "json",
+		Content:      validStructuredContent(),
+		BountyAmount: 10_000,
+		TagSlugs:     []string{"artifact-review", "domain-backend"},
+	}
+}

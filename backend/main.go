@@ -318,6 +318,10 @@ func main() {
 	var caseService services.ValidationCaseServiceInterface
 	caseService = services.NewEntValidationCaseService()
 	logger.Info("Using Ent ORM for ValidationCaseService")
+	workflowService := services.NewEntValidationCaseWorkflowService()
+	ownerResponseSLAWorker := services.NewOwnerResponseSLAWorker(workflowService)
+	ownerResponseSLAWorker.Start()
+	defer ownerResponseSLAWorker.Stop()
 
 	// Initialize passkey service with WebAuthn config
 	rpID := strings.TrimSpace(os.Getenv("WEBAUTHN_RP_ID"))
@@ -346,7 +350,7 @@ func main() {
 	// Use service wrappers for handlers expecting legacy interfaces
 	authHandler := handlers.NewAuthHandler(authServiceWrapper, sessionServiceWrapper)
 	caseHandler := handlers.NewValidationCaseHandler(caseService)
-	workflowHandler := handlers.NewValidationCaseWorkflowHandler(services.NewEntValidationCaseWorkflowService())
+	workflowHandler := handlers.NewValidationCaseWorkflowHandler(workflowService)
 	totpHandler := handlers.NewTOTPHandler(totpServiceWrapper, logger.GetLogger())
 	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authServiceWrapper, logger.GetLogger())
 	sudoHandler := handlers.NewEntSudoHandler(sudoEntService, logger.GetLogger())
@@ -536,6 +540,9 @@ func main() {
 				validationCases.GET("/:id/consultation-requests", middleware.AuthMiddleware(), workflowHandler.ListConsultationRequests)
 				validationCases.POST("/:id/consultation-requests/:requestId/approve", middleware.AuthMiddleware(), workflowHandler.ApproveConsultationRequest)
 				validationCases.POST("/:id/consultation-requests/:requestId/reject", middleware.AuthMiddleware(), workflowHandler.RejectConsultationRequest)
+				validationCases.POST("/:id/clarification/request", middleware.AuthMiddleware(), workflowHandler.RequestOwnerClarificationFromValidator)
+				validationCases.POST("/:id/consultation-requests/:requestId/clarification/request", middleware.AuthMiddleware(), workflowHandler.RequestOwnerClarification)
+				validationCases.POST("/:id/consultation-requests/:requestId/clarification/respond", middleware.AuthMiddleware(), workflowHandler.RespondOwnerClarification)
 				validationCases.GET("/:id/contact", middleware.AuthMiddleware(), workflowHandler.RevealContact)
 
 				validationCases.POST("/:id/final-offers", middleware.AuthMiddleware(), workflowHandler.SubmitFinalOffer)
@@ -595,12 +602,12 @@ func main() {
 			adminProtected.POST("/users/:userId/badges", handlers.AssignBadgeToUser)
 			adminProtected.DELETE("/users/:userId/badges/:badgeId", handlers.RevokeBadgeFromUser)
 
-				// Category management (admin only)
-				adminProtected.GET("/categories", handlers.AdminListCategories)
-				// Validation Case management (admin only)
-				adminProtected.POST("/validation-cases/:id/move", handlers.AdminMoveValidationCase)
+			// Category management (admin only)
+			adminProtected.GET("/categories", handlers.AdminListCategories)
+			// Validation Case management (admin only)
+			adminProtected.POST("/validation-cases/:id/move", handlers.AdminMoveValidationCase)
 
-			}
+		}
 	}
 
 	// Get port from environment variable

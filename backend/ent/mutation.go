@@ -4475,6 +4475,11 @@ type ConsultationRequestMutation struct {
 	status                 *string
 	approved_at            *time.Time
 	rejected_at            *time.Time
+	expires_at             *time.Time
+	owner_response_due_at  *time.Time
+	reminder_count         *int
+	addreminder_count      *int
+	auto_closed_reason     *string
 	clearedFields          map[string]struct{}
 	validation_case        *int
 	clearedvalidation_case bool
@@ -4910,6 +4915,209 @@ func (m *ConsultationRequestMutation) ResetRejectedAt() {
 	delete(m.clearedFields, consultationrequest.FieldRejectedAt)
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (m *ConsultationRequestMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *ConsultationRequestMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the ConsultationRequest entity.
+// If the ConsultationRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsultationRequestMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (m *ConsultationRequestMutation) ClearExpiresAt() {
+	m.expires_at = nil
+	m.clearedFields[consultationrequest.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
+func (m *ConsultationRequestMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[consultationrequest.FieldExpiresAt]
+	return ok
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *ConsultationRequestMutation) ResetExpiresAt() {
+	m.expires_at = nil
+	delete(m.clearedFields, consultationrequest.FieldExpiresAt)
+}
+
+// SetOwnerResponseDueAt sets the "owner_response_due_at" field.
+func (m *ConsultationRequestMutation) SetOwnerResponseDueAt(t time.Time) {
+	m.owner_response_due_at = &t
+}
+
+// OwnerResponseDueAt returns the value of the "owner_response_due_at" field in the mutation.
+func (m *ConsultationRequestMutation) OwnerResponseDueAt() (r time.Time, exists bool) {
+	v := m.owner_response_due_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOwnerResponseDueAt returns the old "owner_response_due_at" field's value of the ConsultationRequest entity.
+// If the ConsultationRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsultationRequestMutation) OldOwnerResponseDueAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOwnerResponseDueAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOwnerResponseDueAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOwnerResponseDueAt: %w", err)
+	}
+	return oldValue.OwnerResponseDueAt, nil
+}
+
+// ClearOwnerResponseDueAt clears the value of the "owner_response_due_at" field.
+func (m *ConsultationRequestMutation) ClearOwnerResponseDueAt() {
+	m.owner_response_due_at = nil
+	m.clearedFields[consultationrequest.FieldOwnerResponseDueAt] = struct{}{}
+}
+
+// OwnerResponseDueAtCleared returns if the "owner_response_due_at" field was cleared in this mutation.
+func (m *ConsultationRequestMutation) OwnerResponseDueAtCleared() bool {
+	_, ok := m.clearedFields[consultationrequest.FieldOwnerResponseDueAt]
+	return ok
+}
+
+// ResetOwnerResponseDueAt resets all changes to the "owner_response_due_at" field.
+func (m *ConsultationRequestMutation) ResetOwnerResponseDueAt() {
+	m.owner_response_due_at = nil
+	delete(m.clearedFields, consultationrequest.FieldOwnerResponseDueAt)
+}
+
+// SetReminderCount sets the "reminder_count" field.
+func (m *ConsultationRequestMutation) SetReminderCount(i int) {
+	m.reminder_count = &i
+	m.addreminder_count = nil
+}
+
+// ReminderCount returns the value of the "reminder_count" field in the mutation.
+func (m *ConsultationRequestMutation) ReminderCount() (r int, exists bool) {
+	v := m.reminder_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReminderCount returns the old "reminder_count" field's value of the ConsultationRequest entity.
+// If the ConsultationRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsultationRequestMutation) OldReminderCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReminderCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReminderCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReminderCount: %w", err)
+	}
+	return oldValue.ReminderCount, nil
+}
+
+// AddReminderCount adds i to the "reminder_count" field.
+func (m *ConsultationRequestMutation) AddReminderCount(i int) {
+	if m.addreminder_count != nil {
+		*m.addreminder_count += i
+	} else {
+		m.addreminder_count = &i
+	}
+}
+
+// AddedReminderCount returns the value that was added to the "reminder_count" field in this mutation.
+func (m *ConsultationRequestMutation) AddedReminderCount() (r int, exists bool) {
+	v := m.addreminder_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetReminderCount resets all changes to the "reminder_count" field.
+func (m *ConsultationRequestMutation) ResetReminderCount() {
+	m.reminder_count = nil
+	m.addreminder_count = nil
+}
+
+// SetAutoClosedReason sets the "auto_closed_reason" field.
+func (m *ConsultationRequestMutation) SetAutoClosedReason(s string) {
+	m.auto_closed_reason = &s
+}
+
+// AutoClosedReason returns the value of the "auto_closed_reason" field in the mutation.
+func (m *ConsultationRequestMutation) AutoClosedReason() (r string, exists bool) {
+	v := m.auto_closed_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAutoClosedReason returns the old "auto_closed_reason" field's value of the ConsultationRequest entity.
+// If the ConsultationRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsultationRequestMutation) OldAutoClosedReason(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAutoClosedReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAutoClosedReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAutoClosedReason: %w", err)
+	}
+	return oldValue.AutoClosedReason, nil
+}
+
+// ClearAutoClosedReason clears the value of the "auto_closed_reason" field.
+func (m *ConsultationRequestMutation) ClearAutoClosedReason() {
+	m.auto_closed_reason = nil
+	m.clearedFields[consultationrequest.FieldAutoClosedReason] = struct{}{}
+}
+
+// AutoClosedReasonCleared returns if the "auto_closed_reason" field was cleared in this mutation.
+func (m *ConsultationRequestMutation) AutoClosedReasonCleared() bool {
+	_, ok := m.clearedFields[consultationrequest.FieldAutoClosedReason]
+	return ok
+}
+
+// ResetAutoClosedReason resets all changes to the "auto_closed_reason" field.
+func (m *ConsultationRequestMutation) ResetAutoClosedReason() {
+	m.auto_closed_reason = nil
+	delete(m.clearedFields, consultationrequest.FieldAutoClosedReason)
+}
+
 // ClearValidationCase clears the "validation_case" edge to the ValidationCase entity.
 func (m *ConsultationRequestMutation) ClearValidationCase() {
 	m.clearedvalidation_case = true
@@ -4998,7 +5206,7 @@ func (m *ConsultationRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ConsultationRequestMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, consultationrequest.FieldCreatedAt)
 	}
@@ -5022,6 +5230,18 @@ func (m *ConsultationRequestMutation) Fields() []string {
 	}
 	if m.rejected_at != nil {
 		fields = append(fields, consultationrequest.FieldRejectedAt)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, consultationrequest.FieldExpiresAt)
+	}
+	if m.owner_response_due_at != nil {
+		fields = append(fields, consultationrequest.FieldOwnerResponseDueAt)
+	}
+	if m.reminder_count != nil {
+		fields = append(fields, consultationrequest.FieldReminderCount)
+	}
+	if m.auto_closed_reason != nil {
+		fields = append(fields, consultationrequest.FieldAutoClosedReason)
 	}
 	return fields
 }
@@ -5047,6 +5267,14 @@ func (m *ConsultationRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.ApprovedAt()
 	case consultationrequest.FieldRejectedAt:
 		return m.RejectedAt()
+	case consultationrequest.FieldExpiresAt:
+		return m.ExpiresAt()
+	case consultationrequest.FieldOwnerResponseDueAt:
+		return m.OwnerResponseDueAt()
+	case consultationrequest.FieldReminderCount:
+		return m.ReminderCount()
+	case consultationrequest.FieldAutoClosedReason:
+		return m.AutoClosedReason()
 	}
 	return nil, false
 }
@@ -5072,6 +5300,14 @@ func (m *ConsultationRequestMutation) OldField(ctx context.Context, name string)
 		return m.OldApprovedAt(ctx)
 	case consultationrequest.FieldRejectedAt:
 		return m.OldRejectedAt(ctx)
+	case consultationrequest.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case consultationrequest.FieldOwnerResponseDueAt:
+		return m.OldOwnerResponseDueAt(ctx)
+	case consultationrequest.FieldReminderCount:
+		return m.OldReminderCount(ctx)
+	case consultationrequest.FieldAutoClosedReason:
+		return m.OldAutoClosedReason(ctx)
 	}
 	return nil, fmt.Errorf("unknown ConsultationRequest field %s", name)
 }
@@ -5137,6 +5373,34 @@ func (m *ConsultationRequestMutation) SetField(name string, value ent.Value) err
 		}
 		m.SetRejectedAt(v)
 		return nil
+	case consultationrequest.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case consultationrequest.FieldOwnerResponseDueAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOwnerResponseDueAt(v)
+		return nil
+	case consultationrequest.FieldReminderCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReminderCount(v)
+		return nil
+	case consultationrequest.FieldAutoClosedReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAutoClosedReason(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ConsultationRequest field %s", name)
 }
@@ -5145,6 +5409,9 @@ func (m *ConsultationRequestMutation) SetField(name string, value ent.Value) err
 // this mutation.
 func (m *ConsultationRequestMutation) AddedFields() []string {
 	var fields []string
+	if m.addreminder_count != nil {
+		fields = append(fields, consultationrequest.FieldReminderCount)
+	}
 	return fields
 }
 
@@ -5153,6 +5420,8 @@ func (m *ConsultationRequestMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *ConsultationRequestMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case consultationrequest.FieldReminderCount:
+		return m.AddedReminderCount()
 	}
 	return nil, false
 }
@@ -5162,6 +5431,13 @@ func (m *ConsultationRequestMutation) AddedField(name string) (ent.Value, bool) 
 // type.
 func (m *ConsultationRequestMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case consultationrequest.FieldReminderCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddReminderCount(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ConsultationRequest numeric field %s", name)
 }
@@ -5178,6 +5454,15 @@ func (m *ConsultationRequestMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(consultationrequest.FieldRejectedAt) {
 		fields = append(fields, consultationrequest.FieldRejectedAt)
+	}
+	if m.FieldCleared(consultationrequest.FieldExpiresAt) {
+		fields = append(fields, consultationrequest.FieldExpiresAt)
+	}
+	if m.FieldCleared(consultationrequest.FieldOwnerResponseDueAt) {
+		fields = append(fields, consultationrequest.FieldOwnerResponseDueAt)
+	}
+	if m.FieldCleared(consultationrequest.FieldAutoClosedReason) {
+		fields = append(fields, consultationrequest.FieldAutoClosedReason)
 	}
 	return fields
 }
@@ -5201,6 +5486,15 @@ func (m *ConsultationRequestMutation) ClearField(name string) error {
 		return nil
 	case consultationrequest.FieldRejectedAt:
 		m.ClearRejectedAt()
+		return nil
+	case consultationrequest.FieldExpiresAt:
+		m.ClearExpiresAt()
+		return nil
+	case consultationrequest.FieldOwnerResponseDueAt:
+		m.ClearOwnerResponseDueAt()
+		return nil
+	case consultationrequest.FieldAutoClosedReason:
+		m.ClearAutoClosedReason()
 		return nil
 	}
 	return fmt.Errorf("unknown ConsultationRequest nullable field %s", name)
@@ -5233,6 +5527,18 @@ func (m *ConsultationRequestMutation) ResetField(name string) error {
 		return nil
 	case consultationrequest.FieldRejectedAt:
 		m.ResetRejectedAt()
+		return nil
+	case consultationrequest.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case consultationrequest.FieldOwnerResponseDueAt:
+		m.ResetOwnerResponseDueAt()
+		return nil
+	case consultationrequest.FieldReminderCount:
+		m.ResetReminderCount()
+		return nil
+	case consultationrequest.FieldAutoClosedReason:
+		m.ResetAutoClosedReason()
 		return nil
 	}
 	return fmt.Errorf("unknown ConsultationRequest field %s", name)
@@ -23108,6 +23414,11 @@ type ValidationCaseMutation struct {
 	bounty_amount                  *int64
 	addbounty_amount               *int64
 	status                         *string
+	sensitivity_level              *string
+	intake_schema_version          *string
+	clarification_state            *string
+	owner_inactivity_count         *int
+	addowner_inactivity_count      *int
 	escrow_transfer_id             *string
 	dispute_id                     *string
 	accepted_final_offer_id        *int
@@ -23742,6 +24053,170 @@ func (m *ValidationCaseMutation) OldStatus(ctx context.Context) (v string, err e
 // ResetStatus resets all changes to the "status" field.
 func (m *ValidationCaseMutation) ResetStatus() {
 	m.status = nil
+}
+
+// SetSensitivityLevel sets the "sensitivity_level" field.
+func (m *ValidationCaseMutation) SetSensitivityLevel(s string) {
+	m.sensitivity_level = &s
+}
+
+// SensitivityLevel returns the value of the "sensitivity_level" field in the mutation.
+func (m *ValidationCaseMutation) SensitivityLevel() (r string, exists bool) {
+	v := m.sensitivity_level
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSensitivityLevel returns the old "sensitivity_level" field's value of the ValidationCase entity.
+// If the ValidationCase object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ValidationCaseMutation) OldSensitivityLevel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSensitivityLevel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSensitivityLevel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSensitivityLevel: %w", err)
+	}
+	return oldValue.SensitivityLevel, nil
+}
+
+// ResetSensitivityLevel resets all changes to the "sensitivity_level" field.
+func (m *ValidationCaseMutation) ResetSensitivityLevel() {
+	m.sensitivity_level = nil
+}
+
+// SetIntakeSchemaVersion sets the "intake_schema_version" field.
+func (m *ValidationCaseMutation) SetIntakeSchemaVersion(s string) {
+	m.intake_schema_version = &s
+}
+
+// IntakeSchemaVersion returns the value of the "intake_schema_version" field in the mutation.
+func (m *ValidationCaseMutation) IntakeSchemaVersion() (r string, exists bool) {
+	v := m.intake_schema_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIntakeSchemaVersion returns the old "intake_schema_version" field's value of the ValidationCase entity.
+// If the ValidationCase object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ValidationCaseMutation) OldIntakeSchemaVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIntakeSchemaVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIntakeSchemaVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIntakeSchemaVersion: %w", err)
+	}
+	return oldValue.IntakeSchemaVersion, nil
+}
+
+// ResetIntakeSchemaVersion resets all changes to the "intake_schema_version" field.
+func (m *ValidationCaseMutation) ResetIntakeSchemaVersion() {
+	m.intake_schema_version = nil
+}
+
+// SetClarificationState sets the "clarification_state" field.
+func (m *ValidationCaseMutation) SetClarificationState(s string) {
+	m.clarification_state = &s
+}
+
+// ClarificationState returns the value of the "clarification_state" field in the mutation.
+func (m *ValidationCaseMutation) ClarificationState() (r string, exists bool) {
+	v := m.clarification_state
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClarificationState returns the old "clarification_state" field's value of the ValidationCase entity.
+// If the ValidationCase object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ValidationCaseMutation) OldClarificationState(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClarificationState is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClarificationState requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClarificationState: %w", err)
+	}
+	return oldValue.ClarificationState, nil
+}
+
+// ResetClarificationState resets all changes to the "clarification_state" field.
+func (m *ValidationCaseMutation) ResetClarificationState() {
+	m.clarification_state = nil
+}
+
+// SetOwnerInactivityCount sets the "owner_inactivity_count" field.
+func (m *ValidationCaseMutation) SetOwnerInactivityCount(i int) {
+	m.owner_inactivity_count = &i
+	m.addowner_inactivity_count = nil
+}
+
+// OwnerInactivityCount returns the value of the "owner_inactivity_count" field in the mutation.
+func (m *ValidationCaseMutation) OwnerInactivityCount() (r int, exists bool) {
+	v := m.owner_inactivity_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOwnerInactivityCount returns the old "owner_inactivity_count" field's value of the ValidationCase entity.
+// If the ValidationCase object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ValidationCaseMutation) OldOwnerInactivityCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOwnerInactivityCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOwnerInactivityCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOwnerInactivityCount: %w", err)
+	}
+	return oldValue.OwnerInactivityCount, nil
+}
+
+// AddOwnerInactivityCount adds i to the "owner_inactivity_count" field.
+func (m *ValidationCaseMutation) AddOwnerInactivityCount(i int) {
+	if m.addowner_inactivity_count != nil {
+		*m.addowner_inactivity_count += i
+	} else {
+		m.addowner_inactivity_count = &i
+	}
+}
+
+// AddedOwnerInactivityCount returns the value that was added to the "owner_inactivity_count" field in this mutation.
+func (m *ValidationCaseMutation) AddedOwnerInactivityCount() (r int, exists bool) {
+	v := m.addowner_inactivity_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetOwnerInactivityCount resets all changes to the "owner_inactivity_count" field.
+func (m *ValidationCaseMutation) ResetOwnerInactivityCount() {
+	m.owner_inactivity_count = nil
+	m.addowner_inactivity_count = nil
 }
 
 // SetEscrowTransferID sets the "escrow_transfer_id" field.
@@ -24422,7 +24897,7 @@ func (m *ValidationCaseMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ValidationCaseMutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 21)
 	if m.created_at != nil {
 		fields = append(fields, validationcase.FieldCreatedAt)
 	}
@@ -24458,6 +24933,18 @@ func (m *ValidationCaseMutation) Fields() []string {
 	}
 	if m.status != nil {
 		fields = append(fields, validationcase.FieldStatus)
+	}
+	if m.sensitivity_level != nil {
+		fields = append(fields, validationcase.FieldSensitivityLevel)
+	}
+	if m.intake_schema_version != nil {
+		fields = append(fields, validationcase.FieldIntakeSchemaVersion)
+	}
+	if m.clarification_state != nil {
+		fields = append(fields, validationcase.FieldClarificationState)
+	}
+	if m.owner_inactivity_count != nil {
+		fields = append(fields, validationcase.FieldOwnerInactivityCount)
 	}
 	if m.escrow_transfer_id != nil {
 		fields = append(fields, validationcase.FieldEscrowTransferID)
@@ -24506,6 +24993,14 @@ func (m *ValidationCaseMutation) Field(name string) (ent.Value, bool) {
 		return m.BountyAmount()
 	case validationcase.FieldStatus:
 		return m.Status()
+	case validationcase.FieldSensitivityLevel:
+		return m.SensitivityLevel()
+	case validationcase.FieldIntakeSchemaVersion:
+		return m.IntakeSchemaVersion()
+	case validationcase.FieldClarificationState:
+		return m.ClarificationState()
+	case validationcase.FieldOwnerInactivityCount:
+		return m.OwnerInactivityCount()
 	case validationcase.FieldEscrowTransferID:
 		return m.EscrowTransferID()
 	case validationcase.FieldDisputeID:
@@ -24549,6 +25044,14 @@ func (m *ValidationCaseMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldBountyAmount(ctx)
 	case validationcase.FieldStatus:
 		return m.OldStatus(ctx)
+	case validationcase.FieldSensitivityLevel:
+		return m.OldSensitivityLevel(ctx)
+	case validationcase.FieldIntakeSchemaVersion:
+		return m.OldIntakeSchemaVersion(ctx)
+	case validationcase.FieldClarificationState:
+		return m.OldClarificationState(ctx)
+	case validationcase.FieldOwnerInactivityCount:
+		return m.OldOwnerInactivityCount(ctx)
 	case validationcase.FieldEscrowTransferID:
 		return m.OldEscrowTransferID(ctx)
 	case validationcase.FieldDisputeID:
@@ -24652,6 +25155,34 @@ func (m *ValidationCaseMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetStatus(v)
 		return nil
+	case validationcase.FieldSensitivityLevel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSensitivityLevel(v)
+		return nil
+	case validationcase.FieldIntakeSchemaVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIntakeSchemaVersion(v)
+		return nil
+	case validationcase.FieldClarificationState:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClarificationState(v)
+		return nil
+	case validationcase.FieldOwnerInactivityCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOwnerInactivityCount(v)
+		return nil
 	case validationcase.FieldEscrowTransferID:
 		v, ok := value.(string)
 		if !ok {
@@ -24698,6 +25229,9 @@ func (m *ValidationCaseMutation) AddedFields() []string {
 	if m.addbounty_amount != nil {
 		fields = append(fields, validationcase.FieldBountyAmount)
 	}
+	if m.addowner_inactivity_count != nil {
+		fields = append(fields, validationcase.FieldOwnerInactivityCount)
+	}
 	if m.addaccepted_final_offer_id != nil {
 		fields = append(fields, validationcase.FieldAcceptedFinalOfferID)
 	}
@@ -24711,6 +25245,8 @@ func (m *ValidationCaseMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case validationcase.FieldBountyAmount:
 		return m.AddedBountyAmount()
+	case validationcase.FieldOwnerInactivityCount:
+		return m.AddedOwnerInactivityCount()
 	case validationcase.FieldAcceptedFinalOfferID:
 		return m.AddedAcceptedFinalOfferID()
 	}
@@ -24728,6 +25264,13 @@ func (m *ValidationCaseMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddBountyAmount(v)
+		return nil
+	case validationcase.FieldOwnerInactivityCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddOwnerInactivityCount(v)
 		return nil
 	case validationcase.FieldAcceptedFinalOfferID:
 		v, ok := value.(int)
@@ -24855,6 +25398,18 @@ func (m *ValidationCaseMutation) ResetField(name string) error {
 		return nil
 	case validationcase.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case validationcase.FieldSensitivityLevel:
+		m.ResetSensitivityLevel()
+		return nil
+	case validationcase.FieldIntakeSchemaVersion:
+		m.ResetIntakeSchemaVersion()
+		return nil
+	case validationcase.FieldClarificationState:
+		m.ResetClarificationState()
+		return nil
+	case validationcase.FieldOwnerInactivityCount:
+		m.ResetOwnerInactivityCount()
 		return nil
 	case validationcase.FieldEscrowTransferID:
 		m.ResetEscrowTransferID()

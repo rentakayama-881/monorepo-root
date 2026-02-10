@@ -38,6 +38,14 @@ const (
 	FieldBountyAmount = "bounty_amount"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldSensitivityLevel holds the string denoting the sensitivity_level field in the database.
+	FieldSensitivityLevel = "sensitivity_level"
+	// FieldIntakeSchemaVersion holds the string denoting the intake_schema_version field in the database.
+	FieldIntakeSchemaVersion = "intake_schema_version"
+	// FieldClarificationState holds the string denoting the clarification_state field in the database.
+	FieldClarificationState = "clarification_state"
+	// FieldOwnerInactivityCount holds the string denoting the owner_inactivity_count field in the database.
+	FieldOwnerInactivityCount = "owner_inactivity_count"
 	// FieldEscrowTransferID holds the string denoting the escrow_transfer_id field in the database.
 	FieldEscrowTransferID = "escrow_transfer_id"
 	// FieldDisputeID holds the string denoting the dispute_id field in the database.
@@ -137,6 +145,10 @@ var Columns = []string{
 	FieldMeta,
 	FieldBountyAmount,
 	FieldStatus,
+	FieldSensitivityLevel,
+	FieldIntakeSchemaVersion,
+	FieldClarificationState,
+	FieldOwnerInactivityCount,
 	FieldEscrowTransferID,
 	FieldDisputeID,
 	FieldAcceptedFinalOfferID,
@@ -185,6 +197,22 @@ var (
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	StatusValidator func(string) error
+	// DefaultSensitivityLevel holds the default value on creation for the "sensitivity_level" field.
+	DefaultSensitivityLevel string
+	// SensitivityLevelValidator is a validator for the "sensitivity_level" field. It is called by the builders before save.
+	SensitivityLevelValidator func(string) error
+	// DefaultIntakeSchemaVersion holds the default value on creation for the "intake_schema_version" field.
+	DefaultIntakeSchemaVersion string
+	// IntakeSchemaVersionValidator is a validator for the "intake_schema_version" field. It is called by the builders before save.
+	IntakeSchemaVersionValidator func(string) error
+	// DefaultClarificationState holds the default value on creation for the "clarification_state" field.
+	DefaultClarificationState string
+	// ClarificationStateValidator is a validator for the "clarification_state" field. It is called by the builders before save.
+	ClarificationStateValidator func(string) error
+	// DefaultOwnerInactivityCount holds the default value on creation for the "owner_inactivity_count" field.
+	DefaultOwnerInactivityCount int
+	// OwnerInactivityCountValidator is a validator for the "owner_inactivity_count" field. It is called by the builders before save.
+	OwnerInactivityCountValidator func(int) error
 	// AcceptedFinalOfferIDValidator is a validator for the "accepted_final_offer_id" field. It is called by the builders before save.
 	AcceptedFinalOfferIDValidator func(int) error
 )
@@ -245,6 +273,26 @@ func ByBountyAmount(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// BySensitivityLevel orders the results by the sensitivity_level field.
+func BySensitivityLevel(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSensitivityLevel, opts...).ToFunc()
+}
+
+// ByIntakeSchemaVersion orders the results by the intake_schema_version field.
+func ByIntakeSchemaVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIntakeSchemaVersion, opts...).ToFunc()
+}
+
+// ByClarificationState orders the results by the clarification_state field.
+func ByClarificationState(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldClarificationState, opts...).ToFunc()
+}
+
+// ByOwnerInactivityCount orders the results by the owner_inactivity_count field.
+func ByOwnerInactivityCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOwnerInactivityCount, opts...).ToFunc()
 }
 
 // ByEscrowTransferID orders the results by the escrow_transfer_id field.

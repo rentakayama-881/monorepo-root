@@ -113,6 +113,83 @@ func (h *ValidationCaseWorkflowHandler) RejectConsultationRequest(c *gin.Context
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+func (h *ValidationCaseWorkflowHandler) RequestOwnerClarification(c *gin.Context) {
+	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
+	if !ok {
+		return
+	}
+	requestID, ok := parseUintParam(c, "requestId", "consultation_request_id")
+	if !ok {
+		return
+	}
+	user, ok := getEntUserFromContext(c)
+	if !ok {
+		return
+	}
+
+	var req services.ClarificationRequestInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		return
+	}
+
+	if err := h.workflow.RequestOwnerClarification(c.Request.Context(), validationCaseID, requestID, uint(user.ID), req); err != nil {
+		h.handleError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+func (h *ValidationCaseWorkflowHandler) RequestOwnerClarificationFromValidator(c *gin.Context) {
+	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
+	if !ok {
+		return
+	}
+	user, ok := getEntUserFromContext(c)
+	if !ok {
+		return
+	}
+
+	var req services.ClarificationRequestInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		return
+	}
+
+	if err := h.workflow.RequestOwnerClarificationForValidator(c.Request.Context(), validationCaseID, uint(user.ID), req); err != nil {
+		h.handleError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+func (h *ValidationCaseWorkflowHandler) RespondOwnerClarification(c *gin.Context) {
+	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
+	if !ok {
+		return
+	}
+	requestID, ok := parseUintParam(c, "requestId", "consultation_request_id")
+	if !ok {
+		return
+	}
+	user, ok := getEntUserFromContext(c)
+	if !ok {
+		return
+	}
+
+	var req services.ClarificationResponseInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		return
+	}
+
+	if err := h.workflow.RespondOwnerClarification(c.Request.Context(), validationCaseID, requestID, uint(user.ID), req); err != nil {
+		h.handleError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
 func (h *ValidationCaseWorkflowHandler) RevealContact(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {

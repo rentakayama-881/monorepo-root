@@ -3,13 +3,27 @@ package services
 // Workflow DTOs for Validation Case protocol endpoints.
 
 type ConsultationRequestItem struct {
-	ID              uint        `json:"id"`
-	ValidationCaseID uint       `json:"validation_case_id"`
-	Validator        UserSummary `json:"validator"`
-	Status          string      `json:"status"`
-	ApprovedAt      *int64      `json:"approved_at,omitempty"`
-	RejectedAt      *int64      `json:"rejected_at,omitempty"`
-	CreatedAt       int64       `json:"created_at"`
+	ID                 uint                    `json:"id"`
+	ValidationCaseID   uint                    `json:"validation_case_id"`
+	Validator          UserSummary             `json:"validator"`
+	Status             string                  `json:"status"`
+	ApprovedAt         *int64                  `json:"approved_at,omitempty"`
+	RejectedAt         *int64                  `json:"rejected_at,omitempty"`
+	ExpiresAt          *int64                  `json:"expires_at,omitempty"`
+	OwnerResponseDueAt *int64                  `json:"owner_response_due_at,omitempty"`
+	ReminderCount      int                     `json:"reminder_count"`
+	AutoClosedReason   string                  `json:"auto_closed_reason,omitempty"`
+	MatchingScore      *MatchingScoreBreakdown `json:"matching_score,omitempty"`
+	CreatedAt          int64                   `json:"created_at"`
+}
+
+type MatchingScoreBreakdown struct {
+	Total             int `json:"total"`
+	DomainFit         int `json:"domain_fit"`
+	EvidenceFit       int `json:"evidence_fit"`
+	HistoryDispute    int `json:"history_dispute"`
+	ResponsivenessSLA int `json:"responsiveness_sla"`
+	StakeGuarantee    int `json:"stake_guarantee"`
 }
 
 type FinalOfferItem struct {
@@ -26,12 +40,29 @@ type FinalOfferItem struct {
 }
 
 type CaseLogItem struct {
-	ID              uint                   `json:"id"`
-	ValidationCaseID uint                  `json:"validation_case_id"`
-	Actor            *UserSummary          `json:"actor,omitempty"`
-	EventType        string                `json:"event_type"`
+	ID               uint                   `json:"id"`
+	ValidationCaseID uint                   `json:"validation_case_id"`
+	Actor            *UserSummary           `json:"actor,omitempty"`
+	EventType        string                 `json:"event_type"`
 	Detail           map[string]interface{} `json:"detail"`
-	CreatedAt        int64                 `json:"created_at"`
+	CreatedAt        int64                  `json:"created_at"`
+}
+
+type AssumptionItem struct {
+	Item      string `json:"item"`
+	Rationale string `json:"rationale,omitempty"`
+	Impact    string `json:"impact,omitempty"`
+}
+
+type ClarificationRequestInput struct {
+	Mode        string           `json:"mode"`
+	Message     string           `json:"message"`
+	Assumptions []AssumptionItem `json:"assumptions,omitempty"`
+}
+
+type ClarificationResponseInput struct {
+	Action        string `json:"action"`
+	Clarification string `json:"clarification,omitempty"`
 }
 
 // EscrowDraft is a client-facing instruction for how to Lock Funds in Feature Service.
@@ -42,4 +73,3 @@ type EscrowDraft struct {
 	HoldHours        int    `json:"hold_hours"`
 	Message          string `json:"message,omitempty"`
 }
-

@@ -238,6 +238,16 @@ func init() {
 	consultationrequest.DefaultStatus = consultationrequestDescStatus.Default.(string)
 	// consultationrequest.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	consultationrequest.StatusValidator = consultationrequestDescStatus.Validators[0].(func(string) error)
+	// consultationrequestDescReminderCount is the schema descriptor for reminder_count field.
+	consultationrequestDescReminderCount := consultationrequestFields[7].Descriptor()
+	// consultationrequest.DefaultReminderCount holds the default value on creation for the reminder_count field.
+	consultationrequest.DefaultReminderCount = consultationrequestDescReminderCount.Default.(int)
+	// consultationrequest.ReminderCountValidator is a validator for the "reminder_count" field. It is called by the builders before save.
+	consultationrequest.ReminderCountValidator = consultationrequestDescReminderCount.Validators[0].(func(int) error)
+	// consultationrequestDescAutoClosedReason is the schema descriptor for auto_closed_reason field.
+	consultationrequestDescAutoClosedReason := consultationrequestFields[8].Descriptor()
+	// consultationrequest.AutoClosedReasonValidator is a validator for the "auto_closed_reason" field. It is called by the builders before save.
+	consultationrequest.AutoClosedReasonValidator = consultationrequestDescAutoClosedReason.Validators[0].(func(string) error)
 	credentialMixin := schema.Credential{}.Mixin()
 	credentialMixinFields0 := credentialMixin[0].Fields()
 	_ = credentialMixinFields0
@@ -1015,8 +1025,32 @@ func init() {
 	validationcase.DefaultStatus = validationcaseDescStatus.Default.(string)
 	// validationcase.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	validationcase.StatusValidator = validationcaseDescStatus.Validators[0].(func(string) error)
+	// validationcaseDescSensitivityLevel is the schema descriptor for sensitivity_level field.
+	validationcaseDescSensitivityLevel := validationcaseFields[9].Descriptor()
+	// validationcase.DefaultSensitivityLevel holds the default value on creation for the sensitivity_level field.
+	validationcase.DefaultSensitivityLevel = validationcaseDescSensitivityLevel.Default.(string)
+	// validationcase.SensitivityLevelValidator is a validator for the "sensitivity_level" field. It is called by the builders before save.
+	validationcase.SensitivityLevelValidator = validationcaseDescSensitivityLevel.Validators[0].(func(string) error)
+	// validationcaseDescIntakeSchemaVersion is the schema descriptor for intake_schema_version field.
+	validationcaseDescIntakeSchemaVersion := validationcaseFields[10].Descriptor()
+	// validationcase.DefaultIntakeSchemaVersion holds the default value on creation for the intake_schema_version field.
+	validationcase.DefaultIntakeSchemaVersion = validationcaseDescIntakeSchemaVersion.Default.(string)
+	// validationcase.IntakeSchemaVersionValidator is a validator for the "intake_schema_version" field. It is called by the builders before save.
+	validationcase.IntakeSchemaVersionValidator = validationcaseDescIntakeSchemaVersion.Validators[0].(func(string) error)
+	// validationcaseDescClarificationState is the schema descriptor for clarification_state field.
+	validationcaseDescClarificationState := validationcaseFields[11].Descriptor()
+	// validationcase.DefaultClarificationState holds the default value on creation for the clarification_state field.
+	validationcase.DefaultClarificationState = validationcaseDescClarificationState.Default.(string)
+	// validationcase.ClarificationStateValidator is a validator for the "clarification_state" field. It is called by the builders before save.
+	validationcase.ClarificationStateValidator = validationcaseDescClarificationState.Validators[0].(func(string) error)
+	// validationcaseDescOwnerInactivityCount is the schema descriptor for owner_inactivity_count field.
+	validationcaseDescOwnerInactivityCount := validationcaseFields[12].Descriptor()
+	// validationcase.DefaultOwnerInactivityCount holds the default value on creation for the owner_inactivity_count field.
+	validationcase.DefaultOwnerInactivityCount = validationcaseDescOwnerInactivityCount.Default.(int)
+	// validationcase.OwnerInactivityCountValidator is a validator for the "owner_inactivity_count" field. It is called by the builders before save.
+	validationcase.OwnerInactivityCountValidator = validationcaseDescOwnerInactivityCount.Validators[0].(func(int) error)
 	// validationcaseDescAcceptedFinalOfferID is the schema descriptor for accepted_final_offer_id field.
-	validationcaseDescAcceptedFinalOfferID := validationcaseFields[11].Descriptor()
+	validationcaseDescAcceptedFinalOfferID := validationcaseFields[15].Descriptor()
 	// validationcase.AcceptedFinalOfferIDValidator is a validator for the "accepted_final_offer_id" field. It is called by the builders before save.
 	validationcase.AcceptedFinalOfferIDValidator = validationcaseDescAcceptedFinalOfferID.Validators[0].(func(int) error)
 	validationcaselogMixin := schema.ValidationCaseLog{}.Mixin()

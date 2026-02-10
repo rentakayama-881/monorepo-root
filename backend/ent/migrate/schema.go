@@ -184,6 +184,10 @@ var (
 		{Name: "status", Type: field.TypeString, Size: 32, Default: "pending"},
 		{Name: "approved_at", Type: field.TypeTime, Nullable: true},
 		{Name: "rejected_at", Type: field.TypeTime, Nullable: true},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "owner_response_due_at", Type: field.TypeTime, Nullable: true},
+		{Name: "reminder_count", Type: field.TypeInt, Default: 0},
+		{Name: "auto_closed_reason", Type: field.TypeString, Nullable: true, Size: 128},
 		{Name: "validator_user_id", Type: field.TypeInt},
 		{Name: "validation_case_id", Type: field.TypeInt},
 	}
@@ -195,13 +199,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "consultation_requests_users_consultation_requests",
-				Columns:    []*schema.Column{ConsultationRequestsColumns[7]},
+				Columns:    []*schema.Column{ConsultationRequestsColumns[11]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "consultation_requests_validation_cases_consultation_requests",
-				Columns:    []*schema.Column{ConsultationRequestsColumns[8]},
+				Columns:    []*schema.Column{ConsultationRequestsColumns[12]},
 				RefColumns: []*schema.Column{ValidationCasesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -210,22 +214,27 @@ var (
 			{
 				Name:    "consultationrequest_validation_case_id_validator_user_id",
 				Unique:  true,
-				Columns: []*schema.Column{ConsultationRequestsColumns[8], ConsultationRequestsColumns[7]},
+				Columns: []*schema.Column{ConsultationRequestsColumns[12], ConsultationRequestsColumns[11]},
 			},
 			{
 				Name:    "consultationrequest_validation_case_id",
 				Unique:  false,
-				Columns: []*schema.Column{ConsultationRequestsColumns[8]},
+				Columns: []*schema.Column{ConsultationRequestsColumns[12]},
 			},
 			{
 				Name:    "consultationrequest_validator_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{ConsultationRequestsColumns[7]},
+				Columns: []*schema.Column{ConsultationRequestsColumns[11]},
 			},
 			{
 				Name:    "consultationrequest_status",
 				Unique:  false,
 				Columns: []*schema.Column{ConsultationRequestsColumns[4]},
+			},
+			{
+				Name:    "consultationrequest_owner_response_due_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConsultationRequestsColumns[8]},
 			},
 		},
 	}
@@ -895,11 +904,15 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "title", Type: field.TypeString},
 		{Name: "summary", Type: field.TypeString, Nullable: true, Default: ""},
-		{Name: "content_type", Type: field.TypeString, Size: 32, Default: "table"},
+		{Name: "content_type", Type: field.TypeString, Size: 32, Default: "json"},
 		{Name: "content_json", Type: field.TypeJSON, Nullable: true},
 		{Name: "meta", Type: field.TypeJSON, Nullable: true},
 		{Name: "bounty_amount", Type: field.TypeInt64, Default: 0},
 		{Name: "status", Type: field.TypeString, Size: 32, Default: "open"},
+		{Name: "sensitivity_level", Type: field.TypeString, Size: 8, Default: "S1"},
+		{Name: "intake_schema_version", Type: field.TypeString, Size: 64, Default: "quick-intake-v1"},
+		{Name: "clarification_state", Type: field.TypeString, Size: 64, Default: "none"},
+		{Name: "owner_inactivity_count", Type: field.TypeInt, Default: 0},
 		{Name: "escrow_transfer_id", Type: field.TypeString, Nullable: true},
 		{Name: "dispute_id", Type: field.TypeString, Nullable: true},
 		{Name: "accepted_final_offer_id", Type: field.TypeInt, Nullable: true},
@@ -916,13 +929,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "validation_cases_categories_validation_cases",
-				Columns:    []*schema.Column{ValidationCasesColumns[16]},
+				Columns:    []*schema.Column{ValidationCasesColumns[20]},
 				RefColumns: []*schema.Column{CategoriesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "validation_cases_users_validation_cases",
-				Columns:    []*schema.Column{ValidationCasesColumns[17]},
+				Columns:    []*schema.Column{ValidationCasesColumns[21]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -931,17 +944,27 @@ var (
 			{
 				Name:    "validationcase_category_id",
 				Unique:  false,
-				Columns: []*schema.Column{ValidationCasesColumns[16]},
+				Columns: []*schema.Column{ValidationCasesColumns[20]},
 			},
 			{
 				Name:    "validationcase_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{ValidationCasesColumns[17]},
+				Columns: []*schema.Column{ValidationCasesColumns[21]},
 			},
 			{
 				Name:    "validationcase_status",
 				Unique:  false,
 				Columns: []*schema.Column{ValidationCasesColumns[10]},
+			},
+			{
+				Name:    "validationcase_sensitivity_level",
+				Unique:  false,
+				Columns: []*schema.Column{ValidationCasesColumns[11]},
+			},
+			{
+				Name:    "validationcase_clarification_state",
+				Unique:  false,
+				Columns: []*schema.Column{ValidationCasesColumns[13]},
 			},
 		},
 	}
