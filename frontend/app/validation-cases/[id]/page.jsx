@@ -595,9 +595,6 @@ export default function ValidationCaseRecordPage() {
                 Status: {status || "unknown"}
               </span>
               <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 text-xs font-semibold text-foreground">
-                Type: {vc?.category?.name || vc?.category?.slug || "-"}
-              </span>
-              <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 text-xs font-semibold text-foreground">
                 Bounty: {formatIDR(vc?.bounty_amount)}
               </span>
               <span className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-3 py-1 text-xs font-semibold text-foreground">
@@ -1223,4 +1220,3 @@ function renderValue(v) {
     return String(v);
   }
 }
-

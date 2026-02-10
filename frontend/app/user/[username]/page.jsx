@@ -354,7 +354,7 @@ export default function UserProfilePage() {
             {/* Validation Cases Tab */}
             {activeTab === "validation_cases" && (
               <div>
-                <ValidationCaseTable cases={validationCases} />
+                <ValidationCaseTable cases={validationCases} showCategory={false} />
               </div>
             )}
 

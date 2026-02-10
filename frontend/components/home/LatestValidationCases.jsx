@@ -58,7 +58,6 @@ export default async function LatestValidationCases() {
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className="font-mono">#{vc.id}</span>
                     <span>Status: {String(vc.status || "unknown")}</span>
-                    <span>Type: {vc?.category?.name || vc?.category?.slug || "-"}</span>
                     <span>Bounty: {formatIDR(vc.bounty_amount)}</span>
                     <span>Filed: {formatDate(vc.created_at)}</span>
                   </div>

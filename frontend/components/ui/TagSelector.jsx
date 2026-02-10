@@ -13,6 +13,7 @@ export default function TagSelector({
   selectedTags = [], 
   onTagsChange,
   availableTags = [],
+  disabled = false,
   maxTags = 5,
   placeholder = "Add tags...",
   className = "",
@@ -65,6 +66,7 @@ export default function TagSelector({
 
   // Toggle tag selection
   const toggleTag = (tag) => {
+    if (disabled) return;
     if (selectedTags.find(t => t.slug === tag.slug)) {
       // Remove tag
       onTagsChange(selectedTags.filter(t => t.slug !== tag.slug));
@@ -89,6 +91,7 @@ export default function TagSelector({
 
   // Remove tag
   const removeTag = (tagSlug) => {
+    if (disabled) return;
     onTagsChange(selectedTags.filter(t => t.slug !== tagSlug));
   };
 
@@ -101,7 +104,7 @@ export default function TagSelector({
             key={tag.slug}
             tag={tag}
             size="sm"
-            onRemove={removeTag}
+            onRemove={disabled ? null : removeTag}
           />
         ))}
       </div>
@@ -119,7 +122,7 @@ export default function TagSelector({
             }}
             onFocus={() => setIsOpen(true)}
             placeholder={selectedTags.length >= maxTags ? `Maks ${maxTags} tags` : placeholder}
-            disabled={selectedTags.length >= maxTags}
+            disabled={disabled || selectedTags.length >= maxTags}
             className={clsx(
               "w-full px-3 py-2 text-sm border rounded-[var(--radius)]",
               "bg-card border-border",
@@ -134,7 +137,7 @@ export default function TagSelector({
             ref={inputRef}
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
-            disabled={selectedTags.length >= maxTags}
+            disabled={disabled || selectedTags.length >= maxTags}
             className={clsx(
               "w-full px-3 py-2 text-left text-sm border rounded-[var(--radius)]",
               "bg-card border-border",
@@ -200,9 +203,11 @@ export default function TagSelector({
                     key={tag.slug}
                     type="button"
                     onClick={() => toggleTag(tag)}
+                    disabled={disabled}
                     className={clsx(
                       "w-full px-3 py-2 text-left text-sm flex items-start gap-2",
-                      "hover:bg-accent transition-colors"
+                      "hover:bg-accent transition-colors",
+                      disabled && "opacity-60 cursor-not-allowed"
                     )}
                   >
                     <span className="mt-0.5 text-muted-foreground">

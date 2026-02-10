@@ -18,7 +18,7 @@ const releases = [
         "Sistem autentikasi dengan email dan kata sandi",
         "Autentikasi dua faktor (TOTP) dengan aplikasi authenticator",
         "Dukungan Passkey/WebAuthn untuk login tanpa kata sandi",
-        "Validation Case registry dengan kategori/type dan taksonomi tags",
+        "Validation Case registry (single index) dengan taksonomi Tags untuk klasifikasi",
         "Sistem escrow untuk transaksi validasi (Lock Funds, release, dispute)",
         "Profil pengguna dengan bio, avatar, dan tautan sosial",
         "Credentials (badges, stake, dan ringkasan riwayat kasus)",
@@ -73,7 +73,7 @@ const releases = [
       added: [
         "Sistem registrasi dan login dasar",
         "Pembuatan Validation Case (judul, ringkasan, deskripsi)",
-        "Kategori/type untuk klasifikasi kasus",
+        "Taksonomi Tags untuk klasifikasi kasus",
         "Profil pengguna dasar",
       ],
       improved: [],

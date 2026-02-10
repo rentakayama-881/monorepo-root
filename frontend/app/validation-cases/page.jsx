@@ -1,17 +1,15 @@
 import Link from "next/link";
 import ValidationCaseTable from "@/components/ui/ValidationCaseTable";
 import { fetchJson } from "@/lib/api";
-import { fetchCategories } from "@/lib/categories";
 
 export const metadata = {
   title: "Validation Case Index",
-  description: "Indeks resmi Validation Case (dossier): status, tipe, bounty, dan pihak terkait.",
+  description: "Indeks resmi Validation Case (dossier): status, bounty, dan pihak terkait.",
 };
 
-async function fetchLatestValidationCases({ categorySlug }) {
+async function fetchLatestValidationCases() {
   const params = new URLSearchParams();
   params.set("limit", "50");
-  if (categorySlug) params.set("category", categorySlug);
 
   try {
     const data = await fetchJson(`/api/validation-cases/latest?${params.toString()}`, {
@@ -24,17 +22,8 @@ async function fetchLatestValidationCases({ categorySlug }) {
   }
 }
 
-export default async function ValidationCaseIndexPage({ searchParams }) {
-  const categorySlug = typeof searchParams?.category === "string" ? searchParams.category.trim() : "";
-  const [categories, cases] = await Promise.all([
-    fetchCategories({ next: { revalidate: 300 } }),
-    fetchLatestValidationCases({ categorySlug }),
-  ]);
-
-  const filterItem =
-    "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors";
-  const filterActive = "bg-primary text-primary-foreground border-primary";
-  const filterIdle = "bg-card text-foreground border-border hover:bg-secondary/60";
+export default async function ValidationCaseIndexPage() {
+  const cases = await fetchLatestValidationCases();
 
   return (
     <main className="container py-10">
@@ -61,27 +50,7 @@ export default async function ValidationCaseIndexPage({ searchParams }) {
         </div>
       </header>
 
-      <section className="mb-5 flex flex-wrap items-center gap-2">
-        <Link
-          href="/validation-cases"
-          className={`${filterItem} ${!categorySlug ? filterActive : filterIdle}`}
-        >
-          All Types
-        </Link>
-        {Array.isArray(categories) &&
-          categories.map((cat) => (
-            <Link
-              key={cat.slug}
-              href={`/validation-cases?category=${encodeURIComponent(cat.slug)}`}
-              className={`${filterItem} ${categorySlug === cat.slug ? filterActive : filterIdle}`}
-            >
-              {cat.name || cat.slug}
-            </Link>
-          ))}
-      </section>
-
-      <ValidationCaseTable cases={cases} />
+      <ValidationCaseTable cases={cases} showCategory={false} />
     </main>
   );
 }
-

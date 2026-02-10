@@ -108,13 +108,12 @@ export default function MyValidationCasesPage() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-[var(--radius)] border border-border bg-card">
-          <table className="min-w-[980px] w-full text-sm">
+          <table className="min-w-[900px] w-full text-sm">
             <thead className="bg-secondary/60 text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Case</th>
                 <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Title</th>
                 <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Status</th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Type</th>
                 <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Bounty</th>
                 <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Filed</th>
                 <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Action</th>
@@ -149,7 +148,6 @@ export default function MyValidationCasesPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground">{String(vc?.status || "")}</td>
-                    <td className="px-4 py-3 align-top text-muted-foreground">{vc?.category?.name || vc?.category?.slug || "-"}</td>
                     <td className="px-4 py-3 align-top font-semibold text-foreground">{formatIDR(vc?.bounty_amount)}</td>
                     <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground">{formatDate(vc?.created_at)}</td>
                     <td className="px-4 py-3 align-top">
@@ -187,4 +185,3 @@ export default function MyValidationCasesPage() {
     </main>
   );
 }
-

@@ -66,7 +66,7 @@ export default function HowItWorks() {
         <div>
           <div className="font-semibold text-foreground">Mulai intake</div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Pilih tipe kasus, lalu buat Validation Case dengan bounty dan acceptance criteria.
+            Buat Validation Case dengan bounty dan acceptance criteria. Klasifikasi menggunakan Tags (audit meaningful).
           </p>
         </div>
         <Button href="/validation-cases/new" variant="gradient">
