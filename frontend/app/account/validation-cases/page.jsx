@@ -119,13 +119,13 @@ export default function MyValidationCasesPage() {
                 return (
                   <tr key={String(id)} className="hover:bg-secondary/40">
                     <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground">
-                      <Link href={href} className="hover:underline">
+                      <Link href={href} prefetch={false} className="hover:underline">
                         #{String(id)}
                       </Link>
                     </td>
                     <td className="px-4 py-3 align-top">
                       <div className="min-w-0">
-                        <Link href={href} className="block font-semibold text-foreground hover:underline">
+                        <Link href={href} prefetch={false} className="block font-semibold text-foreground hover:underline">
                           {vc?.title || "(untitled)"}
                         </Link>
                         {vc?.summary ? (
@@ -145,6 +145,7 @@ export default function MyValidationCasesPage() {
                       <div className="flex flex-wrap gap-2">
                         <Link
                           href={href}
+                          prefetch={false}
                           className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
                         >
                           Open Record

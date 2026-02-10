@@ -562,7 +562,7 @@ export default function ValidationCaseRecordPage() {
           Home
         </Link>
         <span>/</span>
-        <Link href="/validation-cases" className="hover:underline">
+        <Link href="/validation-cases" prefetch={false} className="hover:underline">
           Validation Case Index
         </Link>
         <span>/</span>
