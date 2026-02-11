@@ -309,6 +309,75 @@ func (s *EntValidationCaseWorkflowService) buildMatchingScore(
 	}, nil
 }
 
+// buildMatchingScoreBatch computes matching score using pre-loaded data to avoid N+1 queries.
+func (s *EntValidationCaseWorkflowService) buildMatchingScoreBatch(
+	vc *ent.ValidationCase,
+	validatorUserID int,
+	guaranteeAmount int64,
+	offers []*ent.FinalOffer,
+	approvedReqs []*ent.ConsultationRequest,
+	historyCaseByID map[int]*ent.ValidationCase,
+) (*MatchingScoreBreakdown, error) {
+	caseDomain := extractTagSetByPrefix(vc.Edges.Tags, "domain-")
+	caseEvidence := extractTagSetByPrefix(vc.Edges.Tags, "evidence-")
+
+	// Build history from pre-loaded offers
+	firstOfferByCase := make(map[int]time.Time)
+	caseIDs := make([]int, 0)
+	seenCase := make(map[int]struct{})
+	for _, offer := range offers {
+		if _, ok := seenCase[offer.ValidationCaseID]; !ok {
+			seenCase[offer.ValidationCaseID] = struct{}{}
+			caseIDs = append(caseIDs, offer.ValidationCaseID)
+		}
+		if current, ok := firstOfferByCase[offer.ValidationCaseID]; !ok || offer.CreatedAt.Before(current) {
+			firstOfferByCase[offer.ValidationCaseID] = offer.CreatedAt
+		}
+	}
+
+	historyDomain := map[string]struct{}{}
+	historyEvidence := map[string]struct{}{}
+	disputedCount := 0
+	historyCaseCount := 0
+	for _, caseID := range caseIDs {
+		hc, ok := historyCaseByID[caseID]
+		if !ok {
+			continue
+		}
+		historyCaseCount++
+		for slug := range extractTagSetByPrefix(hc.Edges.Tags, "domain-") {
+			historyDomain[slug] = struct{}{}
+		}
+		for slug := range extractTagSetByPrefix(hc.Edges.Tags, "evidence-") {
+			historyEvidence[slug] = struct{}{}
+		}
+		if normalizeStatus(hc.Status) == "disputed" {
+			disputedCount++
+		}
+	}
+
+	domainScore := overlapScore(caseDomain, historyDomain)
+	evidenceScore := overlapScore(caseEvidence, historyEvidence)
+
+	historyDisputeScore := 50
+	if historyCaseCount > 0 {
+		historyDisputeScore = clampScore(int(math.Round((1 - float64(disputedCount)/float64(historyCaseCount)) * 100)))
+	}
+
+	responsivenessScore := responsivenessSLAScore(approvedReqs, firstOfferByCase, time.Now())
+	stakeScore := stakeGuaranteeScore(guaranteeAmount)
+	total := clampScore(int(math.Round(float64(domainScore+evidenceScore+historyDisputeScore+responsivenessScore+stakeScore) / 5)))
+
+	return &MatchingScoreBreakdown{
+		Total:             total,
+		DomainFit:         domainScore,
+		EvidenceFit:       evidenceScore,
+		HistoryDispute:    historyDisputeScore,
+		ResponsivenessSLA: responsivenessScore,
+		StakeGuarantee:    stakeScore,
+	}, nil
+}
+
 func sanitizeAssumptionItems(items []AssumptionItem) []map[string]string {
 	out := make([]map[string]string, 0, len(items))
 	for _, item := range items {
@@ -442,13 +511,84 @@ func (s *EntValidationCaseWorkflowService) ListConsultationRequestsForOwner(ctx 
 		return nil, apperrors.ErrDatabase
 	}
 
+	// Batch-load all FinalOffer and ConsultationRequest data for all validators
+	// to avoid N+1 queries in buildMatchingScore.
+	validatorIDs := make([]int, 0, len(items))
+	validatorIDSet := make(map[int]struct{})
+	for _, it := range items {
+		if _, ok := validatorIDSet[it.ValidatorUserID]; !ok {
+			validatorIDSet[it.ValidatorUserID] = struct{}{}
+			validatorIDs = append(validatorIDs, it.ValidatorUserID)
+		}
+	}
+
+	// Batch load all FinalOffers for these validators
+	allOffers, err := s.client.FinalOffer.Query().
+		Where(finaloffer.ValidatorUserIDIn(validatorIDs...)).
+		Order(ent.Desc(finaloffer.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		return nil, apperrors.ErrDatabase
+	}
+	offersByValidator := make(map[int][]*ent.FinalOffer)
+	for _, o := range allOffers {
+		offersByValidator[o.ValidatorUserID] = append(offersByValidator[o.ValidatorUserID], o)
+	}
+
+	// Batch load all approved ConsultationRequests for these validators
+	allApprovedReqs, err := s.client.ConsultationRequest.Query().
+		Where(
+			consultationrequest.ValidatorUserIDIn(validatorIDs...),
+			consultationrequest.ApprovedAtNotNil(),
+		).
+		Limit(200 * len(validatorIDs)).
+		All(ctx)
+	if err != nil {
+		return nil, apperrors.ErrDatabase
+	}
+	approvedReqsByValidator := make(map[int][]*ent.ConsultationRequest)
+	for _, r := range allApprovedReqs {
+		approvedReqsByValidator[r.ValidatorUserID] = append(approvedReqsByValidator[r.ValidatorUserID], r)
+	}
+
+	// Batch load all history validation cases (from offers)
+	historyCaseIDSet := make(map[int]struct{})
+	for _, o := range allOffers {
+		historyCaseIDSet[o.ValidationCaseID] = struct{}{}
+	}
+	historyCaseIDs := make([]int, 0, len(historyCaseIDSet))
+	for id := range historyCaseIDSet {
+		historyCaseIDs = append(historyCaseIDs, id)
+	}
+	var allHistoryCases []*ent.ValidationCase
+	if len(historyCaseIDs) > 0 {
+		allHistoryCases, err = s.client.ValidationCase.Query().
+			Where(validationcase.IDIn(historyCaseIDs...)).
+			WithTags(func(q *ent.TagQuery) {
+				q.Where(tag.IsActiveEQ(true))
+			}).
+			All(ctx)
+		if err != nil {
+			return nil, apperrors.ErrDatabase
+		}
+	}
+	historyCaseByID := make(map[int]*ent.ValidationCase)
+	for _, hc := range allHistoryCases {
+		historyCaseByID[hc.ID] = hc
+	}
+
 	out := make([]ConsultationRequestItem, 0, len(items))
 	scoreCache := make(map[int]*MatchingScoreBreakdown)
 	for _, it := range items {
 		validator := buildUserSummaryFromEnt(it.Edges.ValidatorUser)
 		score, cached := scoreCache[it.ValidatorUserID]
 		if !cached {
-			scored, scoreErr := s.buildMatchingScore(ctx, vc, it.ValidatorUserID, validator.GuaranteeAmount)
+			scored, scoreErr := s.buildMatchingScoreBatch(
+				vc, it.ValidatorUserID, validator.GuaranteeAmount,
+				offersByValidator[it.ValidatorUserID],
+				approvedReqsByValidator[it.ValidatorUserID],
+				historyCaseByID,
+			)
 			if scoreErr != nil {
 				logger.Warn("Failed to compute validator matching score",
 					zap.Error(scoreErr),
@@ -521,8 +661,20 @@ func (s *EntValidationCaseWorkflowService) ApproveConsultationRequest(ctx contex
 		return apperrors.ErrInvalidInput.WithDetails("Consultation Request tidak dalam status pending")
 	}
 
+	// Use transaction to ensure atomicity of consultation request + case log updates
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return apperrors.ErrDatabase
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			_ = tx.Rollback()
+			panic(v)
+		}
+	}()
+
 	now := time.Now()
-	if _, err := s.client.ConsultationRequest.UpdateOneID(req.ID).
+	if _, err := tx.ConsultationRequest.UpdateOneID(req.ID).
 		SetStatus(consultationStatusApproved).
 		SetApprovedAt(now).
 		ClearRejectedAt().
@@ -531,6 +683,11 @@ func (s *EntValidationCaseWorkflowService) ApproveConsultationRequest(ctx contex
 		SetReminderCount(0).
 		ClearAutoClosedReason().
 		Save(ctx); err != nil {
+		_ = tx.Rollback()
+		return apperrors.ErrDatabase
+	}
+
+	if err := tx.Commit(); err != nil {
 		return apperrors.ErrDatabase
 	}
 
@@ -651,23 +808,41 @@ func (s *EntValidationCaseWorkflowService) RequestOwnerClarification(
 		eventType = "assumption_mode_submitted"
 	}
 
+	// Use transaction to ensure atomicity of consultation request + validation case updates
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return apperrors.ErrDatabase
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			_ = tx.Rollback()
+			panic(v)
+		}
+	}()
+
 	now := time.Now()
 	due := dueTimeFromNow(now)
-	if _, err := s.client.ConsultationRequest.UpdateOneID(req.ID).
+	if _, err := tx.ConsultationRequest.UpdateOneID(req.ID).
 		SetStatus(consultationStatusWaitingOwnerResponse).
 		SetOwnerResponseDueAt(due).
 		SetExpiresAt(due).
 		SetReminderCount(0).
 		ClearAutoClosedReason().
 		Save(ctx); err != nil {
+		_ = tx.Rollback()
 		return apperrors.ErrDatabase
 	}
 
 	previousStatus := normalizeStatus(vc.Status)
-	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
+	if _, err := tx.ValidationCase.UpdateOneID(vc.ID).
 		SetStatus(caseStatusWaitingOwnerResponse).
 		SetClarificationState(caseClarificationState).
 		Save(ctx); err != nil {
+		_ = tx.Rollback()
+		return apperrors.ErrDatabase
+	}
+
+	if err := tx.Commit(); err != nil {
 		return apperrors.ErrDatabase
 	}
 
@@ -768,19 +943,6 @@ func (s *EntValidationCaseWorkflowService) RespondOwnerClarification(
 		return apperrors.ErrInvalidInput.WithDetails("approve hanya valid untuk Assumption Mode")
 	}
 
-	now := time.Now()
-	if _, err := s.client.ConsultationRequest.UpdateOneID(req.ID).
-		SetStatus(consultationStatusApproved).
-		SetApprovedAt(now).
-		ClearRejectedAt().
-		ClearOwnerResponseDueAt().
-		ClearExpiresAt().
-		SetReminderCount(0).
-		ClearAutoClosedReason().
-		Save(ctx); err != nil {
-		return apperrors.ErrDatabase
-	}
-
 	newClarificationState := clarificationStateOwnerResponded
 	eventType := "owner_clarification_submitted"
 	switch action {
@@ -792,11 +954,42 @@ func (s *EntValidationCaseWorkflowService) RespondOwnerClarification(
 		eventType = "assumption_mode_rejected"
 	}
 
+	// Use transaction to ensure atomicity of consultation request + validation case updates
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return apperrors.ErrDatabase
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			_ = tx.Rollback()
+			panic(v)
+		}
+	}()
+
+	now := time.Now()
+	if _, err := tx.ConsultationRequest.UpdateOneID(req.ID).
+		SetStatus(consultationStatusApproved).
+		SetApprovedAt(now).
+		ClearRejectedAt().
+		ClearOwnerResponseDueAt().
+		ClearExpiresAt().
+		SetReminderCount(0).
+		ClearAutoClosedReason().
+		Save(ctx); err != nil {
+		_ = tx.Rollback()
+		return apperrors.ErrDatabase
+	}
+
 	previousStatus := normalizeStatus(vc.Status)
-	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
+	if _, err := tx.ValidationCase.UpdateOneID(vc.ID).
 		SetStatus(caseStatusOpen).
 		SetClarificationState(newClarificationState).
 		Save(ctx); err != nil {
+		_ = tx.Rollback()
+		return apperrors.ErrDatabase
+	}
+
+	if err := tx.Commit(); err != nil {
 		return apperrors.ErrDatabase
 	}
 
@@ -1150,21 +1343,39 @@ func (s *EntValidationCaseWorkflowService) AcceptFinalOffer(ctx context.Context,
 		return nil, apperrors.ErrInvalidInput.WithDetails("Validator belum memiliki username. Tidak dapat Lock Funds.")
 	}
 
+	// Use transaction to ensure atomicity of offer + case updates
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return nil, apperrors.ErrDatabase
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			_ = tx.Rollback()
+			panic(v)
+		}
+	}()
+
 	now := time.Now()
 
 	// Mark offer accepted (pending funding confirmation).
-	if _, err := s.client.FinalOffer.UpdateOneID(offer.ID).
+	if _, err := tx.FinalOffer.UpdateOneID(offer.ID).
 		SetStatus("accepted_pending_funding").
 		SetAcceptedAt(now).
 		Save(ctx); err != nil {
+		_ = tx.Rollback()
 		return nil, apperrors.ErrDatabase
 	}
 
 	// Remember accepted offer on the case.
-	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
+	if _, err := tx.ValidationCase.UpdateOneID(vc.ID).
 		SetAcceptedFinalOfferID(offer.ID).
 		SetStatus("offer_accepted").
 		Save(ctx); err != nil {
+		_ = tx.Rollback()
+		return nil, apperrors.ErrDatabase
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, apperrors.ErrDatabase
 	}
 

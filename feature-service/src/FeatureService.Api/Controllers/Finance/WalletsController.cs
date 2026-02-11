@@ -264,11 +264,13 @@ public class WalletsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Recalculate balance from ledger (for audit)
+    /// Recalculate balance from ledger (for audit) - Admin only
     /// </summary>
     [HttpPost("audit/recalculate")]
+    [Authorize(Roles = "admin")]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 401)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 403)]
     public async Task<IActionResult> RecalculateBalance()
     {
         var user = _userContextAccessor.GetCurrentUser();

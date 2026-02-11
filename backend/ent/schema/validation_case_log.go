@@ -62,6 +62,7 @@ func (ValidationCaseLog) Indexes() []ent.Index {
 		index.Fields("validation_case_id"),
 		index.Fields("actor_user_id"),
 		index.Fields("event_type"),
+		index.Fields("validation_case_id", "created_at"),
 	}
 }
 

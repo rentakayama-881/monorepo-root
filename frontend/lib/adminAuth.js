@@ -1,3 +1,5 @@
+import { getToken } from "./auth";
+
 const ADMIN_TOKEN_KEY = "admin_token";
 const ADMIN_INFO_KEY = "admin_info";
 const EXPIRY_SKEW_SECONDS = 30;
@@ -99,6 +101,20 @@ export function setAdminSession(token, adminInfo) {
 }
 
 export function getAdminToken() {
+  // First, try the unified auth system (user JWT with admin role)
+  try {
+    const mainToken = getToken();
+    if (mainToken && !isExpired(mainToken)) {
+      const payload = decodeJwtPayload(mainToken);
+      if (payload?.role === "admin" || payload?.is_admin === true) {
+        return mainToken;
+      }
+    }
+  } catch {
+    // Fall through to legacy admin token
+  }
+
+  // Fallback: legacy separate admin session
   migrateLegacySession();
   const session = safeGetSessionStorage();
   if (!session) return null;

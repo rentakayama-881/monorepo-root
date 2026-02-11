@@ -80,5 +80,6 @@ func (ConsultationRequest) Indexes() []ent.Index {
 		index.Fields("validator_user_id"),
 		index.Fields("status"),
 		index.Fields("owner_response_due_at"),
+		index.Fields("validator_user_id", "status"),
 	}
 }

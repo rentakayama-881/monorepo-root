@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useCallback } from "react";
 import { useUser, useWallet, invalidateUserData } from "./swr";
 import { getToken, clearToken, setTokens } from "./auth";
+import { getApiBase } from "./api";
 
 /**
  * UserContext - Single source of truth for user authentication and data
@@ -29,7 +30,7 @@ export function UserProvider({ children }) {
       const token = getToken();
       if (token) {
         // Call logout endpoint
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/auth/logout`, {
+        await fetch(`${getApiBase()}/api/auth/logout`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

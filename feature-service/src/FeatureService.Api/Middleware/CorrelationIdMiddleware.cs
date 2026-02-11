@@ -1,3 +1,5 @@
+using Serilog.Context;
+
 namespace FeatureService.Api.Middleware;
 
 public class CorrelationIdMiddleware
@@ -18,6 +20,11 @@ public class CorrelationIdMiddleware
         context.Items["RequestId"] = correlationId;
         context.Response.Headers.Append(CorrelationIdHeader, correlationId);
 
-        await _next(context);
+        // Enrich Serilog context so all log entries include the request ID
+        using (LogContext.PushProperty("RequestId", correlationId))
+        using (LogContext.PushProperty("Service", "feature-service"))
+        {
+            await _next(context);
+        }
     }
 }

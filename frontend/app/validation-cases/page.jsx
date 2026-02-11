@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { fetchJson } from "@/lib/api";
 import ValidationCaseIndexClient from "./ValidationCaseIndexClient";
 
@@ -10,24 +11,45 @@ export const metadata = {
   },
 };
 
-async function fetchLatestValidationCases() {
+function CaseListSkeleton() {
+  return (
+    <div className="space-y-3 animate-pulse">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center gap-3">
+            <div className="h-4 w-48 rounded bg-muted" />
+            <div className="h-4 w-16 rounded-full bg-muted" />
+          </div>
+          <div className="mt-2 h-3 w-72 rounded bg-muted" />
+          <div className="mt-2 flex gap-2">
+            <div className="h-3 w-20 rounded bg-muted" />
+            <div className="h-3 w-24 rounded bg-muted" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+async function CaseList() {
   const params = new URLSearchParams();
   params.set("limit", "50");
 
+  let cases = [];
   try {
     const data = await fetchJson(`/api/validation-cases/latest?${params.toString()}`, {
       method: "GET",
       next: { revalidate: 30 },
     });
-    return Array.isArray(data?.validation_cases) ? data.validation_cases : [];
+    cases = Array.isArray(data?.validation_cases) ? data.validation_cases : [];
   } catch {
-    return [];
+    cases = [];
   }
+
+  return <ValidationCaseIndexClient cases={cases} />;
 }
 
-export default async function ValidationCaseIndexPage() {
-  const cases = await fetchLatestValidationCases();
-
+export default function ValidationCaseIndexPage() {
   return (
     <main className="container py-10">
       <header className="mb-6">
@@ -44,7 +66,9 @@ export default async function ValidationCaseIndexPage() {
         </div>
       </header>
 
-      <ValidationCaseIndexClient cases={cases} />
+      <Suspense fallback={<CaseListSkeleton />}>
+        <CaseList />
+      </Suspense>
     </main>
   );
 }

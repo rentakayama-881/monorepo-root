@@ -118,5 +118,7 @@ func (ValidationCase) Indexes() []ent.Index {
 		index.Fields("status"),
 		index.Fields("sensitivity_level"),
 		index.Fields("clarification_state"),
+		index.Fields("created_at"),
+		index.Fields("user_id", "status"),
 	}
 }

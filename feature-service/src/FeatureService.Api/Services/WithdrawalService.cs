@@ -30,6 +30,7 @@ public class WithdrawalService : IWithdrawalService
     private const long WithdrawalFee = 2500; // Rp2,500 per withdrawal
     private const long MinWithdrawal = 10000; // Minimum Rp10,000
     private const long MaxWithdrawal = 100000000; // Maximum Rp100,000,000
+    private const long DailyWithdrawalLimit = 50000000; // Rp50,000,000 per day
 
     // Supported Indonesian banks
     private static readonly Dictionary<string, (string Name, string ShortName)> SupportedBanks = new()
@@ -96,8 +97,25 @@ public class WithdrawalService : IWithdrawalService
             w => w.UserId == userId && (w.Status == WithdrawalStatus.Pending || w.Status == WithdrawalStatus.Processing)
         );
         if (pendingCount > 0)
-            return new CreateWithdrawalResponse(false, null, null, 
+            return new CreateWithdrawalResponse(false, null, null,
                 "Anda memiliki penarikan yang sedang diproses. Harap tunggu hingga selesai.");
+
+        // Check daily withdrawal limit
+        var todayStart = DateTime.UtcNow.Date;
+        var todayFilter = Builders<Withdrawal>.Filter.And(
+            Builders<Withdrawal>.Filter.Eq(w => w.UserId, userId),
+            Builders<Withdrawal>.Filter.In(w => w.Status, new[] { WithdrawalStatus.Pending, WithdrawalStatus.Processing, WithdrawalStatus.Completed }),
+            Builders<Withdrawal>.Filter.Gte(w => w.CreatedAt, todayStart)
+        );
+        var todayWithdrawals = await _withdrawals.Find(todayFilter).ToListAsync();
+        var todayTotal = todayWithdrawals.Sum(w => w.Amount);
+        if (todayTotal + request.Amount > DailyWithdrawalLimit)
+        {
+            var remaining = DailyWithdrawalLimit - todayTotal;
+            return new CreateWithdrawalResponse(false, null, null,
+                $"Melebihi batas penarikan harian (Rp{DailyWithdrawalLimit:N0}/hari). " +
+                $"Sisa kuota hari ini: Rp{(remaining > 0 ? remaining : 0):N0}");
+        }
 
         // Generate IDs before deduction so we can link transactions
         var withdrawalId = ObjectId.GenerateNewId().ToString();

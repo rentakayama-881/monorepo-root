@@ -1682,3 +1682,95 @@ html {
   white-space: nowrap;
   border-width: 0;
 }
+
+/* ===== Modern CSS 2025 Enhancements ===== */
+
+/* Container queries for responsive components without media queries */
+.card-container {
+  container-type: inline-size;
+}
+
+@container (min-width: 400px) {
+  .card-content-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@container (min-width: 600px) {
+  .card-content-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+/* View Transitions API for smooth page navigations */
+::view-transition-old(page),
+::view-transition-new(page) {
+  animation-duration: 0.2s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(page) {
+  animation-name: fade-out;
+}
+
+::view-transition-new(page) {
+  animation-name: fade-in;
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Scroll-driven animations for scroll-based reveals */
+@supports (animation-timeline: scroll()) {
+  .scroll-reveal {
+    animation: scroll-fade-in linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 100%;
+  }
+
+  @keyframes scroll-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* CSS nesting for cleaner component styles */
+.validation-case-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px oklch(0 0 0 / 0.08);
+  }
+
+  & .case-title {
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  & .case-meta {
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+  }
+
+  & .case-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+}

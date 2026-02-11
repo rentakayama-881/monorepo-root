@@ -285,7 +285,7 @@ public class WalletService : IWalletService
     public async Task<long> RecalculateBalanceFromLedgerAsync(uint userId)
     {
         var filter = Builders<TransactionLedger>.Filter.And(
-            Builders<TransactionLedger>.Filter.Eq(l => l.UserId, (int)userId),
+            Builders<TransactionLedger>.Filter.Eq(l => l.UserId, userId),
             Builders<TransactionLedger>.Filter.Eq(l => l.Status, TransactionStatus.Completed)
         );
 
@@ -700,7 +700,7 @@ public class WalletService : IWalletService
 
             var ledgerEntry = new TransactionLedger
             {
-                UserId = (int)userId,
+                UserId = userId,
                 EntryType = entryType,
                 Amount = amount,
                 BalanceAfter = balanceAfter,

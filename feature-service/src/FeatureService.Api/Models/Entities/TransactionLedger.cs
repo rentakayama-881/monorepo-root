@@ -18,7 +18,7 @@ public class TransactionLedger
     /// UserID this ledger entry belongs to
     /// </summary>
     [BsonElement("user_id")]
-    public int UserId { get; set; }
+    public uint UserId { get; set; }
 
     /// <summary>
     /// Type of transaction entry (debit or credit)
@@ -60,7 +60,7 @@ public class TransactionLedger
     /// Counterparty UserID (for transfers)
     /// </summary>
     [BsonElement("counterparty_user_id")]
-    public int? CounterpartyUserId { get; set; }
+    public uint? CounterpartyUserId { get; set; }
 
     /// <summary>
     /// Description/notes for this transaction

@@ -9,23 +9,30 @@ import (
 
 	"backend-gin/logger"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
+const slaWorkerLockKey = "sla_worker_lock"
+const slaWorkerLockTTL = 60 * time.Second
+
 // OwnerResponseSLAWorker periodically enforces owner-response SLA reminders and timeout freeze.
+// Uses Redis distributed lock to prevent duplicate processing across multiple instances.
 type OwnerResponseSLAWorker struct {
-	workflow *EntValidationCaseWorkflowService
-	ticker   *time.Ticker
-	stopCh   chan struct{}
-	doneCh   chan struct{}
-	started  bool
+	workflow   *EntValidationCaseWorkflowService
+	ticker     *time.Ticker
+	stopCh     chan struct{}
+	doneCh     chan struct{}
+	started    bool
+	instanceID string
 }
 
 func NewOwnerResponseSLAWorker(workflow *EntValidationCaseWorkflowService) *OwnerResponseSLAWorker {
 	return &OwnerResponseSLAWorker{
-		workflow: workflow,
-		stopCh:   make(chan struct{}),
-		doneCh:   make(chan struct{}),
+		workflow:    workflow,
+		stopCh:     make(chan struct{}),
+		doneCh:     make(chan struct{}),
+		instanceID: uuid.New().String(),
 	}
 }
 
@@ -57,9 +64,29 @@ func (w *OwnerResponseSLAWorker) Start() {
 		for {
 			select {
 			case <-w.ticker.C:
+				// Acquire distributed lock to prevent duplicate processing across instances
+				lockCtx, lockCancel := context.WithTimeout(context.Background(), 5*time.Second)
+				acquired, err := AcquireLock(lockCtx, slaWorkerLockKey, slaWorkerLockTTL)
+				lockCancel()
+				if err != nil {
+					logger.Warn("SLA worker failed to check distributed lock", zap.Error(err))
+					continue
+				}
+				if !acquired {
+					logger.Debug("SLA worker skipping iteration: another instance holds the lock",
+						zap.String("instance_id", w.instanceID))
+					continue
+				}
+
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				reminders, timeouts, err := w.workflow.ProcessOwnerResponseSLA(ctx)
 				cancel()
+
+				// Release lock after processing
+				releaseCtx, releaseCancel := context.WithTimeout(context.Background(), 5*time.Second)
+				_ = ReleaseLock(releaseCtx, slaWorkerLockKey)
+				releaseCancel()
+
 				if err != nil {
 					logger.Warn("Owner-response SLA worker iteration failed", zap.Error(err))
 					continue

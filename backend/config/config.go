@@ -32,8 +32,12 @@ func InitConfig() {
 	}
 
 	// Feature-Service URL for internal calls
-	FeatureServiceURL = os.Getenv("FEATURE_SERVICE_URL")
+	FeatureServiceURL = strings.TrimSpace(os.Getenv("FEATURE_SERVICE_URL"))
 	if FeatureServiceURL == "" {
-		FeatureServiceURL = "http://localhost:5000" // Default for development
+		env := strings.ToLower(strings.TrimSpace(os.Getenv("APP_ENV")))
+		if env == "production" || env == "staging" {
+			log.Fatal("ERROR: FEATURE_SERVICE_URL is not set in environment variables (required in production/staging)")
+		}
+		FeatureServiceURL = "http://localhost:5000" // Default for development only
 	}
 }

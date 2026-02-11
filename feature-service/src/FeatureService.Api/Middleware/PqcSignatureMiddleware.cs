@@ -8,6 +8,7 @@ using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Infrastructure.PQC;
 using FeatureService.Api.Models.Entities;
 using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.Extensions.Caching.Memory;
 using MongoDB.Driver;
 
 namespace FeatureService.Api.Middleware;
@@ -20,18 +21,22 @@ public class PqcSignatureMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<PqcSignatureMiddleware> _logger;
+    private readonly IMemoryCache _pqcKeyCache;
 
     private const string SignatureHeader = "X-PQC-Signature";
     private const string KeyIdHeader = "X-PQC-Key-Id";
     private const string TimestampHeader = "X-PQC-Timestamp";
     private const string IdempotencyKeyHeader = "X-Idempotency-Key";
+    private static readonly TimeSpan PqcKeyCacheTTL = TimeSpan.FromMinutes(5);
 
     public PqcSignatureMiddleware(
         RequestDelegate next,
-        ILogger<PqcSignatureMiddleware> logger)
+        ILogger<PqcSignatureMiddleware> logger,
+        IMemoryCache memoryCache)
     {
         _next = next;
         _logger = logger;
+        _pqcKeyCache = memoryCache;
     }
 
     public async Task InvokeAsync(
@@ -143,6 +148,13 @@ public class PqcSignatureMiddleware
 
     private async Task<bool> HasActivePqcKeyAsync(MongoDbContext dbContext, uint userId)
     {
+        var cacheKey = $"pqc_key_exists:{userId}";
+
+        if (_pqcKeyCache.TryGetValue(cacheKey, out bool cachedResult))
+        {
+            return cachedResult;
+        }
+
         try
         {
             var keyId = await dbContext.UserPqcKeys
@@ -150,7 +162,9 @@ public class PqcSignatureMiddleware
                 .Project(k => k.KeyId)
                 .FirstOrDefaultAsync();
 
-            return !string.IsNullOrWhiteSpace(keyId);
+            var hasKey = !string.IsNullOrWhiteSpace(keyId);
+            _pqcKeyCache.Set(cacheKey, hasKey, PqcKeyCacheTTL);
+            return hasKey;
         }
         catch (Exception ex)
         {

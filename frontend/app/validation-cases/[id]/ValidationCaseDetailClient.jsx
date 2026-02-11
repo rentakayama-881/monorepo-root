@@ -408,6 +408,11 @@ export default function ValidationCaseRecordPage() {
 
   async function approveConsultation(requestId) {
     setConsultationMsg("");
+    // Optimistic update: immediately reflect approval in UI
+    const prevRequests = consultationRequests;
+    setConsultationRequests((prev) =>
+      prev.map((r) => r.id === requestId ? { ...r, status: "approved" } : r)
+    );
     try {
       await fetchJsonAuth(
         `/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests/${encodeURIComponent(String(requestId))}/approve`,
@@ -416,6 +421,8 @@ export default function ValidationCaseRecordPage() {
       setConsultationMsg("Permintaan konsultasi disetujui.");
       await loadOwnerWorkflow();
     } catch (e) {
+      // Rollback on error
+      setConsultationRequests(prevRequests);
       setConsultationMsg(e?.message || "Gagal menyetujui");
     }
   }
@@ -440,6 +447,11 @@ export default function ValidationCaseRecordPage() {
       return;
     }
     setConsultationMsg("");
+    // Optimistic update: immediately reflect rejection in UI
+    const prevRequests = consultationRequests;
+    setConsultationRequests((prev) =>
+      prev.map((r) => r.id === requestId ? { ...r, status: "rejected" } : r)
+    );
     try {
       await fetchJsonAuth(
         `/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests/${encodeURIComponent(String(requestId))}/reject`,
@@ -454,6 +466,8 @@ export default function ValidationCaseRecordPage() {
       setRejectOpen((prev) => ({ ...prev, [requestId]: false }));
       await loadOwnerWorkflow();
     } catch (e) {
+      // Rollback on error
+      setConsultationRequests(prevRequests);
       setConsultationMsg(e?.message || "Gagal menolak");
     }
   }

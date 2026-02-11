@@ -33,8 +33,9 @@ public class TransferService : ITransferService
     private readonly IConfiguration _configuration;
     private readonly ILogger<TransferService> _logger;
 
-    // Fee configuration - 2% for transfers
-    private const decimal TransferFeePercent = 0.02m;
+    // Fee configuration - 2% for transfers (integer arithmetic: amount * 2 / 100)
+    private const int TransferFeeNumerator = 2;
+    private const int TransferFeeDenominator = 100;
     private const int HoursPerDay = 24;
     private const int DefaultHoldHours = 7 * HoursPerDay;
     private const int MaxHoldHours = 30 * HoursPerDay;
@@ -311,8 +312,8 @@ public class TransferService : ITransferService
         if (updateResult.ModifiedCount == 0)
             return (false, "Transfer sudah diproses oleh request lain");
 
-        // Calculate fee (2% from transfer amount)
-        var fee = (long)(transfer.Amount * TransferFeePercent);
+        // Calculate fee (2% from transfer amount, integer arithmetic - no precision loss)
+        var fee = (transfer.Amount * TransferFeeNumerator) / TransferFeeDenominator;
         var amountAfterFee = transfer.Amount - fee;
 
         // Add to receiver's wallet (minus fee)
@@ -608,8 +609,8 @@ public class TransferService : ITransferService
                     continue;
                 }
 
-                // Calculate fee
-                var fee = (long)(transfer.Amount * TransferFeePercent);
+                // Calculate fee (integer arithmetic - no precision loss)
+                var fee = (transfer.Amount * TransferFeeNumerator) / TransferFeeDenominator;
                 var amountAfterFee = transfer.Amount - fee;
 
                 // Add to receiver
