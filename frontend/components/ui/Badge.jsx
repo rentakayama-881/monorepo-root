@@ -13,46 +13,52 @@
 import clsx from "clsx";
 import Link from "next/link";
 
-// Badge icon components (SVG-based, no PNG dependency)
+// Badge icon components (outline style, GitHub-like)
 const BadgeIcons = {
   verified: (props) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M9 12.75l2 2 4-4" />
+      <circle cx="12" cy="12" r="8.25" />
     </svg>
   ),
   admin: (props) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 3l7 3v5c0 4.75-2.75 8.75-7 10-4.25-1.25-7-5.25-7-10V6l7-3z" />
+      <path d="M9.5 12l1.75 1.75L14.5 10.5" />
     </svg>
   ),
   moderator: (props) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 3.75l2.45 4.96 5.47.8-3.96 3.86.94 5.44L12 16.24l-4.9 2.57.94-5.44-3.96-3.86 5.47-.8L12 3.75z" />
     </svg>
   ),
   contributor: (props) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path fillRule="evenodd" d="M14.447 3.027a.75.75 0 01.527.92l-4.5 16.5a.75.75 0 01-1.448-.394l4.5-16.5a.75.75 0 01.921-.526zM16.72 6.22a.75.75 0 011.06 0l5.25 5.25a.75.75 0 010 1.06l-5.25 5.25a.75.75 0 11-1.06-1.06L21.44 12l-4.72-4.72a.75.75 0 010-1.06zm-9.44 0a.75.75 0 010 1.06L2.56 12l4.72 4.72a.75.75 0 11-1.06 1.06L.97 12.53a.75.75 0 010-1.06l5.25-5.25a.75.75 0 011.06 0z" clipRule="evenodd" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M8 8L4 12l4 4" />
+      <path d="M16 8l4 4-4 4" />
+      <path d="M13.5 6l-3 12" />
     </svg>
   ),
   premium: (props) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 3l2.35 5.15L20 9l-4 3.95.95 5.55L12 15.75 7.05 18.5 8 12.95 4 9l5.65-.85L12 3z" />
     </svg>
   ),
   checkmark: (props) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="M9 12.75l2 2 4-4" />
     </svg>
   ),
   trusted: (props) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path fillRule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 00.374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 3l7 3v5c0 4.75-2.75 8.75-7 10-4.25-1.25-7-5.25-7-10V6l7-3z" />
+      <path d="M9 12.75l2 2 4-4" />
     </svg>
   ),
   default: (props) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path fillRule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 00.374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="12" cy="12" r="8.25" />
     </svg>
   ),
 };
@@ -90,6 +96,24 @@ function normalizeIconType(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function hexToRgba(hex, alpha) {
+  const cleaned = String(hex || "").trim();
+  const match = cleaned.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (!match) return null;
+  let value = match[1];
+  if (value.length === 3) {
+    value = value
+      .split("")
+      .map((char) => char + char)
+      .join("");
+  }
+  const intVal = Number.parseInt(value, 16);
+  const r = (intVal >> 16) & 255;
+  const g = (intVal >> 8) & 255;
+  const b = intVal & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function renderBadgeIcon(config, iconClassName) {
   if (config.iconUrl) {
     return (
@@ -106,6 +130,15 @@ function renderBadgeIcon(config, iconClassName) {
 
   const IconComponent = BadgeIcons[config.icon] || BadgeIcons.default;
   return <IconComponent className={clsx(iconClassName, "shrink-0")} />;
+}
+
+function getBadgeTone(config) {
+  const color = config?.color || "#6366f1";
+  return {
+    color,
+    borderColor: hexToRgba(color, 0.42) || "var(--border)",
+    backgroundColor: hexToRgba(color, 0.08) || "var(--secondary)",
+  };
 }
 
 /**
@@ -170,21 +203,23 @@ export function Badge({
 }) {
   const config = getBadgeConfig(badge, type);
   const sizes = sizeConfig[size] || sizeConfig.sm;
+  const tone = getBadgeTone(config);
 
   // Pulse variant (animated for notifications)
   if (variant === "pulse") {
     return (
       <span
         className={clsx(
-          "inline-flex items-center rounded-full font-medium animate-pulse-subtle",
+          "inline-flex items-center rounded-full border font-medium animate-pulse-subtle",
           sizes.gap,
           sizes.text,
           sizes.padding,
           className
         )}
         style={{
-          backgroundColor: `${config.color}15`,
-          color: config.color,
+          backgroundColor: tone.backgroundColor,
+          borderColor: tone.borderColor,
+          color: tone.color,
         }}
         title={config.label}
         {...props}
@@ -203,8 +238,14 @@ export function Badge({
   if (variant === "icon") {
     return (
       <span
-        className={clsx("inline-flex items-center shrink-0", className)}
-        style={{ color: config.color }}
+        className={clsx(
+          "inline-flex items-center justify-center rounded-full border bg-background/90 p-[1px] shrink-0",
+          className
+        )}
+        style={{
+          color: tone.color,
+          borderColor: tone.borderColor,
+        }}
         title={config.label}
         {...props}
       >
@@ -218,7 +259,7 @@ export function Badge({
     return (
       <span
         className={clsx("inline-flex items-center font-medium", sizes.gap, sizes.text, className)}
-        style={{ color: config.color }}
+        style={{ color: tone.color }}
         title={config.label}
         {...props}
       >
@@ -233,14 +274,16 @@ export function Badge({
     <span
       className={clsx(
         "inline-flex items-center rounded-full font-medium",
+        "border",
         sizes.gap,
         sizes.text,
         sizes.padding,
         className
       )}
       style={{
-        backgroundColor: `${config.color}15`,
-        color: config.color,
+        backgroundColor: tone.backgroundColor,
+        borderColor: tone.borderColor,
+        color: tone.color,
       }}
       title={config.label}
       {...props}
@@ -259,20 +302,22 @@ export function BadgeChip({ badge, onRemove, size = "sm", className = "" }) {
 
   const config = getBadgeConfig(badge);
   const sizes = sizeConfig[size] || sizeConfig.sm;
+  const tone = getBadgeTone(config);
 
   return (
     <span
       className={clsx(
         "inline-flex items-center rounded-full font-medium transition-all",
-        "hover:shadow-sm",
+        "border hover:shadow-sm",
         sizes.gap,
         sizes.text,
         sizes.padding,
         className
       )}
       style={{
-        backgroundColor: `${config.color}15`,
-        color: config.color,
+        backgroundColor: tone.backgroundColor,
+        borderColor: tone.borderColor,
+        color: tone.color,
       }}
       title={badge?.description || badge?.Description || config.label}
     >
