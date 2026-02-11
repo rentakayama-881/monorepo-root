@@ -17,8 +17,8 @@ import Link from "next/link";
 const BadgeIcons = {
   verified: (props) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M9 12.75l2 2 4-4" />
-      <circle cx="12" cy="12" r="8.25" />
+      <path d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307z" />
+      <path d="M15.61 10.186a.75.75 0 10-1.22-.872l-3.236 4.53-1.624-1.624a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" />
     </svg>
   ),
   admin: (props) => (
@@ -58,7 +58,7 @@ const BadgeIcons = {
   ),
   default: (props) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <circle cx="12" cy="12" r="8.25" />
+      <path d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307z" />
     </svg>
   ),
 };
@@ -136,8 +136,8 @@ function getBadgeTone(config) {
   const color = config?.color || "#6366f1";
   return {
     color,
-    borderColor: hexToRgba(color, 0.42) || "var(--border)",
-    backgroundColor: hexToRgba(color, 0.08) || "var(--secondary)",
+    borderColor: hexToRgba(color, 0.3) || "var(--border)",
+    backgroundColor: hexToRgba(color, 0.07) || "var(--secondary)",
   };
 }
 
@@ -238,14 +238,8 @@ export function Badge({
   if (variant === "icon") {
     return (
       <span
-        className={clsx(
-          "inline-flex items-center justify-center rounded-full border bg-background/90 p-[1px] shrink-0",
-          className
-        )}
-        style={{
-          color: tone.color,
-          borderColor: tone.borderColor,
-        }}
+        className={clsx("inline-flex items-center shrink-0", className)}
+        style={{ color: tone.color }}
         title={config.label}
         {...props}
       >
@@ -271,15 +265,14 @@ export function Badge({
 
   // Chip variant (with background)
   return (
-    <span
-      className={clsx(
-        "inline-flex items-center rounded-full font-medium",
-        "border",
-        sizes.gap,
-        sizes.text,
-        sizes.padding,
-        className
-      )}
+      <span
+        className={clsx(
+          "inline-flex items-center justify-center rounded-[var(--radius)] border font-medium w-fit whitespace-nowrap shrink-0 overflow-hidden",
+          sizes.gap,
+          sizes.text,
+          sizes.padding,
+          className
+        )}
       style={{
         backgroundColor: tone.backgroundColor,
         borderColor: tone.borderColor,
@@ -307,7 +300,7 @@ export function BadgeChip({ badge, onRemove, size = "sm", className = "" }) {
   return (
     <span
       className={clsx(
-        "inline-flex items-center rounded-full font-medium transition-all",
+        "inline-flex items-center rounded-[var(--radius)] border font-medium transition-all w-fit whitespace-nowrap shrink-0 overflow-hidden",
         "border hover:shadow-sm",
         sizes.gap,
         sizes.text,
