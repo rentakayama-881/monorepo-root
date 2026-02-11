@@ -130,3 +130,48 @@ export function generateCanonicalUrl(path = "") {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
   return `${siteUrl}${path}`;
 }
+
+/**
+ * Generate JSON-LD structured data for FAQ pages
+ * @param {Array<{question: string, answer: string}>} faqs - Array of FAQ items
+ * @returns {Object} - JSON-LD FAQPage object
+ */
+export function generateFAQStructuredData(faqs) {
+  if (!faqs || !faqs.length) return null;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  };
+}
+
+/**
+ * Generate JSON-LD structured data for a user profile page
+ * @param {Object} user - User data
+ * @returns {Object} - JSON-LD ProfilePage object
+ */
+export function generateProfilePageStructuredData(user) {
+  if (!user) return null;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    mainEntity: {
+      "@type": "Person",
+      name: user.display_name || user.username,
+      url: `${siteUrl}/user/${user.username}`,
+      ...(user.bio && { description: user.bio }),
+      ...(user.avatar_url && { image: user.avatar_url }),
+    },
+  };
+}

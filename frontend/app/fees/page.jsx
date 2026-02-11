@@ -1,8 +1,37 @@
+import { generateFAQStructuredData } from "@/lib/seo";
+
 export const dynamic = "force-static";
 
+const feesFaqData = [
+  {
+    question: "Kenapa ada minimum penarikan berbeda?",
+    answer:
+      "Kebijakan ini membantu kami mengelola cash flow dan mencegah penyalahgunaan sistem. Pengguna dengan volume transaksi tinggi mendapat minimum lebih tinggi karena mereka memiliki perputaran dana yang lebih besar.",
+  },
+  {
+    question: "Apakah ada biaya tersembunyi?",
+    answer:
+      "Tidak. Semua biaya yang tercantum di halaman ini adalah biaya lengkap. Tidak ada biaya tambahan yang tersembunyi.",
+  },
+  {
+    question: "Bagaimana jika withdraw gagal?",
+    answer:
+      "Jika penarikan gagal (misalnya nomor rekening salah), dana akan dikembalikan ke wallet Anda dalam 1-3 hari kerja. Biaya penarikan tetap dikenakan karena sudah diproses oleh payment gateway.",
+  },
+  {
+    question: "Apakah biaya bisa berubah?",
+    answer:
+      "Biaya dapat berubah sewaktu-waktu dengan pemberitahuan minimal 30 hari sebelumnya melalui email dan pengumuman di platform.",
+  },
+];
+
 export const metadata = {
-  title: "Biaya Layanan - AIvalid",
-  description: "Informasi lengkap biaya deposit, transaksi escrow, dan penarikan dana di AIvalid"
+  title: "Biaya Layanan Validasi AI - Transparan",
+  description:
+    "Informasi lengkap biaya layanan AIValid — deposit gratis, escrow 2%, dan penarikan Rp 7.500. Struktur biaya transparan tanpa biaya tersembunyi.",
+  alternates: {
+    canonical: "https://aivalid.id/fees",
+  },
 };
 
 const feeStructure = [
@@ -57,7 +86,16 @@ const withdrawalTiers = [
 ];
 
 export default function FeesPage() {
+  const faqJsonLd = generateFAQStructuredData(feesFaqData);
+
   return (
+    <>
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       {/* Header */}
       <div className="mb-6 border-b border-border pb-4">
@@ -319,5 +357,6 @@ export default function FeesPage() {
         </div>
       </section>
     </main>
+    </>
   );
 }

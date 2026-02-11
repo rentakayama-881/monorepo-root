@@ -15,12 +15,55 @@ import {
   CheckIcon,
   ChevronRightIcon,
 } from "@/components/ui/LegalIcons";
+import { generateFAQStructuredData } from "@/lib/seo";
 
 export const dynamic = "force-static";
 
-export const metadata = { 
-  title: "Bantuan - AIvalid",
-  description: "Pusat bantuan dan dukungan pelanggan AIvalid"
+const faqData = [
+  {
+    question: "Bagaimana cara mendaftar akun?",
+    answer:
+      'Klik tombol "Daftar" di pojok kanan atas, masukkan email valid, buat kata sandi minimal 8 karakter, verifikasi email melalui tautan yang dikirim, lalu lengkapi profil Anda.',
+  },
+  {
+    question: "Bagaimana sistem escrow bekerja?",
+    answer:
+      "Sistem escrow melindungi pembeli dan penjual. Dana ditahan selama periode 7-30 hari. Setelah penjual mengirim produk/jasa dan pembeli mengkonfirmasi, dana diteruskan ke penjual. Biaya escrow 2.5% dari nilai transaksi.",
+  },
+  {
+    question: "Bagaimana cara mengaktifkan keamanan dua faktor (2FA)?",
+    answer:
+      "Buka Pengaturan Akun → Keamanan, aktifkan Autentikasi Dua Faktor, pindai kode QR dengan aplikasi authenticator (Google Authenticator, Authy), masukkan kode verifikasi 6 digit, dan simpan backup codes. Kami juga mendukung Passkey.",
+  },
+  {
+    question: "Bagaimana cara mendapatkan lencana?",
+    answer:
+      "Lencana diberikan berdasarkan kontribusi: Kontributor Aktif untuk konten berkualitas, Penjual Terpercaya untuk rating tinggi, Verified untuk identitas terverifikasi, dan Expert untuk keahlian yang diakui komunitas.",
+  },
+  {
+    question: "Bagaimana cara melaporkan konten yang melanggar?",
+    answer:
+      'Klik tombol "Laporkan" pada konten, pilih kategori pelanggaran, berikan penjelasan tambahan, lalu kirim laporan. Tim moderasi akan meninjau dalam 24-48 jam.',
+  },
+  {
+    question: "Bagaimana cara menghapus akun?",
+    answer:
+      'Pastikan tidak ada transaksi berjalan, buka Pengaturan Akun → Akun, scroll ke "Zona Bahaya", klik "Hapus Akun", dan konfirmasi dengan kata sandi atau kode 2FA. Penghapusan bersifat permanen.',
+  },
+  {
+    question: "Metode pembayaran apa yang didukung?",
+    answer:
+      "AIValid mendukung Transfer Bank (BCA, Mandiri, BNI, BRI), E-Wallet (OVO, GoPay, DANA, ShopeePay), QRIS untuk scan QR, dan Virtual Account untuk semua bank utama. Semua diproses melalui payment gateway berlisensi OJK.",
+  },
+];
+
+export const metadata = {
+  title: "Pusat Bantuan AIValid - FAQ & Dukungan",
+  description:
+    "Temukan jawaban untuk pertanyaan umum tentang AIValid — cara mendaftar, sistem escrow, keamanan akun, metode pembayaran, dan dukungan pelanggan.",
+  alternates: {
+    canonical: "https://aivalid.id/contact-support",
+  },
 };
 
 // Contact Card - compact
@@ -101,7 +144,16 @@ function GuideCard({ href, icon: Icon, title, description }) {
 }
 
 export default function HelpPage() {
+  const faqJsonLd = generateFAQStructuredData(faqData);
+
   return (
+    <>
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       {/* Header */}
       <div className="mb-6 border-b border-border pb-4">
@@ -292,5 +344,6 @@ export default function HelpPage() {
         </div>
       </section>
     </main>
+    </>
   );
 }

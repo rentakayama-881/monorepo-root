@@ -4,16 +4,18 @@ import HowItWorks from "../components/home/HowItWorks";
 import FocusAreas from "../components/home/FocusAreas";
 import LatestValidationCases from "../components/home/LatestValidationCases";
 import Skeleton from "../components/ui/Skeleton";
-import Footer from "../components/Footer";
 
 export const metadata = {
-  title: "Beranda",
+  title: "Validasi Hasil AI oleh Ahli - Cek Tugas, Riset, Kode",
   description:
-    "AIValid - Validation Protocol untuk hasil kerja berbasis AI: escrow-backed, stake-gated, dan dapat diaudit.",
+    "AIValid — platform validasi hasil kerja AI pertama di Indonesia. Kirim tugas kuliah, riset ilmiah, kode program, atau dokumen buatan AI untuk direview oleh validator ahli manusia.",
+  alternates: {
+    canonical: "https://aivalid.id",
+  },
   openGraph: {
-    title: "AIvalid - Validasi Hasil AI",
+    title: "AIValid - Validasi Hasil AI oleh Ahli Manusia",
     description:
-      "Buat Validation Case, tetapkan bounty, dan jalankan alur escrow + stake + admin arbitration.",
+      "Kirim hasil kerja AI untuk divalidasi oleh ahli. Tersedia untuk kode program, riset, tugas kuliah, dokumen, dan lainnya.",
   },
 };
 
@@ -35,8 +37,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }

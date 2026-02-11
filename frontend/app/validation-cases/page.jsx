@@ -2,8 +2,12 @@ import { fetchJson } from "@/lib/api";
 import ValidationCaseIndexClient from "./ValidationCaseIndexClient";
 
 export const metadata = {
-  title: "Validation Case Index",
-  description: "Indeks resmi Validation Case (dossier): status, bounty, dan pihak terkait.",
+  title: "Daftar Kasus Validasi AI Terbaru",
+  description:
+    "Lihat daftar kasus validasi AI terbaru di AIValid. Pantau status, hasil review, dan temuan validator untuk berbagai jenis output AI.",
+  alternates: {
+    canonical: "https://aivalid.id/validation-cases",
+  },
 };
 
 async function fetchLatestValidationCases() {

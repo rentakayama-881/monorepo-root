@@ -1,8 +1,12 @@
 import NewValidationCaseClient from "./NewValidationCaseClient";
 
 export const metadata = {
-  title: "Create Validation Case",
-  description: "Susun Validation Case Record dengan bounty dan kriteria yang dapat diaudit.",
+  title: "Buat Kasus Validasi AI Baru",
+  description:
+    "Buat kasus validasi baru di AIValid. Kirimkan hasil kerja AI Anda untuk direview oleh validator ahli — kode, riset, tugas, dokumen, atau desain.",
+  alternates: {
+    canonical: "https://aivalid.id/validation-cases/new",
+  },
 };
 
 export default async function NewValidationCasePage() {

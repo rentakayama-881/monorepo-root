@@ -14,9 +14,13 @@ import {
 
 export const dynamic = "force-static";
 
-export const metadata = { 
-  title: "Tentang Kami - AIvalid",
-  description: "AIvalid powered by PT Alephdraad Utility Stack - Platform validasi ai hasil kerja & market ai subscriptions #1 di Indonesia"
+export const metadata = {
+  title: "Tentang AIValid - Platform Validasi AI Indonesia",
+  description:
+    "AIValid powered by PT Alephdraad Utility Stack — platform validasi hasil kerja AI #1 di Indonesia. Validator ahli manusia dari berbagai bidang ilmu.",
+  alternates: {
+    canonical: "https://aivalid.id/about-content",
+  },
 };
 
 // Reusable styled list item with icon - compact

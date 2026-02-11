@@ -1,6 +1,7 @@
 import "./globals.css";
 import Script from "next/script";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 import { ToastProvider } from "../components/ui/Toast";
 import { SudoProvider } from "../components/SudoModal";
@@ -9,29 +10,44 @@ import { ThemeProvider } from "../lib/ThemeContext";
 import { CommandPaletteProvider } from "../components/CommandPaletteProvider";
 import GlobalKeyboardShortcuts from "../components/GlobalKeyboardShortcuts";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import {
+  generateOrganizationStructuredData,
+  generateWebsiteStructuredData,
+} from "../lib/seo";
 
-const siteName = "AIValid";
+const siteName = "AIValid - Validasi Hasil AI oleh Ahli Manusia";
 const siteDescription =
-  "Validation Protocol untuk hasil kerja berbasis AI: escrow-backed, stake-gated, dan dapat diaudit dengan admin arbitration.";
+  "Platform validasi hasil kerja AI #1 di Indonesia. Cek keaslian dan kualitas tugas, riset, kode program, dan dokumen buatan AI oleh validator ahli.";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: siteName,
-    template: `%s | ${siteName}`,
+    template: `%s | AIValid`,
   },
   description: siteDescription,
-  keywords: ["validation protocol", "validation case", "escrow", "audit trail", "arbitration", "Indonesia", "wallet"],
+  keywords: [
+    "validasi AI",
+    "cek hasil AI",
+    "validasi kode AI",
+    "cek tugas AI",
+    "validasi riset AI",
+    "review dokumen AI",
+    "validator manusia",
+    "platform validasi Indonesia",
+    "cek keaslian AI",
+    "AIValid",
+  ],
   authors: [{ name: "AIvalid Team" }],
   creator: "AIvalid",
   publisher: "AIvalid",
-  
+
   // Open Graph
   openGraph: {
     type: "website",
     locale: "id_ID",
     url: siteUrl,
-    siteName: siteName,
+    siteName: "AIValid",
     title: siteName,
     description: siteDescription,
     images: [
@@ -39,11 +55,11 @@ export const metadata = {
         url: "/images/og-image.png",
         width: 1200,
         height: 630,
-        alt: siteName,
+        alt: "AIValid - Platform Validasi Hasil AI Indonesia",
       },
     ],
   },
-  
+
   // Twitter Card
   twitter: {
     card: "summary_large_image",
@@ -51,7 +67,7 @@ export const metadata = {
     description: siteDescription,
     images: ["/images/og-image.png"],
   },
-  
+
   // Robots
   robots: {
     index: true,
@@ -64,19 +80,19 @@ export const metadata = {
       "max-snippet": -1,
     },
   },
-  
+
 	  // Icons - AIvalid
 	  icons: {
 	    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
 	    shortcut: "/favicon.svg",
 	    apple: "/logo/light-mode.png",
 	  },
-  
+
   // Manifest
   manifest: "/manifest.json",
-  
+
   // Other
-  other: { 
+  other: {
     heleket: "a08412d3",
   },
 };
@@ -88,9 +104,20 @@ export const viewport = {
   viewportFit: "cover",
 };
 
+const jsonLd = [
+  generateOrganizationStructuredData(),
+  generateWebsiteStructuredData(),
+];
+
 export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="flex min-h-dvh flex-col antialiased bg-background text-foreground">
         <Script id="theme-init" strategy="beforeInteractive">{`
 (() => {
@@ -130,7 +157,7 @@ export default function RootLayout({ children }) {
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        
+
         <ThemeProvider>
           <Providers>
             <CommandPaletteProvider>
@@ -142,12 +169,12 @@ export default function RootLayout({ children }) {
                   <div id="main-content" role="main" tabIndex={-1} className="flex-1 pt-[var(--header-height)]">
                     {children}
                   </div>
-                  
-                  <SpeedInsights />                  
+
+                  <Footer />
+
+                  <SpeedInsights />
                   {/* Global keyboard shortcuts handler */}
                   <GlobalKeyboardShortcuts />
-                  
-                  {/* Back to top button - REMOVED as per design requirements */}
                 </SudoProvider>
               </ToastProvider>
             </CommandPaletteProvider>
