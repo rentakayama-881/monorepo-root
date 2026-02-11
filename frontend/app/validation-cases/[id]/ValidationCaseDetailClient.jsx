@@ -121,6 +121,83 @@ function CaseSection({ title, subtitle, children }) {
   );
 }
 
+function WorkflowProgressBanner({ status, isOwner, transferId, artifactId, certifiedId }) {
+  const caseStatus = normalizeStatus(status);
+
+  // Determine owner step
+  let ownerStep = 1;
+  if (caseStatus === "open" || caseStatus === "waiting_owner_response") ownerStep = 2;
+  if (transferId) ownerStep = 4;
+  if (artifactId) ownerStep = 5;
+  if (certifiedId || caseStatus === "completed") ownerStep = 5;
+
+  // Determine validator step
+  let validatorStep = 1;
+  if (caseStatus === "open" || caseStatus === "waiting_owner_response") validatorStep = 2;
+  if (transferId) validatorStep = 3;
+  if (artifactId) validatorStep = 4;
+  if (certifiedId || caseStatus === "completed") validatorStep = 4;
+
+  const ownerSteps = [
+    { num: 1, label: "Buka Kasus" },
+    { num: 2, label: "Review Validator" },
+    { num: 3, label: "Terima Offer" },
+    { num: 4, label: "Lock Funds" },
+    { num: 5, label: "Decision" },
+  ];
+
+  const validatorSteps = [
+    { num: 1, label: "Request Konsultasi" },
+    { num: 2, label: "Kirim Final Offer" },
+    { num: 3, label: "Submit Artifact" },
+    { num: 4, label: "Selesai" },
+  ];
+
+  const roleSteps = isOwner ? ownerSteps : validatorSteps;
+  const currentStep = isOwner ? ownerStep : validatorStep;
+
+  return (
+    <div className="rounded-xl border border-border/80 bg-card p-4 md:p-6 shadow-sm">
+      <div className="mb-4">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          Workflow Progress
+        </div>
+        <div className="mt-1 text-sm font-semibold text-foreground">
+          {isOwner ? "Owner" : "Validator"}: Step {currentStep}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {roleSteps.map((step, idx) => {
+          const isActive = step.num <= currentStep;
+          const isCurrent = step.num === currentStep;
+          return (
+            <div key={step.num} className="flex items-center gap-2">
+              <div
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                  isCurrent
+                    ? "bg-primary text-primary-foreground"
+                    : isActive
+                      ? "bg-primary/30 text-primary"
+                      : "bg-secondary/60 text-muted-foreground"
+                }`}
+              >
+                {step.num}
+              </div>
+              <span className={`text-xs font-medium ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                {step.label}
+              </span>
+              {idx < roleSteps.length - 1 && (
+                <div className={`ml-1 h-px w-4 ${isActive ? "bg-primary/30" : "bg-border"}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function ValidationCaseRecordPage() {
   const params = useParams();
   const router = useRouter();
@@ -150,6 +227,14 @@ export default function ValidationCaseRecordPage() {
     message: "",
     assumptions: "",
   });
+
+  // Inline form states for reject consultation
+  const [rejectForms, setRejectForms] = useState({});
+  const [rejectOpen, setRejectOpen] = useState({});
+
+  // Inline form states for respond to clarification
+  const [clarifyForms, setClarifyForms] = useState({});
+  const [clarifyOpen, setClarifyOpen] = useState({});
 
   const [contactTelegram, setContactTelegram] = useState("");
   const [contactMsg, setContactMsg] = useState("");
@@ -335,9 +420,25 @@ export default function ValidationCaseRecordPage() {
     }
   }
 
-  async function rejectConsultation(requestId) {
-    const reason = window.prompt("Reason (min 5 karakter):", "");
-    if (reason == null) return;
+  function toggleRejectForm(requestId) {
+    setRejectOpen((prev) => ({
+      ...prev,
+      [requestId]: !prev[requestId],
+    }));
+    if (!rejectOpen[requestId]) {
+      setRejectForms((prev) => ({
+        ...prev,
+        [requestId]: "",
+      }));
+    }
+  }
+
+  async function submitRejectConsultation(requestId) {
+    const reason = String(rejectForms[requestId] || "").trim();
+    if (!reason || reason.length < 5) {
+      setConsultationMsg("Alasan ditolak minimal 5 karakter.");
+      return;
+    }
     setConsultationMsg("");
     try {
       await fetchJsonAuth(
@@ -349,6 +450,8 @@ export default function ValidationCaseRecordPage() {
         }
       );
       setConsultationMsg("Permintaan konsultasi ditolak.");
+      setRejectForms((prev) => ({ ...prev, [requestId]: "" }));
+      setRejectOpen((prev) => ({ ...prev, [requestId]: false }));
       await loadOwnerWorkflow();
     } catch (e) {
       setConsultationMsg(e?.message || "Gagal menolak");
@@ -403,11 +506,27 @@ export default function ValidationCaseRecordPage() {
     }
   }
 
-  async function respondOwnerClarification(requestId, action) {
+  function toggleClarifyForm(requestId, action) {
+    const key = `${requestId}-${action}`;
+    setClarifyOpen((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+    if (!clarifyOpen[key]) {
+      setClarifyForms((prev) => ({
+        ...prev,
+        [requestId]: { action, text: "" },
+      }));
+    }
+  }
+
+  async function submitClarifyResponse(requestId, action) {
+    const form = clarifyForms[requestId] || {};
     let clarification = "";
+
     if (action === "clarify" || action === "reject") {
-      clarification = window.prompt("Masukkan klarifikasi (min 8 karakter):", "") || "";
-      if (!clarification.trim() || clarification.trim().length < 8) {
+      clarification = String(form.text || "").trim();
+      if (!clarification || clarification.length < 8) {
         setConsultationMsg("Klarifikasi minimal 8 karakter.");
         return;
       }
@@ -430,6 +549,8 @@ export default function ValidationCaseRecordPage() {
       } else {
         setConsultationMsg("Klarifikasi owner terkirim. Kasus kembali ke status open.");
       }
+      setClarifyForms((prev) => ({ ...prev, [requestId]: {} }));
+      setClarifyOpen({});
       await reloadCase();
       await loadOwnerWorkflow();
     } catch (e) {
@@ -751,6 +872,16 @@ export default function ValidationCaseRecordPage() {
               {Array.isArray(vc?.tags) && vc.tags.length > 0 ? <TagList tags={vc.tags} size="sm" /> : null}
             </header>
 
+            {isAuthed && (
+              <WorkflowProgressBanner
+                status={status}
+                isOwner={isOwner}
+                transferId={transferId}
+                artifactId={artifactId}
+                certifiedId={certifiedId}
+              />
+            )}
+
           <CaseSection title="Overview" subtitle="Record">
             <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
               <div className="border-b border-border/80 bg-secondary/35 px-4 py-3">
@@ -814,50 +945,6 @@ export default function ValidationCaseRecordPage() {
 
                     <div className="h-px bg-border" />
 
-                    <div className="space-y-2">
-                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Clarification / Assumption Mode
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-muted-foreground">Mode</label>
-                        <select
-                          value={clarificationForm.mode}
-                          onChange={(e) => setClarificationForm((f) => ({ ...f, mode: e.target.value }))}
-                          className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                        >
-                          <option value="question">Question</option>
-                          <option value="assumption">Assumption</option>
-                        </select>
-                      </div>
-                      <textarea
-                        value={clarificationForm.message}
-                        onChange={(e) => setClarificationForm((f) => ({ ...f, message: e.target.value }))}
-                        rows={3}
-                        placeholder="Jelaskan kebutuhan klarifikasi secara terstruktur."
-                        className="w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                      />
-                      {String(clarificationForm.mode) === "assumption" ? (
-                        <textarea
-                          value={clarificationForm.assumptions}
-                          onChange={(e) => setClarificationForm((f) => ({ ...f, assumptions: e.target.value }))}
-                          rows={4}
-                          placeholder="Satu asumsi per baris."
-                          className="w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                        />
-                      ) : null}
-                      <button
-                        onClick={requestOwnerClarification}
-                        disabled={clarificationSubmitting || consultationBlocked}
-                        className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60 disabled:opacity-60"
-                        type="button"
-                      >
-                        {clarificationSubmitting ? "Submitting..." : "Submit Clarification"}
-                      </button>
-                      {clarificationMsg ? <div className="text-xs text-muted-foreground">{clarificationMsg}</div> : null}
-                    </div>
-
-                    <div className="h-px bg-border" />
-
                     <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       Private Contact
                     </div>
@@ -888,7 +975,7 @@ export default function ValidationCaseRecordPage() {
             </div>
           </CaseSection>
 
-          {isAuthed && isOwner ? (
+          {isAuthed && isOwner && (status === "open" || status === "waiting_owner_response") ? (
             <CaseSection title="Consultation Requests" subtitle="Owner Review">
               {consultationLoading ? (
                 <div className="text-sm text-muted-foreground">Memuat Consultation Requests...</div>
@@ -955,40 +1042,105 @@ export default function ValidationCaseRecordPage() {
                           </td>
                           <td className="px-4 py-3">
                             {normalizeStatus(r.status) === "pending" ? (
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  className="rounded-[var(--radius)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
-                                  onClick={() => approveConsultation(r.id)}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
-                                  onClick={() => rejectConsultation(r.id)}
-                                >
-                                  Reject
-                                </button>
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    className="rounded-[var(--radius)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                                    onClick={() => approveConsultation(r.id)}
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
+                                    onClick={() => toggleRejectForm(r.id)}
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                                {rejectOpen[r.id] ? (
+                                  <div className="space-y-2 rounded-lg border border-border bg-secondary/20 p-2">
+                                    <textarea
+                                      value={rejectForms[r.id] || ""}
+                                      onChange={(e) => setRejectForms((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                                      placeholder="Alasan penolakan (min 5 karakter)"
+                                      rows={3}
+                                      className="w-full rounded-[var(--radius)] border border-input bg-card px-2 py-1.5 text-xs text-foreground"
+                                    />
+                                    <div className="flex gap-1.5">
+                                      <button
+                                        onClick={() => submitRejectConsultation(r.id)}
+                                        className="rounded-[var(--radius)] bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                                      >
+                                        Submit
+                                      </button>
+                                      <button
+                                        onClick={() => toggleRejectForm(r.id)}
+                                        className="rounded-[var(--radius)] border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary/60"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : null}
                               </div>
                             ) : normalizeStatus(r.status) === "waiting_owner_response" || normalizeStatus(r.status) === "owner_timeout" ? (
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  className="rounded-[var(--radius)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
-                                  onClick={() => respondOwnerClarification(r.id, "clarify")}
-                                >
-                                  Clarify
-                                </button>
-                                <button
-                                  className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
-                                  onClick={() => respondOwnerClarification(r.id, "approve")}
-                                >
-                                  Approve Assumption
-                                </button>
-                                <button
-                                  className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
-                                  onClick={() => respondOwnerClarification(r.id, "reject")}
-                                >
-                                  Reject Assumption
-                                </button>
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    className="rounded-[var(--radius)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                                    onClick={() => submitClarifyResponse(r.id, "approve")}
+                                  >
+                                    Approve Assumption
+                                  </button>
+                                  <button
+                                    className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
+                                    onClick={() => toggleClarifyForm(r.id, "clarify")}
+                                  >
+                                    Clarify
+                                  </button>
+                                  <button
+                                    className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
+                                    onClick={() => toggleClarifyForm(r.id, "reject")}
+                                  >
+                                    Reject Assumption
+                                  </button>
+                                </div>
+                                {clarifyOpen[`${r.id}-clarify`] || clarifyOpen[`${r.id}-reject`] ? (
+                                  <div className="space-y-2 rounded-lg border border-border bg-secondary/20 p-2">
+                                    <textarea
+                                      value={(clarifyForms[r.id] || {}).text || ""}
+                                      onChange={(e) =>
+                                        setClarifyForms((prev) => ({
+                                          ...prev,
+                                          [r.id]: { ...(prev[r.id] || {}), text: e.target.value },
+                                        }))
+                                      }
+                                      placeholder="Klarifikasi/Alasan (min 8 karakter)"
+                                      rows={3}
+                                      className="w-full rounded-[var(--radius)] border border-input bg-card px-2 py-1.5 text-xs text-foreground"
+                                    />
+                                    <div className="flex gap-1.5">
+                                      <button
+                                        onClick={() => {
+                                          const action = clarifyOpen[`${r.id}-clarify`] ? "clarify" : "reject";
+                                          submitClarifyResponse(r.id, action);
+                                        }}
+                                        className="rounded-[var(--radius)] bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                                      >
+                                        Submit
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setClarifyOpen({});
+                                          setClarifyForms((prev) => ({ ...prev, [r.id]: {} }));
+                                        }}
+                                        className="rounded-[var(--radius)] border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary/60"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : null}
                               </div>
                             ) : (
                               <span className="text-xs text-muted-foreground">-</span>
@@ -1004,8 +1156,62 @@ export default function ValidationCaseRecordPage() {
             </CaseSection>
           ) : null}
 
+          {isAuthed && !isOwner && status === "waiting_owner_response" ? (
+            <CaseSection title="Klarifikasi ke Owner" subtitle="Validator">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="text-sm text-muted-foreground">
+                  <div className="font-semibold text-foreground">Status Kasus</div>
+                  <p className="mt-2">
+                    Kasus ini sedang menunggu respons dari pemilik kasus atas pertanyaan atau asumsi yang Anda kirimkan. Silakan tunggu sampai pemilik memberikan klarifikasi.
+                  </p>
+                </div>
+                <div className="md:border-l md:border-border md:pl-6">
+                  <div className="text-sm font-semibold text-foreground mb-3">Kirim Klarifikasi / Asumsi Baru</div>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground">Mode</label>
+                      <select
+                        value={clarificationForm.mode}
+                        onChange={(e) => setClarificationForm((f) => ({ ...f, mode: e.target.value }))}
+                        className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                      >
+                        <option value="question">Question</option>
+                        <option value="assumption">Assumption</option>
+                      </select>
+                    </div>
+                    <textarea
+                      value={clarificationForm.message}
+                      onChange={(e) => setClarificationForm((f) => ({ ...f, message: e.target.value }))}
+                      rows={3}
+                      placeholder="Jelaskan kebutuhan klarifikasi secara terstruktur."
+                      className="w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                    />
+                    {String(clarificationForm.mode) === "assumption" ? (
+                      <textarea
+                        value={clarificationForm.assumptions}
+                        onChange={(e) => setClarificationForm((f) => ({ ...f, assumptions: e.target.value }))}
+                        rows={4}
+                        placeholder="Satu asumsi per baris."
+                        className="w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                      />
+                    ) : null}
+                    <button
+                      onClick={requestOwnerClarification}
+                      disabled={clarificationSubmitting}
+                      className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60 disabled:opacity-60"
+                      type="button"
+                    >
+                      {clarificationSubmitting ? "Submitting..." : "Submit Clarification"}
+                    </button>
+                    {clarificationMsg ? <div className="text-xs text-muted-foreground">{clarificationMsg}</div> : null}
+                  </div>
+                </div>
+              </div>
+            </CaseSection>
+          ) : null}
+
           <CaseSection title="Final Offer" subtitle="Contract">
-            {isAuthed && !isOwner ? (
+            {isAuthed && !isOwner && status === "open" ? (
               <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="text-sm text-muted-foreground">
                   <div className="font-semibold text-foreground">Submission Notes</div>
@@ -1164,19 +1370,14 @@ export default function ValidationCaseRecordPage() {
             {isAuthed && isOwner && offersMsg ? <div className="mt-3 text-xs text-muted-foreground">{offersMsg}</div> : null}
           </CaseSection>
 
-          <CaseSection title="Lock Funds" subtitle="Escrow">
-            {transferId ? (
-              <div className="text-sm text-muted-foreground">
-                Escrow terpasang.
-                <div className="mt-2 font-mono text-xs text-foreground">transfer_id: {String(transferId)}</div>
-              </div>
-            ) : !isAuthed ? (
-              <div className="text-sm text-muted-foreground">Login diperlukan untuk Lock Funds.</div>
-            ) : !isOwner ? (
-              <div className="text-sm text-muted-foreground">
-                Lock Funds dilakukan oleh pemilik Validation Case setelah menerima Final Offer.
-              </div>
-            ) : escrowDraft ? (
+          {isAuthed && isOwner && (escrowDraft || vc?.accepted_final_offer_id) ? (
+            <CaseSection title="Lock Funds" subtitle="Escrow">
+              {transferId ? (
+                <div className="text-sm text-muted-foreground">
+                  Escrow terpasang.
+                  <div className="mt-2 font-mono text-xs text-foreground">transfer_id: {String(transferId)}</div>
+                </div>
+              ) : escrowDraft ? (
               <div className="space-y-4">
                 <div>
                   <div className="text-sm font-semibold text-foreground">Escrow Draft</div>
@@ -1240,88 +1441,74 @@ export default function ValidationCaseRecordPage() {
 
                 {lockFundsMsg ? <div className="text-xs text-muted-foreground">{lockFundsMsg}</div> : null}
               </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                Tidak ada escrow draft. Langkah ini aktif setelah Final Offer diterima.
-              </div>
-            )}
-          </CaseSection>
-
-          <CaseSection title="Artifact Submission" subtitle="Deliverable">
-            {artifactId ? (
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div>
-                  Artifact Submission tersimpan sebagai dokumen.
-                  <div className="mt-2 font-mono text-xs text-foreground">document_id: {String(artifactId)}</div>
-                </div>
-                {artifactDownloadHref ? (
-                  <a href={artifactDownloadHref} className="text-sm font-semibold text-primary hover:underline">
-                    Download Artifact Submission
-                  </a>
-                ) : null}
-              </div>
-            ) : !isAuthed ? (
-              <div className="text-sm text-muted-foreground">Login diperlukan untuk Artifact Submission.</div>
-            ) : isOwner ? (
-              <div className="text-sm text-muted-foreground">
-                Menunggu Artifact Submission dari validator setelah Lock Funds.
-              </div>
-            ) : transferId ? (
-              <div className="space-y-3">
+              ) : (
                 <div className="text-sm text-muted-foreground">
-                  Upload work product penuh (tanpa watermark). Dokumen akan dibagikan secara privat kepada pemilik kasus.
+                  Tidak ada escrow draft. Langkah ini aktif setelah Final Offer diterima.
                 </div>
-                <input
-                  type="file"
-                  accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  onChange={(e) => setArtifactFile(e.target.files?.[0] || null)}
-                  className="block w-full text-sm"
-                />
-                <button
-                  onClick={submitArtifact}
-                  className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
-                  disabled={uploadLoading}
-                  type="button"
-                >
-                  {uploadLoading ? "Uploading..." : "Submit Artifact Submission"}
-                </button>
-                {artifactMsg ? <div className="text-xs text-muted-foreground">{artifactMsg}</div> : null}
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                Artifact Submission aktif setelah Lock Funds.
-              </div>
-            )}
-          </CaseSection>
+              )}
+            </CaseSection>
+          ) : null}
 
-          <CaseSection title="Decision / Dispute" subtitle="Arbitration">
-            {certifiedId ? (
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="font-semibold text-foreground">Certified Artifact</div>
-                <div className="font-mono text-xs text-foreground">document_id: {String(certifiedId)}</div>
-                {certifiedDownloadHref ? (
-                  <a href={certifiedDownloadHref} className="text-sm font-semibold text-primary hover:underline">
-                    Download Certified Artifact
-                  </a>
-                ) : null}
-              </div>
-            ) : disputeId ? (
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="font-semibold text-foreground">Dispute</div>
-                <div className="font-mono text-xs text-foreground">dispute_id: {String(disputeId)}</div>
-                <Link href="/account/wallet/disputes" className="text-sm font-semibold text-primary hover:underline">
-                  Open Dispute Center
-                </Link>
-              </div>
-            ) : !isAuthed ? (
-              <div className="text-sm text-muted-foreground">Login diperlukan untuk aksi Decision/Dispute.</div>
-            ) : !isOwner ? (
-              <div className="text-sm text-muted-foreground">
-                Decision/Dispute dipicu oleh pemilik Validation Case. Admin arbitration menyelesaikan dispute, bukan voting.
-              </div>
-            ) : !artifactId ? (
-              <div className="text-sm text-muted-foreground">Decision/Dispute aktif setelah Artifact Submission.</div>
-            ) : (
+          {isAuthed && !isOwner && transferId ? (
+            <CaseSection title="Artifact Submission" subtitle="Deliverable">
+              {artifactId ? (
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div>
+                    Artifact Submission tersimpan sebagai dokumen.
+                    <div className="mt-2 font-mono text-xs text-foreground">document_id: {String(artifactId)}</div>
+                  </div>
+                  {artifactDownloadHref ? (
+                    <a href={artifactDownloadHref} className="text-sm font-semibold text-primary hover:underline">
+                      Download Artifact Submission
+                    </a>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-sm text-muted-foreground">
+                    Upload work product penuh (tanpa watermark). Dokumen akan dibagikan secara privat kepada pemilik kasus.
+                  </div>
+                  <input
+                    type="file"
+                    accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={(e) => setArtifactFile(e.target.files?.[0] || null)}
+                    className="block w-full text-sm"
+                  />
+                  <button
+                    onClick={submitArtifact}
+                    className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                    disabled={uploadLoading}
+                    type="button"
+                  >
+                    {uploadLoading ? "Uploading..." : "Submit Artifact Submission"}
+                  </button>
+                  {artifactMsg ? <div className="text-xs text-muted-foreground">{artifactMsg}</div> : null}
+                </div>
+              )}
+            </CaseSection>
+          ) : null}
+
+          {isAuthed && isOwner && artifactId ? (
+            <CaseSection title="Decision / Dispute" subtitle="Arbitration">
+              {certifiedId ? (
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="font-semibold text-foreground">Certified Artifact</div>
+                  <div className="font-mono text-xs text-foreground">document_id: {String(certifiedId)}</div>
+                  {certifiedDownloadHref ? (
+                    <a href={certifiedDownloadHref} className="text-sm font-semibold text-primary hover:underline">
+                      Download Certified Artifact
+                    </a>
+                  ) : null}
+                </div>
+              ) : disputeId ? (
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="font-semibold text-foreground">Dispute</div>
+                  <div className="font-mono text-xs text-foreground">dispute_id: {String(disputeId)}</div>
+                  <Link href="/account/wallet/disputes" className="text-sm font-semibold text-primary hover:underline">
+                    Open Dispute Center
+                  </Link>
+                </div>
+              ) : (
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <div>
                   <div className="text-sm font-semibold text-foreground">Approve</div>
@@ -1398,8 +1585,9 @@ export default function ValidationCaseRecordPage() {
                   {disputeMsg ? <div className="mt-3 text-xs text-muted-foreground">{disputeMsg}</div> : null}
                 </div>
               </div>
-            )}
-          </CaseSection>
+              )}
+            </CaseSection>
+          ) : null}
 
           <CaseSection title="Case Log" subtitle="Audit Trail">
             {!isAuthed ? (
