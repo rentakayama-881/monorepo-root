@@ -11,6 +11,7 @@
  */
 
 import clsx from "clsx";
+import Link from "next/link";
 
 // Badge icon components (SVG-based, no PNG dependency)
 const BadgeIcons = {
@@ -76,39 +77,82 @@ const sizeConfig = {
   lg: { icon: "h-5 w-5", text: "text-sm", gap: "gap-1.5", padding: "px-2.5 py-1" },
 };
 
+function pickFirst(...values) {
+  for (const value of values) {
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function normalizeIconType(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function renderBadgeIcon(config, iconClassName) {
+  if (config.iconUrl) {
+    return (
+      <img
+        src={config.iconUrl}
+        alt=""
+        aria-hidden="true"
+        className={clsx(iconClassName, "shrink-0 object-contain")}
+        loading="lazy"
+        decoding="async"
+      />
+    );
+  }
+
+  const IconComponent = BadgeIcons[config.icon] || BadgeIcons.default;
+  return <IconComponent className={clsx(iconClassName, "shrink-0")} />;
+}
+
 /**
  * Get badge configuration from badge object or type
  */
 function getBadgeConfig(badge, type) {
-  if (type && BadgePresets[type]) {
-    return BadgePresets[type];
+  const normalizedType = normalizeIconType(type);
+  if (normalizedType && BadgePresets[normalizedType]) {
+    return { ...BadgePresets[normalizedType], iconUrl: undefined };
   }
-  
+
   if (badge) {
-    // Use icon_type from API response (new system)
-    const iconType = badge.icon_type || badge.slug || "";
-    if (BadgePresets[iconType]) {
-      return { ...BadgePresets[iconType], label: badge.name || BadgePresets[iconType].label };
-    }
-    
-    // Check if BadgeIcons has this icon
-    if (BadgeIcons[iconType]) {
+    const iconType = normalizeIconType(
+      pickFirst(badge.icon_type, badge.iconType, badge.slug, badge.Slug)
+    );
+    const iconUrl = pickFirst(badge.icon_url, badge.iconUrl, badge.IconURL);
+    const preset = BadgePresets[iconType];
+    const color = pickFirst(badge.color, badge.Color, preset?.color, "#6366f1");
+    const label = pickFirst(badge.name, badge.Name, badge.label, preset?.label, "Badge");
+
+    if (preset) {
       return {
-        color: badge.color || "#6366f1",
-        icon: iconType,
-        label: badge.name || "Badge",
+        color,
+        icon: preset.icon,
+        label,
+        iconUrl,
       };
     }
-    
-    // Custom badge from database with fallback
+
+    if (BadgeIcons[iconType]) {
+      return {
+        color,
+        icon: iconType,
+        label,
+        iconUrl,
+      };
+    }
+
     return {
-      color: badge.color || "#6366f1",
+      color,
       icon: iconType || "default",
-      label: badge.name || "Badge",
+      label,
+      iconUrl,
     };
   }
-  
-  return { color: "#6366f1", icon: "default", label: "Badge" };
+
+  return { color: "#6366f1", icon: "default", label: "Badge", iconUrl: undefined };
 }
 
 /**
@@ -126,7 +170,6 @@ export function Badge({
 }) {
   const config = getBadgeConfig(badge, type);
   const sizes = sizeConfig[size] || sizeConfig.sm;
-  const IconComponent = BadgeIcons[config.icon] || BadgeIcons.default;
 
   // Pulse variant (animated for notifications)
   if (variant === "pulse") {
@@ -150,7 +193,7 @@ export function Badge({
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: config.color }}></span>
           <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: config.color }}></span>
         </span>
-        <IconComponent className={sizes.icon} />
+        {renderBadgeIcon(config, sizes.icon)}
         {(showLabel || variant === "pulse") && <span>{config.label}</span>}
       </span>
     );
@@ -165,7 +208,7 @@ export function Badge({
         title={config.label}
         {...props}
       >
-        <IconComponent className={sizes.icon} />
+        {renderBadgeIcon(config, sizes.icon)}
       </span>
     );
   }
@@ -179,7 +222,7 @@ export function Badge({
         title={config.label}
         {...props}
       >
-        <IconComponent className={sizes.icon} />
+        {renderBadgeIcon(config, sizes.icon)}
         {showLabel && <span>{config.label}</span>}
       </span>
     );
@@ -202,7 +245,7 @@ export function Badge({
       title={config.label}
       {...props}
     >
-      <IconComponent className={sizes.icon} />
+      {renderBadgeIcon(config, sizes.icon)}
       {(showLabel || variant === "chip") && <span>{config.label}</span>}
     </span>
   );
@@ -216,7 +259,6 @@ export function BadgeChip({ badge, onRemove, size = "sm", className = "" }) {
 
   const config = getBadgeConfig(badge);
   const sizes = sizeConfig[size] || sizeConfig.sm;
-  const IconComponent = BadgeIcons[config.icon] || BadgeIcons.default;
 
   return (
     <span
@@ -232,9 +274,9 @@ export function BadgeChip({ badge, onRemove, size = "sm", className = "" }) {
         backgroundColor: `${config.color}15`,
         color: config.color,
       }}
-      title={badge.description || badge.name}
+      title={badge?.description || badge?.Description || config.label}
     >
-      <IconComponent className={sizes.icon} />
+      {renderBadgeIcon(config, sizes.icon)}
       <span>{config.label}</span>
       {onRemove && (
         <button
@@ -300,7 +342,6 @@ export function UsernameWithBadge({
   );
 
   if (linkToProfile && username) {
-    const Link = require("next/link").default;
     return (
       <Link
         href={`/user/${username}`}
