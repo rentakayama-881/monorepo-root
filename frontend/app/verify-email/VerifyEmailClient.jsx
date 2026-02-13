@@ -7,6 +7,23 @@ import { fetchJson } from "@/lib/api";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
+function parseRetryAfterSeconds(value) {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return Math.ceil(seconds);
+}
+
+function extractRetryAfterFromError(err) {
+  const fromPayload = parseRetryAfterSeconds(err?.data?.retry_after_seconds);
+  if (fromPayload > 0) return fromPayload;
+
+  const details = String(err?.details || "");
+  const match = details.match(/(\d+)\s*detik/i);
+  if (!match) return 0;
+
+  return parseRetryAfterSeconds(match[1]);
+}
+
 export default function VerifyEmailClient() {
   const params = useSearchParams();
   const token = params.get("token") || "";
@@ -78,14 +95,16 @@ export default function VerifyEmailClient() {
 
       setResendStatus("success");
       setResendMessage(data.message || "Email verifikasi telah dikirim ulang.");
-      setCooldown(60); // 60 second cooldown
+      const retryAfter = parseRetryAfterSeconds(data?.retry_after_seconds);
+      setCooldown(retryAfter > 0 ? retryAfter : 60);
     } catch (err) {
       setResendStatus("error");
-      if (err?.code === "RATE001") {
-        setResendMessage("Too many requests. Please wait a moment before trying again.");
-        setCooldown(60);
+      const retryAfter = extractRetryAfterFromError(err);
+      if (err?.code === "RATE001" || err?.code === "AUTH016" || err?.code === "AUTH018") {
+        setResendMessage(err?.details || err?.message || "Terlalu banyak permintaan. Coba lagi sebentar.");
+        setCooldown(retryAfter > 0 ? retryAfter : 60);
       } else {
-        setResendMessage(err?.message || "Failed to send verification email.");
+        setResendMessage(err?.message || "Gagal mengirim email verifikasi.");
       }
     }
   };

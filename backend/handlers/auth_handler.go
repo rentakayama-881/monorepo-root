@@ -158,16 +158,29 @@ func (h *AuthHandler) RequestVerification(c *gin.Context) {
 		return
 	}
 
-	_, _, err := h.authService.RequestVerification(req.Email, c.ClientIP())
+	result, err := h.authService.RequestVerification(req.Email, c.ClientIP())
 	if err != nil {
+		// Include server-side retry metadata for rate-limit responses.
+		if appErr, ok := err.(*apperrors.AppError); ok && result != nil && result.RetryAfterSeconds > 0 &&
+			(appErr.Code == "AUTH016" || appErr.Code == "AUTH018") {
+			payload := apperrors.ErrorResponse(appErr)
+			payload["retry_after_seconds"] = result.RetryAfterSeconds
+			c.JSON(appErr.StatusCode, payload)
+			return
+		}
 		handleError(c, err)
 		return
 	}
 
 	// Always return success message to avoid email enumeration
-	c.JSON(http.StatusOK, gin.H{
+	response := gin.H{
 		"message": "Jika email terdaftar, tautan verifikasi telah dikirim.",
-	})
+	}
+	if result != nil && result.RetryAfterSeconds > 0 {
+		response["retry_after_seconds"] = result.RetryAfterSeconds
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // ConfirmVerification confirms email verification

@@ -692,7 +692,7 @@ func (s *EntAuthService) ResetPassword(ctx context.Context, token, newPassword s
 // CompleteTOTPLogin completes login after TOTP verification
 func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, totpCode string, ipAddress, userAgent string) (*LoginResponse, error) {
 	// Validate pending token and get user
-	u, err := s.validateTOTPPendingToken(ctx, pendingToken)
+	u, pending, err := s.validateTOTPPendingToken(ctx, pendingToken)
 	if err != nil {
 		return nil, err
 	}
@@ -744,6 +744,11 @@ func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, to
 		loginTracker.ResetTOTPAttempts(u.Email)
 	}
 
+	// Consume pending token only after successful TOTP verification.
+	if err := s.consumeTOTPPendingToken(ctx, pending.ID); err != nil {
+		return nil, err
+	}
+
 	// Create session with token pair
 	sessionService := NewEntSessionService()
 	tokenPair, err := sessionService.CreateSession(ctx, u, ipAddress, userAgent)
@@ -785,7 +790,7 @@ func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, to
 // CompleteTOTPLoginWithBackupCode completes login using a backup code instead of TOTP
 func (s *EntAuthService) CompleteTOTPLoginWithBackupCode(ctx context.Context, pendingToken, backupCode string, ipAddress, userAgent string) (*LoginResponse, error) {
 	// Validate pending token and get user
-	u, err := s.validateTOTPPendingToken(ctx, pendingToken)
+	u, pending, err := s.validateTOTPPendingToken(ctx, pendingToken)
 	if err != nil {
 		return nil, err
 	}
@@ -847,6 +852,11 @@ func (s *EntAuthService) CompleteTOTPLoginWithBackupCode(ctx context.Context, pe
 		loginTracker.ResetTOTPAttempts(u.Email)
 	}
 
+	// Consume pending token only after successful backup code verification.
+	if err := s.consumeTOTPPendingToken(ctx, pending.ID); err != nil {
+		return nil, err
+	}
+
 	// Create session with token pair
 	sessionService := NewEntSessionService()
 	tokenPair, err := sessionService.CreateSession(ctx, u, ipAddress, userAgent)
@@ -905,6 +915,15 @@ func (s *EntAuthService) createVerificationToken(ctx context.Context, u *ent.Use
 	}
 	hash := hashToken(raw)
 	expires := time.Now().Add(24 * time.Hour)
+
+	// Keep only one active verification token per user.
+	_, _ = s.client.EmailVerificationToken.
+		Delete().
+		Where(
+			emailverificationtoken.UserIDEQ(u.ID),
+			emailverificationtoken.UsedAtIsNil(),
+		).
+		Exec(ctx)
 
 	_, err = s.client.EmailVerificationToken.
 		Create().
@@ -969,8 +988,8 @@ func (s *EntAuthService) generateTOTPPendingToken(ctx context.Context, userID in
 	return token, nil
 }
 
-// validateTOTPPendingToken validates and consumes a TOTP pending token
-func (s *EntAuthService) validateTOTPPendingToken(ctx context.Context, token string) (*ent.User, error) {
+// validateTOTPPendingToken validates a TOTP pending token without consuming it.
+func (s *EntAuthService) validateTOTPPendingToken(ctx context.Context, token string) (*ent.User, *ent.TOTPPendingToken, error) {
 	hash := sha256.Sum256([]byte(token))
 	tokenHash := hex.EncodeToString(hash[:])
 
@@ -980,35 +999,48 @@ func (s *EntAuthService) validateTOTPPendingToken(ctx context.Context, token str
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return nil, apperrors.ErrInvalidToken.WithDetails("Token tidak valid atau sudah expired")
+			return nil, nil, apperrors.ErrInvalidToken.WithDetails("Token tidak valid atau sudah expired")
 		}
-		return nil, apperrors.ErrDatabase
+		return nil, nil, apperrors.ErrDatabase
 	}
 
 	// Check if already used
 	if pending.UsedAt != nil {
-		return nil, apperrors.ErrInvalidToken.WithDetails("Token sudah digunakan")
+		return nil, nil, apperrors.ErrInvalidToken.WithDetails("Token sudah digunakan")
 	}
 
 	// Check expiration
 	if time.Now().After(pending.ExpiresAt) {
-		return nil, apperrors.ErrTokenExpired.WithDetails("Token sudah expired. Silakan login ulang.")
+		return nil, nil, apperrors.ErrTokenExpired.WithDetails("Token sudah expired. Silakan login ulang.")
 	}
-
-	// Mark as used
-	now := time.Now()
-	_, _ = s.client.TOTPPendingToken.
-		UpdateOneID(pending.ID).
-		SetUsedAt(now).
-		Save(ctx)
 
 	// Get user
 	u, err := s.client.User.Get(ctx, pending.UserID)
 	if err != nil {
-		return nil, apperrors.ErrUserNotFound
+		return nil, nil, apperrors.ErrUserNotFound
 	}
 
-	return u, nil
+	return u, pending, nil
+}
+
+// consumeTOTPPendingToken marks a pending token as used once authentication succeeds.
+func (s *EntAuthService) consumeTOTPPendingToken(ctx context.Context, pendingID int) error {
+	affected, err := s.client.TOTPPendingToken.
+		Update().
+		Where(
+			totppendingtoken.IDEQ(pendingID),
+			totppendingtoken.UsedAtIsNil(),
+		).
+		SetUsedAt(time.Now()).
+		Save(ctx)
+	if err != nil {
+		return apperrors.ErrDatabase
+	}
+	if affected == 0 {
+		return apperrors.ErrInvalidToken.WithDetails("Token sudah digunakan atau tidak valid")
+	}
+
+	return nil
 }
 
 // WithTx runs a function in a transaction

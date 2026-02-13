@@ -2,11 +2,14 @@ package services
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"backend-gin/dto"
 	"backend-gin/ent"
 	"backend-gin/ent/user"
+	apperrors "backend-gin/errors"
 	"backend-gin/utils"
 	"backend-gin/validators"
 
@@ -22,6 +25,13 @@ import (
 type AuthServiceWrapper struct {
 	ent    *EntAuthService
 	logger *zap.Logger
+}
+
+// VerificationRequestResult carries resend metadata that frontend can use
+// without relying on client-side hardcoded cooldown values.
+type VerificationRequestResult struct {
+	Sent              bool
+	RetryAfterSeconds int
 }
 
 // NewAuthServiceWrapper creates a wrapper around EntAuthService
@@ -47,38 +57,75 @@ func (w *AuthServiceWrapper) LoginWithPasskeyEnt(user *ent.User, ipAddress, user
 	return w.ent.LoginWithPasskey(context.Background(), user, ipAddress, userAgent)
 }
 
-// RequestVerification creates verification token and sends email
-func (w *AuthServiceWrapper) RequestVerification(email, ip string) (string, string, error) {
-	// Delegate to internal createVerificationToken after finding user
+// RequestVerification creates verification token and queues email if account exists.
+// It always returns generic semantics to avoid email enumeration.
+func (w *AuthServiceWrapper) RequestVerification(email, ip string) (*VerificationRequestResult, error) {
 	ctx := context.Background()
+
+	normalizedEmail := strings.TrimSpace(strings.ToLower(email))
+	if err := validators.ValidateEmail(normalizedEmail); err != nil {
+		return nil, err
+	}
+
+	result := &VerificationRequestResult{}
+	if emailRateLimiter != nil {
+		allowed, _, nextAllowed := emailRateLimiter.CanSendVerification(normalizedEmail, ip)
+		if !allowed {
+			retryAfter := secondsUntil(nextAllowed)
+			result.RetryAfterSeconds = retryAfter
+
+			err := apperrors.ErrVerificationLimitReached
+			if retryAfter > 0 {
+				err = err.WithDetails(fmt.Sprintf("Silakan coba lagi dalam %d detik", retryAfter))
+			}
+			return result, err
+		}
+
+		// Reserve quota even for non-existent email to keep endpoint behavior non-enumerable.
+		emailRateLimiter.RecordVerificationSent(normalizedEmail, ip)
+		result.RetryAfterSeconds = int(VerificationResendDelay / time.Second)
+	}
+
 	u, err := w.ent.client.User.Query().
-		Where(user.EmailEQ(email)).
+		Where(user.EmailEqualFold(normalizedEmail)).
 		Only(ctx)
 	if err != nil {
-		// Return empty for non-existent users (security: don't reveal existence)
-		return "", "", nil
+		// Return generic success for non-existent users (don't reveal account existence).
+		return result, nil
 	}
 
 	// Check if user is already verified - no need to send another email
 	if u.EmailVerified {
-		w.logger.Debug("User already verified, skipping email", zap.String("email", email))
-		return "", "", nil
+		w.logger.Debug("User already verified, skipping email", zap.String("email", normalizedEmail))
+		return result, nil
 	}
 
 	// Create verification token
-	token, link, err := w.ent.createVerificationToken(ctx, u)
+	token, _, err := w.ent.createVerificationToken(ctx, u)
 	if err != nil {
-		w.logger.Error("Failed to create verification token", zap.Error(err), zap.String("email", email))
-		return "", "", err
+		w.logger.Error("Failed to create verification token", zap.Error(err), zap.String("email", normalizedEmail))
+		return nil, err
 	}
 
 	// Queue verification email
-	if err := utils.QueueVerificationEmail(email, token); err != nil {
-		w.logger.Warn("Failed to queue verification email", zap.Error(err), zap.String("email", email))
-		// Don't return error - token was created successfully
+	if err := utils.QueueVerificationEmail(normalizedEmail, token); err != nil {
+		w.logger.Warn("Failed to queue verification email", zap.Error(err), zap.String("email", normalizedEmail))
+		return result, nil
 	}
 
-	return token, link, nil
+	result.Sent = true
+	return result, nil
+}
+
+func secondsUntil(nextAllowed *time.Time) int {
+	if nextAllowed == nil {
+		return 0
+	}
+	remaining := int(time.Until(*nextAllowed).Seconds())
+	if remaining < 1 {
+		return 1
+	}
+	return remaining
 }
 
 // ConfirmVerification delegates to EntAuthService

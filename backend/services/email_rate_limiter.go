@@ -38,6 +38,7 @@ const (
 	MaxEmailsPerIP           = 10               // Max 10 total emails per IP per 24h
 	EmailRateWindow          = 24 * time.Hour   // 24 hour window
 	EmailCleanupInterval     = 30 * time.Minute // Cleanup old records every 30 minutes
+	VerificationResendDelay  = 60 * time.Second // Enforce minimum delay between verification resends
 )
 
 // Global email rate limiter instance
@@ -120,9 +121,21 @@ func (e *EmailRateLimiter) CanSendVerification(email, ip string) (bool, int, *ti
 		// Reset if outside window
 		if record.FirstAt.Before(cutoff) {
 			// Will be allowed, record will reset on actual send
-		} else if record.Count >= MaxVerificationPerEmail {
-			nextAllowed := record.FirstAt.Add(EmailRateWindow)
-			return false, 0, &nextAllowed
+		} else {
+			// Enforce short cooldown between resend attempts (platform-like retry window).
+			retryAt := record.LastAt.Add(VerificationResendDelay)
+			if retryAt.After(now) {
+				remaining := MaxVerificationPerEmail - record.Count
+				if remaining < 0 {
+					remaining = 0
+				}
+				return false, remaining, &retryAt
+			}
+
+			if record.Count >= MaxVerificationPerEmail {
+				nextAllowed := record.FirstAt.Add(EmailRateWindow)
+				return false, 0, &nextAllowed
+			}
 		}
 	}
 
@@ -179,7 +192,7 @@ func (e *EmailRateLimiter) RecordVerificationSent(email, ip string) {
 	ipRecord.VerificationCount++
 	ipRecord.LastAt = now
 
-	logger.Info("Verification email sent",
+	logger.Info("Verification email request recorded",
 		zap.String("email", email),
 		zap.String("ip", ip),
 		zap.Int("email_count", record.Count),
