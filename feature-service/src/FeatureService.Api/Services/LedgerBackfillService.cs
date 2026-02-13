@@ -87,7 +87,7 @@ public class LedgerBackfillService : ILedgerBackfillService
 
                 var ledgerEntry = new TransactionLedger
                 {
-                    UserId = (int)txn.UserId,
+                    UserId = txn.UserId,
                     EntryType = entryType,
                     Amount = amount,
                     BalanceAfter = txn.BalanceAfter,
