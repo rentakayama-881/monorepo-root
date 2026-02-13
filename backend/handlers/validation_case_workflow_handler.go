@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -312,9 +314,9 @@ func (h *ValidationCaseWorkflowHandler) SubmitArtifact(c *gin.Context) {
 	}
 
 	var req struct {
-		DocumentID string `json:"document_id" binding:"required"`
+		DocumentID string `json:"document_id"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
 		return
 	}

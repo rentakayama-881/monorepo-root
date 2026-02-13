@@ -69,10 +69,11 @@ type ValidationCaseDetailResponse struct {
 	ArtifactDocumentID          *string `json:"artifact_document_id,omitempty"`
 	CertifiedArtifactDocumentID *string `json:"certified_artifact_document_id,omitempty"`
 
-	CreatedAt int64            `json:"created_at"`
-	Owner     UserSummary      `json:"owner"`
-	Category  CategoryResponse `json:"category"`
-	Tags      []TagResponse    `json:"tags,omitempty"`
+	CreatedAt         int64            `json:"created_at"`
+	Owner             UserSummary      `json:"owner"`
+	AssignedValidator *UserSummary     `json:"assigned_validator,omitempty"`
+	Category          CategoryResponse `json:"category"`
+	Tags              []TagResponse    `json:"tags,omitempty"`
 }
 
 // CategoryWithValidationCasesResponse represents a case type (category) with its cases.

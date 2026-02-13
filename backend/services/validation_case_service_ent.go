@@ -208,7 +208,8 @@ func (s *EntValidationCaseService) GetValidationCaseByID(ctx context.Context, va
 	}
 
 	_ = viewerUserID // reserved for future authz rules (private sections)
-	return s.validationCaseToDetailResponse(vc), nil
+	assignedValidator := s.resolveAssignedValidator(ctx, vc.AcceptedFinalOfferID)
+	return s.validationCaseToDetailResponse(vc, assignedValidator), nil
 }
 
 func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, ownerUserID uint, input validators.CreateValidationCaseInput) (*ValidationCaseDetailResponse, error) {
@@ -307,7 +308,7 @@ func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, own
 		return nil, apperrors.ErrDatabase
 	}
 
-	return s.validationCaseToDetailResponse(vc), nil
+	return s.validationCaseToDetailResponse(vc, nil), nil
 }
 
 func (s *EntValidationCaseService) UpdateValidationCase(ctx context.Context, ownerUserID uint, input validators.UpdateValidationCaseInput) error {
@@ -597,7 +598,7 @@ func (s *EntValidationCaseService) validationCaseToListItem(vc *ent.ValidationCa
 	}
 }
 
-func (s *EntValidationCaseService) validationCaseToDetailResponse(vc *ent.ValidationCase) *ValidationCaseDetailResponse {
+func (s *EntValidationCaseService) validationCaseToDetailResponse(vc *ent.ValidationCase, assignedValidator *UserSummary) *ValidationCaseDetailResponse {
 	owner := buildUserSummaryFromEnt(vc.Edges.User)
 	cat := buildCategoryResponseFromEnt(vc.Edges.Category)
 	tags := buildTagResponsesFromEnt(vc.Edges.Tags)
@@ -628,9 +629,34 @@ func (s *EntValidationCaseService) validationCaseToDetailResponse(vc *ent.Valida
 		CertifiedArtifactDocumentID: vc.CertifiedArtifactDocumentID,
 		CreatedAt:                   vc.CreatedAt.Unix(),
 		Owner:                       owner,
+		AssignedValidator:           assignedValidator,
 		Category:                    cat,
 		Tags:                        tags,
 	}
+}
+
+func (s *EntValidationCaseService) resolveAssignedValidator(ctx context.Context, acceptedFinalOfferID *int) *UserSummary {
+	if acceptedFinalOfferID == nil || *acceptedFinalOfferID <= 0 {
+		return nil
+	}
+
+	offer, err := s.client.FinalOffer.
+		Query().
+		Where(finaloffer.IDEQ(*acceptedFinalOfferID)).
+		WithValidatorUser(func(q *ent.UserQuery) {
+			q.WithPrimaryBadge()
+		}).
+		Only(ctx)
+	if err != nil {
+		logger.Warn("Failed to resolve assigned validator for validation case detail",
+			zap.Int("accepted_final_offer_id", *acceptedFinalOfferID),
+			zap.Error(err),
+		)
+		return nil
+	}
+
+	validator := buildUserSummaryFromEnt(offer.Edges.ValidatorUser)
+	return &validator
 }
 
 func buildUserSummaryFromEnt(u *ent.User) UserSummary {

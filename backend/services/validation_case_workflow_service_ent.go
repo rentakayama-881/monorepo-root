@@ -1554,8 +1554,11 @@ func (s *EntValidationCaseWorkflowService) ConfirmLockFunds(ctx context.Context,
 
 func (s *EntValidationCaseWorkflowService) SubmitArtifact(ctx context.Context, validationCaseID uint, validatorUserID uint, documentID string, authHeader string) error {
 	documentID = strings.TrimSpace(documentID)
+	isManualSubmission := false
 	if documentID == "" {
-		return apperrors.ErrMissingField.WithDetails("document_id")
+		// Manual artifact mark (no file upload): create a stable internal marker.
+		documentID = fmt.Sprintf("artifact-submission-auto-%d-%d-%d", validationCaseID, validatorUserID, time.Now().Unix())
+		isManualSubmission = true
 	}
 
 	vc, err := s.client.ValidationCase.Get(ctx, int(validationCaseID))
@@ -1584,9 +1587,11 @@ func (s *EntValidationCaseWorkflowService) SubmitArtifact(ctx context.Context, v
 		return apperrors.ErrArtifactSubmissionAccessDenied
 	}
 
-	// Share the document with the case owner in Feature Service (validator must be the document owner).
-	if err := s.shareDocumentWithCaseOwner(ctx, authHeader, documentID, uint(vc.UserID)); err != nil {
-		return apperrors.ErrInvalidInput.WithDetails(err.Error())
+	// Share document only when the submission references a real document in Feature Service.
+	if !isManualSubmission {
+		if err := s.shareDocumentWithCaseOwner(ctx, authHeader, documentID, uint(vc.UserID)); err != nil {
+			return apperrors.ErrInvalidInput.WithDetails(err.Error())
+		}
 	}
 
 	if _, err := s.client.ArtifactSubmission.Create().
@@ -1606,7 +1611,8 @@ func (s *EntValidationCaseWorkflowService) SubmitArtifact(ctx context.Context, v
 
 	actorID := int(validatorUserID)
 	s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, "artifact_submitted", map[string]interface{}{
-		"document_id": documentID,
+		"document_id":       documentID,
+		"manual_submission": isManualSubmission,
 	})
 
 	return nil

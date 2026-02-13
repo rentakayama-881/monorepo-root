@@ -12,7 +12,6 @@ import ValidationCaseRecordSkeleton from "./ValidationCaseRecordSkeleton";
 import { fetchJson, fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
-import { useUploadDocument } from "@/lib/useDocuments";
 
 function formatDateTime(ts) {
   if (!ts) return "";
@@ -43,6 +42,12 @@ function formatHoldWindow(hours) {
   return `${h} jam`;
 }
 
+function isSyntheticArtifactMarker(documentIdRaw) {
+  const documentId = String(documentIdRaw || "").trim();
+  if (!documentId) return false;
+  return documentId.startsWith("artifact-submission-auto-");
+}
+
 function normalizeStatus(s) {
   return String(s || "").toLowerCase().trim();
 }
@@ -56,8 +61,8 @@ function statusLabel(statusRaw) {
     on_hold_owner_inactive: "On Hold Owner Inactive",
     offer_accepted: "Offer Accepted",
     funds_locked: "Funds Locked",
-    artifact_submitted: "Artifact Submitted",
-    completed: "Completed",
+    artifact_submitted: "Under Owner Review",
+    completed: "Concluded",
     disputed: "Disputed",
   };
   return map[s] || s.replace(/_/g, " ");
@@ -105,6 +110,12 @@ function contentAsText(content) {
     }
   }
   return String(content);
+}
+
+function stripLeadingRecordLabel(markdownRaw) {
+  const markdown = String(markdownRaw || "").replace(/^\uFEFF/, "");
+  const stripped = markdown.replace(/^\s*(?:#{1,6}\s*)?record\s*:?\s*(?:\r?\n)+/i, "");
+  return stripped.trimStart();
 }
 
 function formatCaseLogLoadError(err, ownerView = false) {
@@ -187,8 +198,7 @@ export default function ValidationCaseRecordPage() {
   const [lockFundsLoading, setLockFundsLoading] = useState(false);
   const [lockFundsMsg, setLockFundsMsg] = useState("");
 
-  const { uploadDocument, loading: uploadLoading } = useUploadDocument();
-  const [artifactFile, setArtifactFile] = useState(null);
+  const [artifactSubmitting, setArtifactSubmitting] = useState(false);
   const [artifactMsg, setArtifactMsg] = useState("");
 
   const [releasePin, setReleasePin] = useState("");
@@ -670,37 +680,22 @@ export default function ValidationCaseRecordPage() {
   }
 
   async function submitArtifact() {
-    if (!artifactFile) {
-      setArtifactMsg("Pilih file terlebih dahulu (PDF/DOCX).");
-      return;
-    }
     setArtifactMsg("");
+    setArtifactSubmitting(true);
     try {
-      const uploaded = await uploadDocument(artifactFile, {
-        title: `Artifact Submission - Validation Case #${String(id)}`,
-        description: "Artifact Submission (full work, no watermark).",
-        category: "other",
-        visibility: "private",
-        tags: ["artifact_submission"],
-      });
-
-      const documentId = uploaded?.id || uploaded?.Id || uploaded?.documentId || uploaded?.DocumentId || "";
-      if (!documentId) {
-        throw new Error("Document ID tidak ditemukan dari hasil upload.");
-      }
-
       await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/artifact-submission`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_id: documentId }),
+        body: JSON.stringify({}),
       });
 
-      setArtifactMsg("Artifact Submission tercatat dan dibagikan ke pemilik kasus.");
-      setArtifactFile(null);
+      setArtifactMsg("Artifact submission berhasil dicatat.");
       await reloadCase();
       await loadNonOwnerWorkflow();
     } catch (e) {
       setArtifactMsg(e?.message || "Gagal submit Artifact Submission");
+    } finally {
+      setArtifactSubmitting(false);
     }
   }
 
@@ -809,10 +804,26 @@ export default function ValidationCaseRecordPage() {
   const disputeId = vc?.dispute_id || "";
   const artifactId = vc?.artifact_document_id || "";
   const certifiedId = vc?.certified_artifact_document_id || "";
+  const acceptedOfferId = Number(vc?.accepted_final_offer_id ?? vc?.acceptedFinalOfferId ?? 0);
+  const acceptedOffer = acceptedOfferId
+    ? finalOffers.find((offer) => Number(offer?.id) === acceptedOfferId) || null
+    : null;
+  const assignedValidator = (vc?.assigned_validator && vc.assigned_validator.id
+    ? vc.assigned_validator
+    : acceptedOffer?.validator) || null;
+  const isAssignedValidator = Boolean(
+    isAuthed &&
+      !isOwner &&
+      me?.id &&
+      assignedValidator?.id &&
+      Number(me.id) === Number(assignedValidator.id),
+  );
 
   const featureBase = (process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id").replace(/\/+$/, "");
-  const artifactDownloadHref = artifactId ? `${featureBase}${FEATURE_ENDPOINTS.DOCUMENTS.DOWNLOAD(String(artifactId))}` : "";
-  const certifiedDownloadHref = certifiedId ? `${featureBase}${FEATURE_ENDPOINTS.DOCUMENTS.DOWNLOAD(String(certifiedId))}` : "";
+  const certifiedDownloadHref =
+    certifiedId && !isSyntheticArtifactMarker(certifiedId)
+      ? `${featureBase}${FEATURE_ENDPOINTS.DOCUMENTS.DOWNLOAD(String(certifiedId))}`
+      : "";
   const recordContent = vc?.content_type === "text" ? contentAsText(vc?.content) : vc?.content;
   const showSummaryFallback = Boolean(vc?.summary) && !hasOverviewContent(recordContent);
 
@@ -1397,42 +1408,49 @@ export default function ValidationCaseRecordPage() {
             </CaseSection>
           ) : null}
 
-          {isAuthed && !isOwner && transferId ? (
+          {isAuthed && !isOwner && transferId && isAssignedValidator ? (
             <CaseSection title="Artifact Submission" subtitle="Deliverable">
               {artifactId ? (
                 <div className="space-y-2 text-sm text-muted-foreground">
-                  <div>
-                    Artifact Submission tersimpan sebagai dokumen.
-                    <div className="mt-2 font-mono text-xs text-foreground">document_id: {String(artifactId)}</div>
-                  </div>
-                  {artifactDownloadHref ? (
-                    <a href={artifactDownloadHref} className="text-sm font-semibold text-primary hover:underline">
-                      Download Artifact Submission
-                    </a>
-                  ) : null}
+                  Artifact submission sudah tercatat dan menunggu keputusan owner.
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div className="text-sm text-muted-foreground">
-                    Upload work product penuh (tanpa watermark). Dokumen akan dibagikan secara privat kepada pemilik kasus.
+                    Tidak perlu upload file. Cukup submit untuk menandai bahwa deliverable sudah dikirim.
                   </div>
-                  <input
-                    type="file"
-                    accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onChange={(e) => setArtifactFile(e.target.files?.[0] || null)}
-                    className="block w-full text-sm"
-                  />
                   <button
                     onClick={submitArtifact}
                     className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
-                    disabled={uploadLoading}
+                    disabled={artifactSubmitting}
                     type="button"
                   >
-                    {uploadLoading ? "Uploading..." : "Submit Artifact Submission"}
+                    {artifactSubmitting ? "Submitting..." : "Submit Artifact"}
                   </button>
                   {artifactMsg ? <div className="text-xs text-muted-foreground">{artifactMsg}</div> : null}
                 </div>
               )}
+            </CaseSection>
+          ) : null}
+
+          {artifactId && assignedValidator ? (
+            <CaseSection title="Assigned Validator" subtitle="Deliverable Submitted">
+              <div className="flex items-center gap-3 rounded-[6px] border border-border/70 bg-secondary/20 px-3 py-3">
+                <Avatar src={assignedValidator?.avatar_url} name={assignedValidator?.username || ""} size="sm" />
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <Link
+                      href={assignedValidator?.username ? `/user/${encodeURIComponent(assignedValidator.username)}` : "#"}
+                      prefetch={false}
+                      className="truncate text-sm font-semibold text-foreground hover:underline"
+                    >
+                      @{assignedValidator?.username || "-"}
+                    </Link>
+                    {assignedValidator?.primary_badge ? <Badge badge={assignedValidator.primary_badge} size="xs" /> : null}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Deliverable submitted</div>
+                </div>
+              </div>
             </CaseSection>
           ) : null}
 
@@ -1461,7 +1479,7 @@ export default function ValidationCaseRecordPage() {
                 <div>
                   <div className="text-sm font-semibold text-foreground">Approve</div>
                   <div className="mt-1 text-sm text-muted-foreground">
-                    Jika work product memenuhi Final Offer, lakukan release escrow. Aksi ini memiliki konsekuensi finansial dan dicatat.
+                    Jika deliverable memenuhi Final Offer, lakukan release escrow. Jika tidak ditekan manual, dana tetap auto-release saat hold window berakhir.
                   </div>
                   <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
                     <div className="md:col-span-2">
@@ -1635,21 +1653,21 @@ export default function ValidationCaseRecordPage() {
                   <div className="flex items-center justify-between gap-4 py-2">
                     <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Workflow</dt>
                     <dd className="text-right text-muted-foreground">
-                      {status === "on_hold_owner_inactive"
-                        ? "On Hold: Owner Inactive (SLA Expired)"
-                        : status === "waiting_owner_response"
-                          ? "Waiting Owner Response (SLA Running)"
-                          : certifiedId
-                        ? "Certified Artifact Issued"
-                        : disputeId
+                      {status === "completed"
+                        ? "Concluded"
+                        : status === "disputed"
                           ? "Dispute Attached"
-                          : artifactId
-                            ? "Artifact Submitted"
-                            : transferId
-                              ? "Funds Locked (Escrow)"
-                              : vc?.accepted_final_offer_id ?? vc?.acceptedFinalOfferId
-                                ? "Final Offer Accepted"
-                                : "Open"}
+                          : status === "on_hold_owner_inactive"
+                            ? "On Hold: Owner Inactive (SLA Expired)"
+                            : status === "waiting_owner_response"
+                              ? "Waiting Owner Response (SLA Running)"
+                              : artifactId
+                                ? "Under Owner Review"
+                                : transferId
+                                  ? "Funds Locked (Escrow)"
+                                  : vc?.accepted_final_offer_id ?? vc?.acceptedFinalOfferId
+                                    ? "Final Offer Accepted"
+                                    : "Open"}
                     </dd>
                   </div>
                   <div className="flex items-center justify-between gap-4 py-2">
@@ -1695,6 +1713,8 @@ const CONTENT_LABEL_MAP = {
   evidence_input: "Materi Awal yang Tersedia",
   pass_criteria: "Kriteria Diterima",
   case_record_text: "Catatan Tambahan",
+  case_record: "Catatan Tambahan",
+  record: "Catatan Tambahan",
   sensitivity_policy: "Kebijakan Sensitivitas",
   schema_version: "Versi Intake",
   max_hours: "Batas Waktu (Jam)",
@@ -1707,7 +1727,7 @@ const CONTENT_LABEL_MAP = {
   requires_admin_gate: "Perlu Admin Gate",
   requires_pre_moderation: "Perlu Pre-Moderasi",
 };
-const RESERVED_CONTENT_KEYS = new Set(["quick_intake", "checklist", "case_record_text"]);
+const RESERVED_CONTENT_KEYS = new Set(["quick_intake", "checklist", "case_record_text", "case_record", "record"]);
 
 function prettifyKey(keyRaw) {
   const key = String(keyRaw || "").trim();
@@ -1832,12 +1852,13 @@ function buildOverviewColumns(content) {
   const cols = [];
 
   if (typeof content === "string") {
+    const normalizedContent = stripLeadingRecordLabel(content);
     cols.push({
       key: "case-record",
       title: "Free Text",
       subtitle: "Ditulis dalam markdown agar instruksi mudah dipindai.",
       type: "markdown",
-      value: content,
+      value: normalizedContent,
       width: "min-w-[34rem]",
     });
     return cols;
@@ -1885,8 +1906,15 @@ function buildOverviewColumns(content) {
   const metadataRows = Object.entries(content)
     .filter(([key]) => !RESERVED_CONTENT_KEYS.has(key))
     .map(([label, value]) => ({ label, value }));
-  const caseRecordText =
-    typeof content.case_record_text === "string" ? content.case_record_text.trim() : "";
+  const caseRecordText = stripLeadingRecordLabel(
+    typeof content.case_record_text === "string"
+      ? content.case_record_text.trim()
+      : typeof content.case_record === "string"
+        ? content.case_record.trim()
+        : typeof content.record === "string"
+          ? content.record.trim()
+          : "",
+  );
 
   if (quickRows.length > 0) {
     cols.push({
