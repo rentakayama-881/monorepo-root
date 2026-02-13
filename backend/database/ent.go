@@ -51,6 +51,22 @@ func columnExists(ctx context.Context, q interface {
 	return exists, nil
 }
 
+func constraintExists(ctx context.Context, q interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}, constraintName string) (bool, error) {
+	var exists bool
+	if err := q.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM pg_constraint
+			WHERE conname = $1
+		)
+	`, constraintName).Scan(&exists); err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 // applyDomainRenames performs an idempotent, production-safe rename from legacy "thread" naming
 // to the new "validation case" naming at the DB level.
 //
@@ -111,6 +127,47 @@ func applyDomainRenames(ctx context.Context, db *sql.DB) error {
 		}
 	}
 
+	// Legacy compatibility:
+	// Some older deployments still have thread_credentials.thread_id FK pointing to validation_cases
+	// with NO ACTION, which can block deleting open cases. Normalize it to ON DELETE CASCADE.
+	threadCredTableExists, err := tableExists(ctx, tx, "thread_credentials")
+	if err != nil {
+		return err
+	}
+	if threadCredTableExists {
+		threadIDExists, err := columnExists(ctx, tx, "thread_credentials", "thread_id")
+		if err != nil {
+			return err
+		}
+		if threadIDExists {
+			oldFK := "thread_credentials_threads_received_credentials"
+			oldFKExists, err := constraintExists(ctx, tx, oldFK)
+			if err != nil {
+				return err
+			}
+			if oldFKExists {
+				if _, err := tx.ExecContext(ctx, `ALTER TABLE thread_credentials DROP CONSTRAINT thread_credentials_threads_received_credentials`); err != nil {
+					return err
+				}
+			}
+
+			newFK := "thread_credentials_validation_cases_received_credentials"
+			newFKExists, err := constraintExists(ctx, tx, newFK)
+			if err != nil {
+				return err
+			}
+			if !newFKExists {
+				if _, err := tx.ExecContext(ctx, `
+					ALTER TABLE thread_credentials
+					ADD CONSTRAINT thread_credentials_validation_cases_received_credentials
+					FOREIGN KEY (thread_id) REFERENCES validation_cases(id) ON DELETE CASCADE
+				`); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	return tx.Commit()
 }
 
@@ -156,7 +213,7 @@ func InitEntDB() {
 	}
 
 	// IMPORTANT: disable prepared statements usage
-        cfg.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+	cfg.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	// Optional timezone support
 	// If you want timezone, set DB_TIMEZONE env to e.g. "Asia/Jakarta"

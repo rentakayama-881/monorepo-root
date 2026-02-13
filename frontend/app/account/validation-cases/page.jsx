@@ -32,6 +32,20 @@ function formatDeleteCaseError(err, fallback = "Gagal menghapus Validation Case"
   return `${message}: ${details}`;
 }
 
+function isCaseDeletable(statusRaw) {
+  return String(statusRaw || "").trim().toLowerCase() === "open";
+}
+
+function deleteStatusHint(statusRaw) {
+  const s = String(statusRaw || "").trim().toLowerCase();
+  if (!s || s === "open") return "";
+  if (s === "funds_locked") return "Case terkunci karena escrow aktif.";
+  if (s === "artifact_submitted") return "Case sedang review owner.";
+  if (s === "completed") return "Case sudah selesai.";
+  if (s === "disputed") return "Case sedang dalam dispute.";
+  return `Case status "${s}" tidak dapat dihapus.`;
+}
+
 export default function MyValidationCasesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -127,6 +141,8 @@ export default function MyValidationCasesPage() {
                 const href = `/validation-cases/${encodeURIComponent(String(id))}`;
                 const owner = vc?.owner || {};
                 const badge = owner?.primary_badge || null;
+                const canDelete = isCaseDeletable(vc?.status);
+                const deleteHint = deleteStatusHint(vc?.status);
                 return (
                   <tr key={String(id)} className="hover:bg-secondary/40">
                     <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground">
@@ -163,13 +179,18 @@ export default function MyValidationCasesPage() {
                         </Link>
                         <button
                           className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-900 hover:bg-red-100 disabled:opacity-60"
-                          disabled={String(deletingId) === String(id)}
-                          onClick={() => deleteCase(id)}
+                          disabled={String(deletingId) === String(id) || !canDelete}
+                          onClick={() => {
+                            if (!canDelete) return;
+                            deleteCase(id);
+                          }}
                           type="button"
+                          title={canDelete ? "Delete case" : deleteHint}
                         >
-                          {String(deletingId) === String(id) ? "Deleting..." : "Delete"}
+                          {String(deletingId) === String(id) ? "Deleting..." : canDelete ? "Delete" : "Locked"}
                         </button>
                       </div>
+                      {!canDelete ? <div className="mt-1 text-[11px] text-muted-foreground">{deleteHint}</div> : null}
 
                       {/* Keep owner snapshot in-row for quick audit context */}
                       <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
