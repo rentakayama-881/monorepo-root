@@ -11,6 +11,7 @@ import (
 	apperrors "backend-gin/errors"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 // RateLimitConfig holds configuration for rate limiting
@@ -92,6 +93,21 @@ func NewEnhancedRateLimiter(config RateLimitConfig) *EnhancedRateLimiter {
 		blacklistCIDRs:    blacklistCIDRs,
 		blacklist:         make(map[string]time.Time),
 	}
+}
+
+// SetRedisClient injects a shared Redis client into all internal limiters.
+// This avoids package import cycles while preserving distributed rate limiting.
+func (r *EnhancedRateLimiter) SetRedisClient(client *redis.Client) {
+	if r == nil {
+		return
+	}
+	r.ipMinuteLimiter.SetRedisClient(client)
+	r.ipHourLimiter.SetRedisClient(client)
+	r.userMinuteLimiter.SetRedisClient(client)
+	r.userHourLimiter.SetRedisClient(client)
+	r.authMinuteLimiter.SetRedisClient(client)
+	r.authHourLimiter.SetRedisClient(client)
+	r.searchLimiter.SetRedisClient(client)
 }
 
 // GetClientIP returns the client IP resolved by Gin.

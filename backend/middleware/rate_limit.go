@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"backend-gin/services"
-
 	"github.com/redis/go-redis/v9"
 )
 
@@ -16,11 +14,12 @@ import (
 // Uses Redis sorted sets for distributed rate limiting when available,
 // falls back to in-memory sliding window when Redis is unavailable.
 type RateLimiter struct {
-	limit    int
-	window   time.Duration
-	prefix   string
-	mu       sync.Mutex
-	requests map[string][]time.Time // in-memory fallback
+	limit       int
+	window      time.Duration
+	prefix      string
+	redisClient *redis.Client
+	mu          sync.Mutex
+	requests    map[string][]time.Time // in-memory fallback
 }
 
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
@@ -36,6 +35,12 @@ func NewRateLimiterWithPrefix(limit int, window time.Duration, prefix string) *R
 	}
 	go r.cleanupLoop()
 	return r
+}
+
+// SetRedisClient sets the Redis client for distributed rate limiting.
+// When set, the rate limiter uses Redis sorted sets; otherwise falls back to in-memory.
+func (r *RateLimiter) SetRedisClient(client *redis.Client) {
+	r.redisClient = client
 }
 
 // cleanupLoop periodically removes expired entries to prevent memory leaks (in-memory fallback only)
@@ -71,7 +76,7 @@ func (r *RateLimiter) cleanup() {
 
 func (r *RateLimiter) Allow(key string) bool {
 	// Try Redis-based sliding window first
-	if services.RedisClient != nil {
+	if r.redisClient != nil {
 		allowed, err := r.allowRedis(key)
 		if err == nil {
 			return allowed
@@ -114,7 +119,7 @@ func (r *RateLimiter) allowRedis(key string) (bool, error) {
 	`)
 
 	windowMs := r.window.Milliseconds()
-	result, err := script.Run(ctx, services.RedisClient, []string{redisKey},
+	result, err := script.Run(ctx, r.redisClient, []string{redisKey},
 		cutoff, nowMicro, r.limit, windowMs).Int()
 	if err != nil {
 		return false, err
@@ -149,7 +154,7 @@ func (r *RateLimiter) allowInMemory(key string) bool {
 
 // Remaining returns the number of remaining requests allowed for the given key
 func (r *RateLimiter) Remaining(key string) int {
-	if services.RedisClient != nil {
+	if r.redisClient != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
@@ -157,8 +162,8 @@ func (r *RateLimiter) Remaining(key string) int {
 		cutoff := time.Now().Add(-r.window).UnixMicro()
 
 		// Remove old entries and count
-		services.RedisClient.ZRemRangeByScore(ctx, redisKey, "-inf", strconv.FormatInt(cutoff, 10))
-		count, err := services.RedisClient.ZCard(ctx, redisKey).Result()
+		r.redisClient.ZRemRangeByScore(ctx, redisKey, "-inf", strconv.FormatInt(cutoff, 10))
+		count, err := r.redisClient.ZCard(ctx, redisKey).Result()
 		if err == nil {
 			remaining := r.limit - int(count)
 			if remaining < 0 {

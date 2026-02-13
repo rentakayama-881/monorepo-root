@@ -395,6 +395,8 @@ func main() {
 
 	rateLimitConfig := buildRateLimitConfig()
 	enhancedRateLimiter := middleware.NewEnhancedRateLimiter(rateLimitConfig)
+	enhancedRateLimiter.SetRedisClient(services.RedisClient)
+	deleteAccountLimiter.SetRedisClient(services.RedisClient)
 	logger.Info("Enhanced rate limiter configured",
 		zap.Int("requests_per_minute", rateLimitConfig.RequestsPerMinute),
 		zap.Int("requests_per_hour", rateLimitConfig.RequestsPerHour),
@@ -404,6 +406,7 @@ func main() {
 		zap.Bool("enable_user_limit", rateLimitConfig.EnableUserLimit),
 		zap.Strings("whitelist_ips", rateLimitConfig.WhitelistIPs),
 		zap.Strings("blacklist_ips", rateLimitConfig.BlacklistIPs),
+		zap.Bool("redis_rate_limit_enabled", services.RedisClient != nil),
 	)
 
 	// Health endpoints are kept outside request rate limits.
