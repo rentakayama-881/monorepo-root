@@ -811,6 +811,8 @@ export default function ValidationCaseRecordPage() {
   const featureBase = (process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id").replace(/\/+$/, "");
   const artifactDownloadHref = artifactId ? `${featureBase}${FEATURE_ENDPOINTS.DOCUMENTS.DOWNLOAD(String(artifactId))}` : "";
   const certifiedDownloadHref = certifiedId ? `${featureBase}${FEATURE_ENDPOINTS.DOCUMENTS.DOWNLOAD(String(certifiedId))}` : "";
+  const recordContent = vc?.content_type === "text" ? contentAsText(vc?.content) : vc?.content;
+  const showSummaryFallback = Boolean(vc?.summary) && !hasOverviewContent(recordContent);
 
   return (
     <main className="container py-10">
@@ -841,15 +843,13 @@ export default function ValidationCaseRecordPage() {
               </div>
               <h1 className="text-2xl font-semibold text-foreground">{vc?.title || "(untitled)"}</h1>
 
-              {vc?.summary ? <p className="text-sm text-muted-foreground">{vc.summary}</p> : null}
+              {showSummaryFallback ? <p className="text-sm text-muted-foreground">{vc.summary}</p> : null}
 
               {Array.isArray(vc?.tags) && vc.tags.length > 0 ? <TagList tags={vc.tags} size="sm" /> : null}
             </header>
 
             <CaseSection title="Overview" subtitle="Record">
-              <ContentTable
-                content={vc?.content_type === "text" ? contentAsText(vc?.content) : vc?.content}
-              />
+              <ContentTable content={recordContent} />
             </CaseSection>
 
           <CaseSection title="Request Consultation" subtitle="Protocol">
@@ -1718,6 +1718,30 @@ function prettifyKey(keyRaw) {
 
 function isPlainObject(value) {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function hasMeaningfulValue(value) {
+  if (value == null) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value === "boolean") return true;
+  if (Array.isArray(value)) return value.some((item) => hasMeaningfulValue(item));
+  if (isPlainObject(value)) return Object.values(value).some((item) => hasMeaningfulValue(item));
+  return String(value).trim().length > 0;
+}
+
+function hasOverviewContent(content) {
+  if (!hasMeaningfulValue(content)) return false;
+  const columns = buildOverviewColumns(content);
+  return columns.some((col) => {
+    if (col.type === "markdown" || col.type === "raw") {
+      return hasMeaningfulValue(col.value);
+    }
+    if (Array.isArray(col.value)) {
+      return col.value.some((row) => hasMeaningfulValue(row?.value));
+    }
+    return hasMeaningfulValue(col.value);
+  });
 }
 
 function normalizeRows(rowsInput) {
