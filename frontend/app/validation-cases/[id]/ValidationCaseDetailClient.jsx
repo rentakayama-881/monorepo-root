@@ -2025,9 +2025,9 @@ function ContentTable({ content }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-max table-fixed border-collapse">
-          <thead className="bg-secondary/55">
+      <div className="relative w-full overflow-x-auto">
+        <table className="w-full min-w-[980px] table-fixed border-collapse text-sm">
+          <thead className="bg-secondary/55 [&_th]:whitespace-nowrap">
             <tr>
               {columns.map((col) => (
                 <th

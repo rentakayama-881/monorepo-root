@@ -21,6 +21,55 @@ function formatIDR(amount) {
   return `Rp ${Math.max(0, Math.trunc(n)).toLocaleString("id-ID")}`;
 }
 
+function statusLabel(statusRaw) {
+  const s = String(statusRaw || "").toLowerCase().trim();
+  if (!s) return "Unknown";
+  const map = {
+    open: "Open",
+    waiting_owner_response: "Waiting Owner Response",
+    on_hold_owner_inactive: "On Hold (Owner Inactive)",
+    offer_accepted: "Offer Accepted",
+    funds_locked: "Funds Locked",
+    artifact_submitted: "Under Owner Review",
+    completed: "Concluded",
+    disputed: "Disputed",
+  };
+  return map[s] || s.replace(/_/g, " ");
+}
+
+function statusStyle(statusRaw) {
+  const s = String(statusRaw || "").toLowerCase().trim();
+  switch (s) {
+    case "completed":
+      return "border-emerald-200 bg-emerald-50 text-emerald-900";
+    case "disputed":
+      return "border-red-200 bg-red-50 text-red-900";
+    case "on_hold_owner_inactive":
+      return "border-orange-200 bg-orange-50 text-orange-900";
+    case "waiting_owner_response":
+      return "border-blue-200 bg-blue-50 text-blue-900";
+    case "funds_locked":
+      return "border-amber-200 bg-amber-50 text-amber-900";
+    case "artifact_submitted":
+      return "border-sky-200 bg-sky-50 text-sky-900";
+    case "offer_accepted":
+      return "border-violet-200 bg-violet-50 text-violet-950";
+    case "open":
+    default:
+      return "border-border bg-card text-foreground";
+  }
+}
+
+function StatusPill({ status }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${statusStyle(status)}`}
+    >
+      {statusLabel(status)}
+    </span>
+  );
+}
+
 function formatDeleteCaseError(err, fallback = "Gagal menghapus Validation Case") {
   const message = String(err?.message || fallback).trim();
   const details = String(err?.details || "").trim();
@@ -123,87 +172,182 @@ export default function MyValidationCasesPage() {
           Belum ada Validation Case.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-[var(--radius)] border border-border bg-card">
-          <table className="min-w-[900px] w-full text-sm">
-            <thead className="bg-secondary/60 text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Case</th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Title</th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Status</th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Bounty</th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Filed</th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {items.map((vc) => {
-                const id = vc?.id;
-                const href = `/validation-cases/${encodeURIComponent(String(id))}`;
-                const owner = vc?.owner || {};
-                const badge = owner?.primary_badge || null;
-                const canDelete = isCaseDeletable(vc?.status);
-                const deleteHint = deleteStatusHint(vc?.status);
-                return (
-                  <tr key={String(id)} className="hover:bg-secondary/40">
-                    <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground">
-                      <Link href={href} prefetch={false} className="hover:underline">
-                        #{String(id)}
+        <div className="space-y-3">
+          <div className="space-y-3 sm:hidden">
+            {items.map((vc) => {
+              const id = vc?.id;
+              const href = `/validation-cases/${encodeURIComponent(String(id))}`;
+              const owner = vc?.owner || {};
+              const badge = owner?.primary_badge || null;
+              const canDelete = isCaseDeletable(vc?.status);
+              const deleteHint = deleteStatusHint(vc?.status);
+              const ownerHref = owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "";
+              return (
+                <article key={String(id)} className="rounded-[var(--radius)] border border-border bg-card px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-mono text-[11px] text-muted-foreground">Case #{String(id)}</div>
+                      <Link
+                        href={href}
+                        prefetch={false}
+                        className="mt-1 block text-sm font-semibold leading-5 text-foreground hover:underline"
+                      >
+                        {vc?.title || "(untitled)"}
                       </Link>
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      <div className="min-w-0">
-                        <Link href={href} prefetch={false} className="block font-semibold text-foreground hover:underline">
-                          {vc?.title || "(untitled)"}
-                        </Link>
-                        {vc?.summary ? (
-                          <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{vc.summary}</div>
-                        ) : null}
-                        {Array.isArray(vc?.tags) && vc.tags.length > 0 ? (
-                          <div className="mt-2">
-                            <TagList tags={vc.tags} size="xs" />
-                          </div>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground">{String(vc?.status || "")}</td>
-                    <td className="px-4 py-3 align-top font-semibold text-foreground">{formatIDR(vc?.bounty_amount)}</td>
-                    <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground">{formatDate(vc?.created_at)}</td>
-                    <td className="px-4 py-3 align-top">
-                      <div className="flex flex-wrap gap-2">
-                        <Link
-                          href={href}
-                          prefetch={false}
-                          className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
-                        >
-                          Open Record
-                        </Link>
-                        <button
-                          className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-900 hover:bg-red-100 disabled:opacity-60"
-                          disabled={String(deletingId) === String(id) || !canDelete}
-                          onClick={() => {
-                            if (!canDelete) return;
-                            deleteCase(id);
-                          }}
-                          type="button"
-                          title={canDelete ? "Delete case" : deleteHint}
-                        >
-                          {String(deletingId) === String(id) ? "Deleting..." : canDelete ? "Delete" : "Locked"}
-                        </button>
-                      </div>
-                      {!canDelete ? <div className="mt-1 text-[11px] text-muted-foreground">{deleteHint}</div> : null}
+                    </div>
+                    <StatusPill status={vc?.status} />
+                  </div>
 
-                      {/* Keep owner snapshot in-row for quick audit context */}
-                      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                        <Avatar src={owner?.avatar_url} name={owner?.username || ""} size="xs" />
-                        <span className="font-semibold text-foreground">@{owner?.username || "-"}</span>
+                  {vc?.summary ? <div className="mt-2 line-clamp-2 text-xs text-muted-foreground">{vc.summary}</div> : null}
+                  {Array.isArray(vc?.tags) && vc.tags.length > 0 ? (
+                    <div className="mt-2">
+                      <TagList tags={vc.tags} size="xs" />
+                    </div>
+                  ) : null}
+
+                  <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <dt className="text-muted-foreground">Bounty</dt>
+                      <dd className="mt-0.5 font-semibold text-foreground">{formatIDR(vc?.bounty_amount)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Filed</dt>
+                      <dd className="mt-0.5 font-mono text-muted-foreground">{formatDate(vc?.created_at)}</dd>
+                    </div>
+                  </dl>
+
+                  <div className="mt-3 flex items-center gap-2 rounded-[calc(var(--radius)-2px)] border border-border/70 bg-secondary/20 px-2.5 py-2">
+                    <Avatar src={owner?.avatar_url} name={owner?.username || ""} size="xs" />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        {ownerHref ? (
+                          <Link href={ownerHref} prefetch={false} className="truncate text-xs font-semibold text-foreground hover:underline">
+                            @{owner?.username || "-"}
+                          </Link>
+                        ) : (
+                          <span className="truncate text-xs font-semibold text-foreground">@{owner?.username || "-"}</span>
+                        )}
                         {badge ? <Badge badge={badge} size="xs" /> : null}
                       </div>
-                    </td>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Link
+                      href={href}
+                      prefetch={false}
+                      className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
+                    >
+                      Open Record
+                    </Link>
+                    <button
+                      className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-900 hover:bg-red-100 disabled:opacity-60"
+                      disabled={String(deletingId) === String(id) || !canDelete}
+                      onClick={() => {
+                        if (!canDelete) return;
+                        deleteCase(id);
+                      }}
+                      type="button"
+                      title={canDelete ? "Delete case" : deleteHint}
+                    >
+                      {String(deletingId) === String(id) ? "Deleting..." : canDelete ? "Delete" : "Locked"}
+                    </button>
+                  </div>
+                  {!canDelete ? <div className="mt-1 text-[11px] text-muted-foreground">{deleteHint}</div> : null}
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="hidden sm:block overflow-hidden rounded-[var(--radius)] border border-border bg-card">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-[900px] text-sm">
+                <thead className="bg-secondary/60 text-muted-foreground [&_th]:whitespace-nowrap">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Case</th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Title</th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Status</th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Bounty</th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Filed</th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Action</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {items.map((vc) => {
+                    const id = vc?.id;
+                    const href = `/validation-cases/${encodeURIComponent(String(id))}`;
+                    const owner = vc?.owner || {};
+                    const badge = owner?.primary_badge || null;
+                    const canDelete = isCaseDeletable(vc?.status);
+                    const deleteHint = deleteStatusHint(vc?.status);
+                    return (
+                      <tr key={String(id)} className="hover:bg-secondary/40">
+                        <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground whitespace-nowrap">
+                          <Link href={href} prefetch={false} className="hover:underline">
+                            #{String(id)}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <div className="min-w-0">
+                            <Link href={href} prefetch={false} className="block font-semibold text-foreground hover:underline">
+                              {vc?.title || "(untitled)"}
+                            </Link>
+                            {vc?.summary ? (
+                              <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{vc.summary}</div>
+                            ) : null}
+                            {Array.isArray(vc?.tags) && vc.tags.length > 0 ? (
+                              <div className="mt-2">
+                                <TagList tags={vc.tags} size="xs" />
+                              </div>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 align-top whitespace-nowrap">
+                          <StatusPill status={vc?.status} />
+                        </td>
+                        <td className="px-4 py-3 align-top font-semibold text-foreground whitespace-nowrap">
+                          {formatIDR(vc?.bounty_amount)}
+                        </td>
+                        <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground whitespace-nowrap">
+                          {formatDate(vc?.created_at)}
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <div className="flex flex-wrap gap-2">
+                            <Link
+                              href={href}
+                              prefetch={false}
+                              className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
+                            >
+                              Open Record
+                            </Link>
+                            <button
+                              className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-900 hover:bg-red-100 disabled:opacity-60"
+                              disabled={String(deletingId) === String(id) || !canDelete}
+                              onClick={() => {
+                                if (!canDelete) return;
+                                deleteCase(id);
+                              }}
+                              type="button"
+                              title={canDelete ? "Delete case" : deleteHint}
+                            >
+                              {String(deletingId) === String(id) ? "Deleting..." : canDelete ? "Delete" : "Locked"}
+                            </button>
+                          </div>
+                          {!canDelete ? <div className="mt-1 text-[11px] text-muted-foreground">{deleteHint}</div> : null}
+
+                          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                            <Avatar src={owner?.avatar_url} name={owner?.username || ""} size="xs" />
+                            <span className="font-semibold text-foreground">@{owner?.username || "-"}</span>
+                            {badge ? <Badge badge={badge} size="xs" /> : null}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
     </main>
