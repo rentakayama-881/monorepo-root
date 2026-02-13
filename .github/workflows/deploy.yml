@@ -167,9 +167,22 @@ jobs:
             cd backend
             /usr/local/go/bin/go build -ldflags="-s -w -X backend-gin/buildinfo.Version=${{ github.sha }}" -o app .
 
+            restart_backend_service() {
+              for svc in alephdraad-backend.service backend.service aivalid-backend; do
+                if sudo systemctl restart "$svc" >/dev/null 2>&1; then
+                  if sudo systemctl is-active --quiet "$svc"; then
+                    echo "✅ Restarted service: $svc"
+                    return 0
+                  fi
+                fi
+              done
+              echo "❌ Failed to restart known backend services (alephdraad-backend.service/backend.service/aivalid-backend)"
+              return 1
+            }
+
             # Graceful restart
             echo "🔄 Restarting service..."
-            sudo systemctl restart backend.service
+            restart_backend_service
 
             # Health check (wait up to 30 seconds)
             echo "🏥 Running health check..."
@@ -182,7 +195,7 @@ jobs:
                 echo "❌ Health check failed after 30 seconds"
                 echo "🔄 Rolling back..."
                 cp $BACKUP_DIR/app.backup /home/deploy/monorepo-root/backend/app
-                sudo systemctl restart backend.service
+                restart_backend_service
                 exit 1
               fi
               sleep 1
@@ -259,9 +272,22 @@ jobs:
             cd feature-service/src/FeatureService.Api
             dotnet publish -c Release -o /home/asp/monorepo-root/feature-service/publish --self-contained false -p:InformationalVersion=${{ github.sha }}
 
+            restart_feature_service() {
+              for svc in feature-service.service featureservice.service feature-service; do
+                if sudo systemctl restart "$svc" >/dev/null 2>&1; then
+                  if sudo systemctl is-active --quiet "$svc"; then
+                    echo "✅ Restarted service: $svc"
+                    return 0
+                  fi
+                fi
+              done
+              echo "❌ Failed to restart known feature-service units (feature-service.service/featureservice.service/feature-service)"
+              return 1
+            }
+
             # Graceful restart
             echo "🔄 Restarting service..."
-            sudo systemctl restart featureservice.service
+            restart_feature_service
 
             # Health check (wait up to 60 seconds for .NET warmup)
             echo "🏥 Running health check..."
@@ -275,7 +301,7 @@ jobs:
                 echo "🔄 Rolling back..."
                 rm -rf /home/asp/monorepo-root/feature-service/publish
                 cp -r $BACKUP_DIR/publish /home/asp/monorepo-root/feature-service/
-                sudo systemctl restart featureservice.service
+                restart_feature_service
                 exit 1
               fi
               sleep 1

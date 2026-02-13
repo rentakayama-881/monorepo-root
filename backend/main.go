@@ -395,6 +395,7 @@ func main() {
 
 	rateLimitConfig := buildRateLimitConfig()
 	enhancedRateLimiter := middleware.NewEnhancedRateLimiter(rateLimitConfig)
+	// Inject shared Redis client into limiters without creating package import cycles.
 	enhancedRateLimiter.SetRedisClient(services.RedisClient)
 	deleteAccountLimiter.SetRedisClient(services.RedisClient)
 	logger.Info("Enhanced rate limiter configured",
