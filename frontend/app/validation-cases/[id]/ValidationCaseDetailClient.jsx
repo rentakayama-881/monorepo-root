@@ -1734,113 +1734,129 @@ function renderValue(v) {
   return String(v);
 }
 
-function KeyValueTable({ rows, headerLeft = "Kolom", headerRight = "Detail" }) {
-  if (!Array.isArray(rows) || rows.length === 0) {
-    return <div className="px-4 py-4 text-sm text-muted-foreground">Tidak ada data.</div>;
-  }
-
-  return (
-    <>
-      <div className="space-y-2 p-3 md:hidden">
-        {rows.map((row, idx) => (
-          <article key={idx} className="rounded-lg border border-border/70 bg-secondary/[0.18] p-3">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              {prettifyKey(row.label)}
-            </div>
-            <div className="mt-1.5 text-sm text-foreground">{renderValue(row.value)}</div>
-          </article>
-        ))}
-      </div>
-
-      <div className="hidden overflow-x-auto md:block">
-        <table className="w-full table-fixed border-collapse text-sm">
-          <thead className="bg-secondary/35">
-            <tr>
-              <th className="w-56 px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                {headerLeft}
-              </th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                {headerRight}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/80">
-            {rows.map((row, idx) => (
-              <tr key={idx} className="align-top transition-colors hover:bg-secondary/15">
-                <td className="px-4 py-3 font-semibold text-foreground">{prettifyKey(row.label)}</td>
-                <td className="px-4 py-3 text-muted-foreground">{renderValue(row.value)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
-  );
-}
-
-function DataPanel({ title, subtitle, rows, headerLeft = "Kolom", headerRight = "Detail" }) {
-  return (
-    <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
-      <div className="border-b border-border/80 bg-secondary/30 px-4 py-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</div>
-        {subtitle ? <div className="mt-1 text-xs text-muted-foreground">{subtitle}</div> : null}
-      </div>
-      <KeyValueTable rows={rows} headerLeft={headerLeft} headerRight={headerRight} />
-    </section>
-  );
-}
-
-function MarkdownPanel({ content }) {
+function OverviewScroller({ children }) {
   return (
     <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="border-b border-border/80 bg-secondary/30 px-4 py-3">
         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Case Record
+          Case Overview
         </div>
         <div className="mt-1 text-xs text-muted-foreground">
-          Ditulis dalam markdown agar instruksi, checklist, dan acceptance criteria lebih mudah dipindai.
+          Panel disusun menyamping. Geser horizontal untuk melihat semua bagian.
         </div>
       </div>
-      <div className="max-h-[520px] overflow-auto px-4 py-4">
-        <div className="prose prose-neutral max-w-none">
-          <MarkdownPreview content={content} />
-        </div>
+      <div className="overflow-x-auto">
+        <div className="flex min-w-max items-stretch gap-3 p-3 md:gap-4 md:p-4">{children}</div>
       </div>
     </section>
+  );
+}
+
+function OverviewPanel({ title, subtitle, wide = false, children }) {
+  const widthClass = wide
+    ? "w-[min(88vw,46rem)] min-w-[320px] md:min-w-[40rem]"
+    : "w-[min(82vw,24rem)] min-w-[280px] md:min-w-[21rem]";
+
+  return (
+    <article className={`shrink-0 overflow-hidden rounded-lg border border-border/80 bg-background/70 ${widthClass}`}>
+      <div className="border-b border-border/80 bg-secondary/35 px-3 py-2.5">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</div>
+        {subtitle ? <div className="mt-1 text-xs text-muted-foreground">{subtitle}</div> : null}
+      </div>
+      {children}
+    </article>
+  );
+}
+
+function CompactTable({ rows, headerLeft = "Kolom", headerRight = "Detail" }) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return <div className="px-3 py-3 text-sm text-muted-foreground">Tidak ada data.</div>;
+  }
+
+  return (
+    <div className="overflow-auto">
+      <table className="w-full table-fixed border-collapse text-sm">
+        <thead className="bg-secondary/25">
+          <tr>
+            <th className="w-[38%] px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {headerLeft}
+            </th>
+            <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {headerRight}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border/80">
+          {rows.map((row, idx) => (
+            <tr key={idx} className="align-top">
+              <td className="px-3 py-2 font-semibold text-foreground">{prettifyKey(row.label)}</td>
+              <td className="px-3 py-2 text-muted-foreground">{renderValue(row.value)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function MarkdownPanelBody({ content }) {
+  return (
+    <div className="max-h-[440px] overflow-auto px-3 py-3">
+      <div className="prose prose-neutral max-w-none">
+        <MarkdownPreview content={content} />
+      </div>
+    </div>
   );
 }
 
 function ContentTable({ content }) {
   if (!content) return <div className="text-sm text-muted-foreground">Tidak ada konten.</div>;
 
+  const panels = [];
+
   if (typeof content === "string") {
-    return <MarkdownPanel content={content} />;
+    panels.push(
+      <OverviewPanel
+        key="case-record"
+        title="Case Record"
+        subtitle="Ditulis dalam markdown agar instruksi mudah dipindai."
+        wide={true}
+      >
+        <MarkdownPanelBody content={content} />
+      </OverviewPanel>
+    );
+    return <OverviewScroller>{panels}</OverviewScroller>;
   }
 
   if (Array.isArray(content?.sections)) {
-    return (
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {content.sections.map((section, idx) => (
-          <DataPanel
-            key={`${section?.title || "section"}-${idx}`}
-            title={section?.title || `Section ${idx + 1}`}
-            rows={normalizeRows(section?.rows)}
-          />
-        ))}
-      </div>
-    );
+    content.sections.forEach((section, idx) => {
+      panels.push(
+        <OverviewPanel key={`${section?.title || "section"}-${idx}`} title={section?.title || `Section ${idx + 1}`}>
+          <CompactTable rows={normalizeRows(section?.rows)} />
+        </OverviewPanel>
+      );
+    });
+    return <OverviewScroller>{panels}</OverviewScroller>;
   }
 
   if (Array.isArray(content?.rows)) {
-    return <DataPanel title="Case Record" rows={normalizeRows(content.rows)} />;
+    panels.push(
+      <OverviewPanel key="rows" title="Case Record">
+        <CompactTable rows={normalizeRows(content.rows)} />
+      </OverviewPanel>
+    );
+    return <OverviewScroller>{panels}</OverviewScroller>;
   }
 
   if (!isPlainObject(content)) {
-    return (
-      <pre className="whitespace-pre-wrap break-words rounded-[var(--radius)] bg-secondary/30 p-3 text-xs text-muted-foreground">
-        {safeJson(content)}
-      </pre>
+    panels.push(
+      <OverviewPanel key="raw" title="Case Record">
+        <pre className="max-h-[440px] overflow-auto whitespace-pre-wrap break-words px-3 py-3 text-xs text-muted-foreground">
+          {safeJson(content)}
+        </pre>
+      </OverviewPanel>
     );
+    return <OverviewScroller>{panels}</OverviewScroller>;
   }
 
   const quickRows = rowsFromObject(content.quick_intake);
@@ -1853,41 +1869,66 @@ function ContentTable({ content }) {
   const caseRecordText =
     typeof content.case_record_text === "string" ? content.case_record_text.trim() : "";
 
-  const hasStructuredCards = quickRows.length > 0 || checklistRows.length > 0 || metadataRows.length > 0 || Boolean(caseRecordText);
-  const fallbackRows = hasStructuredCards ? [] : rowsFromObject(content);
+  const hasStructuredPanels =
+    quickRows.length > 0 || checklistRows.length > 0 || metadataRows.length > 0 || Boolean(caseRecordText);
+  const fallbackRows = hasStructuredPanels ? [] : rowsFromObject(content);
 
-  return (
-    <div className="space-y-4">
-      {quickRows.length > 0 || checklistRows.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          {quickRows.length > 0 ? (
-            <DataPanel
-              title="Quick Intake"
-              subtitle="Kebutuhan inti untuk memahami ruang lingkup validasi."
-              rows={quickRows}
-            />
-          ) : null}
-          {checklistRows.length > 0 ? (
-            <DataPanel
-              title="Protocol Checklist"
-              subtitle="Konfirmasi readiness sebelum workflow dimulai."
-              rows={checklistRows}
-            />
-          ) : null}
-        </div>
-      ) : null}
+  if (quickRows.length > 0) {
+    panels.push(
+      <OverviewPanel
+        key="quick-intake"
+        title="Quick Intake"
+        subtitle="Kebutuhan inti untuk memahami ruang lingkup validasi."
+      >
+        <CompactTable rows={quickRows} />
+      </OverviewPanel>
+    );
+  }
 
-      {metadataRows.length > 0 ? (
-        <DataPanel
-          title="Intake Metadata"
-          subtitle="Konfigurasi tambahan dari payload case record."
-          rows={metadataRows}
-        />
-      ) : null}
+  if (checklistRows.length > 0) {
+    panels.push(
+      <OverviewPanel
+        key="protocol-checklist"
+        title="Protocol Checklist"
+        subtitle="Konfirmasi readiness sebelum workflow dimulai."
+      >
+        <CompactTable rows={checklistRows} />
+      </OverviewPanel>
+    );
+  }
 
-      {caseRecordText ? <MarkdownPanel content={caseRecordText} /> : null}
+  if (metadataRows.length > 0) {
+    panels.push(
+      <OverviewPanel
+        key="metadata"
+        title="Intake Metadata"
+        subtitle="Konfigurasi tambahan dari payload case record."
+      >
+        <CompactTable rows={metadataRows} />
+      </OverviewPanel>
+    );
+  }
 
-      {fallbackRows.length > 0 ? <DataPanel title="Case Record" rows={fallbackRows} /> : null}
-    </div>
-  );
+  if (caseRecordText) {
+    panels.push(
+      <OverviewPanel
+        key="case-record-text"
+        title="Case Record"
+        subtitle="Ditulis dalam markdown agar instruksi mudah dipindai."
+        wide={true}
+      >
+        <MarkdownPanelBody content={caseRecordText} />
+      </OverviewPanel>
+    );
+  }
+
+  if (fallbackRows.length > 0) {
+    panels.push(
+      <OverviewPanel key="fallback" title="Case Record">
+        <CompactTable rows={fallbackRows} />
+      </OverviewPanel>
+    );
+  }
+
+  return <OverviewScroller>{panels}</OverviewScroller>;
 }
