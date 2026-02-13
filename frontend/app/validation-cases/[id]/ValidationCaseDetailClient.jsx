@@ -1748,6 +1748,11 @@ function extractCaseRecordText(content) {
   return "";
 }
 
+function isRecordRowLabel(labelRaw) {
+  const canonical = canonicalContentKey(labelRaw);
+  return canonical === "record" || canonical === "case_record" || canonical === "case_record_text";
+}
+
 function prettifyKey(keyRaw) {
   const key = String(keyRaw || "").trim();
   if (!key) return "-";
@@ -1884,15 +1889,37 @@ function buildOverviewColumns(content) {
   }
 
   if (Array.isArray(content?.sections)) {
+    let sectionRecordMarkdown = "";
     content.sections.forEach((section, idx) => {
+      const rows = normalizeRows(section?.rows);
+      const filteredRows = rows.filter((row) => {
+        const isRecordRow = isRecordRowLabel(row?.label);
+        if (isRecordRow && !sectionRecordMarkdown) {
+          sectionRecordMarkdown = stripLeadingRecordLabel(contentAsText(row?.value));
+        }
+        return !isRecordRow;
+      });
+      if (filteredRows.length === 0) {
+        return;
+      }
       cols.push({
         key: `${section?.title || "section"}-${idx}`,
         title: section?.title || `Section ${idx + 1}`,
         subtitle: "",
         type: "rows",
-        value: normalizeRows(section?.rows),
+        value: filteredRows,
       });
     });
+    if (sectionRecordMarkdown) {
+      cols.push({
+        key: "case-record-sections-markdown",
+        title: "Free Text",
+        subtitle: "Ditulis dalam markdown agar instruksi mudah dipindai.",
+        type: "markdown",
+        value: sectionRecordMarkdown,
+        width: "min-w-[34rem]",
+      });
+    }
     return cols;
   }
 
