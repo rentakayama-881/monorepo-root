@@ -118,7 +118,7 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="flex min-h-dvh flex-col antialiased bg-background text-foreground">
+      <body className="flex min-h-screen flex-col antialiased bg-background text-foreground">
         <Script id="theme-init" strategy="beforeInteractive">{`
 (() => {
   const root = document.documentElement;
@@ -165,7 +165,7 @@ export default function RootLayout({ children }) {
                   <Header />
                   <ApiStatusBanner />
 
-                  <div id="main-content" role="main" tabIndex={-1} className="flex-1 pt-0 md:pt-[var(--header-height)]">
+                  <div id="main-content" role="main" tabIndex={-1} className="flex-1">
                     {children}
                   </div>
 
