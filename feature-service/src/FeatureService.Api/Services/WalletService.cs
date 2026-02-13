@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
@@ -27,6 +28,8 @@ public class WalletService : IWalletService
     private readonly IMongoCollection<Transaction> _transactions;
     private readonly IMongoCollection<TransactionLedger> _ledger;
     private readonly ILogger<WalletService> _logger;
+    // 0 = unknown, 1 = supported, -1 = unsupported (standalone/non-replica MongoDB)
+    private int _transactionSupportState = 0;
 
     // Security constants - PBKDF2 with high iteration count
     private const int PbkdfIterations = 310000;
@@ -329,6 +332,11 @@ public class WalletService : IWalletService
         Func<IClientSessionHandle, Task<T>> transactional,
         Func<Task<T>> fallback)
     {
+        if (Volatile.Read(ref _transactionSupportState) == -1)
+        {
+            return await fallback();
+        }
+
         try
         {
             using var session = await _wallets.Database.Client.StartSessionAsync();
@@ -338,6 +346,7 @@ public class WalletService : IWalletService
             {
                 var result = await transactional(session);
                 await session.CommitTransactionAsync();
+                Volatile.Write(ref _transactionSupportState, 1);
                 return result;
             }
             catch
@@ -348,12 +357,18 @@ public class WalletService : IWalletService
         }
         catch (NotSupportedException ex) when (IsTransactionsNotSupported(ex))
         {
-            _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates");
+            if (Interlocked.Exchange(ref _transactionSupportState, -1) != -1)
+            {
+                _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates");
+            }
             return await fallback();
         }
         catch (MongoCommandException ex) when (IsTransactionsNotSupported(ex))
         {
-            _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates");
+            if (Interlocked.Exchange(ref _transactionSupportState, -1) != -1)
+            {
+                _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates");
+            }
             return await fallback();
         }
     }

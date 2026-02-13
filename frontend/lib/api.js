@@ -1,4 +1,4 @@
-import { getValidToken } from "./tokenRefresh";
+import { getValidToken, refreshAccessToken } from "./tokenRefresh";
 import { clearToken } from "./auth";
 
 export function getApiBase() {
@@ -117,7 +117,7 @@ export async function fetchJsonAuth(path, options = {}) {
 
   try {
     // Get valid token (refreshes if needed)
-    const token = await getValidToken();
+    let token = await getValidToken();
     if (!token) {
       const error = new Error("Sesi telah berakhir. Silakan login kembali.");
       error.status = 401;
@@ -125,14 +125,26 @@ export async function fetchJsonAuth(path, options = {}) {
       throw error;
     }
 
-    const res = await fetch(`${getApiBase()}${path}`, {
-      ...rest,
-      headers: {
-        ...headers,
-        Authorization: `Bearer ${token}`,
-      },
-      signal: controller.signal,
-    });
+    const performAuthedRequest = async (accessToken) =>
+      fetch(`${getApiBase()}${path}`, {
+        ...rest,
+        headers: {
+          ...headers,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        signal: controller.signal,
+      });
+
+    let res = await performAuthedRequest(token);
+
+    // If token is revoked/stale but not yet expired locally, refresh once and retry.
+    if (res.status === 401) {
+      const refreshedToken = await refreshAccessToken();
+      if (refreshedToken) {
+        token = refreshedToken;
+        res = await performAuthedRequest(token);
+      }
+    }
 
     let data;
     try {

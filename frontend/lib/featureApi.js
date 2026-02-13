@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { getValidToken } from "./tokenRefresh";
+import { getValidToken, refreshAccessToken } from "./tokenRefresh";
 import { clearToken } from "./auth";
 
 /**
@@ -274,7 +274,7 @@ export async function fetchFeatureAuth(path, options = {}) {
 
   try {
     // Get valid token (refreshes if needed via Go backend)
-    const token = await getValidToken();
+    let token = await getValidToken();
     if (!token) {
       const error = new Error("Your session has expired. Please sign in again.");
       error.status = 401;
@@ -283,23 +283,37 @@ export async function fetchFeatureAuth(path, options = {}) {
     }
 
     const method = rest.method || "GET";
-    const resolvedHeaders = buildRequestHeaders(
-      { Authorization: `Bearer ${token}` },
-      headers,
-      rest.body
-    );
 
-    if (shouldAttachIdempotencyKey(path, method) && !hasHeader(resolvedHeaders, "X-Idempotency-Key")) {
-      resolvedHeaders["X-Idempotency-Key"] = generateIdempotencyKey();
+    const performAuthedRequest = async (accessToken) => {
+      const requestHeaders = buildRequestHeaders(
+        { Authorization: `Bearer ${accessToken}` },
+        headers,
+        rest.body
+      );
+
+      if (shouldAttachIdempotencyKey(path, method) && !hasHeader(requestHeaders, "X-Idempotency-Key")) {
+        requestHeaders["X-Idempotency-Key"] = generateIdempotencyKey();
+      }
+
+      return fetch(`${getFeatureApiBase()}${path}`, {
+        ...rest,
+        headers: {
+          ...requestHeaders,
+        },
+        signal: controller.signal,
+      });
+    };
+
+    let res = await performAuthedRequest(token);
+
+    // Token can be revoked while still considered valid by local expiry clock.
+    if (res.status === 401) {
+      const refreshedToken = await refreshAccessToken();
+      if (refreshedToken) {
+        token = refreshedToken;
+        res = await performAuthedRequest(token);
+      }
     }
-
-    const res = await fetch(`${getFeatureApiBase()}${path}`, {
-      ...rest,
-      headers: {
-        ...resolvedHeaders,
-      },
-      signal: controller.signal,
-    });
 
     let data;
     try {

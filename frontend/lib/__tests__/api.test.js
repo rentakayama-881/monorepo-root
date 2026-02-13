@@ -3,13 +3,14 @@ import { getApiBase, fetchJson, fetchJsonAuth } from '../api';
 // Mock dependencies
 jest.mock('../tokenRefresh', () => ({
   getValidToken: jest.fn(),
+  refreshAccessToken: jest.fn(),
 }));
 
 jest.mock('../auth', () => ({
   clearToken: jest.fn(),
 }));
 
-const { getValidToken } = require('../tokenRefresh');
+const { getValidToken, refreshAccessToken } = require('../tokenRefresh');
 const { clearToken } = require('../auth');
 
 describe('api.js', () => {
@@ -142,6 +143,7 @@ describe('api.js', () => {
       global.fetch = jest.fn();
       process.env.NEXT_PUBLIC_API_BASE_URL = 'https://api.test.com';
       getValidToken.mockReset();
+      refreshAccessToken.mockReset();
       clearToken.mockReset();
     });
 
@@ -181,6 +183,7 @@ describe('api.js', () => {
 
     it('should clear token on 401 response', async () => {
       getValidToken.mockResolvedValue('expired-token');
+      refreshAccessToken.mockResolvedValue(null);
       global.fetch.mockResolvedValue({
         ok: false,
         status: 401,
@@ -197,8 +200,37 @@ describe('api.js', () => {
       }
     });
 
+    it('should retry once after refresh when first request returns 401', async () => {
+      getValidToken.mockResolvedValue('old-token');
+      refreshAccessToken.mockResolvedValue('new-token');
+      global.fetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          clone: () => ({
+            json: () => Promise.resolve({ message: 'Unauthorized' }),
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          clone: () => ({
+            json: () => Promise.resolve({ data: 'ok-after-refresh' }),
+          }),
+          json: () => Promise.resolve({ data: 'ok-after-refresh' }),
+        });
+
+      const result = await fetchJsonAuth('/api/me');
+
+      expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch.mock.calls[1][1].headers.Authorization).toBe('Bearer new-token');
+      expect(clearToken).not.toHaveBeenCalled();
+      expect(result).toEqual({ data: 'ok-after-refresh' });
+    });
+
     it('should not clear token on 401 when clearSessionOn401=false', async () => {
       getValidToken.mockResolvedValue('some-token');
+      refreshAccessToken.mockResolvedValue(null);
       global.fetch.mockResolvedValue({
         ok: false,
         status: 401,

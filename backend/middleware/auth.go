@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"context"
+	"errors"
 	"time"
 
 	"backend-gin/database"
@@ -63,6 +65,15 @@ func AuthMiddleware() gin.HandlerFunc {
 			Order(ent.Desc(sessionlock.FieldCreatedAt)).
 			First(c.Request.Context())
 		if lockErr != nil && !ent.IsNotFound(lockErr) {
+			if isRequestContextError(lockErr) {
+				logger.Warn("Account lock validation canceled by request context",
+					zap.Uint("user_id", uint(entUser.ID)),
+					zap.Error(lockErr),
+				)
+				abortWithAppError(c, apperrors.ErrSessionInvalid, nil)
+				return
+			}
+
 			logger.Error("Failed to validate account lock state",
 				zap.Uint("user_id", uint(entUser.ID)),
 				zap.Error(lockErr),
@@ -93,6 +104,16 @@ func AuthMiddleware() gin.HandlerFunc {
 				First(c.Request.Context())
 			if err != nil {
 				if ent.IsNotFound(err) {
+					abortWithAppError(c, apperrors.ErrSessionInvalid, nil)
+					return
+				}
+
+				if isRequestContextError(err) {
+					logger.Warn("Session validation canceled by request context",
+						zap.Uint("user_id", uint(entUser.ID)),
+						zap.String("jti", claims.JTI),
+						zap.Error(err),
+					)
 					abortWithAppError(c, apperrors.ErrSessionInvalid, nil)
 					return
 				}
@@ -135,11 +156,19 @@ func AuthMiddleware() gin.HandlerFunc {
 				updates = updates.SetUserAgent(clientUA)
 			}
 			if _, updateErr := updates.Save(c.Request.Context()); updateErr != nil {
-				logger.Warn("Failed to update session activity metadata",
-					zap.Uint("user_id", uint(entUser.ID)),
-					zap.String("jti", claims.JTI),
-					zap.Error(updateErr),
-				)
+				if isRequestContextError(updateErr) {
+					logger.Debug("Skipped session activity metadata update due to request context cancellation",
+						zap.Uint("user_id", uint(entUser.ID)),
+						zap.String("jti", claims.JTI),
+						zap.Error(updateErr),
+					)
+				} else {
+					logger.Warn("Failed to update session activity metadata",
+						zap.Uint("user_id", uint(entUser.ID)),
+						zap.String("jti", claims.JTI),
+						zap.Error(updateErr),
+					)
+				}
 			}
 		}
 
@@ -158,6 +187,10 @@ func truncateString(s string, max int) string {
 		return s[:max]
 	}
 	return s
+}
+
+func isRequestContextError(err error) bool {
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }
 
 func abortWithAppError(c *gin.Context, appErr *apperrors.AppError, extra map[string]interface{}) {
