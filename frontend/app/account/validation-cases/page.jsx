@@ -21,6 +21,17 @@ function formatIDR(amount) {
   return `Rp ${Math.max(0, Math.trunc(n)).toLocaleString("id-ID")}`;
 }
 
+function formatDeleteCaseError(err, fallback = "Gagal menghapus Validation Case") {
+  const message = String(err?.message || fallback).trim();
+  const details = String(err?.details || "").trim();
+  if (!details) return message || fallback;
+  const generic = new Set(["input tidak valid", "kesalahan database", "terjadi kesalahan internal"]);
+  if (generic.has(message.toLowerCase())) {
+    return details;
+  }
+  return `${message}: ${details}`;
+}
+
 export default function MyValidationCasesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -63,7 +74,7 @@ export default function MyValidationCasesPage() {
       await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}`, { method: "DELETE" });
       await load();
     } catch (e) {
-      setError(e?.message || "Gagal menghapus Validation Case");
+      setError(formatDeleteCaseError(e));
     } finally {
       setDeletingId(null);
     }

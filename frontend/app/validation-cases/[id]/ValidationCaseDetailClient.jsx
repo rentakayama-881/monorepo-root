@@ -123,9 +123,11 @@ function CaseSection({ title, subtitle, children }) {
   return (
     <section className="space-y-4">
       <header className="flex flex-col gap-1">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {subtitle || "Section"}
-        </div>
+        {subtitle ? (
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            {subtitle}
+          </div>
+        ) : null}
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
       </header>
       <div>{children}</div>
@@ -848,7 +850,7 @@ export default function ValidationCaseRecordPage() {
               {Array.isArray(vc?.tags) && vc.tags.length > 0 ? <TagList tags={vc.tags} size="sm" /> : null}
             </header>
 
-            <CaseSection title="Overview" subtitle="Record">
+            <CaseSection title="Overview">
               <ContentTable content={recordContent} />
             </CaseSection>
 
@@ -1832,7 +1834,7 @@ function buildOverviewColumns(content) {
   if (typeof content === "string") {
     cols.push({
       key: "case-record",
-      title: "Case Record",
+      title: "Free Text",
       subtitle: "Ditulis dalam markdown agar instruksi mudah dipindai.",
       type: "markdown",
       value: content,
@@ -1857,7 +1859,7 @@ function buildOverviewColumns(content) {
   if (Array.isArray(content?.rows)) {
     cols.push({
       key: "case-record-rows",
-      title: "Case Record",
+      title: "Overview Data",
       subtitle: "",
       type: "rows",
       value: normalizeRows(content.rows),
@@ -1868,7 +1870,7 @@ function buildOverviewColumns(content) {
   if (!isPlainObject(content)) {
     cols.push({
       key: "raw-content",
-      title: "Case Record",
+      title: "Overview Data",
       subtitle: "",
       type: "raw",
       value: safeJson(content),
@@ -1919,7 +1921,7 @@ function buildOverviewColumns(content) {
   if (caseRecordText) {
     cols.push({
       key: "case-record-markdown",
-      title: "Case Record",
+      title: "Free Text",
       subtitle: "Ditulis dalam markdown agar instruksi mudah dipindai.",
       type: "markdown",
       value: caseRecordText,
@@ -1930,7 +1932,7 @@ function buildOverviewColumns(content) {
   if (cols.length === 0) {
     cols.push({
       key: "fallback",
-      title: "Case Record",
+      title: "Overview Data",
       subtitle: "",
       type: "rows",
       value: rowsFromObject(content),

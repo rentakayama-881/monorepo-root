@@ -7,7 +7,11 @@ import (
 
 	"backend-gin/database"
 	"backend-gin/ent"
+	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/category"
+	"backend-gin/ent/consultationrequest"
+	"backend-gin/ent/endorsement"
+	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/tag"
 	"backend-gin/ent/user"
 	"backend-gin/ent/validationcase"
@@ -398,7 +402,17 @@ func (s *EntValidationCaseService) UpdateValidationCase(ctx context.Context, own
 }
 
 func (s *EntValidationCaseService) DeleteValidationCase(ctx context.Context, ownerUserID uint, validationCaseID uint) error {
-	vc, err := s.client.ValidationCase.
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		logger.Error("Failed to start delete validation case transaction",
+			zap.Uint("validation_case_id", validationCaseID),
+			zap.Error(err),
+		)
+		return apperrors.ErrDatabase.WithDetails("Gagal menyiapkan proses hapus Validation Case")
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	vc, err := tx.ValidationCase.
 		Query().
 		Where(validationcase.IDEQ(int(validationCaseID))).
 		Only(ctx)
@@ -416,9 +430,80 @@ func (s *EntValidationCaseService) DeleteValidationCase(ctx context.Context, own
 	if vc.EscrowTransferID != nil && strings.TrimSpace(*vc.EscrowTransferID) != "" {
 		return apperrors.ErrInvalidInput.WithDetails("Validation Case tidak dapat dihapus setelah Lock Funds dilakukan")
 	}
+	if vc.DisputeID != nil && strings.TrimSpace(*vc.DisputeID) != "" {
+		return apperrors.ErrInvalidInput.WithDetails("Validation Case tidak dapat dihapus setelah dispute dibuat")
+	}
+	if vc.ArtifactDocumentID != nil && strings.TrimSpace(*vc.ArtifactDocumentID) != "" {
+		return apperrors.ErrInvalidInput.WithDetails("Validation Case tidak dapat dihapus setelah artifact submission tercatat")
+	}
+	if vc.CertifiedArtifactDocumentID != nil && strings.TrimSpace(*vc.CertifiedArtifactDocumentID) != "" {
+		return apperrors.ErrInvalidInput.WithDetails("Validation Case tidak dapat dihapus setelah certified artifact diterbitkan")
+	}
+	if vc.AcceptedFinalOfferID != nil {
+		return apperrors.ErrInvalidInput.WithDetails("Validation Case tidak dapat dihapus setelah Final Offer diterima")
+	}
 
-	if err := s.client.ValidationCase.DeleteOneID(int(validationCaseID)).Exec(ctx); err != nil {
-		return apperrors.ErrDatabase
+	// FK strategy in current schema uses NO ACTION for most child rows.
+	// Delete children first, then parent case.
+	if _, err := tx.ValidationCaseLog.Delete().
+		Where(validationcaselog.ValidationCaseIDEQ(int(validationCaseID))).
+		Exec(ctx); err != nil {
+		logger.Error("Failed to delete validation case logs",
+			zap.Uint("validation_case_id", validationCaseID),
+			zap.Error(err),
+		)
+		return apperrors.ErrDatabase.WithDetails("Gagal menghapus Case Log")
+	}
+	if _, err := tx.ConsultationRequest.Delete().
+		Where(consultationrequest.ValidationCaseIDEQ(int(validationCaseID))).
+		Exec(ctx); err != nil {
+		logger.Error("Failed to delete consultation requests",
+			zap.Uint("validation_case_id", validationCaseID),
+			zap.Error(err),
+		)
+		return apperrors.ErrDatabase.WithDetails("Gagal menghapus Consultation Request")
+	}
+	if _, err := tx.FinalOffer.Delete().
+		Where(finaloffer.ValidationCaseIDEQ(int(validationCaseID))).
+		Exec(ctx); err != nil {
+		logger.Error("Failed to delete final offers",
+			zap.Uint("validation_case_id", validationCaseID),
+			zap.Error(err),
+		)
+		return apperrors.ErrDatabase.WithDetails("Gagal menghapus Final Offer")
+	}
+	if _, err := tx.ArtifactSubmission.Delete().
+		Where(artifactsubmission.ValidationCaseIDEQ(int(validationCaseID))).
+		Exec(ctx); err != nil {
+		logger.Error("Failed to delete artifact submissions",
+			zap.Uint("validation_case_id", validationCaseID),
+			zap.Error(err),
+		)
+		return apperrors.ErrDatabase.WithDetails("Gagal menghapus Artifact Submission")
+	}
+	if _, err := tx.Endorsement.Delete().
+		Where(endorsement.ValidationCaseIDEQ(int(validationCaseID))).
+		Exec(ctx); err != nil {
+		logger.Error("Failed to delete endorsements",
+			zap.Uint("validation_case_id", validationCaseID),
+			zap.Error(err),
+		)
+		return apperrors.ErrDatabase.WithDetails("Gagal menghapus Endorsement")
+	}
+
+	if err := tx.ValidationCase.DeleteOneID(int(validationCaseID)).Exec(ctx); err != nil {
+		logger.Error("Failed to delete validation case parent row",
+			zap.Uint("validation_case_id", validationCaseID),
+			zap.Error(err),
+		)
+		return apperrors.ErrDatabase.WithDetails("Gagal menghapus Validation Case")
+	}
+	if err := tx.Commit(); err != nil {
+		logger.Error("Failed to commit validation case delete transaction",
+			zap.Uint("validation_case_id", validationCaseID),
+			zap.Error(err),
+		)
+		return apperrors.ErrDatabase.WithDetails("Gagal menyelesaikan proses hapus Validation Case")
 	}
 	return nil
 }
