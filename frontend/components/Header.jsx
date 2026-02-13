@@ -165,12 +165,11 @@ export default function Header() {
         </button>
 
         {/* Logo - AIvalid */}
-        <Logo variant="icon" size={34} priority className="shrink-0 -ml-1 sm:hidden" />
         <Logo
           variant="horizontal"
           size={40}
           priority
-          className="hidden shrink-0 sm:inline-flex drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_6px_20px_rgba(0,0,0,0.22)]"
+          className="shrink-0 -ml-1 md:ml-0 drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_6px_20px_rgba(0,0,0,0.22)]"
         />
 
         {/* Desktop nav */}

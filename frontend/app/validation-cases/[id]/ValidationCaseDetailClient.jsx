@@ -1734,129 +1734,81 @@ function renderValue(v) {
   return String(v);
 }
 
-function OverviewScroller({ children }) {
-  return (
-    <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
-      <div className="border-b border-border/80 bg-secondary/30 px-4 py-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Case Overview
-        </div>
-        <div className="mt-1 text-xs text-muted-foreground">
-          Panel disusun menyamping. Geser horizontal untuk melihat semua bagian.
-        </div>
-      </div>
-      <div className="overflow-x-auto">
-        <div className="flex min-w-max items-stretch gap-3 p-3 md:gap-4 md:p-4">{children}</div>
-      </div>
-    </section>
-  );
-}
-
-function OverviewPanel({ title, subtitle, wide = false, children }) {
-  const widthClass = wide
-    ? "w-[min(88vw,46rem)] min-w-[320px] md:min-w-[40rem]"
-    : "w-[min(82vw,24rem)] min-w-[280px] md:min-w-[21rem]";
-
-  return (
-    <article className={`shrink-0 overflow-hidden rounded-lg border border-border/80 bg-background/70 ${widthClass}`}>
-      <div className="border-b border-border/80 bg-secondary/35 px-3 py-2.5">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</div>
-        {subtitle ? <div className="mt-1 text-xs text-muted-foreground">{subtitle}</div> : null}
-      </div>
-      {children}
-    </article>
-  );
-}
-
-function CompactTable({ rows, headerLeft = "Kolom", headerRight = "Detail" }) {
+function OverviewCellRows({ rows }) {
   if (!Array.isArray(rows) || rows.length === 0) {
-    return <div className="px-3 py-3 text-sm text-muted-foreground">Tidak ada data.</div>;
+    return <div className="text-sm text-muted-foreground">Tidak ada data.</div>;
   }
 
   return (
-    <div className="overflow-auto">
-      <table className="w-full table-fixed border-collapse text-sm">
-        <thead className="bg-secondary/25">
-          <tr>
-            <th className="w-[38%] px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              {headerLeft}
-            </th>
-            <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              {headerRight}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/80">
-          {rows.map((row, idx) => (
-            <tr key={idx} className="align-top">
-              <td className="px-3 py-2 font-semibold text-foreground">{prettifyKey(row.label)}</td>
-              <td className="px-3 py-2 text-muted-foreground">{renderValue(row.value)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <dl className="space-y-2">
+      {rows.map((row, idx) => (
+        <div key={idx} className="rounded-md border border-border/70 bg-background/60 p-2.5">
+          <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            {prettifyKey(row.label)}
+          </dt>
+          <dd className="mt-1 text-sm text-foreground">{renderValue(row.value)}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
-function MarkdownPanelBody({ content }) {
+function OverviewCellMarkdown({ content }) {
   return (
-    <div className="max-h-[440px] overflow-auto px-3 py-3">
-      <div className="prose prose-neutral max-w-none">
-        <MarkdownPreview content={content} />
-      </div>
+    <div className="prose prose-neutral max-w-none">
+      <MarkdownPreview content={content} />
     </div>
   );
 }
 
-function ContentTable({ content }) {
-  if (!content) return <div className="text-sm text-muted-foreground">Tidak ada konten.</div>;
-
-  const panels = [];
+function buildOverviewColumns(content) {
+  const cols = [];
 
   if (typeof content === "string") {
-    panels.push(
-      <OverviewPanel
-        key="case-record"
-        title="Case Record"
-        subtitle="Ditulis dalam markdown agar instruksi mudah dipindai."
-        wide={true}
-      >
-        <MarkdownPanelBody content={content} />
-      </OverviewPanel>
-    );
-    return <OverviewScroller>{panels}</OverviewScroller>;
+    cols.push({
+      key: "case-record",
+      title: "Case Record",
+      subtitle: "Ditulis dalam markdown agar instruksi mudah dipindai.",
+      type: "markdown",
+      value: content,
+      width: "min-w-[34rem]",
+    });
+    return cols;
   }
 
   if (Array.isArray(content?.sections)) {
     content.sections.forEach((section, idx) => {
-      panels.push(
-        <OverviewPanel key={`${section?.title || "section"}-${idx}`} title={section?.title || `Section ${idx + 1}`}>
-          <CompactTable rows={normalizeRows(section?.rows)} />
-        </OverviewPanel>
-      );
+      cols.push({
+        key: `${section?.title || "section"}-${idx}`,
+        title: section?.title || `Section ${idx + 1}`,
+        subtitle: "",
+        type: "rows",
+        value: normalizeRows(section?.rows),
+      });
     });
-    return <OverviewScroller>{panels}</OverviewScroller>;
+    return cols;
   }
 
   if (Array.isArray(content?.rows)) {
-    panels.push(
-      <OverviewPanel key="rows" title="Case Record">
-        <CompactTable rows={normalizeRows(content.rows)} />
-      </OverviewPanel>
-    );
-    return <OverviewScroller>{panels}</OverviewScroller>;
+    cols.push({
+      key: "case-record-rows",
+      title: "Case Record",
+      subtitle: "",
+      type: "rows",
+      value: normalizeRows(content.rows),
+    });
+    return cols;
   }
 
   if (!isPlainObject(content)) {
-    panels.push(
-      <OverviewPanel key="raw" title="Case Record">
-        <pre className="max-h-[440px] overflow-auto whitespace-pre-wrap break-words px-3 py-3 text-xs text-muted-foreground">
-          {safeJson(content)}
-        </pre>
-      </OverviewPanel>
-    );
-    return <OverviewScroller>{panels}</OverviewScroller>;
+    cols.push({
+      key: "raw-content",
+      title: "Case Record",
+      subtitle: "",
+      type: "raw",
+      value: safeJson(content),
+    });
+    return cols;
   }
 
   const quickRows = rowsFromObject(content.quick_intake);
@@ -1869,66 +1821,116 @@ function ContentTable({ content }) {
   const caseRecordText =
     typeof content.case_record_text === "string" ? content.case_record_text.trim() : "";
 
-  const hasStructuredPanels =
-    quickRows.length > 0 || checklistRows.length > 0 || metadataRows.length > 0 || Boolean(caseRecordText);
-  const fallbackRows = hasStructuredPanels ? [] : rowsFromObject(content);
-
   if (quickRows.length > 0) {
-    panels.push(
-      <OverviewPanel
-        key="quick-intake"
-        title="Quick Intake"
-        subtitle="Kebutuhan inti untuk memahami ruang lingkup validasi."
-      >
-        <CompactTable rows={quickRows} />
-      </OverviewPanel>
-    );
+    cols.push({
+      key: "quick-intake",
+      title: "Quick Intake",
+      subtitle: "Kebutuhan inti untuk memahami ruang lingkup validasi.",
+      type: "rows",
+      value: quickRows,
+    });
   }
 
   if (checklistRows.length > 0) {
-    panels.push(
-      <OverviewPanel
-        key="protocol-checklist"
-        title="Protocol Checklist"
-        subtitle="Konfirmasi readiness sebelum workflow dimulai."
-      >
-        <CompactTable rows={checklistRows} />
-      </OverviewPanel>
-    );
+    cols.push({
+      key: "protocol-checklist",
+      title: "Protocol Checklist",
+      subtitle: "Konfirmasi readiness sebelum workflow dimulai.",
+      type: "rows",
+      value: checklistRows,
+    });
   }
 
   if (metadataRows.length > 0) {
-    panels.push(
-      <OverviewPanel
-        key="metadata"
-        title="Intake Metadata"
-        subtitle="Konfigurasi tambahan dari payload case record."
-      >
-        <CompactTable rows={metadataRows} />
-      </OverviewPanel>
-    );
+    cols.push({
+      key: "intake-metadata",
+      title: "Intake Metadata",
+      subtitle: "Konfigurasi tambahan dari payload case record.",
+      type: "rows",
+      value: metadataRows,
+    });
   }
 
   if (caseRecordText) {
-    panels.push(
-      <OverviewPanel
-        key="case-record-text"
-        title="Case Record"
-        subtitle="Ditulis dalam markdown agar instruksi mudah dipindai."
-        wide={true}
-      >
-        <MarkdownPanelBody content={caseRecordText} />
-      </OverviewPanel>
-    );
+    cols.push({
+      key: "case-record-markdown",
+      title: "Case Record",
+      subtitle: "Ditulis dalam markdown agar instruksi mudah dipindai.",
+      type: "markdown",
+      value: caseRecordText,
+      width: "min-w-[34rem]",
+    });
   }
 
-  if (fallbackRows.length > 0) {
-    panels.push(
-      <OverviewPanel key="fallback" title="Case Record">
-        <CompactTable rows={fallbackRows} />
-      </OverviewPanel>
-    );
+  if (cols.length === 0) {
+    cols.push({
+      key: "fallback",
+      title: "Case Record",
+      subtitle: "",
+      type: "rows",
+      value: rowsFromObject(content),
+    });
   }
 
-  return <OverviewScroller>{panels}</OverviewScroller>;
+  return cols;
+}
+
+function ContentTable({ content }) {
+  if (!content) return <div className="text-sm text-muted-foreground">Tidak ada konten.</div>;
+
+  const columns = buildOverviewColumns(content);
+  const defaultColWidth = "min-w-[21rem]";
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+      <div className="border-b border-border/80 bg-secondary/30 px-4 py-3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Case Overview
+        </div>
+        <div className="mt-1 text-xs text-muted-foreground">
+          Struktur kolom menyamping dalam satu tabel. Geser horizontal untuk melihat semua kolom.
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-max table-fixed border-collapse">
+          <thead className="bg-secondary/25">
+            <tr>
+              {columns.map((col) => (
+                <th
+                  key={`${col.key}-head`}
+                  className={`border-r border-border/80 px-3 py-2.5 text-left align-top last:border-r-0 ${col.width || defaultColWidth}`}
+                >
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    {col.title}
+                  </div>
+                  {col.subtitle ? <div className="mt-1 text-xs font-normal text-muted-foreground">{col.subtitle}</div> : null}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="align-top">
+              {columns.map((col) => (
+                <td
+                  key={`${col.key}-body`}
+                  className="border-r border-border/80 p-3 align-top last:border-r-0"
+                >
+                  <div className="max-h-[520px] min-h-[220px] overflow-auto">
+                    {col.type === "markdown" ? (
+                      <OverviewCellMarkdown content={col.value} />
+                    ) : col.type === "raw" ? (
+                      <pre className="whitespace-pre-wrap break-words text-xs text-muted-foreground">{col.value}</pre>
+                    ) : (
+                      <OverviewCellRows rows={col.value} />
+                    )}
+                  </div>
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
 }
