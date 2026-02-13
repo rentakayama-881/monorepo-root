@@ -1729,6 +1729,25 @@ const CONTENT_LABEL_MAP = {
 };
 const RESERVED_CONTENT_KEYS = new Set(["quick_intake", "checklist", "case_record_text", "case_record", "record"]);
 
+function canonicalContentKey(keyRaw) {
+  const key = String(keyRaw || "").trim();
+  if (!key) return "";
+  const snake = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+  return snake.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+function extractCaseRecordText(content) {
+  if (!isPlainObject(content)) return "";
+  for (const [key, value] of Object.entries(content)) {
+    const canonical = canonicalContentKey(key);
+    if (canonical === "case_record_text" || canonical === "case_record" || canonical === "record") {
+      if (typeof value === "string") return value.trim();
+      if (isPlainObject(value) && typeof value.text === "string") return value.text.trim();
+    }
+  }
+  return "";
+}
+
 function prettifyKey(keyRaw) {
   const key = String(keyRaw || "").trim();
   if (!key) return "-";
@@ -1904,17 +1923,9 @@ function buildOverviewColumns(content) {
     typeof value === "boolean" ? (value ? "Ya" : "Tidak") : value
   );
   const metadataRows = Object.entries(content)
-    .filter(([key]) => !RESERVED_CONTENT_KEYS.has(key))
+    .filter(([key]) => !RESERVED_CONTENT_KEYS.has(canonicalContentKey(key)))
     .map(([label, value]) => ({ label, value }));
-  const caseRecordText = stripLeadingRecordLabel(
-    typeof content.case_record_text === "string"
-      ? content.case_record_text.trim()
-      : typeof content.case_record === "string"
-        ? content.case_record.trim()
-        : typeof content.record === "string"
-          ? content.record.trim()
-          : "",
-  );
+  const caseRecordText = stripLeadingRecordLabel(extractCaseRecordText(content));
 
   if (quickRows.length > 0) {
     cols.push({
