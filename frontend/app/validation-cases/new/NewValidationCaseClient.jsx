@@ -17,26 +17,36 @@ const quickIntakeFields = [
     key: "validation_goal",
     label: "Masalah yang ingin diselesaikan",
     placeholder: "Contoh: Saya perlu memastikan hasil kerja AI bisa dipakai untuk presentasi klien.",
+    minLen: 12,
+    maxLen: 800,
   },
   {
     key: "output_type",
     label: "Hasil akhir yang kamu butuhkan",
     placeholder: "Contoh: File Excel final, dokumen revisi, video 30 detik, atau deck presentasi.",
+    minLen: 4,
+    maxLen: 240,
   },
   {
     key: "evidence_input",
     label: "Materi awal yang sudah tersedia",
     placeholder: "Contoh: draft, raw file, catatan, prompt AI, screenshot, atau data pendukung.",
+    minLen: 8,
+    maxLen: 2000,
   },
   {
     key: "pass_criteria",
     label: "Standar hasil dianggap selesai",
     placeholder: "Contoh: tidak ada error formula, style sesuai brand, typo <= 2, dan siap submit.",
+    minLen: 8,
+    maxLen: 2000,
   },
   {
     key: "constraints",
     label: "Batasan penting",
     placeholder: "Contoh: deadline, format wajib, tools yang boleh/tidak boleh, aturan etika/akademik.",
+    minLen: 4,
+    maxLen: 2000,
   },
 ];
 
@@ -64,6 +74,9 @@ const checklistItems = [
 ];
 
 const sensitivityOptions = ["S0", "S1", "S2", "S3"];
+const titleMinLength = 3;
+const titleMaxLength = 200;
+const caseRecordMaxLength = 4000;
 const autoBriefLabelMap = {
   objective: "Tujuan",
   expected_output_type: "Output",
@@ -84,6 +97,26 @@ function sanitizeNumericInput(raw) {
   return String(raw || "")
     .replace(/[^\d]/g, "")
     .replace(/^0+(?=\d)/, "");
+}
+
+function getTagDimensionFromSlug(rawSlug) {
+  const slug = String(rawSlug || "").toLowerCase();
+  if (slug.startsWith("artifact-")) return "artifact";
+  if (slug.startsWith("stage-")) return "stage";
+  if (slug.startsWith("domain-")) return "domain";
+  if (slug.startsWith("evidence-")) return "evidence";
+  return "";
+}
+
+function formatCreateCaseError(err, fallback = "Gagal membuat Validation Case") {
+  const message = String(err?.message || fallback).trim();
+  const details = String(err?.details || "").trim();
+  if (!details) return message || fallback;
+  const generic = new Set(["input tidak valid", "field wajib tidak ada", "request body tidak valid"]);
+  if (generic.has(message.toLowerCase())) {
+    return details;
+  }
+  return `${message}: ${details}`;
 }
 
 function pickDefaultCategory(list) {
@@ -255,8 +288,12 @@ export default function NewValidationCaseClient() {
     const caseRecord = String(form.case_record_text || "").trim();
     const sensitivity = String(form.quick_intake?.sensitivity || "S1").trim().toUpperCase();
 
-    if (title.length < 3) {
-      setError("Title minimal 3 karakter.");
+    if (title.length < titleMinLength) {
+      setError(`Title minimal ${titleMinLength} karakter.`);
+      return;
+    }
+    if (title.length > titleMaxLength) {
+      setError(`Title maksimal ${titleMaxLength} karakter.`);
       return;
     }
     if (!bounty || bounty < 10000) {
@@ -268,8 +305,17 @@ export default function NewValidationCaseClient() {
       return;
     }
     for (const item of quickIntakeFields) {
-      if (!String(form.quick_intake?.[item.key] || "").trim()) {
+      const value = String(form.quick_intake?.[item.key] || "").trim();
+      if (!value) {
         setError(`${item.label} wajib diisi.`);
+        return;
+      }
+      if (value.length < item.minLen) {
+        setError(`${item.label} minimal ${item.minLen} karakter.`);
+        return;
+      }
+      if (value.length > item.maxLen) {
+        setError(`${item.label} maksimal ${item.maxLen} karakter.`);
         return;
       }
     }
@@ -285,9 +331,32 @@ export default function NewValidationCaseClient() {
       setError("Case Record tidak boleh memuat kontak langsung.");
       return;
     }
-    if (selectedTags.length < 2 || selectedTags.length > 4) {
+    if (caseRecord.length > caseRecordMaxLength) {
+      setError(`Case Record maksimal ${caseRecordMaxLength} karakter.`);
+      return;
+    }
+
+    const normalizedTagSlugs = Array.from(
+      new Set(
+        selectedTags
+          .map((t) => String(t?.slug || "").toLowerCase().trim())
+          .filter(Boolean),
+      ),
+    );
+    if (normalizedTagSlugs.length < 2 || normalizedTagSlugs.length > 4) {
       setError("Tags wajib minimal 2 dan maksimal 4 sesuai taxonomy.");
       return;
+    }
+    const seenDimensions = new Map();
+    for (const slug of normalizedTagSlugs) {
+      const dim = getTagDimensionFromSlug(slug);
+      if (!dim) continue;
+      const existing = seenDimensions.get(dim);
+      if (existing) {
+        setError(`Tag dimensi '${dim}' hanya boleh satu (${existing} dan ${slug}).`);
+        return;
+      }
+      seenDimensions.set(dim, slug);
     }
     const unchecked = checklistItems.find((it) => !Boolean(form.checklist?.[it.key]));
     if (unchecked) {
@@ -313,7 +382,7 @@ export default function NewValidationCaseClient() {
         content_type: "json",
         content,
         bounty_amount: bounty,
-        tag_slugs: selectedTags.map((t) => t.slug),
+        tag_slugs: normalizedTagSlugs,
       };
 
       const created = await fetchJsonAuth("/api/validation-cases", {
@@ -328,7 +397,7 @@ export default function NewValidationCaseClient() {
         router.push(`/validation-cases/${encodeURIComponent(String(id))}`);
       }
     } catch (e) {
-      setError(e?.message || "Gagal membuat Validation Case");
+      setError(formatCreateCaseError(e));
     } finally {
       setSubmitting(false);
     }
@@ -506,7 +575,8 @@ export default function NewValidationCaseClient() {
               />
             </div>
             <div className="mt-2 text-[11px] text-muted-foreground">
-              Gunakan markdown secukupnya. Jangan masukkan kontak langsung (Telegram/WhatsApp) di Case Record.
+              Gunakan markdown secukupnya (maksimal {caseRecordMaxLength} karakter). Jangan masukkan kontak langsung
+              (Telegram/WhatsApp) di Case Record.
             </div>
           </div>
 
