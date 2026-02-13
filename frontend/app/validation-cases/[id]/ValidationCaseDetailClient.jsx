@@ -1742,7 +1742,7 @@ function OverviewCellRows({ rows }) {
   return (
     <dl className="space-y-2">
       {rows.map((row, idx) => (
-        <div key={idx} className="rounded-md border border-border/70 bg-background/60 p-2.5">
+        <div key={idx} className="rounded-[4px] border border-border/50 bg-background/40 p-2.5">
           <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             {prettifyKey(row.label)}
           </dt>
@@ -1882,8 +1882,8 @@ function ContentTable({ content }) {
   const defaultColWidth = "min-w-[21rem]";
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
-      <div className="border-b border-border/80 bg-secondary/30 px-4 py-3">
+    <section className="overflow-hidden rounded-[6px] border border-border bg-card">
+      <div className="border-b border-border/70 bg-secondary/45 px-4 py-3">
         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Case Overview
         </div>
@@ -1894,12 +1894,12 @@ function ContentTable({ content }) {
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-max table-fixed border-collapse">
-          <thead className="bg-secondary/25">
+          <thead className="bg-secondary/55">
             <tr>
               {columns.map((col) => (
                 <th
                   key={`${col.key}-head`}
-                  className={`border-r border-border/80 px-3 py-2.5 text-left align-top last:border-r-0 ${col.width || defaultColWidth}`}
+                  className={`border-r border-border/70 px-3 py-2.5 text-left align-top last:border-r-0 ${col.width || defaultColWidth}`}
                 >
                   <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                     {col.title}
@@ -1914,7 +1914,7 @@ function ContentTable({ content }) {
               {columns.map((col) => (
                 <td
                   key={`${col.key}-body`}
-                  className="border-r border-border/80 p-3 align-top last:border-r-0"
+                  className="border-r border-border/70 p-3 align-top last:border-r-0"
                 >
                   <div className="max-h-[520px] min-h-[220px] overflow-auto">
                     {col.type === "markdown" ? (
