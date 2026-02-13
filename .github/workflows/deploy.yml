@@ -143,6 +143,8 @@ jobs:
           host: ${{ secrets.VPS_BACKEND_HOST }}
           username: ${{ secrets.VPS_BACKEND_USER }}
           key: ${{ secrets.VPS_BACKEND_SSH_KEY }}
+          timeout: 120s
+          command_timeout: 30m
           script: |
             set -e
 
@@ -248,6 +250,8 @@ jobs:
           host: ${{ secrets.VPS_FEATURE_HOST }}
           username: ${{ secrets.VPS_FEATURE_USER }}
           key: ${{ secrets.VPS_FEATURE_SSH_KEY }}
+          timeout: 120s
+          command_timeout: 30m
           script: |
             set -e
 
