@@ -1879,7 +1879,7 @@ function buildOverviewColumns(content) {
     const normalizedContent = stripLeadingRecordLabel(content);
     cols.push({
       key: "case-record",
-      title: "Free Text",
+      title: "Case Record (Free Text)",
       subtitle: "Ditulis dalam markdown agar instruksi mudah dipindai.",
       type: "markdown",
       value: normalizedContent,
@@ -1913,7 +1913,7 @@ function buildOverviewColumns(content) {
     if (sectionRecordMarkdown) {
       cols.push({
         key: "case-record-sections-markdown",
-        title: "Free Text",
+        title: "Case Record (Free Text)",
         subtitle: "Ditulis dalam markdown agar instruksi mudah dipindai.",
         type: "markdown",
         value: sectionRecordMarkdown,
@@ -1987,7 +1987,7 @@ function buildOverviewColumns(content) {
   if (caseRecordText) {
     cols.push({
       key: "case-record-markdown",
-      title: "Free Text",
+      title: "Case Record (Free Text)",
       subtitle: "Ditulis dalam markdown agar instruksi mudah dipindai.",
       type: "markdown",
       value: caseRecordText,
