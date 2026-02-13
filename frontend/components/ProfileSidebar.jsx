@@ -159,7 +159,7 @@ export default function ProfileSidebar({ onClose }) {
         />
         <div
           ref={panelRef}
-          className="fixed right-4 top-16 z-[120] w-80 rounded-[var(--radius)] border bg-card p-4 shadow-xl"
+          className="fixed right-3 top-14 z-[120] w-[19rem] max-w-[calc(100vw-1.5rem)] rounded-[var(--radius)] border bg-card p-4 shadow-xl"
         >
           <div className="space-y-4" aria-busy="true" aria-live="polite">
             <div className="flex items-center gap-3">
@@ -192,7 +192,7 @@ export default function ProfileSidebar({ onClose }) {
       />
       <div
         ref={panelRef}
-        className="fixed right-4 top-16 z-[120] w-80 rounded-[var(--radius)] border bg-card shadow-xl flex flex-col max-h-[calc(100dvh-6rem)] animate-slide-down"
+        className="fixed right-3 top-14 z-[120] w-[19rem] max-w-[calc(100vw-1.5rem)] rounded-[var(--radius)] border bg-card shadow-xl flex flex-col max-h-[calc(100dvh-7rem)] animate-slide-down"
       >
         {/* Fixed header section */}
         <div className="p-4 pb-0 shrink-0">

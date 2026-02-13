@@ -1,12 +1,9 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Logo } from "./ui/Logo";
 
 export default function Sidebar({ open, onClose }) {
-  const sidebarRef = useRef(null);
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
   const handleClose = () => onClose?.();
 
   // Lock body scroll when sidebar is open (like prompts.chat Sheet)
@@ -39,49 +36,17 @@ export default function Sidebar({ open, onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [open, handleClose]);
 
-  // Swipe to close gesture for mobile
-  useEffect(() => {
-    if (!open || !sidebarRef.current) return;
-
-    const sidebar = sidebarRef.current;
-    
-    const handleTouchStart = (e) => {
-      touchStartX.current = e.touches[0].clientX;
-    };
-    
-    const handleTouchMove = (e) => {
-      touchEndX.current = e.touches[0].clientX;
-    };
-    
-    const handleTouchEnd = () => {
-      const swipeDistance = touchStartX.current - touchEndX.current;
-      // If swiped left more than 50px, close sidebar
-      if (swipeDistance > 50) {
-        handleClose();
-      }
-    };
-    
-    sidebar.addEventListener('touchstart', handleTouchStart);
-    sidebar.addEventListener('touchmove', handleTouchMove);
-    sidebar.addEventListener('touchend', handleTouchEnd);
-    
-    return () => {
-      sidebar.removeEventListener('touchstart', handleTouchStart);
-      sidebar.removeEventListener('touchmove', handleTouchMove);
-      sidebar.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [open, handleClose]);
-
   const sectionHeading =
     "text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground";
 
   return (
     <>
       <aside
-        ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 z-[120] flex h-full w-3/4 max-w-sm flex-col border-r bg-card shadow-xl transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed inset-y-0 left-0 z-[120] flex h-full w-[280px] max-w-[82vw] flex-col border-r bg-card shadow-lg transition-transform duration-500 ease-in-out md:hidden ${
           open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none"
         }`}
+        role="dialog"
+        aria-modal="true"
         aria-label="Sidebar"
         aria-hidden={!open}
       >
@@ -137,7 +102,7 @@ export default function Sidebar({ open, onClose }) {
       {/* Overlay untuk mobile - match prompts.chat Sheet overlay */}
       {open ? (
         <div
-          className="fixed inset-0 z-[110] bg-black/50 md:hidden"
+          className="fixed inset-0 z-[110] bg-black/50 transition-opacity duration-300 md:hidden"
           onClick={handleClose}
           aria-hidden="true"
         />
