@@ -1,5 +1,6 @@
 import "./globals.css";
 import Script from "next/script";
+import { headers } from "next/headers";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
@@ -13,12 +14,39 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import {
   generateOrganizationStructuredData,
   generateWebsiteStructuredData,
+  generateWebApplicationStructuredData,
 } from "../lib/seo";
 
 const siteName = "AIValid - Validasi Hasil AI oleh Ahli Manusia";
 const siteDescription =
   "Platform validasi hasil kerja AI #1 di Indonesia. Cek keaslian dan kualitas tugas, riset, kode program, dan dokumen buatan AI oleh validator ahli.";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
+
+const HIDE_FOOTER_EXACT = new Set([
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/set-username",
+  "/validation-cases/new",
+  "/documents/upload",
+  "/components-demo",
+  "/sync-token",
+]);
+
+const HIDE_FOOTER_PREFIXES = ["/admin", "/account"];
+
+function shouldHideFooter(pathname) {
+  if (!pathname) return false;
+  const normalized =
+    pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  if (HIDE_FOOTER_EXACT.has(normalized)) return true;
+  return HIDE_FOOTER_PREFIXES.some(
+    (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`)
+  );
+}
+
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -52,9 +80,9 @@ export const metadata = {
     description: siteDescription,
     images: [
       {
-        url: "/images/og-image.png",
-        width: 1200,
-        height: 630,
+        url: "/logo/light-mode.png",
+        width: 1024,
+        height: 1024,
         alt: "AIValid - Platform Validasi Hasil AI Indonesia",
       },
     ],
@@ -65,7 +93,7 @@ export const metadata = {
     card: "summary_large_image",
     title: siteName,
     description: siteDescription,
-    images: ["/images/og-image.png"],
+    images: ["/logo/light-mode.png"],
   },
 
   // Robots
@@ -81,19 +109,28 @@ export const metadata = {
     },
   },
 
-	  // Icons - AIvalid
-	  icons: {
-	    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-	    shortcut: "/favicon.svg",
-	    apple: "/logo/light-mode.png",
-	  },
+  // Icons - AIvalid
+  icons: {
+    icon: [
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon-32.png",
+    apple: "/logo/light-mode.png",
+  },
 
   // Manifest
   manifest: "/manifest.json",
 
+  alternates: {
+    canonical: siteUrl,
+  },
+
   // Other
   other: {
     heleket: "a08412d3",
+    "apple-mobile-web-app-title": "AIvalid",
   },
 };
 
@@ -107,9 +144,14 @@ export const viewport = {
 const jsonLd = [
   generateOrganizationStructuredData(),
   generateWebsiteStructuredData(),
+  generateWebApplicationStructuredData(),
 ];
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || headersList.get("x-invoke-path") || "";
+  const hideFooter = shouldHideFooter(pathname);
+
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
@@ -169,7 +211,7 @@ export default function RootLayout({ children }) {
                     {children}
                   </div>
 
-                  <Footer />
+                  {!hideFooter ? <Footer /> : null}
 
                   <SpeedInsights />
                   {/* Global keyboard shortcuts handler */}

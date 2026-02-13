@@ -6,8 +6,8 @@ export const metadata = {
     canonical: "https://aivalid.id/register",
   },
   robots: {
-    index: true,
-    follow: true,
+    index: false,
+    follow: false,
   },
 };
 

@@ -1,4 +1,6 @@
 export default function robots() {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
+
   return {
     rules: [
       {
@@ -14,10 +16,13 @@ export default function robots() {
           "/forgot-password/",
           "/set-username/",
           "/login/",
+          "/register/",
           "/components-demo/",
+          "/validation-cases/new",
+          "/documents/upload",
         ],
       },
     ],
-    sitemap: "https://aivalid.id/sitemap.xml",
+    sitemap: `${baseUrl}/sitemap.xml`,
   };
 }

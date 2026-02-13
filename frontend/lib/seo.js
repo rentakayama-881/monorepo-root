@@ -55,18 +55,49 @@ export function generateOrganizationStructuredData() {
  * @returns {Object} - JSON-LD object
  */
 export function generateWebsiteStructuredData() {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "AIvalid",
-    url: process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id",
+    url: baseUrl,
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id"}/search?q={search_term_string}`,
+        urlTemplate: `${baseUrl}/validation-cases?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
+    },
+  };
+}
+
+/**
+ * Generate JSON-LD structured data for web application.
+ * Mirrors prompts.chat pattern: add a stable Software/WebApplication entity.
+ * @returns {Object} - JSON-LD WebApplication object
+ */
+export function generateWebApplicationStructuredData() {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "AIvalid",
+    url: baseUrl,
+    description:
+      "Platform validasi hasil kerja AI oleh validator ahli manusia dari berbagai bidang.",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    browserRequirements: "Requires JavaScript. Requires HTML5.",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "IDR",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "AIvalid",
+      url: baseUrl,
     },
   };
 }

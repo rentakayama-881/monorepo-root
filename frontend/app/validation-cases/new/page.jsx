@@ -7,6 +7,10 @@ export const metadata = {
   alternates: {
     canonical: "https://aivalid.id/validation-cases/new",
   },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function NewValidationCasePage() {

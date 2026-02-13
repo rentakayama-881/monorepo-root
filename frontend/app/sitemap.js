@@ -8,6 +8,7 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   "https://api.aivalid.id";
+export const revalidate = 3600;
 
 export default async function sitemap() {
   // Static pages
@@ -35,12 +36,6 @@ export default async function sitemap() {
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.6,
-    },
-    {
-      url: `${BASE_URL}/register`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.9,
     },
     {
       url: `${BASE_URL}/fees`,
@@ -71,6 +66,12 @@ export default async function sitemap() {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
+    },
+    {
+      url: `${BASE_URL}/threads`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
     },
   ];
 
