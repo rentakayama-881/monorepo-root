@@ -17,27 +17,16 @@ export default function ProfileSidebar({ onClose }) {
 
   // Lock body scroll when profile sidebar is open (like prompts.chat Sheet)
   useEffect(() => {
-    const scrollY = window.scrollY;
-    const lockedPathname = window.location.pathname;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.overflow = 'hidden';
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevBodyOverscroll = document.body.style.overscrollBehavior;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overflow = "hidden";
     return () => {
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-
-      // Avoid restoring previous-page scroll onto a different route if
-      // navigation happened while the sheet was open.
-      if (window.location.pathname === lockedPathname) {
-        window.scrollTo(0, scrollY);
-      } else {
-        window.scrollTo(0, 0);
-      }
+      document.body.style.overflow = prevBodyOverflow;
+      document.body.style.overscrollBehavior = prevBodyOverscroll;
+      document.documentElement.style.overflow = prevHtmlOverflow;
     };
   }, []);
 
@@ -126,11 +115,11 @@ export default function ProfileSidebar({ onClose }) {
     };
 
     window.addEventListener("keydown", handleKey);
-    window.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("pointerdown", handleClickOutside);
 
     return () => {
       window.removeEventListener("keydown", handleKey);
-      window.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("pointerdown", handleClickOutside);
     };
   }, [onClose]);
 
@@ -164,7 +153,7 @@ export default function ProfileSidebar({ onClose }) {
       <>
         {/* Backdrop overlay */}
         <div 
-          className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30"
+          className="fixed inset-0 z-[110] bg-black/50"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -197,7 +186,7 @@ export default function ProfileSidebar({ onClose }) {
     <>
       {/* Backdrop overlay - click to close */}
       <div 
-        className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30 animate-fade-in"
+        className="fixed inset-0 z-[110] bg-black/50"
         onClick={onClose}
         aria-hidden="true"
       />

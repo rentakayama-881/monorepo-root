@@ -1,50 +1,28 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { Logo } from "./ui/Logo";
 
 export default function Sidebar({ open, onClose }) {
-  const [isClosing, setIsClosing] = useState(false);
   const sidebarRef = useRef(null);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
-
-  // Handle close with animation
-  const handleClose = useCallback(() => {
-    setIsClosing(true);
-    setTimeout(() => {
-      setIsClosing(false);
-      onClose();
-    }, 200); // Match animation duration
-  }, [onClose]);
+  const handleClose = () => onClose?.();
 
   // Lock body scroll when sidebar is open (like prompts.chat Sheet)
   useEffect(() => {
-    if (open) {
-      const scrollY = window.scrollY;
-      const lockedPathname = window.location.pathname;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        document.body.style.overflow = '';
-
-        // If navigation happened while the sidebar was open, don't restore the
-        // previous page scroll onto the next page (prevents "category starts at
-        // home scroll position" confusion).
-        if (window.location.pathname === lockedPathname) {
-          window.scrollTo(0, scrollY);
-        } else {
-          window.scrollTo(0, 0);
-        }
-      };
-    }
+    if (!open) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevBodyOverscroll = document.body.style.overscrollBehavior;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.body.style.overscrollBehavior = prevBodyOverscroll;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
   }, [open]);
 
   // Keyboard navigation
@@ -101,16 +79,9 @@ export default function Sidebar({ open, onClose }) {
     <>
       <aside
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 z-[120] flex flex h-dvh w-80 flex-col bg-card shadow-xl transition-all duration-300 md:hidden ${
-          open && !isClosing 
-            ? "translate-x-0 opacity-100" 
-            : "-translate-x-full opacity-0"
+        className={`fixed inset-y-0 left-0 z-[120] flex h-full w-3/4 max-w-sm flex-col border-r bg-card shadow-xl transition-transform duration-300 ease-in-out md:hidden ${
+          open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none"
         }`}
-        style={{
-          transitionTimingFunction: open && !isClosing 
-            ? 'cubic-bezier(0.16, 1, 0.3, 1)' 
-            : 'cubic-bezier(0.7, 0, 0.84, 0)'
-        }}
         aria-label="Sidebar"
         aria-hidden={!open}
       >
@@ -164,15 +135,13 @@ export default function Sidebar({ open, onClose }) {
       </aside>
 
       {/* Overlay untuk mobile - match prompts.chat Sheet overlay */}
-      {open && (
+      {open ? (
         <div
-          className={`fixed inset-0 z-[110] bg-black/40 backdrop-blur-md supports-[backdrop-filter]:bg-black/30 md:hidden transition-opacity duration-300 ${
-            isClosing ? 'opacity-0' : 'opacity-100'
-          }`}
+          className="fixed inset-0 z-[110] bg-black/50 md:hidden"
           onClick={handleClose}
           aria-hidden="true"
         />
-      )}
+      ) : null}
     </>
   );
 }
