@@ -107,6 +107,18 @@ function contentAsText(content) {
   return String(content);
 }
 
+function formatCaseLogLoadError(err, ownerView = false) {
+  if (err?.status === 401) {
+    return "Sesi berakhir. Silakan login kembali untuk membuka Case Log.";
+  }
+  if (err?.status === 403) {
+    return ownerView
+      ? "Akses Case Log ditolak. Pastikan akun yang login adalah pemilik case ini."
+      : "Case Log hanya tersedia untuk pemilik kasus atau validator yang telah disetujui.";
+  }
+  return err?.message || "Case Log belum bisa dimuat saat ini.";
+}
+
 function CaseSection({ title, subtitle, children }) {
   return (
     <section className="space-y-4">
@@ -187,6 +199,7 @@ export default function ValidationCaseRecordPage() {
 
   const [caseLog, setCaseLog] = useState([]);
   const [caseLogLoading, setCaseLogLoading] = useState(false);
+  const [caseLogError, setCaseLogError] = useState("");
 
   const isOwner = Boolean(me?.id && vc?.owner?.id && Number(me.id) === Number(vc.owner.id));
 
@@ -234,20 +247,26 @@ export default function ValidationCaseRecordPage() {
     setConsultationLoading(true);
     setOffersLoading(true);
     setCaseLogLoading(true);
+    setCaseLogError("");
     setConsultationMsg("");
     setOffersMsg("");
     setLockFundsMsg("");
 
-    try {
-      const [reqs, offers, log] = await Promise.all([
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests`, { method: "GET", clearSessionOn401: false }),
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/final-offers`, { method: "GET", clearSessionOn401: false }),
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/case-log`, { method: "GET", clearSessionOn401: false }),
-      ]);
+    const [reqsResult, offersResult, logResult] = await Promise.allSettled([
+      fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests`, { method: "GET", clearSessionOn401: false }),
+      fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/final-offers`, { method: "GET", clearSessionOn401: false }),
+      fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/case-log`, { method: "GET", clearSessionOn401: false }),
+    ]);
 
-      setConsultationRequests(Array.isArray(reqs?.consultation_requests) ? reqs.consultation_requests : []);
+    if (reqsResult.status === "fulfilled") {
+      setConsultationRequests(Array.isArray(reqsResult.value?.consultation_requests) ? reqsResult.value.consultation_requests : []);
+    } else {
+      setConsultationRequests([]);
+    }
+
+    if (offersResult.status === "fulfilled") {
+      const offers = offersResult.value;
       setFinalOffers(Array.isArray(offers?.final_offers) ? offers.final_offers : []);
-      setCaseLog(Array.isArray(log?.case_log) ? log.case_log : []);
 
       // Re-derive draft if the page is reloaded after accept.
       const acceptedId = vc?.accepted_final_offer_id ?? vc?.acceptedFinalOfferId ?? null;
@@ -264,13 +283,21 @@ export default function ValidationCaseRecordPage() {
           });
         }
       }
-    } catch (e) {
-      // Individual fetch errors are surfaced via actions; keep the page readable.
-    } finally {
-      setConsultationLoading(false);
-      setOffersLoading(false);
-      setCaseLogLoading(false);
+    } else {
+      setFinalOffers([]);
     }
+
+    if (logResult.status === "fulfilled") {
+      setCaseLog(Array.isArray(logResult.value?.case_log) ? logResult.value.case_log : []);
+      setCaseLogError("");
+    } else {
+      setCaseLog([]);
+      setCaseLogError(formatCaseLogLoadError(logResult.reason, true));
+    }
+
+    setConsultationLoading(false);
+    setOffersLoading(false);
+    setCaseLogLoading(false);
   }
 
   async function loadNonOwnerWorkflow() {
@@ -279,20 +306,30 @@ export default function ValidationCaseRecordPage() {
 
     setOffersLoading(true);
     setCaseLogLoading(true);
+    setCaseLogError("");
     setOffersMsg("");
 
-    try {
-      const [offers, log] = await Promise.all([
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/final-offers`, { method: "GET", clearSessionOn401: false }),
-        // Case Log is only visible to owner or approved validators; best-effort.
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/case-log`, { method: "GET", clearSessionOn401: false }).catch(() => null),
-      ]);
-      setFinalOffers(Array.isArray(offers?.final_offers) ? offers.final_offers : []);
-      setCaseLog(Array.isArray(log?.case_log) ? log.case_log : []);
-    } finally {
-      setOffersLoading(false);
-      setCaseLogLoading(false);
+    const [offersResult, logResult] = await Promise.allSettled([
+      fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/final-offers`, { method: "GET", clearSessionOn401: false }),
+      fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/case-log`, { method: "GET", clearSessionOn401: false }),
+    ]);
+
+    if (offersResult.status === "fulfilled") {
+      setFinalOffers(Array.isArray(offersResult.value?.final_offers) ? offersResult.value.final_offers : []);
+    } else {
+      setFinalOffers([]);
     }
+
+    if (logResult.status === "fulfilled") {
+      setCaseLog(Array.isArray(logResult.value?.case_log) ? logResult.value.case_log : []);
+      setCaseLogError("");
+    } else {
+      setCaseLog([]);
+      setCaseLogError(formatCaseLogLoadError(logResult.reason, false));
+    }
+
+    setOffersLoading(false);
+    setCaseLogLoading(false);
   }
 
   useEffect(() => {
@@ -1505,6 +1542,10 @@ export default function ValidationCaseRecordPage() {
               </div>
             ) : caseLogLoading ? (
               <div className="text-sm text-muted-foreground">Memuat Case Log...</div>
+            ) : caseLogError ? (
+              <div className="rounded-[var(--radius)] border border-border bg-secondary/30 px-4 py-3 text-sm text-muted-foreground">
+                {caseLogError}
+              </div>
             ) : Array.isArray(caseLog) && caseLog.length > 0 ? (
               <ol className="relative space-y-5 border-l border-border pl-6">
                 {caseLog.map((ev) => (

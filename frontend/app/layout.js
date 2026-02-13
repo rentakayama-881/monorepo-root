@@ -165,7 +165,7 @@ export default function RootLayout({ children }) {
                   <Header />
                   <ApiStatusBanner />
 
-                  <div id="main-content" role="main" tabIndex={-1} className="flex-1 pt-[var(--header-height)]">
+                  <div id="main-content" role="main" tabIndex={-1} className="flex-1 pt-0 md:pt-[var(--header-height)]">
                     {children}
                   </div>
 
