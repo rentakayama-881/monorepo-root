@@ -121,83 +121,6 @@ function CaseSection({ title, subtitle, children }) {
   );
 }
 
-function WorkflowProgressBanner({ status, isOwner, transferId, artifactId, certifiedId }) {
-  const caseStatus = normalizeStatus(status);
-
-  // Determine owner step
-  let ownerStep = 1;
-  if (caseStatus === "open" || caseStatus === "waiting_owner_response") ownerStep = 2;
-  if (transferId) ownerStep = 4;
-  if (artifactId) ownerStep = 5;
-  if (certifiedId || caseStatus === "completed") ownerStep = 5;
-
-  // Determine validator step
-  let validatorStep = 1;
-  if (caseStatus === "open" || caseStatus === "waiting_owner_response") validatorStep = 2;
-  if (transferId) validatorStep = 3;
-  if (artifactId) validatorStep = 4;
-  if (certifiedId || caseStatus === "completed") validatorStep = 4;
-
-  const ownerSteps = [
-    { num: 1, label: "Buka Kasus" },
-    { num: 2, label: "Review Validator" },
-    { num: 3, label: "Terima Offer" },
-    { num: 4, label: "Lock Funds" },
-    { num: 5, label: "Decision" },
-  ];
-
-  const validatorSteps = [
-    { num: 1, label: "Request Konsultasi" },
-    { num: 2, label: "Kirim Final Offer" },
-    { num: 3, label: "Submit Artifact" },
-    { num: 4, label: "Selesai" },
-  ];
-
-  const roleSteps = isOwner ? ownerSteps : validatorSteps;
-  const currentStep = isOwner ? ownerStep : validatorStep;
-
-  return (
-    <div className="rounded-xl border border-border/80 bg-card p-4 md:p-6 shadow-sm">
-      <div className="mb-4">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Workflow Progress
-        </div>
-        <div className="mt-1 text-sm font-semibold text-foreground">
-          {isOwner ? "Owner" : "Validator"}: Step {currentStep}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {roleSteps.map((step, idx) => {
-          const isActive = step.num <= currentStep;
-          const isCurrent = step.num === currentStep;
-          return (
-            <div key={step.num} className="flex items-center gap-2">
-              <div
-                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                  isCurrent
-                    ? "bg-primary text-primary-foreground"
-                    : isActive
-                      ? "bg-primary/30 text-primary"
-                      : "bg-secondary/60 text-muted-foreground"
-                }`}
-              >
-                {step.num}
-              </div>
-              <span className={`text-xs font-medium ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
-                {step.label}
-              </span>
-              {idx < roleSteps.length - 1 && (
-                <div className={`ml-1 h-px w-4 ${isActive ? "bg-primary/30" : "bg-border"}`} />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 export default function ValidationCaseRecordPage() {
   const params = useParams();
   const router = useRouter();
@@ -886,39 +809,11 @@ export default function ValidationCaseRecordPage() {
               {Array.isArray(vc?.tags) && vc.tags.length > 0 ? <TagList tags={vc.tags} size="sm" /> : null}
             </header>
 
-            {isAuthed && (
-              <WorkflowProgressBanner
-                status={status}
-                isOwner={isOwner}
-                transferId={transferId}
-                artifactId={artifactId}
-                certifiedId={certifiedId}
+            <CaseSection title="Overview" subtitle="Record">
+              <ContentTable
+                content={vc?.content_type === "text" ? contentAsText(vc?.content) : vc?.content}
               />
-            )}
-
-          <CaseSection title="Overview" subtitle="Record">
-            <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
-              <div className="border-b border-border/80 bg-secondary/35 px-4 py-3">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Case Record
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  Ringkasan terstruktur agar konteks mudah dibaca sebelum masuk workflow.
-                </div>
-              </div>
-              <div className="px-4 py-4">
-                <div className="max-h-[420px] overflow-auto md:max-h-[560px]">
-                  <div className="prose prose-neutral max-w-none">
-                    {vc?.content_type === "text" ? (
-                      <MarkdownPreview content={contentAsText(vc?.content)} />
-                    ) : (
-                      <ContentTable content={vc?.content} />
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CaseSection>
+            </CaseSection>
 
           <CaseSection title="Request Consultation" subtitle="Protocol">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1769,6 +1664,7 @@ const CONTENT_LABEL_MAP = {
   requires_admin_gate: "Perlu Admin Gate",
   requires_pre_moderation: "Perlu Pre-Moderasi",
 };
+const RESERVED_CONTENT_KEYS = new Set(["quick_intake", "checklist", "case_record_text"]);
 
 function prettifyKey(keyRaw) {
   const key = String(keyRaw || "").trim();
@@ -1779,143 +1675,219 @@ function prettifyKey(keyRaw) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function renderInlineValue(v) {
+function isPlainObject(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function normalizeRows(rowsInput) {
+  if (!Array.isArray(rowsInput)) return [];
+  return rowsInput.map((row, idx) => {
+    if (isPlainObject(row) && ("label" in row || "value" in row)) {
+      return { label: row.label ?? `Item ${idx + 1}`, value: row.value };
+    }
+    if (Array.isArray(row) && row.length >= 2) {
+      return { label: row[0], value: row[1] };
+    }
+    if (isPlainObject(row)) {
+      const entries = Object.entries(row);
+      if (entries.length === 1) return { label: entries[0][0], value: entries[0][1] };
+    }
+    return { label: `Item ${idx + 1}`, value: row };
+  });
+}
+
+function rowsFromObject(obj, valueMapper) {
+  if (!isPlainObject(obj)) return [];
+  return Object.entries(obj).map(([label, value]) => ({
+    label,
+    value: valueMapper ? valueMapper(value) : value,
+  }));
+}
+
+function renderValue(v) {
   if (v == null || v === "") return "-";
+  if (isValidElement(v)) return v;
   if (typeof v === "boolean") return v ? "Ya" : "Tidak";
   if (typeof v === "number") return String(v);
-  if (typeof v === "string") return v;
-  if (Array.isArray(v)) return v.map((x) => renderInlineValue(x)).join(", ");
-  try {
-    return JSON.stringify(v);
-  } catch {
-    return String(v);
+  if (typeof v === "string") {
+    if (v.includes("\n")) {
+      return <div className="whitespace-pre-wrap break-words">{v}</div>;
+    }
+    return v;
   }
+  if (Array.isArray(v)) {
+    return (
+      <ul className="list-disc pl-4 space-y-1">
+        {v.map((x, i) => (
+          <li key={i}>{typeof x === "string" ? x : safeJson(x)}</li>
+        ))}
+      </ul>
+    );
+  }
+  if (isPlainObject(v)) {
+    return (
+      <pre className="whitespace-pre-wrap break-words rounded-lg bg-secondary/30 p-2 text-xs text-muted-foreground">
+        {safeJson(v)}
+      </pre>
+    );
+  }
+  return String(v);
+}
+
+function KeyValueTable({ rows, headerLeft = "Kolom", headerRight = "Detail" }) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return <div className="px-4 py-4 text-sm text-muted-foreground">Tidak ada data.</div>;
+  }
+
+  return (
+    <>
+      <div className="space-y-2 p-3 md:hidden">
+        {rows.map((row, idx) => (
+          <article key={idx} className="rounded-lg border border-border/70 bg-secondary/[0.18] p-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              {prettifyKey(row.label)}
+            </div>
+            <div className="mt-1.5 text-sm text-foreground">{renderValue(row.value)}</div>
+          </article>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full table-fixed border-collapse text-sm">
+          <thead className="bg-secondary/35">
+            <tr>
+              <th className="w-56 px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                {headerLeft}
+              </th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                {headerRight}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/80">
+            {rows.map((row, idx) => (
+              <tr key={idx} className="align-top transition-colors hover:bg-secondary/15">
+                <td className="px-4 py-3 font-semibold text-foreground">{prettifyKey(row.label)}</td>
+                <td className="px-4 py-3 text-muted-foreground">{renderValue(row.value)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+function DataPanel({ title, subtitle, rows, headerLeft = "Kolom", headerRight = "Detail" }) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+      <div className="border-b border-border/80 bg-secondary/30 px-4 py-3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</div>
+        {subtitle ? <div className="mt-1 text-xs text-muted-foreground">{subtitle}</div> : null}
+      </div>
+      <KeyValueTable rows={rows} headerLeft={headerLeft} headerRight={headerRight} />
+    </section>
+  );
+}
+
+function MarkdownPanel({ content }) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+      <div className="border-b border-border/80 bg-secondary/30 px-4 py-3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Case Record
+        </div>
+        <div className="mt-1 text-xs text-muted-foreground">
+          Ditulis dalam markdown agar instruksi, checklist, dan acceptance criteria lebih mudah dipindai.
+        </div>
+      </div>
+      <div className="max-h-[520px] overflow-auto px-4 py-4">
+        <div className="prose prose-neutral max-w-none">
+          <MarkdownPreview content={content} />
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function ContentTable({ content }) {
   if (!content) return <div className="text-sm text-muted-foreground">Tidak ada konten.</div>;
 
   if (typeof content === "string") {
-    return <pre className="rounded-[var(--radius)] bg-secondary/30 p-4 text-xs text-muted-foreground">{content}</pre>;
+    return <MarkdownPanel content={content} />;
   }
 
-  let rows = [];
-  if (Array.isArray(content?.rows)) rows = content.rows;
-  else if (Array.isArray(content?.sections)) {
+  if (Array.isArray(content?.sections)) {
     return (
-      <div className="space-y-6">
-        {content.sections.map((sec, idx) => (
-          <div key={idx}>
-            {sec.title && <h3 className="mb-3 text-base font-semibold text-foreground">{sec.title}</h3>}
-            <Table rows={sec.rows || []} />
-          </div>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        {content.sections.map((section, idx) => (
+          <DataPanel
+            key={`${section?.title || "section"}-${idx}`}
+            title={section?.title || `Section ${idx + 1}`}
+            rows={normalizeRows(section?.rows)}
+          />
         ))}
       </div>
     );
-  } else if (typeof content === "object") {
-    rows = Object.entries(content).map(([label, value]) => ({ label, value }));
   }
 
-  if (!rows.length) return <div className="text-sm text-muted-foreground">Tidak ada konten.</div>;
-  return <Table rows={rows} />;
-}
-
-function Table({ rows, headerLeft = "Kolom", headerRight = "Detail", compact = false }) {
-  const tdClass = compact ? "px-3 py-2 text-xs" : "px-4 py-3 text-sm";
-  const thClass = compact ? "px-3 py-2 text-[11px]" : "px-4 py-2.5 text-[11px]";
-  const mobileValueClass = compact ? "mt-1 text-xs text-foreground" : "mt-2 text-sm text-foreground";
-
-  return (
-    <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
-      <div className="md:hidden">
-        <div className="border-b border-border/80 bg-secondary/40 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          {headerLeft} / {headerRight}
-        </div>
-        <div className={compact ? "space-y-2 p-2.5" : "space-y-2.5 p-3"}>
-          {rows.map((r, idx) => (
-            <article
-              key={idx}
-              className="rounded-lg border border-border/70 bg-secondary/[0.18] p-3"
-            >
-              <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                {prettifyKey(r.label)}
-              </h4>
-              <div className={mobileValueClass}>{renderValue(r.value)}</div>
-            </article>
-          ))}
-        </div>
-      </div>
-
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full table-fixed border-collapse">
-          <thead className="bg-secondary/40">
-            <tr>
-              <th className={`w-56 text-left font-semibold uppercase tracking-[0.14em] text-muted-foreground ${thClass}`}>
-                {headerLeft}
-              </th>
-              <th className={`text-left font-semibold uppercase tracking-[0.14em] text-muted-foreground ${thClass}`}>
-                {headerRight}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/80">
-            {rows.map((r, idx) => (
-              <tr key={idx} className="align-top transition-colors hover:bg-secondary/15">
-                <td className={`${tdClass} font-semibold text-foreground`}>{prettifyKey(r.label)}</td>
-                <td className={`${tdClass} text-muted-foreground`}>{renderValue(r.value)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function renderValue(v) {
-  if (v == null) return "";
-  if (isValidElement(v)) return v;
-  if (typeof v === "string") return v;
-  if (typeof v === "number" || typeof v === "boolean") return String(v);
-  if (Array.isArray(v))
-    return (
-      <ul className="list-disc pl-4 space-y-1">
-        {v.map((x, i) => (
-          <li key={i}>{String(x)}</li>
-        ))}
-      </ul>
-    );
-  if (typeof v === "object") {
-    const entries = Object.entries(v);
-    if (!entries.length) return "-";
-    return (
-      <div className="mt-1">
-        <Table
-          rows={entries.map(([key, value]) => ({
-            label: key,
-            value:
-              typeof value === "object" && value !== null && !Array.isArray(value) ? (
-                <pre className="whitespace-pre-wrap break-words rounded-lg bg-secondary/30 p-2 text-[11px]">
-                  {safeJson(value)}
-                </pre>
-              ) : (
-                renderInlineValue(value)
-              ),
-          }))}
-          headerLeft="Atribut"
-          headerRight="Nilai"
-          compact={true}
-        />
-      </div>
-    );
+  if (Array.isArray(content?.rows)) {
+    return <DataPanel title="Case Record" rows={normalizeRows(content.rows)} />;
   }
-  try {
+
+  if (!isPlainObject(content)) {
     return (
-      <pre className="whitespace-pre-wrap break-words rounded-[var(--radius)] bg-secondary/30 p-3 text-xs">
-        {JSON.stringify(v, null, 2)}
+      <pre className="whitespace-pre-wrap break-words rounded-[var(--radius)] bg-secondary/30 p-3 text-xs text-muted-foreground">
+        {safeJson(content)}
       </pre>
     );
-  } catch {
-    return String(v);
   }
+
+  const quickRows = rowsFromObject(content.quick_intake);
+  const checklistRows = rowsFromObject(content.checklist, (value) =>
+    typeof value === "boolean" ? (value ? "Ya" : "Tidak") : value
+  );
+  const metadataRows = Object.entries(content)
+    .filter(([key]) => !RESERVED_CONTENT_KEYS.has(key))
+    .map(([label, value]) => ({ label, value }));
+  const caseRecordText =
+    typeof content.case_record_text === "string" ? content.case_record_text.trim() : "";
+
+  const hasStructuredCards = quickRows.length > 0 || checklistRows.length > 0 || metadataRows.length > 0 || Boolean(caseRecordText);
+  const fallbackRows = hasStructuredCards ? [] : rowsFromObject(content);
+
+  return (
+    <div className="space-y-4">
+      {quickRows.length > 0 || checklistRows.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          {quickRows.length > 0 ? (
+            <DataPanel
+              title="Quick Intake"
+              subtitle="Kebutuhan inti untuk memahami ruang lingkup validasi."
+              rows={quickRows}
+            />
+          ) : null}
+          {checklistRows.length > 0 ? (
+            <DataPanel
+              title="Protocol Checklist"
+              subtitle="Konfirmasi readiness sebelum workflow dimulai."
+              rows={checklistRows}
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {metadataRows.length > 0 ? (
+        <DataPanel
+          title="Intake Metadata"
+          subtitle="Konfigurasi tambahan dari payload case record."
+          rows={metadataRows}
+        />
+      ) : null}
+
+      {caseRecordText ? <MarkdownPanel content={caseRecordText} /> : null}
+
+      {fallbackRows.length > 0 ? <DataPanel title="Case Record" rows={fallbackRows} /> : null}
+    </div>
+  );
 }

@@ -26,6 +26,30 @@ function resolveThemeValue(theme) {
   return theme;
 }
 
+function withoutThemeTransition(callback) {
+  const root = document.documentElement;
+  root.classList.add("theme-switching");
+  callback();
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      root.classList.remove("theme-switching");
+    });
+  });
+}
+
+function applyResolvedTheme(resolved, disableTransition = false) {
+  const root = document.documentElement;
+  const apply = () => {
+    root.classList.remove("light", "dark");
+    root.classList.add(resolved);
+  };
+  if (disableTransition) {
+    withoutThemeTransition(apply);
+    return;
+  }
+  apply();
+}
+
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {
     if (typeof window === "undefined") return "system";
@@ -52,10 +76,7 @@ export function ThemeProvider({ children }) {
 
       setResolvedTheme(resolved);
 
-      // Update document class
-      const root = document.documentElement;
-      root.classList.remove("light", "dark");
-      root.classList.add(resolved);
+      applyResolvedTheme(resolved, true);
     };
 
     updateResolvedTheme();
@@ -80,12 +101,10 @@ export function ThemeProvider({ children }) {
   }, [theme]);
 
   const setTheme = (newTheme) => {
-    const root = document.documentElement;
     const resolved = resolveThemeValue(newTheme);
 
     // Apply immediately for responsive UI
-    root.classList.remove("light", "dark");
-    root.classList.add(resolved);
+    applyResolvedTheme(resolved, true);
     setResolvedTheme(resolved);
     setThemeState(newTheme);
     

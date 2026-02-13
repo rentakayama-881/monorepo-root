@@ -215,6 +215,13 @@
     transition: none !important;
   }
 
+  /* Disable transitions briefly while user toggles theme to avoid flicker artifacts. */
+  html.theme-switching *,
+  html.theme-switching *::before,
+  html.theme-switching *::after {
+    transition: none !important;
+  }
+
   /* ===== Design tokens (LIGHT default) - prompts.chat oklch style ===== */
   :root {
   /* Radius token */

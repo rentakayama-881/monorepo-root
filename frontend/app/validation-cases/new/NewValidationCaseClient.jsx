@@ -7,6 +7,8 @@ import { fetchJson, fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { LOCKED_CATEGORIES } from "@/lib/constants";
 import TagSelector from "@/components/ui/TagSelector";
+import MarkdownEditor from "@/components/ui/MarkdownEditor";
+import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import NewValidationCaseSkeleton from "./NewValidationCaseSkeleton";
 import Skeleton from "@/components/ui/Skeleton";
 
@@ -62,6 +64,15 @@ const checklistItems = [
 ];
 
 const sensitivityOptions = ["S0", "S1", "S2", "S3"];
+const autoBriefLabelMap = {
+  objective: "Tujuan",
+  expected_output_type: "Output",
+  evidence_scope: "Materi awal",
+  pass_gate: "Kriteria lulus",
+  constraints: "Batasan",
+  sensitivity: "Sensitivitas",
+  owner_response_sla: "SLA owner",
+};
 
 function formatIDR(amount) {
   const n = Number(amount || 0);
@@ -328,7 +339,7 @@ export default function NewValidationCaseClient() {
   }
 
   return (
-    <main className="container py-10">
+    <main className="container py-8 md:py-10">
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/validation-cases" prefetch={false} className="hover:underline">
           Validation Case Index
@@ -366,7 +377,7 @@ export default function NewValidationCaseClient() {
         </div>
       ) : null}
 
-      <section className="rounded-[var(--radius)] border border-border bg-card">
+      <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-card shadow-sm">
         <div className="border-b border-border px-5 py-4">
           <div className="text-sm font-semibold text-foreground">Protocol Intake</div>
           <div className="mt-1 text-xs text-muted-foreground">
@@ -445,31 +456,58 @@ export default function NewValidationCaseClient() {
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Layer 2 - Auto Validation Brief
             </div>
-            <div className="mt-3 overflow-x-auto rounded-[var(--radius)] border border-border">
-              <table className="w-full text-sm">
-                <tbody className="divide-y divide-border">
-                  {Object.entries(autoBrief).map(([label, value]) => (
-                    <tr key={label}>
-                      <td className="w-52 bg-secondary/40 px-3 py-2 font-semibold text-foreground">{label}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{String(value || "-")}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="overflow-x-auto rounded-[var(--radius)] border border-border">
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-border">
+                    {Object.entries(autoBrief)
+                      .slice(0, 4)
+                      .map(([label, value]) => (
+                        <tr key={label}>
+                          <td className="w-40 bg-secondary/40 px-3 py-2 font-semibold text-foreground">
+                            {autoBriefLabelMap[label] || label}
+                          </td>
+                          <td className="px-3 py-2 text-muted-foreground">{String(value || "-")}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="overflow-x-auto rounded-[var(--radius)] border border-border">
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-border">
+                    {Object.entries(autoBrief)
+                      .slice(4)
+                      .map(([label, value]) => (
+                        <tr key={label}>
+                          <td className="w-40 bg-secondary/40 px-3 py-2 font-semibold text-foreground">
+                            {autoBriefLabelMap[label] || label}
+                          </td>
+                          <td className="px-3 py-2 text-muted-foreground">{String(value || "-")}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
             <div className="mt-2 text-[11px] text-muted-foreground">Summary otomatis: {autoSummary || "-"}</div>
           </div>
 
           <div>
             <label className="text-xs font-semibold text-muted-foreground">Case Record (Free Text)</label>
-            <textarea
-              value={form.case_record_text}
-              onChange={(e) => setForm((prev) => ({ ...prev, case_record_text: e.target.value }))}
-              rows={8}
-              className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-              placeholder="Tambahkan konteks tambahan yang relevan. Tidak perlu narasi panjang."
-              disabled={locked || submitting}
-            />
+            <div className="mt-1">
+              <MarkdownEditor
+                value={form.case_record_text}
+                onChange={(next) => setForm((prev) => ({ ...prev, case_record_text: next }))}
+                placeholder="Gunakan Markdown: poin, checklist, tabel kecil, dan acceptance criteria."
+                minHeight="280px"
+                preview={MarkdownPreview}
+                disabled={locked || submitting}
+              />
+            </div>
+            <div className="mt-2 text-[11px] text-muted-foreground">
+              Gunakan markdown secukupnya. Jangan masukkan kontak langsung (Telegram/WhatsApp) di Case Record.
+            </div>
           </div>
 
           <div>

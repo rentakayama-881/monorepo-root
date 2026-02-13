@@ -127,14 +127,14 @@ export default function Header() {
   }, []);
 
   const navItem =
-    "px-3 py-1.5 rounded-[var(--radius)] text-sm text-muted-foreground transition-colors hover:text-foreground hover:bg-accent";
+    "inline-flex h-8 items-center rounded-[var(--radius)] px-3 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
 
   const iconButton =
-    "inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius)] hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+    "inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius)] transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 transition-shadow duration-200">
-      <div className="container flex h-12 items-center">
+    <header className="fixed left-0 right-0 top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75 transition-colors duration-200">
+      <div className="container flex h-[var(--header-height)] items-center gap-1.5">
         {/* Mobile menu */}
         <button
           className="flex items-center justify-center -ml-2 md:hidden p-2 rounded-[var(--radius)] hover:bg-accent transition-all duration-200 focus-ring"
