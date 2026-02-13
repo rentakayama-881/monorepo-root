@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -16,6 +17,15 @@ import (
 func effectiveVersion() string {
 	if v := strings.TrimSpace(buildinfo.Version); v != "" && v != "dev" {
 		return v
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info != nil {
+		for _, s := range info.Settings {
+			if s.Key == "vcs.revision" {
+				if v := strings.TrimSpace(s.Value); v != "" {
+					return v
+				}
+			}
+		}
 	}
 	if v := strings.TrimSpace(os.Getenv("VERSION")); v != "" {
 		return v

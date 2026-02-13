@@ -446,6 +446,17 @@ func (s *EntValidationCaseService) DeleteValidationCase(ctx context.Context, own
 
 	// FK strategy in current schema uses NO ACTION for most child rows.
 	// Delete children first, then parent case.
+	// Clear M2M tags explicitly for compatibility with legacy deployments where
+	// join-table FK behavior may not be fully aligned with current migrations.
+	if err := tx.ValidationCase.UpdateOneID(int(validationCaseID)).
+		ClearTags().
+		Exec(ctx); err != nil {
+		logger.Error("Failed to clear validation case tags",
+			zap.Uint("validation_case_id", validationCaseID),
+			zap.Error(err),
+		)
+		return apperrors.ErrDatabase.WithDetails("Gagal menghapus relasi Tag")
+	}
 	if _, err := tx.ValidationCaseLog.Delete().
 		Where(validationcaselog.ValidationCaseIDEQ(int(validationCaseID))).
 		Exec(ctx); err != nil {
