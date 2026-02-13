@@ -299,47 +299,39 @@
 
   /* =========================
      Semantic tokens (LIGHT)
-     (tidak merusak logika komponen kamu)
+     prompts.chat baseline
      ========================= */
-  /* Paper-like background for institutional tone */
-  --background: oklch(0.99 0.008 85);
-  --foreground: var(--color-space-indigo-950);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
 
-  --card: oklch(1 0.004 85);
-  --card-foreground: var(--foreground);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
 
-  --popover: oklch(1 0.004 85);
-  --popover-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
 
-  /* Brand actions */
-  --primary: #a51c30; /* Harvard Crimson */
-  --primary-foreground: oklch(1 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
 
-  /* Surfaces */
-  --secondary: oklch(0.975 0.008 85);
-  --secondary-foreground: var(--color-space-indigo-950);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
 
-  --muted: oklch(0.975 0.008 85);
-  --muted-foreground: oklch(0.45 0.03 275);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
 
-  --accent: oklch(0.985 0.006 85);
-  --accent-foreground: var(--color-space-indigo-950);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
 
-  /* Destructive tetap merah (punya kamu sudah benar) */
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
 
-  /* Borders / inputs: pakai silver agar tidak “ungu neon” seperti sebelumnya */
-  --border: oklch(0.9 0.01 85);
-  --input: oklch(0.9 0.01 85);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
 
-  /* Focus ring: space-indigo agar identitas konsisten */
-  --ring: var(--primary);
-
-  /* Status colors (keep) */
-  --success: oklch(0.65 0.2 145);
-  --warning: oklch(0.75 0.15 85);
-  --warning-foreground: var(--color-space-indigo-950);
+  --success: oklch(0.65 0.18 145);
+  --warning: oklch(0.8 0.14 85);
+  --warning-foreground: oklch(0.205 0 0);
   --error: oklch(0.577 0.245 27.325);
 
   /* ===== Legacy token mappings (biar hljs & bagian lama aman) ===== */
@@ -373,41 +365,37 @@
   /* =========================
      Semantic tokens (DARK)
      ========================= */
-  --background: var(--color-space-indigo-950);
-  --foreground: var(--color-silver-50);
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
 
-  --card: var(--color-space-indigo-900);
-  --card-foreground: var(--foreground);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
 
-  --popover: var(--color-space-indigo-900);
-  --popover-foreground: var(--foreground);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
 
-  /* In dark mode, keep the same institutional crimson but lift it for contrast. */
-  --primary: #d34b5b;
-  --primary-foreground: oklch(1 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
 
-  --secondary: var(--color-space-indigo-900);
-  --secondary-foreground: var(--foreground);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
 
-  --muted: var(--color-space-indigo-900);
-  --muted-foreground: var(--color-silver-300);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
 
-  /* Accent surfaces remain restrained. */
-  --accent: var(--color-space-indigo-800);
-  --accent-foreground: var(--foreground);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
 
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(1 0 0);
 
-  --border: var(--color-space-indigo-800);
-  --input: var(--color-space-indigo-800);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
 
-  --ring: var(--primary);
-
-  /* Status colors (dark mode keep) */
-  --success: oklch(0.75 0.2 145);
-  --warning: oklch(0.85 0.15 85);
-  --warning-foreground: var(--color-space-indigo-950);
+  --success: oklch(0.74 0.18 145);
+  --warning: oklch(0.82 0.13 85);
+  --warning-foreground: oklch(0.145 0 0);
   --error: oklch(0.704 0.191 22.216);
 
   color-scheme: dark;
@@ -419,41 +407,37 @@
       /* =========================
          Semantic tokens (DARK)
          ========================= */
-      --background: var(--color-space-indigo-950);
-      --foreground: var(--color-silver-50);
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
 
-      --card: var(--color-space-indigo-900);
-      --card-foreground: var(--foreground);
+      --card: oklch(0.205 0 0);
+      --card-foreground: oklch(0.985 0 0);
 
-      --popover: var(--color-space-indigo-900);
-      --popover-foreground: var(--foreground);
+      --popover: oklch(0.205 0 0);
+      --popover-foreground: oklch(0.985 0 0);
 
-      /* In dark mode, keep the same institutional crimson but lift it for contrast. */
-      --primary: #d34b5b;
-      --primary-foreground: oklch(1 0 0);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
 
-      --secondary: var(--color-space-indigo-900);
-      --secondary-foreground: var(--foreground);
+      --secondary: oklch(0.269 0 0);
+      --secondary-foreground: oklch(0.985 0 0);
 
-      --muted: var(--color-space-indigo-900);
-      --muted-foreground: var(--color-silver-300);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
 
-      /* Accent surfaces remain restrained. */
-      --accent: var(--color-space-indigo-800);
-      --accent-foreground: var(--foreground);
+      --accent: oklch(0.269 0 0);
+      --accent-foreground: oklch(0.985 0 0);
 
       --destructive: oklch(0.704 0.191 22.216);
       --destructive-foreground: oklch(1 0 0);
 
-      --border: var(--color-space-indigo-800);
-      --input: var(--color-space-indigo-800);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
 
-      --ring: var(--primary);
-
-      /* Status colors (dark mode keep) */
-      --success: oklch(0.75 0.2 145);
-      --warning: oklch(0.85 0.15 85);
-      --warning-foreground: var(--color-space-indigo-950);
+      --success: oklch(0.74 0.18 145);
+      --warning: oklch(0.82 0.13 85);
+      --warning-foreground: oklch(0.145 0 0);
       --error: oklch(0.704 0.191 22.216);
 
       color-scheme: dark;

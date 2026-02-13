@@ -134,7 +134,7 @@ export default function Header() {
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75 transition-colors duration-200">
-      <div className="container flex h-[var(--header-height)] items-center gap-1.5">
+      <div className="container flex h-[var(--header-height)] items-center gap-1">
         {/* Mobile menu */}
         <button
           className="flex items-center justify-center -ml-2 md:hidden p-2 rounded-[var(--radius)] hover:bg-accent transition-all duration-200 focus-ring"
@@ -165,11 +165,12 @@ export default function Header() {
         </button>
 
         {/* Logo - AIvalid */}
+        <Logo variant="icon" size={34} priority className="shrink-0 -ml-1 sm:hidden" />
         <Logo
           variant="horizontal"
-          size={44}
+          size={40}
           priority
-          className="shrink-0 -ml-1 md:ml-0 drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_6px_20px_rgba(0,0,0,0.22)]"
+          className="hidden shrink-0 sm:inline-flex drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_6px_20px_rgba(0,0,0,0.22)]"
         />
 
         {/* Desktop nav */}
@@ -188,7 +189,7 @@ export default function Header() {
         <CommandPaletteTrigger />
 
         {/* Right actions */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           {/* Create (single entry) */}
           <Link
             href="/validation-cases/new"
@@ -265,7 +266,7 @@ export default function Header() {
               </Link>
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center rounded-[var(--radius)] bg-primary px-2 py-1 text-xs sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-md active:scale-95"
+                className="inline-flex items-center justify-center rounded-[var(--radius)] bg-primary px-2 py-1 text-xs sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-all duration-200 active:scale-95"
               >
                 Register
               </Link>

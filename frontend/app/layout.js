@@ -140,15 +140,14 @@ export default function RootLayout({ children }) {
 
     root.classList.remove("light", "dark");
     root.classList.add(resolved);
-
-    // Prevent the white flash before CSS loads by setting an immediate background.
-    // Once CSS is loaded, body uses var(--background) and takes over.
-    root.style.backgroundColor = resolved === "dark" ? "#0b1026" : "#ffffff";
   } catch (_) {
     // Never block rendering if theme init fails.
   } finally {
     // Re-enable transitions after the initial sync theme is applied.
-    setTimeout(() => root.classList.remove("theme-init"), 0);
+    setTimeout(() => {
+      root.classList.remove("theme-init");
+      root.style.backgroundColor = "";
+    }, 0);
   }
 })();
         `}</Script>
