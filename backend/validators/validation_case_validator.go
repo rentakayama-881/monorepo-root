@@ -401,7 +401,8 @@ func ParseStructuredIntakeContent(content interface{}) (*StructuredIntake, error
 	}
 	intake.SensitivityLevel = sensitivity
 
-	caseRecord, err := optionalSanitizedText(contentMap, []string{"case_record_text", "case_record"}, "content.case_record_text", 4000)
+	// Case record is intentionally unlimited in length to support long markdown copy/paste.
+	caseRecord, err := optionalSanitizedText(contentMap, []string{"case_record_text", "case_record"}, "content.case_record_text", 0)
 	if err != nil {
 		return nil, err
 	}

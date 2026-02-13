@@ -56,6 +56,19 @@ func TestCreateValidationCaseInput_Validate_Valid(t *testing.T) {
 	}
 }
 
+func TestCreateValidationCaseInput_Validate_AllowsLongCaseRecord(t *testing.T) {
+	in := baseValidCreateInput()
+	content := validStructuredContent()
+	content["case_record_text"] = strings.Repeat("## Bukti tambahan\n- Item A\n- Item B\n\n", 500)
+	in.Content = content
+
+	err := in.Validate()
+	assert.NoError(t, err)
+	if assert.NotNil(t, in.StructuredIntake) {
+		assert.Greater(t, len(in.StructuredIntake.CaseRecord), 4000)
+	}
+}
+
 func TestCreateValidationCaseInput_Validate_Invalid(t *testing.T) {
 	tests := []struct {
 		name        string

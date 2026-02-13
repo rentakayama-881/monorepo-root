@@ -5,24 +5,35 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 
+function toPlainText(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => toPlainText(item)).join("");
+  }
+  if (value == null) {
+    return "";
+  }
+  return String(value);
+}
+
 /**
  * CodeBlock component with copy button
  */
 function CodeBlock({ children, className, inline }) {
   const [copied, setCopied] = useState(false);
+  const content = toPlainText(children);
   
   if (inline) {
     return (
       <code 
         className="px-1.5 py-0.5 rounded-md bg-muted text-foreground text-[0.875em] font-mono"
       >
-        {children}
+        {content}
       </code>
     );
   }
   
   const handleCopy = async () => {
-    const code = String(children).replace(/\n$/, '');
+    const code = content.replace(/\n$/, "");
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
@@ -37,6 +48,8 @@ function CodeBlock({ children, className, inline }) {
     <div className="code-block-wrapper group">
       <button
         onClick={handleCopy}
+        type="button"
+        aria-label={copied ? "Kode tersalin" : "Salin kode"}
         className="code-copy-button absolute top-2 right-2 px-2 py-1 rounded bg-secondary/80 hover:bg-secondary border text-xs font-medium transition-all opacity-0 group-hover:opacity-100"
         title={copied ? "Disalin!" : "Salin kode"}
       >
@@ -60,7 +73,7 @@ function CodeBlock({ children, className, inline }) {
       <code 
         className={`block font-mono text-foreground whitespace-pre ${className || ''}`}
       >
-        {children}
+        {content}
       </code>
     </div>
   );
@@ -138,9 +151,11 @@ export default function MarkdownPreview({ content, className = "" }) {
           ),
           
           // Code - handles both inline and block
-          code: ({ node, inline, className, children, ...props }) => {
+          code: ({ inline, className, children }) => {
+            const text = toPlainText(children);
+            const isInline = typeof inline === "boolean" ? inline : (!className && !text.includes("\n"));
             return (
-              <CodeBlock inline={inline} className={className}>
+              <CodeBlock inline={isInline} className={className}>
                 {children}
               </CodeBlock>
             );

@@ -76,7 +76,6 @@ const checklistItems = [
 const sensitivityOptions = ["S0", "S1", "S2", "S3"];
 const titleMinLength = 3;
 const titleMaxLength = 200;
-const caseRecordMaxLength = 4000;
 const autoBriefLabelMap = {
   objective: "Tujuan",
   expected_output_type: "Output",
@@ -331,11 +330,6 @@ export default function NewValidationCaseClient() {
       setError("Case Record tidak boleh memuat kontak langsung.");
       return;
     }
-    if (caseRecord.length > caseRecordMaxLength) {
-      setError(`Case Record maksimal ${caseRecordMaxLength} karakter.`);
-      return;
-    }
-
     const normalizedTagSlugs = Array.from(
       new Set(
         selectedTags
@@ -575,8 +569,7 @@ export default function NewValidationCaseClient() {
               />
             </div>
             <div className="mt-2 text-[11px] text-muted-foreground">
-              Gunakan markdown secukupnya (maksimal {caseRecordMaxLength} karakter). Jangan masukkan kontak langsung
-              (Telegram/WhatsApp) di Case Record.
+              Gunakan markdown secukupnya. Jangan masukkan kontak langsung (Telegram/WhatsApp) di Case Record.
             </div>
           </div>
 
