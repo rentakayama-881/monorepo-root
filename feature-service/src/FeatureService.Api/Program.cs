@@ -272,6 +272,7 @@ try
         });
 
     builder.Services.AddAuthorization();
+    builder.Services.AddMemoryCache();
 
     // Register services
     builder.Services.AddHttpContextAccessor();
