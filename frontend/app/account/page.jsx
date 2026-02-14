@@ -888,8 +888,7 @@ function DeleteAccountSection({ API, router }) {
 
         <Button
           variant="danger"
-          size="sm"
-          className="disabled:opacity-50"
+          className="w-full disabled:opacity-50"
           disabled={deleteLoading || deleteConfirmation !== "DELETE" || !canDelete}
           loading={deleteLoading}
           onClick={handleDelete}
