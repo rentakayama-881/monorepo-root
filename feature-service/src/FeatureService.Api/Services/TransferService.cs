@@ -473,9 +473,15 @@ public class TransferService : ITransferService
             return (false, pinResult.Message);
 
         // Update transfer status first to prevent double-credit (server-side)
-        var updateFilter = Builders<Transfer>.Filter.And(
-            Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
-            Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Pending));
+        var filterBuilder = Builders<Transfer>.Filter;
+        var updateFilter = filterBuilder.And(
+            filterBuilder.Eq(t => t.Id, transferId),
+            filterBuilder.Eq(t => t.Status, TransferStatus.Pending),
+            holdExpired
+                ? filterBuilder.Or(
+                    filterBuilder.Lte(t => t.HoldUntil, now),
+                    filterBuilder.Eq(t => t.HoldUntil, null))
+                : filterBuilder.Gt(t => t.HoldUntil, now));
 
         var statusUpdate = Builders<Transfer>.Update
             .Set(t => t.Status, TransferStatus.Released)
@@ -484,7 +490,7 @@ public class TransferService : ITransferService
 
         var updateResult = await _transfers.UpdateOneAsync(updateFilter, statusUpdate);
         if (updateResult.ModifiedCount == 0)
-            return (false, "Transfer sudah diproses oleh request lain");
+            return (false, await BuildReleaseConflictMessageAsync(transferId, userId, now));
 
         // Calculate fee (2% from transfer amount, integer arithmetic - no precision loss)
         var fee = (transfer.Amount * TransferFeeNumerator) / TransferFeeDenominator;
@@ -573,9 +579,13 @@ public class TransferService : ITransferService
             return (false, pinResult.Message);
 
         // Update status first to prevent double refund
-        var updateFilter = Builders<Transfer>.Filter.And(
-            Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
-            Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Pending));
+        var filterBuilder = Builders<Transfer>.Filter;
+        var updateFilter = filterBuilder.And(
+            filterBuilder.Eq(t => t.Id, transferId),
+            filterBuilder.Eq(t => t.Status, TransferStatus.Pending),
+            filterBuilder.Or(
+                filterBuilder.Gt(t => t.HoldUntil, now),
+                filterBuilder.Eq(t => t.HoldUntil, null)));
 
         var statusUpdate = Builders<Transfer>.Update
             .Set(t => t.Status, TransferStatus.Cancelled)
@@ -585,7 +595,7 @@ public class TransferService : ITransferService
 
         var updateResult = await _transfers.UpdateOneAsync(updateFilter, statusUpdate);
         if (updateResult.ModifiedCount == 0)
-            return (false, "Transfer sudah diproses oleh request lain");
+            return (false, await BuildCancelConflictMessageAsync(transferId, now));
 
         // Refund to sender
         try
@@ -670,7 +680,7 @@ public class TransferService : ITransferService
 
         var updateResult = await _transfers.UpdateOneAsync(updateFilter, statusUpdate);
         if (updateResult.ModifiedCount == 0)
-            return (false, "Transfer sudah diproses oleh request lain");
+            return (false, await BuildRejectConflictMessageAsync(transferId));
 
         // Refund to sender (full amount, no fee for rejection)
         try
@@ -719,6 +729,56 @@ public class TransferService : ITransferService
         );
 
         return (true, null);
+    }
+
+    private async Task<string> BuildReleaseConflictMessageAsync(string transferId, uint actorUserId, DateTime now)
+    {
+        var latest = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        if (latest == null)
+            return "Transfer tidak ditemukan";
+
+        if (latest.Status != TransferStatus.Pending)
+            return $"Transfer sudah {latest.Status}";
+
+        var holdUntil = latest.HoldUntil ?? now;
+        var holdExpired = holdUntil <= now;
+        var isSender = latest.SenderId == actorUserId;
+        var isReceiver = latest.ReceiverId == actorUserId;
+
+        if (holdExpired && isSender && !isReceiver)
+            return "Hold period sudah selesai; hanya penerima yang dapat klaim dana";
+
+        if (!holdExpired && isReceiver && !isSender)
+            return $"Hold period belum selesai hingga {holdUntil:O}";
+
+        return "Transfer sedang diproses oleh request lain";
+    }
+
+    private async Task<string> BuildCancelConflictMessageAsync(string transferId, DateTime now)
+    {
+        var latest = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        if (latest == null)
+            return "Transfer tidak ditemukan";
+
+        if (latest.Status != TransferStatus.Pending)
+            return $"Transfer sudah {latest.Status}";
+
+        if (latest.HoldUntil.HasValue && latest.HoldUntil.Value <= now)
+            return "Hold period sudah selesai; transfer tidak bisa dibatalkan oleh pengirim";
+
+        return "Transfer sedang diproses oleh request lain";
+    }
+
+    private async Task<string> BuildRejectConflictMessageAsync(string transferId)
+    {
+        var latest = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        if (latest == null)
+            return "Transfer tidak ditemukan";
+
+        if (latest.Status != TransferStatus.Pending && latest.Status != TransferStatus.Disputed)
+            return $"Transfer sudah {latest.Status}";
+
+        return "Transfer sedang diproses oleh request lain";
     }
 
     public async Task<SearchUserResponse> SearchUserAsync(string username)
