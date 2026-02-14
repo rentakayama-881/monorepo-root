@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { isValidElement, useEffect, useMemo, useState } from "react";
+import { isValidElement, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
@@ -209,11 +209,13 @@ export default function ValidationCaseRecordPage() {
   const [offersMsg, setOffersMsg] = useState("");
   const [finalOfferSubmitting, setFinalOfferSubmitting] = useState(false);
   const [offerForm, setOfferForm] = useState({ hold_hours: 168, terms: "" });
+  const finalOfferSubmitRef = useRef(false);
 
   const [escrowDraft, setEscrowDraft] = useState(null);
   const [lockFundsPin, setLockFundsPin] = useState("");
   const [lockFundsLoading, setLockFundsLoading] = useState(false);
   const [lockFundsMsg, setLockFundsMsg] = useState("");
+  const lockFundsSubmitRef = useRef(false);
 
   const [artifactSubmitting, setArtifactSubmitting] = useState(false);
   const [artifactMsg, setArtifactMsg] = useState("");
@@ -634,6 +636,9 @@ export default function ValidationCaseRecordPage() {
     if (finalOfferSubmitting) {
       return;
     }
+    if (finalOfferSubmitRef.current) {
+      return;
+    }
     setOffersMsg("");
     const amountNum = Number(vc?.bounty_amount || 0);
     const holdHours = Number(offerForm.hold_hours || 168);
@@ -658,6 +663,7 @@ export default function ValidationCaseRecordPage() {
       return;
     }
 
+    finalOfferSubmitRef.current = true;
     setFinalOfferSubmitting(true);
     try {
       await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/final-offers`, {
@@ -674,6 +680,7 @@ export default function ValidationCaseRecordPage() {
     } catch (e) {
       setOffersMsg(e?.message || "Gagal submit Final Offer");
     } finally {
+      finalOfferSubmitRef.current = false;
       setFinalOfferSubmitting(false);
     }
   }
@@ -703,6 +710,9 @@ export default function ValidationCaseRecordPage() {
   }
 
   async function lockFunds() {
+    if (lockFundsSubmitRef.current) {
+      return;
+    }
     if (!escrowDraft || !escrowDraft.receiver_username) {
       setLockFundsMsg("Escrow draft tidak tersedia.");
       return;
@@ -712,6 +722,7 @@ export default function ValidationCaseRecordPage() {
       return;
     }
 
+    lockFundsSubmitRef.current = true;
     setLockFundsLoading(true);
     setLockFundsMsg("");
     try {
@@ -745,6 +756,7 @@ export default function ValidationCaseRecordPage() {
     } catch (e) {
       setLockFundsMsg(e?.message || "Gagal Lock Funds");
     } finally {
+      lockFundsSubmitRef.current = false;
       setLockFundsLoading(false);
     }
   }
