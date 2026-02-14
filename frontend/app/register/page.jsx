@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fetchJson } from "@/lib/api";
-import { setTokens, getToken, TOKEN_KEY, AUTH_CHANGED_EVENT } from "@/lib/auth";
+import { getToken, TOKEN_KEY, AUTH_CHANGED_EVENT } from "@/lib/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -82,7 +82,7 @@ export default function RegisterPage() {
     
     // Validate username is required
     if (!form.username || form.username.trim() === "") {
-      setError("Username wajib diisi");
+      setError("Username is required.");
       setLoading(false);
       return;
     }
@@ -94,18 +94,18 @@ export default function RegisterPage() {
         username: form.username,
         full_name: form.full_name || undefined,
       };
-      const data = await fetchJson(`/api/auth/register`, {
+      await fetchJson(`/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       // Registration with email verification doesn't return tokens
       // User must verify email first, then login
-      setInfo("Registrasi berhasil. Cek email untuk verifikasi lalu lanjutkan login.");
+      setInfo("Account created. Verify your email, then continue to login.");
       setForm({ email: "", password: "", username: "", full_name: "" });
       setTimeout(() => router.replace("/login?registered=1"), 600);
     } catch (e) {
-      setError(e.message || "Terjadi kesalahan");
+      setError(e.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -113,10 +113,12 @@ export default function RegisterPage() {
 
   return (
     <div className="auth-page-bg">
-      <div className="w-full max-w-md mx-auto space-y-6 page-enter">
+      <div className="mx-auto w-full max-w-sm space-y-4">
         <div className="text-center space-y-1">
-          <h1 className="text-xl font-semibold text-foreground">Buat akun</h1>
-          <p className="text-sm text-muted-foreground">Daftar dengan email, pilih username, dan mulai eksplorasi.</p>
+          <h1 className="text-xl font-semibold text-foreground">Create your account</h1>
+          <p className="text-sm text-muted-foreground">
+            Register with email, choose a handle, and launch your first validation flow.
+          </p>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-4 shadow-soft">
@@ -129,7 +131,7 @@ export default function RegisterPage() {
                 value={form.email}
                 onChange={(e) => update("email", e.target.value)}
                 className={inputClass}
-                placeholder="you@example.com"
+                placeholder="name@example.com"
               />
             </div>
             <div className="space-y-2">
@@ -141,56 +143,75 @@ export default function RegisterPage() {
                 minLength={8}
                 onChange={(e) => update("password", e.target.value)}
                 className={inputClass}
-                placeholder="Minimal 8 karakter"
+                placeholder="At least 8 characters"
               />
               {form.password && (
                 <div className="password-strength">
-                  <div className={`password-strength-bar ${passwordStrength >= 1 ? 'active password-strength-weak' : ''}`} />
-                  <div className={`password-strength-bar ${passwordStrength >= 2 ? 'active password-strength-medium' : ''}`} />
-                  <div className={`password-strength-bar ${passwordStrength >= 3 ? 'active password-strength-strong' : ''}`} />
+                  <div
+                    className={`password-strength-bar ${passwordStrength >= 1 ? "active password-strength-weak" : ""}`}
+                  />
+                  <div
+                    className={`password-strength-bar ${passwordStrength >= 2 ? "active password-strength-medium" : ""}`}
+                  />
+                  <div
+                    className={`password-strength-bar ${passwordStrength >= 3 ? "active password-strength-strong" : ""}`}
+                  />
                 </div>
               )}
               {form.password && (
-                <p className={`text-xs ${passwordStrength <= 1 ? 'text-destructive' : passwordStrength === 2 ? 'text-warning' : 'text-success'}`}>
-                  {passwordStrength <= 1 ? 'Password lemah' : passwordStrength === 2 ? 'Password sedang' : 'Password kuat'}
+                <p
+                  className={`text-xs ${passwordStrength <= 1 ? "text-destructive" : passwordStrength === 2 ? "text-warning" : "text-success"}`}
+                >
+                  {passwordStrength <= 1
+                    ? "Weak password"
+                    : passwordStrength === 2
+                      ? "Moderate password"
+                      : "Strong password"}
                 </p>
               )}
             </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Username</label>
-            <input
-              type="text"
-              required
-              value={form.username}
-              onChange={(e) => update("username", e.target.value)}
-              className={inputClass}
-              placeholder="username"
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Username</label>
+              <input
+                type="text"
+                required
+                value={form.username}
+                onChange={(e) => update("username", e.target.value)}
+                className={inputClass}
+                placeholder="your_handle"
+              />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Nama lengkap (opsional)</label>
+              <label className="text-sm font-medium text-foreground">Display name (optional)</label>
               <input
                 type="text"
                 value={form.full_name}
                 onChange={(e) => update("full_name", e.target.value)}
                 className={inputClass}
-                placeholder="Nama panggilan atau lengkap"
+                placeholder="Your name"
               />
             </div>
-            {error && <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</div>}
-            {info && <div className="text-sm text-success bg-success/10 border border-success/20 rounded-lg px-3 py-2">{info}</div>}
-            <button
-              type="submit"
-              disabled={loading}
-              className={primaryButton}
-            >
-              {loading ? "Mendaftarkan..." : "Daftar"}
+            {error && (
+              <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+            {info && (
+              <div className="rounded-lg border border-success/20 bg-success/10 px-3 py-2 text-sm text-success">
+                {info}
+              </div>
+            )}
+            <button type="submit" disabled={loading} className={primaryButton}>
+              {loading ? "Creating account..." : "Create account"}
             </button>
           </form>
         </div>
 
         <div className="text-center text-sm text-muted-foreground">
-          Sudah punya akun? <Link href="/login" className="font-medium text-foreground underline">Masuk</Link>
+          Already have an account?{" "}
+          <Link href="/login" className="font-medium text-foreground underline">
+            Login
+          </Link>
         </div>
       </div>
     </div>

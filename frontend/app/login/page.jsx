@@ -18,7 +18,13 @@ function isWebAuthnSupported() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="auth-page-bg"><div className="text-sm text-muted-foreground">Memuat formulir…</div></div>}>
+    <Suspense
+      fallback={
+        <div className="auth-page-bg">
+          <div className="text-sm text-muted-foreground">Loading sign-in form...</div>
+        </div>
+      }
+    >
       <div className="auth-page-bg">
         <LoginForm />
       </div>
@@ -86,7 +92,7 @@ function LoginForm() {
   }, []);
 
   const inputClass =
-    "w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
+    "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
   const primaryButton =
     "w-full inline-flex justify-center items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
   const secondaryButton =
@@ -95,7 +101,7 @@ function LoginForm() {
   // Passkey login handler
   async function onPasskeyLogin() {
     if (!isWebAuthnSupported()) {
-      setError(new Error("Browser Anda tidak mendukung Passkey"));
+      setError(new Error("This browser does not support passkeys."));
       return;
     }
 
@@ -141,7 +147,7 @@ function LoginForm() {
       });
 
       if (!credential) {
-        throw new Error("Login dibatalkan");
+        throw new Error("Passkey sign-in was cancelled.");
       }
 
       // 3. Prepare response for server
@@ -180,7 +186,7 @@ function LoginForm() {
       }
     } catch (err) {
       if (err.name === "NotAllowedError") {
-        setError(new Error("Login dibatalkan atau tidak diizinkan"));
+        setError(new Error("Passkey sign-in was cancelled or denied."));
       } else {
         setError(err);
       }
@@ -241,7 +247,7 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        const error = new Error(data.message || data.error || "Kode tidak valid");
+        const error = new Error(data.message || data.error || "Invalid verification code.");
         error.code = data.code;
         error.details = data.details;
         throw error;
@@ -267,19 +273,17 @@ function LoginForm() {
   // TOTP verification form
   if (requiresTOTP) {
     return (
-      <div className="w-full max-w-md mx-auto space-y-6 page-enter">
+      <div className="mx-auto w-full max-w-sm space-y-4">
         <div className="text-center space-y-1">
-          <h1 className="text-xl font-semibold text-foreground">Verifikasi 2FA</h1>
-          <p className="text-sm text-muted-foreground">
-            Masukkan kode dari aplikasi authenticator Anda
-          </p>
+          <h1 className="text-xl font-semibold text-foreground">Two-Factor Verification</h1>
+          <p className="text-sm text-muted-foreground">Enter the code from your authenticator app.</p>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-4 shadow-soft">
           <form className="space-y-4" onSubmit={onTOTPSubmit}>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
-                {useBackupCode ? "Backup Code" : "Kode 6 Digit"}
+                {useBackupCode ? "Backup Code" : "6-Digit Code"}
               </label>
               <input
                 type="text"
@@ -295,8 +299,12 @@ function LoginForm() {
               />
             </div>
             <ApiErrorAlert error={error} />
-            <button type="submit" disabled={loading || totpCode.length < (useBackupCode ? 8 : 6)} className={primaryButton}>
-              {loading ? "Memverifikasi..." : "Verifikasi"}
+            <button
+              type="submit"
+              disabled={loading || totpCode.length < (useBackupCode ? 8 : 6)}
+              className={primaryButton}
+            >
+              {loading ? "Verifying..." : "Verify"}
             </button>
             <div className="text-center">
               <button
@@ -308,7 +316,7 @@ function LoginForm() {
                 }}
                 className="text-sm text-muted-foreground hover:text-foreground hover:underline"
               >
-                {useBackupCode ? "Gunakan kode authenticator" : "Gunakan backup code"}
+                {useBackupCode ? "Use authenticator code" : "Use backup code"}
               </button>
             </div>
             <div className="text-center">
@@ -322,7 +330,7 @@ function LoginForm() {
                 }}
                 className="text-sm text-muted-foreground hover:text-foreground hover:underline"
               >
-                ← Kembali ke login
+                Back to login
               </button>
             </div>
           </form>
@@ -332,20 +340,23 @@ function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6 page-enter">
+    <div className="mx-auto w-full max-w-sm space-y-4">
       <div className="text-center space-y-1">
-        <h1 className="text-xl font-semibold text-foreground">Masuk ke AIvalid</h1>
-        <p className="text-sm text-muted-foreground">Gunakan email dan password Anda untuk melanjutkan.</p>
+        <h1 className="text-xl font-semibold text-foreground">Welcome back</h1>
+        <p className="text-sm text-muted-foreground">
+          Sign in to continue to your AIvalid workspace.
+        </p>
       </div>
 
-      <div className="rounded-lg border border-border bg-card p-4 shadow-soft">{sessionExpired && (
+      <div className="rounded-lg border border-border bg-card p-4 shadow-soft">
+        {sessionExpired && (
           <div className="mb-4 rounded-lg border border-warning/20 bg-warning/10 px-3 py-2 text-sm text-warning">
-            Session Anda telah berakhir. Silakan login kembali.
+            Your session has expired. Please sign in again.
           </div>
         )}
         {registeredNotice && (
           <div className="mb-4 rounded-lg border border-success/20 bg-success/10 px-3 py-2 text-sm text-success">
-            Registrasi berhasil. Silahkan periksa kotak masuk Email, Email verifikasi mungkin akan masuk lebih lama, tunggu sekitar 5-10 menit.
+            Registration successful. Check your inbox and verify your email before signing in.
           </div>
         )}
         <form className="space-y-4" onSubmit={onSubmit}>
@@ -357,7 +368,7 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={inputClass}
-              placeholder="you@mail.com"
+              placeholder="name@example.com"
             />
           </div>
           <div className="space-y-2">
@@ -372,13 +383,16 @@ function LoginForm() {
             />
           </div>
           <div className="text-right">
-            <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
-              Lupa password?
+            <Link
+              href="/forgot-password"
+              className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+            >
+              Forgot password?
             </Link>
           </div>
           <ApiErrorAlert error={error} className="mb-2" />
           <button type="submit" disabled={loading} className={primaryButton}>
-            {loading ? "Memproses..." : "Masuk"}
+            {loading ? "Signing in..." : "Login"}
           </button>
         </form>
 
@@ -390,7 +404,7 @@ function LoginForm() {
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">atau</span>
+                <span className="bg-card px-2 text-muted-foreground">or</span>
               </div>
             </div>
 
@@ -403,14 +417,14 @@ function LoginForm() {
               {passkeyLoading ? (
                 <>
                   <span className="inline-block h-4 w-4 mr-2 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-                  Memverifikasi...
+                  Verifying...
                 </>
               ) : (
                 <>
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
                   </svg>
-                  Masuk dengan Passkey
+                  Continue with passkey
                 </>
               )}
             </button>
@@ -419,7 +433,10 @@ function LoginForm() {
       </div>
 
       <div className="text-center text-sm text-muted-foreground">
-        Belum punya akun? <Link href="/register" className="font-medium text-foreground underline">Daftar di sini</Link>
+        New to AIvalid?{" "}
+        <Link href="/register" className="font-medium text-foreground underline">
+          Create an account
+        </Link>
       </div>
     </div>
   );

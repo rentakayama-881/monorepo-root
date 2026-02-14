@@ -256,20 +256,12 @@ export default function Header() {
               </button>
             </div>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className="px-2 py-1 rounded-[var(--radius)] text-xs sm:text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center rounded-[var(--radius)] bg-primary px-2 py-1 text-xs sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-all duration-200 active:scale-95"
-              >
-                Register
-              </Link>
-            </>
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center rounded-[var(--radius)] border border-border px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:bg-accent transition-all duration-200"
+            >
+              Login
+            </Link>
           )}
         </div>
       </div>

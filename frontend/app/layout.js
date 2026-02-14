@@ -1,8 +1,7 @@
 import "./globals.css";
 import Script from "next/script";
-import { headers } from "next/headers";
 import Header from "../components/Header";
-import Footer from "../components/Footer";
+import FooterGate from "../components/FooterGate";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 import CookieConsentBanner from "../components/CookieConsentBanner";
 import { ToastProvider } from "../components/ui/Toast";
@@ -22,31 +21,6 @@ const siteName = "AIValid - Validasi Hasil AI oleh Ahli Manusia";
 const siteDescription =
   "Platform validasi hasil kerja AI #1 di Indonesia. Cek keaslian dan kualitas tugas, riset, kode program, dan dokumen buatan AI oleh validator ahli.";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
-
-const HIDE_FOOTER_EXACT = new Set([
-  "/login",
-  "/register",
-  "/forgot-password",
-  "/reset-password",
-  "/verify-email",
-  "/set-username",
-  "/validation-cases/new",
-  "/documents/upload",
-  "/components-demo",
-  "/sync-token",
-]);
-
-const HIDE_FOOTER_PREFIXES = ["/admin", "/account"];
-
-function shouldHideFooter(pathname) {
-  if (!pathname) return false;
-  const normalized =
-    pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-  if (HIDE_FOOTER_EXACT.has(normalized)) return true;
-  return HIDE_FOOTER_PREFIXES.some(
-    (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`)
-  );
-}
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
@@ -148,11 +122,7 @@ const jsonLd = [
   generateWebApplicationStructuredData(),
 ];
 
-export default async function RootLayout({ children }) {
-  const headersList = await headers();
-  const pathname = headersList.get("x-pathname") || headersList.get("x-invoke-path") || "";
-  const hideFooter = shouldHideFooter(pathname);
-
+export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
@@ -212,7 +182,7 @@ export default async function RootLayout({ children }) {
                     {children}
                   </div>
 
-                  {!hideFooter ? <Footer /> : null}
+                  <FooterGate />
                   <CookieConsentBanner />
 
                   <SpeedInsights />

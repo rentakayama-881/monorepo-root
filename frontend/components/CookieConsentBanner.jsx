@@ -109,7 +109,7 @@ export default function CookieConsentBanner() {
               </Button>
               <Button
                 size="sm"
-                className="h-7 text-xs"
+                className="h-7 text-xs bg-blue-600 text-white hover:bg-blue-500 focus-visible:ring-blue-500"
                 onClick={accept}
               >
                 Terima
