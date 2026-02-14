@@ -68,6 +68,19 @@ function statusLabel(statusRaw) {
   return map[s] || s.replace(/_/g, " ");
 }
 
+function consultationStatusLabel(statusRaw) {
+  const s = normalizeStatus(statusRaw);
+  if (!s) return "-";
+  const map = {
+    pending: "Pending Owner Review",
+    approved: "Approved",
+    rejected: "Rejected",
+    waiting_owner_response: "Waiting Owner Response",
+    owner_timeout: "Owner Timeout",
+  };
+  return map[s] || s.replace(/_/g, " ");
+}
+
 function sensitivityMeta(levelRaw) {
   const level = String(levelRaw || "S1").toUpperCase();
   switch (level) {
@@ -168,6 +181,9 @@ export default function ValidationCaseRecordPage() {
   const [consultationRequests, setConsultationRequests] = useState([]);
   const [consultationLoading, setConsultationLoading] = useState(false);
   const [consultationMsg, setConsultationMsg] = useState("");
+  const [myConsultationRequest, setMyConsultationRequest] = useState(null);
+  const [myConsultationLoading, setMyConsultationLoading] = useState(false);
+  const [requestConsultationLoading, setRequestConsultationLoading] = useState(false);
   const [clarificationMsg, setClarificationMsg] = useState("");
   const [clarificationSubmitting, setClarificationSubmitting] = useState(false);
   const [clarificationForm, setClarificationForm] = useState({
@@ -263,6 +279,7 @@ export default function ValidationCaseRecordPage() {
     setConsultationMsg("");
     setOffersMsg("");
     setLockFundsMsg("");
+    setMyConsultationRequest(null);
 
     const [reqsResult, offersResult, logResult] = await Promise.allSettled([
       fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests`, { method: "GET", clearSessionOn401: false }),
@@ -312,18 +329,36 @@ export default function ValidationCaseRecordPage() {
     setCaseLogLoading(false);
   }
 
+  async function loadMyConsultationRequest() {
+    if (!isAuthed || !id || isOwner) return;
+    setMyConsultationLoading(true);
+    try {
+      const data = await fetchJsonAuth(
+        `/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests/me`,
+        { method: "GET", clearSessionOn401: false }
+      );
+      setMyConsultationRequest(data?.consultation_request || null);
+    } catch {
+      setMyConsultationRequest(null);
+    } finally {
+      setMyConsultationLoading(false);
+    }
+  }
+
   async function loadNonOwnerWorkflow() {
     if (!isAuthed || !id) return;
     if (isOwner) return;
 
     setOffersLoading(true);
     setCaseLogLoading(true);
+    setMyConsultationLoading(true);
     setCaseLogError("");
     setOffersMsg("");
 
-    const [offersResult, logResult] = await Promise.allSettled([
+    const [offersResult, logResult, myReqResult] = await Promise.allSettled([
       fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/final-offers`, { method: "GET", clearSessionOn401: false }),
       fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/case-log`, { method: "GET", clearSessionOn401: false }),
+      fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests/me`, { method: "GET", clearSessionOn401: false }),
     ]);
 
     if (offersResult.status === "fulfilled") {
@@ -340,8 +375,15 @@ export default function ValidationCaseRecordPage() {
       setCaseLogError(formatCaseLogLoadError(logResult.reason, false));
     }
 
+    if (myReqResult.status === "fulfilled") {
+      setMyConsultationRequest(myReqResult.value?.consultation_request || null);
+    } else {
+      setMyConsultationRequest(null);
+    }
+
     setOffersLoading(false);
     setCaseLogLoading(false);
+    setMyConsultationLoading(false);
   }
 
   useEffect(() => {
@@ -360,12 +402,23 @@ export default function ValidationCaseRecordPage() {
       router.push("/login");
       return;
     }
+    if (myConsultationRequest?.id) {
+      setConsultationMsg("Request Consultation untuk kasus ini sudah diajukan.");
+      return;
+    }
     setConsultationMsg("");
+    setRequestConsultationLoading(true);
     try {
-      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests`, {
+      const created = await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
+      });
+      const createdId = Number(created?.id || 0);
+      setMyConsultationRequest({
+        id: createdId > 0 ? createdId : Date.now(),
+        status: "pending",
+        created_at: Math.floor(Date.now() / 1000),
       });
       setConsultationMsg("Request Consultation tercatat. Menunggu persetujuan pemilik kasus.");
     } catch (e) {
@@ -374,7 +427,12 @@ export default function ValidationCaseRecordPage() {
         router.push("/login?session=expired");
         return;
       }
+      if (String(e?.message || "").toLowerCase().includes("sudah pernah diajukan")) {
+        await loadMyConsultationRequest();
+      }
       setConsultationMsg(e?.message || "Gagal Request Consultation");
+    } finally {
+      setRequestConsultationLoading(false);
     }
   }
 
@@ -797,6 +855,17 @@ export default function ValidationCaseRecordPage() {
   const status = normalizeStatus(vc?.status);
   const consultationBlocked = status === "waiting_owner_response" || status === "on_hold_owner_inactive";
   const sensitivity = sensitivityMeta(vc?.sensitivity_level);
+  const consultationStakeRequirement = (() => {
+    if (sensitivity.level === "S0") return "S0: tanpa minimum stake";
+    if (sensitivity.level === "S1") return "S1: minimal stake Rp 100.000";
+    if (sensitivity.level === "S2") return "S2: minimal stake Rp 500.000";
+    if (sensitivity.level === "S3") return `S3: minimal stake sama dengan bounty case (${formatIDR(vc?.bounty_amount)})`;
+    return "Stake mengikuti kebijakan default";
+  })();
+  const consultationRequested = Boolean(myConsultationRequest?.id);
+  const consultationRequestStatus = consultationStatusLabel(myConsultationRequest?.status);
+  const consultationButtonDisabled =
+    consultationBlocked || consultationRequested || requestConsultationLoading || myConsultationLoading;
   const contactRestricted = sensitivity.level === "S2" || sensitivity.level === "S3";
   const owner = vc?.owner || {};
   const ownerBadge = owner?.primary_badge || null;
@@ -870,7 +939,7 @@ export default function ValidationCaseRecordPage() {
               <div className="text-sm text-muted-foreground">
                 <div className="font-semibold text-foreground">Rules</div>
                 <ul className="mt-2 list-disc pl-5">
-                  <li>Request Consultation hanya untuk validator dengan Credibility Stake yang memenuhi syarat.</li>
+                  <li>Stake rule: S0 tanpa minimum stake, S1 minimal Rp 100.000, S2 minimal Rp 500.000, S3 minimal sama dengan bounty case.</li>
                   <li>Kontak Telegram dibuka privat setelah persetujuan pemilik kasus dan dicatat pada Case Log.</li>
                   <li>Jika validator meminta klarifikasi, status menjadi WAITING_OWNER_RESPONSE dengan SLA owner 12 jam.</li>
                   <li>Jika owner tidak merespons sampai SLA habis, kasus auto ON_HOLD_OWNER_INACTIVE tanpa reassignment validator.</li>
@@ -892,13 +961,32 @@ export default function ValidationCaseRecordPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <Button onClick={requestConsultation} variant="gradient" disabled={consultationBlocked}>
-                      Request Consultation
+                    <Button
+                      onClick={requestConsultation}
+                      variant={consultationRequested ? "secondary" : "gradient"}
+                      loading={requestConsultationLoading}
+                      disabled={consultationButtonDisabled}
+                      className={
+                        consultationRequested
+                          ? "border border-primary/30 bg-primary/10 text-primary disabled:opacity-100"
+                          : ""
+                      }
+                    >
+                      {consultationRequested ? "Request Consultation Submitted" : "Request Consultation"}
                     </Button>
+                    <div className="text-xs text-muted-foreground">{consultationStakeRequirement}</div>
+                    {consultationRequested ? (
+                      <div className="text-xs text-primary">
+                        Status request Anda: {consultationRequestStatus}.
+                      </div>
+                    ) : null}
                     {consultationBlocked ? (
                       <div className="text-xs text-muted-foreground">
                         Consultation baru diblokir karena kasus menunggu respons owner atau sedang on-hold owner inactive.
                       </div>
+                    ) : null}
+                    {myConsultationLoading ? (
+                      <div className="text-xs text-muted-foreground">Memuat status consultation request...</div>
                     ) : null}
                     {consultationMsg ? <div className="text-xs text-muted-foreground">{consultationMsg}</div> : null}
 

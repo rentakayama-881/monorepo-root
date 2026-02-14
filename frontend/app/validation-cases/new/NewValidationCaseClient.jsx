@@ -99,6 +99,10 @@ function sanitizeNumericInput(raw) {
     .replace(/^0+(?=\d)/, "");
 }
 
+function hasTelegramContact(value) {
+  return String(value || "").trim().length > 0;
+}
+
 function getTagDimensionFromSlug(rawSlug) {
   const slug = String(rawSlug || "").toLowerCase();
   if (slug.startsWith("artifact-")) return "artifact";
@@ -193,8 +197,12 @@ export default function NewValidationCaseClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
+  const [telegramChecking, setTelegramChecking] = useState(true);
+  const [telegramReady, setTelegramReady] = useState(false);
 
   const locked = Boolean(caseType?.slug && LOCKED_CATEGORIES.includes(String(caseType.slug)));
+  const telegramGateLocked = telegramChecking || !telegramReady;
+  const formDisabled = locked || submitting || telegramGateLocked;
   const autoSummary = useMemo(() => buildAutoSummary(form.quick_intake), [form.quick_intake]);
   const autoBrief = useMemo(() => buildAutoBrief(form.quick_intake), [form.quick_intake]);
 
@@ -241,13 +249,39 @@ export default function NewValidationCaseClient() {
       }
     }
 
+    async function loadTelegramGate() {
+      if (!isAuthed) {
+        if (!cancelled) {
+          setTelegramReady(false);
+          setTelegramChecking(false);
+        }
+        return;
+      }
+
+      setTelegramChecking(true);
+      try {
+        const account = await fetchJsonAuth("/api/account/me", { method: "GET", clearSessionOn401: false });
+        const telegram = String(account?.telegram || "").trim();
+        if (!cancelled) {
+          setTelegramReady(hasTelegramContact(telegram));
+        }
+      } catch {
+        if (!cancelled) {
+          setTelegramReady(false);
+        }
+      } finally {
+        if (!cancelled) setTelegramChecking(false);
+      }
+    }
+
     loadCaseType();
     loadTags();
+    loadTelegramGate();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAuthed]);
 
   function setQuickIntake(key, value) {
     setForm((prev) => ({
@@ -280,6 +314,10 @@ export default function NewValidationCaseClient() {
 
     if (locked) {
       setError("Intake sedang ditutup.");
+      return;
+    }
+    if (telegramGateLocked) {
+      setError("Sebelum membuat Validation Case, atur URL/username Telegram di Account Settings.");
       return;
     }
 
@@ -428,6 +466,23 @@ export default function NewValidationCaseClient() {
           Intake sedang ditutup.
         </div>
       ) : null}
+      {!telegramReady ? (
+        <div className="mb-5 rounded-[var(--radius)] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+          {telegramChecking ? (
+            "Memverifikasi kontak Telegram akun Anda..."
+          ) : (
+            <>
+              Anda wajib set URL/username Telegram di
+              {" "}
+              <Link href="/account" className="font-semibold underline">
+                Account Settings
+              </Link>
+              {" "}
+              sebelum mengisi Create Validation Case.
+            </>
+          )}
+        </div>
+      ) : null}
 
       {error ? (
         <div className="mb-5 rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
@@ -457,7 +512,7 @@ export default function NewValidationCaseClient() {
               onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
               className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
               placeholder="Ringkas dan spesifik."
-              disabled={locked || submitting}
+              disabled={formDisabled}
             />
           </div>
 
@@ -475,7 +530,7 @@ export default function NewValidationCaseClient() {
                     rows={field.key === "evidence_input" || field.key === "constraints" ? 3 : 2}
                     className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
                     placeholder={field.placeholder}
-                    disabled={locked || submitting}
+                    disabled={formDisabled}
                   />
                 </div>
               ))}
@@ -486,7 +541,7 @@ export default function NewValidationCaseClient() {
                   value={form.quick_intake?.sensitivity || "S1"}
                   onChange={(e) => setQuickIntake("sensitivity", e.target.value)}
                   className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                  disabled={locked || submitting}
+                  disabled={formDisabled}
                 >
                   <option value="S0">S0 - Public</option>
                   <option value="S1">S1 - Restricted</option>
@@ -507,7 +562,7 @@ export default function NewValidationCaseClient() {
                   inputMode="numeric"
                   placeholder="10000"
                   maxLength={15}
-                  disabled={locked || submitting}
+                  disabled={formDisabled}
                 />
                 <div className="mt-1 text-[11px] text-muted-foreground">
                   Minimal Rp 10.000. Estimasi saat ini: {form.bounty_amount ? `Rp ${formatIDR(form.bounty_amount)}` : "-"}.
@@ -566,7 +621,7 @@ export default function NewValidationCaseClient() {
                 placeholder="Gunakan Markdown: poin, checklist, tabel kecil, dan acceptance criteria."
                 minHeight="280px"
                 preview={MarkdownPreview}
-                disabled={locked || submitting}
+                disabled={formDisabled}
               />
             </div>
             <div className="mt-2 text-[11px] text-muted-foreground">
@@ -583,7 +638,7 @@ export default function NewValidationCaseClient() {
                     type="checkbox"
                     checked={Boolean(form.checklist?.[item.key])}
                     onChange={(e) => setChecklist(item.key, e.target.checked)}
-                    disabled={locked || submitting}
+                    disabled={formDisabled}
                     className="mt-0.5"
                   />
                   <span>{item.label}</span>
@@ -603,7 +658,7 @@ export default function NewValidationCaseClient() {
                 placeholder="Pilih minimal 2 tags..."
                 enableSearch={true}
                 singlePerGroup={true}
-                disabled={locked || submitting}
+                disabled={formDisabled}
               />
             ) : tagsLoading ? (
               <div className="mt-1">
@@ -625,7 +680,7 @@ export default function NewValidationCaseClient() {
             </Button>
             <Button
               onClick={submit}
-              disabled={locked || submitting}
+              disabled={formDisabled}
               loading={submitting}
               size="sm"
               type="button"
