@@ -1625,6 +1625,9 @@ export default function ValidationCaseRecordPage() {
                       {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
                     </div>
                     <div className="text-xs text-muted-foreground">Case Owner</div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">
+                      Stake: {formatIDR(owner?.guarantee_amount ?? owner?.guaranteeAmount ?? 0)}
+                    </div>
                   </div>
                 </div>
 

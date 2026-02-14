@@ -65,6 +65,7 @@ export default function ValidationCaseRecordSkeleton() {
                   <Skeleton className="h-5 w-16 rounded-full" />
                 </div>
                 <SkeletonText width="w-20" height="h-3" />
+                <SkeletonText width="w-28" height="h-3" />
               </div>
             </div>
 
