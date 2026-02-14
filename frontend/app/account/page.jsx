@@ -16,6 +16,24 @@ import PasskeySettings from "@/components/PasskeySettings";
 import { useSudoAction } from "@/components/SudoModal";
 import { useCanDeleteAccount } from "@/lib/swr";
 
+function normalizeAccountPayload(formValue = {}, socialsValue = []) {
+  const normalizedSocials = (Array.isArray(socialsValue) ? socialsValue : [])
+    .map((item) => ({
+      label: String(item?.label || "").trim(),
+      url: String(item?.url || "").trim(),
+    }))
+    .filter((item) => item.label || item.url);
+
+  return {
+    full_name: String(formValue.full_name || ""),
+    bio: String(formValue.bio || ""),
+    pronouns: String(formValue.pronouns || ""),
+    company: String(formValue.company || ""),
+    telegram: String(formValue.telegram || ""),
+    social_accounts: normalizedSocials,
+  };
+}
+
 function AccountPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -52,6 +70,27 @@ function AccountPageContent() {
   const [releaseGuaranteePin, setReleaseGuaranteePin] = useState("");
   const [guaranteeSubmitting, setGuaranteeSubmitting] = useState(false);
   const [guaranteeReleasing, setGuaranteeReleasing] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaveMessage, setProfileSaveMessage] = useState("");
+  const [savedProfileSignature, setSavedProfileSignature] = useState(
+    JSON.stringify(normalizeAccountPayload({}, []))
+  );
+
+  const profilePayload = useMemo(
+    () => normalizeAccountPayload(form, socials),
+    [form, socials]
+  );
+  const profilePayloadSignature = useMemo(
+    () => JSON.stringify(profilePayload),
+    [profilePayload]
+  );
+  const profileDirty = profilePayloadSignature !== savedProfileSignature;
+
+  useEffect(() => {
+    if (profileDirty) {
+      setProfileSaveMessage("");
+    }
+  }, [profileDirty]);
 
   useEffect(() => {
     if (!authed) { setLoading(false); return; }
@@ -66,15 +105,23 @@ function AccountPageContent() {
         setMe(data);
         setUsername(data.username || "");
         setAvatarUrl(data.avatar_url || "");
-        setForm({
+        const nextForm = {
           full_name: data.full_name || "",
           bio: data.bio || "",
           pronouns: data.pronouns || "",
           company: data.company || "",
           telegram: data.telegram || "",
-        });
-        const s = Array.isArray(data.social_accounts) ? data.social_accounts : [];
-        setSocials(s.length ? s : [{ label: "", url: "" }]);
+        };
+        const socialAccounts = Array.isArray(data.social_accounts) ? data.social_accounts : [];
+        const normalized = normalizeAccountPayload(nextForm, socialAccounts);
+        setForm(nextForm);
+        setSocials(
+          normalized.social_accounts.length
+            ? normalized.social_accounts
+            : [{ label: "", url: "" }]
+        );
+        setSavedProfileSignature(JSON.stringify(normalized));
+        setProfileSaveMessage("");
       } catch (e) {
         setError(e.message);
       } finally {
@@ -321,17 +368,23 @@ function AccountPageContent() {
 
   async function saveAccount(e) {
     e.preventDefault();
-    setError(""); setOk("");
+    if (!profileDirty || profileSaving) return;
+    setError(""); setOk(""); setProfileSaveMessage(""); setProfileSaving(true);
     try {
-      const body = { ...form, social_accounts: socials.filter(s => s.label || s.url) };
+      const body = profilePayload;
       const r = await fetchWithAuth(`${API}/account`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error(await r.text() || "Gagal menyimpan akun");
-      setOk("Akun diperbarui.");
-    } catch (e) { setError(String(e.message || e)); }
+      setSavedProfileSignature(profilePayloadSignature);
+      setProfileSaveMessage("Perubahan profil disimpan.");
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setProfileSaving(false);
+    }
   }
 
   async function changeUsername() {
@@ -395,6 +448,9 @@ function AccountPageContent() {
         </div>
       ) : (
         <div className="space-y-6">
+          {error && <Alert variant="error" message={error} />}
+          {ok && <Alert variant="success" message={ok} />}
+
           {/* Profile Photo Section */}
           <section className="settings-section">
             <h3 className="settings-section-title mb-3">Foto Profil</h3>
@@ -411,9 +467,15 @@ function AccountPageContent() {
                 )}
               </div>
               <div className="flex-1 space-y-2">
-                {/* Show delete button if has avatar and not uploading */}
-                {avatarUrl && !avatarFile && (
-                  <div className="mb-3">
+                <Input
+                  type="file"
+                  accept=".jpg,.jpeg,.png"
+                  onChange={onAvatarFileChange}
+                  label=""
+                  className="block w-full text-sm"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  {avatarUrl && !avatarFile && (
                     <Button
                       type="button"
                       variant="danger"
@@ -427,21 +489,13 @@ function AccountPageContent() {
                       </svg>
                       Hapus Foto
                     </Button>
-                  </div>
-                )}
-                <Input
-                  type="file"
-                  accept=".jpg,.jpeg,.png"
-                  onChange={onAvatarFileChange}
-                  label=""
-                  className="block w-full text-sm"
-                />
-                <div className="flex gap-2">
+                  )}
                   <Button
                     type="button"
                     onClick={uploadAvatar}
                     disabled={avatarUploading || !avatarFile}
                     loading={avatarUploading}
+                    size="sm"
                   >
                     Simpan Foto
                   </Button>
@@ -449,6 +503,7 @@ function AccountPageContent() {
                     <Button
                       type="button"
                       variant="secondary"
+                      size="sm"
                       onClick={() => { setAvatarFile(null); setAvatarPreview(""); }}
                     >
                       Batal
@@ -660,8 +715,18 @@ function AccountPageContent() {
                   </Button>
                 </div>
               </div>
-              <div className="pt-2">
-                <Button type="submit">Simpan</Button>
+              <div className="pt-2 space-y-2">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!profileDirty || profileSaving}
+                  loading={profileSaving}
+                >
+                  Simpan Profil
+                </Button>
+                {profileSaveMessage && (
+                  <Alert variant="success" message={profileSaveMessage} compact />
+                )}
               </div>
             </form>
           </section>
@@ -690,9 +755,6 @@ function AccountPageContent() {
 
           {/* Zona Berbahaya - Delete Account */}
           <DeleteAccountSection API={API} router={router} />
-
-          {error && <Alert variant="error" message={error} />}
-          {ok && <Alert variant="success" message={ok} />}
         </div>
       )}
     </main>
@@ -826,7 +888,8 @@ function DeleteAccountSection({ API, router }) {
 
         <Button
           variant="danger"
-          className="w-full disabled:opacity-50"
+          size="sm"
+          className="disabled:opacity-50"
           disabled={deleteLoading || deleteConfirmation !== "DELETE" || !canDelete}
           loading={deleteLoading}
           onClick={handleDelete}

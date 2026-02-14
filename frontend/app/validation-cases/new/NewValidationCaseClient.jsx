@@ -9,6 +9,7 @@ import { LOCKED_CATEGORIES } from "@/lib/constants";
 import TagSelector from "@/components/ui/TagSelector";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
+import Button from "@/components/ui/Button";
 import NewValidationCaseSkeleton from "./NewValidationCaseSkeleton";
 import Skeleton from "@/components/ui/Skeleton";
 
@@ -613,22 +614,24 @@ export default function NewValidationCaseClient() {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Link
+          <div className="flex items-center justify-end gap-2">
+            <Button
               href="/validation-cases"
               prefetch={false}
-              className="text-sm font-semibold text-muted-foreground hover:underline"
+              variant="secondary"
+              size="sm"
             >
               Back to Case Index
-            </Link>
-            <button
+            </Button>
+            <Button
               onClick={submit}
               disabled={locked || submitting}
-              className="rounded-[var(--radius)] bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              loading={submitting}
+              size="sm"
               type="button"
             >
               {submitting ? "Submitting..." : "Create Validation Case"}
-            </button>
+            </Button>
           </div>
         </div>
       </section>
