@@ -40,6 +40,7 @@ public class TransferService : ITransferService
     private const int HoursPerDay = 24;
     private const int DefaultHoldHours = 7 * HoursPerDay;
     private const int MaxHoldHours = 30 * HoursPerDay;
+    private const string PendingCaseLockIndexName = "caseLockKey_pending_unique";
     private static readonly Regex ValidationCaseLockMessageRegex = new(
         @"Validation\s*Case\s*#(?<caseId>\d+)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -90,25 +91,30 @@ public class TransferService : ITransferService
             throw new ArgumentException("Tidak bisa transfer ke diri sendiri");
         }
 
+        // Calculate hold period (default 7 days, max 30 days)
+        var holdHours = request.HoldHours > 0 ? Math.Min(request.HoldHours, MaxHoldHours) : DefaultHoldHours;
+        var holdUntil = DateTime.UtcNow.AddHours(holdHours);
+
         var transferMessage = string.IsNullOrWhiteSpace(request.Message)
             ? null
             : request.Message.Trim();
+        string? caseLockKey = null;
         if (TryExtractValidationCaseId(transferMessage, out var validationCaseId))
         {
             transferMessage = BuildValidationCaseLockMessage(validationCaseId);
-            var existingPendingLock = await _transfers.Find(t =>
-                    t.SenderId == senderId &&
-                    t.ReceiverId == receiver.UserId &&
-                    t.Amount == request.Amount &&
-                    t.Status == TransferStatus.Pending &&
-                    t.Message == transferMessage)
-                .SortByDescending(t => t.CreatedAt)
-                .FirstOrDefaultAsync();
+            caseLockKey = BuildValidationCaseLockKey(validationCaseId, senderId, receiver.UserId, request.Amount, holdHours);
+
+            var existingPendingLock = await FindExistingPendingCaseLockAsync(
+                senderId,
+                receiver.UserId,
+                request.Amount,
+                transferMessage,
+                caseLockKey);
 
             if (existingPendingLock != null)
             {
                 _logger.LogWarning(
-                    "Duplicate validation-case lock transfer blocked. SenderId={SenderId}, ReceiverId={ReceiverId}, CaseId={CaseId}, ExistingTransferId={TransferId}",
+                    "Duplicate validation-case lock transfer blocked (pre-check). SenderId={SenderId}, ReceiverId={ReceiverId}, CaseId={CaseId}, ExistingTransferId={TransferId}",
                     senderId,
                     receiver.UserId,
                     validationCaseId,
@@ -129,10 +135,6 @@ public class TransferService : ITransferService
             throw new InvalidOperationException($"Saldo tidak cukup. Saldo: Rp {senderWallet.Balance:N0}, Dibutuhkan: Rp {request.Amount:N0}");
         }
 
-        // Calculate hold period (default 7 days, max 30 days)
-        var holdHours = request.HoldHours > 0 ? Math.Min(request.HoldHours, MaxHoldHours) : DefaultHoldHours;
-        var holdUntil = DateTime.UtcNow.AddHours(holdHours);
-
         // Create transfer record (Code assigned just before insert; may retry on duplicate)
         var transfer = new Transfer
         {
@@ -144,6 +146,7 @@ public class TransferService : ITransferService
             ReceiverUsername = receiver.Username,
             Amount = request.Amount,
             Message = transferMessage,
+            CaseLockKey = caseLockKey,
             Status = TransferStatus.Pending,
             HoldUntil = holdUntil,
             CreatedAt = DateTime.UtcNow,
@@ -168,13 +171,45 @@ public class TransferService : ITransferService
         // Save transfer (retry on duplicate code)
         try
         {
+            var inserted = false;
             for (var attempt = 0; attempt < 3; attempt++)
             {
                 transfer.Code = await GenerateUniqueCodeAsync();
                 try
                 {
                     await _transfers.InsertOneAsync(transfer);
+                    inserted = true;
                     break;
+                }
+                catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey && IsPendingCaseLockDuplicate(ex))
+                {
+                    if (!string.IsNullOrWhiteSpace(caseLockKey))
+                    {
+                        var existingPendingLock = await FindPendingCaseLockByKeyAsync(caseLockKey);
+                        if (existingPendingLock != null)
+                        {
+                            _logger.LogWarning(
+                                "Duplicate validation-case lock transfer blocked (race). SenderId={SenderId}, ReceiverId={ReceiverId}, ExistingTransferId={TransferId}",
+                                senderId,
+                                receiver.UserId,
+                                existingPendingLock.Id);
+
+                            if (!await TryRefundFailedTransferDeductionAsync(
+                                    senderId,
+                                    request.Amount,
+                                    receiver.Username,
+                                    transfer.Id,
+                                    "duplicate validation-case lock transfer"))
+                            {
+                                throw new InvalidOperationException(
+                                    "Dana sempat terpotong saat request duplikat dan refund otomatis gagal. Hubungi support.");
+                            }
+
+                            return ToCreateTransferResponse(existingPendingLock);
+                        }
+                    }
+
+                    throw;
                 }
                 catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
                 {
@@ -184,26 +219,24 @@ public class TransferService : ITransferService
                     }
                 }
             }
+
+            if (!inserted)
+            {
+                throw new InvalidOperationException("Gagal menyimpan transfer setelah percobaan ulang.");
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to insert transfer {TransferId} after wallet deduction; attempting refund", transfer.Id);
 
-            try
-            {
-                _ = await _walletService.AddBalanceAsync(
+            if (!await TryRefundFailedTransferDeductionAsync(
                     senderId,
                     request.Amount,
-                    $"Refund: gagal membuat transfer ke @{receiver.Username}",
-                    TransactionType.Refund,
+                    receiver.Username,
                     transfer.Id,
-                    "transfer"
-                );
-            }
-            catch (Exception refundEx)
+                    "transfer insertion failure"))
             {
                 _logger.LogCritical(
-                    refundEx,
                     "CRITICAL: Failed to refund after transfer insert failure. TransferId: {TransferId}, UserId: {UserId}, Amount: {Amount}",
                     transfer.Id,
                     senderId,
@@ -247,6 +280,83 @@ public class TransferService : ITransferService
     private static string BuildValidationCaseLockMessage(int caseId)
     {
         return $"Lock Funds: Validation Case #{caseId}";
+    }
+
+    private static string BuildValidationCaseLockKey(int caseId, uint senderId, uint receiverId, long amount, int holdHours)
+    {
+        return $"validation-case-lock:case:{caseId}:sender:{senderId}:receiver:{receiverId}:amount:{amount}:hold:{holdHours}";
+    }
+
+    private async Task<Transfer?> FindExistingPendingCaseLockAsync(
+        uint senderId,
+        uint receiverId,
+        long amount,
+        string transferMessage,
+        string caseLockKey)
+    {
+        var pendingByLockKey = await FindPendingCaseLockByKeyAsync(caseLockKey);
+        if (pendingByLockKey != null)
+        {
+            return pendingByLockKey;
+        }
+
+        // Backward-compatibility for legacy documents before caseLockKey existed.
+        return await _transfers.Find(t =>
+                t.SenderId == senderId &&
+                t.ReceiverId == receiverId &&
+                t.Amount == amount &&
+                t.Status == TransferStatus.Pending &&
+                t.Message == transferMessage)
+            .SortByDescending(t => t.CreatedAt)
+            .FirstOrDefaultAsync();
+    }
+
+    private async Task<Transfer?> FindPendingCaseLockByKeyAsync(string caseLockKey)
+    {
+        return await _transfers.Find(t =>
+                t.CaseLockKey == caseLockKey &&
+                t.Status == TransferStatus.Pending)
+            .SortByDescending(t => t.CreatedAt)
+            .FirstOrDefaultAsync();
+    }
+
+    private static bool IsPendingCaseLockDuplicate(MongoWriteException ex)
+    {
+        var msg = ex.WriteError?.Message ?? string.Empty;
+        return msg.Contains(PendingCaseLockIndexName, StringComparison.OrdinalIgnoreCase)
+            || msg.Contains("caseLockKey", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task<bool> TryRefundFailedTransferDeductionAsync(
+        uint senderId,
+        long amount,
+        string receiverUsername,
+        string transferId,
+        string reason)
+    {
+        try
+        {
+            _ = await _walletService.AddBalanceAsync(
+                senderId,
+                amount,
+                $"Refund: {reason} (to @{receiverUsername})",
+                TransactionType.Refund,
+                transferId,
+                "transfer"
+            );
+            return true;
+        }
+        catch (Exception refundEx)
+        {
+            _logger.LogCritical(
+                refundEx,
+                "CRITICAL: Failed to refund transfer deduction. TransferId: {TransferId}, UserId: {UserId}, Amount: {Amount}, Reason: {Reason}",
+                transferId,
+                senderId,
+                amount,
+                reason);
+            return false;
+        }
     }
 
     private static CreateTransferResponse ToCreateTransferResponse(Transfer transfer)

@@ -46,7 +46,13 @@ public abstract class ApiControllerBase : ControllerBase
     /// </summary>
     protected bool IsAdmin()
     {
-        return User.IsInRole("admin") 
+        var isAdminToken = string.Equals(
+            User.FindFirst("type")?.Value,
+            "admin",
+            StringComparison.OrdinalIgnoreCase);
+        if (!isAdminToken) return false;
+
+        return User.IsInRole("admin")
             || User.HasClaim(c => c.Type == "role" && c.Value == "admin")
             || User.HasClaim(c => c.Type == ClaimTypes.Role && c.Value == "admin");
     }

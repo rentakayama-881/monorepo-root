@@ -188,6 +188,26 @@ public class MongoDbContext
             _logger.LogWarning(ex, "Failed to create unique index for transfer code");
         }
 
+        try
+        {
+            Transfers.Indexes.CreateOne(new CreateIndexModel<Transfer>(
+                Builders<Transfer>.IndexKeys.Ascending(t => t.CaseLockKey),
+                new CreateIndexOptions<Transfer>
+                {
+                    Unique = true,
+                    Name = "caseLockKey_pending_unique",
+                    // Allow only one pending lock-funds transfer for each validation-case lock key.
+                    PartialFilterExpression = Builders<Transfer>.Filter.And(
+                        Builders<Transfer>.Filter.Ne(t => t.CaseLockKey, null),
+                        Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Pending))
+                }
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create unique partial index for transfer caseLockKey");
+        }
+
         // Guarantee lock indexes
         GuaranteeLocks.Indexes.CreateMany(new[]
         {

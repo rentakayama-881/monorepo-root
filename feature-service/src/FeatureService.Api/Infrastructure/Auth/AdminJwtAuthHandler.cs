@@ -105,23 +105,30 @@ public class AdminJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOpt
 
             // Check if this is an admin token (from Go backend)
             var tokenType = principal.FindFirst("type")?.Value;
-            var isAdmin = tokenType == "admin" || principal.IsInRole("admin");
+            var isAdmin = string.Equals(tokenType, "admin", StringComparison.OrdinalIgnoreCase);
 
-            if (isAdmin)
+            if (!isAdmin)
             {
-                // Add admin role claim if not present
-                var identity = (ClaimsIdentity)principal.Identity!;
-                if (!principal.IsInRole("admin"))
-                {
-                    identity.AddClaim(new Claim(ClaimTypes.Role, "admin"));
-                }
+                return null;
+            }
 
-                // Map admin_id to NameIdentifier if present
-                var adminId = principal.FindFirst("admin_id")?.Value;
-                if (!string.IsNullOrEmpty(adminId) && principal.FindFirst(ClaimTypes.NameIdentifier) == null)
-                {
-                    identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, adminId));
-                }
+            var adminId = principal.FindFirst("admin_id")?.Value;
+            if (string.IsNullOrWhiteSpace(adminId) || !uint.TryParse(adminId, out _))
+            {
+                return null;
+            }
+
+            // Add admin role claim if not present
+            var identity = (ClaimsIdentity)principal.Identity!;
+            if (!principal.IsInRole("admin"))
+            {
+                identity.AddClaim(new Claim(ClaimTypes.Role, "admin"));
+            }
+
+            // Map admin_id to NameIdentifier if present
+            if (principal.FindFirst(ClaimTypes.NameIdentifier) == null)
+            {
+                identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, adminId));
             }
 
             var ticket = new AuthenticationTicket(principal, Scheme.Name);

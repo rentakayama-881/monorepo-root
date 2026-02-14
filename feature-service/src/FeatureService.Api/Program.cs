@@ -145,6 +145,11 @@ try
                     var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
                     var jwtToken = handler.ReadJwtToken(token);
 
+                    if (!string.Equals(jwtToken.Header.Alg, SecurityAlgorithms.HmacSha256, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new SecurityTokenInvalidAlgorithmException("Unsupported token signing algorithm");
+                    }
+
                     // Manually compute and verify HMAC-SHA256 signature
                     var parts = token.Split('.');
                     if (parts.Length != 3)
@@ -192,23 +197,53 @@ try
             {
                 OnTokenValidated = context =>
                 {
-                    // Check if this is an admin token (from Go backend)
-                    var tokenType = context.Principal?.FindFirst("type")?.Value;
+                    var principal = context.Principal;
+                    var identity = (System.Security.Claims.ClaimsIdentity?)principal?.Identity;
+                    if (principal == null || identity == null)
+                    {
+                        context.Fail("Invalid principal");
+                        return Task.CompletedTask;
+                    }
+
+                    var tokenType = principal.FindFirst("type")?.Value?.Trim().ToLowerInvariant();
                     if (tokenType == "admin")
                     {
-                        var identity = (System.Security.Claims.ClaimsIdentity?)context.Principal?.Identity;
-                        if (identity != null && !context.Principal!.IsInRole("admin"))
+                        var adminId = principal.FindFirst("admin_id")?.Value;
+                        if (string.IsNullOrWhiteSpace(adminId) || !uint.TryParse(adminId, out _))
+                        {
+                            context.Fail("Invalid admin token claims");
+                            return Task.CompletedTask;
+                        }
+
+                        if (!principal.IsInRole("admin"))
                         {
                             identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "admin"));
                         }
 
-                        // Map admin_id to NameIdentifier
-                        var adminId = context.Principal?.FindFirst("admin_id")?.Value;
-                        if (!string.IsNullOrEmpty(adminId) && context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) == null)
+                        if (principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) == null)
                         {
-                            identity?.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, adminId));
+                            identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, adminId));
                         }
+
+                        return Task.CompletedTask;
                     }
+
+                    if (!string.IsNullOrEmpty(tokenType) && tokenType != "access")
+                    {
+                        context.Fail("Invalid token type");
+                        return Task.CompletedTask;
+                    }
+
+                    // User tokens must carry an ID claim (legacy tokens without explicit type are still allowed).
+                    var userId = principal.FindFirst("user_id")?.Value
+                        ?? principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                        ?? principal.FindFirst("sub")?.Value;
+
+                    if (string.IsNullOrWhiteSpace(userId) || !uint.TryParse(userId, out _))
+                    {
+                        context.Fail("Invalid user token claims");
+                    }
+
                     return Task.CompletedTask;
                 },
                 OnAuthenticationFailed = context =>
@@ -239,6 +274,7 @@ try
                                     ValidateAudience = validateAudience,
                                     ValidAudience = jwtSettings.Audience,
                                     ValidateLifetime = true,
+                                    ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
                                     ClockSkew = TimeSpan.FromMinutes(5)
                                 };
 
@@ -247,14 +283,19 @@ try
 
                                 if (tokenType == "admin")
                                 {
+                                    var adminId = principal.FindFirst("admin_id")?.Value;
+                                    if (string.IsNullOrWhiteSpace(adminId) || !uint.TryParse(adminId, out _))
+                                    {
+                                        return Task.CompletedTask;
+                                    }
+
                                     var identity = (System.Security.Claims.ClaimsIdentity?)principal.Identity;
                                     if (identity != null && !principal.IsInRole("admin"))
                                     {
                                         identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "admin"));
                                     }
 
-                                    var adminId = principal.FindFirst("admin_id")?.Value;
-                                    if (!string.IsNullOrEmpty(adminId) && principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) == null)
+                                    if (principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) == null)
                                     {
                                         identity?.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, adminId));
                                     }

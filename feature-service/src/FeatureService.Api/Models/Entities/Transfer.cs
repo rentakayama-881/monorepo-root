@@ -31,6 +31,10 @@ public class Transfer
     [BsonIgnoreIfNull]
     public string? Message { get; set; }
 
+    [BsonElement("caseLockKey")]
+    [BsonIgnoreIfNull]
+    public string? CaseLockKey { get; set; }
+
     [BsonElement("status")]
     public TransferStatus Status { get; set; }
 

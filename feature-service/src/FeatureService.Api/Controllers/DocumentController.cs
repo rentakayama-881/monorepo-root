@@ -357,7 +357,15 @@ public class DocumentController : ControllerBase
 
     private bool IsCurrentUserAdmin()
     {
-        return User.IsInRole("admin") || User.HasClaim("role", "admin");
+        var isAdminToken = string.Equals(
+            User.FindFirst("type")?.Value,
+            "admin",
+            StringComparison.OrdinalIgnoreCase);
+        if (!isAdminToken) return false;
+
+        return User.IsInRole("admin")
+            || User.HasClaim("role", "admin")
+            || User.HasClaim(ClaimTypes.Role, "admin");
     }
 }
 

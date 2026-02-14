@@ -26,7 +26,14 @@ public class UserContextAccessor : IUserContextAccessor
         {
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext?.User == null) return false;
-            return httpContext.User.IsInRole("admin") || httpContext.User.HasClaim("role", "admin");
+            var isAdminToken = string.Equals(
+                httpContext.User.FindFirst("type")?.Value,
+                "admin",
+                StringComparison.OrdinalIgnoreCase);
+            if (!isAdminToken) return false;
+            return httpContext.User.IsInRole("admin")
+                || httpContext.User.HasClaim("role", "admin")
+                || httpContext.User.HasClaim(ClaimTypes.Role, "admin");
         }
     }
 
