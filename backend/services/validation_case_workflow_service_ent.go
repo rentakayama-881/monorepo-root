@@ -63,13 +63,16 @@ const (
 	ownerResponseSLAHours   = 12
 	ownerReminderFirstHour  = 2
 	ownerReminderSecondHour = 8
+
+	consultationStakeMinS1 int64 = 100_000
+	consultationStakeMinS2 int64 = 500_000
 )
 
-// minCredibilityStakeIDR returns minimum required active guarantee/stake for validators to request consultation.
+// minCredibilityStakeIDR returns baseline stake used for reputation scoring/fallback checks.
 //
 // Evidence basis:
 // Feature Service enforces a minimum guarantee lock of Rp 100.000 for `GuaranteeService.SetGuaranteeAsync`.
-// We mirror that as the default stake gate in Go backend (configurable via env).
+// We mirror that as baseline value in Go backend (configurable via env).
 func minCredibilityStakeIDR() int64 {
 	const defaultMin = int64(100_000)
 	raw := strings.TrimSpace(os.Getenv("MIN_CREDIBILITY_STAKE_IDR"))
@@ -100,6 +103,28 @@ func valueOrEmpty(v *string) string {
 		return ""
 	}
 	return *v
+}
+
+func requiredStakeForConsultation(vc *ent.ValidationCase) int64 {
+	if vc == nil {
+		return minCredibilityStakeIDR()
+	}
+
+	switch strings.ToUpper(strings.TrimSpace(vc.SensitivityLevel)) {
+	case "S0":
+		return 0
+	case "S1":
+		return consultationStakeMinS1
+	case "S2":
+		return consultationStakeMinS2
+	case "S3":
+		if vc.BountyAmount > 0 {
+			return vc.BountyAmount
+		}
+		return minCredibilityStakeIDR()
+	default:
+		return minCredibilityStakeIDR()
+	}
 }
 
 func dueTimeFromNow(now time.Time) time.Time {
@@ -445,9 +470,15 @@ func (s *EntValidationCaseWorkflowService) RequestConsultation(ctx context.Conte
 		return 0, apperrors.ErrDatabase
 	}
 
-	requiredStake := minCredibilityStakeIDR()
+	requiredStake := requiredStakeForConsultation(vc)
 	if validator.GuaranteeAmount < requiredStake {
-		return 0, apperrors.ErrInvalidInput.WithDetails(fmt.Sprintf("Credibility Stake tidak memenuhi syarat. Minimal Rp %d", requiredStake))
+		return 0, apperrors.ErrInvalidInput.WithDetails(
+			fmt.Sprintf(
+				"Credibility Stake tidak memenuhi syarat untuk sensitivity %s. Minimal Rp %d",
+				strings.ToUpper(strings.TrimSpace(vc.SensitivityLevel)),
+				requiredStake,
+			),
+		)
 	}
 
 	exists, err := s.client.ConsultationRequest.Query().
@@ -481,6 +512,91 @@ func (s *EntValidationCaseWorkflowService) RequestConsultation(ctx context.Conte
 	})
 
 	return uint(req.ID), nil
+}
+
+func (s *EntValidationCaseWorkflowService) GetConsultationRequestForValidator(
+	ctx context.Context,
+	validationCaseID uint,
+	validatorUserID uint,
+) (*ValidatorConsultationRequestSummary, error) {
+	_, err := s.client.ValidationCase.Get(ctx, int(validationCaseID))
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, apperrors.ErrValidationCaseNotFound
+		}
+		return nil, apperrors.ErrDatabase
+	}
+
+	req, err := s.client.ConsultationRequest.Query().
+		Where(
+			consultationrequest.ValidationCaseIDEQ(int(validationCaseID)),
+			consultationrequest.ValidatorUserIDEQ(int(validatorUserID)),
+		).
+		Order(ent.Desc(consultationrequest.FieldCreatedAt)).
+		First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, apperrors.ErrDatabase
+	}
+
+	return &ValidatorConsultationRequestSummary{
+		ID:                 uint(req.ID),
+		Status:             normalizeStatus(req.Status),
+		ApprovedAt:         unixPtr(req.ApprovedAt),
+		RejectedAt:         unixPtr(req.RejectedAt),
+		ExpiresAt:          unixPtr(req.ExpiresAt),
+		OwnerResponseDueAt: unixPtr(req.OwnerResponseDueAt),
+		CreatedAt:          req.CreatedAt.Unix(),
+	}, nil
+}
+
+func (s *EntValidationCaseWorkflowService) ListConsultationGuaranteeLocksForValidator(
+	ctx context.Context,
+	validatorUserID uint,
+) ([]ConsultationGuaranteeLockItem, error) {
+	reqs, err := s.client.ConsultationRequest.Query().
+		Where(
+			consultationrequest.ValidatorUserIDEQ(int(validatorUserID)),
+			consultationrequest.StatusIn(
+				consultationStatusApproved,
+				consultationStatusWaitingOwnerResponse,
+				consultationStatusOwnerTimeout,
+			),
+		).
+		WithValidationCase().
+		Order(ent.Desc(consultationrequest.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		return nil, apperrors.ErrDatabase
+	}
+
+	out := make([]ConsultationGuaranteeLockItem, 0, len(reqs))
+	for _, req := range reqs {
+		vc := req.Edges.ValidationCase
+		if vc == nil {
+			continue
+		}
+
+		escrowTransferID := strings.TrimSpace(valueOrEmpty(vc.EscrowTransferID))
+		validationStatus := normalizeStatus(vc.Status)
+
+		// Completed cases with no escrow are treated as already closed and should not block guarantee release.
+		if validationStatus == "completed" && escrowTransferID == "" {
+			continue
+		}
+
+		out = append(out, ConsultationGuaranteeLockItem{
+			ValidationCaseID:   uint(vc.ID),
+			ValidationStatus:   validationStatus,
+			ConsultationStatus: normalizeStatus(req.Status),
+			EscrowTransferID:   escrowTransferID,
+			DisputeID:          strings.TrimSpace(valueOrEmpty(vc.DisputeID)),
+		})
+	}
+
+	return out, nil
 }
 
 func (s *EntValidationCaseWorkflowService) ListConsultationRequestsForOwner(ctx context.Context, validationCaseID uint, ownerUserID uint) ([]ConsultationRequestItem, error) {

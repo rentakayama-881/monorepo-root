@@ -17,6 +17,24 @@ type ConsultationRequestItem struct {
 	CreatedAt          int64                   `json:"created_at"`
 }
 
+type ValidatorConsultationRequestSummary struct {
+	ID                 uint   `json:"id"`
+	Status             string `json:"status"`
+	ApprovedAt         *int64 `json:"approved_at,omitempty"`
+	RejectedAt         *int64 `json:"rejected_at,omitempty"`
+	ExpiresAt          *int64 `json:"expires_at,omitempty"`
+	OwnerResponseDueAt *int64 `json:"owner_response_due_at,omitempty"`
+	CreatedAt          int64  `json:"created_at"`
+}
+
+type ConsultationGuaranteeLockItem struct {
+	ValidationCaseID   uint   `json:"validation_case_id"`
+	ValidationStatus   string `json:"validation_status"`
+	ConsultationStatus string `json:"consultation_status"`
+	EscrowTransferID   string `json:"escrow_transfer_id,omitempty"`
+	DisputeID          string `json:"dispute_id,omitempty"`
+}
+
 type MatchingScoreBreakdown struct {
 	Total             int `json:"total"`
 	DomainFit         int `json:"domain_fit"`

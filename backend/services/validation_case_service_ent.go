@@ -218,6 +218,17 @@ func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, own
 		return nil, err
 	}
 
+	owner, err := s.client.User.Get(ctx, int(ownerUserID))
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, apperrors.ErrUserNotFound
+		}
+		return nil, apperrors.ErrDatabase
+	}
+	if strings.TrimSpace(owner.Telegram) == "" {
+		return nil, apperrors.ErrInvalidInput.WithDetails("Atur URL/username Telegram di Account Settings sebelum membuat Validation Case")
+	}
+
 	cat, err := s.client.Category.
 		Query().
 		Where(category.SlugEQ(input.CategorySlug)).

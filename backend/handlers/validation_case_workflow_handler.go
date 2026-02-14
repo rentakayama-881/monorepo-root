@@ -60,6 +60,24 @@ func (h *ValidationCaseWorkflowHandler) ListConsultationRequests(c *gin.Context)
 	c.JSON(http.StatusOK, gin.H{"consultation_requests": items})
 }
 
+func (h *ValidationCaseWorkflowHandler) GetMyConsultationRequest(c *gin.Context) {
+	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
+	if !ok {
+		return
+	}
+	user, ok := getEntUserFromContext(c)
+	if !ok {
+		return
+	}
+
+	item, err := h.workflow.GetConsultationRequestForValidator(c.Request.Context(), validationCaseID, uint(user.ID))
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"consultation_request": item})
+}
+
 func (h *ValidationCaseWorkflowHandler) ApproveConsultationRequest(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -369,6 +387,27 @@ func (h *ValidationCaseWorkflowHandler) InternalMarkEscrowReleasedByTransfer(c *
 		validationCaseID = *id
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "validation_case_id": validationCaseID})
+}
+
+// InternalGetValidatorConsultationLocks is called by Feature Service before guarantee release.
+// Protected by InternalServiceAuth middleware (X-Internal-Api-Key).
+func (h *ValidationCaseWorkflowHandler) InternalGetValidatorConsultationLocks(c *gin.Context) {
+	validatorUserID, ok := parseUintParam(c, "id", "validator_user_id")
+	if !ok {
+		return
+	}
+
+	locks, err := h.workflow.ListConsultationGuaranteeLocksForValidator(c.Request.Context(), validatorUserID)
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"validator_user_id":            validatorUserID,
+		"has_active_consultation_lock": len(locks) > 0,
+		"locks":                        locks,
+	})
 }
 
 func (h *ValidationCaseWorkflowHandler) AttachDispute(c *gin.Context) {

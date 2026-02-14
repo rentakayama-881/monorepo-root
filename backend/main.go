@@ -522,6 +522,7 @@ func main() {
 			internal.Use(middleware.InternalServiceAuth())
 			{
 				internal.PUT("/users/:id/guarantee", userHandler.UpdateGuaranteeAmount)
+				internal.GET("/users/:id/consultation-locks", workflowHandler.InternalGetValidatorConsultationLocks)
 				// Feature-service callback: finalize Validation Case after escrow is auto-released.
 				internal.POST("/validation-cases/escrow/released", workflowHandler.InternalMarkEscrowReleasedByTransfer)
 			}
@@ -544,6 +545,7 @@ func main() {
 				// Validation Protocol workflow
 				validationCases.POST("/:id/consultation-requests", middleware.AuthMiddleware(), workflowHandler.RequestConsultation)
 				validationCases.GET("/:id/consultation-requests", middleware.AuthMiddleware(), workflowHandler.ListConsultationRequests)
+				validationCases.GET("/:id/consultation-requests/me", middleware.AuthMiddleware(), workflowHandler.GetMyConsultationRequest)
 				validationCases.POST("/:id/consultation-requests/:requestId/approve", middleware.AuthMiddleware(), workflowHandler.ApproveConsultationRequest)
 				validationCases.POST("/:id/consultation-requests/:requestId/reject", middleware.AuthMiddleware(), workflowHandler.RejectConsultationRequest)
 				validationCases.POST("/:id/clarification/request", middleware.AuthMiddleware(), workflowHandler.RequestOwnerClarificationFromValidator)
