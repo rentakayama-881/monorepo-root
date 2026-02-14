@@ -76,7 +76,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	// Use RegisterWithDevice if device fingerprint provided
-	response, err := h.authService.RegisterWithDevice(input, req.DeviceFingerprint, c.ClientIP(), c.GetHeader("User-Agent"))
+	response, err := h.authService.RegisterWithDeviceCtx(c.Request.Context(), input, req.DeviceFingerprint, c.ClientIP(), c.GetHeader("User-Agent"))
 	if err != nil {
 		handleError(c, err)
 		return
@@ -111,7 +111,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// Use new session-based login
-	response, err := h.authService.LoginWithSession(input, c.ClientIP(), c.GetHeader("User-Agent"))
+	response, err := h.authService.LoginWithSessionCtx(c.Request.Context(), input, c.ClientIP(), c.GetHeader("User-Agent"))
 	if err != nil {
 		handleError(c, err)
 		return
@@ -163,7 +163,7 @@ func (h *AuthHandler) RequestVerification(c *gin.Context) {
 		return
 	}
 
-	result, err := h.authService.RequestVerification(req.Email, c.ClientIP())
+	result, err := h.authService.RequestVerificationCtx(c.Request.Context(), req.Email, c.ClientIP())
 	if err != nil {
 		// Include server-side retry metadata for rate-limit responses.
 		if appErr, ok := err.(*apperrors.AppError); ok && result != nil && result.RetryAfterSeconds > 0 &&
@@ -202,7 +202,7 @@ func (h *AuthHandler) ConfirmVerification(c *gin.Context) {
 		Token: req.Token,
 	}
 
-	if err := h.authService.ConfirmVerification(input); err != nil {
+	if err := h.authService.ConfirmVerificationCtx(c.Request.Context(), input); err != nil {
 		handleError(c, err)
 		return
 	}
@@ -225,7 +225,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.ForgotPassword(req.Email, c.ClientIP())
+	response, err := h.authService.ForgotPasswordCtx(c.Request.Context(), req.Email, c.ClientIP())
 	if err != nil {
 		handleError(c, err)
 		return
@@ -246,7 +246,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.authService.ResetPassword(req.Token, req.NewPassword); err != nil {
+	if err := h.authService.ResetPasswordCtx(c.Request.Context(), req.Token, req.NewPassword); err != nil {
 		handleError(c, err)
 		return
 	}
@@ -279,7 +279,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	tokenPair, err := h.sessionService.RefreshSession(refreshToken, c.ClientIP(), c.GetHeader("User-Agent"))
+	tokenPair, err := h.sessionService.RefreshSessionCtx(c.Request.Context(), refreshToken, c.ClientIP(), c.GetHeader("User-Agent"))
 	if err != nil {
 		handleError(c, err)
 		return
@@ -311,7 +311,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 
 	if refreshToken != "" {
 		// Find and revoke session by refresh token
-		_ = h.sessionService.RevokeSessionByRefreshToken(refreshToken, "User logout")
+		_ = h.sessionService.RevokeSessionByRefreshTokenCtx(c.Request.Context(), refreshToken, "User logout")
 	}
 
 	clearRefreshTokenCookie(c)
@@ -328,7 +328,7 @@ func (h *AuthHandler) LogoutAll(c *gin.Context) {
 	}
 	user := userIfc.(*ent.User)
 
-	if err := h.sessionService.RevokeAllUserSessions(uint(user.ID), "User requested logout from all devices"); err != nil {
+	if err := h.sessionService.RevokeAllUserSessionsCtx(c.Request.Context(), uint(user.ID), "User requested logout from all devices"); err != nil {
 		handleError(c, apperrors.ErrInternalServer)
 		return
 	}
@@ -347,7 +347,7 @@ func (h *AuthHandler) GetActiveSessions(c *gin.Context) {
 	}
 	user := userIfc.(*ent.User)
 
-	sessions, err := h.sessionService.GetActiveSessions(uint(user.ID))
+	sessions, err := h.sessionService.GetActiveSessionsCtx(c.Request.Context(), uint(user.ID))
 	if err != nil {
 		handleError(c, apperrors.ErrInternalServer)
 		return
@@ -395,7 +395,7 @@ func (h *AuthHandler) RevokeSession(c *gin.Context) {
 		return
 	}
 
-	if err := h.sessionService.RevokeSession(uint(sessionIDInt), "User revoked session"); err != nil {
+	if err := h.sessionService.RevokeSessionCtx(c.Request.Context(), uint(sessionIDInt), "User revoked session"); err != nil {
 		handleError(c, apperrors.ErrInternalServer)
 		return
 	}
@@ -421,7 +421,7 @@ func (h *AuthHandler) LoginTOTP(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.CompleteTOTPLogin(req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"))
+	response, err := h.authService.CompleteTOTPLoginCtx(c.Request.Context(), req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"))
 	if err != nil {
 		handleError(c, err)
 		return
@@ -462,7 +462,7 @@ func (h *AuthHandler) LoginBackupCode(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.CompleteTOTPLoginWithBackupCode(req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"))
+	response, err := h.authService.CompleteTOTPLoginWithBackupCodeCtx(c.Request.Context(), req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"))
 	if err != nil {
 		handleError(c, err)
 		return

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -51,7 +50,7 @@ func (h *PasskeyHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	count, err := h.passkeyService.GetPasskeyCount(ctx, int(userID))
 	if err != nil {
 		h.handleError(c, err)
@@ -72,7 +71,7 @@ func (h *PasskeyHandler) ListPasskeys(c *gin.Context) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	passkeys, err := h.passkeyService.ListPasskeys(ctx, int(userID))
 	if err != nil {
 		h.handleError(c, err)
@@ -104,7 +103,7 @@ func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	options, sessionID, err := h.passkeyService.BeginRegistration(ctx, int(userID))
 	if err != nil {
 		h.handleError(c, err)
@@ -162,7 +161,7 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	passkey, err := h.passkeyService.FinishRegistration(ctx, int(userID), rawRequest.SessionID, rawRequest.Name, parsedResponse)
 	if err != nil {
 		h.handleError(c, err)
@@ -192,7 +191,7 @@ func (h *PasskeyHandler) DeletePasskey(c *gin.Context) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if err := h.passkeyService.DeletePasskey(ctx, int(userID), id); err != nil {
 		h.handleError(c, err)
 		return
@@ -222,7 +221,7 @@ func (h *PasskeyHandler) RenamePasskey(c *gin.Context) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if err := h.passkeyService.RenamePasskey(ctx, int(userID), id, req.Name); err != nil {
 		h.handleError(c, err)
 		return
@@ -239,7 +238,7 @@ func (h *PasskeyHandler) CheckPasskeys(c *gin.Context) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	hasPasskeys, err := h.passkeyService.HasPasskeysByEmail(ctx, req.Email)
 	if err != nil {
 		h.handleError(c, err)
@@ -259,7 +258,7 @@ func (h *PasskeyHandler) BeginLogin(c *gin.Context) {
 		req = dto.PasskeyLoginBeginRequest{}
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
 	if req.Email != "" {
 		// Non-discoverable login with email
@@ -323,7 +322,7 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entUser *ent.User
 	if rawRequest.SessionID != "" && rawRequest.Email == "" {
 		// Discoverable login
@@ -360,7 +359,7 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	)
 
 	// Generate tokens using auth service with Ent user
-	response, err := h.authService.LoginWithPasskeyEnt(entUser, clientIP, userAgent)
+	response, err := h.authService.LoginWithPasskeyEntCtx(c.Request.Context(), entUser, clientIP, userAgent)
 	if err != nil {
 		h.handleError(c, err)
 		return

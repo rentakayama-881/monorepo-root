@@ -42,26 +42,39 @@ func NewAuthServiceWrapper(entService *EntAuthService) *AuthServiceWrapper {
 	}
 }
 
+// RegisterWithDeviceCtx delegates to EntAuthService with request context.
+func (w *AuthServiceWrapper) RegisterWithDeviceCtx(ctx context.Context, input validators.RegisterInput, deviceFingerprint, ip, userAgent string) (*RegisterResponse, error) {
+	return w.ent.RegisterWithDevice(ctx, input, deviceFingerprint, ip, userAgent)
+}
+
 // RegisterWithDevice delegates to EntAuthService with context
 func (w *AuthServiceWrapper) RegisterWithDevice(input validators.RegisterInput, deviceFingerprint, ip, userAgent string) (*RegisterResponse, error) {
-	return w.ent.RegisterWithDevice(context.Background(), input, deviceFingerprint, ip, userAgent)
+	return w.RegisterWithDeviceCtx(context.Background(), input, deviceFingerprint, ip, userAgent)
+}
+
+// LoginWithSessionCtx delegates to EntAuthService with request context.
+func (w *AuthServiceWrapper) LoginWithSessionCtx(ctx context.Context, input validators.LoginInput, ip, userAgent string) (*LoginResponse, error) {
+	return w.ent.LoginWithSession(ctx, input, ip, userAgent)
 }
 
 // LoginWithSession delegates to EntAuthService with context
 func (w *AuthServiceWrapper) LoginWithSession(input validators.LoginInput, ip, userAgent string) (*LoginResponse, error) {
-	return w.ent.LoginWithSession(context.Background(), input, ip, userAgent)
+	return w.LoginWithSessionCtx(context.Background(), input, ip, userAgent)
+}
+
+// LoginWithPasskeyEntCtx uses ent.User directly with request context.
+func (w *AuthServiceWrapper) LoginWithPasskeyEntCtx(ctx context.Context, user *ent.User, ipAddress, userAgent string) (*LoginResponse, error) {
+	return w.ent.LoginWithPasskey(ctx, user, ipAddress, userAgent)
 }
 
 // LoginWithPasskeyEnt uses ent.User directly
 func (w *AuthServiceWrapper) LoginWithPasskeyEnt(user *ent.User, ipAddress, userAgent string) (*LoginResponse, error) {
-	return w.ent.LoginWithPasskey(context.Background(), user, ipAddress, userAgent)
+	return w.LoginWithPasskeyEntCtx(context.Background(), user, ipAddress, userAgent)
 }
 
-// RequestVerification creates verification token and queues email if account exists.
+// RequestVerificationCtx creates verification token and queues email if account exists.
 // It always returns generic semantics to avoid email enumeration.
-func (w *AuthServiceWrapper) RequestVerification(email, ip string) (*VerificationRequestResult, error) {
-	ctx := context.Background()
-
+func (w *AuthServiceWrapper) RequestVerificationCtx(ctx context.Context, email, ip string) (*VerificationRequestResult, error) {
 	normalizedEmail := strings.TrimSpace(strings.ToLower(email))
 	if err := validators.ValidateEmail(normalizedEmail); err != nil {
 		return nil, err
@@ -117,6 +130,12 @@ func (w *AuthServiceWrapper) RequestVerification(email, ip string) (*Verificatio
 	return result, nil
 }
 
+// RequestVerification creates verification token and queues email if account exists.
+// It always returns generic semantics to avoid email enumeration.
+func (w *AuthServiceWrapper) RequestVerification(email, ip string) (*VerificationRequestResult, error) {
+	return w.RequestVerificationCtx(context.Background(), email, ip)
+}
+
 func secondsUntil(nextAllowed *time.Time) int {
 	if nextAllowed == nil {
 		return 0
@@ -128,29 +147,54 @@ func secondsUntil(nextAllowed *time.Time) int {
 	return remaining
 }
 
+// ConfirmVerificationCtx delegates to EntAuthService with request context.
+func (w *AuthServiceWrapper) ConfirmVerificationCtx(ctx context.Context, input validators.VerifyTokenInput) error {
+	return w.ent.ConfirmVerification(ctx, input)
+}
+
 // ConfirmVerification delegates to EntAuthService
 func (w *AuthServiceWrapper) ConfirmVerification(input validators.VerifyTokenInput) error {
-	return w.ent.ConfirmVerification(context.Background(), input)
+	return w.ConfirmVerificationCtx(context.Background(), input)
+}
+
+// ForgotPasswordCtx delegates to EntAuthService with request context.
+func (w *AuthServiceWrapper) ForgotPasswordCtx(ctx context.Context, email, ip string) (*ForgotPasswordResponse, error) {
+	return w.ent.ForgotPassword(ctx, email, ip)
 }
 
 // ForgotPassword delegates to EntAuthService
 func (w *AuthServiceWrapper) ForgotPassword(email, ip string) (*ForgotPasswordResponse, error) {
-	return w.ent.ForgotPassword(context.Background(), email, ip)
+	return w.ForgotPasswordCtx(context.Background(), email, ip)
+}
+
+// ResetPasswordCtx delegates to EntAuthService with request context.
+func (w *AuthServiceWrapper) ResetPasswordCtx(ctx context.Context, token, newPassword string) error {
+	return w.ent.ResetPassword(ctx, token, newPassword)
 }
 
 // ResetPassword delegates to EntAuthService
 func (w *AuthServiceWrapper) ResetPassword(token, newPassword string) error {
-	return w.ent.ResetPassword(context.Background(), token, newPassword)
+	return w.ResetPasswordCtx(context.Background(), token, newPassword)
+}
+
+// CompleteTOTPLoginCtx delegates to EntAuthService with request context.
+func (w *AuthServiceWrapper) CompleteTOTPLoginCtx(ctx context.Context, pendingToken, totpCode, ipAddress, userAgent string) (*LoginResponse, error) {
+	return w.ent.CompleteTOTPLogin(ctx, pendingToken, totpCode, ipAddress, userAgent)
 }
 
 // CompleteTOTPLogin delegates to EntAuthService
 func (w *AuthServiceWrapper) CompleteTOTPLogin(pendingToken, totpCode, ipAddress, userAgent string) (*LoginResponse, error) {
-	return w.ent.CompleteTOTPLogin(context.Background(), pendingToken, totpCode, ipAddress, userAgent)
+	return w.CompleteTOTPLoginCtx(context.Background(), pendingToken, totpCode, ipAddress, userAgent)
+}
+
+// CompleteTOTPLoginWithBackupCodeCtx delegates to EntAuthService with request context.
+func (w *AuthServiceWrapper) CompleteTOTPLoginWithBackupCodeCtx(ctx context.Context, pendingToken, backupCode, ipAddress, userAgent string) (*LoginResponse, error) {
+	return w.ent.CompleteTOTPLoginWithBackupCode(ctx, pendingToken, backupCode, ipAddress, userAgent)
 }
 
 // CompleteTOTPLoginWithBackupCode delegates to EntAuthService
 func (w *AuthServiceWrapper) CompleteTOTPLoginWithBackupCode(pendingToken, backupCode, ipAddress, userAgent string) (*LoginResponse, error) {
-	return w.ent.CompleteTOTPLoginWithBackupCode(context.Background(), pendingToken, backupCode, ipAddress, userAgent)
+	return w.CompleteTOTPLoginWithBackupCodeCtx(context.Background(), pendingToken, backupCode, ipAddress, userAgent)
 }
 
 // ============================================================================
@@ -167,29 +211,54 @@ func NewSessionServiceWrapper(entService *EntSessionService) *SessionServiceWrap
 	return &SessionServiceWrapper{ent: entService}
 }
 
+// RefreshSessionCtx delegates to EntSessionService with request context.
+func (w *SessionServiceWrapper) RefreshSessionCtx(ctx context.Context, refreshToken, ip, userAgent string) (*TokenPair, error) {
+	return w.ent.RefreshSession(ctx, refreshToken, ip, userAgent)
+}
+
 // RefreshSession delegates to EntSessionService
 func (w *SessionServiceWrapper) RefreshSession(refreshToken, ip, userAgent string) (*TokenPair, error) {
-	return w.ent.RefreshSession(context.Background(), refreshToken, ip, userAgent)
+	return w.RefreshSessionCtx(context.Background(), refreshToken, ip, userAgent)
+}
+
+// RevokeSessionByRefreshTokenCtx delegates to EntSessionService with request context.
+func (w *SessionServiceWrapper) RevokeSessionByRefreshTokenCtx(ctx context.Context, refreshToken, reason string) error {
+	return w.ent.RevokeSessionByRefreshToken(ctx, refreshToken, reason)
 }
 
 // RevokeSessionByRefreshToken delegates to EntSessionService
 func (w *SessionServiceWrapper) RevokeSessionByRefreshToken(refreshToken, reason string) error {
-	return w.ent.RevokeSessionByRefreshToken(context.Background(), refreshToken, reason)
+	return w.RevokeSessionByRefreshTokenCtx(context.Background(), refreshToken, reason)
+}
+
+// RevokeAllUserSessionsCtx delegates to EntSessionService with request context.
+func (w *SessionServiceWrapper) RevokeAllUserSessionsCtx(ctx context.Context, userID uint, reason string) error {
+	return w.ent.RevokeAllUserSessions(ctx, int(userID), reason)
 }
 
 // RevokeAllUserSessions delegates to EntSessionService
 func (w *SessionServiceWrapper) RevokeAllUserSessions(userID uint, reason string) error {
-	return w.ent.RevokeAllUserSessions(context.Background(), int(userID), reason)
+	return w.RevokeAllUserSessionsCtx(context.Background(), userID, reason)
+}
+
+// GetActiveSessionsCtx delegates to EntSessionService and converts result with request context.
+func (w *SessionServiceWrapper) GetActiveSessionsCtx(ctx context.Context, userID uint) ([]*ent.Session, error) {
+	return w.ent.GetActiveSessions(ctx, int(userID))
 }
 
 // GetActiveSessions delegates to EntSessionService and converts result
 func (w *SessionServiceWrapper) GetActiveSessions(userID uint) ([]*ent.Session, error) {
-	return w.ent.GetActiveSessions(context.Background(), int(userID))
+	return w.GetActiveSessionsCtx(context.Background(), userID)
+}
+
+// RevokeSessionCtx delegates to EntSessionService with request context.
+func (w *SessionServiceWrapper) RevokeSessionCtx(ctx context.Context, sessionID uint, reason string) error {
+	return w.ent.RevokeSession(ctx, int(sessionID), reason)
 }
 
 // RevokeSession delegates to EntSessionService
 func (w *SessionServiceWrapper) RevokeSession(sessionID uint, reason string) error {
-	return w.ent.RevokeSession(context.Background(), int(sessionID), reason)
+	return w.RevokeSessionCtx(context.Background(), sessionID, reason)
 }
 
 // ============================================================================
