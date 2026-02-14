@@ -198,13 +198,23 @@ func (s *EntSessionService) RefreshSession(ctx context.Context, refreshToken, ip
 					username = *u.Username
 				}
 				totpEnabled := u.TotpEnabled && u.TotpVerified
-				accessToken, _, err := middleware.GenerateAccessToken(uint(u.ID), u.Email, username, totpEnabled)
+				accessToken, accessJTI, err := middleware.GenerateAccessToken(uint(u.ID), u.Email, username, totpEnabled)
 				if err != nil {
 					txErr = apperrors.ErrInternalServer.WithDetails("Gagal membuat token")
 					return txErr
 				}
 
-				_ = latestSess // Used to verify we have an active session
+				if _, err := tx.Session.
+					UpdateOneID(latestSess.ID).
+					SetAccessTokenJti(accessJTI).
+					SetLastUsedAt(time.Now()).
+					SetIPAddress(ipAddress).
+					SetUserAgent(truncateString(userAgent, 512)).
+					Save(ctx); err != nil {
+					logger.Error("Failed to update latest session during grace refresh", zap.Error(err))
+					txErr = apperrors.ErrInternalServer.WithDetails("Gagal memperbarui session")
+					return txErr
+				}
 
 				result = &TokenPair{
 					AccessToken:  accessToken,
@@ -253,7 +263,7 @@ func (s *EntSessionService) RefreshSession(ctx context.Context, refreshToken, ip
 				refreshUsername = *u.Username
 			}
 			totpEnabled := u.TotpEnabled && u.TotpVerified
-			accessToken, _, err := middleware.GenerateAccessToken(uint(u.ID), u.Email, refreshUsername, totpEnabled)
+			accessToken, accessJTI, err := middleware.GenerateAccessToken(uint(u.ID), u.Email, refreshUsername, totpEnabled)
 			if err != nil {
 				txErr = apperrors.ErrInternalServer.WithDetails("Gagal membuat token")
 				return txErr
@@ -261,6 +271,7 @@ func (s *EntSessionService) RefreshSession(ctx context.Context, refreshToken, ip
 
 			if _, err := tx.Session.
 				UpdateOneID(sess.ID).
+				SetAccessTokenJti(accessJTI).
 				SetLastUsedAt(time.Now()).
 				SetIPAddress(ipAddress).
 				SetUserAgent(truncateString(userAgent, 512)).
