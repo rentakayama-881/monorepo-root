@@ -13,6 +13,8 @@ export default function ProfileSidebar({ onClose }) {
   const [wallet, setWallet] = useState({ balance: 0, pin_set: false });
   const [guarantee, setGuarantee] = useState({ amount: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [reloadTick, setReloadTick] = useState(0);
   const panelRef = useRef(null);
 
   // Lock body scroll when profile sidebar is open (like prompts.chat Sheet)
@@ -42,6 +44,7 @@ export default function ProfileSidebar({ onClose }) {
         return;
       }
       setIsLoading(true);
+      setLoadError("");
       try {
         // Load user data with automatic token refresh
         const res = await fetchWithAuth(`${getApiBase()}/api/user/me`);
@@ -52,7 +55,13 @@ export default function ProfileSidebar({ onClose }) {
           window.location.href = "/login?session=expired";
           return;
         }
-        if (!res.ok) throw new Error("failed");
+        if (!res.ok) {
+          if (!cancelled) {
+            setLoadError("Profil tidak dapat dimuat saat ini. Coba lagi.");
+            setIsLoading(false);
+          }
+          return;
+        }
         const data = await res.json();
         if (cancelled) return;
         setUser({
@@ -87,14 +96,29 @@ export default function ProfileSidebar({ onClose }) {
         } catch (e) {
           // Silent fail for wallet - not critical
         }
-        
+
         setIsLoading(false);
       } catch (err) {
-        // Network error - redirect to login
+        // Do not force logout on transient/network errors.
+        // Logout only when auth is truly invalid.
         if (!cancelled) {
-          clearToken();
-          onClose?.();
-          window.location.href = "/login";
+          const status = err?.status;
+          const message = String(err?.message || "").toLowerCase();
+          const isAuthError =
+            status === 401 ||
+            message.includes("not authenticated") ||
+            message.includes("session_expired") ||
+            message.includes("sesi telah berakhir");
+
+          if (isAuthError) {
+            clearToken();
+            onClose?.();
+            window.location.href = "/login?session=expired";
+            return;
+          }
+
+          setLoadError("Koneksi bermasalah. Coba lagi dalam beberapa detik.");
+          setIsLoading(false);
         }
       }
     }
@@ -103,7 +127,7 @@ export default function ProfileSidebar({ onClose }) {
     return () => {
       cancelled = true;
     };
-  }, [onClose]);
+  }, [onClose, reloadTick]);
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -147,6 +171,42 @@ export default function ProfileSidebar({ onClose }) {
 
   // Show loading spinner while fetching user data
   if (isLoading || !hasUser) {
+    if (!isLoading && loadError) {
+      return (
+        <>
+          <div
+            className="fixed inset-0 z-[110] bg-black/50"
+            onClick={onClose}
+            aria-hidden="true"
+          />
+          <div
+            ref={panelRef}
+            className="fixed right-3 top-14 z-[120] w-[19rem] max-w-[calc(100vw-1.5rem)] rounded-[var(--radius)] border bg-card p-4 shadow-xl"
+          >
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">{loadError}</p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setReloadTick((v) => v + 1)}
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90"
+                >
+                  Coba lagi
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-md border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
+
     return (
       <>
         {/* Backdrop overlay */}
