@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { getApiBase } from "../lib/api";
-import { clearToken, getToken, getRefreshToken } from "@/lib/auth";
+import { clearToken, getToken } from "@/lib/auth";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
 import { maskEmail } from "@/lib/email";
 import Avatar from "@/components/ui/Avatar";
@@ -126,16 +126,14 @@ export default function ProfileSidebar({ onClose }) {
   const handleLogout = async () => {
     // Call logout API to invalidate server-side session
     const token = getToken();
-    const refreshToken = getRefreshToken();
-    if (token && refreshToken) {
+    if (token) {
       try {
         await fetch(`${getApiBase()}/api/auth/logout`, {
           method: "POST",
+          credentials: "include",
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
-          body: JSON.stringify({ refresh_token: refreshToken }),
         });
       } catch (e) {
         // Ignore errors, we'll clear local tokens anyway

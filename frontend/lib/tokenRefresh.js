@@ -15,9 +15,6 @@ let refreshPromise = null;
  */
 export async function refreshAccessToken() {
   const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    return null;
-  }
 
   // Prevent multiple simultaneous refresh calls
   if (refreshPromise) {
@@ -26,12 +23,16 @@ export async function refreshAccessToken() {
 
   refreshPromise = (async () => {
     try {
+      const payload = refreshToken ? JSON.stringify({ refresh_token: refreshToken }) : null;
       const res = await fetch(`${getApiBase()}/api/auth/refresh`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+        credentials: "include",
+        headers: payload
+          ? {
+              "Content-Type": "application/json",
+            }
+          : undefined,
+        body: payload ?? undefined,
       });
 
       if (!res.ok) {
@@ -113,6 +114,7 @@ export async function fetchWithAuth(url, options = {}) {
 
   const authOptions = {
     ...options,
+    credentials: options.credentials ?? "include",
     headers: {
       ...options.headers,
       Authorization: `Bearer ${token}`,

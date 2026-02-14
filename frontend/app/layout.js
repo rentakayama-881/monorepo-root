@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ApiStatusBanner from "../components/ApiStatusBanner";
+import CookieConsentBanner from "../components/CookieConsentBanner";
 import { ToastProvider } from "../components/ui/Toast";
 import { SudoProvider } from "../components/SudoModal";
 import Providers from "../components/Providers";
@@ -212,6 +213,7 @@ export default async function RootLayout({ children }) {
                   </div>
 
                   {!hideFooter ? <Footer /> : null}
+                  {!hideFooter ? <CookieConsentBanner /> : null}
 
                   <SpeedInsights />
                   {/* Global keyboard shortcuts handler */}

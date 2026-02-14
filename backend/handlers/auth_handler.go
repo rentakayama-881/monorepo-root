@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"backend-gin/database"
@@ -128,6 +129,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			},
 		})
 		return
+	}
+
+	if response.RefreshToken != "" {
+		setRefreshTokenCookie(c, response.RefreshToken)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -259,16 +264,29 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	var req dto.RefreshTokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	refreshToken := getRefreshTokenFromCookie(c)
+	if refreshToken == "" {
+		var req dto.RefreshTokenRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			handleError(c, apperrors.ErrInvalidInput.WithDetails("Refresh token wajib diisi"))
+			return
+		}
+		refreshToken = strings.TrimSpace(req.RefreshToken)
+	}
+
+	if refreshToken == "" {
 		handleError(c, apperrors.ErrInvalidInput.WithDetails("Refresh token wajib diisi"))
 		return
 	}
 
-	tokenPair, err := h.sessionService.RefreshSession(req.RefreshToken, c.ClientIP(), c.GetHeader("User-Agent"))
+	tokenPair, err := h.sessionService.RefreshSession(refreshToken, c.ClientIP(), c.GetHeader("User-Agent"))
 	if err != nil {
 		handleError(c, err)
 		return
+	}
+
+	if tokenPair.RefreshToken != "" {
+		setRefreshTokenCookie(c, tokenPair.RefreshToken)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -283,17 +301,20 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 // POST /api/auth/logout
 func (h *AuthHandler) Logout(c *gin.Context) {
 	var req dto.LogoutRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		// Allow logout without body for backward compatibility
-		c.JSON(http.StatusOK, gin.H{"message": "Berhasil logout"})
-		return
+	// Allow logout without body for backward compatibility.
+	_ = c.ShouldBindJSON(&req)
+
+	refreshToken := strings.TrimSpace(req.RefreshToken)
+	if refreshToken == "" {
+		refreshToken = getRefreshTokenFromCookie(c)
 	}
 
-	if req.RefreshToken != "" {
+	if refreshToken != "" {
 		// Find and revoke session by refresh token
-		_ = h.sessionService.RevokeSessionByRefreshToken(req.RefreshToken, "User logout")
+		_ = h.sessionService.RevokeSessionByRefreshToken(refreshToken, "User logout")
 	}
 
+	clearRefreshTokenCookie(c)
 	c.JSON(http.StatusOK, gin.H{"message": "Berhasil logout"})
 }
 
@@ -312,6 +333,7 @@ func (h *AuthHandler) LogoutAll(c *gin.Context) {
 		return
 	}
 
+	clearRefreshTokenCookie(c)
 	c.JSON(http.StatusOK, gin.H{"message": "Berhasil logout dari semua perangkat"})
 }
 
@@ -405,6 +427,10 @@ func (h *AuthHandler) LoginTOTP(c *gin.Context) {
 		return
 	}
 
+	if response.RefreshToken != "" {
+		setRefreshTokenCookie(c, response.RefreshToken)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"access_token":  response.AccessToken,
 		"refresh_token": response.RefreshToken,
@@ -440,6 +466,10 @@ func (h *AuthHandler) LoginBackupCode(c *gin.Context) {
 	if err != nil {
 		handleError(c, err)
 		return
+	}
+
+	if response.RefreshToken != "" {
+		setRefreshTokenCookie(c, response.RefreshToken)
 	}
 
 	c.JSON(http.StatusOK, gin.H{

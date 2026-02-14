@@ -64,19 +64,19 @@ describe('auth.js', () => {
   });
 
   describe('setRefreshToken', () => {
-    it('should save refresh token to localStorage', () => {
+    it('should clear refresh token from localStorage', () => {
       setRefreshToken('new-refresh-token');
 
-      expect(localStorage.setItem).toHaveBeenCalledWith(REFRESH_TOKEN_KEY, 'new-refresh-token');
+      expect(localStorage.removeItem).toHaveBeenCalledWith(REFRESH_TOKEN_KEY);
     });
   });
 
   describe('setTokens', () => {
-    it('should save both tokens and expiry', () => {
+    it('should save access token, clear refresh token, and save expiry', () => {
       setTokens('access', 'refresh', 900);
 
       expect(localStorage.setItem).toHaveBeenCalledWith(TOKEN_KEY, 'access');
-      expect(localStorage.setItem).toHaveBeenCalledWith(REFRESH_TOKEN_KEY, 'refresh');
+      expect(localStorage.removeItem).toHaveBeenCalledWith(REFRESH_TOKEN_KEY);
       expect(localStorage.setItem).toHaveBeenCalledWith(
         TOKEN_EXPIRES_KEY,
         expect.any(String)

@@ -21,13 +21,24 @@ describe('tokenRefresh.js', () => {
   });
 
   describe('refreshAccessToken', () => {
-    it('should return null if no refresh token', async () => {
+    it('should still attempt refresh using cookie when no refresh token in storage', async () => {
       getRefreshToken.mockReturnValue(null);
+      global.fetch.mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ message: 'Missing refresh token' }),
+      });
 
       const result = await refreshAccessToken();
 
       expect(result).toBeNull();
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.test.com/api/auth/refresh',
+        expect.objectContaining({
+          method: 'POST',
+          credentials: 'include',
+        })
+      );
     });
 
     it('should call refresh endpoint and return new token', async () => {
@@ -49,6 +60,7 @@ describe('tokenRefresh.js', () => {
         'https://api.test.com/api/auth/refresh',
         expect.objectContaining({
           method: 'POST',
+          credentials: 'include',
           body: JSON.stringify({ refresh_token: 'refresh-token-123' }),
         })
       );
@@ -156,6 +168,7 @@ describe('tokenRefresh.js', () => {
       getToken.mockReturnValue('maybe-valid-token');
       isTokenExpired.mockReturnValue(true);
       getRefreshToken.mockReturnValue(null);
+      global.fetch.mockRejectedValue(new Error('Network error'));
 
       const result = await getValidToken();
 
@@ -174,6 +187,7 @@ describe('tokenRefresh.js', () => {
       expect(global.fetch).toHaveBeenCalledWith(
         'https://api.test.com/api/me',
         expect.objectContaining({
+          credentials: 'include',
           headers: expect.objectContaining({
             Authorization: 'Bearer auth-token',
           }),

@@ -54,7 +54,10 @@ export function setToken(token) {
 export function setRefreshToken(token) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(REFRESH_TOKEN_KEY, token);
+    // Refresh token is now transported via HttpOnly cookie.
+    // Keep this key cleared to avoid persisting sensitive tokens in JS-readable storage.
+    void token;
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
   } catch {}
 }
 

@@ -366,6 +366,10 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 		return
 	}
 
+	if response.RefreshToken != "" {
+		setRefreshTokenCookie(c, response.RefreshToken)
+	}
+
 	c.JSON(http.StatusOK, response)
 }
 

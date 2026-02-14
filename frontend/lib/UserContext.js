@@ -32,8 +32,8 @@ export function UserProvider({ children }) {
         // Call logout endpoint
         await fetch(`${getApiBase()}/api/auth/logout`, {
           method: "POST",
+          credentials: "include",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         });

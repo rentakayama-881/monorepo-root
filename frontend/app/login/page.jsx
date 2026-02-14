@@ -108,6 +108,7 @@ function LoginForm() {
       // 1. Begin login - get options (discoverable login, no email needed)
       const beginRes = await fetch(`${API}/api/auth/passkeys/login/begin`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}), // Empty for discoverable login
       });
@@ -149,6 +150,7 @@ function LoginForm() {
       // 4. Finish login - send credential to server
       const finishRes = await fetch(`${API}/api/auth/passkeys/login/finish`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           session_id: session_id,
@@ -231,6 +233,7 @@ function LoginForm() {
       const endpoint = useBackupCode ? "/api/auth/login/backup-code" : "/api/auth/login/totp";
       const res = await fetch(`${getApiBase()}${endpoint}`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ totp_pending: totpPending, code: totpCode }),
       });

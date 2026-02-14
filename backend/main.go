@@ -55,6 +55,7 @@ func buildCORSConfig() cors.Config {
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "X-Sudo-Token"}
+	corsConfig.AllowCredentials = true
 
 	frontend := strings.TrimSpace(os.Getenv("FRONTEND_BASE_URL"))
 	if frontend == "" {

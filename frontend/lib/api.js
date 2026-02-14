@@ -37,7 +37,7 @@ export function getApiBase() {
 }
 
 export async function fetchJson(path, options = {}) {
-  const { timeout = 10000, signal, ...rest } = options;
+  const { timeout = 10000, signal, credentials = "include", ...rest } = options;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(new Error("timeout")), timeout);
 
@@ -52,6 +52,7 @@ export async function fetchJson(path, options = {}) {
   try {
     const res = await fetch(`${getApiBase()}${path}`, {
       ...rest,
+      credentials,
       signal: controller.signal,
     });
 
@@ -103,7 +104,7 @@ export async function fetchJson(path, options = {}) {
  * Use this for all authenticated API calls.
  */
 export async function fetchJsonAuth(path, options = {}) {
-  const { timeout = 10000, signal, headers = {}, clearSessionOn401 = true, ...rest } = options;
+  const { timeout = 10000, signal, headers = {}, clearSessionOn401 = true, credentials = "include", ...rest } = options;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(new Error("timeout")), timeout);
 
@@ -128,6 +129,7 @@ export async function fetchJsonAuth(path, options = {}) {
     const performAuthedRequest = async (accessToken) =>
       fetch(`${getApiBase()}${path}`, {
         ...rest,
+        credentials,
         headers: {
           ...headers,
           Authorization: `Bearer ${accessToken}`,
