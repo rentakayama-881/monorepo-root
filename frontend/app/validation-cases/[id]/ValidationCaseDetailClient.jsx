@@ -207,6 +207,7 @@ export default function ValidationCaseRecordPage() {
   const [finalOffers, setFinalOffers] = useState([]);
   const [offersLoading, setOffersLoading] = useState(false);
   const [offersMsg, setOffersMsg] = useState("");
+  const [finalOfferSubmitting, setFinalOfferSubmitting] = useState(false);
   const [offerForm, setOfferForm] = useState({ hold_hours: 168, terms: "" });
 
   const [escrowDraft, setEscrowDraft] = useState(null);
@@ -630,11 +631,15 @@ export default function ValidationCaseRecordPage() {
       router.push("/login");
       return;
     }
+    if (finalOfferSubmitting) {
+      return;
+    }
     setOffersMsg("");
     const amountNum = Number(vc?.bounty_amount || 0);
     const holdHours = Number(offerForm.hold_hours || 168);
     const allowedHoldHours = new Set([32, 168, 720]);
     const caseStatus = normalizeStatus(vc?.status);
+    const alreadySubmitted = Array.isArray(finalOffers) && finalOffers.length > 0;
 
     if (!amountNum || amountNum < 10000) {
       setOffersMsg("Bounty belum valid (minimal Rp 10.000).");
@@ -648,7 +653,12 @@ export default function ValidationCaseRecordPage() {
       setOffersMsg("Hold window tidak valid. Pilih: 1 hari 8 jam, 7 hari, atau 30 hari.");
       return;
     }
+    if (alreadySubmitted) {
+      setOffersMsg("Final Offer untuk case ini sudah pernah Anda submit.");
+      return;
+    }
 
+    setFinalOfferSubmitting(true);
     try {
       await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/final-offers`, {
         method: "POST",
@@ -663,6 +673,8 @@ export default function ValidationCaseRecordPage() {
       await loadNonOwnerWorkflow();
     } catch (e) {
       setOffersMsg(e?.message || "Gagal submit Final Offer");
+    } finally {
+      setFinalOfferSubmitting(false);
     }
   }
 
@@ -887,6 +899,8 @@ export default function ValidationCaseRecordPage() {
       assignedValidator?.id &&
       Number(me.id) === Number(assignedValidator.id),
   );
+  const hasSubmittedFinalOffer = !isOwner && Array.isArray(finalOffers) && finalOffers.length > 0;
+  const disableSubmitFinalOffer = finalOfferSubmitting || offersLoading || hasSubmittedFinalOffer;
 
   const featureBase = (process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id").replace(/\/+$/, "");
   const certifiedDownloadHref =
@@ -1287,11 +1301,12 @@ export default function ValidationCaseRecordPage() {
                         <button
                           type="button"
                           onClick={() => setOfferForm((f) => ({ ...f, hold_hours: 32 }))}
+                          disabled={disableSubmitFinalOffer}
                           className={`rounded-[var(--radius)] border px-3 py-2 text-left transition ${
                             Number(offerForm.hold_hours) === 32
                               ? "border-primary bg-primary/10 text-primary"
                               : "border-border bg-card text-foreground hover:border-primary"
-                          }`}
+                          } disabled:cursor-not-allowed disabled:opacity-60`}
                         >
                           <div className="text-sm font-semibold">1 hari 8 jam</div>
                           <div className="text-[11px] opacity-70">Tugas ringan</div>
@@ -1299,11 +1314,12 @@ export default function ValidationCaseRecordPage() {
                         <button
                           type="button"
                           onClick={() => setOfferForm((f) => ({ ...f, hold_hours: 168 }))}
+                          disabled={disableSubmitFinalOffer}
                           className={`rounded-[var(--radius)] border px-3 py-2 text-left transition ${
                             Number(offerForm.hold_hours) === 168
                               ? "border-primary bg-primary/10 text-primary"
                               : "border-border bg-card text-foreground hover:border-primary"
-                          }`}
+                          } disabled:cursor-not-allowed disabled:opacity-60`}
                         >
                           <div className="text-sm font-semibold">7 hari</div>
                           <div className="text-[11px] opacity-70">Standar</div>
@@ -1311,11 +1327,12 @@ export default function ValidationCaseRecordPage() {
                         <button
                           type="button"
                           onClick={() => setOfferForm((f) => ({ ...f, hold_hours: 720 }))}
+                          disabled={disableSubmitFinalOffer}
                           className={`rounded-[var(--radius)] border px-3 py-2 text-left transition ${
                             Number(offerForm.hold_hours) === 720
                               ? "border-primary bg-primary/10 text-primary"
                               : "border-border bg-card text-foreground hover:border-primary"
-                          }`}
+                          } disabled:cursor-not-allowed disabled:opacity-60`}
                         >
                           <div className="text-sm font-semibold">30 hari</div>
                           <div className="text-[11px] opacity-70">Kasus kompleks</div>
@@ -1332,15 +1349,17 @@ export default function ValidationCaseRecordPage() {
                       rows={4}
                       placeholder="Scope, acceptance criteria, assumptions, excluded items."
                       className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                      disabled={disableSubmitFinalOffer}
                     />
                   </div>
                   <div className="mt-3 flex justify-end">
                     <button
                       onClick={submitFinalOffer}
-                      className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                      disabled={disableSubmitFinalOffer}
+                      className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                       type="button"
                     >
-                      Submit
+                      {hasSubmittedFinalOffer ? "Already Submitted" : finalOfferSubmitting ? "Submitting..." : "Submit"}
                     </button>
                   </div>
                   {offersMsg ? <div className="mt-3 text-xs text-muted-foreground">{offersMsg}</div> : null}
