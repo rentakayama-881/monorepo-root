@@ -76,6 +76,20 @@ func (_c *FinalOfferCreate) SetValidatorUserID(v int) *FinalOfferCreate {
 	return _c
 }
 
+// SetSubmissionKey sets the "submission_key" field.
+func (_c *FinalOfferCreate) SetSubmissionKey(v string) *FinalOfferCreate {
+	_c.mutation.SetSubmissionKey(v)
+	return _c
+}
+
+// SetNillableSubmissionKey sets the "submission_key" field if the given value is not nil.
+func (_c *FinalOfferCreate) SetNillableSubmissionKey(v *string) *FinalOfferCreate {
+	if v != nil {
+		_c.SetSubmissionKey(*v)
+	}
+	return _c
+}
+
 // SetAmount sets the "amount" field.
 func (_c *FinalOfferCreate) SetAmount(v int64) *FinalOfferCreate {
 	_c.mutation.SetAmount(v)
@@ -243,6 +257,11 @@ func (_c *FinalOfferCreate) check() error {
 			return &ValidationError{Name: "validator_user_id", err: fmt.Errorf(`ent: validator failed for field "FinalOffer.validator_user_id": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.SubmissionKey(); ok {
+		if err := finaloffer.SubmissionKeyValidator(v); err != nil {
+			return &ValidationError{Name: "submission_key", err: fmt.Errorf(`ent: validator failed for field "FinalOffer.submission_key": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.Amount(); !ok {
 		return &ValidationError{Name: "amount", err: errors.New(`ent: missing required field "FinalOffer.amount"`)}
 	}
@@ -310,6 +329,10 @@ func (_c *FinalOfferCreate) createSpec() (*FinalOffer, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DeletedAt(); ok {
 		_spec.SetField(finaloffer.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = &value
+	}
+	if value, ok := _c.mutation.SubmissionKey(); ok {
+		_spec.SetField(finaloffer.FieldSubmissionKey, field.TypeString, value)
+		_node.SubmissionKey = &value
 	}
 	if value, ok := _c.mutation.Amount(); ok {
 		_spec.SetField(finaloffer.FieldAmount, field.TypeInt64, value)

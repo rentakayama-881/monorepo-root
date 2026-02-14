@@ -84,6 +84,26 @@ func (_u *FinalOfferUpdate) SetNillableValidatorUserID(v *int) *FinalOfferUpdate
 	return _u
 }
 
+// SetSubmissionKey sets the "submission_key" field.
+func (_u *FinalOfferUpdate) SetSubmissionKey(v string) *FinalOfferUpdate {
+	_u.mutation.SetSubmissionKey(v)
+	return _u
+}
+
+// SetNillableSubmissionKey sets the "submission_key" field if the given value is not nil.
+func (_u *FinalOfferUpdate) SetNillableSubmissionKey(v *string) *FinalOfferUpdate {
+	if v != nil {
+		_u.SetSubmissionKey(*v)
+	}
+	return _u
+}
+
+// ClearSubmissionKey clears the value of the "submission_key" field.
+func (_u *FinalOfferUpdate) ClearSubmissionKey() *FinalOfferUpdate {
+	_u.mutation.ClearSubmissionKey()
+	return _u
+}
+
 // SetAmount sets the "amount" field.
 func (_u *FinalOfferUpdate) SetAmount(v int64) *FinalOfferUpdate {
 	_u.mutation.ResetAmount()
@@ -275,6 +295,11 @@ func (_u *FinalOfferUpdate) check() error {
 			return &ValidationError{Name: "validator_user_id", err: fmt.Errorf(`ent: validator failed for field "FinalOffer.validator_user_id": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.SubmissionKey(); ok {
+		if err := finaloffer.SubmissionKeyValidator(v); err != nil {
+			return &ValidationError{Name: "submission_key", err: fmt.Errorf(`ent: validator failed for field "FinalOffer.submission_key": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Amount(); ok {
 		if err := finaloffer.AmountValidator(v); err != nil {
 			return &ValidationError{Name: "amount", err: fmt.Errorf(`ent: validator failed for field "FinalOffer.amount": %w`, err)}
@@ -319,6 +344,12 @@ func (_u *FinalOfferUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(finaloffer.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.SubmissionKey(); ok {
+		_spec.SetField(finaloffer.FieldSubmissionKey, field.TypeString, value)
+	}
+	if _u.mutation.SubmissionKeyCleared() {
+		_spec.ClearField(finaloffer.FieldSubmissionKey, field.TypeString)
 	}
 	if value, ok := _u.mutation.Amount(); ok {
 		_spec.SetField(finaloffer.FieldAmount, field.TypeInt64, value)
@@ -482,6 +513,26 @@ func (_u *FinalOfferUpdateOne) SetNillableValidatorUserID(v *int) *FinalOfferUpd
 	if v != nil {
 		_u.SetValidatorUserID(*v)
 	}
+	return _u
+}
+
+// SetSubmissionKey sets the "submission_key" field.
+func (_u *FinalOfferUpdateOne) SetSubmissionKey(v string) *FinalOfferUpdateOne {
+	_u.mutation.SetSubmissionKey(v)
+	return _u
+}
+
+// SetNillableSubmissionKey sets the "submission_key" field if the given value is not nil.
+func (_u *FinalOfferUpdateOne) SetNillableSubmissionKey(v *string) *FinalOfferUpdateOne {
+	if v != nil {
+		_u.SetSubmissionKey(*v)
+	}
+	return _u
+}
+
+// ClearSubmissionKey clears the value of the "submission_key" field.
+func (_u *FinalOfferUpdateOne) ClearSubmissionKey() *FinalOfferUpdateOne {
+	_u.mutation.ClearSubmissionKey()
 	return _u
 }
 
@@ -689,6 +740,11 @@ func (_u *FinalOfferUpdateOne) check() error {
 			return &ValidationError{Name: "validator_user_id", err: fmt.Errorf(`ent: validator failed for field "FinalOffer.validator_user_id": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.SubmissionKey(); ok {
+		if err := finaloffer.SubmissionKeyValidator(v); err != nil {
+			return &ValidationError{Name: "submission_key", err: fmt.Errorf(`ent: validator failed for field "FinalOffer.submission_key": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Amount(); ok {
 		if err := finaloffer.AmountValidator(v); err != nil {
 			return &ValidationError{Name: "amount", err: fmt.Errorf(`ent: validator failed for field "FinalOffer.amount": %w`, err)}
@@ -750,6 +806,12 @@ func (_u *FinalOfferUpdateOne) sqlSave(ctx context.Context) (_node *FinalOffer, 
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(finaloffer.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.SubmissionKey(); ok {
+		_spec.SetField(finaloffer.FieldSubmissionKey, field.TypeString, value)
+	}
+	if _u.mutation.SubmissionKeyCleared() {
+		_spec.ClearField(finaloffer.FieldSubmissionKey, field.TypeString)
 	}
 	if value, ok := _u.mutation.Amount(); ok {
 		_spec.SetField(finaloffer.FieldAmount, field.TypeInt64, value)

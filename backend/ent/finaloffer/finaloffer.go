@@ -24,6 +24,8 @@ const (
 	FieldValidationCaseID = "validation_case_id"
 	// FieldValidatorUserID holds the string denoting the validator_user_id field in the database.
 	FieldValidatorUserID = "validator_user_id"
+	// FieldSubmissionKey holds the string denoting the submission_key field in the database.
+	FieldSubmissionKey = "submission_key"
 	// FieldAmount holds the string denoting the amount field in the database.
 	FieldAmount = "amount"
 	// FieldHoldHours holds the string denoting the hold_hours field in the database.
@@ -66,6 +68,7 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldValidationCaseID,
 	FieldValidatorUserID,
+	FieldSubmissionKey,
 	FieldAmount,
 	FieldHoldHours,
 	FieldTerms,
@@ -95,6 +98,8 @@ var (
 	ValidationCaseIDValidator func(int) error
 	// ValidatorUserIDValidator is a validator for the "validator_user_id" field. It is called by the builders before save.
 	ValidatorUserIDValidator func(int) error
+	// SubmissionKeyValidator is a validator for the "submission_key" field. It is called by the builders before save.
+	SubmissionKeyValidator func(string) error
 	// AmountValidator is a validator for the "amount" field. It is called by the builders before save.
 	AmountValidator func(int64) error
 	// DefaultHoldHours holds the default value on creation for the "hold_hours" field.
@@ -140,6 +145,11 @@ func ByValidationCaseID(opts ...sql.OrderTermOption) OrderOption {
 // ByValidatorUserID orders the results by the validator_user_id field.
 func ByValidatorUserID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidatorUserID, opts...).ToFunc()
+}
+
+// BySubmissionKey orders the results by the submission_key field.
+func BySubmissionKey(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubmissionKey, opts...).ToFunc()
 }
 
 // ByAmount orders the results by the amount field.

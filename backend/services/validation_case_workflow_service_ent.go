@@ -127,6 +127,10 @@ func requiredStakeForConsultation(vc *ent.ValidationCase) int64 {
 	}
 }
 
+func finalOfferSubmissionKey(validationCaseID int, validatorUserID uint) string {
+	return fmt.Sprintf("vc:%d:validator:%d", validationCaseID, validatorUserID)
+}
+
 func dueTimeFromNow(now time.Time) time.Time {
 	return now.Add(ownerResponseSLAHours * time.Hour)
 }
@@ -1327,6 +1331,22 @@ func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context,
 		return 0, apperrors.ErrFinalOfferRequiresApproval
 	}
 
+	// Prevent duplicate submissions from the same validator on the same case.
+	// This protects against accidental double-click/request replay.
+	existingOffer, err := s.client.FinalOffer.Query().
+		Where(
+			finaloffer.ValidationCaseIDEQ(vc.ID),
+			finaloffer.ValidatorUserIDEQ(int(validatorUserID)),
+		).
+		Order(ent.Desc(finaloffer.FieldCreatedAt)).
+		First(ctx)
+	if err == nil && existingOffer != nil {
+		return 0, apperrors.ErrInvalidInput.WithDetails("Final Offer untuk kasus ini sudah pernah diajukan")
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return 0, apperrors.ErrDatabase
+	}
+
 	// Final Offer amount is locked to the posted bounty. Validators do not negotiate amount in-platform.
 	amount := vc.BountyAmount
 	if amount <= 0 {
@@ -1348,15 +1368,22 @@ func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context,
 		return 0, apperrors.ErrInvalidInput.WithDetails("hold_hours harus 32, 168, atau 720")
 	}
 
+	submissionKey := finalOfferSubmissionKey(vc.ID, validatorUserID)
+
 	offer, err := s.client.FinalOffer.Create().
 		SetValidationCaseID(vc.ID).
 		SetValidatorUserID(int(validatorUserID)).
+		SetSubmissionKey(submissionKey).
 		SetAmount(amount).
 		SetHoldHours(holdHours).
 		SetTerms(strings.TrimSpace(terms)).
 		SetStatus("submitted").
 		Save(ctx)
 	if err != nil {
+		if ent.IsConstraintError(err) {
+			// Idempotency unique-key hit: request duplicate for same validator+case.
+			return 0, apperrors.ErrInvalidInput.WithDetails("Final Offer untuk kasus ini sudah pernah diajukan")
+		}
 		return 0, apperrors.ErrDatabase
 	}
 

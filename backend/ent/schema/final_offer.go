@@ -32,6 +32,13 @@ func (FinalOffer) Fields() []ent.Field {
 			Positive(),
 		field.Int("validator_user_id").
 			Positive(),
+		// submission_key enforces idempotency for validator submit-final-offer action.
+		// Nullable to avoid breaking existing rows during online migration.
+		field.String("submission_key").
+			MaxLen(96).
+			Optional().
+			Nillable().
+			Unique(),
 		field.Int64("amount").
 			Positive(),
 		field.Int("hold_hours").
@@ -75,4 +82,3 @@ func (FinalOffer) Indexes() []ent.Index {
 		index.Fields("status"),
 	}
 }
-

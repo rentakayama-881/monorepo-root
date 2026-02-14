@@ -80,6 +80,11 @@ func ValidatorUserID(v int) predicate.FinalOffer {
 	return predicate.FinalOffer(sql.FieldEQ(FieldValidatorUserID, v))
 }
 
+// SubmissionKey applies equality check predicate on the "submission_key" field. It's identical to SubmissionKeyEQ.
+func SubmissionKey(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldEQ(FieldSubmissionKey, v))
+}
+
 // Amount applies equality check predicate on the "amount" field. It's identical to AmountEQ.
 func Amount(v int64) predicate.FinalOffer {
 	return predicate.FinalOffer(sql.FieldEQ(FieldAmount, v))
@@ -278,6 +283,81 @@ func ValidatorUserIDIn(vs ...int) predicate.FinalOffer {
 // ValidatorUserIDNotIn applies the NotIn predicate on the "validator_user_id" field.
 func ValidatorUserIDNotIn(vs ...int) predicate.FinalOffer {
 	return predicate.FinalOffer(sql.FieldNotIn(FieldValidatorUserID, vs...))
+}
+
+// SubmissionKeyEQ applies the EQ predicate on the "submission_key" field.
+func SubmissionKeyEQ(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldEQ(FieldSubmissionKey, v))
+}
+
+// SubmissionKeyNEQ applies the NEQ predicate on the "submission_key" field.
+func SubmissionKeyNEQ(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldNEQ(FieldSubmissionKey, v))
+}
+
+// SubmissionKeyIn applies the In predicate on the "submission_key" field.
+func SubmissionKeyIn(vs ...string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldIn(FieldSubmissionKey, vs...))
+}
+
+// SubmissionKeyNotIn applies the NotIn predicate on the "submission_key" field.
+func SubmissionKeyNotIn(vs ...string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldNotIn(FieldSubmissionKey, vs...))
+}
+
+// SubmissionKeyGT applies the GT predicate on the "submission_key" field.
+func SubmissionKeyGT(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldGT(FieldSubmissionKey, v))
+}
+
+// SubmissionKeyGTE applies the GTE predicate on the "submission_key" field.
+func SubmissionKeyGTE(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldGTE(FieldSubmissionKey, v))
+}
+
+// SubmissionKeyLT applies the LT predicate on the "submission_key" field.
+func SubmissionKeyLT(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldLT(FieldSubmissionKey, v))
+}
+
+// SubmissionKeyLTE applies the LTE predicate on the "submission_key" field.
+func SubmissionKeyLTE(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldLTE(FieldSubmissionKey, v))
+}
+
+// SubmissionKeyContains applies the Contains predicate on the "submission_key" field.
+func SubmissionKeyContains(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldContains(FieldSubmissionKey, v))
+}
+
+// SubmissionKeyHasPrefix applies the HasPrefix predicate on the "submission_key" field.
+func SubmissionKeyHasPrefix(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldHasPrefix(FieldSubmissionKey, v))
+}
+
+// SubmissionKeyHasSuffix applies the HasSuffix predicate on the "submission_key" field.
+func SubmissionKeyHasSuffix(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldHasSuffix(FieldSubmissionKey, v))
+}
+
+// SubmissionKeyIsNil applies the IsNil predicate on the "submission_key" field.
+func SubmissionKeyIsNil() predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldIsNull(FieldSubmissionKey))
+}
+
+// SubmissionKeyNotNil applies the NotNil predicate on the "submission_key" field.
+func SubmissionKeyNotNil() predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldNotNull(FieldSubmissionKey))
+}
+
+// SubmissionKeyEqualFold applies the EqualFold predicate on the "submission_key" field.
+func SubmissionKeyEqualFold(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldEqualFold(FieldSubmissionKey, v))
+}
+
+// SubmissionKeyContainsFold applies the ContainsFold predicate on the "submission_key" field.
+func SubmissionKeyContainsFold(v string) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldContainsFold(FieldSubmissionKey, v))
 }
 
 // AmountEQ applies the EQ predicate on the "amount" field.

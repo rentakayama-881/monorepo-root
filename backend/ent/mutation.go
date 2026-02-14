@@ -9775,6 +9775,7 @@ type FinalOfferMutation struct {
 	created_at             *time.Time
 	updated_at             *time.Time
 	deleted_at             *time.Time
+	submission_key         *string
 	amount                 *int64
 	addamount              *int64
 	hold_hours             *int
@@ -10082,6 +10083,55 @@ func (m *FinalOfferMutation) OldValidatorUserID(ctx context.Context) (v int, err
 // ResetValidatorUserID resets all changes to the "validator_user_id" field.
 func (m *FinalOfferMutation) ResetValidatorUserID() {
 	m.validator_user = nil
+}
+
+// SetSubmissionKey sets the "submission_key" field.
+func (m *FinalOfferMutation) SetSubmissionKey(s string) {
+	m.submission_key = &s
+}
+
+// SubmissionKey returns the value of the "submission_key" field in the mutation.
+func (m *FinalOfferMutation) SubmissionKey() (r string, exists bool) {
+	v := m.submission_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubmissionKey returns the old "submission_key" field's value of the FinalOffer entity.
+// If the FinalOffer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FinalOfferMutation) OldSubmissionKey(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubmissionKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubmissionKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubmissionKey: %w", err)
+	}
+	return oldValue.SubmissionKey, nil
+}
+
+// ClearSubmissionKey clears the value of the "submission_key" field.
+func (m *FinalOfferMutation) ClearSubmissionKey() {
+	m.submission_key = nil
+	m.clearedFields[finaloffer.FieldSubmissionKey] = struct{}{}
+}
+
+// SubmissionKeyCleared returns if the "submission_key" field was cleared in this mutation.
+func (m *FinalOfferMutation) SubmissionKeyCleared() bool {
+	_, ok := m.clearedFields[finaloffer.FieldSubmissionKey]
+	return ok
+}
+
+// ResetSubmissionKey resets all changes to the "submission_key" field.
+func (m *FinalOfferMutation) ResetSubmissionKey() {
+	m.submission_key = nil
+	delete(m.clearedFields, finaloffer.FieldSubmissionKey)
 }
 
 // SetAmount sets the "amount" field.
@@ -10467,7 +10517,7 @@ func (m *FinalOfferMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FinalOfferMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, finaloffer.FieldCreatedAt)
 	}
@@ -10482,6 +10532,9 @@ func (m *FinalOfferMutation) Fields() []string {
 	}
 	if m.validator_user != nil {
 		fields = append(fields, finaloffer.FieldValidatorUserID)
+	}
+	if m.submission_key != nil {
+		fields = append(fields, finaloffer.FieldSubmissionKey)
 	}
 	if m.amount != nil {
 		fields = append(fields, finaloffer.FieldAmount)
@@ -10519,6 +10572,8 @@ func (m *FinalOfferMutation) Field(name string) (ent.Value, bool) {
 		return m.ValidationCaseID()
 	case finaloffer.FieldValidatorUserID:
 		return m.ValidatorUserID()
+	case finaloffer.FieldSubmissionKey:
+		return m.SubmissionKey()
 	case finaloffer.FieldAmount:
 		return m.Amount()
 	case finaloffer.FieldHoldHours:
@@ -10550,6 +10605,8 @@ func (m *FinalOfferMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldValidationCaseID(ctx)
 	case finaloffer.FieldValidatorUserID:
 		return m.OldValidatorUserID(ctx)
+	case finaloffer.FieldSubmissionKey:
+		return m.OldSubmissionKey(ctx)
 	case finaloffer.FieldAmount:
 		return m.OldAmount(ctx)
 	case finaloffer.FieldHoldHours:
@@ -10605,6 +10662,13 @@ func (m *FinalOfferMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetValidatorUserID(v)
+		return nil
+	case finaloffer.FieldSubmissionKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubmissionKey(v)
 		return nil
 	case finaloffer.FieldAmount:
 		v, ok := value.(int64)
@@ -10708,6 +10772,9 @@ func (m *FinalOfferMutation) ClearedFields() []string {
 	if m.FieldCleared(finaloffer.FieldDeletedAt) {
 		fields = append(fields, finaloffer.FieldDeletedAt)
 	}
+	if m.FieldCleared(finaloffer.FieldSubmissionKey) {
+		fields = append(fields, finaloffer.FieldSubmissionKey)
+	}
 	if m.FieldCleared(finaloffer.FieldTerms) {
 		fields = append(fields, finaloffer.FieldTerms)
 	}
@@ -10733,6 +10800,9 @@ func (m *FinalOfferMutation) ClearField(name string) error {
 	switch name {
 	case finaloffer.FieldDeletedAt:
 		m.ClearDeletedAt()
+		return nil
+	case finaloffer.FieldSubmissionKey:
+		m.ClearSubmissionKey()
 		return nil
 	case finaloffer.FieldTerms:
 		m.ClearTerms()
@@ -10765,6 +10835,9 @@ func (m *FinalOfferMutation) ResetField(name string) error {
 		return nil
 	case finaloffer.FieldValidatorUserID:
 		m.ResetValidatorUserID()
+		return nil
+	case finaloffer.FieldSubmissionKey:
+		m.ResetSubmissionKey()
 		return nil
 	case finaloffer.FieldAmount:
 		m.ResetAmount()

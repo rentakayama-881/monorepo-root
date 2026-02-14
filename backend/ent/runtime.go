@@ -470,22 +470,26 @@ func init() {
 	finalofferDescValidatorUserID := finalofferFields[1].Descriptor()
 	// finaloffer.ValidatorUserIDValidator is a validator for the "validator_user_id" field. It is called by the builders before save.
 	finaloffer.ValidatorUserIDValidator = finalofferDescValidatorUserID.Validators[0].(func(int) error)
+	// finalofferDescSubmissionKey is the schema descriptor for submission_key field.
+	finalofferDescSubmissionKey := finalofferFields[2].Descriptor()
+	// finaloffer.SubmissionKeyValidator is a validator for the "submission_key" field. It is called by the builders before save.
+	finaloffer.SubmissionKeyValidator = finalofferDescSubmissionKey.Validators[0].(func(string) error)
 	// finalofferDescAmount is the schema descriptor for amount field.
-	finalofferDescAmount := finalofferFields[2].Descriptor()
+	finalofferDescAmount := finalofferFields[3].Descriptor()
 	// finaloffer.AmountValidator is a validator for the "amount" field. It is called by the builders before save.
 	finaloffer.AmountValidator = finalofferDescAmount.Validators[0].(func(int64) error)
 	// finalofferDescHoldHours is the schema descriptor for hold_hours field.
-	finalofferDescHoldHours := finalofferFields[3].Descriptor()
+	finalofferDescHoldHours := finalofferFields[4].Descriptor()
 	// finaloffer.DefaultHoldHours holds the default value on creation for the hold_hours field.
 	finaloffer.DefaultHoldHours = finalofferDescHoldHours.Default.(int)
 	// finaloffer.HoldHoursValidator is a validator for the "hold_hours" field. It is called by the builders before save.
 	finaloffer.HoldHoursValidator = finalofferDescHoldHours.Validators[0].(func(int) error)
 	// finalofferDescTerms is the schema descriptor for terms field.
-	finalofferDescTerms := finalofferFields[4].Descriptor()
+	finalofferDescTerms := finalofferFields[5].Descriptor()
 	// finaloffer.DefaultTerms holds the default value on creation for the terms field.
 	finaloffer.DefaultTerms = finalofferDescTerms.Default.(string)
 	// finalofferDescStatus is the schema descriptor for status field.
-	finalofferDescStatus := finalofferFields[5].Descriptor()
+	finalofferDescStatus := finalofferFields[6].Descriptor()
 	// finaloffer.DefaultStatus holds the default value on creation for the status field.
 	finaloffer.DefaultStatus = finalofferDescStatus.Default.(string)
 	// finaloffer.StatusValidator is a validator for the "status" field. It is called by the builders before save.

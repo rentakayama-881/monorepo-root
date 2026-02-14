@@ -236,6 +236,11 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{ConsultationRequestsColumns[8]},
 			},
+			{
+				Name:    "consultationrequest_validator_user_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{ConsultationRequestsColumns[11], ConsultationRequestsColumns[4]},
+			},
 		},
 	}
 	// CredentialsColumns holds the columns for the "credentials" table.
@@ -424,6 +429,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "submission_key", Type: field.TypeString, Unique: true, Nullable: true, Size: 96},
 		{Name: "amount", Type: field.TypeInt64},
 		{Name: "hold_hours", Type: field.TypeInt, Default: 168},
 		{Name: "terms", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
@@ -441,13 +447,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "final_offers_users_final_offers",
-				Columns:    []*schema.Column{FinalOffersColumns[10]},
+				Columns:    []*schema.Column{FinalOffersColumns[11]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "final_offers_validation_cases_final_offers",
-				Columns:    []*schema.Column{FinalOffersColumns[11]},
+				Columns:    []*schema.Column{FinalOffersColumns[12]},
 				RefColumns: []*schema.Column{ValidationCasesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -456,22 +462,22 @@ var (
 			{
 				Name:    "finaloffer_validation_case_id",
 				Unique:  false,
-				Columns: []*schema.Column{FinalOffersColumns[11]},
+				Columns: []*schema.Column{FinalOffersColumns[12]},
 			},
 			{
 				Name:    "finaloffer_validator_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{FinalOffersColumns[10]},
+				Columns: []*schema.Column{FinalOffersColumns[11]},
 			},
 			{
 				Name:    "finaloffer_validation_case_id_validator_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{FinalOffersColumns[11], FinalOffersColumns[10]},
+				Columns: []*schema.Column{FinalOffersColumns[12], FinalOffersColumns[11]},
 			},
 			{
 				Name:    "finaloffer_status",
 				Unique:  false,
-				Columns: []*schema.Column{FinalOffersColumns[7]},
+				Columns: []*schema.Column{FinalOffersColumns[8]},
 			},
 		},
 	}
@@ -966,6 +972,16 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{ValidationCasesColumns[13]},
 			},
+			{
+				Name:    "validationcase_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ValidationCasesColumns[1]},
+			},
+			{
+				Name:    "validationcase_user_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{ValidationCasesColumns[21], ValidationCasesColumns[10]},
+			},
 		},
 	}
 	// ValidationCaseLogsColumns holds the columns for the "validation_case_logs" table.
@@ -1013,6 +1029,11 @@ var (
 				Name:    "validationcaselog_event_type",
 				Unique:  false,
 				Columns: []*schema.Column{ValidationCaseLogsColumns[4]},
+			},
+			{
+				Name:    "validationcaselog_validation_case_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ValidationCaseLogsColumns[7], ValidationCaseLogsColumns[1]},
 			},
 		},
 	}

@@ -29,6 +29,8 @@ type FinalOffer struct {
 	ValidationCaseID int `json:"validation_case_id,omitempty"`
 	// ValidatorUserID holds the value of the "validator_user_id" field.
 	ValidatorUserID int `json:"validator_user_id,omitempty"`
+	// SubmissionKey holds the value of the "submission_key" field.
+	SubmissionKey *string `json:"submission_key,omitempty"`
 	// Amount holds the value of the "amount" field.
 	Amount int64 `json:"amount,omitempty"`
 	// HoldHours holds the value of the "hold_hours" field.
@@ -87,7 +89,7 @@ func (*FinalOffer) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case finaloffer.FieldID, finaloffer.FieldValidationCaseID, finaloffer.FieldValidatorUserID, finaloffer.FieldAmount, finaloffer.FieldHoldHours:
 			values[i] = new(sql.NullInt64)
-		case finaloffer.FieldTerms, finaloffer.FieldStatus:
+		case finaloffer.FieldSubmissionKey, finaloffer.FieldTerms, finaloffer.FieldStatus:
 			values[i] = new(sql.NullString)
 		case finaloffer.FieldCreatedAt, finaloffer.FieldUpdatedAt, finaloffer.FieldDeletedAt, finaloffer.FieldAcceptedAt, finaloffer.FieldRejectedAt:
 			values[i] = new(sql.NullTime)
@@ -142,6 +144,13 @@ func (_m *FinalOffer) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field validator_user_id", values[i])
 			} else if value.Valid {
 				_m.ValidatorUserID = int(value.Int64)
+			}
+		case finaloffer.FieldSubmissionKey:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field submission_key", values[i])
+			} else if value.Valid {
+				_m.SubmissionKey = new(string)
+				*_m.SubmissionKey = value.String
 			}
 		case finaloffer.FieldAmount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -243,6 +252,11 @@ func (_m *FinalOffer) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("validator_user_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ValidatorUserID))
+	builder.WriteString(", ")
+	if v := _m.SubmissionKey; v != nil {
+		builder.WriteString("submission_key=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("amount=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Amount))
