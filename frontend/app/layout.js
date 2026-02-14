@@ -213,7 +213,7 @@ export default async function RootLayout({ children }) {
                   </div>
 
                   {!hideFooter ? <Footer /> : null}
-                  {!hideFooter ? <CookieConsentBanner /> : null}
+                  <CookieConsentBanner />
 
                   <SpeedInsights />
                   {/* Global keyboard shortcuts handler */}

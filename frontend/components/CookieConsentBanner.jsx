@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Button from "./ui/Button";
 
 const COOKIE_CONSENT_KEY = "cookie-consent";
 
@@ -11,6 +12,26 @@ export function getCookieConsent() {
   } catch {
     return null;
   }
+}
+
+function CookieIcon({ className = "" }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M10.5 3.4a1.8 1.8 0 0 0 3 1.9 1.8 1.8 0 0 1 2.3-.5 1.8 1.8 0 0 1 .8 2.2 1.8 1.8 0 0 0 2.1 2.5 1.8 1.8 0 0 1 2.1 1.3 1.8 1.8 0 0 1-1 2.2 1.8 1.8 0 0 0-1 2.5 1.8 1.8 0 0 1-.6 2.3 1.8 1.8 0 0 1-2.3-.2 1.8 1.8 0 0 0-2.8.6 1.8 1.8 0 0 1-2.1 1.3 1.8 1.8 0 0 1-1.3-2 1.8 1.8 0 0 0-2.6-1.8 1.8 1.8 0 0 1-2.2-.8 1.8 1.8 0 0 1 .5-2.3 1.8 1.8 0 0 0-.7-3.1 1.8 1.8 0 0 1-1.2-2.1 1.8 1.8 0 0 1 2-1.3 1.8 1.8 0 0 0 2.1-2.4 1.8 1.8 0 0 1 1-2.2 1.8 1.8 0 0 1 2.2.7z" />
+      <circle cx="8.4" cy="9.1" r="1.1" />
+      <circle cx="14.9" cy="11.2" r="1.1" />
+      <circle cx="10.6" cy="15" r="1" />
+    </svg>
+  );
 }
 
 export default function CookieConsentBanner() {
@@ -41,46 +62,54 @@ export default function CookieConsentBanner() {
 
   if (consent !== null) return null;
 
+  const message = confirmReject
+    ? "Yakin menolak cookie analitik? Cookie esensial tetap aktif untuk menjaga sesi login."
+    : "Kami memakai cookie esensial untuk sesi login. Cookie analitik bersifat opsional.";
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container flex flex-col gap-2 py-2 text-xs sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-muted-foreground">
-          Kami memakai cookie esensial untuk menjaga sesi login tetap stabil. Cookie analitik bersifat opsional.
-        </p>
-        <div className="flex items-center gap-2">
+      <div className="container flex flex-col gap-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
+          <CookieIcon className="h-3.5 w-3.5 shrink-0" />
+          <p className="leading-relaxed">{message}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
           {confirmReject ? (
             <>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
                 onClick={() => setConfirmReject(false)}
-                className="rounded border border-border px-2 py-1 text-foreground hover:bg-accent"
               >
                 Batal
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-xs"
                 onClick={reject}
-                className="rounded border border-destructive/40 px-2 py-1 text-destructive hover:bg-destructive/10"
               >
                 Tolak Analitik
-              </button>
+              </Button>
             </>
           ) : (
             <>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
                 onClick={reject}
-                className="rounded border border-border px-2 py-1 text-foreground hover:bg-accent"
               >
                 Tolak
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 text-xs"
                 onClick={accept}
-                className="rounded border border-primary bg-primary px-2 py-1 font-medium text-primary-foreground hover:opacity-90"
               >
                 Terima
-              </button>
+              </Button>
             </>
           )}
         </div>
