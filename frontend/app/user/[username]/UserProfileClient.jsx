@@ -196,14 +196,7 @@ export default function UserProfilePage() {
           </div>
         </div>
         
-        {/* Bio */}
-        {profile.bio && (
-          <p className="text-foreground leading-relaxed border-l-2 border-primary/30 pl-4">
-            {profile.bio}
-          </p>
-        )}
-
-        <div className="flex w-full flex-wrap justify-start gap-2 border-l-2 border-primary/30 pl-4 text-xs">
+        <div className="flex w-full flex-wrap justify-start gap-2 pl-4 text-xs">
           <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 font-semibold text-foreground">
             Validation Cases: {Number(profile.validation_case_count || 0)}
           </span>
@@ -217,6 +210,13 @@ export default function UserProfilePage() {
             </span>
           )}
         </div>
+
+        {/* Bio */}
+        {profile.bio && (
+          <p className="text-foreground leading-relaxed border-l-2 border-primary/30 pl-4">
+            {profile.bio}
+          </p>
+        )}
 
         {/* Meta info */}
         {(profile.company || pronouns || normalizedSocials.length > 0) && (
