@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+using System.Text.RegularExpressions;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
@@ -39,6 +40,9 @@ public class TransferService : ITransferService
     private const int HoursPerDay = 24;
     private const int DefaultHoldHours = 7 * HoursPerDay;
     private const int MaxHoldHours = 30 * HoursPerDay;
+    private static readonly Regex ValidationCaseLockMessageRegex = new(
+        @"Validation\s*Case\s*#(?<caseId>\d+)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     public TransferService(
         MongoDbContext dbContext,
@@ -86,6 +90,33 @@ public class TransferService : ITransferService
             throw new ArgumentException("Tidak bisa transfer ke diri sendiri");
         }
 
+        var transferMessage = string.IsNullOrWhiteSpace(request.Message)
+            ? null
+            : request.Message.Trim();
+        if (TryExtractValidationCaseId(transferMessage, out var validationCaseId))
+        {
+            transferMessage = BuildValidationCaseLockMessage(validationCaseId);
+            var existingPendingLock = await _transfers.Find(t =>
+                    t.SenderId == senderId &&
+                    t.ReceiverId == receiver.UserId &&
+                    t.Amount == request.Amount &&
+                    t.Status == TransferStatus.Pending &&
+                    t.Message == transferMessage)
+                .SortByDescending(t => t.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (existingPendingLock != null)
+            {
+                _logger.LogWarning(
+                    "Duplicate validation-case lock transfer blocked. SenderId={SenderId}, ReceiverId={ReceiverId}, CaseId={CaseId}, ExistingTransferId={TransferId}",
+                    senderId,
+                    receiver.UserId,
+                    validationCaseId,
+                    existingPendingLock.Id);
+                return ToCreateTransferResponse(existingPendingLock);
+            }
+        }
+
         // Get sender's wallet to get username
         var senderWallet = await _walletService.GetOrCreateWalletAsync(senderId);
         senderUsername = !string.IsNullOrWhiteSpace(senderUsername)
@@ -112,7 +143,7 @@ public class TransferService : ITransferService
             ReceiverId = receiver.UserId,
             ReceiverUsername = receiver.Username,
             Amount = request.Amount,
-            Message = request.Message,
+            Message = transferMessage,
             Status = TransferStatus.Pending,
             HoldUntil = holdUntil,
             CreatedAt = DateTime.UtcNow,
@@ -193,6 +224,39 @@ public class TransferService : ITransferService
             transfer.Amount,
             transfer.ReceiverUsername,
             holdUntil
+        );
+    }
+
+    private static bool TryExtractValidationCaseId(string? message, out int caseId)
+    {
+        caseId = 0;
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return false;
+        }
+
+        var match = ValidationCaseLockMessageRegex.Match(message);
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        return int.TryParse(match.Groups["caseId"].Value, out caseId) && caseId > 0;
+    }
+
+    private static string BuildValidationCaseLockMessage(int caseId)
+    {
+        return $"Lock Funds: Validation Case #{caseId}";
+    }
+
+    private static CreateTransferResponse ToCreateTransferResponse(Transfer transfer)
+    {
+        return new CreateTransferResponse(
+            transfer.Id,
+            transfer.Code,
+            transfer.Amount,
+            transfer.ReceiverUsername,
+            transfer.HoldUntil ?? transfer.CreatedAt
         );
     }
 

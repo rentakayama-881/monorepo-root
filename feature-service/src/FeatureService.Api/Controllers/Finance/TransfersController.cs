@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.RegularExpressions;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Services;
 using FeatureService.Api.Models.Entities;
@@ -17,6 +18,10 @@ namespace FeatureService.Api.Controllers.Finance;
 [Produces("application/json")]
 public class TransfersController : ApiControllerBase
 {
+    private static readonly Regex ValidationCaseLockMessageRegex = new(
+        @"Validation\s*Case\s*#(?<caseId>\d+)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     private readonly ITransferService _transferService;
     private readonly ISecureTransferService _secureTransferService;
     private readonly ILogger<TransfersController> _logger;
@@ -73,7 +78,7 @@ public class TransfersController : ApiControllerBase
 
         try
         {
-            var idempotencyKey = Request.Headers["X-Idempotency-Key"].FirstOrDefault();
+            var idempotencyKey = BuildEffectiveTransferIdempotencyKey(userId, request);
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             var userAgent = Request.Headers.UserAgent.ToString();
 
@@ -98,6 +103,32 @@ public class TransfersController : ApiControllerBase
             _logger.LogError(ex, "Error creating transfer for user {UserId}", userId);
             return ApiError(500, "INTERNAL_ERROR", "An error occurred while creating transfer");
         }
+    }
+
+    private string? BuildEffectiveTransferIdempotencyKey(uint senderId, CreateTransferRequest request)
+    {
+        var headerKey = Request.Headers["X-Idempotency-Key"].FirstOrDefault();
+
+        var message = string.IsNullOrWhiteSpace(request.Message)
+            ? string.Empty
+            : request.Message.Trim();
+        var match = ValidationCaseLockMessageRegex.Match(message);
+        if (!match.Success)
+        {
+            return headerKey;
+        }
+
+        if (!int.TryParse(match.Groups["caseId"].Value, out var caseId) || caseId <= 0)
+        {
+            return headerKey;
+        }
+
+        var receiver = string.IsNullOrWhiteSpace(request.ReceiverUsername)
+            ? "unknown"
+            : request.ReceiverUsername.Trim().ToLowerInvariant();
+        var holdHours = request.HoldHours > 0 ? request.HoldHours : 168;
+
+        return $"validation-case-lock:case:{caseId}:sender:{senderId}:receiver:{receiver}:amount:{request.Amount}:hold:{holdHours}";
     }
 
     /// <summary>
