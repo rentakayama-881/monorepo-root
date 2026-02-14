@@ -111,21 +111,37 @@ public class DisputeService : IDisputeService
         {
             await _disputes.InsertOneAsync(dispute);
         }
+        catch (MongoWriteException ex) when (ex.WriteError?.Category == ServerErrorCategory.DuplicateKey)
+        {
+            _logger.LogWarning(
+                ex,
+                "Duplicate dispute insert detected for transfer {TransferId}. Returning existing dispute.",
+                request.TransferId);
+
+            var existing = await _disputes.Find(d => d.TransferId == request.TransferId).FirstOrDefaultAsync();
+            if (existing != null)
+                return new CreateDisputeResponse(true, existing.Id, null);
+
+            await TryRollbackTransferToPendingAsync(request.TransferId);
+            return new CreateDisputeResponse(false, null, "Dispute sudah ada untuk transfer ini");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to insert dispute for transfer {TransferId}. Attempting transfer status rollback.", request.TransferId);
 
+            var existing = await _disputes.Find(d => d.TransferId == request.TransferId).FirstOrDefaultAsync();
+            if (existing != null)
+            {
+                _logger.LogWarning(
+                    "Dispute {DisputeId} already exists after insert failure for transfer {TransferId}. Skip transfer rollback.",
+                    existing.Id,
+                    request.TransferId);
+                return new CreateDisputeResponse(true, existing.Id, null);
+            }
+
             try
             {
-                var rollback = Builders<Transfer>.Update
-                    .Set(t => t.Status, TransferStatus.Pending)
-                    .Set(t => t.UpdatedAt, DateTime.UtcNow);
-
-                await _transfers.UpdateOneAsync(
-                    Builders<Transfer>.Filter.And(
-                        Builders<Transfer>.Filter.Eq(t => t.Id, request.TransferId),
-                        Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Disputed)),
-                    rollback);
+                await TryRollbackTransferToPendingAsync(request.TransferId);
             }
             catch (Exception rollbackEx)
             {
@@ -212,7 +228,14 @@ public class DisputeService : IDisputeService
             .Push(d => d.Messages, message)
             .Set(d => d.UpdatedAt, DateTime.UtcNow);
 
-        await _disputes.UpdateOneAsync(d => d.Id == disputeId, update);
+        var updateFilter = Builders<Dispute>.Filter.And(
+            Builders<Dispute>.Filter.Eq(d => d.Id, disputeId),
+            Builders<Dispute>.Filter.Nin(
+                d => d.Status,
+                new[] { DisputeStatus.Resolved, DisputeStatus.Cancelled }));
+        var updateResult = await _disputes.UpdateOneAsync(updateFilter, update);
+        if (updateResult.ModifiedCount == 0)
+            return (false, "Dispute sudah ditutup");
 
         return (true, null);
     }
@@ -249,7 +272,14 @@ public class DisputeService : IDisputeService
             .Push(d => d.Evidence, evidenceDoc)
             .Set(d => d.UpdatedAt, DateTime.UtcNow);
 
-        await _disputes.UpdateOneAsync(d => d.Id == disputeId, update);
+        var updateFilter = Builders<Dispute>.Filter.And(
+            Builders<Dispute>.Filter.Eq(d => d.Id, disputeId),
+            Builders<Dispute>.Filter.Nin(
+                d => d.Status,
+                new[] { DisputeStatus.Resolved, DisputeStatus.Cancelled }));
+        var updateResult = await _disputes.UpdateOneAsync(updateFilter, update);
+        if (updateResult.ModifiedCount == 0)
+            return (false, "Dispute sudah ditutup");
 
         return (true, null);
     }
@@ -268,18 +298,36 @@ public class DisputeService : IDisputeService
         if (dispute.Status != DisputeStatus.Open)
             return (false, "Dispute tidak bisa dibatalkan dalam status ini");
 
-        var update = Builders<Dispute>.Update
-            .Set(d => d.Status, DisputeStatus.Cancelled)
-            .Set(d => d.UpdatedAt, DateTime.UtcNow)
-            .Set(d => d.ResolvedAt, DateTime.UtcNow);
+        var now = DateTime.UtcNow;
 
-        await _disputes.UpdateOneAsync(d => d.Id == disputeId, update);
-
-        // Restore transfer to previous state (Pending)
+        // Restore transfer to Pending first using CAS to avoid overriding
+        // another request that already moved the transfer out of disputed state.
+        var transferUpdateFilter = Builders<Transfer>.Filter.And(
+            Builders<Transfer>.Filter.Eq(t => t.Id, dispute.TransferId),
+            Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Disputed));
         var transferUpdate = Builders<Transfer>.Update
             .Set(t => t.Status, TransferStatus.Pending)
-            .Set(t => t.UpdatedAt, DateTime.UtcNow);
-        await _transfers.UpdateOneAsync(t => t.Id == dispute.TransferId, transferUpdate);
+            .Unset(t => t.CancelledAt)
+            .Unset(t => t.CancelReason)
+            .Set(t => t.UpdatedAt, now);
+        var transferUpdateResult = await _transfers.UpdateOneAsync(transferUpdateFilter, transferUpdate);
+        if (transferUpdateResult.ModifiedCount == 0)
+            return (false, await BuildTransferDisputeConflictMessageAsync(dispute.TransferId));
+
+        var disputeUpdateFilter = Builders<Dispute>.Filter.And(
+            Builders<Dispute>.Filter.Eq(d => d.Id, disputeId),
+            Builders<Dispute>.Filter.Eq(d => d.InitiatorId, userId),
+            Builders<Dispute>.Filter.Eq(d => d.Status, DisputeStatus.Open));
+        var disputeUpdate = Builders<Dispute>.Update
+            .Set(d => d.Status, DisputeStatus.Cancelled)
+            .Set(d => d.UpdatedAt, now)
+            .Set(d => d.ResolvedAt, now);
+        var disputeUpdateResult = await _disputes.UpdateOneAsync(disputeUpdateFilter, disputeUpdate);
+        if (disputeUpdateResult.ModifiedCount == 0)
+        {
+            await TryRollbackTransferToDisputedAsync(dispute.TransferId);
+            return (false, await BuildDisputeConflictMessageAsync(disputeId));
+        }
 
         _logger.LogInformation("Dispute cancelled: {DisputeId} by user {UserId}", disputeId, userId);
 
@@ -525,15 +573,18 @@ public class DisputeService : IDisputeService
         var transfer = await _transfers.Find(t => t.Id == dispute.TransferId).FirstOrDefaultAsync();
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
+        if (transfer.Status != TransferStatus.Disputed)
+            return (false, "Transfer tidak dalam status Disputed");
 
         // Add admin message about continuation
+        var now = DateTime.UtcNow;
         var message = new DisputeMessage
         {
             SenderId = adminId,
             SenderUsername = adminUsername,
             IsAdmin = true,
             Content = $"[KEPUTUSAN ADMIN] Transaksi dilanjutkan. {note ?? "Dispute ditutup, transaksi mengikuti hold time normal."}",
-            SentAt = DateTime.UtcNow
+            SentAt = now
         };
 
         // Create resolution with NoAction (funds not moved yet, will follow hold time)
@@ -545,22 +596,37 @@ public class DisputeService : IDisputeService
             Note = note ?? "Transaksi dilanjutkan sesuai hold time normal"
         };
 
-        var update = Builders<Dispute>.Update
+        var disputeUpdateFilter = Builders<Dispute>.Filter.And(
+            Builders<Dispute>.Filter.Eq(d => d.Id, disputeId),
+            Builders<Dispute>.Filter.Eq(d => d.Status, dispute.Status));
+        var disputeUpdate = Builders<Dispute>.Update
             .Set(d => d.Status, DisputeStatus.Resolved)
             .Set(d => d.Resolution, resolution)
             .Set(d => d.ResolvedById, adminId)
             .Set(d => d.ResolvedByUsername, adminUsername)
-            .Set(d => d.ResolvedAt, DateTime.UtcNow)
-            .Set(d => d.UpdatedAt, DateTime.UtcNow)
+            .Set(d => d.ResolvedAt, now)
+            .Set(d => d.UpdatedAt, now)
             .Push(d => d.Messages, message);
 
-        await _disputes.UpdateOneAsync(d => d.Id == disputeId, update);
-
-        // Restore transfer to Pending status (will follow hold time)
+        // Restore transfer to Pending status (will follow hold time), CAS-protected.
+        var transferUpdateFilter = Builders<Transfer>.Filter.And(
+            Builders<Transfer>.Filter.Eq(t => t.Id, dispute.TransferId),
+            Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Disputed));
         var transferUpdate = Builders<Transfer>.Update
             .Set(t => t.Status, TransferStatus.Pending)
-            .Set(t => t.UpdatedAt, DateTime.UtcNow);
-        await _transfers.UpdateOneAsync(t => t.Id == dispute.TransferId, transferUpdate);
+            .Unset(t => t.CancelledAt)
+            .Unset(t => t.CancelReason)
+            .Set(t => t.UpdatedAt, now);
+        var transferUpdateResult = await _transfers.UpdateOneAsync(transferUpdateFilter, transferUpdate);
+        if (transferUpdateResult.ModifiedCount == 0)
+            return (false, await BuildTransferDisputeConflictMessageAsync(dispute.TransferId));
+
+        var disputeUpdateResult = await _disputes.UpdateOneAsync(disputeUpdateFilter, disputeUpdate);
+        if (disputeUpdateResult.ModifiedCount == 0)
+        {
+            await TryRollbackTransferToDisputedAsync(dispute.TransferId);
+            return (false, await BuildDisputeConflictMessageAsync(disputeId));
+        }
 
         _logger.LogInformation(
             "Dispute continued: {DisputeId} by admin {AdminId}, transfer restored to Pending",
@@ -664,7 +730,9 @@ public class DisputeService : IDisputeService
 
         var disputeUpdateFilter = Builders<Dispute>.Filter.And(
             Builders<Dispute>.Filter.Eq(d => d.Id, disputeId),
-            Builders<Dispute>.Filter.Eq(d => d.Status, DisputeStatus.Open));
+            Builders<Dispute>.Filter.Nin(
+                d => d.Status,
+                new[] { DisputeStatus.Resolved, DisputeStatus.Cancelled }));
 
         var disputeUpdate = Builders<Dispute>.Update
             .Set(d => d.Status, DisputeStatus.Resolved)
@@ -672,10 +740,74 @@ public class DisputeService : IDisputeService
             .Set(d => d.ResolvedAt, now)
             .Set(d => d.UpdatedAt, now);
 
-        await _disputes.UpdateOneAsync(disputeUpdateFilter, disputeUpdate);
+        var disputeUpdateResult = await _disputes.UpdateOneAsync(disputeUpdateFilter, disputeUpdate);
+        if (disputeUpdateResult.ModifiedCount == 0)
+        {
+            _logger.LogCritical(
+                "CRITICAL: Mutual refund transfer settled but dispute state could not be resolved. DisputeId: {DisputeId}",
+                disputeId);
+            return (false, "Transfer sudah diproses, namun status dispute gagal diperbarui. Hubungi admin/support.");
+        }
 
         _logger.LogInformation("Mutual refund completed for dispute {DisputeId} by user {UserId}", disputeId, userId);
         return (true, null);
+    }
+
+    private async Task TryRollbackTransferToPendingAsync(string transferId)
+    {
+        var rollback = Builders<Transfer>.Update
+            .Set(t => t.Status, TransferStatus.Pending)
+            .Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+        await _transfers.UpdateOneAsync(
+            Builders<Transfer>.Filter.And(
+                Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
+                Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Disputed)),
+            rollback);
+    }
+
+    private async Task TryRollbackTransferToDisputedAsync(string transferId)
+    {
+        var rollback = Builders<Transfer>.Update
+            .Set(t => t.Status, TransferStatus.Disputed)
+            .Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+        await _transfers.UpdateOneAsync(
+            Builders<Transfer>.Filter.And(
+                Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
+                Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Pending)),
+            rollback);
+    }
+
+    private async Task<string> BuildTransferDisputeConflictMessageAsync(string transferId)
+    {
+        var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        if (transfer == null)
+            return "Transfer tidak ditemukan";
+
+        return transfer.Status switch
+        {
+            TransferStatus.Released or TransferStatus.Expired => "Transfer sudah direlease",
+            TransferStatus.Cancelled => "Transfer sudah dibatalkan",
+            TransferStatus.Rejected => "Transfer sudah ditolak",
+            TransferStatus.Pending => "Transfer tidak lagi dalam status dispute",
+            TransferStatus.Disputed => "Transfer sudah diproses oleh request lain",
+            _ => "Transfer sudah diproses oleh request lain"
+        };
+    }
+
+    private async Task<string> BuildDisputeConflictMessageAsync(string disputeId)
+    {
+        var dispute = await _disputes.Find(d => d.Id == disputeId).FirstOrDefaultAsync();
+        if (dispute == null)
+            return "Dispute tidak ditemukan";
+
+        return dispute.Status switch
+        {
+            DisputeStatus.Resolved => "Dispute sudah resolved",
+            DisputeStatus.Cancelled => "Dispute sudah dibatalkan",
+            _ => "Dispute sudah diproses oleh request lain"
+        };
     }
 
     // ==================

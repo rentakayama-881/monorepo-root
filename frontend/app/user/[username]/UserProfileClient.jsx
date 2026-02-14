@@ -193,22 +193,22 @@ export default function UserProfilePage() {
               </p>
             )}
 
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 font-semibold text-foreground">
+                Validation Cases: {Number(profile.validation_case_count || 0)}
+              </span>
+              {Number(profile.guarantee_amount) > 0 ? (
+                <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 font-semibold text-foreground">
+                  Active Stake: Rp {Number(profile.guarantee_amount || 0).toLocaleString("id-ID")}
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 font-semibold text-muted-foreground">
+                  Active Stake: Rp 0
+                </span>
+              )}
+            </div>
+
           </div>
-        </div>
-        
-        <div className="flex w-full flex-wrap justify-start gap-2 pl-4 text-xs">
-          <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 font-semibold text-foreground">
-            Validation Cases: {Number(profile.validation_case_count || 0)}
-          </span>
-          {Number(profile.guarantee_amount) > 0 ? (
-            <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 font-semibold text-foreground">
-              Active Stake: Rp {Number(profile.guarantee_amount || 0).toLocaleString("id-ID")}
-            </span>
-          ) : (
-            <span className="inline-flex items-center rounded-full border border-border bg-secondary/60 px-3 py-1 font-semibold text-muted-foreground">
-              Active Stake: Rp 0
-            </span>
-          )}
         </div>
 
         {/* Bio */}
