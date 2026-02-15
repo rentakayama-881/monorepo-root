@@ -24,6 +24,7 @@ import (
 	"backend-gin/ent/emailverificationtoken"
 	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
+	"backend-gin/ent/ipgeocache"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/securityevent"
@@ -74,6 +75,8 @@ type Client struct {
 	Endorsement *EndorsementClient
 	// FinalOffer is the client for interacting with the FinalOffer builders.
 	FinalOffer *FinalOfferClient
+	// IPGeoCache is the client for interacting with the IPGeoCache builders.
+	IPGeoCache *IPGeoCacheClient
 	// Passkey is the client for interacting with the Passkey builders.
 	Passkey *PasskeyClient
 	// PasswordResetToken is the client for interacting with the PasswordResetToken builders.
@@ -122,6 +125,7 @@ func (c *Client) init() {
 	c.EmailVerificationToken = NewEmailVerificationTokenClient(c.config)
 	c.Endorsement = NewEndorsementClient(c.config)
 	c.FinalOffer = NewFinalOfferClient(c.config)
+	c.IPGeoCache = NewIPGeoCacheClient(c.config)
 	c.Passkey = NewPasskeyClient(c.config)
 	c.PasswordResetToken = NewPasswordResetTokenClient(c.config)
 	c.SecurityEvent = NewSecurityEventClient(c.config)
@@ -239,6 +243,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		EmailVerificationToken: NewEmailVerificationTokenClient(cfg),
 		Endorsement:            NewEndorsementClient(cfg),
 		FinalOffer:             NewFinalOfferClient(cfg),
+		IPGeoCache:             NewIPGeoCacheClient(cfg),
 		Passkey:                NewPasskeyClient(cfg),
 		PasswordResetToken:     NewPasswordResetTokenClient(cfg),
 		SecurityEvent:          NewSecurityEventClient(cfg),
@@ -283,6 +288,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		EmailVerificationToken: NewEmailVerificationTokenClient(cfg),
 		Endorsement:            NewEndorsementClient(cfg),
 		FinalOffer:             NewFinalOfferClient(cfg),
+		IPGeoCache:             NewIPGeoCacheClient(cfg),
 		Passkey:                NewPasskeyClient(cfg),
 		PasswordResetToken:     NewPasswordResetTokenClient(cfg),
 		SecurityEvent:          NewSecurityEventClient(cfg),
@@ -326,7 +332,7 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Admin, c.ArtifactSubmission, c.BackupCode, c.Badge, c.Category, c.ChainCursor,
 		c.ConsultationRequest, c.Credential, c.DeviceFingerprint, c.DeviceUserMapping,
-		c.EmailVerificationToken, c.Endorsement, c.FinalOffer, c.Passkey,
+		c.EmailVerificationToken, c.Endorsement, c.FinalOffer, c.IPGeoCache, c.Passkey,
 		c.PasswordResetToken, c.SecurityEvent, c.Session, c.SessionLock, c.SudoSession,
 		c.TOTPPendingToken, c.Tag, c.User, c.UserBadge, c.ValidationCase,
 		c.ValidationCaseLog,
@@ -341,7 +347,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Admin, c.ArtifactSubmission, c.BackupCode, c.Badge, c.Category, c.ChainCursor,
 		c.ConsultationRequest, c.Credential, c.DeviceFingerprint, c.DeviceUserMapping,
-		c.EmailVerificationToken, c.Endorsement, c.FinalOffer, c.Passkey,
+		c.EmailVerificationToken, c.Endorsement, c.FinalOffer, c.IPGeoCache, c.Passkey,
 		c.PasswordResetToken, c.SecurityEvent, c.Session, c.SessionLock, c.SudoSession,
 		c.TOTPPendingToken, c.Tag, c.User, c.UserBadge, c.ValidationCase,
 		c.ValidationCaseLog,
@@ -379,6 +385,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Endorsement.mutate(ctx, m)
 	case *FinalOfferMutation:
 		return c.FinalOffer.mutate(ctx, m)
+	case *IPGeoCacheMutation:
+		return c.IPGeoCache.mutate(ctx, m)
 	case *PasskeyMutation:
 		return c.Passkey.mutate(ctx, m)
 	case *PasswordResetTokenMutation:
@@ -2406,6 +2414,139 @@ func (c *FinalOfferClient) mutate(ctx context.Context, m *FinalOfferMutation) (V
 		return (&FinalOfferDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown FinalOffer mutation op: %q", m.Op())
+	}
+}
+
+// IPGeoCacheClient is a client for the IPGeoCache schema.
+type IPGeoCacheClient struct {
+	config
+}
+
+// NewIPGeoCacheClient returns a client for the IPGeoCache from the given config.
+func NewIPGeoCacheClient(c config) *IPGeoCacheClient {
+	return &IPGeoCacheClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `ipgeocache.Hooks(f(g(h())))`.
+func (c *IPGeoCacheClient) Use(hooks ...Hook) {
+	c.hooks.IPGeoCache = append(c.hooks.IPGeoCache, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `ipgeocache.Intercept(f(g(h())))`.
+func (c *IPGeoCacheClient) Intercept(interceptors ...Interceptor) {
+	c.inters.IPGeoCache = append(c.inters.IPGeoCache, interceptors...)
+}
+
+// Create returns a builder for creating a IPGeoCache entity.
+func (c *IPGeoCacheClient) Create() *IPGeoCacheCreate {
+	mutation := newIPGeoCacheMutation(c.config, OpCreate)
+	return &IPGeoCacheCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of IPGeoCache entities.
+func (c *IPGeoCacheClient) CreateBulk(builders ...*IPGeoCacheCreate) *IPGeoCacheCreateBulk {
+	return &IPGeoCacheCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *IPGeoCacheClient) MapCreateBulk(slice any, setFunc func(*IPGeoCacheCreate, int)) *IPGeoCacheCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &IPGeoCacheCreateBulk{err: fmt.Errorf("calling to IPGeoCacheClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*IPGeoCacheCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &IPGeoCacheCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for IPGeoCache.
+func (c *IPGeoCacheClient) Update() *IPGeoCacheUpdate {
+	mutation := newIPGeoCacheMutation(c.config, OpUpdate)
+	return &IPGeoCacheUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *IPGeoCacheClient) UpdateOne(_m *IPGeoCache) *IPGeoCacheUpdateOne {
+	mutation := newIPGeoCacheMutation(c.config, OpUpdateOne, withIPGeoCache(_m))
+	return &IPGeoCacheUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *IPGeoCacheClient) UpdateOneID(id int) *IPGeoCacheUpdateOne {
+	mutation := newIPGeoCacheMutation(c.config, OpUpdateOne, withIPGeoCacheID(id))
+	return &IPGeoCacheUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for IPGeoCache.
+func (c *IPGeoCacheClient) Delete() *IPGeoCacheDelete {
+	mutation := newIPGeoCacheMutation(c.config, OpDelete)
+	return &IPGeoCacheDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *IPGeoCacheClient) DeleteOne(_m *IPGeoCache) *IPGeoCacheDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *IPGeoCacheClient) DeleteOneID(id int) *IPGeoCacheDeleteOne {
+	builder := c.Delete().Where(ipgeocache.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &IPGeoCacheDeleteOne{builder}
+}
+
+// Query returns a query builder for IPGeoCache.
+func (c *IPGeoCacheClient) Query() *IPGeoCacheQuery {
+	return &IPGeoCacheQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeIPGeoCache},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a IPGeoCache entity by its id.
+func (c *IPGeoCacheClient) Get(ctx context.Context, id int) (*IPGeoCache, error) {
+	return c.Query().Where(ipgeocache.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *IPGeoCacheClient) GetX(ctx context.Context, id int) *IPGeoCache {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *IPGeoCacheClient) Hooks() []Hook {
+	return c.hooks.IPGeoCache
+}
+
+// Interceptors returns the client interceptors.
+func (c *IPGeoCacheClient) Interceptors() []Interceptor {
+	return c.inters.IPGeoCache
+}
+
+func (c *IPGeoCacheClient) mutate(ctx context.Context, m *IPGeoCacheMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&IPGeoCacheCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&IPGeoCacheUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&IPGeoCacheUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&IPGeoCacheDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown IPGeoCache mutation op: %q", m.Op())
 	}
 }
 
@@ -4666,15 +4807,17 @@ type (
 	hooks struct {
 		Admin, ArtifactSubmission, BackupCode, Badge, Category, ChainCursor,
 		ConsultationRequest, Credential, DeviceFingerprint, DeviceUserMapping,
-		EmailVerificationToken, Endorsement, FinalOffer, Passkey, PasswordResetToken,
-		SecurityEvent, Session, SessionLock, SudoSession, TOTPPendingToken, Tag, User,
-		UserBadge, ValidationCase, ValidationCaseLog []ent.Hook
+		EmailVerificationToken, Endorsement, FinalOffer, IPGeoCache, Passkey,
+		PasswordResetToken, SecurityEvent, Session, SessionLock, SudoSession,
+		TOTPPendingToken, Tag, User, UserBadge, ValidationCase,
+		ValidationCaseLog []ent.Hook
 	}
 	inters struct {
 		Admin, ArtifactSubmission, BackupCode, Badge, Category, ChainCursor,
 		ConsultationRequest, Credential, DeviceFingerprint, DeviceUserMapping,
-		EmailVerificationToken, Endorsement, FinalOffer, Passkey, PasswordResetToken,
-		SecurityEvent, Session, SessionLock, SudoSession, TOTPPendingToken, Tag, User,
-		UserBadge, ValidationCase, ValidationCaseLog []ent.Interceptor
+		EmailVerificationToken, Endorsement, FinalOffer, IPGeoCache, Passkey,
+		PasswordResetToken, SecurityEvent, Session, SessionLock, SudoSession,
+		TOTPPendingToken, Tag, User, UserBadge, ValidationCase,
+		ValidationCaseLog []ent.Interceptor
 	}
 )

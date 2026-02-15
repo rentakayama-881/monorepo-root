@@ -16,6 +16,7 @@ import (
 	"backend-gin/ent/emailverificationtoken"
 	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
+	"backend-gin/ent/ipgeocache"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/predicate"
@@ -61,6 +62,7 @@ const (
 	TypeEmailVerificationToken = "EmailVerificationToken"
 	TypeEndorsement            = "Endorsement"
 	TypeFinalOffer             = "FinalOffer"
+	TypeIPGeoCache             = "IPGeoCache"
 	TypePasskey                = "Passkey"
 	TypePasswordResetToken     = "PasswordResetToken"
 	TypeSecurityEvent          = "SecurityEvent"
@@ -10951,6 +10953,1006 @@ func (m *FinalOfferMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown FinalOffer edge %s", name)
+}
+
+// IPGeoCacheMutation represents an operation that mutates the IPGeoCache nodes in the graph.
+type IPGeoCacheMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	created_at    *time.Time
+	updated_at    *time.Time
+	deleted_at    *time.Time
+	ip_address    *string
+	country_code  *string
+	country_name  *string
+	city          *string
+	latitude      *float64
+	addlatitude   *float64
+	longitude     *float64
+	addlongitude  *float64
+	cached_at     *time.Time
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*IPGeoCache, error)
+	predicates    []predicate.IPGeoCache
+}
+
+var _ ent.Mutation = (*IPGeoCacheMutation)(nil)
+
+// ipgeocacheOption allows management of the mutation configuration using functional options.
+type ipgeocacheOption func(*IPGeoCacheMutation)
+
+// newIPGeoCacheMutation creates new mutation for the IPGeoCache entity.
+func newIPGeoCacheMutation(c config, op Op, opts ...ipgeocacheOption) *IPGeoCacheMutation {
+	m := &IPGeoCacheMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeIPGeoCache,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withIPGeoCacheID sets the ID field of the mutation.
+func withIPGeoCacheID(id int) ipgeocacheOption {
+	return func(m *IPGeoCacheMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *IPGeoCache
+		)
+		m.oldValue = func(ctx context.Context) (*IPGeoCache, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().IPGeoCache.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withIPGeoCache sets the old IPGeoCache of the mutation.
+func withIPGeoCache(node *IPGeoCache) ipgeocacheOption {
+	return func(m *IPGeoCacheMutation) {
+		m.oldValue = func(context.Context) (*IPGeoCache, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m IPGeoCacheMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m IPGeoCacheMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *IPGeoCacheMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *IPGeoCacheMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().IPGeoCache.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *IPGeoCacheMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *IPGeoCacheMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the IPGeoCache entity.
+// If the IPGeoCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IPGeoCacheMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *IPGeoCacheMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *IPGeoCacheMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *IPGeoCacheMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the IPGeoCache entity.
+// If the IPGeoCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IPGeoCacheMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *IPGeoCacheMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *IPGeoCacheMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *IPGeoCacheMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the IPGeoCache entity.
+// If the IPGeoCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IPGeoCacheMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *IPGeoCacheMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[ipgeocache.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *IPGeoCacheMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[ipgeocache.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *IPGeoCacheMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, ipgeocache.FieldDeletedAt)
+}
+
+// SetIPAddress sets the "ip_address" field.
+func (m *IPGeoCacheMutation) SetIPAddress(s string) {
+	m.ip_address = &s
+}
+
+// IPAddress returns the value of the "ip_address" field in the mutation.
+func (m *IPGeoCacheMutation) IPAddress() (r string, exists bool) {
+	v := m.ip_address
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIPAddress returns the old "ip_address" field's value of the IPGeoCache entity.
+// If the IPGeoCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IPGeoCacheMutation) OldIPAddress(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIPAddress is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIPAddress requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIPAddress: %w", err)
+	}
+	return oldValue.IPAddress, nil
+}
+
+// ResetIPAddress resets all changes to the "ip_address" field.
+func (m *IPGeoCacheMutation) ResetIPAddress() {
+	m.ip_address = nil
+}
+
+// SetCountryCode sets the "country_code" field.
+func (m *IPGeoCacheMutation) SetCountryCode(s string) {
+	m.country_code = &s
+}
+
+// CountryCode returns the value of the "country_code" field in the mutation.
+func (m *IPGeoCacheMutation) CountryCode() (r string, exists bool) {
+	v := m.country_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCountryCode returns the old "country_code" field's value of the IPGeoCache entity.
+// If the IPGeoCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IPGeoCacheMutation) OldCountryCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCountryCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCountryCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCountryCode: %w", err)
+	}
+	return oldValue.CountryCode, nil
+}
+
+// ClearCountryCode clears the value of the "country_code" field.
+func (m *IPGeoCacheMutation) ClearCountryCode() {
+	m.country_code = nil
+	m.clearedFields[ipgeocache.FieldCountryCode] = struct{}{}
+}
+
+// CountryCodeCleared returns if the "country_code" field was cleared in this mutation.
+func (m *IPGeoCacheMutation) CountryCodeCleared() bool {
+	_, ok := m.clearedFields[ipgeocache.FieldCountryCode]
+	return ok
+}
+
+// ResetCountryCode resets all changes to the "country_code" field.
+func (m *IPGeoCacheMutation) ResetCountryCode() {
+	m.country_code = nil
+	delete(m.clearedFields, ipgeocache.FieldCountryCode)
+}
+
+// SetCountryName sets the "country_name" field.
+func (m *IPGeoCacheMutation) SetCountryName(s string) {
+	m.country_name = &s
+}
+
+// CountryName returns the value of the "country_name" field in the mutation.
+func (m *IPGeoCacheMutation) CountryName() (r string, exists bool) {
+	v := m.country_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCountryName returns the old "country_name" field's value of the IPGeoCache entity.
+// If the IPGeoCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IPGeoCacheMutation) OldCountryName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCountryName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCountryName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCountryName: %w", err)
+	}
+	return oldValue.CountryName, nil
+}
+
+// ClearCountryName clears the value of the "country_name" field.
+func (m *IPGeoCacheMutation) ClearCountryName() {
+	m.country_name = nil
+	m.clearedFields[ipgeocache.FieldCountryName] = struct{}{}
+}
+
+// CountryNameCleared returns if the "country_name" field was cleared in this mutation.
+func (m *IPGeoCacheMutation) CountryNameCleared() bool {
+	_, ok := m.clearedFields[ipgeocache.FieldCountryName]
+	return ok
+}
+
+// ResetCountryName resets all changes to the "country_name" field.
+func (m *IPGeoCacheMutation) ResetCountryName() {
+	m.country_name = nil
+	delete(m.clearedFields, ipgeocache.FieldCountryName)
+}
+
+// SetCity sets the "city" field.
+func (m *IPGeoCacheMutation) SetCity(s string) {
+	m.city = &s
+}
+
+// City returns the value of the "city" field in the mutation.
+func (m *IPGeoCacheMutation) City() (r string, exists bool) {
+	v := m.city
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCity returns the old "city" field's value of the IPGeoCache entity.
+// If the IPGeoCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IPGeoCacheMutation) OldCity(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCity: %w", err)
+	}
+	return oldValue.City, nil
+}
+
+// ClearCity clears the value of the "city" field.
+func (m *IPGeoCacheMutation) ClearCity() {
+	m.city = nil
+	m.clearedFields[ipgeocache.FieldCity] = struct{}{}
+}
+
+// CityCleared returns if the "city" field was cleared in this mutation.
+func (m *IPGeoCacheMutation) CityCleared() bool {
+	_, ok := m.clearedFields[ipgeocache.FieldCity]
+	return ok
+}
+
+// ResetCity resets all changes to the "city" field.
+func (m *IPGeoCacheMutation) ResetCity() {
+	m.city = nil
+	delete(m.clearedFields, ipgeocache.FieldCity)
+}
+
+// SetLatitude sets the "latitude" field.
+func (m *IPGeoCacheMutation) SetLatitude(f float64) {
+	m.latitude = &f
+	m.addlatitude = nil
+}
+
+// Latitude returns the value of the "latitude" field in the mutation.
+func (m *IPGeoCacheMutation) Latitude() (r float64, exists bool) {
+	v := m.latitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLatitude returns the old "latitude" field's value of the IPGeoCache entity.
+// If the IPGeoCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IPGeoCacheMutation) OldLatitude(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLatitude is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLatitude requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLatitude: %w", err)
+	}
+	return oldValue.Latitude, nil
+}
+
+// AddLatitude adds f to the "latitude" field.
+func (m *IPGeoCacheMutation) AddLatitude(f float64) {
+	if m.addlatitude != nil {
+		*m.addlatitude += f
+	} else {
+		m.addlatitude = &f
+	}
+}
+
+// AddedLatitude returns the value that was added to the "latitude" field in this mutation.
+func (m *IPGeoCacheMutation) AddedLatitude() (r float64, exists bool) {
+	v := m.addlatitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLatitude clears the value of the "latitude" field.
+func (m *IPGeoCacheMutation) ClearLatitude() {
+	m.latitude = nil
+	m.addlatitude = nil
+	m.clearedFields[ipgeocache.FieldLatitude] = struct{}{}
+}
+
+// LatitudeCleared returns if the "latitude" field was cleared in this mutation.
+func (m *IPGeoCacheMutation) LatitudeCleared() bool {
+	_, ok := m.clearedFields[ipgeocache.FieldLatitude]
+	return ok
+}
+
+// ResetLatitude resets all changes to the "latitude" field.
+func (m *IPGeoCacheMutation) ResetLatitude() {
+	m.latitude = nil
+	m.addlatitude = nil
+	delete(m.clearedFields, ipgeocache.FieldLatitude)
+}
+
+// SetLongitude sets the "longitude" field.
+func (m *IPGeoCacheMutation) SetLongitude(f float64) {
+	m.longitude = &f
+	m.addlongitude = nil
+}
+
+// Longitude returns the value of the "longitude" field in the mutation.
+func (m *IPGeoCacheMutation) Longitude() (r float64, exists bool) {
+	v := m.longitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLongitude returns the old "longitude" field's value of the IPGeoCache entity.
+// If the IPGeoCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IPGeoCacheMutation) OldLongitude(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLongitude is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLongitude requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLongitude: %w", err)
+	}
+	return oldValue.Longitude, nil
+}
+
+// AddLongitude adds f to the "longitude" field.
+func (m *IPGeoCacheMutation) AddLongitude(f float64) {
+	if m.addlongitude != nil {
+		*m.addlongitude += f
+	} else {
+		m.addlongitude = &f
+	}
+}
+
+// AddedLongitude returns the value that was added to the "longitude" field in this mutation.
+func (m *IPGeoCacheMutation) AddedLongitude() (r float64, exists bool) {
+	v := m.addlongitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLongitude clears the value of the "longitude" field.
+func (m *IPGeoCacheMutation) ClearLongitude() {
+	m.longitude = nil
+	m.addlongitude = nil
+	m.clearedFields[ipgeocache.FieldLongitude] = struct{}{}
+}
+
+// LongitudeCleared returns if the "longitude" field was cleared in this mutation.
+func (m *IPGeoCacheMutation) LongitudeCleared() bool {
+	_, ok := m.clearedFields[ipgeocache.FieldLongitude]
+	return ok
+}
+
+// ResetLongitude resets all changes to the "longitude" field.
+func (m *IPGeoCacheMutation) ResetLongitude() {
+	m.longitude = nil
+	m.addlongitude = nil
+	delete(m.clearedFields, ipgeocache.FieldLongitude)
+}
+
+// SetCachedAt sets the "cached_at" field.
+func (m *IPGeoCacheMutation) SetCachedAt(t time.Time) {
+	m.cached_at = &t
+}
+
+// CachedAt returns the value of the "cached_at" field in the mutation.
+func (m *IPGeoCacheMutation) CachedAt() (r time.Time, exists bool) {
+	v := m.cached_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCachedAt returns the old "cached_at" field's value of the IPGeoCache entity.
+// If the IPGeoCache object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IPGeoCacheMutation) OldCachedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCachedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCachedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCachedAt: %w", err)
+	}
+	return oldValue.CachedAt, nil
+}
+
+// ResetCachedAt resets all changes to the "cached_at" field.
+func (m *IPGeoCacheMutation) ResetCachedAt() {
+	m.cached_at = nil
+}
+
+// Where appends a list predicates to the IPGeoCacheMutation builder.
+func (m *IPGeoCacheMutation) Where(ps ...predicate.IPGeoCache) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the IPGeoCacheMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *IPGeoCacheMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.IPGeoCache, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *IPGeoCacheMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *IPGeoCacheMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (IPGeoCache).
+func (m *IPGeoCacheMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *IPGeoCacheMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.created_at != nil {
+		fields = append(fields, ipgeocache.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, ipgeocache.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, ipgeocache.FieldDeletedAt)
+	}
+	if m.ip_address != nil {
+		fields = append(fields, ipgeocache.FieldIPAddress)
+	}
+	if m.country_code != nil {
+		fields = append(fields, ipgeocache.FieldCountryCode)
+	}
+	if m.country_name != nil {
+		fields = append(fields, ipgeocache.FieldCountryName)
+	}
+	if m.city != nil {
+		fields = append(fields, ipgeocache.FieldCity)
+	}
+	if m.latitude != nil {
+		fields = append(fields, ipgeocache.FieldLatitude)
+	}
+	if m.longitude != nil {
+		fields = append(fields, ipgeocache.FieldLongitude)
+	}
+	if m.cached_at != nil {
+		fields = append(fields, ipgeocache.FieldCachedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *IPGeoCacheMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case ipgeocache.FieldCreatedAt:
+		return m.CreatedAt()
+	case ipgeocache.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case ipgeocache.FieldDeletedAt:
+		return m.DeletedAt()
+	case ipgeocache.FieldIPAddress:
+		return m.IPAddress()
+	case ipgeocache.FieldCountryCode:
+		return m.CountryCode()
+	case ipgeocache.FieldCountryName:
+		return m.CountryName()
+	case ipgeocache.FieldCity:
+		return m.City()
+	case ipgeocache.FieldLatitude:
+		return m.Latitude()
+	case ipgeocache.FieldLongitude:
+		return m.Longitude()
+	case ipgeocache.FieldCachedAt:
+		return m.CachedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *IPGeoCacheMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case ipgeocache.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case ipgeocache.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case ipgeocache.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case ipgeocache.FieldIPAddress:
+		return m.OldIPAddress(ctx)
+	case ipgeocache.FieldCountryCode:
+		return m.OldCountryCode(ctx)
+	case ipgeocache.FieldCountryName:
+		return m.OldCountryName(ctx)
+	case ipgeocache.FieldCity:
+		return m.OldCity(ctx)
+	case ipgeocache.FieldLatitude:
+		return m.OldLatitude(ctx)
+	case ipgeocache.FieldLongitude:
+		return m.OldLongitude(ctx)
+	case ipgeocache.FieldCachedAt:
+		return m.OldCachedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown IPGeoCache field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *IPGeoCacheMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case ipgeocache.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case ipgeocache.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case ipgeocache.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case ipgeocache.FieldIPAddress:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIPAddress(v)
+		return nil
+	case ipgeocache.FieldCountryCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCountryCode(v)
+		return nil
+	case ipgeocache.FieldCountryName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCountryName(v)
+		return nil
+	case ipgeocache.FieldCity:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCity(v)
+		return nil
+	case ipgeocache.FieldLatitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLatitude(v)
+		return nil
+	case ipgeocache.FieldLongitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLongitude(v)
+		return nil
+	case ipgeocache.FieldCachedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCachedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown IPGeoCache field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *IPGeoCacheMutation) AddedFields() []string {
+	var fields []string
+	if m.addlatitude != nil {
+		fields = append(fields, ipgeocache.FieldLatitude)
+	}
+	if m.addlongitude != nil {
+		fields = append(fields, ipgeocache.FieldLongitude)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *IPGeoCacheMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case ipgeocache.FieldLatitude:
+		return m.AddedLatitude()
+	case ipgeocache.FieldLongitude:
+		return m.AddedLongitude()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *IPGeoCacheMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case ipgeocache.FieldLatitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLatitude(v)
+		return nil
+	case ipgeocache.FieldLongitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLongitude(v)
+		return nil
+	}
+	return fmt.Errorf("unknown IPGeoCache numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *IPGeoCacheMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(ipgeocache.FieldDeletedAt) {
+		fields = append(fields, ipgeocache.FieldDeletedAt)
+	}
+	if m.FieldCleared(ipgeocache.FieldCountryCode) {
+		fields = append(fields, ipgeocache.FieldCountryCode)
+	}
+	if m.FieldCleared(ipgeocache.FieldCountryName) {
+		fields = append(fields, ipgeocache.FieldCountryName)
+	}
+	if m.FieldCleared(ipgeocache.FieldCity) {
+		fields = append(fields, ipgeocache.FieldCity)
+	}
+	if m.FieldCleared(ipgeocache.FieldLatitude) {
+		fields = append(fields, ipgeocache.FieldLatitude)
+	}
+	if m.FieldCleared(ipgeocache.FieldLongitude) {
+		fields = append(fields, ipgeocache.FieldLongitude)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *IPGeoCacheMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *IPGeoCacheMutation) ClearField(name string) error {
+	switch name {
+	case ipgeocache.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	case ipgeocache.FieldCountryCode:
+		m.ClearCountryCode()
+		return nil
+	case ipgeocache.FieldCountryName:
+		m.ClearCountryName()
+		return nil
+	case ipgeocache.FieldCity:
+		m.ClearCity()
+		return nil
+	case ipgeocache.FieldLatitude:
+		m.ClearLatitude()
+		return nil
+	case ipgeocache.FieldLongitude:
+		m.ClearLongitude()
+		return nil
+	}
+	return fmt.Errorf("unknown IPGeoCache nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *IPGeoCacheMutation) ResetField(name string) error {
+	switch name {
+	case ipgeocache.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case ipgeocache.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case ipgeocache.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case ipgeocache.FieldIPAddress:
+		m.ResetIPAddress()
+		return nil
+	case ipgeocache.FieldCountryCode:
+		m.ResetCountryCode()
+		return nil
+	case ipgeocache.FieldCountryName:
+		m.ResetCountryName()
+		return nil
+	case ipgeocache.FieldCity:
+		m.ResetCity()
+		return nil
+	case ipgeocache.FieldLatitude:
+		m.ResetLatitude()
+		return nil
+	case ipgeocache.FieldLongitude:
+		m.ResetLongitude()
+		return nil
+	case ipgeocache.FieldCachedAt:
+		m.ResetCachedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown IPGeoCache field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *IPGeoCacheMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *IPGeoCacheMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *IPGeoCacheMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *IPGeoCacheMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *IPGeoCacheMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *IPGeoCacheMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *IPGeoCacheMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown IPGeoCache unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *IPGeoCacheMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown IPGeoCache edge %s", name)
 }
 
 // PasskeyMutation represents an operation that mutates the Passkey nodes in the graph.

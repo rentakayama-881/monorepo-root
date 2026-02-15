@@ -16,6 +16,7 @@ import (
 	"backend-gin/ent/emailverificationtoken"
 	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
+	"backend-gin/ent/ipgeocache"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/securityevent"
@@ -110,6 +111,7 @@ func checkColumn(t, c string) error {
 			emailverificationtoken.Table: emailverificationtoken.ValidColumn,
 			endorsement.Table:            endorsement.ValidColumn,
 			finaloffer.Table:             finaloffer.ValidColumn,
+			ipgeocache.Table:             ipgeocache.ValidColumn,
 			passkey.Table:                passkey.ValidColumn,
 			passwordresettoken.Table:     passwordresettoken.ValidColumn,
 			securityevent.Table:          securityevent.ValidColumn,

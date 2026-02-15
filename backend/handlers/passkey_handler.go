@@ -291,9 +291,10 @@ func (h *PasskeyHandler) BeginLogin(c *gin.Context) {
 // FinishLogin completes passkey login
 func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	var rawRequest struct {
-		Email      string          `json:"email"`
-		SessionID  string          `json:"session_id"`
-		Credential json.RawMessage `json:"credential"`
+		Email             string          `json:"email"`
+		SessionID         string          `json:"session_id"`
+		Credential        json.RawMessage `json:"credential"`
+		DeviceFingerprint string          `json:"device_fingerprint"`
 	}
 	if err := c.ShouldBindJSON(&rawRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -359,7 +360,7 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	)
 
 	// Generate tokens using auth service with Ent user
-	response, err := h.authService.LoginWithPasskeyEntCtx(c.Request.Context(), entUser, clientIP, userAgent)
+	response, err := h.authService.LoginWithPasskeyEntCtx(c.Request.Context(), entUser, clientIP, userAgent, rawRequest.DeviceFingerprint)
 	if err != nil {
 		h.handleError(c, err)
 		return

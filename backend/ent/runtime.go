@@ -16,6 +16,7 @@ import (
 	"backend-gin/ent/emailverificationtoken"
 	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
+	"backend-gin/ent/ipgeocache"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/schema"
@@ -494,6 +495,55 @@ func init() {
 	finaloffer.DefaultStatus = finalofferDescStatus.Default.(string)
 	// finaloffer.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	finaloffer.StatusValidator = finalofferDescStatus.Validators[0].(func(string) error)
+	ipgeocacheMixin := schema.IPGeoCache{}.Mixin()
+	ipgeocacheMixinFields0 := ipgeocacheMixin[0].Fields()
+	_ = ipgeocacheMixinFields0
+	ipgeocacheFields := schema.IPGeoCache{}.Fields()
+	_ = ipgeocacheFields
+	// ipgeocacheDescCreatedAt is the schema descriptor for created_at field.
+	ipgeocacheDescCreatedAt := ipgeocacheMixinFields0[0].Descriptor()
+	// ipgeocache.DefaultCreatedAt holds the default value on creation for the created_at field.
+	ipgeocache.DefaultCreatedAt = ipgeocacheDescCreatedAt.Default.(func() time.Time)
+	// ipgeocacheDescUpdatedAt is the schema descriptor for updated_at field.
+	ipgeocacheDescUpdatedAt := ipgeocacheMixinFields0[1].Descriptor()
+	// ipgeocache.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	ipgeocache.DefaultUpdatedAt = ipgeocacheDescUpdatedAt.Default.(func() time.Time)
+	// ipgeocache.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	ipgeocache.UpdateDefaultUpdatedAt = ipgeocacheDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// ipgeocacheDescIPAddress is the schema descriptor for ip_address field.
+	ipgeocacheDescIPAddress := ipgeocacheFields[0].Descriptor()
+	// ipgeocache.IPAddressValidator is a validator for the "ip_address" field. It is called by the builders before save.
+	ipgeocache.IPAddressValidator = func() func(string) error {
+		validators := ipgeocacheDescIPAddress.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(ip_address string) error {
+			for _, fn := range fns {
+				if err := fn(ip_address); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// ipgeocacheDescCountryCode is the schema descriptor for country_code field.
+	ipgeocacheDescCountryCode := ipgeocacheFields[1].Descriptor()
+	// ipgeocache.CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
+	ipgeocache.CountryCodeValidator = ipgeocacheDescCountryCode.Validators[0].(func(string) error)
+	// ipgeocacheDescCountryName is the schema descriptor for country_name field.
+	ipgeocacheDescCountryName := ipgeocacheFields[2].Descriptor()
+	// ipgeocache.CountryNameValidator is a validator for the "country_name" field. It is called by the builders before save.
+	ipgeocache.CountryNameValidator = ipgeocacheDescCountryName.Validators[0].(func(string) error)
+	// ipgeocacheDescCity is the schema descriptor for city field.
+	ipgeocacheDescCity := ipgeocacheFields[3].Descriptor()
+	// ipgeocache.CityValidator is a validator for the "city" field. It is called by the builders before save.
+	ipgeocache.CityValidator = ipgeocacheDescCity.Validators[0].(func(string) error)
+	// ipgeocacheDescCachedAt is the schema descriptor for cached_at field.
+	ipgeocacheDescCachedAt := ipgeocacheFields[6].Descriptor()
+	// ipgeocache.DefaultCachedAt holds the default value on creation for the cached_at field.
+	ipgeocache.DefaultCachedAt = ipgeocacheDescCachedAt.Default.(func() time.Time)
 	passkeyMixin := schema.Passkey{}.Mixin()
 	passkeyMixinFields0 := passkeyMixin[0].Fields()
 	_ = passkeyMixinFields0

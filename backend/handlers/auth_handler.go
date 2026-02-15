@@ -110,8 +110,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		Password: req.Password,
 	}
 
-	// Use new session-based login
-	response, err := h.authService.LoginWithSessionCtx(c.Request.Context(), input, c.ClientIP(), c.GetHeader("User-Agent"))
+	// Use new session-based login with device fingerprint
+	response, err := h.authService.LoginWithSessionCtx(c.Request.Context(), input, c.ClientIP(), c.GetHeader("User-Agent"), req.DeviceFingerprint)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -412,8 +412,9 @@ func (h *AuthHandler) LoginTOTP(c *gin.Context) {
 	}
 
 	var req struct {
-		TOTPPending string `json:"totp_pending" binding:"required"`
-		Code        string `json:"code" binding:"required"`
+		TOTPPending       string `json:"totp_pending" binding:"required"`
+		Code              string `json:"code" binding:"required"`
+		DeviceFingerprint string `json:"device_fingerprint"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Debug("Invalid TOTP login request", zap.Error(err))
@@ -421,7 +422,7 @@ func (h *AuthHandler) LoginTOTP(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.CompleteTOTPLoginCtx(c.Request.Context(), req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"))
+	response, err := h.authService.CompleteTOTPLoginCtx(c.Request.Context(), req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"), req.DeviceFingerprint)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -453,8 +454,9 @@ func (h *AuthHandler) LoginBackupCode(c *gin.Context) {
 	}
 
 	var req struct {
-		TOTPPending string `json:"totp_pending" binding:"required"`
-		Code        string `json:"code" binding:"required"`
+		TOTPPending       string `json:"totp_pending" binding:"required"`
+		Code              string `json:"code" binding:"required"`
+		DeviceFingerprint string `json:"device_fingerprint"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Debug("Invalid backup code login request", zap.Error(err))
@@ -462,7 +464,7 @@ func (h *AuthHandler) LoginBackupCode(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.CompleteTOTPLoginWithBackupCodeCtx(c.Request.Context(), req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"))
+	response, err := h.authService.CompleteTOTPLoginWithBackupCodeCtx(c.Request.Context(), req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"), req.DeviceFingerprint)
 	if err != nil {
 		handleError(c, err)
 		return

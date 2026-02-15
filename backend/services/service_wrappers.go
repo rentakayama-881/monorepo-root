@@ -53,23 +53,23 @@ func (w *AuthServiceWrapper) RegisterWithDevice(input validators.RegisterInput, 
 }
 
 // LoginWithSessionCtx delegates to EntAuthService with request context.
-func (w *AuthServiceWrapper) LoginWithSessionCtx(ctx context.Context, input validators.LoginInput, ip, userAgent string) (*LoginResponse, error) {
-	return w.ent.LoginWithSession(ctx, input, ip, userAgent)
+func (w *AuthServiceWrapper) LoginWithSessionCtx(ctx context.Context, input validators.LoginInput, ip, userAgent, deviceFingerprint string) (*LoginResponse, error) {
+	return w.ent.LoginWithSession(ctx, input, ip, userAgent, deviceFingerprint)
 }
 
 // LoginWithSession delegates to EntAuthService with context
-func (w *AuthServiceWrapper) LoginWithSession(input validators.LoginInput, ip, userAgent string) (*LoginResponse, error) {
-	return w.LoginWithSessionCtx(context.Background(), input, ip, userAgent)
+func (w *AuthServiceWrapper) LoginWithSession(input validators.LoginInput, ip, userAgent, deviceFingerprint string) (*LoginResponse, error) {
+	return w.LoginWithSessionCtx(context.Background(), input, ip, userAgent, deviceFingerprint)
 }
 
 // LoginWithPasskeyEntCtx uses ent.User directly with request context.
-func (w *AuthServiceWrapper) LoginWithPasskeyEntCtx(ctx context.Context, user *ent.User, ipAddress, userAgent string) (*LoginResponse, error) {
-	return w.ent.LoginWithPasskey(ctx, user, ipAddress, userAgent)
+func (w *AuthServiceWrapper) LoginWithPasskeyEntCtx(ctx context.Context, user *ent.User, ipAddress, userAgent, deviceFingerprint string) (*LoginResponse, error) {
+	return w.ent.LoginWithPasskey(ctx, user, ipAddress, userAgent, deviceFingerprint)
 }
 
 // LoginWithPasskeyEnt uses ent.User directly
-func (w *AuthServiceWrapper) LoginWithPasskeyEnt(user *ent.User, ipAddress, userAgent string) (*LoginResponse, error) {
-	return w.LoginWithPasskeyEntCtx(context.Background(), user, ipAddress, userAgent)
+func (w *AuthServiceWrapper) LoginWithPasskeyEnt(user *ent.User, ipAddress, userAgent, deviceFingerprint string) (*LoginResponse, error) {
+	return w.LoginWithPasskeyEntCtx(context.Background(), user, ipAddress, userAgent, deviceFingerprint)
 }
 
 // RequestVerificationCtx creates verification token and queues email if account exists.
@@ -178,23 +178,23 @@ func (w *AuthServiceWrapper) ResetPassword(token, newPassword string) error {
 }
 
 // CompleteTOTPLoginCtx delegates to EntAuthService with request context.
-func (w *AuthServiceWrapper) CompleteTOTPLoginCtx(ctx context.Context, pendingToken, totpCode, ipAddress, userAgent string) (*LoginResponse, error) {
-	return w.ent.CompleteTOTPLogin(ctx, pendingToken, totpCode, ipAddress, userAgent)
+func (w *AuthServiceWrapper) CompleteTOTPLoginCtx(ctx context.Context, pendingToken, totpCode, ipAddress, userAgent, deviceFingerprint string) (*LoginResponse, error) {
+	return w.ent.CompleteTOTPLogin(ctx, pendingToken, totpCode, ipAddress, userAgent, deviceFingerprint)
 }
 
 // CompleteTOTPLogin delegates to EntAuthService
-func (w *AuthServiceWrapper) CompleteTOTPLogin(pendingToken, totpCode, ipAddress, userAgent string) (*LoginResponse, error) {
-	return w.CompleteTOTPLoginCtx(context.Background(), pendingToken, totpCode, ipAddress, userAgent)
+func (w *AuthServiceWrapper) CompleteTOTPLogin(pendingToken, totpCode, ipAddress, userAgent, deviceFingerprint string) (*LoginResponse, error) {
+	return w.CompleteTOTPLoginCtx(context.Background(), pendingToken, totpCode, ipAddress, userAgent, deviceFingerprint)
 }
 
 // CompleteTOTPLoginWithBackupCodeCtx delegates to EntAuthService with request context.
-func (w *AuthServiceWrapper) CompleteTOTPLoginWithBackupCodeCtx(ctx context.Context, pendingToken, backupCode, ipAddress, userAgent string) (*LoginResponse, error) {
-	return w.ent.CompleteTOTPLoginWithBackupCode(ctx, pendingToken, backupCode, ipAddress, userAgent)
+func (w *AuthServiceWrapper) CompleteTOTPLoginWithBackupCodeCtx(ctx context.Context, pendingToken, backupCode, ipAddress, userAgent, deviceFingerprint string) (*LoginResponse, error) {
+	return w.ent.CompleteTOTPLoginWithBackupCode(ctx, pendingToken, backupCode, ipAddress, userAgent, deviceFingerprint)
 }
 
 // CompleteTOTPLoginWithBackupCode delegates to EntAuthService
-func (w *AuthServiceWrapper) CompleteTOTPLoginWithBackupCode(pendingToken, backupCode, ipAddress, userAgent string) (*LoginResponse, error) {
-	return w.CompleteTOTPLoginWithBackupCodeCtx(context.Background(), pendingToken, backupCode, ipAddress, userAgent)
+func (w *AuthServiceWrapper) CompleteTOTPLoginWithBackupCode(pendingToken, backupCode, ipAddress, userAgent, deviceFingerprint string) (*LoginResponse, error) {
+	return w.CompleteTOTPLoginWithBackupCodeCtx(context.Background(), pendingToken, backupCode, ipAddress, userAgent, deviceFingerprint)
 }
 
 // ============================================================================

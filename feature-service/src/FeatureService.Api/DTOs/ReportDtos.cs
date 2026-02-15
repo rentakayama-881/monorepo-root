@@ -100,7 +100,9 @@ public record DeviceBanDto(
     bool IsActive,
     uint BannedByAdminId,
     DateTime CreatedAt,
-    DateTime? UnbannedAt
+    DateTime? UnbannedAt,
+    bool IsPermanent = true,
+    DateTime? ExpiresAt = null
 );
 
 /// <summary>
@@ -111,7 +113,7 @@ public record CheckDeviceBanRequest(string DeviceFingerprint);
 /// <summary>
 /// Response for device ban check
 /// </summary>
-public record CheckDeviceBanResponse(bool IsBanned, string? Reason, DateTime? BannedAt);
+public record CheckDeviceBanResponse(bool IsBanned, string? Message, DateTime? BannedAt);
 
 /// <summary>
 /// Request to unban a device

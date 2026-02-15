@@ -52,7 +52,7 @@ type SudoVerifyResult struct {
 // Security tracker constants
 const (
 	// MaxAccountsPerDevice is the maximum number of accounts per device
-	MaxAccountsPerDevice = 3
+	MaxAccountsPerDevice = 2
 
 	// DeviceCleanupInterval is how often to clean up old device records
 	DeviceCleanupInterval = 1 * time.Hour
@@ -210,6 +210,9 @@ var (
 	// deviceTracker is the global device tracker instance
 	deviceTracker DeviceTrackerInterface
 
+	// deviceBanChecker is the global device ban checker instance (Feature Service integration)
+	deviceBanChecker *FeatureServiceDeviceBanChecker
+
 	// securityAudit is the global security audit service instance
 	securityAudit SecurityAuditInterface
 
@@ -219,9 +222,10 @@ var (
 
 // DeviceTrackerInterface defines device tracking operations
 type DeviceTrackerInterface interface {
-	IsDeviceBlocked(fingerprintHash string) (bool, string)
-	CanRegisterAccount(fingerprintHash, ip, userAgent string) (bool, int, error)
-	RecordDeviceRegistration(userID uint, fingerprintHash, ip, userAgent string) error
+	IsDeviceBlocked(ctx context.Context, fingerprintHash string) (bool, string)
+	CanRegisterAccount(ctx context.Context, fingerprintHash, ip, userAgent string) (bool, int, error)
+	RecordDeviceRegistration(ctx context.Context, userID int, fingerprintHash, ip, userAgent string) error
+	RecordDeviceLogin(ctx context.Context, userID int, fingerprintHash, ip, userAgent string) error
 }
 
 // SecurityAuditInterface defines security audit operations
@@ -267,6 +271,11 @@ func SetSecurityAudit(audit SecurityAuditInterface) {
 // SetLoginTracker sets the global login tracker instance
 func SetLoginTracker(tracker LoginTrackerInterface) {
 	loginTracker = tracker
+}
+
+// SetDeviceBanChecker sets the global device ban checker instance
+func SetDeviceBanChecker(checker *FeatureServiceDeviceBanChecker) {
+	deviceBanChecker = checker
 }
 
 // HashFingerprint creates a SHA256 hash of device fingerprint components

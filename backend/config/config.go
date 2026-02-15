@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	JWTKey      []byte
-	JWTIssuer   string
-	JWTAudience string
+	JWTKey        []byte
+	JWTIssuer     string
+	JWTAudience   string
+	ServiceToken  string
 
 	FeatureServiceURL string
 )
@@ -39,5 +40,16 @@ func InitConfig() {
 			log.Fatal("ERROR: FEATURE_SERVICE_URL is not set in environment variables (required in production/staging)")
 		}
 		FeatureServiceURL = "http://localhost:5000" // Default for development only
+	}
+
+	// Service token for Feature Service authentication
+	ServiceToken = strings.TrimSpace(os.Getenv("SERVICE_TOKEN"))
+	if ServiceToken == "" {
+		env := strings.ToLower(strings.TrimSpace(os.Getenv("APP_ENV")))
+		if env == "production" || env == "staging" {
+			log.Fatal("ERROR: SERVICE_TOKEN is not set in environment variables (required for secure Feature Service communication)")
+		}
+		// Default for development only - should be set in production
+		ServiceToken = "dev-service-token"
 	}
 }

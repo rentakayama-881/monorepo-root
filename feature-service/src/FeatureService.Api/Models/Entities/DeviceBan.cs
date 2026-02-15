@@ -85,6 +85,18 @@ public class DeviceBan
     [BsonElement("unbanReason")]
     public string? UnbanReason { get; set; }
 
+    /// <summary>
+    /// Whether the ban is permanent (true) or temporary (false)
+    /// </summary>
+    [BsonElement("isPermanent")]
+    public bool IsPermanent { get; set; } = true;
+
+    /// <summary>
+    /// Expiration date for temporary bans (null if permanent)
+    /// </summary>
+    [BsonElement("expiresAt")]
+    public DateTime? ExpiresAt { get; set; }
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

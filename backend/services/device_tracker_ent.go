@@ -29,6 +29,8 @@ var entDeviceTracker *EntDeviceTracker
 // InitEntDeviceTracker initializes the global Ent device tracker
 func InitEntDeviceTracker() {
 	entDeviceTracker = NewEntDeviceTracker()
+	// Set the global tracker for use in other services
+	SetDeviceTracker(entDeviceTracker)
 	logger.Info("Ent device tracker initialized")
 }
 
@@ -192,8 +194,14 @@ func (d *EntDeviceTracker) RecordDeviceRegistration(ctx context.Context, userID 
 		SetLastSeenAt(now).
 		Save(ctx)
 	if err != nil {
-		// Ignore duplicate error
-		logger.Warn("Failed to create device-user mapping (may be duplicate)", zap.Error(err))
+		if !ent.IsConstraintError(err) {
+			_ = tx.Rollback()
+			return err
+		}
+		// Duplicate mapping already exists, safe to ignore
+		logger.Debug("Device-user mapping already exists",
+			zap.Int("user_id", userID),
+			zap.String("fingerprint", fingerprintHash[:16]+"..."))
 	}
 
 	if err := tx.Commit(); err != nil {

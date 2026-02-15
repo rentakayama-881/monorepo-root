@@ -164,6 +164,18 @@ func (f FinalOfferFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FinalOfferMutation", m)
 }
 
+// The IPGeoCacheFunc type is an adapter to allow the use of ordinary
+// function as IPGeoCache mutator.
+type IPGeoCacheFunc func(context.Context, *ent.IPGeoCacheMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f IPGeoCacheFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.IPGeoCacheMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IPGeoCacheMutation", m)
+}
+
 // The PasskeyFunc type is an adapter to allow the use of ordinary
 // function as Passkey mutator.
 type PasskeyFunc func(context.Context, *ent.PasskeyMutation) (ent.Value, error)

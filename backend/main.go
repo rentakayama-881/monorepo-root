@@ -303,6 +303,17 @@ func main() {
 	}
 
 	config.InitConfig()
+
+	// Initialize device tracker (must be before auth service)
+	services.InitEntDeviceTracker()
+
+	// Initialize geo lookup service for impossible travel detection
+	services.InitGeoLookupService()
+
+	// Initialize Feature Service device ban checker
+	deviceBanChecker := services.NewFeatureServiceDeviceBanChecker(config.FeatureServiceURL, config.ServiceToken)
+	services.SetDeviceBanChecker(deviceBanChecker)
+
 	// Initialize services (Ent)
 	services.InitEmailRateLimiter()
 	authEntService := services.NewEntAuthService()

@@ -46,43 +46,66 @@ func strVal(s *string) string {
 // RegisterWithDevice registers a new user with device fingerprint tracking
 func (s *EntAuthService) RegisterWithDevice(ctx context.Context, input validators.RegisterInput, deviceFingerprint, ip, userAgent string) (*RegisterResponse, error) {
 	// Check device limit if fingerprint provided
-	if deviceFingerprint != "" && deviceTracker != nil {
-		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
-
-		// Check if device is blocked
-		if blocked, reason := deviceTracker.IsDeviceBlocked(fingerprintHash); blocked {
-			if securityAudit != nil {
-				securityAudit.LogEvent(SecurityEvent{
-					Email:     input.Email,
-					EventType: "registration_device_blocked",
-					IPAddress: ip,
-					UserAgent: userAgent,
-					Success:   false,
-					Details:   reason,
-					Severity:  "warning",
-				})
+	if deviceFingerprint != "" {
+		// Check Feature Service admin bans first (highest priority)
+		if deviceBanChecker != nil {
+			if banned, reason, err := deviceBanChecker.IsDeviceBanned(ctx, deviceFingerprint); banned {
+				if securityAudit != nil {
+					securityAudit.LogEvent(SecurityEvent{
+						Email:     input.Email,
+						EventType: "registration_device_banned",
+						IPAddress: ip,
+						UserAgent: userAgent,
+						Success:   false,
+						Details:   "Device banned by admin: " + reason,
+						Severity:  "warning",
+					})
+				}
+				return nil, apperrors.ErrDeviceBlocked
+			} else if err != nil {
+				logger.Debug("Device ban check error (will continue)", zap.Error(err))
 			}
-			return nil, apperrors.ErrDeviceBlocked
 		}
 
-		// Check device account limit
-		allowed, count, err := deviceTracker.CanRegisterAccount(fingerprintHash, ip, userAgent)
-		if err != nil {
-			logger.Warn("Failed to check device limit", zap.Error(err))
-		} else if !allowed {
-			if securityAudit != nil {
-				securityAudit.LogEvent(SecurityEvent{
-					Email:     input.Email,
-					EventType: "registration_device_limit",
-					IPAddress: ip,
-					UserAgent: userAgent,
-					Success:   false,
-					Details:   fmt.Sprintf("Device already has %d accounts (max %d)", count, MaxAccountsPerDevice),
-					Severity:  "warning",
-				})
+		// Check PostgreSQL device tracker
+		if deviceTracker != nil {
+			fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+
+			// Check if device is blocked
+			if blocked, reason := deviceTracker.IsDeviceBlocked(ctx, fingerprintHash); blocked {
+				if securityAudit != nil {
+					securityAudit.LogEvent(SecurityEvent{
+						Email:     input.Email,
+						EventType: "registration_device_blocked",
+						IPAddress: ip,
+						UserAgent: userAgent,
+						Success:   false,
+						Details:   reason,
+						Severity:  "warning",
+					})
+				}
+				return nil, apperrors.ErrDeviceBlocked
 			}
-			return nil, apperrors.ErrDeviceLimitReached.WithDetails(
-				fmt.Sprintf("Perangkat ini sudah memiliki %d akun terdaftar (maksimal %d)", count, MaxAccountsPerDevice))
+
+			// Check device account limit
+			allowed, count, err := deviceTracker.CanRegisterAccount(ctx, fingerprintHash, ip, userAgent)
+			if err != nil {
+				logger.Warn("Failed to check device limit", zap.Error(err))
+			} else if !allowed {
+				if securityAudit != nil {
+					securityAudit.LogEvent(SecurityEvent{
+						Email:     input.Email,
+						EventType: "registration_device_limit",
+						IPAddress: ip,
+						UserAgent: userAgent,
+						Success:   false,
+						Details:   fmt.Sprintf("Device already has %d accounts (max %d)", count, MaxAccountsPerDevice),
+						Severity:  "warning",
+					})
+				}
+				return nil, apperrors.ErrDeviceLimitReached.WithDetails(
+					fmt.Sprintf("Perangkat ini sudah memiliki %d akun terdaftar (maksimal %d)", count, MaxAccountsPerDevice))
+			}
 		}
 	}
 
@@ -95,7 +118,7 @@ func (s *EntAuthService) RegisterWithDevice(ctx context.Context, input validator
 	// Record device registration if successful
 	if deviceFingerprint != "" && deviceTracker != nil && response != nil {
 		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
-		if err := deviceTracker.RecordDeviceRegistration(response.UserID, fingerprintHash, ip, userAgent); err != nil {
+		if err := deviceTracker.RecordDeviceRegistration(ctx, int(response.UserID), fingerprintHash, ip, userAgent); err != nil {
 			logger.Warn("Failed to record device registration", zap.Error(err))
 		}
 	}
@@ -239,7 +262,7 @@ func (s *EntAuthService) Register(ctx context.Context, input validators.Register
 }
 
 // LoginWithSession authenticates a user and creates a session with token pair
-func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.LoginInput, ipAddress, userAgent string) (*LoginResponse, error) {
+func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.LoginInput, ipAddress, userAgent, deviceFingerprint string) (*LoginResponse, error) {
 	// Validate input
 	if err := input.Validate(); err != nil {
 		return nil, err
@@ -307,6 +330,53 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 		First(ctx)
 	if err == nil && lock.ExpiresAt.After(time.Now()) {
 		return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04"))
+	}
+
+	// Device ban checks BEFORE password verification:
+	// 1. Avoids expensive bcrypt on banned devices
+	// 2. Prevents banned devices from testing passwords (info leak)
+	// Order: Feature Service admin bans (highest priority) → local device tracker
+	if deviceFingerprint != "" {
+		// Check Feature Service admin bans first (highest priority)
+		if deviceBanChecker != nil {
+			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, deviceFingerprint); banned {
+				if securityAudit != nil {
+					securityAudit.LogEvent(SecurityEvent{
+						Email:     email,
+						EventType: "login_device_banned",
+						IPAddress: ipAddress,
+						UserAgent: userAgent,
+						Success:   false,
+						Details:   "Device banned by admin: " + reason,
+						Severity:  "warning",
+					})
+				}
+				return nil, apperrors.ErrDeviceBlocked
+			} else if banErr != nil {
+				logger.Debug("Device ban check error (will continue)", zap.Error(banErr))
+			}
+		}
+
+		// Check PostgreSQL device tracker
+		if deviceTracker != nil {
+			fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+
+			// Check if device is blocked
+			if blocked, reason := deviceTracker.IsDeviceBlocked(ctx, fingerprintHash); blocked {
+				if securityAudit != nil {
+					securityAudit.LogEvent(SecurityEvent{
+						Email:     email,
+						EventType: "login_device_blocked",
+						IPAddress: ipAddress,
+						UserAgent: userAgent,
+						Success:   false,
+						Details:   reason,
+						Severity:  "warning",
+					})
+				}
+				return nil, apperrors.ErrDeviceBlocked
+			}
+		}
 	}
 
 	// Check password
@@ -380,6 +450,14 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 		return nil, err
 	}
 
+	// Record device login if fingerprint provided
+	if deviceFingerprint != "" && deviceTracker != nil {
+		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+		if err := deviceTracker.RecordDeviceLogin(ctx, u.ID, fingerprintHash, ipAddress, userAgent); err != nil {
+			logger.Warn("Failed to record device login", zap.Error(err))
+		}
+	}
+
 	// Record successful login
 	if loginTracker != nil {
 		// Convert Ent user to models.User for login tracker
@@ -408,23 +486,13 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 }
 
 // LoginWithPasskey creates a session for a user authenticated via passkey
-func (s *EntAuthService) LoginWithPasskey(ctx context.Context, u *ent.User, ipAddress, userAgent string) (*LoginResponse, error) {
+func (s *EntAuthService) LoginWithPasskey(ctx context.Context, u *ent.User, ipAddress, userAgent, deviceFingerprint string) (*LoginResponse, error) {
 	logger.Info("LoginWithPasskey called",
 		zap.Int("user_id", u.ID),
 		zap.String("email", u.Email),
 		zap.Bool("email_verified", u.EmailVerified),
 		zap.String("ip", ipAddress),
 	)
-
-	// Check if account is locked
-	lock, err := s.client.SessionLock.
-		Query().
-		Where(sessionlock.UserIDEQ(u.ID)).
-		Order(ent.Desc(sessionlock.FieldCreatedAt)).
-		First(ctx)
-	if err == nil && lock.ExpiresAt.After(time.Now()) {
-		return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04"))
-	}
 
 	// Re-fetch fresh user data
 	freshUser, err := s.client.User.Get(ctx, u.ID)
@@ -433,12 +501,72 @@ func (s *EntAuthService) LoginWithPasskey(ctx context.Context, u *ent.User, ipAd
 		return nil, apperrors.ErrInternalServer
 	}
 
+	// Check if account is locked in database (brute force, impossible travel, etc.)
+	if freshUser.LockedUntil != nil && freshUser.LockedUntil.After(time.Now()) {
+		remaining := time.Until(*freshUser.LockedUntil)
+		reason := freshUser.LockReason
+		return nil, apperrors.ErrAccountLockedBruteForce.WithDetails(
+			fmt.Sprintf("Akun dikunci selama %s. Alasan: %s", formatDuration(remaining), reason))
+	}
+
+	// Check session lock (legacy)
+	lock, err := s.client.SessionLock.
+		Query().
+		Where(sessionlock.UserIDEQ(freshUser.ID)).
+		Order(ent.Desc(sessionlock.FieldCreatedAt)).
+		First(ctx)
+	if err == nil && lock.ExpiresAt.After(time.Now()) {
+		return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04"))
+	}
+
 	if !freshUser.EmailVerified {
 		logger.Warn("Email not verified for passkey login",
 			zap.Int("user_id", freshUser.ID),
 			zap.String("email", freshUser.Email),
 		)
 		return nil, apperrors.ErrEmailNotVerified
+	}
+
+	// Check device status if fingerprint provided
+	if deviceFingerprint != "" {
+		// Check Feature Service admin bans (highest priority)
+		if deviceBanChecker != nil {
+			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, deviceFingerprint); banned {
+				if securityAudit != nil {
+					securityAudit.LogEvent(SecurityEvent{
+						Email:     freshUser.Email,
+						EventType: "passkey_login_device_banned",
+						IPAddress: ipAddress,
+						UserAgent: userAgent,
+						Success:   false,
+						Details:   "Device banned by admin: " + reason,
+						Severity:  "warning",
+					})
+				}
+				return nil, apperrors.ErrDeviceBlocked
+			} else if banErr != nil {
+				logger.Debug("Device ban check error (will continue)", zap.Error(banErr))
+			}
+		}
+
+		// Check PostgreSQL device tracker
+		if deviceTracker != nil {
+			fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+			if blocked, reason := deviceTracker.IsDeviceBlocked(ctx, fingerprintHash); blocked {
+				if securityAudit != nil {
+					securityAudit.LogEvent(SecurityEvent{
+						Email:     freshUser.Email,
+						EventType: "passkey_login_device_blocked",
+						IPAddress: ipAddress,
+						UserAgent: userAgent,
+						Success:   false,
+						Details:   reason,
+						Severity:  "warning",
+					})
+				}
+				return nil, apperrors.ErrDeviceBlocked
+			}
+		}
 	}
 
 	username := ""
@@ -451,6 +579,14 @@ func (s *EntAuthService) LoginWithPasskey(ctx context.Context, u *ent.User, ipAd
 	tokenPair, err := sessionService.CreateSession(ctx, freshUser, ipAddress, userAgent)
 	if err != nil {
 		return nil, err
+	}
+
+	// Record device login if fingerprint provided
+	if deviceFingerprint != "" && deviceTracker != nil {
+		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+		if err := deviceTracker.RecordDeviceLogin(ctx, freshUser.ID, fingerprintHash, ipAddress, userAgent); err != nil {
+			logger.Warn("Failed to record device login for passkey", zap.Error(err))
+		}
 	}
 
 	logger.Info("User logged in via passkey",
@@ -690,7 +826,7 @@ func (s *EntAuthService) ResetPassword(ctx context.Context, token, newPassword s
 }
 
 // CompleteTOTPLogin completes login after TOTP verification
-func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, totpCode string, ipAddress, userAgent string) (*LoginResponse, error) {
+func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, totpCode string, ipAddress, userAgent, deviceFingerprint string) (*LoginResponse, error) {
 	// Validate pending token and get user
 	u, pending, err := s.validateTOTPPendingToken(ctx, pendingToken)
 	if err != nil {
@@ -721,6 +857,45 @@ func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, to
 		First(ctx)
 	if err == nil && lock.ExpiresAt.After(time.Now()) {
 		return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04"))
+	}
+
+	// Check device status if fingerprint provided
+	if deviceFingerprint != "" {
+		if deviceBanChecker != nil {
+			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, deviceFingerprint); banned {
+				if securityAudit != nil {
+					securityAudit.LogEvent(SecurityEvent{
+						Email:     u.Email,
+						EventType: "totp_login_device_banned",
+						IPAddress: ipAddress,
+						UserAgent: userAgent,
+						Success:   false,
+						Details:   "Device banned by admin: " + reason,
+						Severity:  "warning",
+					})
+				}
+				return nil, apperrors.ErrDeviceBlocked
+			} else if banErr != nil {
+				logger.Debug("Device ban check error (will continue)", zap.Error(banErr))
+			}
+		}
+		if deviceTracker != nil {
+			fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+			if blocked, reason := deviceTracker.IsDeviceBlocked(ctx, fingerprintHash); blocked {
+				if securityAudit != nil {
+					securityAudit.LogEvent(SecurityEvent{
+						Email:     u.Email,
+						EventType: "totp_login_device_blocked",
+						IPAddress: ipAddress,
+						UserAgent: userAgent,
+						Success:   false,
+						Details:   reason,
+						Severity:  "warning",
+					})
+				}
+				return nil, apperrors.ErrDeviceBlocked
+			}
+		}
 	}
 
 	// Verify TOTP code using Ent-based TOTP service
@@ -756,6 +931,14 @@ func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, to
 		return nil, err
 	}
 
+	// Record device login if fingerprint provided
+	if deviceFingerprint != "" && deviceTracker != nil {
+		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+		if err := deviceTracker.RecordDeviceLogin(ctx, u.ID, fingerprintHash, ipAddress, userAgent); err != nil {
+			logger.Warn("Failed to record device login for TOTP", zap.Error(err))
+		}
+	}
+
 	// Record successful login
 	if loginTracker != nil {
 		_ = loginTracker.RecordSuccessfulLogin(entUserToModel(u), ipAddress)
@@ -788,7 +971,7 @@ func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, to
 }
 
 // CompleteTOTPLoginWithBackupCode completes login using a backup code instead of TOTP
-func (s *EntAuthService) CompleteTOTPLoginWithBackupCode(ctx context.Context, pendingToken, backupCode string, ipAddress, userAgent string) (*LoginResponse, error) {
+func (s *EntAuthService) CompleteTOTPLoginWithBackupCode(ctx context.Context, pendingToken, backupCode string, ipAddress, userAgent, deviceFingerprint string) (*LoginResponse, error) {
 	// Validate pending token and get user
 	u, pending, err := s.validateTOTPPendingToken(ctx, pendingToken)
 	if err != nil {
@@ -819,6 +1002,45 @@ func (s *EntAuthService) CompleteTOTPLoginWithBackupCode(ctx context.Context, pe
 		First(ctx)
 	if err == nil && lock.ExpiresAt.After(time.Now()) {
 		return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04"))
+	}
+
+	// Check device status if fingerprint provided
+	if deviceFingerprint != "" {
+		if deviceBanChecker != nil {
+			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, deviceFingerprint); banned {
+				if securityAudit != nil {
+					securityAudit.LogEvent(SecurityEvent{
+						Email:     u.Email,
+						EventType: "backup_login_device_banned",
+						IPAddress: ipAddress,
+						UserAgent: userAgent,
+						Success:   false,
+						Details:   "Device banned by admin: " + reason,
+						Severity:  "warning",
+					})
+				}
+				return nil, apperrors.ErrDeviceBlocked
+			} else if banErr != nil {
+				logger.Debug("Device ban check error (will continue)", zap.Error(banErr))
+			}
+		}
+		if deviceTracker != nil {
+			fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+			if blocked, reason := deviceTracker.IsDeviceBlocked(ctx, fingerprintHash); blocked {
+				if securityAudit != nil {
+					securityAudit.LogEvent(SecurityEvent{
+						Email:     u.Email,
+						EventType: "backup_login_device_blocked",
+						IPAddress: ipAddress,
+						UserAgent: userAgent,
+						Success:   false,
+						Details:   reason,
+						Severity:  "warning",
+					})
+				}
+				return nil, apperrors.ErrDeviceBlocked
+			}
+		}
 	}
 
 	// Verify backup code using Ent-based TOTP service
@@ -862,6 +1084,14 @@ func (s *EntAuthService) CompleteTOTPLoginWithBackupCode(ctx context.Context, pe
 	tokenPair, err := sessionService.CreateSession(ctx, u, ipAddress, userAgent)
 	if err != nil {
 		return nil, err
+	}
+
+	// Record device login if fingerprint provided
+	if deviceFingerprint != "" && deviceTracker != nil {
+		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+		if err := deviceTracker.RecordDeviceLogin(ctx, u.ID, fingerprintHash, ipAddress, userAgent); err != nil {
+			logger.Warn("Failed to record device login for backup code", zap.Error(err))
+		}
 	}
 
 	// Record successful login

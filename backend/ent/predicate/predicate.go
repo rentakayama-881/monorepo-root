@@ -45,6 +45,9 @@ type Endorsement func(*sql.Selector)
 // FinalOffer is the predicate function for finaloffer builders.
 type FinalOffer func(*sql.Selector)
 
+// IPGeoCache is the predicate function for ipgeocache builders.
+type IPGeoCache func(*sql.Selector)
+
 // Passkey is the predicate function for passkey builders.
 type Passkey func(*sql.Selector)
 

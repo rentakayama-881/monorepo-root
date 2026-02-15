@@ -57,6 +57,7 @@ func (DeviceUserMapping) Edges() []ent.Edge {
 func (DeviceUserMapping) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("fingerprint_hash"),
-		index.Fields("user_id"),
+		// user_id index is auto-created by the edge.From("user") definition
+		index.Fields("fingerprint_hash", "user_id").Unique(),
 	}
 }

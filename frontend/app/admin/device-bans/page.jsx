@@ -136,6 +136,24 @@ export default function DeviceBansPage() {
     return date.toLocaleString("id-ID");
   };
 
+  const getBanStatus = (ban) => {
+    if (ban.isPermanent) {
+      return "Permanent";
+    }
+    if (!ban.isActive) {
+      return "Inactive";
+    }
+    // Check if temporary ban has expired
+    if (ban.expiresAt) {
+      const expiryDate = new Date(ban.expiresAt);
+      if (expiryDate < new Date()) {
+        return "Expired";
+      }
+      return "Active";
+    }
+    return "Active";
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -174,43 +192,49 @@ export default function DeviceBansPage() {
               </tr>
             </thead>
             <tbody>
-              {bans.map((ban) => (
-                <tr key={ban.id} className="border-b border-border hover:bg-muted/50">
-                  <td className="py-3 px-4 font-mono text-xs truncate max-w-48">{ban.deviceFingerprint}</td>
-                  <td className="py-3 px-4">{ban.userId || "-"}</td>
-                  <td className="py-3 px-4 max-w-48 truncate">{ban.reason}</td>
-                  <td className="py-3 px-4">
-                    {ban.isPermanent ? (
-                      <span className="inline-flex items-center rounded-full border border-destructive/20 bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
-                        Permanent
+              {bans.map((ban) => {
+                const status = getBanStatus(ban);
+                const statusColor =
+                  status === "Permanent"
+                    ? "border-destructive/20 bg-destructive/10 text-destructive"
+                    : status === "Active"
+                    ? "border-warning/20 bg-warning/10 text-warning"
+                    : "border-border bg-muted/60 text-muted-foreground";
+
+                return (
+                  <tr key={ban.id} className="border-b border-border hover:bg-muted/50">
+                    <td className="py-3 px-4 font-mono text-xs truncate max-w-48">{ban.deviceFingerprint}</td>
+                    <td className="py-3 px-4">
+                      {ban.userId ? (
+                        <span className="font-mono text-xs">{ban.userId}</span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="py-3 px-4 max-w-48 truncate">{ban.reason}</td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${statusColor}`}>
+                        {status}
                       </span>
-                    ) : ban.isActive ? (
-                      <span className="inline-flex items-center rounded-full border border-warning/20 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
-                        Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                        Expired
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-xs text-muted-foreground">
-                    {formatDateTime(ban.createdAt)}
-                  </td>
-                  <td className="py-3 px-4 text-xs text-muted-foreground">
-                    {ban.isPermanent ? "-" : formatDateTime(ban.expiresAt)}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      onClick={() => handleUnban(ban.id)}
-                    >
-                      Unban
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground">
+                      {formatDateTime(ban.createdAt)}
+                    </td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground">
+                      {ban.isPermanent ? "-" : formatDateTime(ban.expiresAt)}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={() => handleUnban(ban.id)}
+                      >
+                        Unban
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

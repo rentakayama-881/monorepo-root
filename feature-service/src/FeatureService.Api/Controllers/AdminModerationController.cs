@@ -191,7 +191,9 @@ public class AdminModerationController : ControllerBase
                 request.UserId,
                 request.Reason,
                 adminId,
-                request.ReportId
+                request.ReportId,
+                request.IsPermanent,
+                request.ExpiresAt
             );
 
             _logger.LogWarning("Device banned: {Fingerprint} for user {UserId} by admin {AdminId}",
@@ -248,12 +250,31 @@ public class AdminModerationController : ControllerBase
     /// Check if a device is banned (for registration/login flow)
     /// </summary>
     [HttpPost("device-bans/check")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(DeviceBanCheckResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> CheckDeviceBan([FromBody] CheckDeviceBanRequest request)
+    [AllowAnonymous] // Allows anonymous but validates service token
+    [ProducesResponseType(typeof(CheckDeviceBanResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> CheckDeviceBan([FromBody] CheckDeviceBanRequest request,
+        [FromHeader(Name = "X-Service-Token")] string? serviceToken)
     {
+        // Validate caller: must have valid service token OR authenticated admin JWT
+        var configServiceToken = Environment.GetEnvironmentVariable("SERVICE_TOKEN") ?? "";
+        if (string.IsNullOrEmpty(configServiceToken))
+        {
+            _logger.LogWarning("SERVICE_TOKEN not configured");
+            return Unauthorized(new { error = "Service token not configured" });
+        }
+
+        var hasValidServiceToken = !string.IsNullOrEmpty(serviceToken) && serviceToken == configServiceToken;
+        var isAuthenticatedAdmin = User.Identity?.IsAuthenticated == true && User.IsInRole("admin");
+
+        if (!hasValidServiceToken && !isAuthenticatedAdmin)
+        {
+            _logger.LogWarning("Unauthorized device ban check: no valid service token and no admin JWT");
+            return Unauthorized(new { error = "Valid service token or admin authentication required" });
+        }
+
         var (isBanned, message) = await _deviceBanService.CheckDeviceBanAsync(request.DeviceFingerprint);
-        return Ok(new DeviceBanCheckResponse(isBanned, message));
+        return Ok(new CheckDeviceBanResponse(isBanned, message, null));
     }
 
     #endregion
@@ -483,9 +504,13 @@ public class AdminModerationController : ControllerBase
 }
 
 // Request/Response DTOs
-public record BanDeviceRequest(string DeviceFingerprint, uint? UserId, string Reason, string? ReportId);
-public record CheckDeviceBanRequest(string DeviceFingerprint);
-public record DeviceBanCheckResponse(bool IsBanned, string? Message);
+public record BanDeviceRequest(
+    string DeviceFingerprint,
+    uint? UserId,
+    string Reason,
+    string? ReportId,
+    bool IsPermanent = true,
+    DateTime? ExpiresAt = null);
 public record DeviceBanCreatedResponse(string BanId, string Message);
 public record CreateWarningRequest(uint UserId, string Reason, string Message, string Severity, string? ReportId);
 public record WarningCreatedResponse(string WarningId, string Message);

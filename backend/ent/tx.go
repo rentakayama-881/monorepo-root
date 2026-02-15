@@ -38,6 +38,8 @@ type Tx struct {
 	Endorsement *EndorsementClient
 	// FinalOffer is the client for interacting with the FinalOffer builders.
 	FinalOffer *FinalOfferClient
+	// IPGeoCache is the client for interacting with the IPGeoCache builders.
+	IPGeoCache *IPGeoCacheClient
 	// Passkey is the client for interacting with the Passkey builders.
 	Passkey *PasskeyClient
 	// PasswordResetToken is the client for interacting with the PasswordResetToken builders.
@@ -206,6 +208,7 @@ func (tx *Tx) init() {
 	tx.EmailVerificationToken = NewEmailVerificationTokenClient(tx.config)
 	tx.Endorsement = NewEndorsementClient(tx.config)
 	tx.FinalOffer = NewFinalOfferClient(tx.config)
+	tx.IPGeoCache = NewIPGeoCacheClient(tx.config)
 	tx.Passkey = NewPasskeyClient(tx.config)
 	tx.PasswordResetToken = NewPasswordResetTokenClient(tx.config)
 	tx.SecurityEvent = NewSecurityEventClient(tx.config)

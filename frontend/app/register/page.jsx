@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fetchJson } from "@/lib/api";
 import { getToken, TOKEN_KEY, AUTH_CHANGED_EVENT } from "@/lib/auth";
+import { getDeviceFingerprintWithTimeout } from "@/lib/fingerprint";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -79,20 +80,24 @@ export default function RegisterPage() {
     setError("");
     setInfo("");
     setLoading(true);
-    
+
     // Validate username is required
     if (!form.username || form.username.trim() === "") {
       setError("Username is required.");
       setLoading(false);
       return;
     }
-    
+
     try {
+      // Get device fingerprint (with timeout for graceful degradation)
+      const deviceFingerprint = await getDeviceFingerprintWithTimeout(3000);
+
       const payload = {
         email: form.email,
         password: form.password,
         username: form.username,
         full_name: form.full_name || undefined,
+        device_fingerprint: deviceFingerprint,
       };
       await fetchJson(`/api/auth/register`, {
         method: "POST",

@@ -8,7 +8,7 @@ namespace FeatureService.Api.Services;
 
 public interface IDeviceBanService
 {
-    Task<string> BanDeviceAsync(string deviceFingerprint, uint? userId, string reason, uint adminId, string? reportId = null);
+    Task<string> BanDeviceAsync(string deviceFingerprint, uint? userId, string reason, uint adminId, string? reportId = null, bool isPermanent = true, DateTime? expiresAt = null);
     Task UnbanDeviceAsync(string banId, uint adminId);
     Task<bool> IsDeviceBannedAsync(string deviceFingerprint);
     Task<(bool IsBanned, string? Message)> CheckDeviceBanAsync(string deviceFingerprint);
@@ -27,7 +27,7 @@ public class DeviceBanService : IDeviceBanService
         _logger = logger;
     }
 
-    public async Task<string> BanDeviceAsync(string deviceFingerprint, uint? userId, string reason, uint adminId, string? reportId = null)
+    public async Task<string> BanDeviceAsync(string deviceFingerprint, uint? userId, string reason, uint adminId, string? reportId = null, bool isPermanent = true, DateTime? expiresAt = null)
     {
         // Check if device is already banned
         var existingBan = await _context.DeviceBans
@@ -51,13 +51,16 @@ public class DeviceBanService : IDeviceBanService
             BannedByAdminId = adminId,
             UserAgent = null,
             IpAddress = null,
+            IsPermanent = isPermanent,
+            ExpiresAt = expiresAt,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
         await _context.DeviceBans.InsertOneAsync(ban);
-        _logger.LogWarning("Device banned: {BanId} for user {UserId} by admin {AdminId}. Reason: {Reason}", 
-            ban.Id, userId, adminId, reason);
+        var banTypeStr = isPermanent ? "permanently" : "temporarily";
+        _logger.LogWarning("Device banned {BanType}: {BanId} for user {UserId} by admin {AdminId}. Reason: {Reason}",
+            banTypeStr, ban.Id, userId, adminId, reason);
 
         return ban.Id;
     }
@@ -103,7 +106,20 @@ public class DeviceBanService : IDeviceBanService
             return (false, null);
         }
 
-        return (true, $"This device has been permanently banned. Reason: {ban.Reason}");
+        // Check if ban has expired (for temporary bans)
+        if (!ban.IsPermanent && ban.ExpiresAt.HasValue && ban.ExpiresAt.Value < DateTime.UtcNow)
+        {
+            return (false, null); // Ban has expired, not banned
+        }
+
+        var banType = ban.IsPermanent ? "permanently" : "temporarily";
+        var message = $"This device has been {banType} banned. Reason: {ban.Reason}";
+        if (!ban.IsPermanent && ban.ExpiresAt.HasValue)
+        {
+            message += $" (expires: {ban.ExpiresAt.Value:yyyy-MM-dd HH:mm:ss} UTC)";
+        }
+
+        return (true, message);
     }
 
     public async Task<PaginatedDeviceBansResponse> GetDeviceBansAsync(int page, int pageSize, bool activeOnly = true)
@@ -131,7 +147,9 @@ public class DeviceBanService : IDeviceBanService
             b.IsActive,
             b.BannedByAdminId,
             b.CreatedAt,
-            b.UnbannedAt
+            b.UnbannedAt,
+            b.IsPermanent,
+            b.ExpiresAt
         )).ToList();
 
         return new PaginatedDeviceBansResponse(dtos, (int)totalCount, page, pageSize);
@@ -154,7 +172,9 @@ public class DeviceBanService : IDeviceBanService
             ban.IsActive,
             ban.BannedByAdminId,
             ban.CreatedAt,
-            ban.UnbannedAt
+            ban.UnbannedAt,
+            ban.IsPermanent,
+            ban.ExpiresAt
         );
     }
 }

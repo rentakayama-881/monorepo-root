@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"backend-gin/database"
@@ -89,6 +90,11 @@ func (s *EntSessionService) CreateSession(ctx context.Context, u *ent.User, ipAd
 	if err != nil {
 		logger.Error("Failed to create session", zap.Error(err))
 		return nil, apperrors.ErrInternalServer.WithDetails("Gagal membuat session")
+	}
+
+	// Check impossible travel on login (not just refresh)
+	if ipAddress != "" {
+		s.checkIPRotationPatternEnt(ctx, u.ID, ipAddress)
 	}
 
 	// Log security event
@@ -386,9 +392,11 @@ func (s *EntSessionService) RefreshSession(ctx context.Context, refreshToken, ip
 	return result, nil
 }
 
-// checkIPRotationPatternEnt checks for suspicious IP rotation patterns
+// checkIPRotationPatternEnt checks for impossible travel patterns using geolocation
+// Detects: 2+ IPs from different countries within 30 minutes (impossible to travel that distance)
 func (s *EntSessionService) checkIPRotationPatternEnt(ctx context.Context, userID int, currentIP string) {
-	cutoff := time.Now().Add(-IPChangeWindow)
+	// 30-minute window for impossible travel detection
+	cutoff := time.Now().Add(-30 * time.Minute)
 
 	sessions, err := s.client.Session.
 		Query().
@@ -398,22 +406,101 @@ func (s *EntSessionService) checkIPRotationPatternEnt(ctx context.Context, userI
 		).
 		All(ctx)
 	if err != nil {
+		logger.Warn("Failed to query sessions for impossible travel check", zap.Error(err))
 		return
 	}
 
-	uniqueIPs := make(map[string]bool)
+	// Collect unique IPs and their geolocations
+	ipToCountry := make(map[string]string) // IP -> CountryCode
 	for _, sess := range sessions {
-		if sess.IPAddress != "" {
-			uniqueIPs[sess.IPAddress] = true
+		if sess.IPAddress != "" && sess.IPAddress != currentIP {
+			ipToCountry[sess.IPAddress] = ""
 		}
 	}
-	uniqueIPs[currentIP] = true
+	ipToCountry[currentIP] = ""
 
-	if len(uniqueIPs) >= IPChangeSuspiciousCount {
-		logger.Warn("Suspicious IP rotation pattern detected",
+	// Skip if only one or fewer unique IPs
+	if len(ipToCountry) <= 1 {
+		return
+	}
+
+	// Lookup geolocation for each IP
+	geoService := GetGeoLookupService()
+	uniqueCountries := make(map[string]bool)
+	var detectedCountries []string
+
+	for ip := range ipToCountry {
+		loc := geoService.LookupIP(ctx, ip)
+		if loc != nil && loc.CountryCode != "" {
+			ipToCountry[ip] = loc.CountryCode
+			uniqueCountries[loc.CountryCode] = true
+			detectedCountries = append(detectedCountries, loc.CountryCode)
+		} else {
+			// Geo lookup failed for this IP
+			// Fail-open: don't block legitimate users due to geo-IP lookup errors
+			logger.Debug("Geo lookup failed for IP in impossible travel check",
+				zap.Int("user_id", userID),
+				zap.String("ip", ip))
+		}
+	}
+
+	// Impossible travel: 2+ different countries detected in 30-minute window
+	if len(uniqueCountries) >= 2 {
+		logger.Warn("Impossible travel detected - locking account",
 			zap.Int("user_id", userID),
-			zap.Int("unique_ips", len(uniqueIPs)),
-			zap.Duration("window", IPChangeWindow))
+			zap.Strings("countries", detectedCountries),
+			zap.Int("unique_countries", len(uniqueCountries)))
+
+		// Lock account for 48 hours
+		lockDuration := 48 * time.Hour
+		lockUntil := time.Now().Add(lockDuration)
+		lockReason := "Impossible travel detected: Login from different countries within 30 minutes"
+
+		// Update user: lock account
+		u, err := s.client.User.Get(ctx, userID)
+		if err != nil {
+			logger.Error("Failed to get user for impossible travel lock", zap.Error(err))
+			return
+		}
+
+		_, err = s.client.User.
+			UpdateOneID(userID).
+			SetLockedUntil(lockUntil).
+			SetLockReason(lockReason).
+			Save(ctx)
+		if err != nil {
+			logger.Error("Failed to lock user account for impossible travel", zap.Error(err))
+			return
+		}
+
+		// Revoke all active sessions
+		_, err = s.client.Session.
+			Update().
+			Where(session.UserIDEQ(userID), session.RevokedAtIsNil()).
+			SetRevokedAt(time.Now()).
+			SetRevokeReason("Impossible travel security lock: Login from different countries").
+			Save(ctx)
+		if err != nil {
+			logger.Error("Failed to revoke sessions for impossible travel lock", zap.Error(err))
+		}
+
+		// Log security event
+		if securityAudit != nil {
+			securityAudit.LogEvent(SecurityEvent{
+				Email:     u.Email,
+				EventType: "impossible_travel",
+				IPAddress: currentIP,
+				UserAgent: "",
+				Success:   false,
+				Details:   "Detected login from " + strings.Join(detectedCountries, ", "),
+				Severity:  "critical",
+			})
+		}
+
+		logger.Info("Account locked due to impossible travel",
+			zap.Int("user_id", userID),
+			zap.Duration("lock_duration", lockDuration),
+			zap.Strings("countries", detectedCountries))
 	}
 }
 

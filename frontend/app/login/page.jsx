@@ -7,6 +7,7 @@ import { fetchJson, getApiBase } from "@/lib/api";
 import { setTokens, getToken, TOKEN_KEY, AUTH_CHANGED_EVENT } from "@/lib/auth";
 import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn";
 import ApiErrorAlert from "@/components/ApiErrorAlert";
+import { getDeviceFingerprintWithTimeout } from "@/lib/fingerprint";
 
 // Check if WebAuthn is supported
 function isWebAuthnSupported() {
@@ -111,6 +112,9 @@ function LoginForm() {
     try {
       const API = getApiBase();
 
+      // Get device fingerprint (with timeout for graceful degradation)
+      const deviceFingerprint = await getDeviceFingerprintWithTimeout(3000);
+
       // 1. Begin login - get options (discoverable login, no email needed)
       const beginRes = await fetch(`${API}/api/auth/passkeys/login/begin`, {
         method: "POST",
@@ -161,6 +165,7 @@ function LoginForm() {
         body: JSON.stringify({
           session_id: session_id,
           credential: credentialForServer,
+          device_fingerprint: deviceFingerprint,
         }),
       });
 
@@ -200,10 +205,13 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
+      // Get device fingerprint (with timeout for graceful degradation)
+      const deviceFingerprint = await getDeviceFingerprintWithTimeout(3000);
+
       const data = await fetchJson(`/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, device_fingerprint: deviceFingerprint }),
       });
 
       // Check if 2FA is required
@@ -216,7 +224,7 @@ function LoginForm() {
 
       // Handle new token response format
       setTokens(data.access_token, data.refresh_token, data.expires_in);
-      
+
       // Check if user has username, redirect to set-username if not
       if (!data.user?.username || data.user.username === "") {
         router.replace("/set-username");
@@ -236,12 +244,15 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
+      // Get device fingerprint (with timeout for graceful degradation)
+      const deviceFingerprint = await getDeviceFingerprintWithTimeout(3000);
+
       const endpoint = useBackupCode ? "/api/auth/login/backup-code" : "/api/auth/login/totp";
       const res = await fetch(`${getApiBase()}${endpoint}`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ totp_pending: totpPending, code: totpCode }),
+        body: JSON.stringify({ totp_pending: totpPending, code: totpCode, device_fingerprint: deviceFingerprint }),
       });
 
       const data = await res.json();
@@ -255,7 +266,7 @@ function LoginForm() {
 
       // Success - store tokens
       setTokens(data.access_token, data.refresh_token, data.expires_in);
-      
+
       // Check if user has username, redirect to set-username if not
       if (!data.user?.username || data.user.username === "") {
         router.replace("/set-username");
