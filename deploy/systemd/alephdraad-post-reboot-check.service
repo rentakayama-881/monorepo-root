@@ -1,0 +1,14 @@
+[Unit]
+Description=Alephdraad Post-Reboot Health Check
+After=network-online.target docker.service nginx.service alephdraad-backend.service feature-service.service
+Wants=network-online.target
+ConditionPathExists=/usr/local/sbin/alephdraad-post-reboot-check.sh
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/alephdraad-post-reboot-check.sh
+StandardOutput=append:/var/log/alephdraad-post-reboot-check.log
+StandardError=append:/var/log/alephdraad-post-reboot-check.log
+
+[Install]
+WantedBy=multi-user.target

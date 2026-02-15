@@ -1,0 +1,14 @@
+[Unit]
+Description=Alephdraad Baseline Firewall Rules
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+Before=nginx.service alephdraad-backend.service feature-service.service
+ConditionPathExists=/usr/local/sbin/alephdraad-firewall-ensure.sh
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/alephdraad-firewall-ensure.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
