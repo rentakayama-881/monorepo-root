@@ -1,256 +1,138 @@
+import {
+  CheckIcon,
+  HeartIcon,
+  MailIcon,
+  ShieldIcon,
+  UsersIcon,
+  WarningIcon,
+} from "@/components/ui/LegalIcons";
+
 export const dynamic = "force-static";
 
-export const metadata = { 
+export const metadata = {
   title: "Pedoman Komunitas - AIvalid",
-  description: "Pedoman perilaku dan etika komunitas AIvalid untuk menciptakan lingkungan yang aman dan produktif"
+  description:
+    "Pedoman komunitas AIvalid untuk menjaga ruang diskusi yang aman, inklusif, dan produktif.",
+  alternates: {
+    canonical: "https://aivalid.id/community-guidelines",
+  },
 };
+
+const expectedBehavior = [
+  "Bersikap sopan, profesional, dan menghargai perbedaan pendapat.",
+  "Memberikan kritik yang fokus pada isi pembahasan, bukan menyerang pribadi.",
+  "Membagikan konten yang relevan, bermanfaat, dan dapat dipertanggungjawabkan.",
+  "Melaporkan pelanggaran dengan bukti yang jelas.",
+  "Menjaga etika saat bertransaksi dan memenuhi komitmen yang disepakati.",
+];
+
+const prohibitedBehavior = [
+  "Pelecehan, ancaman, doxing, dan bentuk intimidasi lain.",
+  "Konten kebencian berbasis SARA dan diskriminasi terhadap kelompok tertentu.",
+  "Konten berbahaya: pornografi ilegal, kekerasan ekstrem, atau ajakan tindakan kriminal.",
+  "Spam, manipulasi sistem, dan upaya penyalahgunaan fitur platform.",
+  "Penipuan dalam transaksi atau klaim palsu yang merugikan pengguna lain.",
+];
+
+const sanctions = [
+  {
+    level: "Ringan",
+    action: "Peringatan, penghapusan konten, atau pembatasan sementara pada fitur tertentu.",
+  },
+  {
+    level: "Sedang",
+    action: "Penangguhan akun sementara sesuai tingkat pelanggaran.",
+  },
+  {
+    level: "Berat",
+    action: "Penutupan akun permanen dan pelaporan ke pihak berwenang jika diperlukan.",
+  },
+];
+
+function Section({ title, icon: Icon, children }) {
+  return (
+    <section className="mb-10 space-y-3">
+      <h2 className="flex items-center gap-2 text-lg font-semibold">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        <span>{title}</span>
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+function BulletList({ items, warning = false }) {
+  return (
+    <ul className="space-y-2 text-sm text-muted-foreground">
+      {items.map((item) => (
+        <li key={item} className="flex items-start gap-2">
+          {warning ? (
+            <WarningIcon className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+          ) : (
+            <CheckIcon className="mt-0.5 h-4 w-4 shrink-0" />
+          )}
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function CommunityGuidelinesPage() {
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-      {/* Header */}
-      <div className="mb-6 border-b border-border pb-4">
-        <h1 className="text-lg font-semibold text-foreground">Pedoman Komunitas</h1>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Panduan untuk menciptakan lingkungan yang aman, inklusif, dan produktif
+    <main className="container max-w-3xl py-10">
+      <header className="mb-8">
+        <p className="mb-2 text-sm text-muted-foreground">Pedoman Komunitas</p>
+        <h1 className="mb-2 text-2xl font-bold">Standar interaksi di AIvalid</h1>
+        <p className="text-muted-foreground">
+          Pedoman ini membantu menjaga AIvalid sebagai ruang yang aman, adil, dan produktif untuk
+          seluruh pengguna.
         </p>
-      </div>
+      </header>
 
-      <article>
-        {/* Prinsip */}
-        <section className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
-          <h2 className="mb-1.5 text-sm font-semibold text-foreground">Prinsip Dasar</h2>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            AIvalid didirikan untuk memfasilitasi pertukaran pengetahuan dan pengalaman. Kami menjunjung 
-            tinggi ilmu dan memberikan penghargaan tertinggi untuk setiap upaya, sekecil apapun. Di sini, 
-            setiap pengguna didorong untuk merealisasikan ide mereka dalam berbagai bentuk tindakan, teknik, dan inovasi.
-          </p>
-        </section>
+      <Section title="Nilai Dasar" icon={HeartIcon}>
+        <article className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+          Kami menjunjung rasa hormat, tanggung jawab, dan kolaborasi. Kebebasan berpendapat tetap
+          dihormati selama tidak melanggar hukum, etika komunitas, dan hak pengguna lain.
+        </article>
+      </Section>
 
-        {/* Perilaku yang Diharapkan */}
-        <section className="mb-4">
-          <h2 className="mb-2 text-sm font-semibold text-foreground">Perilaku yang Diharapkan</h2>
-          <ul className="space-y-1 text-xs text-muted-foreground">
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-success">✓</span>
-              <span>Bersikap sopan, hormat, dan profesional dalam setiap interaksi</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-success">✓</span>
-              <span>Memberikan kritik yang konstruktif berfokus pada argumen, bukan individu</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-success">✓</span>
-              <span>Menghargai perbedaan pendapat, latar belakang, dan pengalaman</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-success">✓</span>
-              <span>Berkontribusi dengan konten yang bermanfaat dan berkualitas</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-success">✓</span>
-              <span>Melaporkan konten atau perilaku yang melanggar pedoman</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-success">✓</span>
-              <span>Bertransaksi dengan jujur dan memenuhi kesepakatan</span>
-            </li>
-          </ul>
-        </section>
+      <Section title="Perilaku yang Diharapkan" icon={UsersIcon}>
+        <article className="rounded-lg border bg-card p-4">
+          <BulletList items={expectedBehavior} />
+        </article>
+      </Section>
 
-        {/* Perilaku yang Dilarang */}
-        <section className="mb-4">
-          <h2 className="mb-2 text-sm font-semibold text-foreground">Perilaku yang Dilarang</h2>
-          
-          <h3 className="mb-1.5 mt-3 text-xs font-medium text-foreground">Pelecehan dan Kekerasan</h3>
-          <ul className="mb-3 space-y-0.5 text-xs text-muted-foreground">
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Serangan pribadi, penghinaan, atau ancaman terhadap pengguna lain</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Diskriminasi berdasarkan ras, agama, gender, orientasi seksual, atau latar belakang sosial</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Doxxing (mempublikasikan informasi pribadi tanpa izin)</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Stalking atau pelecehan berkelanjutan</span>
-            </li>
-          </ul>
+      <Section title="Perilaku yang Dilarang" icon={WarningIcon}>
+        <article className="rounded-lg border bg-card p-4">
+          <BulletList items={prohibitedBehavior} warning />
+        </article>
+      </Section>
 
-          <h3 className="mb-1.5 mt-3 text-xs font-medium text-foreground">Konten Berbahaya</h3>
-          <ul className="mb-3 space-y-0.5 text-xs text-muted-foreground">
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Pornografi, terutama yang melibatkan anak di bawah umur</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Konten kekerasan grafis atau gore</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Propaganda terorisme atau ekstremisme</span>
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Promosi bunuh diri atau menyakiti diri sendiri</span>
-            </li>
-          </ul>
+      <Section title="Penegakan dan Sanksi" icon={ShieldIcon}>
+        <div className="space-y-3">
+          {sanctions.map((item) => (
+            <article key={item.level} className="rounded-lg border bg-card p-4">
+              <h3 className="mb-1 text-sm font-semibold">Pelanggaran {item.level}</h3>
+              <p className="text-sm text-muted-foreground">{item.action}</p>
+            </article>
+          ))}
+        </div>
+      </Section>
 
-          <h3 className="mb-2 mt-4 text-sm font-medium text-foreground">Penipuan dan Penyalahgunaan</h3>
-          <ul className="mb-4 space-y-1 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Penipuan dalam transaksi atau janji palsu</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Pemerasan atau blackmail</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Phishing atau upaya mencuri kredensial</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Spam dan flooding</span>
-            </li>
-          </ul>
-
-          <h3 className="mb-2 mt-4 text-sm font-medium text-foreground">Pelanggaran Platform</h3>
-          <ul className="space-y-1 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Membuat akun ganda untuk menghindari sanksi</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Manipulasi sistem reputasi atau voting</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-destructive">✗</span>
-              <span>Eksploitasi bug atau kerentanan platform</span>
-            </li>
-          </ul>
-        </section>
-
-        {/* Diskusi Teknis */}
-        <section className="mb-8">
-          <h2 className="mb-3 text-lg font-semibold text-foreground">Diskusi Keamanan Siber</h2>
-          <p className="mb-3 text-sm text-muted-foreground">
-            Diskusi tentang topik keamanan siber (penetration testing, malware analysis, social engineering, dll) 
-            <strong className="text-foreground"> diperbolehkan untuk tujuan edukasi dan penelitian</strong>, dengan ketentuan:
-          </p>
-          <ul className="space-y-1 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-warning">!</span>
-              <span>Tidak mempublikasikan data pribadi aktif atau akses ilegal yang masih berlaku</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-warning">!</span>
-              <span>Tidak membagikan metode yang dapat merugikan individu secara langsung</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-warning">!</span>
-              <span>Pengguna bertanggung jawab penuh atas konsekuensi hukum dari tindakan mereka</span>
-            </li>
-          </ul>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Platform tidak bertanggung jawab atas penyalahgunaan informasi yang dibagikan.
-          </p>
-        </section>
-
-        {/* Konten dan Posting */}
-        <section className="mb-8">
-          <h2 className="mb-3 text-lg font-semibold text-foreground">Panduan Konten</h2>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground" />
-              <span>Unggah konten pada kategori yang sesuai</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground" />
-              <span>Gunakan judul yang jelas dan deskriptif</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground" />
-              <span>Hindari posting berulang (flood) dan konten duplikat</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground" />
-              <span>Sertakan sumber jika mengutip karya orang lain</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground" />
-              <span>Humor dan meme diperbolehkan selama tidak merendahkan orang lain</span>
-            </li>
-          </ul>
-        </section>
-
-        {/* Penegakan */}
-        <section className="mb-8">
-          <h2 className="mb-3 text-lg font-semibold text-foreground">Penegakan dan Sanksi</h2>
-          <p className="mb-3 text-sm text-muted-foreground">
-            Pelanggaran pedoman akan ditangani secara proporsional:
-          </p>
-          <div className="space-y-3">
-            <div className="rounded-lg border border-border p-3">
-              <h4 className="text-sm font-medium text-foreground">Pelanggaran Ringan</h4>
-              <p className="text-xs text-muted-foreground">Teguran tertulis, penghapusan konten</p>
-            </div>
-            <div className="rounded-lg border border-warning/30 bg-warning/10 p-3">
-              <h4 className="text-sm font-medium text-foreground">Pelanggaran Sedang</h4>
-              <p className="text-xs text-muted-foreground">Pembatasan fitur, penangguhan sementara (1-30 hari)</p>
-            </div>
-            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-              <h4 className="text-sm font-medium text-foreground">Pelanggaran Berat</h4>
-              <p className="text-xs text-muted-foreground">Pemutusan akun permanen, pelaporan ke pihak berwajib jika melanggar hukum</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Nilai Komunitas */}
-        <section className="mb-8 rounded-lg border border-border bg-muted/50 p-4">
-          <h2 className="mb-3 text-base font-semibold text-foreground">Nilai-Nilai Komunitas</h2>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="text-primary">✦</span>
-              <span>Kemanusiaan di atas segalanya</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">✦</span>
-              <span>Ilmu untuk berkembang, bukan untuk menindas</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">✦</span>
-              <span>Kebebasan berpendapat dibarengi tanggung jawab</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">✦</span>
-              <span>Bertindak dengan rasionalitas dan kesadaran penuh</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">✦</span>
-              <span>Saling menghargai meskipun berbeda pandangan</span>
-            </li>
-          </ul>
-        </section>
-
-        {/* Kontak */}
-        <section>
-          <p className="text-sm text-muted-foreground">
-            Untuk melaporkan pelanggaran atau pertanyaan terkait pedoman komunitas, hubungi:{" "}
-            <a href="mailto:ops@aivalid.id" className="text-primary hover:underline">
-              ops@aivalid.id
-            </a>
-          </p>
-        </section>
-      </article>
+      <section className="rounded-lg border bg-card p-4">
+        <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">
+          <MailIcon className="h-4 w-4 text-muted-foreground" />
+          <span>Laporan Pelanggaran</span>
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Untuk laporan pelanggaran atau pertanyaan terkait pedoman komunitas, hubungi
+          <a href="mailto:ops@aivalid.id" className="ml-1 font-medium text-foreground hover:underline">
+            ops@aivalid.id
+          </a>
+          .
+        </p>
+      </section>
     </main>
   );
 }

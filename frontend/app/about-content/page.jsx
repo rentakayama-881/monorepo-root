@@ -1,201 +1,120 @@
-import {
-  TargetIcon,
-  UsersIcon,
-  CheckIcon,
-  MessageCircleIcon,
-  ShieldIcon,
-  AwardIcon,
-  ScaleIcon,
-  MailIcon,
-  GlobeIcon,
-  HeartIcon,
-  ZapIcon,
-} from "@/components/ui/LegalIcons";
+import { CheckIcon, ShieldIcon, TargetIcon, UsersIcon } from "@/components/ui/LegalIcons";
 
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Tentang AIValid - Platform Validasi AI Indonesia",
+  title: "Tentang AIValid",
   description:
-    "AIValid powered by PT Alephdraad Utility Stack — platform validasi hasil kerja AI #1 di Indonesia. Validator ahli manusia dari berbagai bidang ilmu.",
+    "Kisah di balik AIvalid.id, platform validasi keluaran AI untuk pekerjaan berskala besar yang menuntut akurasi dan dapat dipertanggungjawabkan.",
   alternates: {
     canonical: "https://aivalid.id/about-content",
   },
 };
 
-// Reusable styled list item with icon - compact
-function ListItem({ children, icon: Icon = CheckIcon }) {
-  return (
-    <li className="flex items-start gap-2">
-      <span className="mt-0.5 shrink-0 text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" />
-      </span>
-      <span className="text-[13px]">{children}</span>
-    </li>
-  );
-}
+const coreProblems = [
+  {
+    title: "Konteks Besar, Kualitas Turun",
+    description:
+      "Dalam konteks yang sangat panjang, AI sering kehilangan konsistensi, melewatkan detail penting, atau menghasilkan jawaban yang tidak stabil.",
+  },
+  {
+    title: "Output Sulit Dipertanggungjawabkan",
+    description:
+      "Untuk pekerjaan serius, keluaran AI tidak cukup hanya terlihat meyakinkan. Hasilnya harus bisa diuji, diverifikasi, dan dipertanggungjawabkan.",
+  },
+];
 
-// Section card with icon header - compact style
-function Section({ title, icon: Icon, children, highlight = false }) {
-  return (
-    <section className={`mb-4 overflow-hidden rounded-lg border ${highlight ? 'border-primary/20 bg-primary/5' : 'border-border bg-card'}`}>
-      <div className={`border-b px-4 py-3 ${highlight ? 'border-primary/20 bg-primary/5' : 'border-border bg-muted/50/30'}`}>
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Icon className="h-4 w-4 text-muted-foreground" />
-          <span>{title}</span>
-        </h2>
-      </div>
-      <div className="p-4 text-[13px] leading-relaxed">
-        {children}
-      </div>
-    </section>
-  );
-}
+const hopes = [
+  "Membantu pengguna menyelesaikan tugas dan pekerjaan yang melibatkan AI dengan standar kualitas yang lebih tinggi.",
+  "Mengurangi waktu yang terbuang untuk revisi berulang akibat output AI yang tidak konsisten.",
+  "Mendorong proses kerja yang lebih efektif: AI tetap digunakan, tetapi hasil akhirnya tetap terkontrol dan terverifikasi.",
+  "Menjadi jembatan antara kecepatan AI dan kebutuhan manusia atas hasil yang akurat.",
+];
 
-// Service Card - compact style
-function ServiceCard({ title, description, icon: Icon }) {
+function Section({ title, icon: Icon, children, className = "" }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4 transition-all hover:border-muted-foreground/50">
-      <div className="mb-2 flex items-center gap-2">
+    <section className={`mb-10 space-y-3 ${className}`}>
+      <h2 className="flex items-center gap-2 text-lg font-semibold">
         <Icon className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-[13px] font-medium text-foreground">{title}</h3>
-      </div>
-      <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
-    </div>
+        <span>{title}</span>
+      </h2>
+      {children}
+    </section>
   );
 }
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-      {/* Header */}
-      <div className="mb-6 border-b border-border pb-4">
-        <h1 className="text-lg font-semibold text-foreground">Tentang AIvalid</h1>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Platform komunitas digital Indonesia
+    <main className="container max-w-3xl py-10">
+      <header className="mb-8">
+        <p className="mb-2 text-sm text-muted-foreground">Tentang AIvalid.id</p>
+        <h1 className="mb-2 text-2xl font-bold">Membawa validasi manusia ke keluaran AI</h1>
+        <p className="text-muted-foreground">
+          Kisah di balik platform validasi keluaran AI untuk tugas berskala besar yang menuntut
+          keakuratan dan hasil yang dapat dipertanggungjawabkan.
         </p>
-      </div>
+      </header>
 
-      <article>
-	        {/* Company Info */}
-	        <Section title="Perusahaan" icon={ZapIcon}>
-	          <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-	            AIvalid powered by <strong className="text-foreground">PT ALEPHDRAAD UTILITY STACK</strong> adalah perusahaan teknologi
-	            yang berfokus pada pengembangan platform komunitas digital. Kami berkomitmen untuk menyediakan
-	            ruang yang aman, terpercaya, dan bermanfaat bagi seluruh pengguna di Indonesia.
-	          </p>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            Didirikan dengan visi untuk mendemokratisasi akses terhadap pengetahuan dan peluang ekonomi digital, 
-            AIvalid hadir sebagai jembatan antara komunitas, edukasi, dan transaksi yang transparan.
+      <Section title="Kisah di Balik AIvalid.id" icon={TargetIcon}>
+        <p className="text-muted-foreground">
+          AIvalid.id lahir dari kebutuhan nyata di lapangan. Banyak pekerjaan penting sudah
+          menggunakan AI, tetapi tidak semua keluaran AI aman dipakai langsung tanpa pemeriksaan.
+        </p>
+        <p className="text-muted-foreground">
+          Saat kebutuhan makin besar, konteks makin kompleks, dan dampak keputusan makin serius,
+          risiko kesalahan juga meningkat. Di titik itulah proses validasi menjadi hal yang wajib,
+          bukan pilihan.
+        </p>
+      </Section>
+
+      <Section title="Yang Ingin Kami Sampaikan" icon={ShieldIcon}>
+        <p className="text-muted-foreground">
+          AIvalid.id adalah dedikasi kami untuk menjawab persoalan yang sering terjadi dalam
+          penggunaan AI sehari-hari.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {coreProblems.map((problem) => (
+            <article key={problem.title} className="rounded-lg border bg-card p-4">
+              <h3 className="mb-1 text-sm font-semibold">{problem.title}</h3>
+              <p className="text-sm text-muted-foreground">{problem.description}</p>
+            </article>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Harapan Kami" icon={UsersIcon}>
+        <p className="text-muted-foreground">
+          Kami berharap platform ini membantu lebih banyak orang menyelesaikan tugas, pekerjaan,
+          dan proyek yang melibatkan AI secara lebih aman dan efisien.
+        </p>
+        <ul className="space-y-2 text-sm text-muted-foreground">
+          {hopes.map((item) => (
+            <li key={item} className="flex items-start gap-2">
+              <CheckIcon className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section title="Contoh Sederhana" icon={ShieldIcon} className="mb-0">
+        <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+          <p className="mb-3">
+            Bayangkan Anda seorang pengacara yang mengandalkan AI untuk menyusun analisis hukum.
+            Pada kasus kecil, AI mungkin masih cukup membantu.
           </p>
-        </Section>
-
-        {/* Visi */}
-        <Section title="Visi" icon={TargetIcon} highlight={true}>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            Menjadi platform Validator AI & Market untuk AI terdepan di Indonesia yang menghubungkan pengetahuan, 
-            inovasi, dan peluang ekonomi secara inklusif dan berkelanjutan.
+          <p className="mb-3">
+            Namun saat perkara membesar, Anda perlu konteks yang jauh lebih panjang, waktu lebih
+            banyak, biaya lebih besar, dan energi lebih tinggi hanya untuk memastikan AI memahami
+            instruksi dengan benar.
           </p>
-        </Section>
-
-        {/* Misi */}
-        <Section title="Misi" icon={HeartIcon}>
-          <ul className="space-y-2 text-muted-foreground">
-            <ListItem icon={MessageCircleIcon}>
-              Menyediakan platform diskusi yang berkualitas dan bebas dari konten berbahaya
-            </ListItem>
-            <ListItem icon={ShieldIcon}>
-              Memfasilitasi transaksi digital yang aman dengan sistem escrow terpercaya
-            </ListItem>
-            <ListItem icon={UsersIcon}>
-              Mendorong pertukaran pengetahuan dan pengalaman antar anggota komunitas
-            </ListItem>
-            <ListItem icon={AwardIcon}>
-              Memberikan penghargaan kepada kontributor yang berdedikasi
-            </ListItem>
-          </ul>
-        </Section>
-
-        {/* Layanan */}
-        <section className="mb-4">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
-            <ZapIcon className="h-4 w-4 text-muted-foreground" />
-            Layanan Kami
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <ServiceCard 
-              title="Forum Diskusi" 
-              description="Ruang interaksi untuk berbagi ide, pengalaman, dan pengetahuan dengan sesama anggota komunitas."
-              icon={MessageCircleIcon}
-            />
-            <ServiceCard 
-              title="Marketplace" 
-              description="Platform jual beli produk dan jasa digital dengan sistem escrow untuk keamanan transaksi."
-              icon={ShieldIcon}
-            />
-            <ServiceCard 
-              title="Sistem Reputasi" 
-              description="Penghargaan berupa lencana dan level untuk anggota yang berkontribusi positif."
-              icon={AwardIcon}
-            />
-          </div>
-        </section>
-
-	        {/* Landasan Hukum */}
-	        <Section title="Landasan Hukum" icon={ScaleIcon}>
-	          <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-	            PT Alephdraad Utility Stack beroperasi sesuai dengan peraturan perundang-undangan Republik Indonesia, termasuk namun tidak terbatas pada:
-	          </p>
-          <ul className="space-y-3 text-sm text-muted-foreground">
-            <ListItem icon={ScaleIcon}>
-              Undang-Undang Nomor 11 Tahun 2008 tentang Informasi dan Transaksi Elektronik (UU ITE) sebagaimana diubah dengan UU No. 19 Tahun 2016
-            </ListItem>
-            <ListItem icon={ScaleIcon}>
-              Peraturan Pemerintah Nomor 71 Tahun 2019 tentang Penyelenggaraan Sistem dan Transaksi Elektronik
-            </ListItem>
-            <ListItem icon={ShieldIcon}>
-              Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi
-            </ListItem>
-            <ListItem icon={UsersIcon}>
-              Undang-Undang Nomor 8 Tahun 1999 tentang Perlindungan Konsumen
-            </ListItem>
-          </ul>
-        </Section>
-
-        {/* Contact */}
-        <section className="rounded-lg border border-border bg-gradient-to-br from-muted/50 to-card p-5">
-          <h2 className="mb-4 flex items-center gap-3 text-base font-semibold text-foreground">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-foreground">
-              <MailIcon className="h-4 w-4" />
-            </span>
-            Kontak Perusahaan
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground">
-                <MailIcon className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-xs text-muted-foreground">Email</p>
-                <a href="mailto:ops@aivalid.id" className="text-sm font-medium text-foreground hover:underline">
-                  ops@aivalid.id
-                </a>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground">
-                <GlobeIcon className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-xs text-muted-foreground">Website</p>
-                <a href="https://www.aivalid.id" className="text-sm font-medium text-foreground hover:underline">
-                  www.aivalid.id
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-      </article>
+          <p>
+            Jika hasil AI tetap tidak akurat, risikonya sangat besar. AIvalid.id hadir untuk
+            menutup celah itu: membantu memastikan keluaran AI lebih terjaga kualitasnya sebelum
+            dipakai untuk keputusan penting.
+          </p>
+        </div>
+      </Section>
     </main>
   );
 }

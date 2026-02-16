@@ -1,19 +1,11 @@
+import Link from "next/link";
 import {
-  HelpCircleIcon,
-  MailIcon,
   ClockIcon,
+  HelpCircleIcon,
+  LockIcon,
+  MailIcon,
   ShieldIcon,
   UserIcon,
-  LockIcon,
-  AwardIcon,
-  WarningIcon,
-  TrashIcon,
-  CreditCardIcon,
-  FileTextIcon,
-  UsersIcon,
-  InfoIcon,
-  CheckIcon,
-  ChevronRightIcon,
 } from "@/components/ui/LegalIcons";
 import { generateFAQStructuredData } from "@/lib/seo";
 
@@ -23,123 +15,71 @@ const faqData = [
   {
     question: "Bagaimana cara mendaftar akun?",
     answer:
-      'Klik tombol "Daftar" di pojok kanan atas, masukkan email valid, buat kata sandi minimal 8 karakter, verifikasi email melalui tautan yang dikirim, lalu lengkapi profil Anda.',
+      "Klik Daftar, masukkan email aktif, buat kata sandi yang kuat, lalu verifikasi email sebelum melengkapi profil.",
   },
   {
-    question: "Bagaimana sistem escrow bekerja?",
+    question: "Bagaimana mekanisme perlindungan transaksi bekerja?",
     answer:
-      "Sistem escrow melindungi pembeli dan penjual. Dana ditahan selama periode 7-30 hari. Setelah penjual mengirim produk/jasa dan pembeli mengkonfirmasi, dana diteruskan ke penjual. Biaya escrow 2.5% dari nilai transaksi.",
+      "Dana transaksi diproses melalui alur perlindungan hingga pekerjaan dinyatakan selesai atau sengketa diputuskan sesuai kebijakan platform.",
   },
   {
-    question: "Bagaimana cara mengaktifkan keamanan dua faktor (2FA)?",
+    question: "Bagaimana cara mengamankan akun?",
     answer:
-      "Buka Pengaturan Akun → Keamanan, aktifkan Autentikasi Dua Faktor, pindai kode QR dengan aplikasi authenticator (Google Authenticator, Authy), masukkan kode verifikasi 6 digit, dan simpan backup codes. Kami juga mendukung Passkey.",
+      "Gunakan kata sandi kuat, aktifkan autentikasi dua faktor, dan simpan backup code di tempat aman.",
   },
   {
-    question: "Bagaimana cara mendapatkan lencana?",
+    question: "Bagaimana cara melaporkan konten bermasalah?",
     answer:
-      "Lencana diberikan berdasarkan kontribusi: Kontributor Aktif untuk konten berkualitas, Penjual Terpercaya untuk rating tinggi, Verified untuk identitas terverifikasi, dan Expert untuk keahlian yang diakui komunitas.",
-  },
-  {
-    question: "Bagaimana cara melaporkan konten yang melanggar?",
-    answer:
-      'Klik tombol "Laporkan" pada konten, pilih kategori pelanggaran, berikan penjelasan tambahan, lalu kirim laporan. Tim moderasi akan meninjau dalam 24-48 jam.',
+      "Gunakan tombol laporan pada konten terkait, pilih jenis pelanggaran, dan berikan konteks agar tim moderasi dapat memproses lebih cepat.",
   },
   {
     question: "Bagaimana cara menghapus akun?",
     answer:
-      'Pastikan tidak ada transaksi berjalan, buka Pengaturan Akun → Akun, scroll ke "Zona Bahaya", klik "Hapus Akun", dan konfirmasi dengan kata sandi atau kode 2FA. Penghapusan bersifat permanen.',
+      "Akun dapat ditutup melalui pengaturan akun setelah seluruh kewajiban transaksi selesai.",
+  },
+];
+
+const quickGuides = [
+  {
+    href: "/fees",
+    title: "Biaya Layanan",
+    description: "Lihat struktur biaya dan ketentuan penarikan dana.",
   },
   {
-    question: "Metode pembayaran apa yang didukung?",
-    answer:
-      "AIValid mendukung Transfer Bank (BCA, Mandiri, BNI, BRI), E-Wallet (OVO, GoPay, DANA, ShopeePay), QRIS untuk scan QR, dan Virtual Account untuk semua bank utama. Semua diproses melalui payment gateway berlisensi OJK.",
+    href: "/rules-content",
+    title: "Syarat dan Ketentuan",
+    description: "Pahami aturan penggunaan platform dan penegakan kebijakan.",
+  },
+  {
+    href: "/privacy",
+    title: "Kebijakan Privasi",
+    description: "Pelajari cara AIvalid mengelola data pribadi pengguna.",
+  },
+  {
+    href: "/community-guidelines",
+    title: "Pedoman Komunitas",
+    description: "Standar perilaku agar komunitas tetap aman dan produktif.",
   },
 ];
 
 export const metadata = {
-  title: "Pusat Bantuan AIValid - FAQ & Dukungan",
+  title: "Pusat Bantuan - AIvalid",
   description:
-    "Temukan jawaban untuk pertanyaan umum tentang AIValid — cara mendaftar, sistem escrow, keamanan akun, metode pembayaran, dan dukungan pelanggan.",
+    "Temukan jawaban pertanyaan umum, panduan penggunaan platform, dan kanal dukungan resmi AIvalid.",
   alternates: {
     canonical: "https://aivalid.id/contact-support",
   },
 };
 
-// Contact Card - compact
-function ContactCard({ icon: Icon, title, children, highlight = false }) {
+function Section({ title, icon: Icon, children }) {
   return (
-    <div className={`rounded-lg border p-3 ${highlight ? 'border-primary/20 bg-primary/5' : 'border-border bg-card'}`}>
-      <div className="mb-2 flex items-center gap-2">
+    <section className="mb-10 space-y-3">
+      <h2 className="flex items-center gap-2 text-lg font-semibold">
         <Icon className="h-4 w-4 text-muted-foreground" />
-        <span className="text-[13px] font-medium text-foreground">{title}</span>
-      </div>
-      <div className="text-xs text-muted-foreground">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// FAQ Accordion Item - compact
-function FAQItem({ question, children, icon: Icon = HelpCircleIcon }) {
-  return (
-    <details className="group overflow-hidden rounded-lg border border-border bg-card">
-      <summary className="flex cursor-pointer items-center justify-between p-3 text-[13px] font-medium text-foreground">
-        <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-muted-foreground" />
-          <span>{question}</span>
-        </div>
-        <svg className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-      </summary>
-      <div className="border-t border-border p-3 text-xs text-muted-foreground leading-relaxed">
-        {children}
-      </div>
-    </details>
-  );
-}
-
-// Numbered Step - compact
-function Step({ number, title, description }) {
-  return (
-    <li className="flex items-start gap-2">
-      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted/50 text-[10px] font-semibold text-foreground">
-        {number}
-      </span>
-      <div className="pt-0.5 text-xs">
-        {title && <strong className="text-foreground">{title}</strong>}
-        {title && description && " — "}
-        {description}
-      </div>
-    </li>
-  );
-}
-
-// List Item with icon - compact
-function ListItem({ children, icon: Icon = CheckIcon }) {
-  return (
-    <li className="flex items-start gap-1.5">
-      <span className="mt-0.5 shrink-0 text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" />
-      </span>
-      <span className="text-xs">{children}</span>
-    </li>
-  );
-}
-
-// Guide Link Card - compact
-function GuideCard({ href, icon: Icon, title, description }) {
-  return (
-    <a href={href} className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-all hover:border-muted-foreground/50">
-      <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-medium text-foreground">{title}</p>
-        <p className="text-[11px] text-muted-foreground truncate">{description}</p>
-      </div>
-      <ChevronRightIcon className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
-    </a>
+        <span>{title}</span>
+      </h2>
+      {children}
+    </section>
   );
 }
 
@@ -154,196 +94,78 @@ export default function HelpPage() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
       )}
-    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-      {/* Header */}
-      <div className="mb-6 border-b border-border pb-4">
-        <h1 className="text-lg font-semibold text-foreground">Pusat Bantuan</h1>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Temukan jawaban atau hubungi tim kami
-        </p>
-      </div>
 
-      {/* Contact Section */}
-      <section className="mb-8">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
-          <MailIcon className="h-5 w-5 text-muted-foreground" />
-          Hubungi Kami
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <ContactCard icon={MailIcon} title="Email" highlight={true}>
-            <a href="mailto:help@aivalid.id" className="text-sm font-medium text-foreground hover:underline">
-              help@aivalid.id
-            </a>
-            <p className="mt-1 text-xs text-muted-foreground">Respons dalam 1-2 hari kerja</p>
-          </ContactCard>
-          <ContactCard icon={ClockIcon} title="Jam Operasional">
-            <p className="text-sm text-muted-foreground">Senin - Jumat</p>
-            <p className="text-sm font-medium text-foreground">09.00 - 18.00 WIB</p>
-          </ContactCard>
-        </div>
-      </section>
+      <main className="container max-w-3xl py-10">
+        <header className="mb-8">
+          <p className="mb-2 text-sm text-muted-foreground">Pusat Bantuan</p>
+          <h1 className="mb-2 text-2xl font-bold">Dukungan untuk pengguna AIvalid</h1>
+          <p className="text-muted-foreground">
+            Gunakan halaman ini untuk mendapatkan jawaban cepat, memahami alur penggunaan platform,
+            dan menghubungi tim kami saat dibutuhkan.
+          </p>
+        </header>
 
-      {/* FAQ Section */}
-      <section className="mb-8">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
-          <HelpCircleIcon className="h-5 w-5 text-muted-foreground" />
-          Pertanyaan Umum (FAQ)
-        </h2>
-        <div className="space-y-3">
-          <FAQItem question="Bagaimana cara mendaftar akun?" icon={UserIcon}>
-            <p className="mb-3">Untuk mendaftar akun AIvalid:</p>
-            <ol className="space-y-2.5">
-              <Step number={1} description='Klik tombol "Daftar" di pojok kanan atas' />
-              <Step number={2} description="Masukkan alamat email yang valid" />
-              <Step number={3} description="Buat kata sandi yang kuat (minimal 8 karakter)" />
-              <Step number={4} description="Verifikasi email Anda melalui tautan yang dikirim" />
-              <Step number={5} description="Lengkapi profil Anda" />
-            </ol>
-          </FAQItem>
-
-          <FAQItem question="Bagaimana sistem escrow bekerja?" icon={ShieldIcon}>
-            <p className="mb-3">Sistem escrow melindungi pembeli dan penjual dalam transaksi:</p>
-            <ol className="space-y-2.5">
-              <Step number={1} title="Ketika user A mengirim uang ke user B" description="Kami memfasilitasi penahanan uang selama periode 7 hari dan 30 hari" />
-              <Step number={2} title="Penjual menerima notifikasi" description="Penjual mengirimkan produk/jasa sesuai kesepakatan" />
-              <Step number={3} title="Pembeli melakukan inspeksi" description="Pembeli memiliki waktu untuk memeriksa produk/jasa" />
-              <Step number={4} title="Konfirmasi penyelesaian" description="Jika sesuai, pembeli mengkonfirmasi dan dana diteruskan ke penjual" />
-              <Step number={5} title="Penyelesaian masalah" description="Jika ada masalah, tim arbitrase akan membantu menyelesaikan" />
-            </ol>
-            <p className="mt-4 rounded-lg bg-muted/50 p-3 text-xs">
-              💡 Biaya layanan escrow: <strong className="text-foreground">2.5%</strong> dari nilai transaksi
-            </p>
-          </FAQItem>
-
-          <FAQItem question="Bagaimana cara mengaktifkan keamanan dua faktor (2FA)?" icon={LockIcon}>
-            <p className="mb-3">Untuk mengaktifkan 2FA:</p>
-            <ol className="space-y-2.5">
-              <Step number={1} description="Buka Pengaturan Akun → Keamanan" />
-              <Step number={2} description='"Aktifkan Autentikasi Dua Faktor"' />
-              <Step number={3} description="Pindai kode QR dengan aplikasi authenticator (Google Authenticator, Authy, dll)" />
-              <Step number={4} description="Masukkan kode verifikasi 6 digit" />
-              <Step number={5} description="Simpan backup codes  di tempat aman" />
-            </ol>
-            <p className="mt-4 text-sm">Kami juga mendukung <strong className="text-foreground">Passkey</strong> untuk keamanan yang lebih tinggi.</p>
-          </FAQItem>
-
-          <FAQItem question="Bagaimana cara mendapatkan lencana?" icon={AwardIcon}>
-            <p className="mb-3">Lencana diberikan berdasarkan kontribusi dan reputasi:</p>
-            <ul className="space-y-2.5">
-              <ListItem icon={AwardIcon}>
-                <strong className="text-foreground">Kontributor Aktif</strong> — Membuat konten berkualitas secara konsisten
-              </ListItem>
-              <ListItem icon={ShieldIcon}>
-                <strong className="text-foreground">Penjual Terpercaya</strong> — Menyelesaikan transaksi dengan rating tinggi
-              </ListItem>
-              <ListItem icon={CheckIcon}>
-                <strong className="text-foreground">Verified</strong> — Identitas telah diverifikasi oleh tim
-              </ListItem>
-              <ListItem icon={UserIcon}>
-                <strong className="text-foreground">Expert</strong> — Memiliki keahlian khusus yang diakui komunitas
-              </ListItem>
-            </ul>
-            <p className="mt-4 text-xs text-muted-foreground">Lencana juga dapat diberikan berdasarkan reputasi dari platform lain yang dapat diverifikasi.</p>
-          </FAQItem>
-
-          <FAQItem question="Bagaimana cara melaporkan konten yang melanggar?" icon={WarningIcon}>
-            <p className="mb-3">Untuk melaporkan konten yang melanggar:</p>
-            <ol className="space-y-2.5">
-              <Step number={1} description='Klik tombol "Laporkan" pada konten yang ingin dilaporkan' />
-              <Step number={2} description='"Laporkan"' />
-              <Step number={3} description="Pilih kategori pelanggaran" />
-              <Step number={4} description="Berikan penjelasan tambahan jika diperlukan" />
-              <Step number={5} description="Kirim laporan" />
-            </ol>
-            <p className="mt-4 rounded-lg bg-muted/50 p-3 text-xs">
-              ⏱️ Tim moderasi akan meninjau laporan dalam <strong className="text-foreground">24-48 jam</strong>.
-            </p>
-          </FAQItem>
-
-          <FAQItem question="Bagaimana cara menghapus akun?" icon={TrashIcon}>
-            <p className="mb-3">Untuk menghapus akun secara permanen:</p>
-            <ol className="space-y-2.5">
-              <Step number={1} description="Pastikan tidak ada transaksi yang sedang berjalan" />
-              <Step number={2} description="Buka Pengaturan Akun → Akun" />
-              <Step number={3} description='Scroll ke bagian "Zona Bahaya"' />
-              <Step number={4} description='"Hapus Akun"' />
-              <Step number={5} description="Konfirmasi dengan memasukkan kata sandi atau kode 2FA" />
-            </ol>
-            <p className="mt-4 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive">
-              ⚠️ Perhatian: Penghapusan akun bersifat permanen dan tidak dapat dibatalkan.
-            </p>
-          </FAQItem>
-
-          <FAQItem question="Metode pembayaran apa yang didukung?" icon={CreditCardIcon}>
-            <p className="mb-3">AIvalid mendukung berbagai metode pembayaran:</p>
-            <ul className="space-y-2.5">
-              <ListItem icon={CreditCardIcon}>
-                <strong className="text-foreground">Transfer Bank</strong> — BCA, Mandiri, BNI, BRI, dan bank lainnya
-              </ListItem>
-              <ListItem icon={CreditCardIcon}>
-                <strong className="text-foreground">E-Wallet</strong> — OVO, GoPay, DANA, ShopeePay
-              </ListItem>
-              <ListItem icon={CreditCardIcon}>
-                <strong className="text-foreground">QRIS</strong> — Scan QR untuk pembayaran instan
-              </ListItem>
-              <ListItem icon={CreditCardIcon}>
-                <strong className="text-foreground">Virtual Account</strong> — Tersedia untuk semua bank utama
-              </ListItem>
-            </ul>
-            <p className="mt-4 text-xs text-muted-foreground">Pembayaran diproses melalui payment gateway berlisensi OJK.</p>
-          </FAQItem>
-        </div>
-      </section>
-
-      {/* Guidelines */}
-      <section className="mb-8">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
-          <FileTextIcon className="h-5 w-5 text-muted-foreground" />
-          Panduan Pengguna
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <GuideCard 
-            href="/rules-content" 
-            icon={FileTextIcon}
-            title="Syarat dan Ketentuan"
-            description="Aturan penggunaan platform"
-          />
-          <GuideCard 
-            href="/privacy" 
-            icon={LockIcon}
-            title="Kebijakan Privasi"
-            description="Cara kami melindungi data Anda"
-          />
-          <GuideCard 
-            href="/community-guidelines" 
-            icon={UsersIcon}
-            title="Pedoman Komunitas"
-            description="Etika dan perilaku di platform"
-          />
-          <GuideCard 
-            href="/changelog" 
-            icon={ClockIcon}
-            title="Catatan Perubahan"
-            description="Pembaruan dan fitur baru"
-          />
-        </div>
-      </section>
-
-      {/* Tips Box */}
-      <section className="rounded-lg border border-border bg-muted/50/50 p-5">
-        <div className="flex gap-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-foreground">
-            <InfoIcon className="h-5 w-5" />
-          </span>
-          <div>
-            <p className="font-medium text-foreground">Tips untuk respons cepat</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Sertakan detail lengkap dalam pertanyaan Anda: tangkapan layar error, dan langkah-langkah yang sudah dicoba.
-            </p>
+        <Section title="Kontak Resmi" icon={MailIcon}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <article className="rounded-lg border bg-card p-4">
+              <h3 className="mb-1 text-sm font-semibold">Email Bantuan</h3>
+              <a href="mailto:help@aivalid.id" className="text-sm font-medium hover:underline">
+                help@aivalid.id
+              </a>
+              <p className="mt-2 text-sm text-muted-foreground">Untuk pertanyaan umum dan kendala akun.</p>
+            </article>
+            <article className="rounded-lg border bg-card p-4">
+              <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold">
+                <ClockIcon className="h-4 w-4 text-muted-foreground" />
+                Jam Operasional
+              </h3>
+              <p className="text-sm text-muted-foreground">Senin-Jumat, 09.00-18.00 WIB</p>
+            </article>
           </div>
-        </div>
-      </section>
-    </main>
+        </Section>
+
+        <Section title="Pertanyaan Umum" icon={HelpCircleIcon}>
+          <div className="space-y-3">
+            {faqData.map((faq) => (
+              <details key={faq.question} className="rounded-lg border bg-card">
+                <summary className="cursor-pointer list-none p-4 text-sm font-medium">
+                  {faq.question}
+                </summary>
+                <div className="border-t px-4 py-3 text-sm text-muted-foreground">{faq.answer}</div>
+              </details>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Panduan Cepat" icon={UserIcon}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {quickGuides.map((guide) => (
+              <Link
+                key={guide.href}
+                href={guide.href}
+                className="rounded-lg border bg-card p-4 transition-colors hover:border-muted-foreground/50"
+              >
+                <h3 className="mb-1 text-sm font-semibold">{guide.title}</h3>
+                <p className="text-sm text-muted-foreground">{guide.description}</p>
+              </Link>
+            ))}
+          </div>
+        </Section>
+
+        <section className="rounded-lg border bg-card p-4">
+          <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">
+            <ShieldIcon className="h-4 w-4 text-muted-foreground" />
+            <span>Keamanan Akun</span>
+          </h2>
+          <p className="mb-2 text-sm text-muted-foreground">
+            Gunakan autentikasi dua faktor untuk meningkatkan perlindungan akun Anda.
+          </p>
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <LockIcon className="h-4 w-4" />
+            Simpan backup code di lokasi aman dan jangan dibagikan.
+          </p>
+        </section>
+      </main>
     </>
   );
 }
