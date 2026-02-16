@@ -73,6 +73,7 @@ export default function AdminLayout({ children }) {
     { href: "/admin/badges", label: "Badges" },
     { href: "/admin/disputes", label: "Dispute Center" },
     { href: "/admin/reports", label: "Reports" },
+    { href: "/admin/observed-devices", label: "Observed Devices" },
     { href: "/admin/device-bans", label: "Device Bans" },
     { href: "/admin/warnings", label: "Warnings" },
     { href: "/admin/content", label: "Hidden Records" },

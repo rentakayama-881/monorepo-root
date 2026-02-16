@@ -47,9 +47,14 @@ func strVal(s *string) string {
 func (s *EntAuthService) RegisterWithDevice(ctx context.Context, input validators.RegisterInput, deviceFingerprint, ip, userAgent string) (*RegisterResponse, error) {
 	// Check device limit if fingerprint provided
 	if deviceFingerprint != "" {
+		// Compute hash once: used for both Feature Service ban check and local tracking.
+		// This aligns the ban identifier so that bans created from Observed Devices
+		// (which use fingerprint_hash) are enforced correctly during auth.
+		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+
 		// Check Feature Service admin bans first (highest priority)
 		if deviceBanChecker != nil {
-			if banned, reason, err := deviceBanChecker.IsDeviceBanned(ctx, deviceFingerprint); banned {
+			if banned, reason, err := deviceBanChecker.IsDeviceBanned(ctx, fingerprintHash); banned {
 				if securityAudit != nil {
 					securityAudit.LogEvent(SecurityEvent{
 						Email:     input.Email,
@@ -69,8 +74,6 @@ func (s *EntAuthService) RegisterWithDevice(ctx context.Context, input validator
 
 		// Check PostgreSQL device tracker
 		if deviceTracker != nil {
-			fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
-
 			// Check if device is blocked
 			if blocked, reason := deviceTracker.IsDeviceBlocked(ctx, fingerprintHash); blocked {
 				if securityAudit != nil {
@@ -337,9 +340,11 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 	// 2. Prevents banned devices from testing passwords (info leak)
 	// Order: Feature Service admin bans (highest priority) → local device tracker
 	if deviceFingerprint != "" {
+		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+
 		// Check Feature Service admin bans first (highest priority)
 		if deviceBanChecker != nil {
-			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, deviceFingerprint); banned {
+			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, fingerprintHash); banned {
 				if securityAudit != nil {
 					securityAudit.LogEvent(SecurityEvent{
 						Email:     email,
@@ -359,8 +364,6 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 
 		// Check PostgreSQL device tracker
 		if deviceTracker != nil {
-			fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
-
 			// Check if device is blocked
 			if blocked, reason := deviceTracker.IsDeviceBlocked(ctx, fingerprintHash); blocked {
 				if securityAudit != nil {
@@ -529,9 +532,11 @@ func (s *EntAuthService) LoginWithPasskey(ctx context.Context, u *ent.User, ipAd
 
 	// Check device status if fingerprint provided
 	if deviceFingerprint != "" {
+		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+
 		// Check Feature Service admin bans (highest priority)
 		if deviceBanChecker != nil {
-			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, deviceFingerprint); banned {
+			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, fingerprintHash); banned {
 				if securityAudit != nil {
 					securityAudit.LogEvent(SecurityEvent{
 						Email:     freshUser.Email,
@@ -551,7 +556,6 @@ func (s *EntAuthService) LoginWithPasskey(ctx context.Context, u *ent.User, ipAd
 
 		// Check PostgreSQL device tracker
 		if deviceTracker != nil {
-			fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
 			if blocked, reason := deviceTracker.IsDeviceBlocked(ctx, fingerprintHash); blocked {
 				if securityAudit != nil {
 					securityAudit.LogEvent(SecurityEvent{
@@ -861,8 +865,10 @@ func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, to
 
 	// Check device status if fingerprint provided
 	if deviceFingerprint != "" {
+		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+
 		if deviceBanChecker != nil {
-			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, deviceFingerprint); banned {
+			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, fingerprintHash); banned {
 				if securityAudit != nil {
 					securityAudit.LogEvent(SecurityEvent{
 						Email:     u.Email,
@@ -880,7 +886,6 @@ func (s *EntAuthService) CompleteTOTPLogin(ctx context.Context, pendingToken, to
 			}
 		}
 		if deviceTracker != nil {
-			fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
 			if blocked, reason := deviceTracker.IsDeviceBlocked(ctx, fingerprintHash); blocked {
 				if securityAudit != nil {
 					securityAudit.LogEvent(SecurityEvent{
@@ -1006,8 +1011,10 @@ func (s *EntAuthService) CompleteTOTPLoginWithBackupCode(ctx context.Context, pe
 
 	// Check device status if fingerprint provided
 	if deviceFingerprint != "" {
+		fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
+
 		if deviceBanChecker != nil {
-			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, deviceFingerprint); banned {
+			if banned, reason, banErr := deviceBanChecker.IsDeviceBanned(ctx, fingerprintHash); banned {
 				if securityAudit != nil {
 					securityAudit.LogEvent(SecurityEvent{
 						Email:     u.Email,
@@ -1025,7 +1032,6 @@ func (s *EntAuthService) CompleteTOTPLoginWithBackupCode(ctx context.Context, pe
 			}
 		}
 		if deviceTracker != nil {
-			fingerprintHash := HashFingerprint(deviceFingerprint, userAgent)
 			if blocked, reason := deviceTracker.IsDeviceBlocked(ctx, fingerprintHash); blocked {
 				if securityAudit != nil {
 					securityAudit.LogEvent(SecurityEvent{

@@ -626,6 +626,9 @@ func main() {
 			// Validation Case management (admin only)
 			adminProtected.POST("/validation-cases/:id/move", handlers.AdminMoveValidationCase)
 
+			// Observed devices (read-only)
+			adminProtected.GET("/observed-devices", handlers.AdminListObservedDevices)
+
 		}
 	}
 

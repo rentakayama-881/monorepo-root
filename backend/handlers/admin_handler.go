@@ -12,6 +12,8 @@ import (
 	"backend-gin/ent"
 	"backend-gin/ent/admin"
 	"backend-gin/ent/badge"
+	"backend-gin/ent/devicefingerprint"
+	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/user"
 	"backend-gin/ent/userbadge"
 	"backend-gin/logger"
@@ -775,5 +777,131 @@ func AdminGetUser(c *gin.Context) {
 			"primary_badge_id": entUser.PrimaryBadgeID,
 		},
 		"badges": badgesResponse,
+	})
+}
+
+// ==================== Observed Devices ====================
+
+// AdminListObservedDevices returns a paginated list of observed device fingerprints.
+// GET /admin/observed-devices?page=1&pageSize=50&search=...
+func AdminListObservedDevices(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "50"))
+	search := strings.TrimSpace(c.Query("search"))
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 50
+	}
+	offset := (page - 1) * pageSize
+
+	client := database.GetEntClient()
+	ctx := c.Request.Context()
+
+	// Build base query
+	buildQuery := func() *ent.DeviceFingerprintQuery {
+		q := client.DeviceFingerprint.Query().
+			Where(devicefingerprint.DeletedAtIsNil())
+		if search != "" {
+			// Search by fingerprint hash or user ID (as string)
+			searchID, idErr := strconv.Atoi(search)
+			if idErr == nil {
+				// If the search string is numeric, also match user_id
+				q = q.Where(devicefingerprint.Or(
+					devicefingerprint.FingerprintHashContainsFold(search),
+					devicefingerprint.UserIDEQ(searchID),
+				))
+			} else {
+				q = q.Where(devicefingerprint.FingerprintHashContainsFold(search))
+			}
+		}
+		return q
+	}
+
+	total, err := buildQuery().Count(ctx)
+	if err != nil {
+		logger.Error("Failed to count observed devices", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    "SRV001",
+			"message": "Gagal mengambil data observed devices",
+		})
+		return
+	}
+
+	devices, err := buildQuery().
+		Offset(offset).
+		Limit(pageSize).
+		Order(ent.Desc(devicefingerprint.FieldLastSeenAt)).
+		All(ctx)
+	if err != nil {
+		logger.Error("Failed to query observed devices", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    "SRV001",
+			"message": "Gagal mengambil data observed devices",
+		})
+		return
+	}
+
+	// Collect all fingerprint hashes for bulk user mapping lookup
+	fpHashes := make([]string, 0, len(devices))
+	for _, d := range devices {
+		fpHashes = append(fpHashes, d.FingerprintHash)
+	}
+
+	// Fetch all user mappings for these fingerprints in one query
+	userMappingMap := make(map[string][]int)
+	if len(fpHashes) > 0 {
+		mappings, err := client.DeviceUserMapping.Query().
+			Where(
+				deviceusermapping.FingerprintHashIn(fpHashes...),
+				deviceusermapping.DeletedAtIsNil(),
+			).
+			All(ctx)
+		if err != nil {
+			logger.Warn("Failed to fetch device user mappings", zap.Error(err))
+		} else {
+			for _, m := range mappings {
+				userMappingMap[m.FingerprintHash] = append(userMappingMap[m.FingerprintHash], m.UserID)
+			}
+		}
+	}
+
+	// Build response
+	type ObservedDevice struct {
+		FingerprintHash string    `json:"fingerprint_hash"`
+		AccountCount    int       `json:"account_count"`
+		Blocked         bool      `json:"blocked"`
+		BlockReason     string    `json:"block_reason"`
+		LastSeenAt      time.Time `json:"last_seen_at"`
+		IPAddress       string    `json:"ip_address"`
+		UserAgent       string    `json:"user_agent"`
+		UserIDs         []int     `json:"user_ids"`
+	}
+
+	items := make([]ObservedDevice, 0, len(devices))
+	for _, d := range devices {
+		userIDs := userMappingMap[d.FingerprintHash]
+		if userIDs == nil {
+			userIDs = []int{}
+		}
+		items = append(items, ObservedDevice{
+			FingerprintHash: d.FingerprintHash,
+			AccountCount:    d.AccountCount,
+			Blocked:         d.Blocked,
+			BlockReason:     d.BlockReason,
+			LastSeenAt:      d.LastSeenAt,
+			IPAddress:       d.IPAddress,
+			UserAgent:       d.UserAgent,
+			UserIDs:         userIDs,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"devices":  items,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
 	})
 }
