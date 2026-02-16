@@ -420,6 +420,15 @@ export function extractFeatureItems(payload) {
     return payload.Items;
   }
 
+  // Admin moderation paginated responses can use bans/Bans
+  if (Array.isArray(payload.bans)) {
+    return payload.bans;
+  }
+
+  if (Array.isArray(payload.Bans)) {
+    return payload.Bans;
+  }
+
   if (Array.isArray(payload.results)) {
     return payload.results;
   }
