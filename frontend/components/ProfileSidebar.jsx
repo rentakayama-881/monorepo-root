@@ -383,18 +383,18 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
         >
           <div className="space-y-3.5" aria-busy="true" aria-live="polite">
             <div className="flex items-center gap-2.5">
-              <SkeletonCircle size="h-8 w-8" />
+              <SkeletonCircle size="h-8 w-8" className="bg-muted-foreground/20 dark:bg-secondary" />
               <div className="min-w-0 flex-1 space-y-2">
-                <SkeletonText width="w-28" />
-                <SkeletonText width="w-36" height="h-3" />
+                <SkeletonText width="w-28" className="bg-muted-foreground/20 dark:bg-secondary" />
+                <SkeletonText width="w-36" height="h-3" className="bg-muted-foreground/20 dark:bg-secondary" />
               </div>
-              <Skeleton className="h-7 w-7 rounded-md" />
+              <Skeleton className="h-7 w-7 rounded-md bg-muted-foreground/20 dark:bg-secondary" />
             </div>
 
             <div className="space-y-2">
-              <Skeleton className="h-9 w-full rounded-md" />
-              <Skeleton className="h-9 w-full rounded-md" />
-              <Skeleton className="h-9 w-full rounded-md" />
+              <Skeleton className="h-9 w-full rounded-md bg-muted-foreground/20 dark:bg-secondary" />
+              <Skeleton className="h-9 w-full rounded-md bg-muted-foreground/20 dark:bg-secondary" />
+              <Skeleton className="h-9 w-full rounded-md bg-muted-foreground/20 dark:bg-secondary" />
             </div>
           </div>
         </div>
