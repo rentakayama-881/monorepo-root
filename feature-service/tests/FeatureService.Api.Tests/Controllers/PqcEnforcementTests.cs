@@ -27,7 +27,6 @@ public class PqcEnforcementTests
     public void WalletPin_Endpoints_RequirePqcSignature()
     {
         AssertRequiresPqc(typeof(WalletsController), nameof(WalletsController.SetPin), requireIdempotencyKey: true);
-        AssertRequiresPqc(typeof(WalletsController), nameof(WalletsController.ChangePin), requireIdempotencyKey: true);
         AssertRequiresPqc(typeof(WalletsController), nameof(WalletsController.VerifyPin), requireIdempotencyKey: false);
     }
 

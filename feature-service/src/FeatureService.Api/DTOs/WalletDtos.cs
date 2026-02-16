@@ -31,22 +31,6 @@ public class SetPinRequest
     public string ConfirmPin { get; set; } = string.Empty;
 }
 
-public class ChangePinRequest
-{
-    [Required(ErrorMessage = "PIN lama wajib diisi")]
-    [StringLength(6, MinimumLength = 6, ErrorMessage = "PIN harus 6 digit")]
-    public string CurrentPin { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "PIN baru wajib diisi")]
-    [StringLength(6, MinimumLength = 6, ErrorMessage = "PIN harus 6 digit")]
-    [RegularExpression(@"^\d{6}$", ErrorMessage = "PIN harus berisi angka saja")]
-    public string NewPin { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Konfirmasi PIN baru wajib diisi")]
-    [Compare(nameof(NewPin), ErrorMessage = "Konfirmasi PIN tidak cocok")]
-    public string ConfirmPin { get; set; } = string.Empty;
-}
-
 public class VerifyPinRequest
 {
     [Required(ErrorMessage = "PIN wajib diisi")]

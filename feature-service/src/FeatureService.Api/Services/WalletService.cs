@@ -12,7 +12,6 @@ public interface IWalletService
 {
     Task<UserWallet> GetOrCreateWalletAsync(uint userId);
     Task<bool> SetPinAsync(uint userId, string pin);
-    Task<bool> ChangePinAsync(uint userId, string currentPin, string newPin);
     Task<VerifyPinResponse> VerifyPinAsync(uint userId, string pin);
     Task<PinStatusResponse> GetPinStatusAsync(uint userId);
     Task<(bool success, string? error, string? transactionId)> DeductBalanceAsync(uint userId, long amount, string description, TransactionType type, string? referenceId = null, string? referenceType = null);
@@ -81,15 +80,14 @@ public class WalletService : IWalletService
 
     public async Task<bool> SetPinAsync(uint userId, string pin)
     {
-        var wallet = await GetOrCreateWalletAsync(userId);
-        
-        if (wallet.PinSet)
-        {
-            throw new InvalidOperationException("PIN sudah diset. Gunakan change PIN untuk mengubah.");
-        }
-
+        await GetOrCreateWalletAsync(userId);
         ValidatePin(pin);
         var pinHash = HashPin(pin);
+
+        var filter = Builders<UserWallet>.Filter.And(
+            Builders<UserWallet>.Filter.Eq(w => w.UserId, userId),
+            Builders<UserWallet>.Filter.Eq(w => w.PinSet, false)
+        );
 
         var update = Builders<UserWallet>.Update
             .Set(w => w.PinHash, pinHash)
@@ -98,48 +96,13 @@ public class WalletService : IWalletService
             .Set(w => w.PinLockedUntil, null)
             .Set(w => w.UpdatedAt, DateTime.UtcNow);
 
-        var result = await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
+        var result = await _wallets.UpdateOneAsync(filter, update);
+
+        if (result.MatchedCount == 0)
+            throw new InvalidOperationException("PIN sudah diset sebelumnya. PIN tidak dapat diubah.");
+
         _logger.LogInformation("PIN set for user {UserId}", userId);
-        return result.ModifiedCount > 0;
-    }
-
-    public async Task<bool> ChangePinAsync(uint userId, string currentPin, string newPin)
-    {
-        var wallet = await GetOrCreateWalletAsync(userId);
-        
-        if (!wallet.PinSet || string.IsNullOrEmpty(wallet.PinHash))
-        {
-            throw new InvalidOperationException("PIN belum diset. Gunakan set PIN terlebih dahulu.");
-        }
-
-        // Check if PIN is locked
-        CheckPinLock(wallet);
-
-        // Verify current PIN
-        if (!VerifyPinHash(currentPin, wallet.PinHash))
-        {
-            await IncrementFailedAttemptsAsync(userId, wallet);
-            throw new UnauthorizedAccessException("PIN lama salah");
-        }
-
-        ValidatePin(newPin);
-        
-        if (currentPin == newPin)
-        {
-            throw new InvalidOperationException("PIN baru tidak boleh sama dengan PIN lama");
-        }
-
-        var newPinHash = HashPin(newPin);
-
-        var update = Builders<UserWallet>.Update
-            .Set(w => w.PinHash, newPinHash)
-            .Set(w => w.FailedPinAttempts, 0)
-            .Set(w => w.PinLockedUntil, null)
-            .Set(w => w.UpdatedAt, DateTime.UtcNow);
-
-        var result = await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
-        _logger.LogInformation("PIN changed for user {UserId}", userId);
-        return result.ModifiedCount > 0;
+        return true;
     }
 
     public async Task<VerifyPinResponse> VerifyPinAsync(uint userId, string pin)

@@ -137,7 +137,6 @@ export const FEATURE_ENDPOINTS = {
     ME: "/api/v1/wallets/me",
     PIN_STATUS: "/api/v1/wallets/pin/status",
     PIN_SET: "/api/v1/wallets/pin/set",
-    PIN_CHANGE: "/api/v1/wallets/pin/change",
     PIN_VERIFY: "/api/v1/wallets/pin/verify",
     TRANSACTIONS: "/api/v1/wallets/transactions",
     DEPOSITS: "/api/v1/wallets/deposits",

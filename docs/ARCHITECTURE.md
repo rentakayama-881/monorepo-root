@@ -803,8 +803,7 @@ GET    /health                               # HealthChecks endpoint
 Wallet Endpoints:
 GET    /api/v1/wallets/me                    # Get own wallet
 GET    /api/v1/wallets/pin/status            # PIN status (locked / set)
-POST   /api/v1/wallets/pin/set               # Set PIN (requires 2FA)
-POST   /api/v1/wallets/pin/change            # Change PIN
+POST   /api/v1/wallets/pin/set               # Set PIN (one-time, requires 2FA)
 POST   /api/v1/wallets/pin/verify            # Verify PIN
 GET    /api/v1/wallets/transactions          # Transaction history
 

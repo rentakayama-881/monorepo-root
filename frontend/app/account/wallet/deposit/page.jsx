@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   fetchFeatureAuth,
   FEATURE_ENDPOINTS,
@@ -126,8 +125,17 @@ export default function DepositPage() {
   }, [router]);
 
   const quickAmounts = [50000, 100000, 200000, 500000, 1000000];
+  const defaultBackRoute = "/account/wallet/transactions";
 
   const amountNum = parseInt(amount.replace(/\D/g, ""), 10) || 0;
+
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(defaultBackRoute);
+  };
 
   const handleNextToPayment = () => {
     setError("");
@@ -243,17 +251,18 @@ export default function DepositPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-3xl px-4 py-8">
-          <Link
-            href="/account/wallet"
+          <button
+            type="button"
+            onClick={handleBack}
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Kembali
-          </Link>
+          </button>
 
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-foreground">Deposit</h1>

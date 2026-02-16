@@ -318,6 +318,12 @@ try
     // Register services
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<IUserContextAccessor, UserContextAccessor>();
+    // Live 2FA verifier — calls Go backend to prevent stale JWT claim bypass
+    builder.Services.AddHttpClient<ITwoFactorVerifier, LiveTwoFactorVerifier>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(5);
+    });
+
     // Register financial services
     builder.Services.AddScoped<IWalletService, WalletService>();
     builder.Services.AddScoped<IGuaranteeService, GuaranteeService>();

@@ -8,7 +8,6 @@ import {
   unwrapFeatureData,
 } from "@/lib/featureApi";
 import { fetchJsonAuth } from "@/lib/api";
-import { getToken } from "@/lib/auth";
 import { getValidToken } from "@/lib/tokenRefresh";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
@@ -31,8 +30,6 @@ export default function SetPinContent() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
-  const [hasPin, setHasPin] = useState(false);
-  const [currentPin, setCurrentPin] = useState("");
 
   useEffect(() => {
     async function checkWalletAndTwoFactor() {
@@ -54,7 +51,13 @@ export default function SetPinContent() {
 
         // Get PIN status from Feature Service
         const pinStatus = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.PIN_STATUS);
-        setHasPin(normalizePinStatus(pinStatus));
+        const pinAlreadySet = normalizePinStatus(pinStatus);
+
+        // PIN can only be set once — if already set, redirect to transactions
+        if (pinAlreadySet) {
+          router.push("/account/wallet/transactions");
+          return;
+        }
       } catch (e) {
         logger.error("Failed to check wallet:", e);
         // If Feature Service unavailable, show error
@@ -104,18 +107,9 @@ export default function SetPinContent() {
         return;
       }
 
-      // Determine endpoint and body based on whether user is changing or setting PIN
-      const endpoint = hasPin
-        ? FEATURE_ENDPOINTS.WALLETS.PIN_CHANGE
-        : FEATURE_ENDPOINTS.WALLETS.PIN_SET;
-
-      const body = hasPin
-        ? { currentPin: currentPin, newPin: pin, confirmNewPin: confirmPin }
-        : { pin: pin, confirmPin: confirmPin };
-
-      await fetchFeatureAuth(endpoint, {
+      await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.PIN_SET, {
         method: "POST",
-        body: JSON.stringify(body),
+        body: JSON.stringify({ pin: pin, confirmPin: confirmPin }),
       });
 
       // Success - redirect based on context
@@ -184,7 +178,7 @@ export default function SetPinContent() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-foreground">
-            {hasPin ? "Ubah PIN" : "Buat PIN Transaksi"}
+            Buat PIN Transaksi
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             PIN digunakan untuk mengamankan transaksi keuangan Anda
@@ -198,9 +192,9 @@ export default function SetPinContent() {
         )}
 
         <div className="rounded-lg border border-border bg-card p-6">
-          {/* Step indicators */}
+          {/* Step indicators — always 2 steps */}
           <div className="mb-6 flex justify-center gap-2">
-            {(hasPin ? [1, 2, 3] : [1, 2]).map((s) => (
+            {[1, 2].map((s) => (
               <div
                 key={s}
                 className={`h-2 w-8 rounded-full transition ${
@@ -210,37 +204,11 @@ export default function SetPinContent() {
             ))}
           </div>
 
-          {/* Step: Current PIN (only if changing) */}
-          {hasPin && step === 1 && (
+          {/* Step 1: New PIN */}
+          {step === 1 && (
             <div>
               <label className="block text-sm font-medium text-foreground mb-2 text-center">
-                Masukkan PIN Saat Ini
-              </label>
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                value={currentPin}
-                onChange={(e) => handlePinChange(e.target.value, setCurrentPin)}
-                placeholder="••••••"
-                className="w-full rounded-lg border border-border bg-transparent px-4 py-4 text-center text-3xl tracking-[0.5em] focus:outline-none focus:border-primary"
-                autoFocus
-              />
-              <button
-                onClick={() => setStep(2)}
-                disabled={currentPin.length !== 6}
-                className="mt-6 w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
-              >
-                Lanjutkan
-              </button>
-            </div>
-          )}
-
-          {/* Step: New PIN */}
-          {((hasPin && step === 2) || (!hasPin && step === 1)) && (
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2 text-center">
-                {hasPin ? "Masukkan PIN Baru" : "Buat PIN 6 Digit"}
+                Buat PIN 6 Digit
               </label>
               <input
                 type="password"
@@ -255,28 +223,18 @@ export default function SetPinContent() {
               <p className="mt-2 text-xs text-muted-foreground text-center">
                 Hindari PIN yang mudah ditebak seperti 123456
               </p>
-              <div className="mt-6 flex gap-3">
-                {hasPin && (
-                  <button
-                    onClick={() => setStep(1)}
-                    className="flex-1 rounded-lg border border-border py-3 font-medium"
-                  >
-                    Kembali
-                  </button>
-                )}
-                <button
-                  onClick={() => setStep(hasPin ? 3 : 2)}
-                  disabled={pin.length !== 6}
-                  className={`${hasPin ? "flex-1" : "w-full"} rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50`}
-                >
-                  Lanjutkan
-                </button>
-              </div>
+              <button
+                onClick={() => setStep(2)}
+                disabled={pin.length !== 6}
+                className="mt-6 w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+              >
+                Lanjutkan
+              </button>
             </div>
           )}
 
-          {/* Step: Confirm PIN */}
-          {((hasPin && step === 3) || (!hasPin && step === 2)) && (
+          {/* Step 2: Confirm PIN */}
+          {step === 2 && (
             <div>
               <label className="block text-sm font-medium text-foreground mb-2 text-center">
                 Konfirmasi PIN
@@ -296,7 +254,7 @@ export default function SetPinContent() {
               )}
               <div className="mt-6 flex gap-3">
                 <button
-                  onClick={() => setStep(hasPin ? 2 : 1)}
+                  onClick={() => setStep(1)}
                   className="flex-1 rounded-lg border border-border py-3 font-medium"
                 >
                   Kembali
@@ -314,23 +272,21 @@ export default function SetPinContent() {
         </div>
 
         {/* Critical warning - PIN cannot be reset */}
-        {!hasPin && (
-          <div className="mt-6 rounded-lg bg-destructive/10 border border-destructive/30 p-4">
-            <div className="flex gap-3">
-              <svg className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div className="text-sm">
-                <p className="font-semibold text-destructive mb-1">⚠️ Peringatan Penting</p>
-                <p className="text-muted-foreground">
-                  <strong>PIN tidak dapat di-reset atau dipulihkan.</strong> Jika Anda lupa PIN,
-                  Anda tidak akan bisa melakukan transaksi dan harus menghubungi admin untuk bantuan.
-                  Pastikan Anda mengingat PIN yang Anda buat.
-                </p>
-              </div>
+        <div className="mt-6 rounded-lg bg-destructive/10 border border-destructive/30 p-4">
+          <div className="flex gap-3">
+            <svg className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div className="text-sm">
+              <p className="font-semibold text-destructive mb-1">Peringatan Penting</p>
+              <p className="text-muted-foreground">
+                <strong>PIN tidak dapat di-reset atau dipulihkan.</strong> Jika Anda lupa PIN,
+                Anda tidak akan bisa melakukan transaksi dan harus menghubungi admin untuk bantuan.
+                Pastikan Anda mengingat PIN yang Anda buat.
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Security notice */}
         <div className="mt-6 rounded-lg bg-primary/10 border border-primary/30 p-4">

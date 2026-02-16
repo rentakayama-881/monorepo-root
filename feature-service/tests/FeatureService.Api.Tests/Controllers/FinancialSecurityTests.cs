@@ -97,24 +97,6 @@ public class FinancialSecurityTests
     }
 
     [Fact]
-    public void ChangePinRequest_WithAllRequiredFields_IsComplete()
-    {
-        // Arrange
-        var request = new ChangePinRequest
-        {
-            CurrentPin = "123456",
-            NewPin = "654321",
-            ConfirmPin = "654321"
-        };
-
-        // Assert
-        Assert.Equal(6, request.CurrentPin.Length);
-        Assert.Equal(6, request.NewPin.Length);
-        Assert.Equal(request.NewPin, request.ConfirmPin);
-        Assert.NotEqual(request.CurrentPin, request.NewPin);
-    }
-
-    [Fact]
     public void VerifyPinRequest_WithPin_HasCorrectFormat()
     {
         // Arrange

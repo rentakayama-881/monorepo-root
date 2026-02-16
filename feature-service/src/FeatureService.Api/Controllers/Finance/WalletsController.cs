@@ -14,15 +14,18 @@ public class WalletsController : ApiControllerBase
 {
     private readonly IWalletService _walletService;
     private readonly IUserContextAccessor _userContextAccessor;
+    private readonly ITwoFactorVerifier _twoFactorVerifier;
     private readonly ILogger<WalletsController> _logger;
 
     public WalletsController(
-        IWalletService walletService, 
+        IWalletService walletService,
         IUserContextAccessor userContextAccessor,
+        ITwoFactorVerifier twoFactorVerifier,
         ILogger<WalletsController> logger)
     {
         _walletService = walletService;
         _userContextAccessor = userContextAccessor;
+        _twoFactorVerifier = twoFactorVerifier;
         _logger = logger;
     }
 
@@ -112,9 +115,17 @@ public class WalletsController : ApiControllerBase
             return ApiUnauthorized("User tidak terautentikasi");
         }
 
-        // CRITICAL: Require 2FA before setting PIN
-        var twoFactorCheck = RequiresTwoFactorAuth();
-        if (twoFactorCheck != null) return twoFactorCheck;
+        // CRITICAL: Live 2FA verification — do NOT trust stale JWT claim for
+        // irreversible PIN set.  Call Go backend to confirm 2FA is still active.
+        var authHeader = HttpContext.Request.Headers["Authorization"].ToString();
+        var is2faLive = await _twoFactorVerifier.IsEnabledLiveAsync(authHeader);
+        if (!is2faLive)
+        {
+            _logger.LogWarning("Live 2FA check failed for user {UserId} on PIN set", user.UserId);
+            return ApiError(403, "TWO_FACTOR_REQUIRED",
+                "Two-factor authentication (2FA) must be currently active to set PIN. " +
+                "Please enable 2FA in your security settings and try again.");
+        }
 
         try
         {
@@ -138,46 +149,6 @@ public class WalletsController : ApiControllerBase
         {
             _logger.LogError(ex, "Error setting PIN for user {UserId}", user.UserId);
             return ApiInternalError("Failed to set PIN");
-        }
-    }
-
-    /// <summary>
-    /// Change existing PIN
-    /// </summary>
-    [HttpPost("pin/change")]
-    [RequiresPqcSignature(RequireIdempotencyKey = true)]
-    [ProducesResponseType(200)]
-    [ProducesResponseType(typeof(ApiErrorResponse), 400)]
-    [ProducesResponseType(typeof(ApiErrorResponse), 401)]
-    public async Task<IActionResult> ChangePin([FromBody] ChangePinRequest request)
-    {
-        var user = _userContextAccessor.GetCurrentUser();
-        if (user == null)
-        {
-            return ApiUnauthorized("User tidak terautentikasi");
-        }
-
-        try
-        {
-            await _walletService.ChangePinAsync(user.UserId, request.CurrentPin, request.NewPin);
-            return Ok(new { message = "PIN berhasil diubah" });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return ApiBadRequest(ex.Message);
-        }
-        catch (ArgumentException ex)
-        {
-            return ApiBadRequest(ex.Message);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return ApiError(401, ApiErrorCodes.InvalidPin, ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error changing PIN for user {UserId}", user.UserId);
-            return ApiInternalError("Gagal mengubah PIN");
         }
     }
 
