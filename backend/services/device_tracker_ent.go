@@ -226,26 +226,148 @@ func (d *EntDeviceTracker) RecordDeviceRegistration(ctx context.Context, userID 
 	return nil
 }
 
-// RecordDeviceLogin records a device being used for login
+// RecordDeviceLogin records a device being used for login (upsert: create-or-update)
 func (d *EntDeviceTracker) RecordDeviceLogin(ctx context.Context, userID int, fingerprintHash, ip, userAgent string) error {
 	now := time.Now()
 	client := database.GetEntClient()
 
-	// Update device last seen
-	_ = client.DeviceFingerprint.Update().
-		Where(devicefingerprint.FingerprintHashEQ(fingerprintHash)).
-		SetLastSeenAt(now).
-		SetIPAddress(ip).
-		Exec(ctx)
+	// Use transaction for atomicity
+	tx, err := client.Tx(ctx)
+	if err != nil {
+		logger.Error("RecordDeviceLogin: failed to start transaction", zap.Error(err))
+		return err
+	}
 
-	// Update user-device mapping
-	_ = client.DeviceUserMapping.Update().
+	// Upsert device_fingerprints: create if not exist, update if exist
+	deviceFP, err := tx.DeviceFingerprint.Query().
+		Where(devicefingerprint.FingerprintHashEQ(fingerprintHash)).
+		Only(ctx)
+
+	var blocked bool
+	if ent.IsNotFound(err) {
+		// New device — create row
+		deviceFP, err = tx.DeviceFingerprint.Create().
+			SetFingerprintHash(fingerprintHash).
+			SetUserID(userID).
+			SetIPAddress(ip).
+			SetUserAgent(userAgent).
+			SetAccountCount(1).
+			SetLastSeenAt(now).
+			Save(ctx)
+		if err != nil {
+			_ = tx.Rollback()
+			logger.Error("RecordDeviceLogin: failed to create device fingerprint", zap.Error(err))
+			return err
+		}
+		blocked = false
+	} else if err != nil {
+		_ = tx.Rollback()
+		logger.Error("RecordDeviceLogin: failed to query device fingerprint", zap.Error(err))
+		return err
+	} else {
+		// Existing device — update last_seen_at, ip, user_agent
+		blocked = deviceFP.Blocked
+		_, err = tx.DeviceFingerprint.UpdateOne(deviceFP).
+			SetLastSeenAt(now).
+			SetIPAddress(ip).
+			SetUserAgent(userAgent).
+			Save(ctx)
+		if err != nil {
+			_ = tx.Rollback()
+			logger.Error("RecordDeviceLogin: failed to update device fingerprint", zap.Error(err))
+			return err
+		}
+	}
+
+	// Upsert device_user_mappings: create if not exist, update last_seen_at if exist
+	existingMapping, err := tx.DeviceUserMapping.Query().
 		Where(
 			deviceusermapping.FingerprintHashEQ(fingerprintHash),
 			deviceusermapping.UserIDEQ(userID),
 		).
-		SetLastSeenAt(now).
-		Exec(ctx)
+		Only(ctx)
+
+	if ent.IsNotFound(err) {
+		// New mapping — create
+		_, err = tx.DeviceUserMapping.Create().
+			SetFingerprintHash(fingerprintHash).
+			SetUserID(userID).
+			SetFirstSeenAt(now).
+			SetLastSeenAt(now).
+			Save(ctx)
+		if err != nil {
+			if ent.IsConstraintError(err) {
+				// Race condition: another transaction created it — safe to ignore
+				logger.Debug("RecordDeviceLogin: duplicate mapping constraint (ignored)",
+					zap.Int("user_id", userID),
+					zap.String("fingerprint", fingerprintHash[:16]+"..."))
+			} else {
+				_ = tx.Rollback()
+				logger.Error("RecordDeviceLogin: failed to create user mapping", zap.Error(err))
+				return err
+			}
+		}
+	} else if err != nil {
+		_ = tx.Rollback()
+		logger.Error("RecordDeviceLogin: failed to query user mapping", zap.Error(err))
+		return err
+	} else {
+		// Existing mapping — update last_seen_at
+		_, err = tx.DeviceUserMapping.UpdateOne(existingMapping).
+			SetLastSeenAt(now).
+			Save(ctx)
+		if err != nil {
+			_ = tx.Rollback()
+			logger.Error("RecordDeviceLogin: failed to update user mapping", zap.Error(err))
+			return err
+		}
+	}
+
+	// Sync account_count with actual distinct user mappings
+	mappingCount, err := tx.DeviceUserMapping.Query().
+		Where(deviceusermapping.FingerprintHashEQ(fingerprintHash)).
+		Count(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		logger.Error("RecordDeviceLogin: failed to count user mappings", zap.Error(err))
+		return err
+	}
+
+	if deviceFP.AccountCount != mappingCount {
+		_, err = tx.DeviceFingerprint.Update().
+			Where(devicefingerprint.FingerprintHashEQ(fingerprintHash)).
+			SetAccountCount(mappingCount).
+			Save(ctx)
+		if err != nil {
+			_ = tx.Rollback()
+			logger.Error("RecordDeviceLogin: failed to sync account_count", zap.Error(err))
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		logger.Error("RecordDeviceLogin: failed to commit transaction", zap.Error(err))
+		return err
+	}
+
+	// Update cache
+	d.mu.Lock()
+	d.recentDevices[fingerprintHash] = &recentDeviceRecord{
+		FingerprintHash: fingerprintHash,
+		IPAddress:       ip,
+		UserAgent:       userAgent,
+		AccountCount:    mappingCount,
+		LastSeen:        now,
+		Blocked:         blocked,
+		BlockReason:     deviceFP.BlockReason,
+	}
+	d.mu.Unlock()
+
+	logger.Info("Device login recorded",
+		zap.Int("user_id", userID),
+		zap.String("fingerprint", fingerprintHash[:16]+"..."),
+		zap.String("ip", ip),
+		zap.Int("account_count", mappingCount))
 
 	return nil
 }
