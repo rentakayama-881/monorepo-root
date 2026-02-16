@@ -313,7 +313,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
 
   const displayName = user.username || (user.email ? user.email.split("@")[0] : "Akun");
   const hasUser = !!(displayName || user.email);
-  const overlayClassName = "fixed inset-0 z-[100] bg-black/30 backdrop-blur-[1px]";
+  const overlayClassName = "fixed inset-0 z-[100] bg-black/50 transition-opacity duration-300";
   const panelBaseClassName =
     "fixed right-2 top-[3.35rem] z-[110] w-[16.5rem] max-w-[calc(100vw-0.75rem)] rounded-2xl border border-border/75 bg-card/95 shadow-[0_14px_28px_rgba(0,0,0,0.18)] backdrop-blur-md flex flex-col max-h-[calc(100dvh-4.1rem)] animate-slide-in-from-right";
   const panelPaddedClassName = `${panelBaseClassName} p-3`;
