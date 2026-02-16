@@ -134,7 +134,7 @@ export default function Modal({
   return (
     <div
       className={clsx(
-        "fixed inset-0 z-[140] flex justify-center",
+        "fixed inset-0 z-50 flex justify-center",
         shouldSlideUp ? "items-end sm:items-center" : "items-center",
         size === "full" ? "p-0" : "p-4",
         // Mobile-first: slide up from bottom on small screens for better UX

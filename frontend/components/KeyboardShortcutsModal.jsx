@@ -30,13 +30,13 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[130] bg-black/50 backdrop-blur-sm animate-fade-in"
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 z-[140] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 animate-scale-in">
+      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 animate-scale-in">
         <div className="mx-4 rounded-lg border bg-card shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between border-b px-6 py-4">
