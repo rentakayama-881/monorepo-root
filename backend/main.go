@@ -542,7 +542,7 @@ func main() {
 			{
 				validationCases.GET("/categories", caseHandler.GetCategories)
 				validationCases.GET("/category/:slug", caseHandler.GetValidationCasesByCategory)
-				validationCases.GET("/latest", enhancedRateLimiter.SearchMiddleware(), caseHandler.GetLatestValidationCases)
+				validationCases.GET("/latest", caseHandler.GetLatestValidationCases)
 				validationCases.GET("/:id/public", caseHandler.GetPublicValidationCaseDetail)
 				validationCases.GET("/:id", middleware.AuthMiddleware(), caseHandler.GetValidationCaseDetail)
 				validationCases.POST("", middleware.AuthMiddleware(), caseHandler.CreateValidationCase)

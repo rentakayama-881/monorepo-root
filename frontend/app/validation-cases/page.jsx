@@ -35,16 +35,11 @@ async function CaseList() {
   const params = new URLSearchParams();
   params.set("limit", "50");
 
-  let cases = [];
-  try {
-    const data = await fetchJson(`/api/validation-cases/latest?${params.toString()}`, {
-      method: "GET",
-      next: { revalidate: 30 },
-    });
-    cases = Array.isArray(data?.validation_cases) ? data.validation_cases : [];
-  } catch {
-    cases = [];
-  }
+  const data = await fetchJson(`/api/validation-cases/latest?${params.toString()}`, {
+    method: "GET",
+    next: { revalidate: 30 },
+  });
+  const cases = Array.isArray(data?.validation_cases) ? data.validation_cases : [];
 
   return <ValidationCaseIndexClient cases={cases} />;
 }
