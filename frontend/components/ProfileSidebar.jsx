@@ -239,9 +239,9 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
 
   const displayName = user.username || (user.email ? user.email.split("@")[0] : "Akun");
   const hasUser = !!(displayName || user.email);
-  const overlayClassName = "fixed inset-0 z-[100] bg-black/50 backdrop-blur-[1px]";
+  const overlayClassName = "fixed inset-0 z-[100] bg-black/45 backdrop-blur-[1px]";
   const panelBaseClassName =
-    "fixed inset-y-0 right-0 z-[110] w-[22rem] max-w-[92vw] border-l border-border bg-card shadow-2xl flex flex-col animate-slide-in-from-right";
+    "fixed right-3 top-14 z-[110] w-[18.75rem] max-w-[calc(100vw-1rem)] rounded-2xl border border-border/70 bg-card/95 shadow-2xl backdrop-blur-md flex flex-col max-h-[calc(100dvh-6.5rem)] animate-slide-down";
   const panelPaddedClassName = `${panelBaseClassName} p-4`;
 
   // Show loading spinner while fetching user data
@@ -341,7 +341,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
         onClickCapture={handlePanelNavigation}
       >
         {/* Fixed header section */}
-        <div className="shrink-0 border-b p-4">
+        <div className="shrink-0 p-4 pb-0">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="relative">
@@ -375,9 +375,9 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin" style={{ overscrollBehavior: 'contain' }}>
+      <div className="flex-1 overflow-y-auto p-4 pt-0 scrollbar-thin" style={{ overscrollBehavior: 'contain' }}>
         {/* Wallet Balance Card */}
-        <div className="rounded-[var(--radius)] border bg-gradient-to-br from-secondary/50 to-transparent p-3">
+        <div className="mt-4 rounded-[var(--radius)] border bg-gradient-to-br from-secondary/50 to-transparent p-3">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-muted-foreground">Saldo</div>
