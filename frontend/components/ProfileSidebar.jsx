@@ -8,7 +8,7 @@ import { maskEmail } from "@/lib/email";
 import Avatar from "@/components/ui/Avatar";
 import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton";
 
-export default function ProfileSidebar({ onClose }) {
+export default function ProfileSidebar({ onClose, triggerRef }) {
   const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
   const [wallet, setWallet] = useState({ balance: 0, pin_set: false });
   const [guarantee, setGuarantee] = useState({ amount: 0 });
@@ -65,7 +65,10 @@ export default function ProfileSidebar({ onClose }) {
         const data = await res.json();
         if (cancelled) return;
         setUser({
-          username: data.username || data.name || "",
+          username:
+            data.username ||
+            data.name ||
+            (typeof data.email === "string" ? data.email.split("@")[0] : ""),
           avatar_url: data.avatar_url || "",
           email: data.email || "",
         });
@@ -97,7 +100,9 @@ export default function ProfileSidebar({ onClose }) {
           // Silent fail for wallet - not critical
         }
 
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       } catch (err) {
         // Do not force logout on transient/network errors.
         // Logout only when auth is truly invalid.
@@ -130,12 +135,65 @@ export default function ProfileSidebar({ onClose }) {
   }, [onClose, reloadTick]);
 
   useEffect(() => {
+    const panelEl = panelRef.current;
+    const previousActiveElement = document.activeElement;
+
+    if (panelEl) {
+      panelEl.focus();
+    }
+
+    const trapFocus = (e) => {
+      const container = panelRef.current;
+      if (!container) return;
+
+      const focusable = container.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+
+      if (!focusable.length) {
+        e.preventDefault();
+        container.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (e.shiftKey) {
+        if (active === first || active === container) {
+          e.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+
+      if (active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
     const handleKey = (e) => {
-      if (e && e.key === "Escape") onClose?.();
+      if (!e) return;
+      if (e.key === "Escape") {
+        onClose?.();
+        return;
+      }
+      if (e.key === "Tab") {
+        trapFocus(e);
+      }
     };
 
     const handleClickOutside = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) onClose?.();
+      const target = e?.target;
+      if (!target) return;
+
+      if (triggerRef?.current && triggerRef.current.contains(target)) {
+        return;
+      }
+
+      if (panelRef.current && !panelRef.current.contains(target)) onClose?.();
     };
 
     window.addEventListener("keydown", handleKey);
@@ -144,8 +202,20 @@ export default function ProfileSidebar({ onClose }) {
     return () => {
       window.removeEventListener("keydown", handleKey);
       window.removeEventListener("pointerdown", handleClickOutside);
+      if (previousActiveElement && typeof previousActiveElement.focus === "function") {
+        previousActiveElement.focus();
+      }
     };
-  }, [onClose]);
+  }, [onClose, triggerRef]);
+
+  const handlePanelNavigation = (e) => {
+    const target = e?.target;
+    if (!target || typeof target.closest !== "function") return;
+    const anchor = target.closest("a[href]");
+    if (anchor) {
+      onClose?.();
+    }
+  };
 
   const handleLogout = async () => {
     // Call logout API to invalidate server-side session
@@ -167,7 +237,12 @@ export default function ProfileSidebar({ onClose }) {
     window.location.href = "/login";
   };
 
-  const hasUser = !!user.username;
+  const displayName = user.username || (user.email ? user.email.split("@")[0] : "Akun");
+  const hasUser = !!(displayName || user.email);
+  const overlayClassName = "fixed inset-0 z-[100] bg-black/50 backdrop-blur-[1px]";
+  const panelBaseClassName =
+    "fixed inset-y-0 right-0 z-[110] w-[22rem] max-w-[92vw] border-l border-border bg-card shadow-2xl flex flex-col animate-slide-in-from-right";
+  const panelPaddedClassName = `${panelBaseClassName} p-4`;
 
   // Show loading spinner while fetching user data
   if (isLoading || !hasUser) {
@@ -175,13 +250,17 @@ export default function ProfileSidebar({ onClose }) {
       return (
         <>
           <div
-            className="fixed inset-0 z-[110] bg-black/50"
+            className={overlayClassName}
             onClick={onClose}
             aria-hidden="true"
           />
           <div
             ref={panelRef}
-            className="fixed right-3 top-14 z-[120] w-[19rem] max-w-[calc(100vw-1.5rem)] rounded-[var(--radius)] border bg-card p-4 shadow-xl"
+            className={panelPaddedClassName}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Panel akun"
+            tabIndex={-1}
           >
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">{loadError}</p>
@@ -211,13 +290,17 @@ export default function ProfileSidebar({ onClose }) {
       <>
         {/* Backdrop overlay */}
         <div 
-          className="fixed inset-0 z-[110] bg-black/50"
+          className={overlayClassName}
           onClick={onClose}
           aria-hidden="true"
         />
         <div
           ref={panelRef}
-          className="fixed right-3 top-14 z-[120] w-[19rem] max-w-[calc(100vw-1.5rem)] rounded-[var(--radius)] border bg-card p-4 shadow-xl"
+          className={panelPaddedClassName}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Panel akun"
+          tabIndex={-1}
         >
           <div className="space-y-4" aria-busy="true" aria-live="polite">
             <div className="flex items-center gap-3">
@@ -244,29 +327,34 @@ export default function ProfileSidebar({ onClose }) {
     <>
       {/* Backdrop overlay - click to close */}
       <div 
-        className="fixed inset-0 z-[110] bg-black/50"
+        className={overlayClassName}
         onClick={onClose}
         aria-hidden="true"
       />
       <div
         ref={panelRef}
-        className="fixed right-3 top-14 z-[120] w-[19rem] max-w-[calc(100vw-1.5rem)] rounded-[var(--radius)] border bg-card shadow-xl flex flex-col max-h-[calc(100dvh-7rem)] animate-slide-down"
+        className={panelBaseClassName}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Panel akun"
+        tabIndex={-1}
+        onClickCapture={handlePanelNavigation}
       >
         {/* Fixed header section */}
-        <div className="p-4 pb-0 shrink-0">
+        <div className="shrink-0 border-b p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="relative">
               <Avatar 
                 src={user.avatar_url} 
-                name={user.username} 
+                name={displayName} 
                 size="md" 
               />
               {/* Status indicator */}
               <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card bg-success ring-2 ring-card" />
             </div>
             <div className="min-w-0">
-              <div className="truncate text-base font-semibold text-foreground">{user.username}</div>
+              <div className="truncate text-base font-semibold text-foreground">{displayName}</div>
               {user.email && (
                 <div className="text-xs text-muted-foreground">{maskEmail(user.email)}</div>
               )}
@@ -287,9 +375,9 @@ export default function ProfileSidebar({ onClose }) {
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto p-4 pt-0 scrollbar-thin" style={{ overscrollBehavior: 'contain' }}>
+      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin" style={{ overscrollBehavior: 'contain' }}>
         {/* Wallet Balance Card */}
-        <div className="mt-4 rounded-[var(--radius)] border bg-gradient-to-br from-secondary/50 to-transparent p-3">
+        <div className="rounded-[var(--radius)] border bg-gradient-to-br from-secondary/50 to-transparent p-3">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-muted-foreground">Saldo</div>

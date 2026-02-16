@@ -3,6 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import CommandPaletteTrigger from "./CommandPaletteTrigger";
 import { Logo } from "./ui/Logo";
@@ -16,6 +17,7 @@ const Sidebar = dynamic(() => import("./Sidebar"), { ssr: false });
 const ProfileSidebar = dynamic(() => import("./ProfileSidebar"), { ssr: false });
 
 export default function Header() {
+  const pathname = usePathname();
   const [authChecked, setAuthChecked] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(null);
@@ -27,6 +29,7 @@ export default function Header() {
 
   const sidebarPrefetchedRef = useRef(false);
   const profilePrefetchedRef = useRef(false);
+  const profileTriggerRef = useRef(null);
 
   useEffect(() => {
     const sync = () => {
@@ -37,6 +40,8 @@ export default function Header() {
           setAvatarUrl(null);
           setUserName("");
           setProfileLoading(false);
+          setProfileOpen(false);
+          setSidebarOpen(false);
         }
       } catch (_) {
         setIsAuthed(false);
@@ -110,6 +115,11 @@ export default function Header() {
       cancelled = true;
     };
   }, [isAuthed]);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+    setProfileOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -225,6 +235,7 @@ export default function Header() {
           ) : isAuthed ? (
             <div className="relative">
               <button
+                ref={profileTriggerRef}
                 className="inline-flex items-center gap-2 rounded-[var(--radius)] px-2 py-1 hover:bg-accent transition-all duration-200 hover:shadow-sm focus-ring"
                 onClick={() => setProfileOpen((v) => !v)}
                 onPointerEnter={prefetchProfileSidebar}
@@ -270,7 +281,12 @@ export default function Header() {
         {sidebarMounted ? (
           <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         ) : null}
-        {profileOpen ? <ProfileSidebar onClose={() => setProfileOpen(false)} /> : null}
+        {profileOpen ? (
+          <ProfileSidebar
+            triggerRef={profileTriggerRef}
+            onClose={() => setProfileOpen(false)}
+          />
+        ) : null}
       </Portal>
     </header>
   );
