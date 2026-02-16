@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getApiBase } from "../lib/api";
 import { clearToken, getToken } from "@/lib/auth";
@@ -8,7 +9,80 @@ import { maskEmail } from "@/lib/email";
 import Avatar from "@/components/ui/Avatar";
 import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton";
 
+const walletLinks = [
+  {
+    href: "/account/wallet/send",
+    label: "Kirim Uang",
+    iconPath: "M12 19l9 2-9-18-9 18 9-2zm0 0v-8",
+  },
+  {
+    href: "/account/wallet/transactions",
+    label: "Transaksi Saya",
+    iconPath:
+      "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
+  },
+  {
+    href: "/account/wallet/disputes",
+    label: "Dispute Center",
+    iconPath:
+      "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
+  },
+  {
+    href: "/account/wallet/withdraw",
+    label: "Tarik Dana",
+    iconPath:
+      "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z",
+  },
+];
+
+const accountLinks = [
+  {
+    href: "/account",
+    label: "Account",
+    iconPath: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
+  },
+  {
+    href: "/account/validation-cases",
+    label: "My Validation Cases",
+    iconPath:
+      "M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z",
+  },
+];
+
+function MenuItemLink({ href, label, iconPath, isActive }) {
+  const itemClassName = isActive
+    ? "group flex items-center justify-between rounded-lg border border-foreground/20 bg-accent px-3 py-2 transition-colors"
+    : "group flex items-center justify-between rounded-lg border border-border/70 bg-background/60 px-3 py-2 transition-colors hover:border-border hover:bg-accent/60";
+
+  const iconClassName = isActive
+    ? "h-4 w-4 text-foreground"
+    : "h-4 w-4 text-muted-foreground";
+
+  const labelClassName = isActive
+    ? "flex items-center gap-2.5 text-sm font-semibold text-foreground"
+    : "flex items-center gap-2.5 text-sm font-medium text-foreground";
+
+  return (
+    <Link
+      href={href}
+      className={itemClassName}
+      aria-current={isActive ? "page" : undefined}
+    >
+      <span className={labelClassName}>
+        <svg className={iconClassName} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+          <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
+        </svg>
+        {label}
+      </span>
+      <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      </svg>
+    </Link>
+  );
+}
+
 export default function ProfileSidebar({ onClose, triggerRef }) {
+  const pathname = usePathname();
   const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
   const [wallet, setWallet] = useState({ balance: 0, pin_set: false });
   const [guarantee, setGuarantee] = useState({ amount: 0 });
@@ -239,10 +313,15 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
 
   const displayName = user.username || (user.email ? user.email.split("@")[0] : "Akun");
   const hasUser = !!(displayName || user.email);
-  const overlayClassName = "fixed inset-0 z-[100] bg-black/45 backdrop-blur-[1px]";
+  const overlayClassName = "fixed inset-0 z-[100] bg-black/30 backdrop-blur-[1px]";
   const panelBaseClassName =
-    "fixed right-3 top-14 z-[110] w-[18.75rem] max-w-[calc(100vw-1rem)] rounded-2xl border border-border/70 bg-card/95 shadow-2xl backdrop-blur-md flex flex-col max-h-[calc(100dvh-6.5rem)] animate-slide-down";
-  const panelPaddedClassName = `${panelBaseClassName} p-4`;
+    "fixed right-2 top-[3.35rem] z-[110] w-[16.5rem] max-w-[calc(100vw-0.75rem)] rounded-2xl border border-border/75 bg-card/95 shadow-[0_14px_28px_rgba(0,0,0,0.18)] backdrop-blur-md flex flex-col max-h-[calc(100dvh-4.1rem)] animate-slide-in-from-right";
+  const panelPaddedClassName = `${panelBaseClassName} p-3`;
+  const isLinkActive = (href) => {
+    if (!pathname) return false;
+    if (href === "/account") return pathname === "/account";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   // Show loading spinner while fetching user data
   if (isLoading || !hasUser) {
@@ -302,20 +381,20 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
           aria-label="Panel akun"
           tabIndex={-1}
         >
-          <div className="space-y-4" aria-busy="true" aria-live="polite">
-            <div className="flex items-center gap-3">
-              <SkeletonCircle size="h-10 w-10" />
+          <div className="space-y-3.5" aria-busy="true" aria-live="polite">
+            <div className="flex items-center gap-2.5">
+              <SkeletonCircle size="h-8 w-8" />
               <div className="min-w-0 flex-1 space-y-2">
-                <SkeletonText width="w-32" />
-                <SkeletonText width="w-40" height="h-3" />
+                <SkeletonText width="w-28" />
+                <SkeletonText width="w-36" height="h-3" />
               </div>
-              <Skeleton className="h-8 w-8 rounded-md" />
+              <Skeleton className="h-7 w-7 rounded-md" />
             </div>
 
             <div className="space-y-2">
-              <Skeleton className="h-10 w-full rounded-md" />
-              <Skeleton className="h-10 w-full rounded-md" />
-              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-9 w-full rounded-md" />
+              <Skeleton className="h-9 w-full rounded-md" />
+              <Skeleton className="h-9 w-full rounded-md" />
             </div>
           </div>
         </div>
@@ -341,29 +420,29 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
         onClickCapture={handlePanelNavigation}
       >
         {/* Fixed header section */}
-        <div className="shrink-0 p-4 pb-0">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 overflow-hidden">
+        <div className="shrink-0 p-3 pb-0">
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5 overflow-hidden">
             <div className="relative">
               <Avatar 
                 src={user.avatar_url} 
                 name={displayName} 
-                size="md" 
+                size="sm"
               />
               {/* Status indicator */}
-              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card bg-success ring-2 ring-card" />
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-success ring-2 ring-card" />
             </div>
             <div className="min-w-0">
-              <div className="truncate text-base font-semibold text-foreground">{displayName}</div>
+              <div className="truncate text-sm font-semibold text-foreground">{displayName}</div>
               {user.email && (
-                <div className="text-xs text-muted-foreground">{maskEmail(user.email)}</div>
+                <div className="text-[11px] text-muted-foreground">{maskEmail(user.email)}</div>
               )}
-              <div className="text-xs text-muted-foreground">Kelola aktivitas & profil Anda</div>
+              <div className="text-[11px] text-muted-foreground">Kelola aktivitas & profil Anda</div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-muted-foreground hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
             type="button"
           >
             <span className="sr-only">Tutup menu profil</span>
@@ -375,17 +454,17 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto p-4 pt-0 scrollbar-thin" style={{ overscrollBehavior: 'contain' }}>
+      <div className="flex-1 overflow-y-auto p-3 pt-0 scrollbar-thin" style={{ overscrollBehavior: "contain" }}>
         {/* Wallet Balance Card */}
-        <div className="mt-4 rounded-[var(--radius)] border bg-gradient-to-br from-secondary/50 to-transparent p-3">
+        <div className="mt-3 rounded-lg border border-border/70 bg-gradient-to-b from-secondary/40 to-card p-2.5">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs text-muted-foreground">Saldo</div>
-                <div className="text-lg font-bold text-foreground">
+                <div className="text-[11px] font-medium text-muted-foreground">Saldo</div>
+                <div className="text-base font-semibold tracking-tight text-foreground">
                   Rp {wallet.balance.toLocaleString("id-ID")}
                 </div>
                 {guarantee.amount > 0 && (
-                  <div className="mt-1 text-xs text-muted-foreground">
+                  <div className="mt-1 text-[11px] text-muted-foreground">
                     Jaminan Aktif:{" "}
                     <span className="font-medium text-emerald-600 dark:text-emerald-400">
                       Rp {guarantee.amount.toLocaleString("id-ID")}
@@ -395,113 +474,47 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
               </div>
               <Link
                 href="/account/wallet/deposit"
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90 hover:scale-105"
+                className="rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
                 + Deposit
               </Link>
             </div>
           </div>
 
-          <nav className="mt-4 flex flex-col gap-2 text-sm text-foreground">
+          <nav className="mt-3 flex flex-col gap-1.5 text-sm text-foreground">
             {/* Wallet Section */}
-            <div className="text-xs font-semibold uppercase text-muted-foreground px-1">Wallet</div>
-            <Link
-              href="/account/wallet/send"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
-            >
-              <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                Kirim Uang
-              </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-            <Link
-              href="/account/wallet/transactions"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
-            >
-              <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Transaksi Saya
-              </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-            <Link
-              href="/account/wallet/disputes"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
-            >
-              <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                Dispute Center
-              </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-            <Link
-              href="/account/wallet/withdraw"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
-            >
-              <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                Tarik Dana
-              </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+            <div className="px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Wallet</div>
+            {walletLinks.map((item) => (
+              <MenuItemLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                iconPath={item.iconPath}
+                isActive={isLinkActive(item.href)}
+              />
+            ))}
 
             {/* Account Section */}
-            <div className="text-xs font-semibold uppercase text-muted-foreground px-1 mt-2">Akun</div>
-            <Link
-              href="/account"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 transition-all hover:border-primary hover:bg-primary/5"
-            >
-              <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                Account
-              </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-            <Link
-              href="/account/validation-cases"
-              className="group flex items-center justify-between rounded-md border px-3 py-2 text-foreground transition-all hover:border-primary hover:bg-primary/5"
-            >
-              <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                </svg>
-                My Validation Cases
-              </span>
-              <svg className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+            <div className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Akun</div>
+            {accountLinks.map((item) => (
+              <MenuItemLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                iconPath={item.iconPath}
+                isActive={isLinkActive(item.href)}
+              />
+            ))}
 
           </nav>
         </div>
         {/* End of scrollable content area */}
 
         {/* Fixed footer - Logout button - OUTSIDE scrollable area */}
-        <div className="shrink-0 p-4 border-t">
+        <div className="shrink-0 border-t p-3">
           <button
             onClick={handleLogout}
-            className="w-full rounded-md border border-destructive/20 px-3 py-2 text-left text-sm font-semibold text-destructive transition-all hover:bg-destructive/10 hover:border-destructive/40"
+            className="w-full rounded-lg border border-destructive/25 bg-destructive/[0.03] px-3 py-2 text-left text-sm font-semibold text-destructive transition-colors hover:border-destructive/40 hover:bg-destructive/10"
             type="button"
           >
             <span className="flex items-center gap-2">
