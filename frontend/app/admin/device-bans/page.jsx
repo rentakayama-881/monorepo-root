@@ -3,9 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
 import { getAdminToken } from "@/lib/adminAuth";
-import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
-
-const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
+import { getFeatureApiBase, unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
 
 function normalizeDeviceBan(item) {
   return {
@@ -46,7 +44,7 @@ export default function DeviceBansPage() {
         return;
       }
       const res = await fetch(
-        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/device-bans?page=1&pageSize=50`,
+        `${getFeatureApiBase()}/api/v1/admin/moderation/device-bans?page=1&pageSize=50`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -54,7 +52,16 @@ export default function DeviceBansPage() {
           },
         }
       );
-      if (!res.ok) throw new Error("Gagal memuat device bans");
+      if (!res.ok) {
+        let msg = `Gagal memuat device bans (${res.status})`;
+        try {
+          const body = await res.json();
+          if (body?.error?.message) msg = body.error.message;
+          else if (body?.error) msg = typeof body.error === "string" ? body.error : msg;
+          else if (body?.message) msg = body.message;
+        } catch {}
+        throw new Error(msg);
+      }
       const data = await res.json();
       const payload = unwrapFeatureData(data);
       const items = extractFeatureItems(payload).map(normalizeDeviceBan);
@@ -87,7 +94,7 @@ export default function DeviceBansPage() {
       }
 
       const res = await fetch(
-        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/device-bans`,
+        `${getFeatureApiBase()}/api/v1/admin/moderation/device-bans`,
         {
           method: "POST",
           headers: {
@@ -97,7 +104,16 @@ export default function DeviceBansPage() {
           body: JSON.stringify(body),
         }
       );
-      if (!res.ok) throw new Error("Gagal membuat device ban");
+      if (!res.ok) {
+        let msg = `Gagal membuat device ban (${res.status})`;
+        try {
+          const body = await res.json();
+          if (body?.error?.message) msg = body.error.message;
+          else if (body?.error) msg = typeof body.error === "string" ? body.error : msg;
+          else if (body?.message) msg = body.message;
+        } catch {}
+        throw new Error(msg);
+      }
       setShowCreateModal(false);
       setForm({ deviceFingerprint: "", userId: "", reason: "", isPermanent: false, expiresAt: "" });
       fetchBans();
@@ -114,7 +130,7 @@ export default function DeviceBansPage() {
       const token = getAdminToken();
       if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
       const res = await fetch(
-        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/device-bans/${banId}`,
+        `${getFeatureApiBase()}/api/v1/admin/moderation/device-bans/${banId}`,
         {
           method: "DELETE",
           headers: {
@@ -122,7 +138,16 @@ export default function DeviceBansPage() {
           },
         }
       );
-      if (!res.ok) throw new Error("Gagal menghapus ban");
+      if (!res.ok) {
+        let msg = `Gagal menghapus ban (${res.status})`;
+        try {
+          const body = await res.json();
+          if (body?.error?.message) msg = body.error.message;
+          else if (body?.error) msg = typeof body.error === "string" ? body.error : msg;
+          else if (body?.message) msg = body.message;
+        } catch {}
+        throw new Error(msg);
+      }
       fetchBans();
     } catch (e) {
       alert(e.message);
