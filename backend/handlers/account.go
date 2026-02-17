@@ -79,12 +79,10 @@ type ChangeUsernameRequest struct {
 
 // GET /api/account/me
 func GetMyAccountHandler(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*ent.User)
 
 	socials := normalizeSocialAccounts(user.SocialAccounts)
 	name := ""
@@ -106,12 +104,10 @@ func GetMyAccountHandler(c *gin.Context) {
 
 // PUT /api/account
 func UpdateMyAccountHandler(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*ent.User)
 
 	var req UpdateAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -167,12 +163,10 @@ func UpdateMyAccountHandler(c *gin.Context) {
 // POST /api/account/change-username
 // Updates unique username without balance deductions
 func ChangeUsernamePaidHandler(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*ent.User)
 
 	var req ChangeUsernameRequest
 	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.NewUsername) == "" {
@@ -198,7 +192,6 @@ func ChangeUsernamePaidHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "new_username": req.NewUsername})
 }
 
-// BuildPublicProfileFromEnt builds a public profile response from ent.User
 func BuildPublicProfileFromEnt(c *gin.Context, u *ent.User) gin.H {
 	ctx := c.Request.Context()
 	socials := normalizeSocialAccounts(u.SocialAccounts)
@@ -266,12 +259,10 @@ func BuildPublicProfileFromEnt(c *gin.Context, u *ent.User) gin.H {
 
 // PUT /api/account/avatar
 func UploadAvatarHandler(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*ent.User)
 
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
@@ -332,12 +323,10 @@ func UploadAvatarHandler(c *gin.Context) {
 
 // DELETE /api/account/avatar
 func DeleteAvatarHandler(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*ent.User)
 
 	if user.AvatarURL == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "tidak ada foto profil"})
@@ -355,13 +344,11 @@ func DeleteAvatarHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "foto profil dihapus"})
 }
 
-// DeleteAccountRequest for account deletion
-// Note: Password not required here because RequireSudo middleware already verifies identity
+// Password not required — RequireSudo middleware already verifies identity
 type DeleteAccountRequest struct {
 	Confirmation string `json:"confirmation" binding:"required"`
 }
 
-// FeatureServiceValidationResult represents the response from Feature-Service validation
 type FeatureServiceValidationResult struct {
 	CanDelete          bool     `json:"canDelete"`
 	BlockingReasons    []string `json:"blockingReasons"`
@@ -372,7 +359,6 @@ type FeatureServiceValidationResult struct {
 	PendingWithdrawals int      `json:"pendingWithdrawals"`
 }
 
-// FeatureServiceCleanupResult represents the response from Feature-Service cleanup
 type FeatureServiceCleanupResult struct {
 	Success        bool             `json:"success"`
 	BlockingReason string           `json:"blockingReason"`
@@ -382,12 +368,10 @@ type FeatureServiceCleanupResult struct {
 // GET /api/account/can-delete - Check if user can delete their account
 // Returns blocking reasons and warnings
 func CanDeleteAccountHandler(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*ent.User)
 
 	// Call Feature-Service to check validation
 	result, err := callFeatureServiceValidation(c, uint(user.ID))
@@ -418,7 +402,6 @@ func CanDeleteAccountHandler(c *gin.Context) {
 	})
 }
 
-// callFeatureServiceValidation calls Feature-Service to validate account deletion
 func callFeatureServiceValidation(c *gin.Context, userID uint) (*FeatureServiceValidationResult, error) {
 	url := fmt.Sprintf("%s/api/v1/user/%d/can-delete", config.FeatureServiceURL, userID)
 
@@ -454,7 +437,6 @@ func callFeatureServiceValidation(c *gin.Context, userID uint) (*FeatureServiceV
 	return &result, nil
 }
 
-// callFeatureServiceCleanup calls Feature-Service to delete user data from MongoDB
 func callFeatureServiceCleanup(c *gin.Context, userID uint) (*FeatureServiceCleanupResult, error) {
 	url := fmt.Sprintf("%s/api/v1/user/%d/cleanup", config.FeatureServiceURL, userID)
 
@@ -497,12 +479,10 @@ func callFeatureServiceCleanup(c *gin.Context, userID uint) (*FeatureServiceClea
 // DELETE /api/account - Delete user account permanently
 // Protected by RequireSudo middleware which already validates user identity
 func DeleteAccountHandler(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*ent.User)
 
 	var req DeleteAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

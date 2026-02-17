@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"strconv"
 
@@ -17,29 +16,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// PasskeyHandler handles passkey/WebAuthn endpoints
 type PasskeyHandler struct {
 	passkeyService *services.EntPasskeyService
-	authService    *services.AuthServiceWrapper
+	authService    *services.EntAuthService
 	logger         *zap.Logger
 }
 
-// NewPasskeyHandler creates a new PasskeyHandler
-func NewPasskeyHandler(passkeyService *services.EntPasskeyService, authService *services.AuthServiceWrapper, logger *zap.Logger) *PasskeyHandler {
+func NewPasskeyHandler(passkeyService *services.EntPasskeyService, authService *services.EntAuthService, logger *zap.Logger) *PasskeyHandler {
 	return &PasskeyHandler{
 		passkeyService: passkeyService,
 		authService:    authService,
 		logger:         logger,
 	}
-}
-
-func (h *PasskeyHandler) handleError(c *gin.Context, err error) {
-	if appErr, ok := err.(*errors.AppError); ok {
-		c.JSON(appErr.StatusCode, errors.ErrorResponse(appErr))
-		return
-	}
-	h.logger.Error("Passkey error", zap.Error(err))
-	c.JSON(http.StatusInternalServerError, errors.ErrorResponse(errors.ErrInternalServer.WithDetails("Akun Anda telah di hapus atau tidak di temukan")))
 }
 
 // GetStatus returns passkey status for current user
@@ -53,7 +41,7 @@ func (h *PasskeyHandler) GetStatus(c *gin.Context) {
 	ctx := c.Request.Context()
 	count, err := h.passkeyService.GetPasskeyCount(ctx, int(userID))
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -74,7 +62,7 @@ func (h *PasskeyHandler) ListPasskeys(c *gin.Context) {
 	ctx := c.Request.Context()
 	passkeys, err := h.passkeyService.ListPasskeys(ctx, int(userID))
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -106,7 +94,7 @@ func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 	ctx := c.Request.Context()
 	options, sessionID, err := h.passkeyService.BeginRegistration(ctx, int(userID))
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -164,7 +152,7 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 	ctx := c.Request.Context()
 	passkey, err := h.passkeyService.FinishRegistration(ctx, int(userID), rawRequest.SessionID, rawRequest.Name, parsedResponse)
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -193,7 +181,7 @@ func (h *PasskeyHandler) DeletePasskey(c *gin.Context) {
 
 	ctx := c.Request.Context()
 	if err := h.passkeyService.DeletePasskey(ctx, int(userID), id); err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -223,7 +211,7 @@ func (h *PasskeyHandler) RenamePasskey(c *gin.Context) {
 
 	ctx := c.Request.Context()
 	if err := h.passkeyService.RenamePasskey(ctx, int(userID), id, req.Name); err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -241,7 +229,7 @@ func (h *PasskeyHandler) CheckPasskeys(c *gin.Context) {
 	ctx := c.Request.Context()
 	hasPasskeys, err := h.passkeyService.HasPasskeysByEmail(ctx, req.Email)
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -264,7 +252,7 @@ func (h *PasskeyHandler) BeginLogin(c *gin.Context) {
 		// Non-discoverable login with email
 		options, sessionID, err := h.passkeyService.BeginLogin(ctx, req.Email)
 		if err != nil {
-			h.handleError(c, err)
+			handleError(c, err)
 			return
 		}
 
@@ -278,7 +266,7 @@ func (h *PasskeyHandler) BeginLogin(c *gin.Context) {
 	// Discoverable login (usernameless)
 	options, sessionID, err := h.passkeyService.BeginDiscoverableLogin()
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -329,7 +317,7 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 		// Discoverable login
 		u, err := h.passkeyService.FinishDiscoverableLogin(ctx, rawRequest.SessionID, parsedResponse)
 		if err != nil {
-			h.handleError(c, err)
+			handleError(c, err)
 			return
 		}
 		entUser = u
@@ -337,7 +325,7 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 		// Non-discoverable login
 		u, err := h.passkeyService.FinishLogin(ctx, rawRequest.Email, rawRequest.SessionID, parsedResponse)
 		if err != nil {
-			h.handleError(c, err)
+			handleError(c, err)
 			return
 		}
 		entUser = u
@@ -360,9 +348,9 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	)
 
 	// Generate tokens using auth service with Ent user
-	response, err := h.authService.LoginWithPasskeyEntCtx(c.Request.Context(), entUser, clientIP, userAgent, rawRequest.DeviceFingerprint)
+	response, err := h.authService.LoginWithPasskey(c.Request.Context(), entUser, clientIP, userAgent, rawRequest.DeviceFingerprint)
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -372,6 +360,3 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
-
-// Ensure io import is used
-var _ io.Reader = (*bytes.Reader)(nil)

@@ -5,94 +5,75 @@ import (
 
 	"backend-gin/dto"
 	apperrors "backend-gin/errors"
-	"backend-gin/logger"
 	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// TOTPHandler handles TOTP/2FA related endpoints
 type TOTPHandler struct {
-	totpService *services.TOTPServiceWrapper
-	logger      *zap.Logger
+	totpService *services.EntTOTPService
 }
 
-// NewTOTPHandler creates a new TOTP handler
-func NewTOTPHandler(totpService *services.TOTPServiceWrapper, log *zap.Logger) *TOTPHandler {
-	return &TOTPHandler{
-		totpService: totpService,
-		logger:      log,
-	}
+func NewTOTPHandler(totpService *services.EntTOTPService) *TOTPHandler {
+	return &TOTPHandler{totpService: totpService}
 }
 
-// handleTOTPError sends error response for TOTP handlers
-func handleTOTPError(c *gin.Context, err error) {
-	if appErr, ok := err.(*apperrors.AppError); ok {
-		c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
-		return
-	}
-
-	logger.Error("Unhandled error in TOTP handler", zap.Error(err))
-	c.JSON(http.StatusInternalServerError, apperrors.ErrorResponse(apperrors.ErrInternalServer))
-}
-
-// GetStatus returns current 2FA status
 // GET /api/auth/totp/status
 func (h *TOTPHandler) GetStatus(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		handleTOTPError(c, apperrors.ErrUnauthorized)
+		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
 
-	status, err := h.totpService.GetStatus(userID.(uint))
+	ctx := c.Request.Context()
+	status, err := h.totpService.GetStatus(ctx, int(userID.(uint)))
 	if err != nil {
-		handleTOTPError(c, err)
+		handleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, status)
 }
 
-// Setup initiates TOTP setup and returns QR code data
 // POST /api/auth/totp/setup
 func (h *TOTPHandler) Setup(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		handleTOTPError(c, apperrors.ErrUnauthorized)
+		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
 
-	setup, err := h.totpService.GenerateSetup(userID.(uint))
+	ctx := c.Request.Context()
+	setup, err := h.totpService.GenerateSetup(ctx, int(userID.(uint)))
 	if err != nil {
-		handleTOTPError(c, err)
+		handleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, setup)
 }
 
-// Verify verifies a TOTP code and enables 2FA
+// Enables 2FA after verifying code. Returns backup codes (shown ONLY ONCE).
 // POST /api/auth/totp/verify
-// Returns backup codes that should be shown to user ONLY ONCE
 func (h *TOTPHandler) Verify(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		handleTOTPError(c, apperrors.ErrUnauthorized)
+		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
 
 	var req dto.TOTPVerifyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		handleTOTPError(c, apperrors.ErrInvalidRequestBody)
+		handleError(c, apperrors.ErrInvalidRequestBody)
 		return
 	}
 
-	backupCodes, err := h.totpService.VerifyAndEnable(userID.(uint), req.Code)
+	ctx := c.Request.Context()
+	backupCodes, err := h.totpService.VerifyAndEnable(ctx, int(userID.(uint)), req.Code)
 	if err != nil {
-		handleTOTPError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -103,28 +84,27 @@ func (h *TOTPHandler) Verify(c *gin.Context) {
 	})
 }
 
-// Disable disables 2FA after verification
 // POST /api/auth/totp/disable
 func (h *TOTPHandler) Disable(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		handleTOTPError(c, apperrors.ErrUnauthorized)
+		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
 
 	var req dto.TOTPDisableRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		handleTOTPError(c, apperrors.ErrInvalidRequestBody)
+		handleError(c, apperrors.ErrInvalidRequestBody)
 		return
 	}
 
-	// Password verification function
 	verifyPassword := func(hash, password string) bool {
 		return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 	}
 
-	if err := h.totpService.Disable(userID.(uint), req.Password, req.Code, verifyPassword); err != nil {
-		handleTOTPError(c, err)
+	ctx := c.Request.Context()
+	if err := h.totpService.Disable(ctx, int(userID.(uint)), req.Password, req.Code, verifyPassword); err != nil {
+		handleError(c, err)
 		return
 	}
 
@@ -134,36 +114,36 @@ func (h *TOTPHandler) Disable(c *gin.Context) {
 	})
 }
 
-// GenerateBackupCodes generates new backup codes
 // POST /api/auth/totp/backup-codes
 func (h *TOTPHandler) GenerateBackupCodes(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		handleTOTPError(c, apperrors.ErrUnauthorized)
+		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
 
-	codes, err := h.totpService.GenerateBackupCodes(userID.(uint))
+	ctx := c.Request.Context()
+	codes, err := h.totpService.GenerateBackupCodes(ctx, int(userID.(uint)))
 	if err != nil {
-		handleTOTPError(c, err)
+		handleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"codes": codes})
 }
 
-// GetBackupCodeCount returns the number of remaining backup codes
 // GET /api/auth/totp/backup-codes/count
 func (h *TOTPHandler) GetBackupCodeCount(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		handleTOTPError(c, apperrors.ErrUnauthorized)
+		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
 
-	count, err := h.totpService.GetBackupCodeCount(userID.(uint))
+	ctx := c.Request.Context()
+	count, err := h.totpService.GetBackupCodeCount(ctx, int(userID.(uint)))
 	if err != nil {
-		handleTOTPError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -172,24 +152,25 @@ func (h *TOTPHandler) GetBackupCodeCount(c *gin.Context) {
 	})
 }
 
-// VerifyCode verifies a TOTP code without enabling (for sudo mode, etc)
+// Verifies a TOTP code without enabling (for sudo mode, etc).
 // POST /api/auth/totp/verify-code
 func (h *TOTPHandler) VerifyCode(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		handleTOTPError(c, apperrors.ErrUnauthorized)
+		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
 
 	var req dto.TOTPVerifyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		handleTOTPError(c, apperrors.ErrInvalidRequestBody)
+		handleError(c, apperrors.ErrInvalidRequestBody)
 		return
 	}
 
-	valid, err := h.totpService.Verify(userID.(uint), req.Code)
+	ctx := c.Request.Context()
+	valid, err := h.totpService.Verify(ctx, int(userID.(uint)), req.Code)
 	if err != nil {
-		handleTOTPError(c, err)
+		handleError(c, err)
 		return
 	}
 

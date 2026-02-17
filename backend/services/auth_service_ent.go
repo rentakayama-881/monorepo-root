@@ -25,17 +25,19 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// EntAuthService handles authentication business logic using Ent ORM
 type EntAuthService struct {
 	client *ent.Client
 }
 
-// NewEntAuthService creates a new auth service with Ent
 func NewEntAuthService() *EntAuthService {
 	return &EntAuthService{client: database.GetEntClient()}
 }
 
-// strVal safely dereferences a string pointer, returning empty string if nil
+type VerificationRequestResult struct {
+	Sent              bool
+	RetryAfterSeconds int
+}
+
 func strVal(s *string) string {
 	if s == nil {
 		return ""
@@ -1141,9 +1143,68 @@ func (s *EntAuthService) CompleteTOTPLoginWithBackupCode(ctx context.Context, pe
 	}, nil
 }
 
-// Helper functions
+func (s *EntAuthService) RequestVerification(ctx context.Context, email, ip string) (*VerificationRequestResult, error) {
+	normalizedEmail := strings.TrimSpace(strings.ToLower(email))
+	if err := validators.ValidateEmail(normalizedEmail); err != nil {
+		return nil, err
+	}
 
-// createVerificationToken creates a verification token for a user
+	result := &VerificationRequestResult{}
+	if emailRateLimiter != nil {
+		allowed, _, nextAllowed := emailRateLimiter.CanSendVerification(normalizedEmail, ip)
+		if !allowed {
+			retryAfter := secondsUntil(nextAllowed)
+			result.RetryAfterSeconds = retryAfter
+
+			err := apperrors.ErrVerificationLimitReached
+			if retryAfter > 0 {
+				err = err.WithDetails(fmt.Sprintf("Silakan coba lagi dalam %d detik", retryAfter))
+			}
+			return result, err
+		}
+
+		emailRateLimiter.RecordVerificationSent(normalizedEmail, ip)
+		result.RetryAfterSeconds = int(VerificationResendDelay / time.Second)
+	}
+
+	u, err := s.client.User.Query().
+		Where(user.EmailEqualFold(normalizedEmail)).
+		Only(ctx)
+	if err != nil {
+		return result, nil
+	}
+
+	if u.EmailVerified {
+		logger.Debug("User already verified, skipping email", zap.String("email", normalizedEmail))
+		return result, nil
+	}
+
+	token, _, err := s.createVerificationToken(ctx, u)
+	if err != nil {
+		logger.Error("Failed to create verification token", zap.Error(err), zap.String("email", normalizedEmail))
+		return nil, err
+	}
+
+	if err := utils.QueueVerificationEmail(normalizedEmail, token); err != nil {
+		logger.Warn("Failed to queue verification email", zap.Error(err), zap.String("email", normalizedEmail))
+		return result, nil
+	}
+
+	result.Sent = true
+	return result, nil
+}
+
+func secondsUntil(nextAllowed *time.Time) int {
+	if nextAllowed == nil {
+		return 0
+	}
+	remaining := int(time.Until(*nextAllowed).Seconds())
+	if remaining < 1 {
+		return 1
+	}
+	return remaining
+}
+
 func (s *EntAuthService) createVerificationToken(ctx context.Context, u *ent.User) (string, string, error) {
 	raw, err := randomToken()
 	if err != nil {

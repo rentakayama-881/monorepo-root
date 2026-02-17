@@ -16,7 +16,6 @@ using FeatureService.Api.Infrastructure.Security;
 using FeatureService.Api.Services;
 using FeatureService.Api.Middleware;
 
-// Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
@@ -27,14 +26,11 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // Add Serilog
     builder.Host.UseSerilog();
 
-    // Configure MongoDB settings
+    // MongoDB
     var mongoSettings = new MongoDbSettings();
     builder.Configuration.GetSection("MongoDB").Bind(mongoSettings);
-
-    // Override with environment variables if present
     if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MONGODB__CONNECTIONSTRING")))
     {
         mongoSettings.ConnectionString = Environment.GetEnvironmentVariable("MONGODB__CONNECTIONSTRING")!;
@@ -47,11 +43,9 @@ try
     builder.Services.AddSingleton(mongoSettings);
     builder.Services.AddSingleton<MongoDbContext>();
 
-    // Configure JWT settings
+    // JWT
     var jwtSettings = new JwtSettings();
     builder.Configuration.GetSection("Jwt").Bind(jwtSettings);
-
-    // Override with environment variables if present
     if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT__SECRET")))
     {
         jwtSettings.Secret = Environment.GetEnvironmentVariable("JWT__SECRET")!;
@@ -72,7 +66,7 @@ try
 
     builder.Services.AddSingleton(jwtSettings);
 
-    // Configure CORS
+    // CORS
     var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
     var envCorsOrigin = Environment.GetEnvironmentVariable("CORS__ALLOWEDORIGINS__0");
     if (!string.IsNullOrEmpty(envCorsOrigin))
@@ -573,7 +567,7 @@ try
 
     // PQC Signature validation for financial endpoints
     // Must be after Authentication so user context is available
-    app.UsePqcSignatureValidation();
+    app.UseMiddleware<PqcSignatureMiddleware>();
 
     app.MapControllers();
     app.MapHealthChecks("/health");

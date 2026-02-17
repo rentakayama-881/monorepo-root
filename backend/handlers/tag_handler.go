@@ -212,7 +212,6 @@ func GetValidationCaseTagsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": res})
 }
 
-// AddTagToValidationCaseRequest is the request body for adding tags
 type AddTagToValidationCaseRequest struct {
 	TagIDs []int `json:"tag_ids" binding:"required"`
 }
@@ -220,12 +219,10 @@ type AddTagToValidationCaseRequest struct {
 // AddTagsToValidationCaseHandler adds tags to a Validation Case (owner only)
 // POST /api/validation-cases/:id/tags
 func AddTagsToValidationCaseHandler(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*ent.User)
 
 	idStr := c.Param("id")
 	validationCaseID, err := strconv.Atoi(idStr)
@@ -326,12 +323,10 @@ func AddTagsToValidationCaseHandler(c *gin.Context) {
 // RemoveTagFromValidationCaseHandler removes a tag from a Validation Case (owner only)
 // DELETE /api/validation-cases/:id/tags/:tagSlug
 func RemoveTagFromValidationCaseHandler(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	user := userIfc.(*ent.User)
 
 	idStr := c.Param("id")
 	validationCaseID, err := strconv.Atoi(idStr)

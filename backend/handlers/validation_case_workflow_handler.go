@@ -4,16 +4,12 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 
-	"backend-gin/ent"
 	apperrors "backend-gin/errors"
-	"backend-gin/logger"
 	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 type ValidationCaseWorkflowHandler struct {
@@ -29,14 +25,14 @@ func (h *ValidationCaseWorkflowHandler) RequestConsultation(c *gin.Context) {
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	id, err := h.workflow.RequestConsultation(c.Request.Context(), validationCaseID, uint(user.ID))
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"id": id})
@@ -47,14 +43,14 @@ func (h *ValidationCaseWorkflowHandler) ListConsultationRequests(c *gin.Context)
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	items, err := h.workflow.ListConsultationRequestsForOwner(c.Request.Context(), validationCaseID, uint(user.ID))
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"consultation_requests": items})
@@ -65,14 +61,14 @@ func (h *ValidationCaseWorkflowHandler) GetMyConsultationRequest(c *gin.Context)
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	item, err := h.workflow.GetConsultationRequestForValidator(c.Request.Context(), validationCaseID, uint(user.ID))
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"consultation_request": item})
@@ -87,13 +83,13 @@ func (h *ValidationCaseWorkflowHandler) ApproveConsultationRequest(c *gin.Contex
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	if err := h.workflow.ApproveConsultationRequest(c.Request.Context(), validationCaseID, uint(user.ID), requestID); err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -108,7 +104,7 @@ func (h *ValidationCaseWorkflowHandler) RejectConsultationRequest(c *gin.Context
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
@@ -117,17 +113,17 @@ func (h *ValidationCaseWorkflowHandler) RejectConsultationRequest(c *gin.Context
 		Reason string `json:"reason" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
 		return
 	}
 	reason := strings.TrimSpace(req.Reason)
 	if len(reason) < 5 {
-		h.handleError(c, apperrors.ErrInvalidInput.WithDetails("reason minimal 5 karakter"))
+		handleError(c, apperrors.ErrInvalidInput.WithDetails("reason minimal 5 karakter"))
 		return
 	}
 
 	if err := h.workflow.RejectConsultationRequest(c.Request.Context(), validationCaseID, uint(user.ID), requestID, reason); err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -142,19 +138,19 @@ func (h *ValidationCaseWorkflowHandler) RequestOwnerClarification(c *gin.Context
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	var req services.ClarificationRequestInput
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
 		return
 	}
 
 	if err := h.workflow.RequestOwnerClarification(c.Request.Context(), validationCaseID, requestID, uint(user.ID), req); err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -165,19 +161,19 @@ func (h *ValidationCaseWorkflowHandler) RequestOwnerClarificationFromValidator(c
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	var req services.ClarificationRequestInput
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
 		return
 	}
 
 	if err := h.workflow.RequestOwnerClarificationForValidator(c.Request.Context(), validationCaseID, uint(user.ID), req); err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -192,19 +188,19 @@ func (h *ValidationCaseWorkflowHandler) RespondOwnerClarification(c *gin.Context
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	var req services.ClarificationResponseInput
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
 		return
 	}
 
 	if err := h.workflow.RespondOwnerClarification(c.Request.Context(), validationCaseID, requestID, uint(user.ID), req); err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -215,14 +211,14 @@ func (h *ValidationCaseWorkflowHandler) RevealContact(c *gin.Context) {
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	telegram, err := h.workflow.RevealOwnerTelegramContact(c.Request.Context(), validationCaseID, uint(user.ID))
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"telegram": telegram})
@@ -233,7 +229,7 @@ func (h *ValidationCaseWorkflowHandler) SubmitFinalOffer(c *gin.Context) {
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
@@ -243,13 +239,13 @@ func (h *ValidationCaseWorkflowHandler) SubmitFinalOffer(c *gin.Context) {
 		Terms     string `json:"terms"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
 		return
 	}
 
 	id, err := h.workflow.SubmitFinalOffer(c.Request.Context(), validationCaseID, uint(user.ID), req.HoldHours, req.Terms)
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"id": id})
@@ -260,14 +256,14 @@ func (h *ValidationCaseWorkflowHandler) ListFinalOffers(c *gin.Context) {
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	items, err := h.workflow.ListFinalOffers(c.Request.Context(), validationCaseID, uint(user.ID))
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"final_offers": items})
@@ -282,14 +278,14 @@ func (h *ValidationCaseWorkflowHandler) AcceptFinalOffer(c *gin.Context) {
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	draft, err := h.workflow.AcceptFinalOffer(c.Request.Context(), validationCaseID, uint(user.ID), offerID)
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"escrow_draft": draft})
@@ -300,7 +296,7 @@ func (h *ValidationCaseWorkflowHandler) ConfirmLockFunds(c *gin.Context) {
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
@@ -309,13 +305,13 @@ func (h *ValidationCaseWorkflowHandler) ConfirmLockFunds(c *gin.Context) {
 		TransferID string `json:"transfer_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
 		return
 	}
 
 	authHeader := c.GetHeader("Authorization")
 	if err := h.workflow.ConfirmLockFunds(c.Request.Context(), validationCaseID, uint(user.ID), req.TransferID, authHeader); err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -326,7 +322,7 @@ func (h *ValidationCaseWorkflowHandler) SubmitArtifact(c *gin.Context) {
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
@@ -335,13 +331,13 @@ func (h *ValidationCaseWorkflowHandler) SubmitArtifact(c *gin.Context) {
 		DocumentID string `json:"document_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
-		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
 		return
 	}
 
 	authHeader := c.GetHeader("Authorization")
 	if err := h.workflow.SubmitArtifact(c.Request.Context(), validationCaseID, uint(user.ID), req.DocumentID, authHeader); err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -352,33 +348,33 @@ func (h *ValidationCaseWorkflowHandler) MarkEscrowReleased(c *gin.Context) {
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	authHeader := c.GetHeader("Authorization")
 	if err := h.workflow.MarkEscrowReleased(c.Request.Context(), validationCaseID, uint(user.ID), authHeader); err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// InternalMarkEscrowReleasedByTransfer is called by Feature Service (auto-release worker).
+// Called by Feature Service (auto-release worker).
 // Protected by InternalServiceAuth middleware (X-Internal-Api-Key).
 func (h *ValidationCaseWorkflowHandler) InternalMarkEscrowReleasedByTransfer(c *gin.Context) {
 	var req struct {
 		TransferID string `json:"transfer_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
 		return
 	}
 
 	id, err := h.workflow.MarkEscrowReleasedInternalByTransferID(c.Request.Context(), req.TransferID)
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -389,7 +385,7 @@ func (h *ValidationCaseWorkflowHandler) InternalMarkEscrowReleasedByTransfer(c *
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "validation_case_id": validationCaseID})
 }
 
-// InternalGetValidatorConsultationLocks is called by Feature Service before guarantee release.
+// Called by Feature Service before guarantee release.
 // Protected by InternalServiceAuth middleware (X-Internal-Api-Key).
 func (h *ValidationCaseWorkflowHandler) InternalGetValidatorConsultationLocks(c *gin.Context) {
 	validatorUserID, ok := parseUintParam(c, "id", "validator_user_id")
@@ -399,7 +395,7 @@ func (h *ValidationCaseWorkflowHandler) InternalGetValidatorConsultationLocks(c 
 
 	locks, err := h.workflow.ListConsultationGuaranteeLocksForValidator(c.Request.Context(), validatorUserID)
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 
@@ -415,7 +411,7 @@ func (h *ValidationCaseWorkflowHandler) AttachDispute(c *gin.Context) {
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
@@ -424,13 +420,13 @@ func (h *ValidationCaseWorkflowHandler) AttachDispute(c *gin.Context) {
 		DisputeID string `json:"dispute_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
 		return
 	}
 
 	authHeader := c.GetHeader("Authorization")
 	if err := h.workflow.AttachDispute(c.Request.Context(), validationCaseID, uint(user.ID), req.DisputeID, authHeader); err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -441,54 +437,15 @@ func (h *ValidationCaseWorkflowHandler) GetCaseLog(c *gin.Context) {
 	if !ok {
 		return
 	}
-	user, ok := getEntUserFromContext(c)
+	user, ok := mustGetUser(c)
 	if !ok {
 		return
 	}
 
 	items, err := h.workflow.GetCaseLog(c.Request.Context(), validationCaseID, uint(user.ID))
 	if err != nil {
-		h.handleError(c, err)
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"case_log": items})
-}
-
-func (h *ValidationCaseWorkflowHandler) handleError(c *gin.Context, err error) {
-	if appErr, ok := err.(*apperrors.AppError); ok {
-		logger.Debug("ValidationCase workflow handler error",
-			zap.String("code", appErr.Code),
-			zap.String("message", appErr.Message),
-			zap.Int("status", appErr.StatusCode),
-		)
-		c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
-		return
-	}
-
-	logger.Error("Unexpected error in validation case workflow handler", zap.Error(err))
-	c.JSON(http.StatusInternalServerError, apperrors.ErrorResponse(apperrors.ErrInternalServer))
-}
-
-func parseUintParam(c *gin.Context, paramName string, label string) (uint, bool) {
-	raw := strings.TrimSpace(c.Param(paramName))
-	v, err := strconv.ParseUint(raw, 10, 32)
-	if err != nil || v == 0 {
-		c.JSON(http.StatusBadRequest, apperrors.ErrorResponse(apperrors.ErrInvalidInput.WithDetails(label+" harus berupa angka")))
-		return 0, false
-	}
-	return uint(v), true
-}
-
-func getEntUserFromContext(c *gin.Context) (*ent.User, bool) {
-	userIfc, ok := c.Get("user")
-	if !ok {
-		c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
-		return nil, false
-	}
-	u, ok := userIfc.(*ent.User)
-	if !ok || u == nil {
-		c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
-		return nil, false
-	}
-	return u, true
 }

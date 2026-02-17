@@ -9,14 +9,9 @@ import {
 
 let refreshPromise = null;
 
-/**
- * Refresh the access token using the refresh token
- * Returns the new access token or null if refresh failed
- */
 export async function refreshAccessToken() {
   const refreshToken = getRefreshToken();
 
-  // Prevent multiple simultaneous refresh calls
   if (refreshPromise) {
     return refreshPromise;
   }
@@ -79,9 +74,6 @@ export async function refreshAccessToken() {
   return refreshPromise;
 }
 
-/**
- * Get a valid access token, refreshing if necessary
- */
 export async function getValidToken() {
   const token = getToken();
   
@@ -89,7 +81,6 @@ export async function getValidToken() {
     return null;
   }
 
-  // Check if token is about to expire
   if (isTokenExpired()) {
     const refreshed = await refreshAccessToken();
     if (refreshed) return refreshed;
@@ -102,9 +93,6 @@ export async function getValidToken() {
   return token;
 }
 
-/**
- * Wrapper for fetch that automatically handles token refresh
- */
 export async function fetchWithAuth(url, options = {}) {
   let token = await getValidToken();
   

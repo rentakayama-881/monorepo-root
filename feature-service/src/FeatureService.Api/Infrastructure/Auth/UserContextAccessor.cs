@@ -58,9 +58,7 @@ public class UserContextAccessor : IUserContextAccessor
             return null;
         }
 
-        // Parse totp_enabled claim (defaults to false if not present)
-        var totpEnabled = totpEnabledClaim?.Value?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
-            || totpEnabledClaim?.Value?.Equals("True", StringComparison.OrdinalIgnoreCase) == true;
+        var totpEnabled = totpEnabledClaim?.Value?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
 
         return new UserContext
         {

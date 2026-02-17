@@ -17,12 +17,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// EntSessionService handles session management using Ent ORM
 type EntSessionService struct {
 	client *ent.Client
 }
 
-// NewEntSessionService creates a new session service with Ent
 func NewEntSessionService() *EntSessionService {
 	return &EntSessionService{client: database.GetEntClient()}
 }

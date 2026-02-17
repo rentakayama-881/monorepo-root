@@ -91,7 +91,6 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
   const [reloadTick, setReloadTick] = useState(0);
   const panelRef = useRef(null);
 
-  // Lock body scroll when profile sidebar is open (like prompts.chat Sheet)
   useEffect(() => {
     const prevBodyOverflow = document.body.style.overflow;
     const prevBodyOverscroll = document.body.style.overscrollBehavior;
@@ -107,12 +106,12 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    const { signal } = controller;
 
     async function loadUser() {
       const token = getToken();
       if (!token) {
-        // No token = redirect to login
         onClose?.();
         window.location.href = "/login";
         return;
@@ -120,24 +119,22 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
       setIsLoading(true);
       setLoadError("");
       try {
-        // Load user data with automatic token refresh
-        const res = await fetchWithAuth(`${getApiBase()}/api/user/me`);
+        const res = await fetchWithAuth(`${getApiBase()}/api/user/me`, { signal });
         if (res.status === 401) {
-          // Session expired - clear and redirect
           clearToken();
           onClose?.();
           window.location.href = "/login?session=expired";
           return;
         }
         if (!res.ok) {
-          if (!cancelled) {
+          if (!signal.aborted) {
             setLoadError("Profil tidak dapat dimuat saat ini. Coba lagi.");
             setIsLoading(false);
           }
           return;
         }
         const data = await res.json();
-        if (cancelled) return;
+        if (signal.aborted) return;
         setUser({
           username:
             data.username ||
@@ -146,14 +143,13 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
           avatar_url: data.avatar_url || "",
           email: data.email || "",
         });
-        
-        // Load wallet balance from Feature Service
+
         try {
           const featureBase = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
-          const walletRes = await fetchWithAuth(`${featureBase}/api/v1/wallets/me`);
+          const walletRes = await fetchWithAuth(`${featureBase}/api/v1/wallets/me`, { signal });
           if (walletRes.ok) {
             const walletData = await walletRes.json();
-            if (!cancelled) {
+            if (!signal.aborted) {
               setWallet({
                 balance: walletData.balance || 0,
                 pin_set: walletData.pinSet || walletData.pin_set || false,
@@ -161,26 +157,22 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
             }
           }
 
-          const gRes = await fetchWithAuth(`${featureBase}/api/v1/guarantees/me`);
+          const gRes = await fetchWithAuth(`${featureBase}/api/v1/guarantees/me`, { signal });
           if (gRes.ok) {
             const gData = await gRes.json();
-            if (!cancelled) {
-              setGuarantee({
-                amount: gData.amount || 0,
-              });
+            if (!signal.aborted) {
+              setGuarantee({ amount: gData.amount || 0 });
             }
           }
         } catch (e) {
-          // Silent fail for wallet - not critical
+          if (e.name === "AbortError") return;
         }
 
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        if (!signal.aborted) setIsLoading(false);
       } catch (err) {
-        // Do not force logout on transient/network errors.
-        // Logout only when auth is truly invalid.
-        if (!cancelled) {
+        if (err.name === "AbortError") return;
+        // Only force logout on genuine auth errors, not transient/network issues
+        if (!signal.aborted) {
           const status = err?.status;
           const message = String(err?.message || "").toLowerCase();
           const isAuthError =
@@ -203,9 +195,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
     }
 
     loadUser();
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [onClose, reloadTick]);
 
   useEffect(() => {

@@ -4,18 +4,6 @@ import React, { useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
 import clsx from "clsx";
 
-/**
- * Modal component with focus trap and premium features:
- * - open: boolean untuk show/hide
- * - onClose: function dipanggil saat close (backdrop click, ESC, atau X button)
- * - title: string (optional, tampil di header)
- * - children: content modal
- * - size: "sm" | "md" | "lg" | "xl" | "full" (default "md")
- * - variant: "default" | "slide-up" (slide-up untuk mobile)
- * - showCloseButton: boolean (default true)
- * - closeOnBackdrop: boolean (default true)
- * - closeOnEscape: boolean (default true)
- */
 export default function Modal({
   open = false,
   onClose,
@@ -31,7 +19,6 @@ export default function Modal({
   const modalRef = useRef(null);
   const previousActiveElement = useRef(null);
 
-  // Handle ESC key
   const handleEscape = useCallback(
     (e) => {
       if (e.key === "Escape" && open && closeOnEscape) {
@@ -41,33 +28,26 @@ export default function Modal({
     [open, onClose, closeOnEscape]
   );
 
-  // Focus trap
   useEffect(() => {
     if (open && modalRef.current) {
-      // Store currently focused element
       previousActiveElement.current = document.activeElement;
 
-      // Get all focusable elements
       const focusableElements = modalRef.current.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
 
-      // Focus first element
       firstElement?.focus();
 
-      // Trap focus within modal
       const handleTab = (e) => {
         if (e.key === "Tab") {
           if (e.shiftKey) {
-            // Shift + Tab
             if (document.activeElement === firstElement) {
               e.preventDefault();
               lastElement?.focus();
             }
           } else {
-            // Tab
             if (document.activeElement === lastElement) {
               e.preventDefault();
               firstElement?.focus();
@@ -79,7 +59,6 @@ export default function Modal({
       document.addEventListener("keydown", handleTab);
       return () => {
         document.removeEventListener("keydown", handleTab);
-        // Restore focus
         previousActiveElement.current?.focus();
       };
     }
@@ -90,7 +69,6 @@ export default function Modal({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [handleEscape]);
 
-  // Prevent body scroll when open
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -112,7 +90,6 @@ export default function Modal({
     full: "max-w-full w-full h-full m-0 rounded-none",
   };
 
-  // Use CSS media query instead of JS window width check for better performance
   const shouldSlideUp = variant === "slide-up";
 
   const modalStyles = clsx(
@@ -213,9 +190,6 @@ Modal.propTypes = {
   className: PropTypes.string,
 };
 
-/**
- * ModalHeader - Structured header for modal
- */
 export function ModalHeader({ children, className = "" }) {
   return (
     <div className={clsx("border-b px-4 py-3", className)}>
@@ -229,9 +203,6 @@ ModalHeader.propTypes = {
   className: PropTypes.string,
 };
 
-/**
- * ModalBody - Structured body for modal content
- */
 export function ModalBody({ children, className = "" }) {
   return (
     <div className={clsx("p-4", className)}>
@@ -245,9 +216,6 @@ ModalBody.propTypes = {
   className: PropTypes.string,
 };
 
-/**
- * ModalFooter - Structured footer for modal actions
- */
 export function ModalFooter({ children, className = "" }) {
   return (
     <div className={clsx("border-t px-4 py-3 flex items-center justify-end gap-2", className)}>

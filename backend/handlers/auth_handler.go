@@ -8,7 +8,6 @@ import (
 
 	"backend-gin/database"
 	"backend-gin/dto"
-	"backend-gin/ent"
 	"backend-gin/ent/session"
 	apperrors "backend-gin/errors"
 	"backend-gin/logger"
@@ -20,18 +19,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// AuthHandler handles authentication HTTP requests
 type AuthHandler struct {
-	authService     *services.AuthServiceWrapper
-	sessionService  *services.SessionServiceWrapper
+	authService     *services.EntAuthService
+	sessionService  *services.EntSessionService
 	loginLimiter    *middleware.RateLimiter
 	registerLimiter *middleware.RateLimiter
 	verifyLimiter   *middleware.RateLimiter
 	refreshLimiter  *middleware.RateLimiter
 }
 
-// NewAuthHandler creates a new auth handler
-func NewAuthHandler(authService *services.AuthServiceWrapper, sessionService *services.SessionServiceWrapper) *AuthHandler {
+func NewAuthHandler(authService *services.EntAuthService, sessionService *services.EntSessionService) *AuthHandler {
 	return &AuthHandler{
 		authService:     authService,
 		sessionService:  sessionService,
@@ -42,18 +39,6 @@ func NewAuthHandler(authService *services.AuthServiceWrapper, sessionService *se
 	}
 }
 
-// handleError sends error response
-func handleError(c *gin.Context, err error) {
-	if appErr, ok := err.(*apperrors.AppError); ok {
-		c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
-		return
-	}
-
-	logger.Error("Unhandled error", zap.Error(err))
-	c.JSON(http.StatusInternalServerError, apperrors.ErrorResponse(apperrors.ErrInternalServer))
-}
-
-// Register handles user registration
 // POST /api/auth/register
 func (h *AuthHandler) Register(c *gin.Context) {
 	if !h.registerLimiter.Allow(c.ClientIP()) {
@@ -76,7 +61,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	// Use RegisterWithDevice if device fingerprint provided
-	response, err := h.authService.RegisterWithDeviceCtx(c.Request.Context(), input, req.DeviceFingerprint, c.ClientIP(), c.GetHeader("User-Agent"))
+	response, err := h.authService.RegisterWithDevice(c.Request.Context(), input, req.DeviceFingerprint, c.ClientIP(), c.GetHeader("User-Agent"))
 	if err != nil {
 		handleError(c, err)
 		return
@@ -90,7 +75,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	})
 }
 
-// Login handles user login
 // POST /api/auth/login
 func (h *AuthHandler) Login(c *gin.Context) {
 	if !h.loginLimiter.Allow(c.ClientIP()) {
@@ -111,7 +95,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// Use new session-based login with device fingerprint
-	response, err := h.authService.LoginWithSessionCtx(c.Request.Context(), input, c.ClientIP(), c.GetHeader("User-Agent"), req.DeviceFingerprint)
+	response, err := h.authService.LoginWithSession(c.Request.Context(), input, c.ClientIP(), c.GetHeader("User-Agent"), req.DeviceFingerprint)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -148,7 +132,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	})
 }
 
-// RequestVerification requests a new verification email
 // POST /api/auth/verify/request
 func (h *AuthHandler) RequestVerification(c *gin.Context) {
 	if !h.verifyLimiter.Allow(c.ClientIP()) {
@@ -163,7 +146,7 @@ func (h *AuthHandler) RequestVerification(c *gin.Context) {
 		return
 	}
 
-	result, err := h.authService.RequestVerificationCtx(c.Request.Context(), req.Email, c.ClientIP())
+	result, err := h.authService.RequestVerification(c.Request.Context(), req.Email, c.ClientIP())
 	if err != nil {
 		// Include server-side retry metadata for rate-limit responses.
 		if appErr, ok := err.(*apperrors.AppError); ok && result != nil && result.RetryAfterSeconds > 0 &&
@@ -188,7 +171,6 @@ func (h *AuthHandler) RequestVerification(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// ConfirmVerification confirms email verification
 // POST /api/auth/verify/confirm
 func (h *AuthHandler) ConfirmVerification(c *gin.Context) {
 	var req dto.VerifyConfirmRequest
@@ -202,7 +184,7 @@ func (h *AuthHandler) ConfirmVerification(c *gin.Context) {
 		Token: req.Token,
 	}
 
-	if err := h.authService.ConfirmVerificationCtx(c.Request.Context(), input); err != nil {
+	if err := h.authService.ConfirmVerification(c.Request.Context(), input); err != nil {
 		handleError(c, err)
 		return
 	}
@@ -210,7 +192,6 @@ func (h *AuthHandler) ConfirmVerification(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Email berhasil diverifikasi"})
 }
 
-// ForgotPassword handles password reset request
 // POST /api/auth/forgot-password
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	if !h.verifyLimiter.Allow(c.ClientIP()) {
@@ -225,7 +206,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.ForgotPasswordCtx(c.Request.Context(), req.Email, c.ClientIP())
+	response, err := h.authService.ForgotPassword(c.Request.Context(), req.Email, c.ClientIP())
 	if err != nil {
 		handleError(c, err)
 		return
@@ -236,7 +217,6 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	})
 }
 
-// ResetPassword handles password reset with token
 // POST /api/auth/reset-password
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req dto.ResetPasswordRequest
@@ -246,7 +226,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.authService.ResetPasswordCtx(c.Request.Context(), req.Token, req.NewPassword); err != nil {
+	if err := h.authService.ResetPassword(c.Request.Context(), req.Token, req.NewPassword); err != nil {
 		handleError(c, err)
 		return
 	}
@@ -256,7 +236,6 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	})
 }
 
-// RefreshToken handles token refresh with rotation
 // POST /api/auth/refresh
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	if !h.refreshLimiter.Allow(c.ClientIP()) {
@@ -279,7 +258,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	tokenPair, err := h.sessionService.RefreshSessionCtx(c.Request.Context(), refreshToken, c.ClientIP(), c.GetHeader("User-Agent"))
+	tokenPair, err := h.sessionService.RefreshSession(c.Request.Context(), refreshToken, c.ClientIP(), c.GetHeader("User-Agent"))
 	if err != nil {
 		handleError(c, err)
 		return
@@ -297,7 +276,6 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	})
 }
 
-// Logout revokes the current session
 // POST /api/auth/logout
 func (h *AuthHandler) Logout(c *gin.Context) {
 	var req dto.LogoutRequest
@@ -311,24 +289,21 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 
 	if refreshToken != "" {
 		// Find and revoke session by refresh token
-		_ = h.sessionService.RevokeSessionByRefreshTokenCtx(c.Request.Context(), refreshToken, "User logout")
+		_ = h.sessionService.RevokeSessionByRefreshToken(c.Request.Context(), refreshToken, "User logout")
 	}
 
 	clearRefreshTokenCookie(c)
 	c.JSON(http.StatusOK, gin.H{"message": "Berhasil logout"})
 }
 
-// LogoutAll revokes all sessions for the current user
 // POST /api/auth/logout-all
 func (h *AuthHandler) LogoutAll(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
-	user := userIfc.(*ent.User)
 
-	if err := h.sessionService.RevokeAllUserSessionsCtx(c.Request.Context(), uint(user.ID), "User requested logout from all devices"); err != nil {
+	if err := h.sessionService.RevokeAllUserSessions(c.Request.Context(), user.ID, "User requested logout from all devices"); err != nil {
 		handleError(c, apperrors.ErrInternalServer)
 		return
 	}
@@ -337,17 +312,14 @@ func (h *AuthHandler) LogoutAll(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Berhasil logout dari semua perangkat"})
 }
 
-// GetActiveSessions returns all active sessions for the current user
 // GET /api/auth/sessions
 func (h *AuthHandler) GetActiveSessions(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
-	user := userIfc.(*ent.User)
 
-	sessions, err := h.sessionService.GetActiveSessionsCtx(c.Request.Context(), uint(user.ID))
+	sessions, err := h.sessionService.GetActiveSessions(c.Request.Context(), user.ID)
 	if err != nil {
 		handleError(c, apperrors.ErrInternalServer)
 		return
@@ -369,15 +341,12 @@ func (h *AuthHandler) GetActiveSessions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"sessions": response})
 }
 
-// RevokeSession revokes a specific session
 // DELETE /api/auth/sessions/:id
 func (h *AuthHandler) RevokeSession(c *gin.Context) {
-	userIfc, ok := c.Get("user")
+	user, ok := mustGetUser(c)
 	if !ok {
-		handleError(c, apperrors.ErrUnauthorized)
 		return
 	}
-	user := userIfc.(*ent.User)
 
 	sessionID := c.Param("id")
 	sessionIDInt, err := strconv.Atoi(sessionID)
@@ -395,7 +364,7 @@ func (h *AuthHandler) RevokeSession(c *gin.Context) {
 		return
 	}
 
-	if err := h.sessionService.RevokeSessionCtx(c.Request.Context(), uint(sessionIDInt), "User revoked session"); err != nil {
+	if err := h.sessionService.RevokeSession(c.Request.Context(), sessionIDInt, "User revoked session"); err != nil {
 		handleError(c, apperrors.ErrInternalServer)
 		return
 	}
@@ -403,7 +372,6 @@ func (h *AuthHandler) RevokeSession(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Session berhasil dicabut"})
 }
 
-// LoginTOTP completes login with TOTP code after password verification
 // POST /api/auth/login/totp
 func (h *AuthHandler) LoginTOTP(c *gin.Context) {
 	if !h.loginLimiter.Allow(c.ClientIP()) {
@@ -422,7 +390,7 @@ func (h *AuthHandler) LoginTOTP(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.CompleteTOTPLoginCtx(c.Request.Context(), req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"), req.DeviceFingerprint)
+	response, err := h.authService.CompleteTOTPLogin(c.Request.Context(), req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"), req.DeviceFingerprint)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -445,7 +413,6 @@ func (h *AuthHandler) LoginTOTP(c *gin.Context) {
 	})
 }
 
-// LoginBackupCode completes login with backup code after password verification
 // POST /api/auth/login/backup-code
 func (h *AuthHandler) LoginBackupCode(c *gin.Context) {
 	if !h.loginLimiter.Allow(c.ClientIP()) {
@@ -464,7 +431,7 @@ func (h *AuthHandler) LoginBackupCode(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.CompleteTOTPLoginWithBackupCodeCtx(c.Request.Context(), req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"), req.DeviceFingerprint)
+	response, err := h.authService.CompleteTOTPLoginWithBackupCode(c.Request.Context(), req.TOTPPending, req.Code, c.ClientIP(), c.GetHeader("User-Agent"), req.DeviceFingerprint)
 	if err != nil {
 		handleError(c, err)
 		return

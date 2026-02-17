@@ -1,53 +1,26 @@
-/**
- * SWR Configuration and custom fetchers for data fetching with caching
- * Provides auto-revalidation, focus-based refresh, and proper error handling
- */
 import useSWR, { mutate as globalMutate } from "swr";
 import { getApiBase } from "./api";
 import { getToken } from "./auth";
 import { fetchWithAuth } from "./tokenRefresh";
 
-/**
- * Default SWR configuration
- * Similar to how GitHub handles data freshness
- */
 export const swrConfig = {
-  // Revalidate when window regains focus
   revalidateOnFocus: true,
-  // Revalidate when browser comes back online
   revalidateOnReconnect: true,
-  // Custom retry logic
   shouldRetryOnError: true,
-  // Keep previous data while revalidating (smooth UX)
   keepPreviousData: true,
-  // Dedupe requests within 2 seconds
   dedupingInterval: 2000,
-  // Focus throttle - don't refetch too often on focus
   focusThrottleInterval: 5000,
-  // Error retry count
   errorRetryCount: 2,
-  // Error retry interval
   errorRetryInterval: 5000,
-  // Custom error retry logic
   onErrorRetry: (error, key, config, revalidate, { retryCount }) => {
-    // Don't retry for 404 (resource not found) - it won't magically appear
     if (error.status === 404) return;
-    // Don't retry for 401/403 (auth issues) - let token refresh handle it
     if (error.status === 401 || error.status === 403) return;
-    // Don't retry for 400 (bad request)
     if (error.status === 400) return;
-    // Max 2 retries
     if (retryCount >= 2) return;
-    // Retry after 5 seconds for other errors (network, 5xx)
     setTimeout(() => revalidate({ retryCount }), 5000);
   },
 };
 
-/**
- * Authenticated fetcher using fetchWithAuth for automatic token refresh
- * @param {string} url - Full URL to fetch
- * @returns {Promise<any>} Parsed JSON response
- */
 export async function authFetcher(url) {
   const res = await fetchWithAuth(url);
   
@@ -71,11 +44,6 @@ export async function authFetcher(url) {
   return res.json();
 }
 
-/**
- * Public fetcher (no auth required)
- * @param {string} url - Full URL to fetch
- * @returns {Promise<any>} Parsed JSON response
- */
 export async function publicFetcher(url) {
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
@@ -97,22 +65,15 @@ export async function publicFetcher(url) {
   return res.json();
 }
 
-/**
- * Hook for fetching current user data with SWR
- * Automatically revalidates on focus and handles token refresh
- */
 export function useUser() {
   const token = getToken();
-  
+
   const { data, error, isLoading, isValidating, mutate } = useSWR(
-    // Only fetch if we have a token
     token ? `${getApiBase()}/api/account/me` : null,
     authFetcher,
     {
       ...swrConfig,
-      // User data should be fresh - check on every focus
       revalidateOnFocus: true,
-      // Don't retry on auth errors
       shouldRetryOnError: (error) => error?.status !== 401 && error?.status !== 403,
     }
   );
@@ -127,20 +88,15 @@ export function useUser() {
   };
 }
 
-/**
- * Hook for fetching wallet balance
- * Uses Feature Service for wallet data
- */
 export function useWallet() {
   const token = getToken();
   const featureBase = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
-  
+
   const { data, error, isLoading, mutate } = useSWR(
     token ? `${featureBase}/api/v1/wallets/me` : null,
     authFetcher,
     {
       ...swrConfig,
-      // Wallet balance should refresh on focus
       revalidateOnFocus: true,
     }
   );
@@ -153,10 +109,6 @@ export function useWallet() {
   };
 }
 
-/**
- * Hook for fetching Validation Case record (public)
- * @param {string|null} validationCaseId - Validation Case ID to fetch
- */
 export function useValidationCase(validationCaseId) {
   const { data, error, isLoading, mutate } = useSWR(
     validationCaseId ? `${getApiBase()}/api/validation-cases/${validationCaseId}/public` : null,
@@ -175,9 +127,6 @@ export function useValidationCase(validationCaseId) {
   };
 }
 
-/**
- * Hook for fetching user's Validation Cases (My Validation Cases page)
- */
 export function useMyValidationCases() {
   const token = getToken();
   
@@ -198,18 +147,14 @@ export function useMyValidationCases() {
   };
 }
 
-/**
- * Hook for fetching Validation Case types (categories)
- */
 export function useValidationCaseCategories() {
   const { data, error, isLoading } = useSWR(
     `${getApiBase()}/api/validation-cases/categories`,
     publicFetcher,
     {
       ...swrConfig,
-      // Categories don't change often - longer revalidation
       revalidateOnFocus: false,
-      dedupingInterval: 60000, // 1 minute
+      dedupingInterval: 60000,
     }
   );
 
@@ -220,18 +165,14 @@ export function useValidationCaseCategories() {
   };
 }
 
-/**
- * Hook for checking if user can delete their account
- */
 export function useCanDeleteAccount() {
   const token = getToken();
-  
+
   const { data, error, isLoading, mutate } = useSWR(
     token ? `${getApiBase()}/api/account/can-delete` : null,
     authFetcher,
     {
       ...swrConfig,
-      // Don't auto-revalidate - only fetch when needed
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
     }
@@ -248,9 +189,6 @@ export function useCanDeleteAccount() {
   };
 }
 
-/**
- * Hook for fetching TOTP status
- */
 export function useTOTPStatus() {
   const token = getToken();
   
@@ -272,10 +210,6 @@ export function useTOTPStatus() {
   };
 }
 
-/**
- * Global mutate helper - invalidate cache for specific keys
- * Use after mutations (create, update, delete) to trigger refetch
- */
 export function invalidateCache(keyOrKeys) {
   if (Array.isArray(keyOrKeys)) {
     keyOrKeys.forEach(key => globalMutate(key));
@@ -284,10 +218,6 @@ export function invalidateCache(keyOrKeys) {
   }
 }
 
-/**
- * Invalidate all user-related data
- * Call this after login/logout
- */
 export function invalidateUserData() {
   const base = getApiBase();
   const featureBase = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
@@ -298,14 +228,9 @@ export function invalidateUserData() {
   globalMutate(`${base}/api/account/can-delete`);
 }
 
-/**
- * Invalidate Validation Case-related data
- * Call this after creating/updating/deleting Validation Cases
- */
 export function invalidateValidationCases() {
   const base = getApiBase();
   globalMutate(`${base}/api/validation-cases/me`);
-  // Also invalidate any matching list patterns
   globalMutate(
     (key) => typeof key === 'string' && key.includes("/api/validation-cases"),
     undefined,

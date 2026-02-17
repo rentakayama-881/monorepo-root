@@ -1,10 +1,5 @@
 namespace FeatureService.Api.DTOs;
 
-// ================== Admin Moderation DTOs ==================
-
-/// <summary>
-/// Admin dashboard statistics
-/// </summary>
 public record AdminDashboardStatsDto(
     int PendingReports,
     int TotalReportsToday,
@@ -13,9 +8,6 @@ public record AdminDashboardStatsDto(
     int HiddenContentCount
 );
 
-/// <summary>
-/// Request to move a Validation Case (admin)
-/// </summary>
 public record MoveValidationCaseRequest(
     uint ValidationCaseId,
     uint NewOwnerUserId,
@@ -24,9 +16,6 @@ public record MoveValidationCaseRequest(
     bool DryRun = false
 );
 
-/// <summary>
-/// Response after moving a Validation Case
-/// </summary>
 public record MoveValidationCaseResponse(
     uint ValidationCaseId,
     uint PreviousOwnerUserId,
@@ -34,9 +23,6 @@ public record MoveValidationCaseResponse(
     string Message
 );
 
-/// <summary>
-/// Hidden content summary for admin
-/// </summary>
 public record HiddenContentDto(
     string Id,
     string ContentType,
@@ -51,9 +37,6 @@ public record HiddenContentDto(
     object? ContentPreview
 );
 
-/// <summary>
-/// Paginated hidden content response
-/// </summary>
 public record PaginatedHiddenContentResponse(
     List<HiddenContentDto> Items,
     int TotalCount,
@@ -61,14 +44,8 @@ public record PaginatedHiddenContentResponse(
     int PageSize
 );
 
-/// <summary>
-/// Request to unhide content
-/// </summary>
 public record UnhideContentRequest(string ContentId);
 
-/// <summary>
-/// Validation Case ownership move history item
-/// </summary>
 public record ValidationCaseOwnershipTransferDto(
     string Id,
     uint ValidationCaseId,
@@ -82,23 +59,17 @@ public record ValidationCaseOwnershipTransferDto(
     DateTime TransferredAt
 );
 
-/// <summary>
-/// Admin action log entry
-/// </summary>
 public record AdminActionLogDto(
     string Id,
     uint AdminId,
     string? AdminEmail,
-    string ActionType,  // report_action, validation_case_move, ban_device, unban_device, hide_content, unhide_content
-    string TargetType,  // report, validation_case, device, content, user
+    string ActionType,
+    string TargetType,
     string TargetId,
     object? ActionDetails,
     DateTime CreatedAt
 );
 
-/// <summary>
-/// Paginated admin action log response
-/// </summary>
 public record PaginatedAdminActionLogResponse(
     List<AdminActionLogDto> Logs,
     int TotalCount,
@@ -106,12 +77,23 @@ public record PaginatedAdminActionLogResponse(
     int PageSize
 );
 
-/// <summary>
-/// Paginated warnings response for admin list all
-/// </summary>
 public record PaginatedWarningsResponse(
     List<UserWarningDto> Items,
     int TotalCount,
     int Page,
     int PageSize
 );
+
+// Moved from AdminModerationController.cs
+public record BanDeviceRequest(
+    string DeviceFingerprint,
+    uint? UserId,
+    string Reason,
+    string? ReportId,
+    bool IsPermanent = true,
+    DateTime? ExpiresAt = null);
+public record DeviceBanCreatedResponse(string BanId, string Message);
+public record CreateWarningRequest(uint UserId, string Reason, string Message, string Severity, string? ReportId);
+public record WarningCreatedResponse(string WarningId, string Message);
+public record HideContentRequest(string ContentType, string ContentId, string Reason, string? ReportId);
+public record ContentHiddenResponse(string HiddenId, string Message);

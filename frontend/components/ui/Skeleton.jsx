@@ -1,9 +1,6 @@
 import { cn } from "@/lib/utils";
 import { cva } from "class-variance-authority";
 
-/**
- * Skeleton variants
- */
 const skeletonVariants = cva(
   "rounded-[var(--radius)] bg-secondary relative overflow-hidden",
   {
@@ -26,9 +23,6 @@ const skeletonVariants = cva(
   }
 );
 
-/**
- * Base skeleton component with shimmer animation
- */
 export default function Skeleton({ className, variant, shape, ...props }) {
   return (
     <div
@@ -38,36 +32,24 @@ export default function Skeleton({ className, variant, shape, ...props }) {
   );
 }
 
-/**
- * Text line skeleton
- */
 export function SkeletonText({ width = "w-full", height = "h-4", className = "" }) {
   return (
     <Skeleton shape="text" className={cn(width, height, className)} />
   );
 }
 
-/**
- * Circle skeleton (for avatars)
- */
 export function SkeletonCircle({ size = "h-10 w-10", className = "" }) {
   return (
     <Skeleton shape="circle" className={cn(size, className)} />
   );
 }
 
-/**
- * Card skeleton
- */
 export function SkeletonCard({ className = "" }) {
   return (
     <Skeleton shape="card" className={cn("w-full", className)} />
   );
 }
 
-/**
- * List item skeleton
- */
 export function SkeletonListItem() {
   return (
     <div className="flex items-center gap-3 p-3 border-b last:border-b-0 animate-pulse">
@@ -81,9 +63,6 @@ export function SkeletonListItem() {
   );
 }
 
-/**
- * Transaction list skeleton
- */
 export function SkeletonTransactionList({ count = 3 }) {
   return (
     <div className="rounded-[var(--radius)] border bg-card divide-y">
@@ -94,9 +73,6 @@ export function SkeletonTransactionList({ count = 3 }) {
   );
 }
 
-/**
- * Balance card skeleton
- */
 export function SkeletonBalanceCard() {
   return (
     <div className="rounded-[var(--radius)] border bg-card p-6 animate-pulse">
@@ -110,9 +86,6 @@ export function SkeletonBalanceCard() {
   );
 }
 
-/**
- * Page loading skeleton
- */
 export function SkeletonPage() {
   return (
     <main className="min-h-screen bg-background pt-16">

@@ -18,13 +18,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// EntTOTPService handles TOTP/2FA operations using Ent ORM
 type EntTOTPService struct {
 	client *ent.Client
 	logger *zap.Logger
 }
 
-// NewEntTOTPService creates a new TOTP service with Ent
 func NewEntTOTPService(logger *zap.Logger) *EntTOTPService {
 	return &EntTOTPService{
 		client: database.GetEntClient(),
@@ -329,4 +327,27 @@ func (s *EntTOTPService) GetBackupCodeStatus(ctx context.Context, userID int) (i
 	}
 
 	return total - used, total, nil
+}
+
+func (s *EntTOTPService) GetStatus(ctx context.Context, userID int) (*dto.TOTPStatusResponse, error) {
+	u, err := s.client.User.Get(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var verifiedAt *string
+	if u.TotpVerifiedAt != nil {
+		t := u.TotpVerifiedAt.Format(time.RFC3339)
+		verifiedAt = &t
+	}
+
+	return &dto.TOTPStatusResponse{
+		Enabled:    u.TotpEnabled,
+		VerifiedAt: verifiedAt,
+	}, nil
+}
+
+func (s *EntTOTPService) GetBackupCodeCount(ctx context.Context, userID int) (int, error) {
+	remaining, _, err := s.GetBackupCodeStatus(ctx, userID)
+	return remaining, err
 }

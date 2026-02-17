@@ -314,22 +314,13 @@ func main() {
 	deviceBanChecker := services.NewFeatureServiceDeviceBanChecker(config.FeatureServiceURL, config.ServiceToken)
 	services.SetDeviceBanChecker(deviceBanChecker)
 
-	// Initialize services (Ent)
 	services.InitEmailRateLimiter()
 	authEntService := services.NewEntAuthService()
 	sessionEntService := services.NewEntSessionService()
 	totpEntService := services.NewEntTOTPService(logger.GetLogger())
 	sudoEntService := services.NewEntSudoService(logger.GetLogger(), totpEntService)
 
-	// Create service wrappers for handler compatibility
-	authServiceWrapper := services.NewAuthServiceWrapper(authEntService)
-	sessionServiceWrapper := services.NewSessionServiceWrapper(sessionEntService)
-	totpServiceWrapper := services.NewTOTPServiceWrapper(totpEntService)
-
-	// Use Ent-based Validation Case service exclusively
-	var caseService services.ValidationCaseServiceInterface
-	caseService = services.NewEntValidationCaseService()
-	logger.Info("Using Ent ORM for ValidationCaseService")
+	var caseService services.ValidationCaseServiceInterface = services.NewEntValidationCaseService()
 	workflowService := services.NewEntValidationCaseWorkflowService()
 	ownerResponseSLAWorker := services.NewOwnerResponseSLAWorker(workflowService)
 	ownerResponseSLAWorker.Start()
@@ -355,16 +346,14 @@ func main() {
 		logger.Fatal("Failed to initialize passkey service", zap.Error(err))
 	}
 
-	// Initialize handlers
 	userEntService := services.NewEntUserService()
 	userHandler := handlers.NewUserHandler(userEntService)
 
-	// Use service wrappers for handlers expecting legacy interfaces
-	authHandler := handlers.NewAuthHandler(authServiceWrapper, sessionServiceWrapper)
+	authHandler := handlers.NewAuthHandler(authEntService, sessionEntService)
 	caseHandler := handlers.NewValidationCaseHandler(caseService)
 	workflowHandler := handlers.NewValidationCaseWorkflowHandler(workflowService)
-	totpHandler := handlers.NewTOTPHandler(totpServiceWrapper, logger.GetLogger())
-	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authServiceWrapper, logger.GetLogger())
+	totpHandler := handlers.NewTOTPHandler(totpEntService)
+	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authEntService, logger.GetLogger())
 	sudoHandler := handlers.NewEntSudoHandler(sudoEntService, logger.GetLogger())
 	sudoValidator := services.NewSudoValidatorAdapter(sudoEntService)
 	// Financial features are handled by the ASP.NET service; keep Go focused on core identity/content.

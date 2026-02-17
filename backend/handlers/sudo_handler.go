@@ -10,13 +10,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// SudoHandler handles sudo mode endpoints
 type SudoHandler struct {
 	sudoService *services.EntSudoService
 	logger      *zap.Logger
 }
 
-// NewSudoHandler creates a new SudoHandler
 func NewEntSudoHandler(sudoService *services.EntSudoService, logger *zap.Logger) *SudoHandler {
 	return &SudoHandler{
 		sudoService: sudoService,
@@ -24,7 +22,7 @@ func NewEntSudoHandler(sudoService *services.EntSudoService, logger *zap.Logger)
 	}
 }
 
-// Verify handles POST /sudo/verify - verify password + TOTP to enter sudo mode
+// POST /sudo/verify
 func (h *SudoHandler) Verify(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -63,7 +61,7 @@ func (h *SudoHandler) Verify(c *gin.Context) {
 	})
 }
 
-// GetStatus handles GET /sudo/status - check if sudo mode is active
+// GET /sudo/status
 func (h *SudoHandler) GetStatus(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -100,7 +98,7 @@ func (h *SudoHandler) GetStatus(c *gin.Context) {
 	})
 }
 
-// Extend handles POST /sudo/extend - extend sudo session
+// POST /sudo/extend
 func (h *SudoHandler) Extend(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -127,7 +125,7 @@ func (h *SudoHandler) Extend(c *gin.Context) {
 	})
 }
 
-// Revoke handles DELETE /sudo - revoke sudo session
+// DELETE /sudo
 func (h *SudoHandler) Revoke(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {

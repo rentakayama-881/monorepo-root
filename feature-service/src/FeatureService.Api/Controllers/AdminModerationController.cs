@@ -3,17 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using FeatureService.Api.Services;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Models.Entities;
-using System.Security.Claims;
 
 namespace FeatureService.Api.Controllers;
 
-/// <summary>
-/// Admin moderation endpoints for managing reports, bans, warnings, and content
-/// </summary>
 [ApiController]
 [Route("api/v1/admin/moderation")]
 [Authorize(Roles = "admin")]
-public class AdminModerationController : ControllerBase
+public class AdminModerationController : ApiControllerBase
 {
     private readonly IReportService _reportService;
     private readonly IDeviceBanService _deviceBanService;
@@ -35,11 +31,6 @@ public class AdminModerationController : ControllerBase
         _logger = logger;
     }
 
-    #region Dashboard
-
-    /// <summary>
-    /// Get admin dashboard statistics
-    /// </summary>
     [HttpGet("dashboard")]
     [ProducesResponseType(typeof(AdminDashboardStatsDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDashboardStats()
@@ -48,13 +39,6 @@ public class AdminModerationController : ControllerBase
         return Ok(stats);
     }
 
-    #endregion
-
-    #region Reports Management
-
-    /// <summary>
-    /// Get pending reports for admin review
-    /// </summary>
     [HttpGet("reports")]
     [ProducesResponseType(typeof(PaginatedReportsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPendingReports(
@@ -67,9 +51,6 @@ public class AdminModerationController : ControllerBase
         return Ok(reports);
     }
 
-    /// <summary>
-    /// Get report details
-    /// </summary>
     [HttpGet("reports/{id}")]
     [ProducesResponseType(typeof(ReportDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -111,20 +92,16 @@ public class AdminModerationController : ControllerBase
         return Ok(dto);
     }
 
-    /// <summary>
-    /// Take action on a report (dismiss, warn, hide, ban)
-    /// </summary>
     [HttpPost("reports/{id}/action")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> TakeReportAction(string id, [FromBody] TakeReportActionRequest request)
     {
-        var adminId = GetCurrentAdminId();
+        var adminId = GetUserId();
         var ipAddress = GetClientIpAddress();
         var userAgent = Request.Headers.UserAgent.ToString();
 
-        // Validate action
         if (!ReportAction.All.Contains(request.Action))
         {
             return BadRequest(new { error = "Invalid action. Must be one of: " + string.Join(", ", ReportAction.All) });
@@ -149,13 +126,6 @@ public class AdminModerationController : ControllerBase
         }
     }
 
-    #endregion
-
-    #region Device Bans
-
-    /// <summary>
-    /// Get all device bans
-    /// </summary>
     [HttpGet("device-bans")]
     [ProducesResponseType(typeof(PaginatedDeviceBansResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDeviceBans(
@@ -168,16 +138,13 @@ public class AdminModerationController : ControllerBase
         return Ok(bans);
     }
 
-    /// <summary>
-    /// Ban a device (permanent ban)
-    /// </summary>
     [HttpPost("device-bans")]
     [ProducesResponseType(typeof(DeviceBanCreatedResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> BanDevice([FromBody] BanDeviceRequest request)
     {
-        var adminId = GetCurrentAdminId();
+        var adminId = GetUserId();
 
         if (string.IsNullOrWhiteSpace(request.DeviceFingerprint))
         {
@@ -208,9 +175,6 @@ public class AdminModerationController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get device ban details
-    /// </summary>
     [HttpGet("device-bans/{id}")]
     [ProducesResponseType(typeof(DeviceBanDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -224,15 +188,12 @@ public class AdminModerationController : ControllerBase
         return Ok(ban);
     }
 
-    /// <summary>
-    /// Unban a device
-    /// </summary>
     [HttpDelete("device-bans/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UnbanDevice(string id)
     {
-        var adminId = GetCurrentAdminId();
+        var adminId = GetUserId();
 
         try
         {
@@ -247,16 +208,15 @@ public class AdminModerationController : ControllerBase
     }
 
     /// <summary>
-    /// Check if a device is banned (for registration/login flow)
+    /// Accepts service token OR admin JWT for cross-service ban checks.
     /// </summary>
     [HttpPost("device-bans/check")]
-    [AllowAnonymous] // Allows anonymous but validates service token
+    [AllowAnonymous]
     [ProducesResponseType(typeof(CheckDeviceBanResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CheckDeviceBan([FromBody] CheckDeviceBanRequest request,
         [FromHeader(Name = "X-Service-Token")] string? serviceToken)
     {
-        // Validate caller: must have valid service token OR authenticated admin JWT
         var configServiceToken = Environment.GetEnvironmentVariable("SERVICE_TOKEN") ?? "";
         if (string.IsNullOrEmpty(configServiceToken))
         {
@@ -277,13 +237,6 @@ public class AdminModerationController : ControllerBase
         return Ok(new CheckDeviceBanResponse(isBanned, message, null));
     }
 
-    #endregion
-
-    #region User Warnings
-
-    /// <summary>
-    /// Get all warnings (paginated, optionally filtered by userId)
-    /// </summary>
     [HttpGet("warnings")]
     [ProducesResponseType(typeof(PaginatedWarningsResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllWarnings(
@@ -296,9 +249,6 @@ public class AdminModerationController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get all warnings for a user
-    /// </summary>
     [HttpGet("warnings/user/{userId}")]
     [ProducesResponseType(typeof(List<UserWarningDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUserWarnings(uint userId)
@@ -307,16 +257,12 @@ public class AdminModerationController : ControllerBase
         return Ok(warnings);
     }
 
-    /// <summary>
-    /// Issue a warning to a user
-    /// </summary>
     [HttpPost("warnings")]
     [ProducesResponseType(typeof(WarningCreatedResponse), StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateWarning([FromBody] CreateWarningRequest request)
     {
-        var adminId = GetCurrentAdminId();
+        var adminId = GetUserId();
 
-        // Validate severity
         if (!WarningSeverity.All.Contains(request.Severity))
         {
             return BadRequest(new { error = "Invalid severity. Must be one of: " + string.Join(", ", WarningSeverity.All) });
@@ -338,9 +284,6 @@ public class AdminModerationController : ControllerBase
             new WarningCreatedResponse(warningId, "Warning issued successfully"));
     }
 
-    /// <summary>
-    /// Get warning details
-    /// </summary>
     [HttpGet("warnings/{id}")]
     [ProducesResponseType(typeof(UserWarningDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -354,18 +297,11 @@ public class AdminModerationController : ControllerBase
         return Ok(warning);
     }
 
-    #endregion
-
-    #region Content Hiding
-
-    /// <summary>
-    /// Hide record (validation case)
-    /// </summary>
     [HttpPost("content/hide")]
     [ProducesResponseType(typeof(ContentHiddenResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> HideContent([FromBody] HideContentRequest request)
     {
-        var adminId = GetCurrentAdminId();
+        var adminId = GetUserId();
 
         try
         {
@@ -385,15 +321,12 @@ public class AdminModerationController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Unhide content
-    /// </summary>
     [HttpPost("content/unhide/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UnhideContent(string id)
     {
-        var adminId = GetCurrentAdminId();
+        var adminId = GetUserId();
 
         try
         {
@@ -410,9 +343,6 @@ public class AdminModerationController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get all hidden content
-    /// </summary>
     [HttpGet("content/hidden")]
     [ProducesResponseType(typeof(PaginatedHiddenContentResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetHiddenContent([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
@@ -422,18 +352,11 @@ public class AdminModerationController : ControllerBase
         return Ok(result);
     }
 
-    #endregion
-
-    #region Validation Case Management
-
-    /// <summary>
-    /// Move a Validation Case (re-assign owner and/or category)
-    /// </summary>
     [HttpPost("validation-cases/move")]
     [ProducesResponseType(typeof(MoveValidationCaseResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> MoveValidationCase([FromBody] MoveValidationCaseRequest request)
     {
-        var adminId = GetCurrentAdminId();
+        var adminId = GetUserId();
 
         try
         {
@@ -467,13 +390,6 @@ public class AdminModerationController : ControllerBase
         }
     }
 
-    #endregion
-
-    #region Admin Action Logs
-
-    /// <summary>
-    /// Get admin action audit logs
-    /// </summary>
     [HttpGet("logs")]
     [ProducesResponseType(typeof(PaginatedAdminActionLogResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAdminActionLogs(
@@ -486,33 +402,8 @@ public class AdminModerationController : ControllerBase
         return Ok(logs);
     }
 
-    #endregion
-
-    private uint GetCurrentAdminId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? User.FindFirst("sub")?.Value
-            ?? User.FindFirst("user_id")?.Value;
-
-        return uint.TryParse(userIdClaim, out var id) ? id : 0;
-    }
-
     private string? GetClientIpAddress()
     {
         return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 }
-
-// Request/Response DTOs
-public record BanDeviceRequest(
-    string DeviceFingerprint,
-    uint? UserId,
-    string Reason,
-    string? ReportId,
-    bool IsPermanent = true,
-    DateTime? ExpiresAt = null);
-public record DeviceBanCreatedResponse(string BanId, string Message);
-public record CreateWarningRequest(uint UserId, string Reason, string Message, string Severity, string? ReportId);
-public record WarningCreatedResponse(string WarningId, string Message);
-public record HideContentRequest(string ContentType, string ContentId, string Reason, string? ReportId);
-public record ContentHiddenResponse(string HiddenId, string Message);

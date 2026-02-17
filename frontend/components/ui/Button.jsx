@@ -4,9 +4,6 @@ import { cva } from "class-variance-authority";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-/**
- * Button variants using class-variance-authority (prompts.chat style)
- */
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:scale-[0.98]",
   {
@@ -40,18 +37,6 @@ const buttonVariants = cva(
   }
 );
 
-/**
- * Button component with multiple variants and sizes
- * @param {Object} props
- * @param {"default"|"primary"|"destructive"|"danger"|"outline"|"secondary"|"ghost"|"link"|"gradient"} props.variant
- * @param {"default"|"sm"|"lg"|"icon"|"icon-sm"|"icon-lg"} props.size
- * @param {boolean} props.loading - Show loading spinner
- * @param {boolean} props.disabled - Disable button
- * @param {string} props.href - If provided, renders as Link
- * @param {string} props.className - Additional CSS classes
- * @param {React.ReactNode} props.iconLeft - Icon to display on the left
- * @param {React.ReactNode} props.iconRight - Icon to display on the right
- */
 export default function Button({
   variant = "default",
   size = "default",
@@ -82,7 +67,6 @@ export default function Button({
     </>
   );
 
-  // If href is provided, render as Link
   if (href) {
     return (
       <Link

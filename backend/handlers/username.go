@@ -6,7 +6,6 @@ import (
 
 	"backend-gin/database"
 	"backend-gin/dto"
-	"backend-gin/ent"
 	entuser "backend-gin/ent/user"
 	"backend-gin/validators"
 
@@ -14,13 +13,10 @@ import (
 )
 
 func CreateUsernameHandler(c *gin.Context) {
-	userCtx, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token tidak valid"})
+	user, ok := mustGetUser(c)
+	if !ok {
 		return
 	}
-
-	user := userCtx.(*ent.User)
 
 	var req dto.CreateUsernameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

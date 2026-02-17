@@ -132,7 +132,6 @@ function AccountPageContent() {
     return () => { cancelled = true; };
   }, [API, authed]);
 
-  // Fetch user badges
   useEffect(() => {
     if (!authed) return;
     const loadBadges = async () => {
@@ -304,8 +303,7 @@ function AccountPageContent() {
     setOk(""); setError("");
     const file = e.target.files && e.target.files[0];
     if (file) {
-      // Validate extension
-      const ext = file.name.toLowerCase().split('.').pop();
+      const ext = (file.name.toLowerCase().split('.').pop() || "");
       if (!['jpg', 'jpeg', 'png'].includes(ext)) {
         setError("Format gambar harus JPG atau PNG");
         e.target.value = "";
@@ -415,7 +413,6 @@ function AccountPageContent() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Alert banner when redirected for 2FA setup */}
       {setup2fa === "true" && (
         <div className="mb-6 rounded-lg border border-warning/30 bg-warning/10 p-4">
           <div className="flex items-start gap-3">
@@ -451,7 +448,6 @@ function AccountPageContent() {
           {error && <Alert variant="error" message={error} />}
           {ok && <Alert variant="success" message={ok} />}
 
-          {/* Profile Photo Section */}
           <section className="settings-section">
             <h3 className="settings-section-title mb-3">Foto Profil</h3>
             <div className="mt-3 flex items-start gap-4">
@@ -515,7 +511,6 @@ function AccountPageContent() {
             </div>
           </section>
 
-          {/* Badges Section */}
           <section className="settings-section">
             <h3 className="settings-section-title mb-3">Badges</h3>
             <div className="mt-3 space-y-3">
@@ -747,13 +742,8 @@ function AccountPageContent() {
             </div>
           </section>
 
-          {/* 2FA / TOTP Security Section */}
           <TOTPSettings />
-
-          {/* Passkeys / WebAuthn Section */}
           <PasskeySettings />
-
-          {/* Zona Berbahaya - Delete Account */}
           <DeleteAccountSection API={API} router={router} />
         </div>
       )}
@@ -761,7 +751,6 @@ function AccountPageContent() {
   );
 }
 
-// Separate component for delete account to use sudo hook
 function DeleteAccountSection({ API, router }) {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -776,7 +765,6 @@ function DeleteAccountSection({ API, router }) {
     setDeleteLoading(true);
 
     try {
-      // Request sudo mode first
       await executeSudo(async (sudoToken) => {
         const t = await getValidToken();
         if (!t) {
@@ -797,7 +785,6 @@ function DeleteAccountSection({ API, router }) {
         if (!res.ok) {
           throw new Error(data.error || "Gagal menghapus akun");
         }
-        // Clean logout
         localStorage.removeItem("token");
         localStorage.removeItem("sudo_token");
         localStorage.removeItem("sudo_expires");
@@ -825,7 +812,6 @@ function DeleteAccountSection({ API, router }) {
         Aksi ini tidak dapat dibatalkan.
       </p>
 
-      {/* Loading state */}
       {checkingDelete && (
         <div className="mt-4 p-3 rounded-lg bg-background/50 border border-border">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -835,7 +821,6 @@ function DeleteAccountSection({ API, router }) {
         </div>
       )}
 
-      {/* Blocking reasons - cannot delete */}
       {!checkingDelete && blockingReasons && blockingReasons.length > 0 && (
         <div className="mt-4 p-3 rounded-lg bg-warning/10 border border-warning/20">
           <p className="text-sm font-medium text-warning mb-2 flex items-center gap-2">
@@ -855,7 +840,6 @@ function DeleteAccountSection({ API, router }) {
         </div>
       )}
 
-      {/* Warnings - can delete but with caution */}
       {!checkingDelete && canDelete && warnings && warnings.length > 0 && (
         <div className="mt-4 p-3 rounded-lg bg-warning/10 border border-warning/20">
           <p className="text-sm font-medium text-warning mb-2">Peringatan:</p>
