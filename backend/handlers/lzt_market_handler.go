@@ -318,7 +318,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		return
 	}
 
-	resp, buyErr := h.buyChatGPTItem(c, itemID, i18n, price)
+	resp, failureReason, buyErr := h.buyChatGPTItem(c, itemID, i18n, price)
 	if buyErr != nil {
 		h.markOrderFailed(order.ID, buyErr.Error())
 		detail, _ := h.getOrderForUser(order.ID, userID)
@@ -329,12 +329,11 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		return
 	}
 
-	if resp.StatusCode >= http.StatusBadRequest {
-		reason := fmt.Sprintf("Provider rejected purchase with status %d", resp.StatusCode)
-		if strings.TrimSpace(resp.Raw) != "" {
-			reason = strings.TrimSpace(resp.Raw)
+	if resp == nil || resp.StatusCode >= http.StatusBadRequest || !hasPurchasingPayload(resp) {
+		if strings.TrimSpace(failureReason) == "" {
+			failureReason = normalizeProviderFailureReason(resp, "Provider purchase failed")
 		}
-		h.markOrderFailed(order.ID, reason)
+		h.markOrderFailed(order.ID, failureReason)
 		detail, _ := h.getOrderForUser(order.ID, userID)
 		c.JSON(http.StatusBadGateway, gin.H{
 			"error": "Provider purchase failed",
@@ -415,7 +414,7 @@ func buildLZTItemURL(itemID string) string {
 	return fmt.Sprintf(template, itemID)
 }
 
-func (h *LZTMarketHandler) buyChatGPTItem(c *gin.Context, itemID, i18n string, price float64) (*services.LZTMarketResponse, error) {
+func (h *LZTMarketHandler) buyChatGPTItem(c *gin.Context, itemID, i18n string, price float64) (*services.LZTMarketResponse, string, error) {
 	method := strings.ToUpper(strings.TrimSpace(os.Getenv("LZT_MARKET_BUY_METHOD")))
 	if method == "" {
 		method = http.MethodPost
@@ -426,26 +425,35 @@ func (h *LZTMarketHandler) buyChatGPTItem(c *gin.Context, itemID, i18n string, p
 		contentType = "json"
 	}
 
-	pathTemplate := strings.TrimSpace(os.Getenv("LZT_MARKET_BUY_PATH_TEMPLATE"))
-	if pathTemplate == "" {
-		pathTemplate = "/{item_id}/fast-buy"
-	}
-	path := strings.ReplaceAll(pathTemplate, "{item_id}", itemID)
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-
 	maxRetries := readPositiveIntEnvLocal("LZT_MARKET_BUY_MAX_RETRIES", 100)
 	if maxRetries < 1 {
 		maxRetries = 1
 	}
 
+	fastBuyPath := normalizeProviderPath(
+		strings.TrimSpace(os.Getenv("LZT_MARKET_BUY_PATH_TEMPLATE")),
+		"/{item_id}/fast-buy",
+		itemID,
+	)
+	checkPath := normalizeProviderPath(
+		strings.TrimSpace(os.Getenv("LZT_MARKET_CHECK_PATH_TEMPLATE")),
+		"/{item_id}/check-account",
+		itemID,
+	)
+	confirmPath := normalizeProviderPath(
+		strings.TrimSpace(os.Getenv("LZT_MARKET_CONFIRM_PATH_TEMPLATE")),
+		"/{item_id}/confirm-buy",
+		itemID,
+	)
+
 	var lastResp *services.LZTMarketResponse
 	var lastErr error
+
+	// 1) Fast-buy with retry_request handling.
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		resp, err := h.client.Do(c.Request.Context(), services.LZTMarketRequest{
 			Method:      method,
-			Path:        path,
+			Path:        fastBuyPath,
 			Query:       map[string]string{"i18n": i18n},
 			ContentType: contentType,
 			JSONBody: map[string]interface{}{
@@ -458,17 +466,57 @@ func (h *LZTMarketHandler) buyChatGPTItem(c *gin.Context, itemID, i18n string, p
 		}
 		lastResp = resp
 		if !isRetryRequestResponse(resp) {
-			return resp, nil
+			break
 		}
 	}
 
 	if lastErr != nil {
-		return nil, lastErr
+		return nil, "Provider transport error", lastErr
 	}
 	if lastResp == nil {
-		return nil, errors.New("provider buy request returned no response")
+		return nil, "Provider returned empty response", errors.New("provider buy request returned no response")
 	}
-	return lastResp, nil
+
+	if isSuccessfulPurchaseResponse(lastResp) {
+		return lastResp, "", nil
+	}
+
+	// 2) Fast-buy failed. Fallback only for non-hard-fail reasons.
+	if !shouldFallbackAfterFastBuy(lastResp) {
+		return lastResp, normalizeProviderFailureReason(lastResp, "Fast-buy failed"), nil
+	}
+
+	checkResp, checkErr := h.client.Do(c.Request.Context(), services.LZTMarketRequest{
+		Method:      method,
+		Path:        checkPath,
+		Query:       map[string]string{"i18n": i18n},
+		ContentType: contentType,
+	})
+	if checkErr != nil {
+		return lastResp, normalizeProviderFailureReason(lastResp, "Fast-buy failed and check-account unavailable"), nil
+	}
+	if isHardFailResponse(checkResp) {
+		return checkResp, normalizeProviderFailureReason(checkResp, "Check-account rejected purchase"), nil
+	}
+
+	confirmResp, confirmErr := h.client.Do(c.Request.Context(), services.LZTMarketRequest{
+		Method:      method,
+		Path:        confirmPath,
+		Query:       map[string]string{"i18n": i18n},
+		ContentType: contentType,
+		JSONBody: map[string]interface{}{
+			"price": price,
+		},
+	})
+	if confirmErr != nil {
+		return checkResp, "Confirm-buy transport error", confirmErr
+	}
+
+	if isSuccessfulPurchaseResponse(confirmResp) {
+		return confirmResp, "", nil
+	}
+
+	return confirmResp, normalizeProviderFailureReason(confirmResp, "Confirm-buy failed"), nil
 }
 
 func (h *LZTMarketHandler) fetchChatGPTListing(c *gin.Context, i18n string) (*services.LZTMarketResponse, error) {
@@ -848,6 +896,132 @@ func firstNonEmptyString(m map[string]interface{}, keys ...string) string {
 }
 
 func isRetryRequestResponse(resp *services.LZTMarketResponse) bool {
+	if resp == nil {
+		return false
+	}
+	if hasStatusValue(resp, "retry_request") {
+		return true
+	}
+	errorsList := extractProviderErrors(resp)
+	for _, msg := range errorsList {
+		if strings.EqualFold(strings.TrimSpace(msg), "retry_request") {
+			return true
+		}
+	}
+	return false
+}
+
+func isSuccessfulPurchaseResponse(resp *services.LZTMarketResponse) bool {
+	return hasPurchasingPayload(resp)
+}
+
+func hasPurchasingPayload(resp *services.LZTMarketResponse) bool {
+	if resp == nil || resp.StatusCode >= http.StatusBadRequest || resp.JSON == nil {
+		return false
+	}
+	root, ok := resp.JSON.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	item := readMap(root, "item")
+	if len(item) == 0 {
+		return false
+	}
+	loginData := readMap(item, "loginData")
+	if len(loginData) > 0 {
+		return true
+	}
+	// Some responses may still be considered success with item summary.
+	return firstNonEmptyString(item, "item_id", "title") != ""
+}
+
+func shouldFallbackAfterFastBuy(resp *services.LZTMarketResponse) bool {
+	if resp == nil {
+		return true
+	}
+	if isHardFailResponse(resp) {
+		return false
+	}
+	if isRetryRequestResponse(resp) {
+		return true
+	}
+	if resp.StatusCode >= http.StatusInternalServerError {
+		return true
+	}
+	if resp.StatusCode >= http.StatusBadRequest {
+		return true
+	}
+	return !hasPurchasingPayload(resp)
+}
+
+func isHardFailResponse(resp *services.LZTMarketResponse) bool {
+	if resp == nil {
+		return false
+	}
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusNotFound {
+		return true
+	}
+	errorsList := strings.ToLower(strings.Join(extractProviderErrors(resp), " | "))
+	if strings.Contains(errorsList, "invalid or expired access token") {
+		return true
+	}
+	if strings.Contains(errorsList, "no permission") || strings.Contains(errorsList, "do not have permission") {
+		return true
+	}
+	if strings.Contains(errorsList, "ad not found") || strings.Contains(errorsList, "item not found") {
+		return true
+	}
+	if strings.Contains(errorsList, "this item is sold") {
+		return true
+	}
+	return false
+}
+
+func normalizeProviderFailureReason(resp *services.LZTMarketResponse, fallback string) string {
+	if resp == nil {
+		return fallback
+	}
+	errorsList := extractProviderErrors(resp)
+	if len(errorsList) > 0 {
+		return strings.TrimSpace(strings.Join(errorsList, "; "))
+	}
+	if strings.TrimSpace(resp.Raw) != "" {
+		return strings.TrimSpace(resp.Raw)
+	}
+	if resp.StatusCode > 0 {
+		return fmt.Sprintf("%s (status %d)", fallback, resp.StatusCode)
+	}
+	return fallback
+}
+
+func extractProviderErrors(resp *services.LZTMarketResponse) []string {
+	if resp == nil || resp.JSON == nil {
+		return nil
+	}
+	root, ok := resp.JSON.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	rawErrors, ok := root["errors"]
+	if !ok || rawErrors == nil {
+		return nil
+	}
+	rows, ok := rawErrors.([]interface{})
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(rows))
+	for _, row := range rows {
+		msg := strings.TrimSpace(fmt.Sprintf("%v", row))
+		if msg != "" {
+			out = append(out, msg)
+		}
+	}
+	return out
+}
+
+func hasStatusValue(resp *services.LZTMarketResponse, wanted string) bool {
 	if resp == nil || resp.JSON == nil {
 		return false
 	}
@@ -855,8 +1029,23 @@ func isRetryRequestResponse(resp *services.LZTMarketResponse) bool {
 	if !ok {
 		return false
 	}
-	status := strings.TrimSpace(fmt.Sprintf("%v", root["status"]))
-	return strings.EqualFold(status, "retry_request")
+	value := strings.TrimSpace(fmt.Sprintf("%v", root["status"]))
+	if value == "" {
+		return false
+	}
+	return strings.EqualFold(value, wanted)
+}
+
+func normalizeProviderPath(pathTemplate, fallbackTemplate, itemID string) string {
+	template := strings.TrimSpace(pathTemplate)
+	if template == "" {
+		template = fallbackTemplate
+	}
+	path := strings.ReplaceAll(template, "{item_id}", itemID)
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	return path
 }
 
 func newPublicMarketOrderID() string {

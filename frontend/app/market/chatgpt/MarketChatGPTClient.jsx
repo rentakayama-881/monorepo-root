@@ -1,9 +1,8 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getApiBase } from "@/lib/api";
-import { fetchJsonAuth } from "@/lib/api";
+import { fetchJsonAuth, getApiBase } from "@/lib/api";
 
 function extractList(payload) {
   if (!payload) return [];
@@ -25,6 +24,12 @@ function extractList(payload) {
   return [];
 }
 
+function normalizeBool(value) {
+  if (value === true || value === 1 || value === "1" || value === "true") return true;
+  if (value === false || value === 0 || value === "0" || value === "false") return false;
+  return false;
+}
+
 function toDisplayAccount(item, index) {
   const id = item?.id ?? item?.item_id ?? item?.account_id ?? `row-${index}`;
   const seller =
@@ -38,10 +43,7 @@ function toDisplayAccount(item, index) {
     price: item?.priceWithSellerFee ?? item?.price ?? item?.amount ?? item?.cost ?? "-",
     status: item?.item_state ?? item?.status ?? item?.state ?? item?.availability ?? "-",
     seller,
-    canBuy:
-      typeof item?.canBuyItem === "boolean"
-        ? item.canBuyItem
-        : item?.canBuyItem === 1 || item?.canBuyItem === "1" || item?.canBuyItem === "true",
+    canBuy: normalizeBool(item?.canBuyItem),
     raw: item,
   };
 }
@@ -63,10 +65,10 @@ export default function MarketChatGPTClient() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState("");
-  const [expandedID, setExpandedID] = useState("");
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [response, setResponse] = useState(null);
+  const [drawerItem, setDrawerItem] = useState(null);
 
   const apiBase = useMemo(() => getApiBase(), []);
 
@@ -76,9 +78,7 @@ export default function MarketChatGPTClient() {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US`, {
-          method: "GET",
-        });
+        const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US`, { method: "GET" });
         const data = await parseApiResponseSafe(res);
         if (!res.ok) throw new Error(data?.error || "Gagal memuat listing market.");
         if (!cancelled) setResponse(data);
@@ -117,9 +117,7 @@ export default function MarketChatGPTClient() {
     try {
       const data = await fetchJsonAuth("/api/market/chatgpt/orders", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ item_id: itemID, i18n: "en-US" }),
       });
       const orderID = data?.order?.id;
@@ -132,143 +130,169 @@ export default function MarketChatGPTClient() {
     }
   }
 
+  const cachedBadge = response?.cached ? "cached" : "live";
+  const staleBadge = response?.stale ? "stale" : "";
+
   return (
-    <div className="space-y-6">
-      <header>
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Marketplace
+    <div className="space-y-4">
+      <header className="space-y-1">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Marketplace</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-xl font-semibold text-foreground">ChatGPT Accounts</h1>
+          <TinyBadge label={cachedBadge} />
+          {staleBadge ? <TinyBadge label={staleBadge} tone="warning" /> : null}
         </div>
-        <h1 className="mt-2 text-2xl font-semibold text-foreground">ChatGPT Accounts</h1>
-        <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Pilih akun yang tersedia lalu checkout langsung di web ini. Data akun akan dikirim ke detail order setelah pembelian sukses.
-        </p>
+        <p className="text-xs text-muted-foreground">Listing compact. Klik detail untuk lihat spek lengkap akun sebelum beli.</p>
       </header>
 
-      <section className="rounded-lg border border-border bg-card p-4 space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-muted-foreground">
-            {loading ? "Memuat listing..." : `${filtered.length} item tersedia`}
-          </div>
+      <section className="rounded-xl border border-border bg-card p-3 space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-muted-foreground">{loading ? "Memuat listing..." : `${filtered.length} item`}</div>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari title, status, seller..."
-            className="w-full sm:w-80 rounded-md border border-border bg-background px-3 py-2 text-sm"
+            placeholder="Cari title, seller, status..."
+            className="w-full sm:w-72 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs"
           />
         </div>
 
         {error ? (
-          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </div>
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">{error}</div>
         ) : null}
 
         {loading ? (
           <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-14 animate-pulse rounded-md bg-muted/50" />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-10 animate-pulse rounded-md bg-muted/50" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Belum ada item yang cocok.</p>
+          <p className="text-xs text-muted-foreground">Belum ada item yang cocok.</p>
         ) : (
-          <div className="overflow-auto rounded-md border border-border">
-            <table className="min-w-full text-sm">
-              <thead className="bg-muted/40">
+          <div className="overflow-auto rounded-lg border border-border">
+            <table className="min-w-full text-xs">
+              <thead className="bg-muted/35">
                 <tr>
-                  <th className="px-3 py-2 text-left font-medium">Title</th>
-                  <th className="px-3 py-2 text-left font-medium">Price</th>
-                  <th className="px-3 py-2 text-left font-medium">Status</th>
-                  <th className="px-3 py-2 text-left font-medium">Seller</th>
-                  <th className="px-3 py-2 text-left font-medium">Action</th>
+                  <th className="px-2.5 py-1.5 text-left font-medium">Account</th>
+                  <th className="px-2.5 py-1.5 text-left font-medium">Price</th>
+                  <th className="px-2.5 py-1.5 text-left font-medium">Status</th>
+                  <th className="px-2.5 py-1.5 text-left font-medium">Seller</th>
+                  <th className="px-2.5 py-1.5 text-left font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((item) => (
-                  <Fragment key={item.id}>
-                    <tr className="border-t border-border">
-                      <td className="px-3 py-2">{item.title}</td>
-                      <td className="px-3 py-2">{String(item.price)}</td>
-                      <td className="px-3 py-2">{String(item.status)}</td>
-                      <td className="px-3 py-2">{String(item.seller)}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setExpandedID(expandedID === item.id ? "" : item.id)}
-                            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted/40"
-                          >
-                            {expandedID === item.id ? "Tutup Detail" : "Detail"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleCheckout(item.id, item.canBuy)}
-                            disabled={checkingOut === item.id || !item.canBuy}
-                            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
-                          >
-                            {checkingOut === item.id ? "Memproses..." : item.canBuy ? "Beli" : "Tidak Tersedia"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    {expandedID === item.id ? (
-                      <tr className="border-t border-border bg-muted/20">
-                        <td colSpan={5} className="px-3 py-3">
-                          <AccountSpecs item={item.raw} />
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
+                  <tr key={item.id} className="border-t border-border">
+                    <td className="px-2.5 py-1.5">
+                      <div className="max-w-[360px] truncate font-medium">{item.title}</div>
+                      <div className="mt-0.5 flex flex-wrap gap-1">
+                        {item?.raw?.chatgpt_subscription ? <TinyBadge label={String(item.raw.chatgpt_subscription)} /> : null}
+                        {item?.raw?.openai_tier ? <TinyBadge label={String(item.raw.openai_tier)} /> : null}
+                        {item?.raw?.chatgpt_country ? <TinyBadge label={String(item.raw.chatgpt_country)} /> : null}
+                      </div>
+                    </td>
+                    <td className="px-2.5 py-1.5 font-medium">{String(item.price)}</td>
+                    <td className="px-2.5 py-1.5">
+                      <TinyBadge label={String(item.status)} tone={item.canBuy ? "neutral" : "warning"} />
+                    </td>
+                    <td className="px-2.5 py-1.5">{String(item.seller)}</td>
+                    <td className="px-2.5 py-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setDrawerItem(item)}
+                          className="rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted/40"
+                        >
+                          Detail
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCheckout(item.id, item.canBuy)}
+                          disabled={checkingOut === item.id || !item.canBuy}
+                          className="rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                        >
+                          {checkingOut === item.id ? "..." : item.canBuy ? "Beli" : "N/A"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
       </section>
+
+      <SpecDrawer item={drawerItem} onClose={() => setDrawerItem(null)} />
     </div>
   );
 }
 
-function AccountSpecs({ item }) {
-  const specs = [
-    ["Subscription", item?.chatgpt_subscription],
-    ["Subscription Ends", formatUnixDate(item?.chatgpt_subscription_ends)],
-    ["Auto Renewal", booleanLabel(item?.chatgpt_subscription_auto_renew)],
-    ["Country", item?.chatgpt_country],
-    ["Register Date", formatUnixDate(item?.chatgpt_register_date)],
-    ["Phone Linked", booleanLabel(item?.chatgpt_phone)],
-    ["Email Type", item?.email_type],
-    ["Email Provider", item?.email_provider],
-    ["Email Domain", item?.item_domain],
-    ["OpenAI Tier", item?.openai_tier],
-    ["OpenAI Balance", item?.openai_balance],
-    ["Can Buy", booleanLabel(item?.canBuyItem)],
-  ].filter((row) => {
-    const value = row?.[1];
-    return value !== null && value !== undefined && String(value).trim() !== "";
-  });
+function TinyBadge({ label, tone = "neutral" }) {
+  const toneClass =
+    tone === "warning"
+      ? "border-warning/30 bg-warning/10 text-warning"
+      : "border-border bg-background text-muted-foreground";
+  return <span className={`inline-flex rounded-full border px-1.5 py-0.5 text-[10px] ${toneClass}`}>{label}</span>;
+}
 
-  if (specs.length === 0) {
-    return <p className="text-sm text-muted-foreground">Spesifikasi akun belum tersedia.</p>;
-  }
+function SpecDrawer({ item, onClose }) {
+  if (!item) return null;
+
+  const specs = [
+    ["Subscription", item?.raw?.chatgpt_subscription],
+    ["Subscription Ends", formatUnixDate(item?.raw?.chatgpt_subscription_ends)],
+    ["Auto Renewal", boolText(item?.raw?.chatgpt_subscription_auto_renew)],
+    ["Country", item?.raw?.chatgpt_country],
+    ["Register Date", formatUnixDate(item?.raw?.chatgpt_register_date)],
+    ["Phone Linked", boolText(item?.raw?.chatgpt_phone)],
+    ["Email Type", item?.raw?.email_type],
+    ["Email Provider", item?.raw?.email_provider],
+    ["Email Domain", item?.raw?.item_domain],
+    ["OpenAI Tier", item?.raw?.openai_tier],
+    ["OpenAI Balance", item?.raw?.openai_balance],
+    ["Can Buy", boolText(item?.raw?.canBuyItem)],
+    ["Can Resell", boolText(item?.raw?.canResellItemAfterPurchase)],
+    ["Seller Sold", item?.raw?.seller?.sold_items_count],
+  ].filter((row) => row?.[1] !== null && row?.[1] !== undefined && String(row?.[1]).trim() !== "");
 
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-      {specs.map(([label, value]) => (
-        <div key={label} className="rounded-md border border-border bg-card p-2">
-          <div className="text-[11px] text-muted-foreground">{label}</div>
-          <div className="mt-1 text-sm text-foreground break-all">{String(value)}</div>
+    <>
+      <button type="button" aria-label="Close detail drawer" onClick={onClose} className="fixed inset-0 z-40 bg-black/25" />
+      <aside className="fixed z-50 w-full border-l border-border bg-card shadow-2xl md:top-0 md:right-0 md:h-full md:w-[360px] bottom-0 left-0 max-h-[80vh] md:max-h-none rounded-t-2xl md:rounded-none">
+        <div className="flex items-start justify-between border-b border-border px-3 py-2.5">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Account Specs</div>
+            <h2 className="truncate text-sm font-semibold">{item.title}</h2>
+            <div className="mt-1 flex flex-wrap gap-1">
+              <TinyBadge label={`Price ${String(item.price)}`} />
+              <TinyBadge label={`Seller ${item.seller}`} />
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-md border border-border px-2 py-1 text-[11px] hover:bg-muted/40">
+            Tutup
+          </button>
         </div>
-      ))}
-    </div>
+
+        <div className="h-[calc(80vh-64px)] md:h-[calc(100vh-64px)] overflow-auto p-3">
+          <div className="grid grid-cols-1 gap-2">
+            {specs.map(([label, value]) => (
+              <div key={label} className="rounded-md border border-border bg-background px-2.5 py-2">
+                <div className="text-[10px] text-muted-foreground">{label}</div>
+                <div className="mt-0.5 text-xs text-foreground break-all">{String(value)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }
 
-function booleanLabel(value) {
-  if (value === null || value === undefined) return "";
+function boolText(value) {
   if (value === true || value === 1 || value === "1" || value === "true") return "Yes";
   if (value === false || value === 0 || value === "0" || value === "false") return "No";
-  return String(value);
+  return "";
 }
 
 function formatUnixDate(value) {
