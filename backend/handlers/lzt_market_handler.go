@@ -307,49 +307,19 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 	}
 
 	authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
-	item, err := h.findChatGPTItem(c, itemID, i18n, true)
-	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
-		return
-	}
-	if item == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Item not found in current listing"})
-		return
-	}
-
 	now := time.Now().UTC()
-	sourcePrice, sourceCurrency, sourceSymbol := h.extractSourcePriceAndCurrency(item)
-	if sourcePrice <= 0 {
-		sourcePrice = extractNumericPrice(item)
-	}
-	if sourceCurrency == "" {
-		sourceCurrency = "RUB"
-	}
-
-	priceIDR, fxRate, pricingErr := h.computeIDRPrice(sourcePrice, sourceCurrency)
-	if pricingErr != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to compute realtime IDR price"})
-		return
-	}
 
 	order := &publicMarketOrder{
-		ID:             newPublicMarketOrderID(),
-		UserID:         userID,
-		ItemID:         itemID,
-		Title:          normalizeItemTitle(item),
-		Price:          normalizeItemPrice(item),
-		Status:         "processing",
-		Seller:         normalizeSeller(item),
-		SourcePrice:    sourcePrice,
-		SourceCurrency: sourceCurrency,
-		SourceSymbol:   sourceSymbol,
-		PriceIDR:       priceIDR,
-		FXRateToIDR:    fxRate,
-		PriceDisplay:   formatIDR(priceIDR),
-		SourceDisplay:  formatSourcePrice(sourcePrice, sourceSymbol, sourceCurrency),
-		PricingNote:    "Harga realtime + margin platform",
-		CreatedAt:      now,
-		UpdatedAt:      now,
+		ID:          newPublicMarketOrderID(),
+		UserID:      userID,
+		ItemID:      itemID,
+		Title:       "ChatGPT Account",
+		Price:       "-",
+		Status:      "processing",
+		Seller:      "-",
+		PricingNote: "Harga realtime + margin platform",
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	order.Steps = []publicOrderStep{
 		{
@@ -367,17 +337,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		At:     time.Now().UTC(),
 	})
 
-	if !extractCanBuyItem(item) {
-		h.markOrderFailed(order.ID, "ITEM_NOT_PURCHASABLE", "Item cannot be purchased right now")
-		detail, _ := h.getOrderForUser(order.ID, userID)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Item cannot be purchased right now",
-			"order": detail,
-		})
-		return
-	}
-
-	go h.processOrderAsync(order.ID, userID, itemID, i18n, sourcePrice, authHeader)
+	go h.processOrderAsync(order.ID, userID, itemID, i18n, authHeader)
 
 	detail, _ := h.getOrderForUser(order.ID, userID)
 	c.JSON(http.StatusAccepted, gin.H{
@@ -996,6 +956,80 @@ func extractFloatFromMap(m map[string]interface{}, keys ...string) float64 {
 	return 0
 }
 
+func (h *LZTMarketHandler) checkAccountItem(ctx context.Context, itemID, i18n string) (map[string]interface{}, error) {
+	method := strings.ToUpper(strings.TrimSpace(os.Getenv("LZT_MARKET_BUY_METHOD")))
+	if method == "" {
+		method = http.MethodPost
+	}
+	contentType := strings.ToLower(strings.TrimSpace(os.Getenv("LZT_MARKET_BUY_CONTENT_TYPE")))
+	if contentType == "" {
+		contentType = "json"
+	}
+
+	checkPath := normalizeProviderPath(
+		strings.TrimSpace(os.Getenv("LZT_MARKET_CHECK_PATH_TEMPLATE")),
+		"/{item_id}/check-account",
+		itemID,
+	)
+
+	resp, err := h.client.Do(ctx, services.LZTMarketRequest{
+		Method:      method,
+		Path:        checkPath,
+		Query:       map[string]string{"i18n": i18n},
+		ContentType: contentType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil || resp.StatusCode >= http.StatusBadRequest {
+		return nil, fmt.Errorf(normalizeProviderFailureReason(resp, "Provider check-account failed"))
+	}
+	root, ok := resp.JSON.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Provider response invalid")
+	}
+	item := readMap(root, "item")
+	if len(item) == 0 {
+		return nil, fmt.Errorf("Item not found in provider response")
+	}
+	return item, nil
+}
+
+func (h *LZTMarketHandler) applyOrderItemSnapshot(orderID string, item map[string]interface{}) {
+	sourcePrice, sourceCurrency, sourceSymbol := h.extractSourcePriceAndCurrency(item)
+	if sourcePrice <= 0 {
+		sourcePrice = extractNumericPrice(item)
+	}
+	if sourceCurrency == "" {
+		sourceCurrency = "RUB"
+	}
+	priceIDR, fxRate, err := h.computeIDRPrice(sourcePrice, sourceCurrency)
+	if err != nil {
+		priceIDR = 0
+		fxRate = 0
+	}
+
+	h.ordersMu.Lock()
+	defer h.ordersMu.Unlock()
+	order, ok := h.orders[orderID]
+	if !ok {
+		return
+	}
+	order.Title = normalizeItemTitle(item)
+	order.Price = normalizeItemPrice(item)
+	order.Seller = normalizeSeller(item)
+	order.SourcePrice = sourcePrice
+	order.SourceCurrency = sourceCurrency
+	order.SourceSymbol = sourceSymbol
+	order.PriceIDR = priceIDR
+	order.FXRateToIDR = fxRate
+	if priceIDR > 0 {
+		order.PriceDisplay = formatIDR(priceIDR)
+	}
+	order.SourceDisplay = formatSourcePrice(sourcePrice, sourceSymbol, sourceCurrency)
+	order.UpdatedAt = time.Now().UTC()
+}
+
 func (h *LZTMarketHandler) saveOrder(order *publicMarketOrder) {
 	h.ordersMu.Lock()
 	defer h.ordersMu.Unlock()
@@ -1053,9 +1087,51 @@ func (h *LZTMarketHandler) getOrderForUser(orderID string, userID uint) (publicM
 	return order.toClientDTO(true), true
 }
 
-func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID, i18n string, sourcePrice float64, authHeader string) {
+func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID, i18n, authHeader string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
+
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "FETCH_PROVIDER_ITEM",
+		Label:  "Memvalidasi item ke provider",
+		Status: "processing",
+		At:     time.Now().UTC(),
+	})
+	item, err := h.checkAccountItem(ctx, itemID, i18n)
+	if err != nil || item == nil {
+		msg := "Akun sudah tidak tersedia. Silakan pilih listing lain."
+		if err != nil {
+			msg = normalizeUserFacingFailureReason(err.Error())
+		}
+		h.markOrderFailed(orderID, "ITEM_NOT_AVAILABLE", msg)
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "FETCH_PROVIDER_ITEM",
+			Label:   "Validasi item gagal",
+			Status:  "failed",
+			Message: msg,
+			At:      time.Now().UTC(),
+		})
+		return
+	}
+	if !extractCanBuyItem(item) {
+		msg := "Item ini belum bisa dibeli saat ini."
+		h.markOrderFailed(orderID, "ITEM_NOT_PURCHASABLE", msg)
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "FETCH_PROVIDER_ITEM",
+			Label:   "Item belum bisa dibeli",
+			Status:  "failed",
+			Message: msg,
+			At:      time.Now().UTC(),
+		})
+		return
+	}
+	h.applyOrderItemSnapshot(orderID, item)
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "FETCH_PROVIDER_ITEM",
+		Label:  "Item valid di provider",
+		Status: "done",
+		At:     time.Now().UTC(),
+	})
 
 	h.appendOrderStep(orderID, publicOrderStep{
 		Code:   "USER_BALANCE_RESERVE",
@@ -1078,6 +1154,17 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 
 	orderSnapshot, ok := h.getOrderForUser(orderID, userID)
 	if !ok {
+		return
+	}
+	if orderSnapshot.PriceIDR <= 0 || orderSnapshot.SourcePrice <= 0 {
+		h.markOrderFailed(orderID, "PRICING_UNAVAILABLE", "Harga belum tersedia untuk item ini.")
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "USER_BALANCE_RESERVE",
+			Label:   "Reserve saldo user gagal",
+			Status:  "failed",
+			Message: "Harga belum tersedia untuk item ini.",
+			At:      time.Now().UTC(),
+		})
 		return
 	}
 
@@ -1106,7 +1193,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		Status: "processing",
 		At:     time.Now().UTC(),
 	})
-	supplierEnough := h.checkSupplierBalance(ctx, sourcePrice)
+	supplierEnough := h.checkSupplierBalance(ctx, orderSnapshot.SourcePrice)
 	if !supplierEnough {
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Saldo supplier tidak cukup")
 		h.markOrderFailed(orderID, "SUPPLIER_BALANCE_NOT_ENOUGH", "Akun belum siap untuk dijual saat ini.")
@@ -1132,7 +1219,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		Status: "processing",
 		At:     time.Now().UTC(),
 	})
-	resp, failureReason, buyErr := h.buyChatGPTItem(ctx, itemID, i18n, sourcePrice)
+	resp, failureReason, buyErr := h.buyChatGPTItem(ctx, itemID, i18n, orderSnapshot.SourcePrice)
 	if buyErr != nil {
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Provider transport error")
 		h.markOrderFailed(orderID, "PROVIDER_ERROR", "Gagal membeli akun dari provider")
