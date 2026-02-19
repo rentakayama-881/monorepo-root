@@ -90,7 +90,7 @@ function normalizeCheckoutErrorMessage(message) {
     lower.includes("ad not found") ||
     lower.includes("sold")
   ) {
-    return "Akun sudah tidak tersedia. Silakan pilih akun lain.";
+    return "Akun belum siap untuk dijual saat ini.";
   }
   if (lower.includes("supplier") || lower.includes("akun belum siap")) {
     return "Akun belum siap untuk dijual saat ini.";

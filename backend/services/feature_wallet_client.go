@@ -17,6 +17,11 @@ type FeatureWalletClient struct {
 	client  *http.Client
 }
 
+type FeatureWalletBalanceResult struct {
+	UserID  uint  `json:"userId"`
+	Balance int64 `json:"balance"`
+}
+
 type featureApiEnvelope[T any] struct {
 	Success bool `json:"success"`
 	Data    T    `json:"data"`
@@ -51,6 +56,39 @@ func (c *FeatureWalletClient) ReserveMarketPurchase(ctx context.Context, authHea
 		"referenceType": "market_chatgpt",
 	}
 	return c.postMarketWallet(ctx, authHeader, "/api/v1/wallets/market-purchases/reserve", payload)
+}
+
+func (c *FeatureWalletClient) GetMyWalletBalance(ctx context.Context, authHeader string) (*FeatureWalletBalanceResult, error) {
+	if c == nil || c.baseURL == "" {
+		return nil, fmt.Errorf("feature wallet client is not configured")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v1/wallets/me", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+	if strings.TrimSpace(authHeader) != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var parsed featureApiEnvelope[FeatureWalletBalanceResult]
+	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
+		return nil, err
+	}
+	if resp.StatusCode >= http.StatusBadRequest || !parsed.Success {
+		if parsed.Error != nil && strings.TrimSpace(parsed.Error.Message) != "" {
+			return nil, fmt.Errorf("%s", parsed.Error.Message)
+		}
+		return nil, fmt.Errorf("feature wallet request failed with status %d", resp.StatusCode)
+	}
+	return &parsed.Data, nil
 }
 
 func (c *FeatureWalletClient) CaptureMarketPurchase(ctx context.Context, authHeader, orderID string) (*FeatureMarketWalletResult, error) {

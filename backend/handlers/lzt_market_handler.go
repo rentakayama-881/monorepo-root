@@ -1092,6 +1092,33 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	defer cancel()
 
 	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "USER_BALANCE_CHECK",
+		Label:  "Memeriksa saldo user",
+		Status: "processing",
+		At:     time.Now().UTC(),
+	})
+	if h.featureWallet != nil {
+		balanceInfo, balanceErr := h.featureWallet.GetMyWalletBalance(ctx, authHeader)
+		if balanceErr == nil && (balanceInfo == nil || balanceInfo.Balance <= 0) {
+			h.markOrderFailed(orderID, "USER_BALANCE_NOT_ENOUGH", "Saldo kamu tidak mencukupi.")
+			h.appendOrderStep(orderID, publicOrderStep{
+				Code:    "USER_BALANCE_CHECK",
+				Label:   "Saldo user tidak mencukupi",
+				Status:  "failed",
+				Message: "Saldo kamu tidak mencukupi.",
+				At:      time.Now().UTC(),
+			})
+			return
+		}
+	}
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "USER_BALANCE_CHECK",
+		Label:  "Saldo user terdeteksi",
+		Status: "done",
+		At:     time.Now().UTC(),
+	})
+
+	h.appendOrderStep(orderID, publicOrderStep{
 		Code:   "FETCH_PROVIDER_ITEM",
 		Label:  "Memvalidasi item ke provider",
 		Status: "processing",
@@ -1099,7 +1126,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	})
 	item, err := h.checkAccountItem(ctx, itemID, i18n)
 	if err != nil || item == nil {
-		msg := "Akun sudah tidak tersedia. Silakan pilih listing lain."
+		msg := "Akun belum siap untuk dijual saat ini."
 		if err != nil {
 			msg = normalizeUserFacingFailureReason(err.Error())
 		}
@@ -1505,13 +1532,13 @@ func normalizeUserFacingFailureReason(reason string) string {
 	msg := strings.TrimSpace(reason)
 	lower := strings.ToLower(msg)
 	if strings.Contains(lower, "current listing") {
-		return "Akun sudah tidak tersedia. Silakan pilih listing lain."
+		return "Akun belum siap untuk dijual saat ini."
 	}
 	if strings.Contains(lower, "ad not found") || strings.Contains(lower, "item not found") || strings.Contains(lower, "not found") {
-		return "Akun sudah tidak tersedia. Silakan pilih listing lain."
+		return "Akun belum siap untuk dijual saat ini."
 	}
 	if strings.Contains(lower, "this item is sold") || strings.Contains(lower, "sold") {
-		return "Akun ini sudah terjual. Silakan pilih listing lain."
+		return "Akun belum siap untuk dijual saat ini."
 	}
 	if strings.Contains(lower, "invalid or expired access token") {
 		return "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."

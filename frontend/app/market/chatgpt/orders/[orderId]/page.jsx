@@ -13,7 +13,7 @@ function normalizeFailure(message) {
   if (lower.includes("saldo kamu tidak mencukupi") || lower.includes("insufficient")) return "Saldo kamu tidak mencukupi.";
   if (lower.includes("supplier") || lower.includes("akun belum siap")) return "Akun belum siap untuk dijual saat ini.";
   if (lower.includes("item not found") || lower.includes("current listing") || lower.includes("sold")) {
-    return "Akun sudah tidak tersedia. Silakan pilih akun lain.";
+    return "Akun belum siap untuk dijual saat ini.";
   }
   return raw;
 }
