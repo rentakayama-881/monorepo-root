@@ -303,7 +303,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 	}
 
 	authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
-	item, err := h.findChatGPTItem(c, itemID, i18n)
+	item, err := h.findChatGPTItem(c, itemID, i18n, true)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
@@ -549,7 +549,23 @@ func (h *LZTMarketHandler) buyChatGPTItem(ctx context.Context, itemID, i18n stri
 	return confirmResp, normalizeProviderFailureReason(confirmResp, "Confirm-buy failed"), nil
 }
 
-func (h *LZTMarketHandler) fetchChatGPTListing(c *gin.Context, i18n string) (*services.LZTMarketResponse, error) {
+func (h *LZTMarketHandler) fetchChatGPTListing(c *gin.Context, i18n string, forceRefresh bool) (*services.LZTMarketResponse, error) {
+	if forceRefresh {
+		resp, err := h.client.Do(c.Request.Context(), services.LZTMarketRequest{
+			Method: http.MethodGet,
+			Path:   "/chatgpt",
+			Query:  map[string]string{"i18n": i18n},
+		})
+		if err != nil {
+			if cached, ok := h.getAnyCachedChatGPT(); ok {
+				return cached, nil
+			}
+			return nil, err
+		}
+		h.setCachedChatGPT(i18n, resp)
+		return resp, nil
+	}
+
 	if cached, ok := h.getCachedChatGPT(i18n); ok {
 		return cached, nil
 	}
@@ -568,8 +584,8 @@ func (h *LZTMarketHandler) fetchChatGPTListing(c *gin.Context, i18n string) (*se
 	return resp, nil
 }
 
-func (h *LZTMarketHandler) findChatGPTItem(c *gin.Context, itemID, i18n string) (map[string]interface{}, error) {
-	resp, err := h.fetchChatGPTListing(c, i18n)
+func (h *LZTMarketHandler) findChatGPTItem(c *gin.Context, itemID, i18n string, forceRefresh bool) (map[string]interface{}, error) {
+	resp, err := h.fetchChatGPTListing(c, i18n, forceRefresh)
 	if err != nil {
 		return nil, err
 	}
@@ -1129,6 +1145,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		if strings.TrimSpace(failureReason) == "" {
 			failureReason = normalizeProviderFailureReason(resp, "Provider purchase failed")
 		}
+		failureReason = normalizeUserFacingFailureReason(failureReason)
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, failureReason)
 		h.markOrderFailed(orderID, "PROVIDER_PURCHASE_FAILED", failureReason)
 		h.appendOrderStep(orderID, publicOrderStep{
@@ -1391,6 +1408,21 @@ func normalizeProviderFailureReason(resp *services.LZTMarketResponse, fallback s
 		return fmt.Sprintf("%s (status %d)", fallback, resp.StatusCode)
 	}
 	return fallback
+}
+
+func normalizeUserFacingFailureReason(reason string) string {
+	msg := strings.TrimSpace(reason)
+	lower := strings.ToLower(msg)
+	if strings.Contains(lower, "ad not found") || strings.Contains(lower, "item not found") || strings.Contains(lower, "not found") {
+		return "Akun sudah tidak tersedia. Silakan pilih listing lain."
+	}
+	if strings.Contains(lower, "this item is sold") || strings.Contains(lower, "sold") {
+		return "Akun ini sudah terjual. Silakan pilih listing lain."
+	}
+	if strings.Contains(lower, "invalid or expired access token") {
+		return "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."
+	}
+	return msg
 }
 
 func extractProviderErrors(resp *services.LZTMarketResponse) []string {
