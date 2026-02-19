@@ -1038,7 +1038,7 @@ func (h *LZTMarketHandler) checkAccountItem(ctx context.Context, itemID, i18n st
 		return nil, err
 	}
 	if resp == nil || resp.StatusCode >= http.StatusBadRequest {
-		return nil, fmt.Errorf(normalizeProviderFailureReason(resp, "Provider check-account failed"))
+		return nil, errors.New(normalizeProviderFailureReason(resp, "Provider check-account failed"))
 	}
 	root, ok := resp.JSON.(map[string]interface{})
 	if !ok {

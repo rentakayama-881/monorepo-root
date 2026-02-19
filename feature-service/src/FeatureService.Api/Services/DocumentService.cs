@@ -26,13 +26,11 @@ public class DocumentService : IDocumentService
 {
     private readonly MongoDbContext _context;
     private readonly ILogger<DocumentService> _logger;
-    private readonly IConfiguration _configuration;
 
-    public DocumentService(MongoDbContext context, ILogger<DocumentService> logger, IConfiguration configuration)
+    public DocumentService(MongoDbContext context, ILogger<DocumentService> logger)
     {
         _context = context;
         _logger = logger;
-        _configuration = configuration;
     }
 
     public async Task<string> UploadDocumentAsync(uint userId, UploadDocumentRequest request)
@@ -74,8 +72,8 @@ public class DocumentService : IDocumentService
         var documentId = $"doc_{Ulid.NewUlid()}";
         var storagePath = $"documents/{userId}/{documentId}{extension}";
 
-        // TODO: Upload to Supabase Storage
-        // For now, store file data in MongoDB (GridFS should be used for production)
+        // Current implementation stores file bytes in MongoDB.
+        // Storage backends can be swapped later without changing public service contract.
         var publicUrl = request.Visibility == DocumentVisibility.Public 
             ? $"/api/v1/documents/{documentId}/download"
             : null;

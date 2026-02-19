@@ -58,7 +58,7 @@ function toDisplayAccount(item, index) {
     priceSourceSymbol: item?.price_source_symbol ?? "",
     priceSourceCurrency: item?.price_source_currency ?? "",
     priceIDR: item?.price_idr ?? 0,
-    status: item?.item_state ?? item?.status ?? item?.state ?? item?.availability ?? "-",
+    status: item?.item_state ?? item?.status ?? item?.state ?? item?.availability ?? "Available",
     seller,
     canBuy: normalizeBool(item?.canBuyItem) && hasIDRPrice && !isFallbackID,
     idValid: !isFallbackID,
@@ -315,12 +315,8 @@ function SpecDrawer({ item, onClose }) {
     ["Register Date", formatUnixDate(item?.raw?.chatgpt_register_date)],
     ["Phone Linked", boolText(item?.raw?.chatgpt_phone)],
     ["Email Type", item?.raw?.email_type],
-    ["Email Provider", item?.raw?.email_provider],
-    ["Email Domain", item?.raw?.item_domain],
     ["OpenAI Tier", item?.raw?.openai_tier],
     ["OpenAI Balance", item?.raw?.openai_balance],
-    ["Can Buy", boolText(item?.raw?.canBuyItem)],
-    ["Can Resell", boolText(item?.raw?.canResellItemAfterPurchase)],
     ["Seller Sold", item?.raw?.seller?.sold_items_count],
   ].filter((row) => row?.[1] !== null && row?.[1] !== undefined && String(row?.[1]).trim() !== "");
 
@@ -367,7 +363,7 @@ function formatUnixDate(value) {
   const seconds = Number(value);
   if (!Number.isFinite(seconds) || seconds <= 0) return "";
   try {
-    return new Date(seconds * 1000).toLocaleDateString("id-ID", {
+    return new Date(seconds * 1000).toLocaleDateString("en-US", {
       day: "2-digit",
       month: "short",
       year: "numeric",
