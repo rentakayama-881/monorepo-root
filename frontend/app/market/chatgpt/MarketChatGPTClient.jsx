@@ -32,7 +32,7 @@ function normalizeBool(value) {
 }
 
 function toDisplayAccount(item, index) {
-  const id = item?.id ?? item?.item_id ?? item?.account_id ?? `row-${index}`;
+  const id = item?.id ?? item?.item_id ?? item?.account_id ?? item?.chatgpt_item_id ?? `row-${index}`;
   const seller =
     typeof item?.seller === "object" && item?.seller !== null
       ? item?.seller?.username ?? item?.seller?.title ?? item?.seller?.name ?? item?.seller?.id ?? "-"

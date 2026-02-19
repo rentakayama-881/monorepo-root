@@ -600,7 +600,7 @@ func (h *LZTMarketHandler) findChatGPTItem(c *gin.Context, itemID, i18n string, 
 }
 
 func normalizeItemID(item map[string]interface{}) string {
-	for _, key := range []string{"id", "item_id", "account_id"} {
+	for _, key := range []string{"id", "item_id", "account_id", "chatgpt_item_id"} {
 		if v, ok := item[key]; ok {
 			s := strings.TrimSpace(fmt.Sprintf("%v", v))
 			if s != "" {
