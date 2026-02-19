@@ -92,6 +92,9 @@ function normalizeCheckoutErrorMessage(message) {
   ) {
     return "Akun belum siap untuk dijual saat ini.";
   }
+  if (lower.includes("checker sedang error") || lower.includes("checker")) {
+    return "Checker sedang error. Coba lagi sebentar.";
+  }
   if (lower.includes("supplier") || lower.includes("akun belum siap")) {
     return "Akun belum siap untuk dijual saat ini.";
   }

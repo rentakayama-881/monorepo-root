@@ -307,19 +307,59 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 	}
 
 	authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+	item, checkErr := h.checkAccountItem(c.Request.Context(), itemID, i18n)
+	if checkErr != nil || item == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": normalizeCheckerErrorMessage(checkErr)})
+		return
+	}
+	if !extractCanBuyItem(item) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
+		return
+	}
+
+	sourcePrice, sourceCurrency, sourceSymbol := h.extractSourcePriceAndCurrency(item)
+	if sourcePrice <= 0 {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Checker sedang error. Coba lagi sebentar."})
+		return
+	}
+	priceIDR, fxRate, pricingErr := h.computeIDRPrice(sourcePrice, sourceCurrency)
+	if pricingErr != nil || priceIDR <= 0 {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Checker sedang error. Coba lagi sebentar."})
+		return
+	}
+
+	if h.featureWallet != nil {
+		walletBalance, balErr := h.featureWallet.GetMyWalletBalance(c.Request.Context(), authHeader)
+		if balErr == nil && walletBalance != nil && walletBalance.Balance < priceIDR {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo kamu tidak mencukupi."})
+			return
+		}
+	}
+	if !h.checkSupplierBalance(c.Request.Context(), sourcePrice) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
+		return
+	}
+
 	now := time.Now().UTC()
 
 	order := &publicMarketOrder{
-		ID:          newPublicMarketOrderID(),
-		UserID:      userID,
-		ItemID:      itemID,
-		Title:       "ChatGPT Account",
-		Price:       "-",
-		Status:      "processing",
-		Seller:      "-",
-		PricingNote: "Harga realtime + margin platform",
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ID:             newPublicMarketOrderID(),
+		UserID:         userID,
+		ItemID:         itemID,
+		Title:          normalizeItemTitle(item),
+		Price:          normalizeItemPrice(item),
+		Status:         "processing",
+		Seller:         normalizeSeller(item),
+		SourcePrice:    sourcePrice,
+		SourceCurrency: sourceCurrency,
+		SourceSymbol:   sourceSymbol,
+		PriceIDR:       priceIDR,
+		FXRateToIDR:    fxRate,
+		PriceDisplay:   formatIDR(priceIDR),
+		SourceDisplay:  formatSourcePrice(sourcePrice, sourceSymbol, sourceCurrency),
+		PricingNote:    "Harga realtime + margin platform",
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	}
 	order.Steps = []publicOrderStep{
 		{
@@ -1242,19 +1282,19 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 
 	h.appendOrderStep(orderID, publicOrderStep{
 		Code:   "PROVIDER_PURCHASE",
-		Label:  "Membeli akun ke market supplier",
+		Label:  "Memproses pembelian akun",
 		Status: "processing",
 		At:     time.Now().UTC(),
 	})
 	resp, failureReason, buyErr := h.buyChatGPTItem(ctx, itemID, i18n, orderSnapshot.SourcePrice)
 	if buyErr != nil {
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Provider transport error")
-		h.markOrderFailed(orderID, "PROVIDER_ERROR", "Gagal membeli akun dari provider")
+		h.markOrderFailed(orderID, "CHECKER_ERROR", "Checker sedang error. Coba lagi sebentar.")
 		h.appendOrderStep(orderID, publicOrderStep{
 			Code:    "PROVIDER_PURCHASE",
-			Label:   "Pembelian ke provider gagal",
+			Label:   "Proses pembelian gagal",
 			Status:  "failed",
-			Message: "Gagal membeli akun dari provider",
+			Message: "Checker sedang error. Coba lagi sebentar.",
 			At:      time.Now().UTC(),
 		})
 		return
@@ -1268,7 +1308,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		h.markOrderFailed(orderID, "PROVIDER_PURCHASE_FAILED", failureReason)
 		h.appendOrderStep(orderID, publicOrderStep{
 			Code:    "PROVIDER_PURCHASE",
-			Label:   "Pembelian ke provider gagal",
+			Label:   "Proses pembelian gagal",
 			Status:  "failed",
 			Message: failureReason,
 			At:      time.Now().UTC(),
@@ -1277,7 +1317,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	}
 	h.appendOrderStep(orderID, publicOrderStep{
 		Code:   "PROVIDER_PURCHASE",
-		Label:  "Pembelian ke provider berhasil",
+		Label:  "Pembelian akun berhasil",
 		Status: "done",
 		At:     time.Now().UTC(),
 	})
@@ -1544,6 +1584,21 @@ func normalizeUserFacingFailureReason(reason string) string {
 		return "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."
 	}
 	return msg
+}
+
+func normalizeCheckerErrorMessage(err error) string {
+	if err == nil {
+		return "Akun belum siap untuk dijual saat ini."
+	}
+	msg := strings.TrimSpace(err.Error())
+	lower := strings.ToLower(msg)
+	if strings.Contains(lower, "sold") ||
+		strings.Contains(lower, "not found") ||
+		strings.Contains(lower, "ad not found") ||
+		strings.Contains(lower, "item not found") {
+		return "Akun belum siap untuk dijual saat ini."
+	}
+	return "Checker sedang error. Coba lagi sebentar."
 }
 
 func extractProviderErrors(resp *services.LZTMarketResponse) []string {
