@@ -242,8 +242,11 @@ func InitEntDB() {
 
 	// One-time naming migration (Thread -> Validation Case) to keep DB aligned with domain terminology.
 	// Idempotent and safe: runs only when old tables exist and new tables do not.
-	if err := applyDomainRenames(ctx, db); err != nil {
-		logger.Fatal("Failed to apply domain renames", zap.Error(err))
+	// Do not fail service startup if this step times out due transient DB contention.
+	renameCtx, renameCancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer renameCancel()
+	if err := applyDomainRenames(renameCtx, db); err != nil {
+		logger.Warn("Skipping domain rename migration on startup", zap.Error(err))
 	}
 
 	SQLDB = db
