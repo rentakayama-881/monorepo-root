@@ -38,18 +38,27 @@ function toDisplayAccount(item, index) {
       ? item?.seller?.username ?? item?.seller?.title ?? item?.seller?.name ?? item?.seller?.id ?? "-"
       : item?.seller ?? item?.seller_name ?? item?.owner ?? "-";
 
+  const numericPriceIDR = Number(item?.price_idr ?? 0);
+  const hasIDRPrice = Number.isFinite(numericPriceIDR) && numericPriceIDR > 0;
+  const normalizedIDR =
+    typeof item?.display_price_idr === "string" && item.display_price_idr.trim() !== ""
+      ? item.display_price_idr.trim()
+      : hasIDRPrice
+      ? `Rp ${numericPriceIDR.toLocaleString("id-ID")}`
+      : "Harga belum tersedia";
+
   return {
     id: String(id),
     title: item?.title ?? item?.name ?? item?.account_title ?? item?.description ?? `Account ${index + 1}`,
     price: item?.priceWithSellerFee ?? item?.price ?? item?.amount ?? item?.cost ?? "-",
-    displayPriceIDR: item?.display_price_idr ?? "",
-    displayPriceSource: item?.display_price_source ?? "",
+    displayPriceIDR: normalizedIDR,
+    displayPriceSource: "",
     priceSourceSymbol: item?.price_source_symbol ?? "",
     priceSourceCurrency: item?.price_source_currency ?? "",
     priceIDR: item?.price_idr ?? 0,
     status: item?.item_state ?? item?.status ?? item?.state ?? item?.availability ?? "-",
     seller,
-    canBuy: normalizeBool(item?.canBuyItem),
+    canBuy: normalizeBool(item?.canBuyItem) && hasIDRPrice,
     raw: item,
   };
 }
@@ -109,7 +118,7 @@ export default function MarketChatGPTClient() {
     const term = query.trim().toLowerCase();
     if (!term) return accounts;
     return accounts.filter((item) =>
-      `${item.title} ${item.price} ${item.displayPriceIDR} ${item.status} ${item.seller}`.toLowerCase().includes(term)
+      `${item.title} ${item.displayPriceIDR} ${item.status} ${item.seller}`.toLowerCase().includes(term)
     );
   }, [accounts, query]);
 
@@ -198,10 +207,7 @@ export default function MarketChatGPTClient() {
                       </div>
                     </td>
                     <td className="px-2.5 py-1.5">
-                      <div className="font-medium">{item.displayPriceIDR || `Rp ${Number(item.priceIDR || 0).toLocaleString("id-ID")}`}</div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {item.displayPriceSource || `${item.priceSourceSymbol || item.priceSourceCurrency || ""} ${String(item.price)}`}
-                      </div>
+                      <div className="font-medium">{item.displayPriceIDR}</div>
                     </td>
                     <td className="px-2.5 py-1.5">
                       <TinyBadge label={String(item.status)} tone={item.canBuy ? "neutral" : "warning"} />
@@ -277,7 +283,6 @@ function SpecDrawer({ item, onClose }) {
             <h2 className="truncate text-sm font-semibold">{item.title}</h2>
             <div className="mt-1 flex flex-wrap gap-1">
               <TinyBadge label={`Harga ${item.displayPriceIDR || String(item.price)}`} />
-              {item.displayPriceSource ? <TinyBadge label={`Asal ${item.displayPriceSource}`} /> : null}
               <TinyBadge label={`Seller ${item.seller}`} />
             </div>
           </div>
