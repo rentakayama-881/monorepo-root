@@ -7,6 +7,17 @@ import { fetchJsonAuth } from "@/lib/api";
 
 const FINAL_STATUSES = new Set(["fulfilled", "failed"]);
 
+function normalizeFailure(message) {
+  const raw = String(message || "").trim();
+  const lower = raw.toLowerCase();
+  if (lower.includes("saldo kamu tidak mencukupi") || lower.includes("insufficient")) return "Saldo kamu tidak mencukupi.";
+  if (lower.includes("supplier") || lower.includes("akun belum siap")) return "Akun belum siap untuk dijual saat ini.";
+  if (lower.includes("item not found") || lower.includes("current listing") || lower.includes("sold")) {
+    return "Akun sudah tidak tersedia. Silakan pilih akun lain.";
+  }
+  return raw;
+}
+
 export default function MarketChatGPTOrderDetailPage() {
   const params = useParams();
   const orderID = String(params?.orderId || "");
@@ -89,7 +100,7 @@ export default function MarketChatGPTOrderDetailPage() {
 
             {order?.failure_reason ? (
               <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {order.failure_reason}
+                {normalizeFailure(order.failure_reason)}
               </div>
             ) : null}
 

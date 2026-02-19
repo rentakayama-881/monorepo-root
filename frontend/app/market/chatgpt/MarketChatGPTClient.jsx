@@ -78,6 +78,26 @@ async function parseApiResponseSafe(res) {
   return { error: text || `HTTP ${res.status}` };
 }
 
+function normalizeCheckoutErrorMessage(message) {
+  const raw = String(message || "").trim();
+  const lower = raw.toLowerCase();
+  if (lower.includes("saldo kamu tidak mencukupi") || lower.includes("insufficient") || lower.includes("balance")) {
+    return "Saldo kamu tidak mencukupi.";
+  }
+  if (
+    lower.includes("item not found in current listing") ||
+    lower.includes("item not found") ||
+    lower.includes("ad not found") ||
+    lower.includes("sold")
+  ) {
+    return "Akun sudah tidak tersedia. Silakan pilih akun lain.";
+  }
+  if (lower.includes("supplier") || lower.includes("akun belum siap")) {
+    return "Akun belum siap untuk dijual saat ini.";
+  }
+  return raw || "Gagal lanjut checkout.";
+}
+
 export default function MarketChatGPTClient() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -141,7 +161,7 @@ export default function MarketChatGPTClient() {
       if (!orderID) throw new Error("Order berhasil dibuat tetapi ID order tidak ditemukan.");
       router.push(`/market/chatgpt/orders/${encodeURIComponent(orderID)}`);
     } catch (err) {
-      setError(err?.message || "Gagal lanjut checkout.");
+      setError(normalizeCheckoutErrorMessage(err?.message));
     } finally {
       setCheckingOut("");
     }

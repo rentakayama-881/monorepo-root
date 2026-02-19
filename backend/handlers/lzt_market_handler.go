@@ -1504,6 +1504,9 @@ func normalizeProviderFailureReason(resp *services.LZTMarketResponse, fallback s
 func normalizeUserFacingFailureReason(reason string) string {
 	msg := strings.TrimSpace(reason)
 	lower := strings.ToLower(msg)
+	if strings.Contains(lower, "current listing") {
+		return "Akun sudah tidak tersedia. Silakan pilih listing lain."
+	}
 	if strings.Contains(lower, "ad not found") || strings.Contains(lower, "item not found") || strings.Contains(lower, "not found") {
 		return "Akun sudah tidak tersedia. Silakan pilih listing lain."
 	}
