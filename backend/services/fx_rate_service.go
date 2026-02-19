@@ -93,7 +93,7 @@ func (s *FXRateService) getRateToIDR(currency string) (float64, error) {
 func (s *FXRateService) refreshRates(baseCurrency string) error {
 	endpoint := strings.TrimSpace(os.Getenv("MARKET_FX_API_URL_TEMPLATE"))
 	if endpoint == "" {
-		endpoint = "https://api.exchangerate.host/latest?base={base}&symbols=IDR"
+		endpoint = "https://open.er-api.com/v6/latest/{base}"
 	}
 	url := strings.ReplaceAll(endpoint, "{base}", baseCurrency)
 
