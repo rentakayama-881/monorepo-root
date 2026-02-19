@@ -4,9 +4,11 @@ using FeatureService.Api.DTOs;
 using FeatureService.Api.Infrastructure.Audit;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Infrastructure.PQC;
+using FeatureService.Api.Infrastructure.Security;
 using FeatureService.Api.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using MongoDB.Driver;
 using Org.BouncyCastle.Pqc.Crypto.Crystals.Dilithium;
 
@@ -23,17 +25,20 @@ public class PqcKeysController : ApiControllerBase
     private readonly MongoDbContext _dbContext;
     private readonly IPostQuantumCryptoService _pqcService;
     private readonly IAuditTrailService _auditService;
+    private readonly IMemoryCache _memoryCache;
     private readonly ILogger<PqcKeysController> _logger;
 
     public PqcKeysController(
         MongoDbContext dbContext,
         IPostQuantumCryptoService pqcService,
         IAuditTrailService auditService,
+        IMemoryCache memoryCache,
         ILogger<PqcKeysController> logger)
     {
         _dbContext = dbContext;
         _pqcService = pqcService;
         _auditService = auditService;
+        _memoryCache = memoryCache;
         _logger = logger;
     }
 
@@ -119,6 +124,7 @@ public class PqcKeysController : ApiControllerBase
         };
 
         await _dbContext.UserPqcKeys.InsertOneAsync(pqcKey);
+        _memoryCache.Remove(PqcCacheKeys.UserHasActivePqcKey(userId));
 
         // Record audit event
         await _auditService.RecordEventAsync(new AuditEventRequest
@@ -209,6 +215,7 @@ public class PqcKeysController : ApiControllerBase
             .Set(k => k.RevokeReason, request.Reason);
 
         await _dbContext.UserPqcKeys.UpdateOneAsync(k => k.Id == key.Id, update);
+        _memoryCache.Remove(PqcCacheKeys.UserHasActivePqcKey(userId));
 
         // Record audit event
         await _auditService.RecordEventAsync(new AuditEventRequest

@@ -6,6 +6,7 @@ using FeatureService.Api.Domain.Entities;
 using FeatureService.Api.Infrastructure.Audit;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Infrastructure.PQC;
+using FeatureService.Api.Infrastructure.Security;
 using FeatureService.Api.Models.Entities;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Caching.Memory;
@@ -148,7 +149,7 @@ public class PqcSignatureMiddleware
 
     private async Task<bool> HasActivePqcKeyAsync(MongoDbContext dbContext, uint userId)
     {
-        var cacheKey = $"pqc_key_exists:{userId}";
+        var cacheKey = PqcCacheKeys.UserHasActivePqcKey(userId);
 
         if (_pqcKeyCache.TryGetValue(cacheKey, out bool cachedResult))
         {
@@ -163,7 +164,10 @@ public class PqcSignatureMiddleware
                 .FirstOrDefaultAsync();
 
             var hasKey = !string.IsNullOrWhiteSpace(keyId);
-            _pqcKeyCache.Set(cacheKey, hasKey, PqcKeyCacheTTL);
+            if (hasKey)
+            {
+                _pqcKeyCache.Set(cacheKey, true, PqcKeyCacheTTL);
+            }
             return hasKey;
         }
         catch (Exception ex)
