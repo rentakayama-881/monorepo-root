@@ -33,6 +33,7 @@ function normalizeBool(value) {
 
 function toDisplayAccount(item, index) {
   const id = item?.id ?? item?.item_id ?? item?.account_id ?? item?.chatgpt_item_id ?? `row-${index}`;
+  const isFallbackID = String(id).startsWith("row-");
   const seller =
     typeof item?.seller === "object" && item?.seller !== null
       ? item?.seller?.username ?? item?.seller?.title ?? item?.seller?.name ?? item?.seller?.id ?? "-"
@@ -58,7 +59,8 @@ function toDisplayAccount(item, index) {
     priceIDR: item?.price_idr ?? 0,
     status: item?.item_state ?? item?.status ?? item?.state ?? item?.availability ?? "-",
     seller,
-    canBuy: normalizeBool(item?.canBuyItem) && hasIDRPrice,
+    canBuy: normalizeBool(item?.canBuyItem) && hasIDRPrice && !isFallbackID,
+    idValid: !isFallbackID,
     raw: item,
   };
 }
@@ -124,7 +126,7 @@ export default function MarketChatGPTClient() {
 
   async function handleCheckout(itemID, canBuy) {
     if (!canBuy) {
-      setError("Item ini belum bisa dibeli saat ini.");
+      setError("Item ini belum bisa dibeli saat ini. Coba refresh listing terlebih dulu.");
       return;
     }
     setCheckingOut(itemID);
@@ -211,6 +213,7 @@ export default function MarketChatGPTClient() {
                     </td>
                     <td className="px-2.5 py-1.5">
                       <TinyBadge label={String(item.status)} tone={item.canBuy ? "neutral" : "warning"} />
+                      {!item.idValid ? <div className="mt-1 text-[10px] text-amber-600">ID item belum valid</div> : null}
                     </td>
                     <td className="px-2.5 py-1.5">{String(item.seller)}</td>
                     <td className="px-2.5 py-1.5">

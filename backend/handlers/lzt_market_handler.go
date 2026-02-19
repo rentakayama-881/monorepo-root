@@ -296,6 +296,10 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid item ID"})
 		return
 	}
+	if strings.HasPrefix(strings.ToLower(itemID), "row-") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Item ID belum valid dari provider. Refresh listing lalu coba lagi."})
+		return
+	}
 
 	i18n := strings.TrimSpace(req.I18n)
 	if i18n == "" {
