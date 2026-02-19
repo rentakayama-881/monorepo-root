@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm">Memuat…</div>}>
+    <Suspense fallback={<div className="p-6 text-sm">Loading...</div>}>
       <VerifyEmailClient />
     </Suspense>
   );

@@ -18,7 +18,7 @@ function extractRetryAfterFromError(err) {
   if (fromPayload > 0) return fromPayload;
 
   const details = String(err?.details || "");
-  const match = details.match(/(\d+)\s*detik/i);
+  const match = details.match(/(\d+)\s*(detik|seconds?)/i);
   if (!match) return 0;
 
   return parseRetryAfterSeconds(match[1]);
@@ -28,7 +28,7 @@ export default function VerifyEmailClient() {
   const params = useSearchParams();
   const token = params.get("token") || "";
   const [status, setStatus] = useState("pending");
-  const [message, setMessage] = useState("Memeriksa token...");
+  const [message, setMessage] = useState("Checking verification token...");
 
   // Resend state
   const [resendEmail, setResendEmail] = useState("");
@@ -39,13 +39,13 @@ export default function VerifyEmailClient() {
   useEffect(() => {
     if (!token) {
       setStatus("error");
-      setMessage("Token verifikasi tidak ditemukan.");
+      setMessage("Verification token was not found.");
       return;
     }
 
     let cancelled = false;
     setStatus("pending");
-    setMessage("Memverifikasi token...");
+    setMessage("Verifying token...");
 
     fetchJson(`/api/auth/verify/confirm`, {
       method: "POST",
@@ -61,7 +61,7 @@ export default function VerifyEmailClient() {
       .catch((err) => {
         if (cancelled) return;
         setStatus("error");
-        setMessage(err?.message || "Token tidak valid");
+        setMessage(err?.message || "Invalid verification token.");
       });
 
     return () => {
@@ -94,17 +94,17 @@ export default function VerifyEmailClient() {
       });
 
       setResendStatus("success");
-      setResendMessage(data.message || "Email verifikasi telah dikirim ulang.");
+      setResendMessage(data.message || "A new verification email has been sent.");
       const retryAfter = parseRetryAfterSeconds(data?.retry_after_seconds);
       setCooldown(retryAfter > 0 ? retryAfter : 60);
     } catch (err) {
       setResendStatus("error");
       const retryAfter = extractRetryAfterFromError(err);
       if (err?.code === "RATE001" || err?.code === "AUTH016" || err?.code === "AUTH018") {
-        setResendMessage(err?.details || err?.message || "Terlalu banyak permintaan. Coba lagi sebentar.");
+        setResendMessage(err?.details || err?.message || "Too many requests. Please try again shortly.");
         setCooldown(retryAfter > 0 ? retryAfter : 60);
       } else {
-        setResendMessage(err?.message || "Gagal mengirim email verifikasi.");
+        setResendMessage(err?.message || "Unable to send a verification email.");
       }
     }
   };
@@ -126,7 +126,7 @@ export default function VerifyEmailClient() {
     <div className="w-full max-w-lg mx-auto space-y-4">
       {/* Verification status */}
       <div className="space-y-3 rounded-lg border border-border bg-card p-6">
-        <h1 className="text-lg font-semibold text-foreground">Verifikasi Email</h1>
+        <h1 className="text-lg font-semibold text-foreground">Email Verification</h1>
 
         <div className={`rounded-md border px-4 py-3 text-sm ${styles[status] || styles.pending}`}>
           {message}
@@ -137,7 +137,7 @@ export default function VerifyEmailClient() {
             href="/login"
             className="inline-flex items-center gap-2 text-sm font-medium text-foreground underline"
           >
-            Lanjut ke halaman login →
+            Continue to sign in →
           </Link>
         )}
       </div>
@@ -147,10 +147,10 @@ export default function VerifyEmailClient() {
         <div className="space-y-4 rounded-lg border border-border bg-card p-6">
           <div>
             <h2 className="text-base font-semibold text-foreground">
-              Kirim Ulang Email Verifikasi
+              Resend Verification Email
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Masukkan email Anda untuk mendapatkan link verifikasi baru.
+              Enter your email address to receive a new verification link.
             </p>
           </div>
 
@@ -158,7 +158,7 @@ export default function VerifyEmailClient() {
             <Input
               type="email"
               label="Email"
-              placeholder="email@contoh.com"
+              placeholder="email@example.com"
               value={resendEmail}
               onChange={(e) => setResendEmail(e.target.value)}
               required
@@ -171,11 +171,11 @@ export default function VerifyEmailClient() {
               className="w-full"
             >
               {resendStatus === "loading" ? (
-                "Mengirim..."
+                "Sending..."
               ) : cooldown > 0 ? (
-                `Tunggu ${cooldown} detik`
+                `Wait ${cooldown} seconds`
               ) : (
-                "Kirim Ulang Email"
+                "Resend Email"
               )}
             </Button>
           </form>

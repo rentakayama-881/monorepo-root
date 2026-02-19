@@ -10,12 +10,12 @@ const FINAL_STATUSES = new Set(["fulfilled", "failed"]);
 function normalizeFailure(message) {
   const raw = String(message || "").trim();
   const lower = raw.toLowerCase();
-  if (lower.includes("saldo kamu tidak mencukupi") || lower.includes("insufficient")) return "Saldo kamu tidak mencukupi.";
-  if (lower.includes("akun belum siap")) return "Akun belum siap untuk dijual saat ini.";
+  if (lower.includes("saldo kamu tidak mencukupi") || lower.includes("insufficient")) return "Your balance is insufficient.";
+  if (lower.includes("akun belum siap")) return "This account is currently unavailable.";
   if (lower.includes("item not found") || lower.includes("current listing") || lower.includes("sold")) {
-    return "Akun belum siap untuk dijual saat ini.";
+    return "This account is currently unavailable.";
   }
-  if (lower.includes("checker")) return "Sistem sedang memeriksa akun. Coba lagi sebentar.";
+  if (lower.includes("checker")) return "Verification is currently in progress. Please try again shortly.";
   if (
     lower.includes("provider") ||
     lower.includes("supplier") ||
@@ -23,25 +23,25 @@ function normalizeFailure(message) {
     lower.includes("internal") ||
     lower.includes("transport")
   ) {
-    return "Sedang ada kendala sistem. Coba lagi beberapa saat.";
+    return "A temporary system issue occurred. Please try again shortly.";
   }
-  return raw || "Sedang ada kendala sistem. Coba lagi beberapa saat.";
+  return raw || "A temporary system issue occurred. Please try again shortly.";
 }
 
 function getStepLabel(step) {
   const code = String(step?.code || "").toUpperCase();
   const map = {
-    INIT: "Pesanan dibuat",
-    PROCESSING: "Memproses pesanan",
-    USER_BALANCE_CHECK: "Verifikasi saldo akun",
-    FETCH_PROVIDER_ITEM: "Validasi ketersediaan akun",
-    USER_BALANCE_RESERVE: "Mengunci saldo pesanan",
-    SUPPLIER_BALANCE_CHECK: "Validasi stok akun",
-    PROVIDER_PURCHASE: "Eksekusi pembelian akun",
-    USER_BALANCE_CAPTURE: "Finalisasi pembayaran",
-    DELIVERY_READY: "Data akun siap digunakan",
+    INIT: "Order created",
+    PROCESSING: "Processing order",
+    USER_BALANCE_CHECK: "Checking account balance",
+    FETCH_PROVIDER_ITEM: "Validating account availability",
+    USER_BALANCE_RESERVE: "Reserving payment amount",
+    SUPPLIER_BALANCE_CHECK: "Verifying account readiness",
+    PROVIDER_PURCHASE: "Executing purchase",
+    USER_BALANCE_CAPTURE: "Finalizing payment",
+    DELIVERY_READY: "Account data is ready",
   };
-  return map[code] || step?.label || "Proses";
+  return map[code] || step?.label || "Processing";
 }
 
 export default function MarketChatGPTOrderDetailPage() {
@@ -75,7 +75,7 @@ export default function MarketChatGPTOrderDetailPage() {
         }
       } catch (err) {
         if (!active) return;
-        setError(err?.message || "Gagal memuat detail order.");
+        setError(err?.message || "Unable to load order details.");
       } finally {
         if (active) setLoading(false);
       }
@@ -91,33 +91,33 @@ export default function MarketChatGPTOrderDetailPage() {
 
   const statusText = useMemo(() => {
     const status = String(order?.status || "").toLowerCase();
-    if (status === "fulfilled") return "Selesai";
-    if (status === "failed") return "Gagal";
-    return "Diproses";
+    if (status === "fulfilled") return "Completed";
+    if (status === "failed") return "Failed";
+    return "Processing";
   }, [order?.status]);
 
   return (
     <main className="container py-10 space-y-6">
       <header className="space-y-2">
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Marketplace</div>
-        <h1 className="text-2xl font-semibold text-foreground">Detail Order</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Order Details</h1>
         <p className="text-sm text-muted-foreground">Order ID: {orderID || "-"}</p>
       </header>
 
       <section className="rounded-lg border border-border bg-card p-4 space-y-4">
-        {loading ? <p className="text-sm text-muted-foreground">Memuat detail order...</p> : null}
+        {loading ? <p className="text-sm text-muted-foreground">Loading order details...</p> : null}
 
         {error ? (
           <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
         ) : null}
 
-        {!loading && !error && !order ? <p className="text-sm text-muted-foreground">Order tidak ditemukan.</p> : null}
+        {!loading && !error && !order ? <p className="text-sm text-muted-foreground">Order not found.</p> : null}
 
         {!loading && !error && order ? (
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Row label="Produk" value={order?.title} />
-              <Row label="Harga" value={order?.price_display || order?.price || "-"} />
+              <Row label="Product" value={order?.title} />
+              <Row label="Price" value={order?.price_display || order?.price || "-"} />
               <Row label="Status" value={statusText} />
               <Row label="Order ID" value={order?.id || "-"} />
             </div>
@@ -129,10 +129,10 @@ export default function MarketChatGPTOrderDetailPage() {
             ) : null}
 
             <div className="rounded-md border border-border bg-background p-3">
-              <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Progress Pembelian</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Purchase Progress</div>
               <div className="mt-3 space-y-2">
                 {(order?.steps || []).length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Menunggu update proses...</p>
+                  <p className="text-xs text-muted-foreground">Waiting for status updates...</p>
                 ) : (
                   order.steps.map((step, idx) => (
                     <div key={`${step?.code || "step"}-${idx}`} className="rounded-md border border-border bg-card p-2.5">
@@ -149,29 +149,29 @@ export default function MarketChatGPTOrderDetailPage() {
             </div>
 
             <div className="rounded-md border border-border bg-background p-3">
-              <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Data Akun</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Account Data</div>
               {order?.status === "fulfilled" ? (
                 <div className="mt-3 space-y-3">
                   <CredentialBlock
-                    title="Ringkasan Akun"
+                    title="Account Summary"
                     rows={[
-                      ["Judul", order?.delivery?.account?.title],
+                      ["Title", order?.delivery?.account?.title],
                       ["Status", order?.delivery?.account?.status],
                       ["Tier", order?.delivery?.account?.openai_tier],
-                      ["Langganan", order?.delivery?.account?.subscription],
-                      ["Negara", order?.delivery?.account?.country],
-                      ["Domain Email", order?.delivery?.account?.email_domain],
+                      ["Subscription", order?.delivery?.account?.subscription],
+                      ["Country", order?.delivery?.account?.country],
+                      ["Email Domain", order?.delivery?.account?.email_domain],
                     ]}
                   />
                   <CredentialBlock
-                    title="Login Akun"
+                    title="Account Login"
                     rows={[
                       ["Email/Username", order?.delivery?.credentials?.account_login],
                       ["Password", order?.delivery?.credentials?.account_password],
                     ]}
                   />
                   <CredentialBlock
-                    title="Login Email Recovery"
+                    title="Recovery Email Login"
                     rows={[
                       ["Email", order?.delivery?.credentials?.email_login],
                       ["Password", order?.delivery?.credentials?.email_password],
@@ -179,7 +179,7 @@ export default function MarketChatGPTOrderDetailPage() {
                   />
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Data akun akan muncul setelah order berstatus selesai.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Account data will appear after the order is completed.</p>
               )}
             </div>
           </div>
@@ -188,10 +188,10 @@ export default function MarketChatGPTOrderDetailPage() {
 
       <div className="flex flex-wrap items-center gap-2">
         <Link href="/market/chatgpt" className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40">
-          Kembali ke listing
+          Back to listings
         </Link>
         <Link href="/account/my-purchases" className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40">
-          Lihat My Purchase
+          Open My Purchases
         </Link>
       </div>
     </main>
@@ -210,12 +210,12 @@ function Row({ label, value }) {
 function StepBadge({ status }) {
   const normalized = String(status || "").toLowerCase();
   if (normalized === "done") {
-    return <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">Selesai</span>;
+    return <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">Done</span>;
   }
   if (normalized === "failed") {
-    return <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">Gagal</span>;
+    return <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">Failed</span>;
   }
-  return <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700">Proses</span>;
+  return <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700">Processing</span>;
 }
 
 function CredentialBlock({ title, rows }) {
@@ -240,7 +240,7 @@ function CredentialBlock({ title, rows }) {
 function formatDateTime(value) {
   if (!value) return "-";
   try {
-    return new Date(value).toLocaleString("id-ID", {
+    return new Date(value).toLocaleString("en-US", {
       day: "2-digit",
       month: "short",
       year: "numeric",

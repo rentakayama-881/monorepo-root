@@ -83,7 +83,7 @@ function normalizeCheckoutErrorMessage(message) {
   const raw = String(message || "").trim();
   const lower = raw.toLowerCase();
   if (lower.includes("saldo kamu tidak mencukupi") || lower.includes("insufficient") || lower.includes("balance")) {
-    return "Saldo kamu tidak mencukupi.";
+    return "Your balance is insufficient.";
   }
   if (
     lower.includes("item not found in current listing") ||
@@ -91,15 +91,17 @@ function normalizeCheckoutErrorMessage(message) {
     lower.includes("ad not found") ||
     lower.includes("sold")
   ) {
-    return "Akun belum siap untuk dijual saat ini.";
+    return "This account is currently unavailable.";
   }
-  if (lower.includes("checker sedang error") || lower.includes("checker")) {
-    return "Checker sedang error. Coba lagi sebentar.";
+  if (
+    lower.includes("supplier") ||
+    lower.includes("akun belum siap") ||
+    lower.includes("checker") ||
+    lower.includes("provider")
+  ) {
+    return "This account is currently unavailable.";
   }
-  if (lower.includes("supplier") || lower.includes("akun belum siap")) {
-    return "Akun belum siap untuk dijual saat ini.";
-  }
-  return raw || "Gagal lanjut checkout.";
+  return raw || "Unable to continue checkout at the moment.";
 }
 
 export default function MarketChatGPTClient() {
@@ -124,14 +126,14 @@ export default function MarketChatGPTClient() {
       try {
         const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US`, { method: "GET" });
         const data = await parseApiResponseSafe(res);
-        if (!res.ok) throw new Error(data?.error || "Gagal memuat listing market.");
+        if (!res.ok) throw new Error(data?.error || "Unable to load marketplace listings.");
         if (!cancelled) {
           setResponse(data);
           setError("");
         }
       } catch (err) {
         if (!cancelled && isInitial) {
-          setError(err?.message || "Gagal memuat listing market.");
+          setError(err?.message || "Unable to load marketplace listings.");
         }
       } finally {
         if (!cancelled && isInitial) setLoading(false);
@@ -164,7 +166,7 @@ export default function MarketChatGPTClient() {
 
   async function handleCheckout(itemID, canBuy) {
     if (!canBuy) {
-      setError("Item ini belum bisa dibeli saat ini. Coba refresh listing terlebih dulu.");
+      setError("This item is not available for purchase right now. Please refresh the listing.");
       return;
     }
     setCheckingOut(itemID);
@@ -175,7 +177,7 @@ export default function MarketChatGPTClient() {
       const wallet = unwrapFeatureData(walletPayload) || {};
       const balance = Number(wallet?.balance ?? wallet?.Balance ?? 0) || 0;
       if (balance <= 0) {
-        throw new Error("Saldo kamu tidak mencukupi.");
+        throw new Error("Your balance is insufficient.");
       }
 
       const data = await fetchJsonAuth("/api/market/chatgpt/orders", {
@@ -184,7 +186,7 @@ export default function MarketChatGPTClient() {
         body: JSON.stringify({ item_id: itemID, i18n: "en-US" }),
       });
       const orderID = data?.order?.id;
-      if (!orderID) throw new Error("Order berhasil dibuat tetapi ID order tidak ditemukan.");
+      if (!orderID) throw new Error("The order was created, but the order ID is missing.");
       router.push(`/market/chatgpt/orders/${encodeURIComponent(orderID)}`);
     } catch (err) {
       setError(normalizeCheckoutErrorMessage(err?.message));
@@ -205,16 +207,16 @@ export default function MarketChatGPTClient() {
           <TinyBadge label={cachedBadge} />
           {staleBadge ? <TinyBadge label={staleBadge} tone="warning" /> : null}
         </div>
-        <p className="text-xs text-muted-foreground">Listing compact. Klik detail untuk lihat spek lengkap akun sebelum beli.</p>
+        <p className="text-xs text-muted-foreground">Compact listing. Open details to review full account specifications before purchasing.</p>
       </header>
 
       <section className="rounded-xl border border-border bg-card p-3 space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs text-muted-foreground">{loading ? "Memuat listing..." : `${filtered.length} item`}</div>
+          <div className="text-xs text-muted-foreground">{loading ? "Loading listings..." : `${filtered.length} items`}</div>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari title, seller, status..."
+            placeholder="Search title, seller, or status..."
             className="w-full sm:w-72 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs"
           />
         </div>
@@ -230,14 +232,14 @@ export default function MarketChatGPTClient() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Belum ada item yang cocok.</p>
+          <p className="text-xs text-muted-foreground">No matching items found.</p>
         ) : (
           <div className="overflow-auto rounded-lg border border-border">
             <table className="min-w-full text-xs">
               <thead className="bg-muted/35">
                 <tr>
                   <th className="px-2.5 py-1.5 text-left font-medium">Account</th>
-                  <th className="px-2.5 py-1.5 text-left font-medium">Harga</th>
+                  <th className="px-2.5 py-1.5 text-left font-medium">Price</th>
                   <th className="px-2.5 py-1.5 text-left font-medium">Status</th>
                   <th className="px-2.5 py-1.5 text-left font-medium">Seller</th>
                   <th className="px-2.5 py-1.5 text-left font-medium">Actions</th>
@@ -259,7 +261,7 @@ export default function MarketChatGPTClient() {
                     </td>
                     <td className="px-2.5 py-1.5">
                       <TinyBadge label={String(item.status)} tone={item.canBuy ? "neutral" : "warning"} />
-                      {!item.idValid ? <div className="mt-1 text-[10px] text-amber-600">ID item belum valid</div> : null}
+                      {!item.idValid ? <div className="mt-1 text-[10px] text-amber-600">Item ID is not yet valid</div> : null}
                     </td>
                     <td className="px-2.5 py-1.5">{String(item.seller)}</td>
                     <td className="px-2.5 py-1.5">
@@ -269,7 +271,7 @@ export default function MarketChatGPTClient() {
                           onClick={() => setDrawerItem(item)}
                           className="rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted/40"
                         >
-                          Detail
+                          Details
                         </button>
                         <button
                           type="button"
@@ -277,7 +279,7 @@ export default function MarketChatGPTClient() {
                           disabled={checkingOut === item.id || !item.canBuy}
                           className="rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
                         >
-                          {checkingOut === item.id ? "..." : item.canBuy ? "Beli" : "N/A"}
+                          {checkingOut === item.id ? "..." : item.canBuy ? "Buy" : "N/A"}
                         </button>
                       </div>
                     </td>
@@ -331,12 +333,12 @@ function SpecDrawer({ item, onClose }) {
             <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Account Specs</div>
             <h2 className="truncate text-sm font-semibold">{item.title}</h2>
             <div className="mt-1 flex flex-wrap gap-1">
-              <TinyBadge label={`Harga ${item.displayPriceIDR || String(item.price)}`} />
+              <TinyBadge label={`Price ${item.displayPriceIDR || String(item.price)}`} />
               <TinyBadge label={`Seller ${item.seller}`} />
             </div>
           </div>
           <button type="button" onClick={onClose} className="rounded-md border border-border px-2 py-1 text-[11px] hover:bg-muted/40">
-            Tutup
+            Close
           </button>
         </div>
 

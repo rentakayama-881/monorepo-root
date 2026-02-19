@@ -12,12 +12,12 @@ import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton
 const walletLinks = [
   {
     href: "/account/wallet/send",
-    label: "Kirim Uang",
+    label: "Send Funds",
     iconPath: "M12 19l9 2-9-18-9 18 9-2zm0 0v-8",
   },
   {
     href: "/account/wallet/transactions",
-    label: "Transaksi Saya",
+    label: "Transactions",
     iconPath:
       "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
   },
@@ -29,7 +29,7 @@ const walletLinks = [
   },
   {
     href: "/account/wallet/withdraw",
-    label: "Tarik Dana",
+    label: "Withdraw",
     iconPath:
       "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z",
   },
@@ -133,7 +133,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
         }
         if (!res.ok) {
           if (!signal.aborted) {
-            setLoadError("Profil tidak dapat dimuat saat ini. Coba lagi.");
+            setLoadError("Your profile could not be loaded at this time. Please try again.");
             setIsLoading(false);
           }
           return;
@@ -193,7 +193,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
             return;
           }
 
-          setLoadError("Koneksi bermasalah. Coba lagi dalam beberapa detik.");
+          setLoadError("A temporary network issue occurred. Please try again in a moment.");
           setIsLoading(false);
         }
       }
@@ -306,7 +306,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
     window.location.href = "/login";
   };
 
-  const displayName = user.username || (user.email ? user.email.split("@")[0] : "Akun");
+  const displayName = user.username || (user.email ? user.email.split("@")[0] : "Account");
   const overlayClassName = "fixed inset-0 z-[100] bg-black/50 transition-opacity duration-300";
   const panelBaseClassName =
     "fixed right-2 top-[3.35rem] z-[110] w-[16.5rem] max-w-[calc(100vw-0.75rem)] rounded-2xl border border-border/75 bg-card/95 shadow-[0_14px_28px_rgba(0,0,0,0.18)] backdrop-blur-md flex flex-col max-h-[calc(100dvh-4.1rem)] animate-slide-in-from-right";
@@ -331,7 +331,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
           className={panelPaddedClassName}
           role="dialog"
           aria-modal="true"
-          aria-label="Panel akun"
+          aria-label="Account panel"
           tabIndex={-1}
         >
           <div className="space-y-3">
@@ -342,14 +342,14 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
                 onClick={() => setReloadTick((v) => v + 1)}
                 className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90"
               >
-                Coba lagi
+                Try Again
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="rounded-md border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
               >
-                Tutup
+                Close
               </button>
             </div>
           </div>
@@ -373,7 +373,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
           className={panelPaddedClassName}
           role="dialog"
           aria-modal="true"
-          aria-label="Panel akun"
+          aria-label="Account panel"
           tabIndex={-1}
         >
           <div className="space-y-3.5" aria-busy="true" aria-live="polite">
@@ -410,7 +410,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
         className={panelBaseClassName}
         role="dialog"
         aria-modal="true"
-        aria-label="Panel akun"
+          aria-label="Account panel"
         tabIndex={-1}
         onClickCapture={handlePanelNavigation}
       >
@@ -432,7 +432,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
               {user.email && (
                 <div className="text-[11px] text-muted-foreground">{maskEmail(user.email)}</div>
               )}
-              <div className="text-[11px] text-muted-foreground">Kelola aktivitas & profil Anda</div>
+              <div className="text-[11px] text-muted-foreground">Manage your activity and profile settings</div>
             </div>
           </div>
           <button
@@ -440,7 +440,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
             className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
             type="button"
           >
-            <span className="sr-only">Tutup menu profil</span>
+            <span className="sr-only">Close profile menu</span>
             <svg className="h-5 w-5" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
             </svg>
@@ -454,13 +454,13 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
         <div className="mt-3 rounded-lg border border-border/70 bg-gradient-to-b from-secondary/40 to-card p-2.5">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[11px] font-medium text-muted-foreground">Saldo</div>
+                <div className="text-[11px] font-medium text-muted-foreground">Balance</div>
                 <div className="text-base font-semibold tracking-tight text-foreground">
                   Rp {wallet.balance.toLocaleString("id-ID")}
                 </div>
                 {guarantee.amount > 0 && (
                   <div className="mt-1 text-[11px] text-muted-foreground">
-                    Jaminan Aktif:{" "}
+                    Active Guarantee:{" "}
                     <span className="font-medium text-emerald-600 dark:text-emerald-400">
                       Rp {guarantee.amount.toLocaleString("id-ID")}
                     </span>
@@ -490,7 +490,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
             ))}
 
             {/* Account Section */}
-            <div className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Akun</div>
+            <div className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Account</div>
             {accountLinks.map((item) => (
               <MenuItemLink
                 key={item.href}
@@ -516,7 +516,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              Keluar
+              Sign Out
             </span>
           </button>
         </div>

@@ -2,8 +2,8 @@ import Link from "next/link";
 import SearchInput from "@/components/ui/SearchInput";
 
 export const metadata = {
-  title: "Halaman Tidak Ditemukan",
-  description: "Halaman yang Anda cari tidak ditemukan.",
+  title: "Page Not Found",
+  description: "The page you requested could not be found.",
   robots: {
     index: false,
     follow: false,
@@ -28,17 +28,17 @@ export default function NotFound() {
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          Halaman Tidak Ditemukan
+          Page Not Found
         </h1>
 
         <p className="text-lg text-muted-foreground mb-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-          Ups! Sepertinya halaman yang Anda cari telah berpindah ke dimensi lain atau mungkin tidak pernah ada. 🚀
+          The page you are looking for may have moved, been removed, or never existed.
         </p>
 
         {/* Search suggestion */}
         <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.3s' }}>
           <div className="max-w-md mx-auto">
-            <SearchInput placeholder="Coba cari halaman yang Anda butuhkan..." />
+            <SearchInput placeholder="Search for the page you need..." />
           </div>
         </div>
 
@@ -51,7 +51,7 @@ export default function NotFound() {
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
-            Kembali ke Beranda
+            Back to Home
           </Link>
           <Link
             href="/contact-support"
@@ -60,13 +60,13 @@ export default function NotFound() {
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
-            Hubungi Kami
+            Contact Support
           </Link>
         </div>
 
         {/* Popular links */}
         <div className="pt-8 border-t border-border animate-slide-up" style={{ animationDelay: '0.5s' }}>
-          <p className="text-sm font-semibold text-muted-foreground mb-4">Mungkin Anda mencari:</p>
+          <p className="text-sm font-semibold text-muted-foreground mb-4">You may be looking for:</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
             <Link href="/validation-cases" className="group rounded-lg border border-border p-3 transition-all hover:border-primary hover:bg-primary/5">
               <div className="flex items-center gap-2 font-medium text-foreground group-hover:text-primary">
@@ -81,7 +81,7 @@ export default function NotFound() {
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>Tentang</span>
+                <span>About</span>
               </div>
             </Link>
             <Link href="/rules-content" className="group rounded-lg border border-border p-3 transition-all hover:border-primary hover:bg-primary/5">
@@ -89,7 +89,7 @@ export default function NotFound() {
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span>Aturan</span>
+                <span>Rules</span>
               </div>
             </Link>
           </div>

@@ -127,7 +127,7 @@ export async function fetchJsonAuth(path, options = {}) {
   try {
     let token = await getValidToken();
     if (!token) {
-      const error = new Error("Sesi telah berakhir. Silakan login kembali.");
+      const error = new Error("Your session has expired. Please sign in again.");
       error.status = 401;
       error.code = "session_expired";
       throw error;
@@ -157,7 +157,7 @@ export async function fetchJsonAuth(path, options = {}) {
     if (!res.ok) {
       if (res.status === 401) {
         if (clearSessionOn401) clearToken();
-        const error = new Error(data?.message || data?.error || "Sesi telah berakhir. Silakan login kembali.");
+        const error = new Error(data?.message || data?.error || "Your session has expired. Please sign in again.");
         error.status = 401;
         error.code = data?.code || "session_expired";
         error.details = data?.details;
@@ -167,7 +167,8 @@ export async function fetchJsonAuth(path, options = {}) {
 
       if (res.status === 403) {
         if (data?.code === "AUTH009" || data?.code === "AUTH012" || data?.message?.includes("terkunci")) {
-          const error = new Error(data?.message || data?.error || "Akun terkunci. Hubungi admin untuk bantuan.");
+          const fallbackLocked = "Your account is currently restricted. Please contact support.";
+          const error = new Error(data?.message || data?.error || fallbackLocked);
           error.status = 403;
           error.code = data?.code || "account_locked";
           error.lockedAt = data?.locked_at;
@@ -177,7 +178,7 @@ export async function fetchJsonAuth(path, options = {}) {
           error.data = data;
           throw error;
         }
-        const error = new Error(data?.message || data?.error || "Akses ditolak.");
+        const error = new Error(data?.message || data?.error || "Access denied.");
         error.status = 403;
         error.code = data?.code || "forbidden";
         error.details = data?.details;
@@ -185,7 +186,7 @@ export async function fetchJsonAuth(path, options = {}) {
         throw error;
       }
 
-      const message = data?.message || data?.error || res.statusText || `Request gagal dengan status ${res.status}`;
+      const message = data?.message || data?.error || res.statusText || `Request failed with status ${res.status}`;
       const error = new Error(message);
       error.status = res.status;
       error.code = data?.code;

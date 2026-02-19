@@ -37,12 +37,12 @@ export default function Error({ error, reset }) {
         </div>
 
         <h2 className="text-2xl font-bold text-foreground mb-3 animate-slide-up">
-          Terjadi Kesalahan
+          Something went wrong
         </h2>
 
         <p className="text-muted-foreground mb-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          Maaf, terjadi kesalahan saat memuat halaman ini. Silakan coba lagi
-          atau kembali ke halaman utama.
+          We encountered an issue while loading this page. Please try again,
+          or return to the home page.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center animate-slide-up" style={{ animationDelay: '0.2s' }}>
@@ -50,24 +50,24 @@ export default function Error({ error, reset }) {
             <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            Coba Lagi
+            Try Again
           </Button>
           <Button href="/" variant="secondary">
             <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
-            Ke Halaman Utama
+            Go to Home
           </Button>
         </div>
 
         {/* Contact support link */}
         <div className="mt-8 pt-6 border-t border-border">
-          <p className="text-sm text-muted-foreground mb-3">Butuh bantuan?</p>
+          <p className="text-sm text-muted-foreground mb-3">Need assistance?</p>
           <Button href="/contact-support" variant="ghost" className="text-xs">
             <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
-            Hubungi Support
+            Contact Support
           </Button>
         </div>
 
@@ -75,7 +75,7 @@ export default function Error({ error, reset }) {
         {process.env.NODE_ENV === "development" && error?.message && (
           <details className="mt-6 text-left">
             <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-              Detail Error (Development)
+              Error Details (Development)
             </summary>
             <pre className="mt-2 p-3 bg-muted/50 rounded-md text-xs overflow-auto text-destructive max-h-48">
               {error.message}
