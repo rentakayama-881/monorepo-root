@@ -307,6 +307,14 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 	}
 
 	authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+	if h.featureWallet != nil {
+		walletBalance, balErr := h.featureWallet.GetMyWalletBalance(c.Request.Context(), authHeader)
+		if balErr == nil && walletBalance != nil && walletBalance.Balance <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo kamu tidak mencukupi."})
+			return
+		}
+	}
+
 	item, checkErr := h.checkAccountItem(c.Request.Context(), itemID, i18n)
 	if checkErr != nil || item == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": normalizeCheckerErrorMessage(checkErr)})
