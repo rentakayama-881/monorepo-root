@@ -307,25 +307,30 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 	}
 
 	authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+	var walletBalance int64 = -1
 	if h.featureWallet != nil {
-		walletBalance, balErr := h.featureWallet.GetMyWalletBalance(c.Request.Context(), authHeader)
-		if balErr == nil && walletBalance != nil && walletBalance.Balance <= 0 {
+		walletInfo, balErr := h.featureWallet.GetMyWalletBalance(c.Request.Context(), authHeader)
+		if balErr == nil && walletInfo != nil {
+			walletBalance = walletInfo.Balance
+		}
+		if balErr == nil && walletInfo != nil && walletInfo.Balance <= 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo kamu tidak mencukupi."})
 			return
 		}
 	}
 
-	item, checkErr := h.checkAccountItem(c.Request.Context(), itemID, i18n)
-	if checkErr != nil || item == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": normalizeCheckerErrorMessage(checkErr)})
-		return
-	}
-	if !extractCanBuyItem(item) {
+	// Step 1 after user balance: resolve latest listing item and check supplier balance first.
+	listingItem, listingErr := h.findChatGPTItem(c, itemID, i18n, true)
+	if listingErr != nil || listingItem == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
 		return
 	}
+	resolvedItemID := normalizeItemID(listingItem)
+	if resolvedItemID == "" {
+		resolvedItemID = itemID
+	}
 
-	sourcePrice, sourceCurrency, sourceSymbol := h.extractSourcePriceAndCurrency(item)
+	sourcePrice, sourceCurrency, sourceSymbol := h.extractSourcePriceAndCurrency(listingItem)
 	if sourcePrice <= 0 {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Checker sedang error. Coba lagi sebentar."})
 		return
@@ -335,15 +340,22 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Checker sedang error. Coba lagi sebentar."})
 		return
 	}
-
-	if h.featureWallet != nil {
-		walletBalance, balErr := h.featureWallet.GetMyWalletBalance(c.Request.Context(), authHeader)
-		if balErr == nil && walletBalance != nil && walletBalance.Balance < priceIDR {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo kamu tidak mencukupi."})
-			return
-		}
+	if walletBalance >= 0 && walletBalance < priceIDR {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo kamu tidak mencukupi."})
+		return
 	}
 	if !h.checkSupplierBalance(c.Request.Context(), sourcePrice) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
+		return
+	}
+
+	// Step 2 only when supplier balance is enough: run checker validation.
+	item, checkErr := h.checkAccountItem(c.Request.Context(), resolvedItemID, i18n)
+	if checkErr != nil || item == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": normalizeCheckerErrorMessage(checkErr)})
+		return
+	}
+	if !extractCanBuyItem(item) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
 		return
 	}
@@ -353,7 +365,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 	order := &publicMarketOrder{
 		ID:             newPublicMarketOrderID(),
 		UserID:         userID,
-		ItemID:         itemID,
+		ItemID:         resolvedItemID,
 		Title:          normalizeItemTitle(item),
 		Price:          normalizeItemPrice(item),
 		Status:         "processing",
@@ -385,7 +397,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		At:     time.Now().UTC(),
 	})
 
-	go h.processOrderAsync(order.ID, userID, itemID, i18n, authHeader)
+	go h.processOrderAsync(order.ID, userID, resolvedItemID, i18n, authHeader)
 
 	detail, _ := h.getOrderForUser(order.ID, userID)
 	c.JSON(http.StatusAccepted, gin.H{
