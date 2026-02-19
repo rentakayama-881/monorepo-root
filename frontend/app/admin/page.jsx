@@ -294,6 +294,12 @@ export default function AdminDashboardPage() {
       href: "/admin/content",
       color: "text-muted-foreground",
     },
+    {
+      label: "LZT API",
+      value: "Ready",
+      href: "/admin/integrations/lzt",
+      color: "text-primary",
+    },
   ];
 
   return (
@@ -346,6 +352,15 @@ export default function AdminDashboardPage() {
               <span className="font-medium">Manage Users</span>
               <p className="text-sm text-muted-foreground">
                 Assign or revoke badges from users
+              </p>
+            </Link>
+            <Link
+              href="/admin/integrations/lzt"
+              className="block rounded-lg px-4 py-3 bg-muted/50 hover:bg-accent transition-colors"
+            >
+              <span className="font-medium">LZT Integration</span>
+              <p className="text-sm text-muted-foreground">
+                Test request Market API dari backend secara aman
               </p>
             </Link>
           </div>

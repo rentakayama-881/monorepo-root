@@ -356,6 +356,8 @@ func main() {
 	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authEntService, logger.GetLogger())
 	sudoHandler := handlers.NewEntSudoHandler(sudoEntService, logger.GetLogger())
 	sudoValidator := services.NewSudoValidatorAdapter(sudoEntService)
+	lztMarketClient := services.NewLZTMarketClientFromEnv()
+	lztMarketHandler := handlers.NewLZTMarketHandler(lztMarketClient)
 	// Financial features are handled by the ASP.NET service; keep Go focused on core identity/content.
 
 	// Verify all handlers are properly initialized
@@ -617,6 +619,10 @@ func main() {
 
 			// Observed devices (read-only)
 			adminProtected.GET("/observed-devices", handlers.AdminListObservedDevices)
+
+			// External integration (LZT Market API)
+			adminProtected.GET("/integrations/lzt/config", lztMarketHandler.GetConfig)
+			adminProtected.POST("/integrations/lzt/request", lztMarketHandler.ProxyRequest)
 
 		}
 	}
