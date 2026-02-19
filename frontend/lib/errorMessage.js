@@ -10,7 +10,7 @@ function safeJsonStringify(value) {
   }
 }
 
-export function getErrorMessage(error, fallback = "Terjadi kesalahan. Silakan coba lagi.") {
+export function getErrorMessage(error, fallback = "An error occurred. Please try again.") {
   if (!error) return fallback;
 
   if (typeof error === "string") return error;

@@ -91,7 +91,7 @@ export function SudoProvider({ children }) {
   // Handle sudo verification cancel
   const onSudoCancel = useCallback(() => {
     if (pendingAction) {
-      pendingAction.reject(new Error("Verifikasi dibatalkan"));
+      pendingAction.reject(new Error("Verification was canceled"));
       setPendingAction(null);
     }
     setShowModal(false);
@@ -180,7 +180,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
     try {
       const token = await getValidToken();
       if (!token) {
-        setError("Sesi telah berakhir. Silakan login kembali.");
+        setError("Your session has expired. Please sign in again.");
         setLoading(false);
         return;
       }
@@ -207,12 +207,12 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Verifikasi gagal");
+        throw new Error(data.error || "Verification failed");
       }
 
       onSuccess(data.sudo_token, data.expires_at);
     } catch (err) {
-      setError(err.message || "Terjadi kesalahan");
+      setError(err.message || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -255,7 +255,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={inputClass}
-                  placeholder="Masukkan password Anda"
+                  placeholder="Enter your password"
                   autoFocus
                 />
               </div>
@@ -284,7 +284,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
                     }}
                     className="text-xs text-muted-foreground hover:text-foreground hover:underline"
                   >
-                    {useBackupCode ? "Gunakan kode authenticator" : "Masukkan kode 2FA atau backup code"}
+                    {useBackupCode ? "Use authenticator code" : "Enter 2FA code or backup code"}
                   </button>
                 </div>
               )}
@@ -301,7 +301,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
                   onClick={onCancel}
                   className="flex-1 inline-flex justify-center items-center rounded-md border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary"
                 >
-                  Batal
+                  Cancel
                 </button>
                 <button
                   type="submit"

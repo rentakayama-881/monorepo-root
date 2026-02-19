@@ -46,14 +46,14 @@ export default function PasskeySettings() {
     try {
       const token = await getValidToken();
       if (!token) {
-        setError("Sesi telah berakhir. Silakan login kembali.");
+        setError("Your session has expired. Please sign in again.");
         setLoading(false);
         return;
       }
       const res = await fetch(API, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Gagal memuat passkeys");
+      if (!res.ok) throw new Error("Failed to load passkeys.");
       const data = await res.json();
       setPasskeys(data.passkeys || []);
     } catch (err) {
@@ -70,7 +70,7 @@ export default function PasskeySettings() {
 
   async function registerPasskey() {
     if (!isWebAuthnSupported()) {
-      setError("Browser Anda tidak mendukung Passkey/WebAuthn");
+      setError("Your browser does not support Passkey/WebAuthn");
       return;
     }
 
@@ -81,7 +81,7 @@ export default function PasskeySettings() {
     try {
       const token = await getValidToken();
       if (!token) {
-        setError("Sesi telah berakhir. Silakan login kembali.");
+        setError("Your session has expired. Please sign in again.");
         return;
       }
 
@@ -94,7 +94,7 @@ export default function PasskeySettings() {
       });
       if (!beginRes.ok) {
         const errData = await beginRes.json();
-        throw new Error(errData.error || "Gagal memulai registrasi");
+        throw new Error(errData.error || "Failed to start registration.");
       }
       const beginData = await beginRes.json();
       const { options, session_id: sessionId } = beginData;
@@ -115,7 +115,7 @@ export default function PasskeySettings() {
       });
 
       if (!credential) {
-        throw new Error("Registrasi dibatalkan");
+        throw new Error("Registration was canceled");
       }
 
       const credentialForServer = serializePublicKeyCredential(credential);
@@ -136,18 +136,18 @@ export default function PasskeySettings() {
 
       if (!finishRes.ok) {
         const errData = await finishRes.json();
-        throw new Error(errData.error || "Gagal menyelesaikan registrasi");
+        throw new Error(errData.error || "Failed to complete registration.");
       }
 
-      setSuccess("Passkey berhasil didaftarkan!");
+      setSuccess("Passkey registered successfully!");
       fetchPasskeys();
     } catch (err) {
       if (err.name === "NotAllowedError") {
-        setError("Registrasi dibatalkan atau tidak diizinkan");
+        setError("Registration was canceled atau tidak diizinkan");
       } else if (err.name === "InvalidStateError") {
         setError("Passkey ini sudah terdaftar");
       } else {
-        setError(err.message || "Gagal mendaftarkan passkey");
+        setError(err.message || "Failed to register passkey.");
       }
     } finally {
       setRegistering(false);
@@ -155,7 +155,7 @@ export default function PasskeySettings() {
   }
 
   async function deletePasskey(id) {
-    if (!confirm("Hapus passkey ini? Anda tidak dapat login dengan passkey ini lagi.")) {
+    if (!confirm("Delete this passkey? You will no longer be able to sign in with it.")) {
       return;
     }
 
@@ -166,7 +166,7 @@ export default function PasskeySettings() {
     try {
       const token = await getValidToken();
       if (!token) {
-        setError("Sesi telah berakhir. Silakan login kembali.");
+        setError("Your session has expired. Please sign in again.");
         setDeleting(null);
         return;
       }
@@ -176,9 +176,9 @@ export default function PasskeySettings() {
       });
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Gagal menghapus passkey");
+        throw new Error(errData.error || "Failed to delete passkey.");
       }
-      setSuccess("Passkey berhasil dihapus");
+      setSuccess("Passkey removed successfully.");
       fetchPasskeys();
     } catch (err) {
       setError(err.message);
@@ -194,7 +194,7 @@ export default function PasskeySettings() {
     try {
       const token = await getValidToken();
       if (!token) {
-        setError("Sesi telah berakhir. Silakan login kembali.");
+        setError("Your session has expired. Please sign in again.");
         return;
       }
       const res = await fetch(`${API}/${id}/name`, {
@@ -207,9 +207,9 @@ export default function PasskeySettings() {
       });
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Gagal mengubah nama");
+        throw new Error(errData.error || "Failed to update name.");
       }
-      setSuccess("Nama passkey berhasil diubah");
+      setSuccess("Passkey name updated successfully.");
       fetchPasskeys();
     } catch (err) {
       setError(err.message);
@@ -227,7 +227,7 @@ export default function PasskeySettings() {
           <div className="flex items-start gap-2">
             <span className="text-warning">{WarningIcon}</span>
             <p className="text-sm text-warning">
-              Browser Anda tidak mendukung Passkey/WebAuthn. Gunakan browser modern seperti Chrome, Firefox, Safari, atau Edge versi terbaru.
+              Your browser does not support Passkey/WebAuthn. Gunakan browser modern seperti Chrome, Firefox, Safari, atau Edge versi terbaru.
             </p>
           </div>
         </div>
@@ -266,7 +266,7 @@ export default function PasskeySettings() {
       {loading ?  (
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" />
-          Memuat...
+          Loading...
         </div>
       ) : (
         <>

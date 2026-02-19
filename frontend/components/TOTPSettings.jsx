@@ -40,14 +40,14 @@ function TOTPSettingsContent() {
     try {
       const token = await getValidToken();
       if (!token) {
-        setError("Sesi telah berakhir. Silakan login kembali.");
+        setError("Your session has expired. Please sign in again.");
         setLoading(false);
         return;
       }
       const res = await fetch(`${API}/auth/totp/status`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Gagal memuat status 2FA");
+      if (!res.ok) throw new Error("Failed to load 2FA status.");
       const data = await res.json();
       setStatus(data);
 
@@ -77,7 +77,7 @@ function TOTPSettingsContent() {
     try {
       const token = await getValidToken();
       if (!token) {
-        setError("Sesi telah berakhir. Silakan login kembali.");
+        setError("Your session has expired. Please sign in again.");
         setSetupLoading(false);
         return;
       }
@@ -87,7 +87,7 @@ function TOTPSettingsContent() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Gagal memulai setup 2FA");
+        throw new Error(data.error || "Failed to start 2FA setup.");
       }
       const data = await res.json();
       setSetupData(data);
@@ -101,7 +101,7 @@ function TOTPSettingsContent() {
   async function verifyAndEnable(e) {
     e.preventDefault();
     if (!setupCode || setupCode.length !== 6) {
-      setError("Masukkan kode 6 digit dari aplikasi authenticator");
+      setError("Enter the 6-digit code from your authenticator app.");
       return;
     }
 
@@ -110,7 +110,7 @@ function TOTPSettingsContent() {
     try {
       const token = await getValidToken();
       if (!token) {
-        setError("Sesi telah berakhir. Silakan login kembali.");
+        setError("Your session has expired. Please sign in again.");
         setSetupLoading(false);
         return;
       }
@@ -124,7 +124,7 @@ function TOTPSettingsContent() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Kode tidak valid");
+        throw new Error(data.error || "Invalid code.");
       }
       const data = await res.json();
 
@@ -133,7 +133,7 @@ function TOTPSettingsContent() {
         setBackupCount(data.backup_codes.length);
       }
 
-      setSuccess("2FA berhasil diaktifkan! PENTING: Simpan backup codes di bawah sekarang. Codes ini HANYA ditampilkan sekali!");
+      setSuccess("2FA enabled successfully. Important: Save your backup codes now. They are shown only once.");
       setSetupData(null);
       setSetupCode("");
       fetchStatus();
@@ -147,7 +147,7 @@ function TOTPSettingsContent() {
   async function disableTOTP(e) {
     e.preventDefault();
     if (!disablePassword || !disableCode) {
-      setError("Masukkan password dan kode 2FA");
+      setError("Enter your password and 2FA code.");
       return;
     }
 
@@ -156,7 +156,7 @@ function TOTPSettingsContent() {
     try {
       const token = await getValidToken();
       if (!token) {
-        setError("Sesi telah berakhir. Silakan login kembali.");
+        setError("Your session has expired. Please sign in again.");
         setDisableLoading(false);
         return;
       }
@@ -170,9 +170,9 @@ function TOTPSettingsContent() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Gagal menonaktifkan 2FA");
+        throw new Error(data.error || "Failed to disable 2FA.");
       }
-      setSuccess("2FA berhasil dinonaktifkan");
+      setSuccess("2FA disabled successfully.");
       setShowDisable(false);
       setDisablePassword("");
       setDisableCode("");
@@ -197,7 +197,7 @@ function TOTPSettingsContent() {
       <div className="rounded-[var(--radius)] border bg-card p-6">
         <div className="flex items-center gap-2">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
-          <span className="text-sm text-muted-foreground">Memuat pengaturan 2FA...</span>
+          <span className="text-sm text-muted-foreground">Loading 2FA settings...</span>
         </div>
       </div>
     );
@@ -224,10 +224,10 @@ function TOTPSettingsContent() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold text-foreground">
-            Autentikasi Dua Faktor (2FA)
+            Two-Factor Authentication (2FA)
           </h3>
           <p className="text-sm text-muted-foreground">
-            Tambahkan lapisan keamanan ekstra dengan aplikasi authenticator
+            Add an extra security layer with an authenticator app
           </p>
         </div>
         <div className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium ${
@@ -235,7 +235,7 @@ function TOTPSettingsContent() {
             ? "border-success/20 bg-success/10 text-success"
             : "border-border bg-muted/60 text-muted-foreground"
         }`}>
-          {status.enabled ? "Aktif" : "Tidak Aktif"}
+          {status.enabled ? "Active" : "Inactive"}
         </div>
       </div>
 
@@ -255,10 +255,10 @@ function TOTPSettingsContent() {
       {!status.enabled && !setupData && (
         <div className="pt-2">
           <p className="text-sm text-muted-foreground mb-3">
-            2FA menggunakan aplikasi seperti Google Authenticator, Authy, atau 1Password untuk menghasilkan kode verifikasi.
+            2FA uses apps such as Google Authenticator, Authy, or 1Password to generate verification codes.
           </p>
           <Button onClick={startSetup} disabled={setupLoading}>
-            {setupLoading ? "Memulai..." : "Aktifkan 2FA"}
+            {setupLoading ? "Starting..." : "Enable 2FA"}
           </Button>
         </div>
       )}
@@ -281,17 +281,17 @@ function TOTPSettingsContent() {
         <div className="space-y-4 pt-2">
           {status.verified_at && (
             <p className="text-xs text-muted-foreground">
-              Diaktifkan pada: {new Date(status.verified_at).toLocaleDateString("id-ID", { dateStyle: "long" })}
+              Enabled on: {new Date(status.verified_at).toLocaleDateString("id-ID", { dateStyle: "long" })}
             </p>
           )}
 
           <div className="p-4 bg-background rounded-[var(--radius)] border">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-medium text-foreground">Backup Codes</h4>
-              <span className="text-xs text-muted-foreground">{backupCount} tersisa</span>
+              <span className="text-xs text-muted-foreground">{backupCount} remaining</span>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              Backup codes dapat digunakan untuk login jika Anda tidak memiliki akses ke aplikasi authenticator.
+              Backup codes can be used to sign in when you do not have access to your authenticator app.
             </p>
 
             {backupCodes ? (
@@ -302,22 +302,22 @@ function TOTPSettingsContent() {
                   ))}
                 </div>
                 <p className="text-xs text-destructive font-medium">
-                  PENTING: Simpan backup codes ini SEKARANG! Codes ini HANYA ditampilkan sekali dan tidak dapat dilihat lagi.
+                  Important: Save these backup codes now. They are displayed only once and cannot be viewed again.
                 </p>
                 <Button variant="secondary" size="sm" onClick={copyBackupCodes}>
-                  Salin ke Clipboard
+                  Copy to Clipboard
                 </Button>
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Backup codes hanya ditampilkan saat pertama kali mengaktifkan 2FA.
-                Jika Anda kehilangan backup codes, nonaktifkan dan aktifkan kembali 2FA untuk mendapatkan codes baru.
+                Backup codes are shown only once when you first enable 2FA.
+                If you lose them, disable and re-enable 2FA to generate new codes.
               </p>
             )}
           </div>
 
           <Button variant="danger" onClick={() => setShowDisable(true)}>
-            Nonaktifkan 2FA
+            Disable 2FA
           </Button>
         </div>
       )}
@@ -347,7 +347,7 @@ function TOTPSettingsLoading() {
     <div className="rounded-[var(--radius)] border bg-card p-6">
       <div className="flex items-center gap-2">
         <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
-        <span className="text-sm text-muted-foreground">Memuat pengaturan 2FA...</span>
+        <span className="text-sm text-muted-foreground">Loading 2FA settings...</span>
       </div>
     </div>
   );

@@ -47,7 +47,7 @@ function toDisplayAccount(item, index) {
       ? item.display_price_idr.trim()
       : hasIDRPrice
       ? `Rp ${numericPriceIDR.toLocaleString("id-ID")}`
-      : "Harga belum tersedia";
+      : "Price unavailable";
 
   return {
     id: String(id),

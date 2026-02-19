@@ -25,7 +25,7 @@ export default function WithdrawSuccessPage() {
             Penarikan Diproses
           </h1>
           <p className="text-muted-foreground mb-8">
-            Permintaan penarikan Anda sedang diproses. Dana akan ditransfer ke rekening Anda dalam 1-3 hari kerja.
+            Your withdrawal request is being processed. Funds will be transferred to your bank account within 1-3 business days.
           </p>
 
           <div className="rounded-lg border border-border bg-card p-4 mb-8">
@@ -33,7 +33,7 @@ export default function WithdrawSuccessPage() {
               <svg className="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>Anda akan menerima notifikasi email ketika dana telah ditransfer.</span>
+              <span>You will receive an email notification once the transfer is completed.</span>
             </div>
           </div>
 
@@ -42,13 +42,13 @@ export default function WithdrawSuccessPage() {
               href="/account/wallet/transactions"
               className="block w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90"
             >
-              Lihat Transaksi
+              View Transactions
             </Link>
             <Link
               href="/"
               className="block w-full rounded-lg border border-border py-3 font-medium text-foreground transition hover:bg-card"
             >
-              Kembali ke Beranda
+              Back to Home
             </Link>
           </div>
         </div>

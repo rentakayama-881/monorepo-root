@@ -128,11 +128,11 @@ export default function SendMoneyPage() {
   const handleAmountNext = () => {
     const amountNum = parseInt(amount.replace(/\D/g, ""), 10);
     if (!amountNum || amountNum < 10000) {
-      setError("Minimum transfer adalah Rp 10.000");
+      setError("Minimum transfer is IDR 10,000");
       return;
     }
     if (amountNum > wallet.balance) {
-      setError("Saldo tidak mencukupi");
+      setError("Insufficient balance");
       return;
     }
     setError("");
@@ -166,7 +166,7 @@ export default function SendMoneyPage() {
         router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/send"));
         return;
       }
-      setError(getErrorMessage(e, "Gagal mengirim uang"));
+      setError(getErrorMessage(e, "Unable to send funds."));
       setLoading(false);
     }
   };
@@ -181,7 +181,7 @@ export default function SendMoneyPage() {
     <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-lg px-4 py-8">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground">Kirim Uang</h1>
+            <h1 className="text-2xl font-bold text-foreground">Send Funds</h1>
             <p className="text-sm text-muted-foreground">
               Transfer uang ke pengguna lain dengan sistem escrow
             </p>
@@ -213,7 +213,7 @@ export default function SendMoneyPage() {
 
           {/* Current Balance */}
           <div className="mb-6 rounded-lg border border-border bg-card p-4">
-            <div className="text-sm text-muted-foreground">Saldo Tersedia</div>
+            <div className="text-sm text-muted-foreground">Available Balance</div>
             <div className="text-xl font-bold text-foreground">
               Rp {wallet.balance.toLocaleString("id-ID")}
             </div>
@@ -224,7 +224,7 @@ export default function SendMoneyPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Cari Penerima
+                  Find Recipient
                 </label>
                 <input
                   type="text"
@@ -251,7 +251,7 @@ export default function SendMoneyPage() {
                   <svg className="h-8 w-8 mx-auto mb-2 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p>User tidak ditemukan</p>
+                  <p>User not found</p>
                   <p className="text-xs mt-1">Username minimal 7 karakter</p>
                 </div>
               )}
@@ -291,7 +291,7 @@ export default function SendMoneyPage() {
                   <div className="font-medium text-foreground">
                     {selectedUser?.username}
                   </div>
-                  <div className="text-xs text-muted-foreground">Penerima</div>
+                  <div className="text-xs text-muted-foreground">Recipient</div>
                 </div>
                 <button
                   onClick={() => {
@@ -330,7 +330,7 @@ export default function SendMoneyPage() {
                   Periode Hold
                 </label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Uang akan di-hold selama periode ini sebelum otomatis dikirim ke penerima. Anda bisa melepaskan lebih awal.
+                  Funds will be held during this period before being auto-released to the recipient. You may release earlier if needed.
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -355,7 +355,7 @@ export default function SendMoneyPage() {
                     }`}
                   >
                     <div className="text-lg font-bold">30 Hari</div>
-                    <div className="text-xs opacity-70">Transaksi Besar</div>
+                    <div className="text-xs opacity-70">Large Transaction</div>
                   </button>
                 </div>
               </div>
@@ -386,7 +386,7 @@ export default function SendMoneyPage() {
                   onClick={() => setStep(1)}
                   className="flex-1 rounded-lg border border-border bg-card py-3 font-semibold text-foreground transition hover:bg-muted/50"
                 >
-                  Kembali
+                  Back
                 </button>
                 <button
                   type="button"
@@ -406,7 +406,7 @@ export default function SendMoneyPage() {
               <div className="rounded-lg border border-border bg-card p-4 space-y-3">
                 <h3 className="font-semibold text-foreground">Ringkasan Transfer</h3>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Penerima</span>
+                  <span className="text-muted-foreground">Recipient</span>
                   <span className="font-medium text-foreground">{selectedUser?.username}</span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -428,14 +428,14 @@ export default function SendMoneyPage() {
               {/* Info Box */}
               <div className="rounded-lg bg-primary/10 border border-primary/30 p-3 text-sm text-muted-foreground">
                 <p>
-                  Uang akan di-hold selama {holdDays} hari. Setelah periode hold berakhir, uang akan otomatis dikirim ke {selectedUser?.username}. Anda dapat melepaskan uang lebih awal dari menu Transaksi.
+                  Funds will be held for {holdDays} days. After the hold period ends, funds are automatically released to {selectedUser?.username}. You can release them earlier from the Transactions menu.
                 </p>
               </div>
 
               {/* PIN */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Masukkan PIN Transaksi
+                  Enter Transaction PIN
                 </label>
                 <input
                   type="password"
@@ -459,14 +459,14 @@ export default function SendMoneyPage() {
                   onClick={() => setStep(2)}
                   className="flex-1 rounded-lg border border-border bg-card py-3 font-semibold text-foreground transition hover:bg-muted/50"
                 >
-                  Kembali
+                  Back
                 </button>
                 <button
                   type="submit"
                   disabled={loading || pin.length !== 6}
                   className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {loading ? "Memproses..." : "Kirim Uang"}
+                  {loading ? "Processing..." : "Send Funds"}
                 </button>
               </div>
             </form>

@@ -14,11 +14,11 @@ import logger from "@/lib/logger";
 
 // Dispute categories matching backend
 const DISPUTE_CATEGORIES = [
-  { value: "ItemNotReceived", label: "Barang/Jasa Tidak Diterima" },
-  { value: "ItemNotAsDescribed", label: "Barang/Jasa Tidak Sesuai Deskripsi" },
-  { value: "Fraud", label: "Dugaan Penipuan" },
-  { value: "SellerNotResponding", label: "Penjual Tidak Merespons" },
-  { value: "Other", label: "Alasan Lainnya" },
+  { value: "ItemNotReceived", label: "Item/Service Not Received" },
+  { value: "ItemNotAsDescribed", label: "Item/Service Not as Described" },
+  { value: "Fraud", label: "Suspected Fraud" },
+  { value: "SellerNotResponding", label: "Seller Not Responding" },
+  { value: "Other", label: "Other Reason" },
 ];
 
 function normalizeWallet(payload) {
@@ -101,7 +101,7 @@ export default function TransactionDetailPage() {
         setTransfer(normalizeTransfer(transferData));
       } catch (e) {
         logger.error("Failed to load transfer:", e);
-        setError("Transfer tidak ditemukan");
+        setError("Transfer not found");
       }
       setLoading(false);
     }
@@ -140,11 +140,11 @@ export default function TransactionDetailPage() {
   const confirmActionWithoutPin = async () => {
     // Validate dispute form
     if (!disputeCategory) {
-      setError("Pilih kategori masalah");
+      setError("Select an issue category");
       return;
     }
     if (!disputeReason || disputeReason.length < 20) {
-      setError("Jelaskan masalah minimal 20 karakter");
+      setError("Please provide at least 20 characters.");
       return;
     }
 
@@ -171,14 +171,14 @@ export default function TransactionDetailPage() {
       if (disputeData?.disputeId) {
         router.push(`/account/wallet/disputes/${disputeData.disputeId}`);
       } else {
-        setActionSuccess("Permintaan mediasi berhasil dikirim. Tim kami akan menghubungi Anda.");
+        setActionSuccess("Mediation request submitted successfully. Our team will contact you.");
         // Reload transfer
         const transferData = await fetchFeatureAuth(FEATURE_ENDPOINTS.TRANSFERS.DETAIL(transferId));
         setTransfer(normalizeTransfer(transferData));
       }
     } catch (e) {
       logger.error("Dispute action failed:", e);
-      setError(getErrorMessage(e, "Gagal membuat permintaan mediasi"));
+      setError(getErrorMessage(e, "Unable to submit mediation request."));
     }
     setProcessing(false);
   };
@@ -186,7 +186,7 @@ export default function TransactionDetailPage() {
   // Confirm action with PIN (release/cancel)
   const confirmActionWithPin = async () => {
     if (pin.length !== 6) {
-      setError("PIN harus 6 digit");
+      setError("PIN must be 6 digits.");
       return;
     }
 
@@ -201,10 +201,10 @@ export default function TransactionDetailPage() {
         endpoint = FEATURE_ENDPOINTS.TRANSFERS.RELEASE(transferId);
       } else if (pendingAction === "cancel") {
         endpoint = FEATURE_ENDPOINTS.TRANSFERS.CANCEL(transferId);
-        body.reason = "Dibatalkan oleh pengirim";
+        body.reason = "Cancelled by sender";
       } else if (pendingAction === "reject") {
         endpoint = FEATURE_ENDPOINTS.TRANSFERS.REJECT(transferId);
-        body.reason = "Ditolak oleh penerima";
+        body.reason = "Rejected by recipient";
       }
 
       await fetchFeatureAuth(endpoint, {
@@ -215,10 +215,10 @@ export default function TransactionDetailPage() {
       setShowPinModal(false);
       setActionSuccess(
         pendingAction === "release" 
-          ? "Dana berhasil dilepaskan ke penerima!" 
+          ? "Funds released to recipient successfully!" 
           : pendingAction === "reject"
-          ? "Transfer ditolak, dana dikembalikan ke pengirim."
-          : "Transaksi berhasil dibatalkan, dana dikembalikan."
+          ? "Transfer rejected, funds returned to sender."
+          : "Transaction cancelled successfully, funds returned."
       );
       
       // Reload transfer
@@ -226,7 +226,7 @@ export default function TransactionDetailPage() {
       setTransfer(normalizeTransfer(transferData));
     } catch (e) {
       logger.error("Action failed:", e);
-      setError(getErrorMessage(e, "Gagal memproses. Pastikan PIN benar."));
+      setError(getErrorMessage(e, "Unable to process request. Please ensure your PIN is correct."));
     }
     setProcessing(false);
   };
@@ -255,12 +255,12 @@ export default function TransactionDetailPage() {
       rejected: "bg-destructive/10 text-destructive border-destructive/30",
     };
     const labels = {
-      held: "Dana Ditahan",
-      released: "Selesai",
-      refunded: "Dikembalikan",
-      disputed: "Dalam Mediasi",
-      cancelled: "Dibatalkan",
-      rejected: "Ditolak Penerima",
+      held: "Funds on Hold",
+      released: "Completed",
+      refunded: "Refunded",
+      disputed: "In Mediation",
+      cancelled: "Cancelled",
+      rejected: "Rejected by Recipient",
     };
     return (
       <span className={`rounded-full border px-3 py-1 text-sm font-medium ${styles[normalized] || styles.held}`}>
@@ -284,7 +284,7 @@ export default function TransactionDetailPage() {
     return (
       <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-2xl px-4 py-8 text-center text-muted-foreground">
-          Memuat...
+          Loading...
         </div>
       </div>
     );
@@ -294,9 +294,9 @@ export default function TransactionDetailPage() {
     return (
       <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-2xl px-4 py-8 text-center">
-          <div className="text-destructive mb-4">{error || "Transfer tidak ditemukan"}</div>
+          <div className="text-destructive mb-4">{error || "Transfer not found"}</div>
           <Link href="/account/wallet/transactions" className="text-primary hover:underline">
-            ← Kembali
+            ← Back
           </Link>
         </div>
       </div>
@@ -330,14 +330,14 @@ export default function TransactionDetailPage() {
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Kembali
+            Back
           </Link>
 
           <div className="rounded-lg border border-border bg-card">
             {/* Header */}
             <div className="border-b border-border p-6 text-center">
               <div className="text-sm text-muted-foreground mb-1">
-                {isSender ? "Anda mengirim ke" : "Anda menerima dari"}
+                {isSender ? "You sent to" : "You received from"}
                 <span className="font-medium text-foreground ml-1">
                   @{isSender ? transfer.receiverUsername : transfer.senderUsername}
                 </span>
@@ -351,40 +351,40 @@ export default function TransactionDetailPage() {
             {/* Details */}
             <div className="p-6 space-y-4">
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Pengirim</span>
+                <span className="text-muted-foreground">Sender</span>
                 <span className="font-medium text-foreground">
                   @{transfer.senderUsername || "Unknown"}
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Penerima</span>
+                <span className="text-muted-foreground">Recipient</span>
                 <span className="font-medium text-foreground">
                   @{transfer.receiverUsername || "Unknown"}
                 </span>
               </div>
               {transfer.message && (
                 <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Catatan</span>
+                  <span className="text-muted-foreground">Note</span>
                   <span className="font-medium text-foreground text-right max-w-xs">
                     {transfer.message}
                   </span>
                 </div>
               )}
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Kode Transfer</span>
+                <span className="text-muted-foreground">Transfer Code</span>
                 <span className="font-mono text-foreground">
                   {transfer.code}
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Tanggal Dibuat</span>
+                <span className="text-muted-foreground">Created Date</span>
                 <span className="font-medium text-foreground">
                   {formatDate(transfer.createdAt)}
                 </span>
               </div>
               {status === "held" && holdInfo && (
                 <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Pelepasan Otomatis</span>
+                  <span className="text-muted-foreground">Auto Release</span>
                   <span className="font-medium text-foreground">
                     {formatDate(transfer.holdUntil)}
                   </span>
@@ -392,7 +392,7 @@ export default function TransactionDetailPage() {
               )}
               {transfer.releasedAt && (
                 <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Tanggal Selesai</span>
+                  <span className="text-muted-foreground">Completed Date</span>
                   <span className="font-medium text-primary">
                     {formatDate(transfer.releasedAt)}
                   </span>
@@ -400,7 +400,7 @@ export default function TransactionDetailPage() {
               )}
               {transfer.cancelledAt && (
                 <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Tanggal Dibatalkan</span>
+                  <span className="text-muted-foreground">Cancelled Date</span>
                   <span className="font-medium text-destructive">
                     {formatDate(transfer.cancelledAt)}
                   </span>
@@ -416,29 +416,29 @@ export default function TransactionDetailPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
-                    <div className="font-medium text-warning mb-1">Dana Dalam Perlindungan Escrow</div>
+                    <div className="font-medium text-warning mb-1">Funds Under Escrow Protection</div>
                     <div className="text-sm text-muted-foreground">
                       {isSender ? (
                         <>
-                          Dana Anda ditahan sementara untuk melindungi transaksi. 
+                          Your funds are temporarily held to protect the transaction.
                           {holdInfo.daysRemaining > 0 
-                            ? ` Dana akan otomatis dikirim ke penerima dalam ${holdInfo.daysRemaining} hari.`
-                            : " Dana akan segera dikirim ke penerima."
+                            ? ` Funds will be automatically released to the recipient in ${holdInfo.daysRemaining} days.`
+                            : " Funds will be released to the recipient shortly."
                           }
                           <br /><br />
-                          <strong>Sudah menerima barang/jasa?</strong> Anda dapat melepaskan dana lebih awal.
+                          <strong>Received the item/service?</strong> You can release funds early.
                           <br />
-                          <strong>Ada masalah?</strong> Anda dapat membatalkan transaksi atau meminta bantuan tim kami.
+                          <strong>Need help?</strong> You can cancel the transaction or request support from our team.
                         </>
                       ) : (
                         <>
-                          Dana sedang ditahan dalam sistem escrow untuk keamanan kedua belah pihak.
+                          Funds are currently held in escrow to protect both parties.
                           {holdInfo.daysRemaining > 0 
-                            ? ` Dana akan otomatis masuk ke saldo Anda dalam ${holdInfo.daysRemaining} hari.`
-                            : " Dana akan segera masuk ke saldo Anda."
+                            ? ` Funds will be added to your balance automatically in ${holdInfo.daysRemaining} days.`
+                            : " Funds will be added to your balance shortly."
                           }
                           <br /><br />
-                          <strong>Ada kendala dalam transaksi?</strong> Anda dapat meminta bantuan tim mediasi kami.
+                          <strong>Encountering an issue?</strong> You can request support from our mediation team.
                         </>
                       )}
                     </div>
@@ -466,18 +466,18 @@ export default function TransactionDetailPage() {
                   <>
                     <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 text-sm text-muted-foreground">
                       <p className="mb-2">
-                        <strong className="text-foreground">Info untuk Pengirim:</strong>
+                        <strong className="text-foreground">For Sender:</strong>
                       </p>
                       <p>
-                        Sudah menerima barang/jasa? Anda dapat melepaskan dana lebih awal.<br/>
-                        Ada masalah? Anda dapat meminta bantuan tim mediasi.
+                        Received the item/service? You may release funds early.<br/>
+                        Need help? You can request support from our mediation team.
                       </p>
                     </div>
                     <button
                       onClick={() => handleAction("release")}
                       className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90"
                     >
-                      Lepaskan Dana Lebih Awal
+                      Release Funds Early
                     </button>
                   </>
                 )}
@@ -485,17 +485,17 @@ export default function TransactionDetailPage() {
                   <>
                     <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 text-sm text-muted-foreground">
                       <p className="mb-2">
-                        <strong className="text-foreground">Info untuk Penerima:</strong>
+                        <strong className="text-foreground">For Recipient:</strong>
                       </p>
                       <p>
-                        Sebagai penerima, dana akan otomatis masuk ke saldo Anda setelah periode penahanan berakhir.
+                        As recipient, funds are automatically credited after the hold period ends.
                       </p>
                     </div>
                     <button
                       onClick={() => handleAction("reject")}
                       className="w-full rounded-lg border border-destructive/30 py-3 font-semibold text-destructive transition hover:bg-destructive/10"
                     >
-                      Tolak Transfer & Kembalikan ke Pengirim
+                      Reject Transfer & Return to Sender
                     </button>
                   </>
                 )}
@@ -505,7 +505,7 @@ export default function TransactionDetailPage() {
                     onClick={() => handleAction("dispute")}
                     className="w-full rounded-lg border border-primary/30 py-3 font-semibold text-primary transition hover:bg-primary/10"
                   >
-                    Minta Bantuan Tim Mediasi
+                    Request Mediation Support
                   </button>
                 )}
               </div>
@@ -518,7 +518,7 @@ export default function TransactionDetailPage() {
                   href={`/account/wallet/disputes/${transfer.disputeId}`}
                   className="block w-full rounded-lg bg-primary/10 border border-primary/30 py-3 text-center font-semibold text-primary transition hover:opacity-80"
                 >
-                  Lihat Detail Mediasi
+                  View Mediation Details
                 </Link>
               </div>
             )}
@@ -530,12 +530,12 @@ export default function TransactionDetailPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="w-full max-w-sm rounded-lg bg-card p-6">
               <h3 className="text-lg font-bold text-foreground mb-4">
-                Konfirmasi dengan PIN
+                Confirm with PIN
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                {pendingAction === "release" && "Masukkan PIN untuk melepaskan dana ke penerima"}
-                {pendingAction === "cancel" && "Masukkan PIN untuk membatalkan dan mengembalikan dana"}
-                {pendingAction === "reject" && "Masukkan PIN untuk menolak transfer dan mengembalikan dana ke pengirim"}
+                {pendingAction === "release" && "Enter PIN to release funds to recipient"}
+                {pendingAction === "cancel" && "Enter PIN to cancel and refund funds"}
+                {pendingAction === "reject" && "Enter PIN to reject transfer and return funds to sender"}
               </p>
 
               <input
@@ -556,14 +556,14 @@ export default function TransactionDetailPage() {
                   disabled={processing}
                   className="flex-1 rounded-lg border border-border py-2 font-medium transition hover:bg-card"
                 >
-                  Batal
+                  Cancel
                 </button>
                 <button
                   onClick={confirmActionWithPin}
                   disabled={processing || pin.length !== 6}
                   className="flex-1 rounded-lg bg-primary py-2 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
-                  {processing ? "Memproses..." : "Konfirmasi"}
+                  {processing ? "Processing..." : "Confirm"}
                 </button>
               </div>
             </div>
@@ -575,25 +575,25 @@ export default function TransactionDetailPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
             <div className="w-full max-w-md rounded-lg bg-card p-6 my-8">
               <h3 className="text-lg font-bold text-foreground mb-4">
-                Minta Bantuan Tim Mediasi
+                Request Mediation Support
               </h3>
               <div className="text-sm text-muted-foreground mb-4">
                 <p>
-                  Jelaskan masalah yang Anda alami agar tim kami dapat membantu menyelesaikannya.
+                  Describe the issue clearly so our team can assist effectively.
                 </p>
               </div>
 
               {/* Category Selection */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Kategori Masalah <span className="text-destructive">*</span>
+                  Issue Category <span className="text-destructive">*</span>
                 </label>
                 <select
                   value={disputeCategory}
                   onChange={(e) => setDisputeCategory(e.target.value)}
                   className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-foreground focus:outline-none focus:border-primary"
                 >
-                  <option value="">-- Pilih Kategori --</option>
+                  <option value="">-- Select Category --</option>
                   {DISPUTE_CATEGORIES.map((cat) => (
                     <option key={cat.value} value={cat.value}>
                       {cat.label}
@@ -605,17 +605,17 @@ export default function TransactionDetailPage() {
               {/* Reason Textarea */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Jelaskan Masalah <span className="text-destructive">*</span>
+                  Describe the Issue <span className="text-destructive">*</span>
                 </label>
                 <textarea
                   value={disputeReason}
                   onChange={(e) => setDisputeReason(e.target.value)}
-                  placeholder="Jelaskan masalah yang Anda alami secara detail (minimal 20 karakter)..."
+                  placeholder="Describe the issue in detail (minimum 20 characters)..."
                   rows={4}
                   className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-foreground focus:outline-none focus:border-primary resize-none"
                 />
                 <div className={`text-xs mt-1 ${disputeReason.length >= 20 ? 'text-success' : 'text-muted-foreground'}`}>
-                  {disputeReason.length}/20 karakter minimum {disputeReason.length >= 20 ? '✓' : ''}
+                  {disputeReason.length}/20 minimum characters {disputeReason.length >= 20 ? '✓' : ''}
                 </div>
               </div>
 
@@ -627,14 +627,14 @@ export default function TransactionDetailPage() {
                   disabled={processing}
                   className="flex-1 rounded-lg border border-border py-2 font-medium transition hover:bg-card"
                 >
-                  Batal
+                  Cancel
                 </button>
                 <button
                   onClick={confirmActionWithoutPin}
                   disabled={processing || !disputeCategory || disputeReason.length < 20}
                   className="flex-1 rounded-lg bg-primary py-2 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
-                  {processing ? "Memproses..." : "Kirim Permintaan"}
+                  {processing ? "Processing..." : "Submit Request"}
                 </button>
               </div>
             </div>
@@ -653,18 +653,18 @@ export default function TransactionDetailPage() {
                 </div>
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2 text-center">
-                PIN Belum Diatur
+                PIN Not Configured
               </h3>
               <div className="text-sm text-muted-foreground mb-6 text-center space-y-2">
                 <p>
-                  Untuk melakukan aksi ini, Anda harus membuat PIN keamanan terlebih dahulu.
+                  To perform this action, you must set up a security PIN first.
                 </p>
                 <p className="text-xs">
-                  Silakan buat PIN dengan cara:
+                  Please set up a PIN by following:
                 </p>
                 <ol className="text-xs text-left list-decimal list-inside space-y-1">
-                  <li>Aktifkan autentikasi keamanan (2FA) di halaman pengaturan akun</li>
-                  <li>Kemudian klik tombol <strong>Kirim Uang</strong> atau <strong>Tarik Saldo</strong> untuk mengatur PIN</li>
+                  <li>Enable two-factor authentication (2FA) in account settings</li>
+                  <li>Then click <strong>Send Funds</strong> or <strong>Withdraw Funds</strong> to configure your PIN</li>
                 </ol>
               </div>
 
@@ -673,13 +673,13 @@ export default function TransactionDetailPage() {
                   onClick={() => setShowNoPinModal(false)}
                   className="flex-1 rounded-lg border border-border py-2 font-medium transition hover:bg-card"
                 >
-                  Tutup
+                  Close
                 </button>
                 <Link
                   href="/account?setup2fa=true"
                   className="flex-1 rounded-lg bg-primary py-2 font-semibold text-primary-foreground text-center transition hover:opacity-90"
                 >
-                  Atur Keamanan
+                  Security Settings
                 </Link>
               </div>
             </div>

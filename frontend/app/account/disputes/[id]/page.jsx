@@ -145,7 +145,7 @@ export default function DisputeCenterPage() {
       setDispute(normalizeDispute(response));
     } catch (e) {
       logger.error("Failed to load dispute:", e);
-      setError("Dispute tidak ditemukan atau Anda tidak memiliki akses");
+      setError("Dispute not found or you do not have access.");
     } finally {
       if (isInitialLoad) {
         setLoading(false);
@@ -231,7 +231,7 @@ export default function DisputeCenterPage() {
       await loadDispute(false);
     } catch (e) {
       logger.error("Failed to send message:", e);
-      setError("Gagal mengirim pesan");
+      setError("Failed to send message.");
     }
     setSending(false);
   };
@@ -279,15 +279,15 @@ export default function DisputeCenterPage() {
   const getStatusLabel = (status) => {
     switch (normalizeStatus(status)) {
       case "open":
-        return "Menunggu Review";
+        return "Awaiting Review";
       case "underreview":
-        return "Sedang Ditinjau";
+        return "Under Review";
       case "waitingforevidence":
-        return "Butuh Bukti Tambahan";
+        return "Additional Evidence Required";
       case "resolved":
-        return "Selesai";
+        return "Completed";
       case "cancelled":
-        return "Dibatalkan";
+        return "Cancelled";
       default:
         return status;
     }
@@ -307,10 +307,10 @@ export default function DisputeCenterPage() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="bg-card rounded-lg p-8 text-center">
             <div className="text-6xl mb-4">⚠️</div>
-            <h1 className="text-xl font-bold text-foreground mb-2">Tidak Dapat Mengakses Dispute</h1>
+            <h1 className="text-xl font-bold text-foreground mb-2">Unable to Access Dispute</h1>
             <p className="text-muted-foreground mb-6">{error}</p>
             <Link href="/account/wallet/transactions" className="text-primary hover:underline">
-              ← Kembali ke Transaksi
+              ← Back to Transactions
             </Link>
           </div>
         </div>
@@ -331,10 +331,10 @@ export default function DisputeCenterPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Kembali ke Transaksi
+            Back to Transactions
           </Link>
-          <h1 className="text-2xl font-bold text-foreground mt-2">Pusat Mediasi</h1>
-          <p className="text-muted-foreground">Selesaikan masalah transaksi Anda bersama tim mediasi</p>
+          <h1 className="text-2xl font-bold text-foreground mt-2">Mediation Center</h1>
+          <p className="text-muted-foreground">Resolve transaction issues with support from our mediation team</p>
         </div>
 
         {/* Dispute Info Card */}
@@ -350,10 +350,10 @@ export default function DisputeCenterPage() {
                 </span>
               </div>
               <h2 className="text-lg font-semibold text-foreground mb-1">
-                Masalah: {dispute?.category === "ItemNotReceived" ? "Barang Tidak Diterima" :
-                         dispute?.category === "ItemNotAsDescribed" ? "Tidak Sesuai Deskripsi" :
-                         dispute?.category === "Fraud" ? "Dugaan Penipuan" :
-                         dispute?.category === "SellerNotResponding" ? "Penjual Tidak Merespons" : "Lainnya"}
+                Issue: {dispute?.category === "ItemNotReceived" ? "Item Not Received" :
+                         dispute?.category === "ItemNotAsDescribed" ? "Not as Described" :
+                         dispute?.category === "Fraud" ? "Suspected Fraud" :
+                         dispute?.category === "SellerNotResponding" ? "Seller Not Responding" : "Other"}
               </h2>
               <p className="text-sm text-muted-foreground">{dispute?.reason}</p>
             </div>
@@ -362,7 +362,7 @@ export default function DisputeCenterPage() {
                 Rp {formatAmount(dispute?.amount || 0)}
               </div>
               <div className="text-xs text-muted-foreground">
-                Dana dalam escrow
+                Funds in escrow
               </div>
             </div>
           </div>
@@ -370,17 +370,17 @@ export default function DisputeCenterPage() {
           {/* Parties */}
           <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-4">
             <div>
-              <div className="text-xs text-muted-foreground mb-1">Pembeli (Pengirim Dana)</div>
+              <div className="text-xs text-muted-foreground mb-1">Buyer (Fund Sender)</div>
               <div className="font-medium text-foreground">
                 @{isInitiator ? dispute?.initiatorUsername : dispute?.respondentUsername}
-                {isInitiator ? " (Anda)" : ""}
+                {isInitiator ? " (You)" : ""}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-muted-foreground mb-1">Penjual (Penerima Dana)</div>
+              <div className="text-xs text-muted-foreground mb-1">Seller (Fund Recipient)</div>
               <div className="font-medium text-foreground">
                 @{isInitiator ? dispute?.respondentUsername : dispute?.initiatorUsername}
-                {!isInitiator ? " (Anda)" : ""}
+                {!isInitiator ? " (You)" : ""}
               </div>
             </div>
           </div>
@@ -393,17 +393,17 @@ export default function DisputeCenterPage() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Keputusan Admin
+                  Admin Decision
                 </div>
                 <p className="text-sm text-foreground">
-                  {dispute.resolution.type === "FullRefundToSender" && `Dana Rp ${formatAmount(dispute.resolution.refundToSender)} dikembalikan ke pembeli.`}
-                  {dispute.resolution.type === "FullReleaseToReceiver" && `Dana Rp ${formatAmount(dispute.resolution.releaseToReceiver)} dilepaskan ke penjual.`}
-                  {dispute.resolution.type === "Split" && `Dana dibagi: Rp ${formatAmount(dispute.resolution.refundToSender)} ke pembeli, Rp ${formatAmount(dispute.resolution.releaseToReceiver)} ke penjual.`}
-                  {dispute.resolution.type === "NoAction" && "Transaksi dilanjutkan mengikuti hold time normal."}
+                  {dispute.resolution.type === "FullRefundToSender" && `IDR ${formatAmount(dispute.resolution.refundToSender)} refunded to the buyer.`}
+                  {dispute.resolution.type === "FullReleaseToReceiver" && `IDR ${formatAmount(dispute.resolution.releaseToReceiver)} released to the seller.`}
+                  {dispute.resolution.type === "Split" && `Funds split: IDR ${formatAmount(dispute.resolution.refundToSender)} to the buyer, IDR ${formatAmount(dispute.resolution.releaseToReceiver)} to the seller.`}
+                  {dispute.resolution.type === "NoAction" && "Transaction continues under the standard hold period."}
                 </p>
                 {dispute.resolution.note && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    Catatan: {dispute.resolution.note}
+                    Note: {dispute.resolution.note}
                   </p>
                 )}
               </div>
@@ -414,8 +414,8 @@ export default function DisputeCenterPage() {
         {/* Chat Section */}
         <div className="bg-card rounded-lg border border-border overflow-hidden">
           <div className="px-6 py-4 border-b border-border">
-            <h3 className="font-semibold text-foreground">Diskusi Mediasi</h3>
-            <p className="text-xs text-muted-foreground">Komunikasikan masalah Anda dengan pihak lain dan tim admin</p>
+            <h3 className="font-semibold text-foreground">Mediation Discussion</h3>
+            <p className="text-xs text-muted-foreground">Discuss the issue with the counterparty and the admin team</p>
           </div>
 
           {/* Messages */}
@@ -427,7 +427,7 @@ export default function DisputeCenterPage() {
             {dispute?.messages?.length === 0 && (
               <div className="text-center text-muted-foreground py-8">
                 <div className="text-4xl mb-2">💬</div>
-                <p>Belum ada pesan. Mulai diskusi untuk menyelesaikan masalah.</p>
+                <p>No messages yet. Start the discussion to resolve this issue.</p>
               </div>
             )}
 
@@ -474,7 +474,7 @@ export default function DisputeCenterPage() {
                   type="text"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Ketik pesan Anda..."
+                  placeholder="Type your message..."
                   className="flex-1 rounded-lg border border-border bg-background px-4 py-2 text-foreground focus:outline-none focus:border-primary"
                   disabled={sending}
                 />
@@ -483,13 +483,13 @@ export default function DisputeCenterPage() {
                   disabled={sending || !message.trim()}
                   className="px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium transition hover:opacity-90 disabled:opacity-50"
                 >
-                  {sending ? "..." : "Kirim"}
+                  {sending ? "..." : "Send"}
                 </button>
               </div>
             </form>
           ) : (
             <div className="p-4 border-t border-border bg-muted/30 text-center text-sm text-muted-foreground">
-              Dispute ini sudah ditutup. Tidak bisa mengirim pesan lagi.
+              This dispute has been closed. Messaging is no longer available.
             </div>
           )}
         </div>
@@ -497,7 +497,7 @@ export default function DisputeCenterPage() {
         {/* Evidence Section */}
         {dispute?.evidence?.length > 0 && (
           <div className="bg-card rounded-lg border border-border p-6 mt-6">
-            <h3 className="font-semibold text-foreground mb-4">Bukti yang Dilampirkan</h3>
+            <h3 className="font-semibold text-foreground mb-4">Submitted Evidence</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {dispute.evidence.map((ev, idx) => (
                 <a key={idx} href={ev.url} target="_blank" rel="noopener noreferrer" 
@@ -506,7 +506,7 @@ export default function DisputeCenterPage() {
                     {ev.type === "image" ? "🖼️" : ev.type === "document" ? "📄" : "📸"}
                   </div>
                   <div className="text-sm font-medium text-foreground truncate">
-                    {ev.description || `Bukti ${idx + 1}`}
+                    {ev.description || `Evidence ${idx + 1}`}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {formatDate(ev.uploadedAt)}

@@ -110,7 +110,7 @@ export default function DisputesListPage() {
         return "Selesai";
       case "cancelled":
       case "closed":
-        return "Dibatalkan";
+        return "Cancelled";
       default: return status;
     }
   };
@@ -141,7 +141,7 @@ export default function DisputesListPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Kembali ke Riwayat Transaksi
+            Back to Transaction History
           </Link>
           <h1 className="text-2xl font-bold text-foreground mt-2">Dispute Saya</h1>
           <p className="text-muted-foreground">Daftar permasalahan transaksi yang Anda ajukan</p>
@@ -173,12 +173,12 @@ export default function DisputesListPage() {
           <div className="bg-card rounded-lg border border-border p-12 text-center">
             <div className="text-6xl mb-4">🎉</div>
             <h2 className="text-xl font-bold text-foreground mb-2">
-              {filter === "all" ? "Tidak Ada Dispute" : "Tidak Ada Hasil"}
+              {filter === "all" ? "No Disputes" : "No Results"}
             </h2>
             <p className="text-muted-foreground">
               {filter === "all" 
                 ? "Semua transaksi Anda berjalan lancar tanpa masalah."
-                : "Tidak ada dispute dengan filter ini."}
+                : "No disputes match this filter."}
             </p>
           </div>
         ) : (
@@ -200,10 +200,10 @@ export default function DisputesListPage() {
                       </span>
                     </div>
                     <div className="font-medium text-foreground mb-1">
-                      {dispute.category === "ItemNotReceived" ? "Barang Tidak Diterima" :
-                       dispute.category === "ItemNotAsDescribed" ? "Tidak Sesuai Deskripsi" :
-                       dispute.category === "Fraud" ? "Dugaan Penipuan" :
-                       dispute.category === "SellerNotResponding" ? "Penjual Tidak Merespons" : "Lainnya"}
+                      {dispute.category === "ItemNotReceived" ? "Item Not Received" :
+                       dispute.category === "ItemNotAsDescribed" ? "Not as Described" :
+                       dispute.category === "Fraud" ? "Suspected Fraud" :
+                       dispute.category === "SellerNotResponding" ? "Seller Not Responding" : "Other"}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       vs @{dispute.respondentUsername}

@@ -16,14 +16,14 @@ const QRIS_IMAGE_URL =
 
 const PAYMENT_METHODS = [
   { value: "QRIS", label: "QRIS (aktif)", enabled: true },
-  { value: "BCA", label: "BCA (tidak tersedia)", enabled: false },
-  { value: "BNI", label: "BNI (tidak tersedia)", enabled: false },
-  { value: "BRI", label: "BRI (tidak tersedia)", enabled: false },
-  { value: "MANDIRI", label: "Mandiri (tidak tersedia)", enabled: false },
-  { value: "OVO", label: "OVO (tidak tersedia)", enabled: false },
-  { value: "DANA", label: "DANA (tidak tersedia)", enabled: false },
-  { value: "GOPAY", label: "GoPay (tidak tersedia)", enabled: false },
-  { value: "SHOPEEPAY", label: "ShopeePay (tidak tersedia)", enabled: false },
+  { value: "BCA", label: "BCA (unavailable)", enabled: false },
+  { value: "BNI", label: "BNI (unavailable)", enabled: false },
+  { value: "BRI", label: "BRI (unavailable)", enabled: false },
+  { value: "MANDIRI", label: "Mandiri (unavailable)", enabled: false },
+  { value: "OVO", label: "OVO (unavailable)", enabled: false },
+  { value: "DANA", label: "DANA (unavailable)", enabled: false },
+  { value: "GOPAY", label: "GoPay (unavailable)", enabled: false },
+  { value: "SHOPEEPAY", label: "ShopeePay (unavailable)", enabled: false },
 ];
 
 function normalizeWallet(payload) {
@@ -104,7 +104,7 @@ export default function DepositPage() {
           setDepositHistory(extractDeposits(historyRes));
         } catch (e) {
           logger.error("Failed to load deposit history:", e);
-          setHistoryError(getErrorMessage(e, "Gagal memuat riwayat deposit"));
+          setHistoryError(getErrorMessage(e, "Unable to load deposit history."));
         }
       } catch (e) {
         logger.error("Failed to load wallet:", e);
@@ -115,7 +115,7 @@ export default function DepositPage() {
           );
           return;
         }
-        setError(getErrorMessage(e, "Gagal memuat wallet"));
+        setError(getErrorMessage(e, "Unable to load wallet data."));
       } finally {
         setHistoryLoading(false);
         setLoading(false);
@@ -157,7 +157,7 @@ export default function DepositPage() {
     }
 
     if (!transactionId || transactionId.trim().length < 6) {
-      setError("ID transaksi tidak valid");
+      setError("Invalid transaction ID");
       setSubmitting(false);
       return;
     }
@@ -194,7 +194,7 @@ export default function DepositPage() {
         );
         return;
       }
-      setError(getErrorMessage(e, "Gagal membuat request deposit"));
+      setError(getErrorMessage(e, "Unable to create deposit request."));
     } finally {
       setSubmitting(false);
     }
@@ -225,9 +225,9 @@ export default function DepositPage() {
       rejected: "bg-destructive/10 text-destructive border-destructive/30",
     };
     const labels = {
-      pending: "Menunggu Verifikasi",
+      pending: "Pending Verification",
       approved: "Disetujui",
-      rejected: "Ditolak",
+      rejected: "Rejected",
     };
     return (
       <span
@@ -244,7 +244,7 @@ export default function DepositPage() {
     return (
       <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-lg px-4 py-8 text-center text-muted-foreground">
-          Memuat...
+          Loading...
         </div>
       </div>
     );
@@ -261,19 +261,19 @@ export default function DepositPage() {
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Kembali
+            Back
           </button>
 
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-foreground">Deposit</h1>
             <p className="text-sm text-muted-foreground">
-              Isi saldo ke wallet Anda
+              Add funds to your wallet
             </p>
           </div>
 
           {/* Current Balance */}
           <div className="mb-6 rounded-lg border border-border bg-card p-4">
-            <div className="text-sm text-muted-foreground">Saldo Saat Ini</div>
+            <div className="text-sm text-muted-foreground">Current Balance</div>
             <div className="text-2xl font-bold text-foreground">
               Rp {wallet.balance.toLocaleString("id-ID")}
             </div>
@@ -401,19 +401,19 @@ export default function DepositPage() {
                   />
                 </div>
                 <p className="mt-4 text-sm text-muted-foreground">
-                  Scan QRIS, bayar sesuai nominal, lalu masukkan ID transaksi.
+                  Scan the QRIS code, pay the exact amount, then enter your transaction ID.
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  ID Transaksi
+                  Transaction ID
                 </label>
                 <input
                   type="text"
                   value={transactionId}
                   onChange={(e) => setTransactionId(e.target.value)}
-                  placeholder="Masukkan ID transaksi pembayaran"
+                  placeholder="Enter payment transaction ID"
                   className="w-full rounded-lg border border-border bg-card px-3 py-3 text-sm font-medium text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
@@ -424,7 +424,7 @@ export default function DepositPage() {
                   onClick={() => setStep(1)}
                   className="flex-1 rounded-lg border border-border py-3 font-medium text-foreground transition hover:bg-muted/50"
                 >
-                  Kembali
+                  Back
                 </button>
                 <button
                   type="button"
@@ -460,7 +460,7 @@ export default function DepositPage() {
                 Menunggu verifikasi admin
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Deposit Anda sedang diproses. Admin akan memverifikasi pembayaran QRIS Anda.
+                Your deposit is being processed. Our team will verify your QRIS payment.
               </p>
 
               {createdDeposit?.id && (
@@ -536,7 +536,7 @@ export default function DepositPage() {
           {/* Deposit History */}
           <div className="mt-10">
             <h3 className="text-sm font-semibold text-foreground mb-3">
-              Riwayat Deposit (Manual)
+              Manual Deposit History
             </h3>
 
             {historyError && (
@@ -570,7 +570,7 @@ export default function DepositPage() {
                           {d.method} • {formatDate(d.createdAt)}
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
-                          ID Transaksi: <span className="font-mono break-all">{d.externalTransactionId}</span>
+                          Transaction ID: <span className="font-mono break-all">{d.externalTransactionId}</span>
                         </div>
                       </div>
                       <div className="self-start sm:self-auto">{statusBadge(d.status)}</div>

@@ -1,43 +1,43 @@
 const DEFAULT_ALERT = {
   variant: "error",
-  title: "Terjadi kesalahan",
+  title: "An error occurred",
 };
 
 const ALERT_BY_CODE = {
   AUTH005: {
     variant: "error",
-    title: "Token tidak valid",
-    message: "Token tidak valid atau sudah kedaluwarsa. Silakan login kembali.",
+    title: "Invalid token",
+    message: "Token is invalid or expired. Please sign in again.",
   },
   AUTH009: {
     variant: "warning",
-    title: "Akun terkunci",
-    message: "Akun Anda terkunci karena aktivitas mencurigakan.",
+    title: "Account locked",
+    message: "Your account is locked due to suspicious activity.",
   },
   AUTH012: {
     variant: "warning",
-    title: "Akun dikunci sementara",
-    message: "Terlalu banyak percobaan login gagal. Silakan coba lagi nanti.",
+    title: "Account temporarily locked",
+    message: "Too many failed login attempts. Please try again later.",
   },
   AUTH013: {
     variant: "warning",
-    title: "Percobaan dibatasi",
-    message: "Mohon tunggu sebelum mencoba login kembali.",
+    title: "Attempts limited",
+    message: "Please wait before attempting to sign in again.",
   },
   AUTH014: {
     variant: "warning",
-    title: "Verifikasi dibatasi",
-    message: "Terlalu banyak percobaan verifikasi. Coba lagi nanti.",
+    title: "Verification limited",
+    message: "Too many verification attempts. Please try again later.",
   },
   RATE001: {
     variant: "warning",
-    title: "Terlalu banyak permintaan",
-    message: "Mohon tunggu sebentar sebelum mencoba lagi.",
+    title: "Too many requests",
+    message: "Please wait a moment before trying again.",
   },
   RATE002: {
     variant: "warning",
-    title: "Batas permintaan tercapai",
-    message: "Mohon tunggu sebentar sebelum mencoba lagi.",
+    title: "Request limit reached",
+    message: "Please wait a moment before trying again.",
   },
 };
 
@@ -56,7 +56,7 @@ function extractErrorInfo(error) {
 export function mapApiErrorToAlert(error) {
   const { code, message, details } = extractErrorInfo(error);
   const mapped = code && ALERT_BY_CODE[code] ? { ...ALERT_BY_CODE[code] } : { ...DEFAULT_ALERT };
-  const fallbackMessage = message || mapped.message || "Terjadi kesalahan. Silakan coba lagi.";
+  const fallbackMessage = message || mapped.message || "An error occurred. Please try again.";
   const baseMessage = mapped.message || fallbackMessage;
   const combinedMessage = details && details !== baseMessage ? `${baseMessage} ${details}` : baseMessage;
 

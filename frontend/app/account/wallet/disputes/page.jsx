@@ -69,11 +69,11 @@ export default function DisputesPage() {
       closed: "bg-muted/60 text-muted-foreground border-border",
     };
     const phaseLabels = {
-      negotiation: "Negosiasi",
-      evidence: "Bukti",
+      negotiation: "Negotiation",
+      evidence: "Evidence",
       admin_review: "Admin Review",
     };
-    const label = normalizedStatus === "open" ? phaseLabels[phase] || "Aktif" : normalizedStatus === "resolved" ? "Selesai" : "Ditutup";
+    const label = normalizedStatus === "open" ? phaseLabels[phase] || "Active" : normalizedStatus === "resolved" ? "Resolved" : "Closed";
     return (
       <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${statusStyles[normalizedStatus] || statusStyles.open}`}>
         {label}
@@ -82,9 +82,9 @@ export default function DisputesPage() {
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return "Tanggal tidak tersedia";
+    if (!dateStr) return "Date unavailable";
     const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return "Tanggal tidak valid";
+    if (isNaN(date.getTime())) return "Invalid date";
     return date.toLocaleDateString("id-ID", {
       day: "numeric",
       month: "short",
@@ -104,7 +104,7 @@ export default function DisputesPage() {
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-foreground">Dispute Center</h1>
             <p className="text-sm text-muted-foreground">
-              Kelola sengketa transaksi Anda
+              Manage your transaction disputes
             </p>
           </div>
 
@@ -115,11 +115,11 @@ export default function DisputesPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="text-sm text-muted-foreground">
-                <p className="font-medium text-primary mb-1">Proses Dispute</p>
+                <p className="font-medium text-primary mb-1">Dispute Process</p>
                 <ol className="list-decimal list-inside space-y-1">
-                  <li><strong>Negosiasi</strong> - Diskusi dengan pihak lain (24 jam)</li>
-                  <li><strong>Bukti</strong> - Upload bukti pendukung (48 jam)</li>
-                  <li><strong>Admin Review</strong> - Tim kami akan memutuskan</li>
+                  <li><strong>Negotiation</strong> - Discuss with the counterparty (24 hours)</li>
+                  <li><strong>Evidence</strong> - Upload supporting evidence (48 hours)</li>
+                  <li><strong>Admin Review</strong> - Our team will decide</li>
                 </ol>
               </div>
             </div>
@@ -135,7 +135,7 @@ export default function DisputesPage() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Aktif ({activeDisputes.length})
+              Active ({activeDisputes.length})
             </button>
             <button
               onClick={() => setActiveTab("resolved")}
@@ -145,20 +145,20 @@ export default function DisputesPage() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Selesai ({resolvedDisputes.length})
+              Resolved ({resolvedDisputes.length})
             </button>
           </div>
 
           {/* Disputes List */}
           {loading ? (
-            <div className="text-center py-12 text-muted-foreground">Memuat...</div>
+            <div className="text-center py-12 text-muted-foreground">Loading...</div>
           ) : displayDisputes.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-4">🎉</div>
               <div className="text-muted-foreground">
                 {activeTab === "active"
-                  ? "Tidak ada dispute aktif"
-                  : "Belum ada riwayat dispute"}
+                  ? "No active disputes"
+                  : "No dispute history yet"}
               </div>
             </div>
           ) : (
@@ -200,7 +200,7 @@ export default function DisputesPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span className="text-xs text-warning">
-                        Batas waktu: {formatDate(dispute.phaseDeadline)}
+                        Deadline: {formatDate(dispute.phaseDeadline)}
                       </span>
                     </div>
                   )}

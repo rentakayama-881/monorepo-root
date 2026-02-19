@@ -79,19 +79,19 @@ export default function SetPinContent() {
 
   const handleSubmit = async () => {
     if (pin.length !== 6) {
-      setError("PIN harus 6 digit");
+      setError("PIN must be 6 digits.");
       return;
     }
 
     if (pin !== confirmPin) {
-      setError("PIN tidak cocok");
+      setError("PINs do not match");
       return;
     }
 
     // Check for weak PINs
     const weakPins = ["123456", "654321", "111111", "000000", "123123"];
     if (weakPins.includes(pin)) {
-      setError("PIN terlalu mudah ditebak. Gunakan kombinasi yang lebih aman.");
+      setError("This PIN is too predictable. Please choose a stronger combination.");
       return;
     }
 
@@ -102,7 +102,7 @@ export default function SetPinContent() {
       // Get fresh token before API call to prevent token expiry issues
       const freshToken = await getValidToken();
       if (!freshToken) {
-        setError("Sesi telah berakhir. Silakan login kembali.");
+        setError("Your session has expired. Please sign in again.");
         router.push("/login");
         return;
       }
@@ -128,7 +128,7 @@ export default function SetPinContent() {
         router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/set-pin"));
         return;
       }
-      setError(getErrorMessage(e, "Gagal menyimpan PIN"));
+      setError(getErrorMessage(e, "Unable to save PIN."));
     }
     setProcessing(false);
   };
@@ -158,7 +158,7 @@ export default function SetPinContent() {
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Kembali
+          Back
         </Link>
 
         <div className="text-center mb-8">
@@ -178,10 +178,10 @@ export default function SetPinContent() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-foreground">
-            Buat PIN Transaksi
+            Create Transaction PIN
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            PIN digunakan untuk mengamankan transaksi keuangan Anda
+            This PIN protects your financial transactions
           </p>
         </div>
 
@@ -208,7 +208,7 @@ export default function SetPinContent() {
           {step === 1 && (
             <div>
               <label className="block text-sm font-medium text-foreground mb-2 text-center">
-                Buat PIN 6 Digit
+                Create 6-Digit PIN
               </label>
               <input
                 type="password"
@@ -221,7 +221,7 @@ export default function SetPinContent() {
                 autoFocus
               />
               <p className="mt-2 text-xs text-muted-foreground text-center">
-                Hindari PIN yang mudah ditebak seperti 123456
+                Avoid predictable PINs such as 123456
               </p>
               <button
                 onClick={() => setStep(2)}
@@ -237,7 +237,7 @@ export default function SetPinContent() {
           {step === 2 && (
             <div>
               <label className="block text-sm font-medium text-foreground mb-2 text-center">
-                Konfirmasi PIN
+                Confirm PIN
               </label>
               <input
                 type="password"
@@ -250,21 +250,21 @@ export default function SetPinContent() {
                 autoFocus
               />
               {confirmPin.length === 6 && confirmPin !== pin && (
-                <p className="mt-2 text-sm text-destructive text-center">PIN tidak cocok</p>
+                <p className="mt-2 text-sm text-destructive text-center">PINs do not match</p>
               )}
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => setStep(1)}
                   className="flex-1 rounded-lg border border-border py-3 font-medium"
                 >
-                  Kembali
+                  Back
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={processing || confirmPin.length !== 6 || confirmPin !== pin}
                   className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
-                  {processing ? "Menyimpan..." : "Simpan PIN"}
+                  {processing ? "Saving..." : "Save PIN"}
                 </button>
               </div>
             </div>
@@ -278,11 +278,11 @@ export default function SetPinContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <div className="text-sm">
-              <p className="font-semibold text-destructive mb-1">Peringatan Penting</p>
+              <p className="font-semibold text-destructive mb-1">Important Notice</p>
               <p className="text-muted-foreground">
-                <strong>PIN tidak dapat di-reset atau dipulihkan.</strong> Jika Anda lupa PIN,
-                Anda tidak akan bisa melakukan transaksi dan harus menghubungi admin untuk bantuan.
-                Pastikan Anda mengingat PIN yang Anda buat.
+                <strong>PIN cannot be reset or recovered.</strong> If you forget your PIN,
+                you will not be able to perform transactions and will need to contact support for assistance.
+                Make sure you remember the PIN you set.
               </p>
             </div>
           </div>
@@ -295,11 +295,11 @@ export default function SetPinContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
             <div className="text-sm text-muted-foreground">
-              <p className="font-medium text-primary mb-1">Tips Keamanan</p>
+              <p className="font-medium text-primary mb-1">Security Tips</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>Jangan bagikan PIN Anda kepada siapapun</li>
+                <li>Never share your PIN with anyone</li>
                 <li>Gunakan kombinasi angka yang unik</li>
-                <li>Hindari menggunakan tanggal lahir</li>
+                <li>Avoid using your birth date</li>
               </ul>
             </div>
           </div>

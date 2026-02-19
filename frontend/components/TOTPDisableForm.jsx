@@ -25,7 +25,7 @@ export default function TOTPDisableForm({
             </label>
             <Input
               type="password"
-              placeholder="Masukkan password Anda"
+              placeholder="Enter your password"
               value={disablePassword}
               onChange={(e) => onPasswordChange(e.target.value)}
             />
@@ -56,7 +56,7 @@ export default function TOTPDisableForm({
           {disableLoading ? "Menonaktifkan..." : "Nonaktifkan 2FA"}
         </Button>
         <Button type="button" variant="secondary" onClick={onCancel}>
-          Batal
+          Cancel
         </Button>
       </div>
     </form>

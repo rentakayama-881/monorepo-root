@@ -38,7 +38,7 @@ export default function ReportModal({
     e.preventDefault();
 
     if (!reason) {
-      toast.warning("Pilih Alasan", "Silakan pilih alasan laporan");
+      toast.warning("Select Reason", "Please select a report reason.");
       return;
     }
 
@@ -54,7 +54,7 @@ export default function ReportModal({
         reason,
         description,
       });
-      toast.success("Laporan Terkirim", "Terima kasih atas laporan Anda. Tim kami akan meninjau.");
+      toast.success("Report Submitted", "Thank you for your report. Our team will review it.");
       handleClose();
     } catch (err) {
       // Error already shown via toast in hook, but we can show additional feedback
@@ -71,7 +71,7 @@ export default function ReportModal({
   // Success state
   if (success) {
     return (
-      <Modal open={open} onClose={handleClose} title="Laporan Terkirim" size="sm">
+      <Modal open={open} onClose={handleClose} title="Report Submitted" size="sm">
         <div className="p-4 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success/10 flex items-center justify-center">
             <svg
@@ -92,7 +92,7 @@ export default function ReportModal({
             Terima Kasih!
           </h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Laporan Anda telah diterima dan akan ditinjau oleh tim moderasi kami.
+            Your report has been received and will be reviewed by our moderation team.
           </p>
           <Button variant="primary" onClick={handleClose}>
             Tutup
@@ -114,7 +114,7 @@ export default function ReportModal({
         {targetTitle && (
           <div className="p-3 rounded-md bg-muted/50 border border-border">
             <p className="text-xs text-muted-foreground mb-1">
-              {targetTypeLabels[targetType]} yang dilaporkan:
+              Reported {targetTypeLabels[targetType]}:
             </p>
             <p className="text-sm text-foreground font-medium truncate">
               {targetTitle}
@@ -124,27 +124,27 @@ export default function ReportModal({
 
         {/* Reason select */}
         <Select
-          label="Alasan Laporan *"
+          label="Report Reason *"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           options={REPORT_REASONS}
-          placeholder="Pilih alasan..."
-          error={!reason && error ? "Silakan pilih alasan" : ""}
+          placeholder="Select a reason..."
+          error={!reason && error ? "Please select a reason." : ""}
         />
 
         {/* Description */}
         <Textarea
-          label="Detail Tambahan (opsional)"
+          label="Additional Details (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Jelaskan lebih detail mengapa Anda melaporkan konten ini..."
+          placeholder="Explain why you are reporting this content..."
           rows={4}
           maxLength={1000}
         />
 
         {/* Character count */}
         <div className="text-xs text-muted-foreground text-right">
-          {description.length}/1000 karakter
+          {description.length}/1000 characters
         </div>
 
         {/* Error message */}
@@ -156,11 +156,11 @@ export default function ReportModal({
 
         {/* Guidelines */}
         <div className="p-3 rounded-md bg-muted/50 text-xs text-muted-foreground">
-          <p className="font-medium mb-1">Panduan Pelaporan:</p>
+          <p className="font-medium mb-1">Reporting Guidelines:</p>
           <ul className="list-disc list-inside space-y-0.5">
-            <li>Pastikan konten benar-benar melanggar aturan komunitas</li>
-            <li>Laporan palsu dapat mengakibatkan sanksi pada akun Anda</li>
-            <li>Tim moderasi akan meninjau laporan dalam 24-48 jam</li>
+            <li>Ensure the content clearly violates community guidelines</li>
+            <li>Fraudulent reports may result in account penalties.</li>
+            <li>The moderation team reviews reports within 24-48 hours</li>
           </ul>
         </div>
 
@@ -172,7 +172,7 @@ export default function ReportModal({
             onClick={handleClose}
             disabled={loading}
           >
-            Batal
+            Cancel
           </Button>
           <Button
             type="submit"
@@ -180,7 +180,7 @@ export default function ReportModal({
             loading={loading}
             disabled={!reason || loading}
           >
-            {loading ? "Mengirim..." : "Kirim Laporan"}
+            {loading ? "Submitting..." : "Submit Report"}
           </Button>
         </div>
       </form>

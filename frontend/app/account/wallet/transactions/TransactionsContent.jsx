@@ -113,9 +113,9 @@ export default function TransactionsContent() {
     const labels = {
       held: "Ditahan",
       released: "Terkirim",
-      refunded: "Dikembalikan",
-      disputed: "Sengketa",
-      cancelled: "Dibatalkan",
+      refunded: "Refunded",
+      disputed: "Disputed",
+      cancelled: "Cancelled",
     };
     return (
       <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${styles[normalized] || styles.held}`}>
@@ -145,29 +145,29 @@ export default function TransactionsContent() {
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span className="font-medium">Transfer berhasil dibuat!</span>
+              <span className="font-medium">Transfer created successfully!</span>
             </div>
           </div>
         )}
 
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Transaksi Saya</h1>
+            <h1 className="text-2xl font-bold text-foreground">My Transactions</h1>
             <p className="text-sm text-muted-foreground">
-              Riwayat transfer dan escrow
+              Transfer and escrow history
             </p>
           </div>
           <Link
             href="/account/wallet/send"
             className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
-            + Kirim Uang
+            + Send Funds
           </Link>
         </div>
 
         {/* Balance Card */}
         <div className="mb-6 rounded-lg border border-border bg-card p-4">
-          <div className="text-sm text-muted-foreground">Saldo Tersedia</div>
+          <div className="text-sm text-muted-foreground">Available Balance</div>
           <div className="text-2xl font-bold text-foreground">
             Rp {wallet.balance.toLocaleString("id-ID")}
           </div>
@@ -246,9 +246,9 @@ export default function TransactionsContent() {
                       <div>
                         <div className="font-medium text-foreground">
                           {isSender
-                            ? `Ke @${transfer.receiverUsername || "Unknown"}`
+                            ? `To @${transfer.receiverUsername || "Unknown"}`
                             : isReceiver
-                            ? `Dari @${transfer.senderUsername || "Unknown"}`
+                            ? `From @${transfer.senderUsername || "Unknown"}`
                             : "Transfer"}
                         </div>
                         <div className="text-xs text-muted-foreground">

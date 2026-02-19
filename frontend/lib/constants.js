@@ -64,22 +64,22 @@ export const STATUS_STYLES = {
   },
 };
 
-// Status Labels (Indonesian)
+// Status Labels
 export const STATUS_LABELS = {
   transfer: {
-    held: "Ditahan",
-    released: "Dirilis",
-    refunded: "Dikembalikan",
-    disputed: "Sengketa",
-    expired: "Kedaluwarsa",
+    held: "Held",
+    released: "Released",
+    refunded: "Refunded",
+    disputed: "Disputed",
+    expired: "Expired",
   },
   dispute: {
-    open: "Aktif",
-    resolved: "Selesai",
+    open: "Active",
+    resolved: "Resolved",
   },
   phase: {
-    negotiation: "Negosiasi",
-    evidence: "Pengumpulan Bukti",
+    negotiation: "Negotiation",
+    evidence: "Evidence Collection",
     admin_review: "Review Admin",
   },
 };

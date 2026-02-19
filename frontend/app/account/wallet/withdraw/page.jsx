@@ -96,7 +96,7 @@ export default function WithdrawPage() {
 
   const handleSubmit = async () => {
     if (pin.length !== 6) {
-      setError("PIN harus 6 digit");
+      setError("PIN must be 6 digits.");
       return;
     }
 
@@ -122,7 +122,7 @@ export default function WithdrawPage() {
         router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/withdraw"));
         return;
       }
-      setError(getErrorMessage(e, "Gagal memproses penarikan"));
+      setError(getErrorMessage(e, "Unable to process withdrawal."));
     }
     setProcessing(false);
   };
@@ -131,7 +131,7 @@ export default function WithdrawPage() {
     return (
       <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-md px-4 py-8 text-center text-muted-foreground">
-          Memuat...
+          Loading...
         </div>
       </div>
     );
@@ -147,17 +147,17 @@ export default function WithdrawPage() {
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Kembali
+            Back
           </Link>
 
-          <h1 className="text-2xl font-bold text-foreground mb-2">Tarik Dana</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Withdraw Funds</h1>
           <p className="text-sm text-muted-foreground mb-6">
-            Transfer saldo ke rekening bank Anda
+            Transfer your balance to your bank account
           </p>
 
           {/* Balance Card */}
           <div className="mb-6 rounded-lg border border-border bg-card p-4">
-            <div className="text-sm text-muted-foreground">Saldo Tersedia</div>
+            <div className="text-sm text-muted-foreground">Available Balance</div>
             <div className="text-2xl font-bold text-foreground">
               Rp {wallet.balance.toLocaleString("id-ID")}
             </div>
@@ -208,7 +208,7 @@ export default function WithdrawPage() {
                     onChange={(e) => setBankCode(e.target.value)}
                     className="w-full rounded-lg border border-border bg-background px-4 py-3 focus:outline-none focus:border-primary"
                   >
-                    <option value="">Pilih bank</option>
+                    <option value="">Select a bank</option>
                     {BANKS.map((bank) => (
                       <option key={bank.code} value={bank.code}>
                         {bank.name}
@@ -226,7 +226,7 @@ export default function WithdrawPage() {
                     inputMode="numeric"
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Masukkan nomor rekening"
+                    placeholder="Enter account number"
                     className="w-full rounded-lg border border-border bg-transparent px-4 py-3 focus:outline-none focus:border-primary"
                   />
                 </div>
@@ -239,11 +239,11 @@ export default function WithdrawPage() {
                     type="text"
                     value={accountName}
                     onChange={(e) => setAccountName(e.target.value.toUpperCase())}
-                    placeholder="Masukkan nama sesuai rekening"
+                    placeholder="Enter account holder name"
                     className="w-full rounded-lg border border-border bg-transparent px-4 py-3 uppercase focus:outline-none focus:border-primary"
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Pastikan nama sesuai dengan rekening bank
+                    Ensure the name matches your bank account
                   </p>
                 </div>
               </div>
@@ -308,7 +308,7 @@ export default function WithdrawPage() {
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Biaya transfer</span>
+                  <span className="text-muted-foreground">Transfer fee</span>
                   <span className="text-foreground">Rp {fee.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="border-t border-border pt-2 flex justify-between font-semibold">
@@ -320,7 +320,7 @@ export default function WithdrawPage() {
               </div>
 
               {totalDeduction > wallet.balance && parsedAmount > 0 && (
-                <p className="mt-2 text-sm text-destructive">Saldo tidak mencukupi</p>
+                <p className="mt-2 text-sm text-destructive">Insufficient balance</p>
               )}
 
               <div className="mt-6 flex gap-3">
@@ -328,7 +328,7 @@ export default function WithdrawPage() {
                   onClick={() => setStep(1)}
                   className="flex-1 rounded-lg border border-border py-3 font-medium transition hover:bg-background"
                 >
-                  Kembali
+                  Back
                 </button>
                 <button
                   onClick={() => setStep(3)}
@@ -363,7 +363,7 @@ export default function WithdrawPage() {
                   <span className="text-foreground font-medium">{accountName}</span>
                 </div>
                 <div className="border-t border-border pt-3 flex justify-between">
-                  <span className="text-muted-foreground">Akan diterima</span>
+                  <span className="text-muted-foreground">You will receive</span>
                   <span className="text-lg font-bold text-primary">
                     Rp {parsedAmount.toLocaleString("id-ID")}
                   </span>
@@ -372,7 +372,7 @@ export default function WithdrawPage() {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Masukkan PIN
+                  Enter PIN
                 </label>
                 <input
                   type="password"
@@ -391,7 +391,7 @@ export default function WithdrawPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                   <span>
-                    Dana akan ditransfer dalam 1-3 hari kerja
+                    Funds will be transferred within 1-3 business days
                   </span>
                 </div>
               </div>
@@ -402,14 +402,14 @@ export default function WithdrawPage() {
                   disabled={processing}
                   className="flex-1 rounded-lg border border-border py-3 font-medium transition hover:bg-background"
                 >
-                  Kembali
+                  Back
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={processing || pin.length !== 6}
                   className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
-                  {processing ? "Memproses..." : "Tarik Dana"}
+                  {processing ? "Processing..." : "Withdraw Funds"}
                 </button>
               </div>
             </div>

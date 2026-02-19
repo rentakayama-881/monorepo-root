@@ -166,7 +166,7 @@ export default function DisputeDetailPage() {
         setDispute(normalizeDispute(response));
       } catch (e) {
         logger.error("Failed to load dispute:", e);
-        setError("Dispute tidak ditemukan");
+        setError("Dispute not found");
       }
       setLoading(false);
     }
@@ -263,7 +263,7 @@ export default function DisputeDetailPage() {
       await fetchFeatureAuth(endpoint, { method: "POST" });
       await refreshDispute();
     } catch (e) {
-      setError(e.message || "Terjadi kesalahan");
+      setError(e.message || "An error occurred");
     }
     setProcessing(false);
   };
@@ -287,20 +287,20 @@ export default function DisputeDetailPage() {
   const getPhaseInfo = (phase) => {
     const info = {
       negotiation: {
-        title: "Fase Negosiasi",
-        description: "Diskusikan dengan pihak lain untuk menemukan solusi.",
+        title: "Negotiation Phase",
+        description: "Discuss with the counterparty to find a resolution.",
         containerClass: "bg-warning/10 border border-warning/30",
         titleClass: "text-warning",
       },
       evidence: {
-        title: "Fase Bukti",
-        description: "Upload bukti-bukti pendukung klaim Anda.",
+        title: "Evidence Phase",
+        description: "Upload supporting evidence for your claim.",
         containerClass: "bg-accent border border-border",
         titleClass: "text-accent-foreground",
       },
       admin_review: {
-        title: "Review Admin",
-        description: "Tim kami sedang meninjau kasus ini.",
+        title: "Admin Review",
+        description: "Our team is currently reviewing this case.",
         containerClass: "bg-primary/10 border border-primary/30",
         titleClass: "text-primary",
       },
@@ -310,11 +310,11 @@ export default function DisputeDetailPage() {
 
   const getResolutionLabel = (resolution) => {
     const value = String(resolution || "").replace(/\s+/g, "").toLowerCase();
-    if (!value) return "Selesai";
-    if (value.includes("split")) return "Dana Dibagi";
-    if (value.includes("refund")) return "Refund ke Pengirim";
-    if (value.includes("release")) return "Rilis ke Penerima";
-    if (value.includes("noaction")) return "Tidak Ada Aksi";
+    if (!value) return "Completed";
+    if (value.includes("split")) return "Funds Split";
+    if (value.includes("refund")) return "Refund to Sender";
+    if (value.includes("release")) return "Release to Recipient";
+    if (value.includes("noaction")) return "No Action";
     return resolution;
   };
 
@@ -334,7 +334,7 @@ export default function DisputeDetailPage() {
     return (
       <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-3xl px-4 py-8 text-center text-muted-foreground">
-          Memuat...
+          Loading...
         </div>
       </div>
     );
@@ -344,9 +344,9 @@ export default function DisputeDetailPage() {
     return (
       <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-3xl px-4 py-8 text-center">
-          <div className="text-destructive mb-4">{error || "Dispute tidak ditemukan"}</div>
+          <div className="text-destructive mb-4">{error || "Dispute not found"}</div>
           <Link href="/account/wallet/disputes" className="text-primary hover:underline">
-            ← Kembali
+            ← Back
           </Link>
         </div>
       </div>
@@ -370,7 +370,7 @@ export default function DisputeDetailPage() {
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Kembali
+            Back
           </Link>
 
           {error && (
@@ -393,7 +393,7 @@ export default function DisputeDetailPage() {
                   </div>
                   {dispute.phaseDeadline && (
                     <div className="mt-2 text-xs text-muted-foreground">
-                      Batas waktu: {formatDate(dispute.phaseDeadline)}
+                      Deadline: {formatDate(dispute.phaseDeadline)}
                     </div>
                   )}
                 </div>
@@ -402,7 +402,7 @@ export default function DisputeDetailPage() {
               {/* Messages */}
               <div className="rounded-lg border border-border bg-card">
                 <div className="border-b border-border p-4">
-                  <h3 className="font-semibold text-foreground">Diskusi</h3>
+                  <h3 className="font-semibold text-foreground">Discussion</h3>
                 </div>
                 <div
                   ref={messagesContainerRef}
@@ -411,7 +411,7 @@ export default function DisputeDetailPage() {
                 >
                   {dispute.messages?.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
-                      Belum ada pesan
+                      No messages yet
                     </div>
                   ) : (
                     dispute.messages?.map((msg) => (
@@ -461,7 +461,7 @@ export default function DisputeDetailPage() {
                         type="text"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Tulis pesan..."
+                        placeholder="Write a message..."
                         className="flex-1 rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
                       />
                       <button
@@ -469,7 +469,7 @@ export default function DisputeDetailPage() {
                         disabled={sendingMessage || !message.trim()}
                         className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                       >
-                        Kirim
+                        Send
                       </button>
                     </div>
                   </form>
@@ -480,13 +480,13 @@ export default function DisputeDetailPage() {
               {(dispute.phase === "evidence" || dispute.phase === "admin_review") && (
                 <div className="rounded-lg border border-border bg-card">
                   <div className="border-b border-border p-4 flex items-center justify-between">
-                    <h3 className="font-semibold text-foreground">Bukti</h3>
+                    <h3 className="font-semibold text-foreground">Evidence</h3>
                     {isOpen && dispute.phase === "evidence" && (
                       <button
                         onClick={() => setShowEvidenceForm(!showEvidenceForm)}
                         className="text-sm text-primary hover:underline"
                       >
-                        + Tambah Bukti
+                        + Add Evidence
                       </button>
                     )}
                   </div>
@@ -497,7 +497,7 @@ export default function DisputeDetailPage() {
                       <textarea
                         value={evidenceDescription}
                         onChange={(e) => setEvidenceDescription(e.target.value)}
-                        placeholder="Jelaskan bukti Anda..."
+                        placeholder="Describe your evidence..."
                         rows={3}
                         className="w-full rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
                       />
@@ -505,7 +505,7 @@ export default function DisputeDetailPage() {
                         type="url"
                         value={evidenceUrl}
                         onChange={(e) => setEvidenceUrl(e.target.value)}
-                        placeholder="URL file bukti (opsional)"
+                        placeholder="Evidence file URL (optional)"
                         className="w-full rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
                       />
                       <div className="flex gap-2">
@@ -514,14 +514,14 @@ export default function DisputeDetailPage() {
                           onClick={() => setShowEvidenceForm(false)}
                           className="px-4 py-2 text-sm"
                         >
-                          Batal
+                          Cancel
                         </button>
                         <button
                           type="submit"
                           disabled={processing || !evidenceDescription.trim()}
                           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                         >
-                          Kirim Bukti
+                          Submit Evidence
                         </button>
                       </div>
                     </form>
@@ -530,7 +530,7 @@ export default function DisputeDetailPage() {
                   <div className="p-4 space-y-3">
                     {dispute.evidence?.length === 0 ? (
                       <div className="text-center text-muted-foreground py-4">
-                        Belum ada bukti
+                        No evidence submitted yet
                       </div>
                     ) : (
                       dispute.evidence?.map((ev) => (
@@ -557,7 +557,7 @@ export default function DisputeDetailPage() {
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                               </svg>
-                              Lihat Lampiran
+                              View Attachment
                             </a>
                           )}
                         </div>
@@ -572,24 +572,24 @@ export default function DisputeDetailPage() {
             <div className="space-y-6">
               {/* Transfer Info */}
               <div className="rounded-lg border border-border bg-card p-4">
-                <h3 className="font-semibold text-foreground mb-4">Detail Transfer</h3>
+                <h3 className="font-semibold text-foreground mb-4">Transfer Details</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Jumlah</span>
+                    <span className="text-muted-foreground">Amount</span>
                     <span className="font-medium text-foreground">
                       Rp {dispute.amount?.toLocaleString("id-ID") || 0}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Pembeli (Pengirim Dana)</span>
+                    <span className="text-muted-foreground">Buyer (Fund Sender)</span>
                     <span className="font-medium text-foreground">
-                      @{dispute.senderUsername}{isSender && " (Anda)"}
+                      @{dispute.senderUsername}{isSender && " (You)"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Penjual (Penerima Dana)</span>
+                    <span className="text-muted-foreground">Seller (Fund Recipient)</span>
                     <span className="font-medium text-foreground">
-                      @{dispute.receiverUsername}{isReceiver && " (Anda)"}
+                      @{dispute.receiverUsername}{isReceiver && " (You)"}
                     </span>
                   </div>
                 </div>
@@ -598,7 +598,7 @@ export default function DisputeDetailPage() {
               {/* Actions */}
               {isOpen && (
                 <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="font-semibold text-foreground mb-4">Aksi</h3>
+                  <h3 className="font-semibold text-foreground mb-4">Actions</h3>
                   <div className="space-y-3">
                     {/* Refund - Only receiver (penjual) can agree to refund */}
                     {isReceiver ? (
@@ -607,12 +607,12 @@ export default function DisputeDetailPage() {
                         disabled={processing}
                         className="w-full rounded-lg border border-border py-2 text-sm font-medium transition hover:bg-background disabled:opacity-50"
                       >
-                        Setuju Refund ke Pengirim
+                        Agree to Sender Refund
                       </button>
                     ) : (
                       <div className="text-xs text-muted-foreground bg-warning/5 border border-warning/20 rounded-lg p-3">
-                        <p className="font-medium text-warning mb-1">Menunggu Respon</p>
-                        <p>Anda telah membuka dispute. Tunggu respon dari penerima atau eskalasi ke admin jika diperlukan.</p>
+                        <p className="font-medium text-warning mb-1">Awaiting Response</p>
+                        <p>You opened this dispute. Wait for the recipient response or escalate to admin review if necessary.</p>
                       </div>
                     )}
 
@@ -620,7 +620,7 @@ export default function DisputeDetailPage() {
                     {isReceiver && (
                       <div className="text-xs text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg p-3">
                         <p className="font-medium text-primary mb-1">Info</p>
-                        <p>Jika Anda ingin melanjutkan transaksi, sampaikan pembelaan Anda di chat. Admin akan memutuskan berdasarkan diskusi.</p>
+                        <p>If you want to proceed with this transaction, provide your response in chat. The team will decide based on the discussion.</p>
                       </div>
                     )}
 
@@ -632,8 +632,8 @@ export default function DisputeDetailPage() {
                         className="w-full rounded-lg border border-warning/30 py-2 text-sm font-medium text-warning transition hover:bg-warning/10 disabled:opacity-50"
                       >
                         {dispute.phase === "negotiation"
-                          ? "Eskalasi ke Fase Bukti"
-                          : "Eskalasi ke Admin"}
+                          ? "Escalate to Evidence Phase"
+                          : "Escalate to Admin"}
                       </button>
                     )}
                   </div>
@@ -643,15 +643,15 @@ export default function DisputeDetailPage() {
               {/* Resolution Result */}
               {dispute.status === "resolved" && (
                 <div className="rounded-lg border border-success/30 bg-success/10 p-4">
-                  <h3 className="font-semibold text-success mb-2">Dispute Selesai</h3>
+                  <h3 className="font-semibold text-success mb-2">Dispute Resolved</h3>
                   <p className="text-sm text-muted-foreground">
-                    Hasil: <strong className="text-foreground">
+                    Result: <strong className="text-foreground">
                       {getResolutionLabel(dispute.resolution)}
                     </strong>
                   </p>
                   {dispute.admin_notes && (
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Catatan: {dispute.admin_notes}
+                      Notes: {dispute.admin_notes}
                     </p>
                   )}
                 </div>
