@@ -25,9 +25,10 @@ function extractList(payload) {
 }
 
 function normalizeBool(value) {
+  if (value === null || value === undefined || value === "") return true;
   if (value === true || value === 1 || value === "1" || value === "true") return true;
   if (value === false || value === 0 || value === "0" || value === "false") return false;
-  return false;
+  return true;
 }
 
 function toDisplayAccount(item, index) {
@@ -41,6 +42,11 @@ function toDisplayAccount(item, index) {
     id: String(id),
     title: item?.title ?? item?.name ?? item?.account_title ?? item?.description ?? `Account ${index + 1}`,
     price: item?.priceWithSellerFee ?? item?.price ?? item?.amount ?? item?.cost ?? "-",
+    displayPriceIDR: item?.display_price_idr ?? "",
+    displayPriceSource: item?.display_price_source ?? "",
+    priceSourceSymbol: item?.price_source_symbol ?? "",
+    priceSourceCurrency: item?.price_source_currency ?? "",
+    priceIDR: item?.price_idr ?? 0,
     status: item?.item_state ?? item?.status ?? item?.state ?? item?.availability ?? "-",
     seller,
     canBuy: normalizeBool(item?.canBuyItem),
@@ -103,7 +109,7 @@ export default function MarketChatGPTClient() {
     const term = query.trim().toLowerCase();
     if (!term) return accounts;
     return accounts.filter((item) =>
-      `${item.title} ${item.price} ${item.status} ${item.seller}`.toLowerCase().includes(term)
+      `${item.title} ${item.price} ${item.displayPriceIDR} ${item.status} ${item.seller}`.toLowerCase().includes(term)
     );
   }, [accounts, query]);
 
@@ -174,7 +180,7 @@ export default function MarketChatGPTClient() {
               <thead className="bg-muted/35">
                 <tr>
                   <th className="px-2.5 py-1.5 text-left font-medium">Account</th>
-                  <th className="px-2.5 py-1.5 text-left font-medium">Price</th>
+                  <th className="px-2.5 py-1.5 text-left font-medium">Harga</th>
                   <th className="px-2.5 py-1.5 text-left font-medium">Status</th>
                   <th className="px-2.5 py-1.5 text-left font-medium">Seller</th>
                   <th className="px-2.5 py-1.5 text-left font-medium">Actions</th>
@@ -191,7 +197,12 @@ export default function MarketChatGPTClient() {
                         {item?.raw?.chatgpt_country ? <TinyBadge label={String(item.raw.chatgpt_country)} /> : null}
                       </div>
                     </td>
-                    <td className="px-2.5 py-1.5 font-medium">{String(item.price)}</td>
+                    <td className="px-2.5 py-1.5">
+                      <div className="font-medium">{item.displayPriceIDR || `Rp ${Number(item.priceIDR || 0).toLocaleString("id-ID")}`}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {item.displayPriceSource || `${item.priceSourceSymbol || item.priceSourceCurrency || ""} ${String(item.price)}`}
+                      </div>
+                    </td>
                     <td className="px-2.5 py-1.5">
                       <TinyBadge label={String(item.status)} tone={item.canBuy ? "neutral" : "warning"} />
                     </td>
@@ -265,7 +276,8 @@ function SpecDrawer({ item, onClose }) {
             <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Account Specs</div>
             <h2 className="truncate text-sm font-semibold">{item.title}</h2>
             <div className="mt-1 flex flex-wrap gap-1">
-              <TinyBadge label={`Price ${String(item.price)}`} />
+              <TinyBadge label={`Harga ${item.displayPriceIDR || String(item.price)}`} />
+              {item.displayPriceSource ? <TinyBadge label={`Asal ${item.displayPriceSource}`} /> : null}
               <TinyBadge label={`Seller ${item.seller}`} />
             </div>
           </div>

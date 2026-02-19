@@ -55,6 +55,7 @@ public class MongoDbContext
     public IMongoCollection<Dispute> Disputes => _database.GetCollection<Dispute>("disputes");
     public IMongoCollection<Withdrawal> Withdrawals => _database.GetCollection<Withdrawal>("withdrawals");
     public IMongoCollection<GuaranteeLock> GuaranteeLocks => _database.GetCollection<GuaranteeLock>("guarantee_locks");
+    public IMongoCollection<MarketPurchaseReservation> MarketPurchaseReservations => _database.GetCollection<MarketPurchaseReservation>("market_purchase_reservations");
 
     #endregion
 
@@ -259,6 +260,34 @@ public class MongoDbContext
                 .Ascending(w => w.Status)
                 .Ascending(w => w.CreatedAt))
         });
+
+        // Market purchase reservation indexes
+        MarketPurchaseReservations.Indexes.CreateMany(new[]
+        {
+            new CreateIndexModel<MarketPurchaseReservation>(Builders<MarketPurchaseReservation>.IndexKeys
+                .Ascending(r => r.UserId)
+                .Descending(r => r.CreatedAt)),
+            new CreateIndexModel<MarketPurchaseReservation>(Builders<MarketPurchaseReservation>.IndexKeys
+                .Ascending(r => r.Status)
+                .Descending(r => r.UpdatedAt))
+        });
+        try
+        {
+            MarketPurchaseReservations.Indexes.CreateOne(new CreateIndexModel<MarketPurchaseReservation>(
+                Builders<MarketPurchaseReservation>.IndexKeys
+                    .Ascending(r => r.OrderId)
+                    .Ascending(r => r.UserId),
+                new CreateIndexOptions
+                {
+                    Unique = true,
+                    Name = "orderId_userId_unique"
+                }
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create unique index for market purchase reservation orderId+userId");
+        }
 
         try
         {

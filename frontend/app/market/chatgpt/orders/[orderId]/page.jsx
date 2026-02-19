@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchJsonAuth } from "@/lib/api";
+
+const FINAL_STATUSES = new Set(["fulfilled", "failed"]);
 
 export default function MarketChatGPTOrderDetailPage() {
   const params = useParams();
@@ -13,29 +15,49 @@ export default function MarketChatGPTOrderDetailPage() {
   const [order, setOrder] = useState(null);
 
   useEffect(() => {
-    let cancelled = false;
+    let active = true;
+    let timer = null;
 
-    async function loadOrder() {
+    async function loadOrder(isFirst = false) {
       if (!orderID) return;
-      setLoading(true);
+      if (isFirst) {
+        setLoading(true);
+      }
       setError("");
       try {
         const data = await fetchJsonAuth(`/api/market/chatgpt/orders/${encodeURIComponent(orderID)}`, {
           method: "GET",
         });
-        if (!cancelled) setOrder(data?.order || null);
+        if (!active) return;
+        const nextOrder = data?.order || null;
+        setOrder(nextOrder);
+
+        const status = String(nextOrder?.status || "").toLowerCase();
+        if (nextOrder && !FINAL_STATUSES.has(status)) {
+          timer = setTimeout(() => loadOrder(false), 1800);
+        }
       } catch (err) {
-        if (!cancelled) setError(err?.message || "Gagal memuat detail order.");
+        if (!active) return;
+        setError(err?.message || "Gagal memuat detail order.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (active) setLoading(false);
       }
     }
 
-    loadOrder();
+    loadOrder(true);
+
     return () => {
-      cancelled = true;
+      active = false;
+      if (timer) clearTimeout(timer);
     };
   }, [orderID]);
+
+  const statusText = useMemo(() => {
+    const status = String(order?.status || "").toLowerCase();
+    if (status === "fulfilled") return "Selesai";
+    if (status === "failed") return "Gagal";
+    return "Diproses";
+  }, [order?.status]);
 
   return (
     <main className="container py-10 space-y-6">
@@ -58,9 +80,11 @@ export default function MarketChatGPTOrderDetailPage() {
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <Row label="Title" value={order?.title} />
-              <Row label="Price" value={String(order?.price ?? "-")} />
-              <Row label="Status" value={order?.status || "-"} />
+              <Row label="Harga" value={order?.price_display || order?.price || "-"} />
+              <Row label="Harga Sumber" value={order?.source_display || "-"} />
+              <Row label="Status" value={statusText} />
               <Row label="Seller" value={order?.seller || "-"} />
+              <Row label="Kode Gagal" value={order?.failure_code || "-"} />
             </div>
 
             {order?.failure_reason ? (
@@ -68,6 +92,26 @@ export default function MarketChatGPTOrderDetailPage() {
                 {order.failure_reason}
               </div>
             ) : null}
+
+            <div className="rounded-md border border-border bg-background p-3">
+              <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Progress Pembelian</div>
+              <div className="mt-3 space-y-2">
+                {(order?.steps || []).length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Menunggu update proses...</p>
+                ) : (
+                  order.steps.map((step, idx) => (
+                    <div key={`${step?.code || "step"}-${idx}`} className="rounded-md border border-border bg-card p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs font-medium text-foreground">{step?.label || step?.code || "Step"}</div>
+                        <StepBadge status={step?.status} />
+                      </div>
+                      {step?.message ? <div className="mt-1 text-xs text-muted-foreground">{step.message}</div> : null}
+                      <div className="mt-1 text-[11px] text-muted-foreground">{formatDateTime(step?.at)}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
 
             <div className="rounded-md border border-border bg-background p-3">
               <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Data Akun</div>
@@ -95,7 +139,7 @@ export default function MarketChatGPTOrderDetailPage() {
                   </details>
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Data akun akan muncul setelah order berstatus fulfilled.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Data akun akan muncul setelah order berstatus selesai.</p>
               )}
             </div>
           </div>
@@ -113,9 +157,20 @@ function Row({ label, value }) {
   return (
     <div className="rounded-md border border-border bg-background p-3">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm text-foreground">{value || "-"}</div>
+      <div className="mt-1 text-sm text-foreground break-all">{value || "-"}</div>
     </div>
   );
+}
+
+function StepBadge({ status }) {
+  const normalized = String(status || "").toLowerCase();
+  if (normalized === "done") {
+    return <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">Selesai</span>;
+  }
+  if (normalized === "failed") {
+    return <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">Gagal</span>;
+  }
+  return <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700">Proses</span>;
 }
 
 function CredentialBlock({ title, rows }) {
@@ -135,4 +190,20 @@ function CredentialBlock({ title, rows }) {
       </div>
     </div>
   );
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  try {
+    return new Date(value).toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  } catch {
+    return "-";
+  }
 }

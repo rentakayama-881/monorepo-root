@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"regexp"
@@ -20,7 +22,9 @@ import (
 )
 
 type LZTMarketHandler struct {
-	client *services.LZTMarketClient
+	client        *services.LZTMarketClient
+	featureWallet *services.FeatureWalletClient
+	fxRates       *services.FXRateService
 
 	cacheMu           sync.RWMutex
 	cachedChatGPT     *services.LZTMarketResponse
@@ -35,10 +39,12 @@ type LZTMarketHandler struct {
 
 func NewLZTMarketHandler(client *services.LZTMarketClient) *LZTMarketHandler {
 	return &LZTMarketHandler{
-		client:     client,
-		cacheTTL:   30 * time.Second,
-		orders:     make(map[string]*publicMarketOrder),
-		userOrders: make(map[uint][]string),
+		client:        client,
+		featureWallet: services.NewFeatureWalletClientFromConfig(),
+		fxRates:       services.NewFXRateServiceFromEnv(),
+		cacheTTL:      30 * time.Second,
+		orders:        make(map[string]*publicMarketOrder),
+		userOrders:    make(map[uint][]string),
 	}
 }
 
@@ -57,17 +63,37 @@ type createPublicMarketOrderRequest struct {
 }
 
 type publicMarketOrder struct {
-	ID            string                 `json:"id"`
-	UserID        uint                   `json:"-"`
-	ItemID        string                 `json:"item_id"`
-	Title         string                 `json:"title"`
-	Price         string                 `json:"price"`
-	Status        string                 `json:"status"`
-	Seller        string                 `json:"seller"`
-	FailureReason string                 `json:"failure_reason,omitempty"`
-	Delivery      map[string]interface{} `json:"delivery,omitempty"`
-	CreatedAt     time.Time              `json:"created_at"`
-	UpdatedAt     time.Time              `json:"updated_at"`
+	ID               string                 `json:"id"`
+	UserID           uint                   `json:"-"`
+	ItemID           string                 `json:"item_id"`
+	Title            string                 `json:"title"`
+	Price            string                 `json:"price"`
+	Status           string                 `json:"status"`
+	Seller           string                 `json:"seller"`
+	FailureReason    string                 `json:"failure_reason,omitempty"`
+	FailureCode      string                 `json:"failure_code,omitempty"`
+	Delivery         map[string]interface{} `json:"delivery,omitempty"`
+	SourcePrice      float64                `json:"source_price,omitempty"`
+	SourceCurrency   string                 `json:"source_currency,omitempty"`
+	SourceSymbol     string                 `json:"source_symbol,omitempty"`
+	PriceIDR         int64                  `json:"price_idr,omitempty"`
+	FXRateToIDR      float64                `json:"fx_rate_to_idr,omitempty"`
+	PriceDisplay     string                 `json:"price_display,omitempty"`
+	SourceDisplay    string                 `json:"source_display,omitempty"`
+	PricingNote      string                 `json:"pricing_note,omitempty"`
+	Steps            []publicOrderStep      `json:"steps,omitempty"`
+	LastStepCode     string                 `json:"last_step_code,omitempty"`
+	SupplierCurrency string                 `json:"supplier_currency,omitempty"`
+	CreatedAt        time.Time              `json:"created_at"`
+	UpdatedAt        time.Time              `json:"updated_at"`
+}
+
+type publicOrderStep struct {
+	Code    string    `json:"code"`
+	Label   string    `json:"label"`
+	Status  string    `json:"status"`
+	Message string    `json:"message,omitempty"`
+	At      time.Time `json:"at"`
 }
 
 func (h *LZTMarketHandler) GetConfig(c *gin.Context) {
@@ -178,10 +204,11 @@ func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 
 	if !forceRefresh {
 		if cached, ok := h.getCachedChatGPT(i18n); ok {
+			payload := h.withDisplayPricing(cached.JSON)
 			c.JSON(http.StatusOK, gin.H{
 				"cached":          true,
 				"upstream_status": cached.StatusCode,
-				"json":            cached.JSON,
+				"json":            payload,
 				"raw":             cached.Raw,
 			})
 			return
@@ -197,12 +224,13 @@ func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 	})
 	if err != nil {
 		if cached, ok := h.getAnyCachedChatGPT(); ok {
+			payload := h.withDisplayPricing(cached.JSON)
 			c.JSON(http.StatusOK, gin.H{
 				"cached":          true,
 				"stale":           true,
 				"warning":         "Upstream unavailable, serving stale cache",
 				"upstream_status": cached.StatusCode,
-				"json":            cached.JSON,
+				"json":            payload,
 				"raw":             cached.Raw,
 			})
 			return
@@ -217,11 +245,12 @@ func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 	}
 
 	h.setCachedChatGPT(i18n, resp)
+	payload := h.withDisplayPricing(resp.JSON)
 
 	c.JSON(http.StatusOK, gin.H{
 		"cached":          false,
 		"upstream_status": resp.StatusCode,
-		"json":            resp.JSON,
+		"json":            payload,
 		"raw":             resp.Raw,
 	})
 }
@@ -273,6 +302,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		i18n = "en-US"
 	}
 
+	authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
 	item, err := h.findChatGPTItem(c, itemID, i18n)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
@@ -283,33 +313,58 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		return
 	}
 
-	now := time.Now()
-	order := &publicMarketOrder{
-		ID:        newPublicMarketOrderID(),
-		UserID:    userID,
-		ItemID:    itemID,
-		Title:     normalizeItemTitle(item),
-		Price:     normalizeItemPrice(item),
-		Status:    "processing",
-		Seller:    normalizeSeller(item),
-		CreatedAt: now,
-		UpdatedAt: now,
+	now := time.Now().UTC()
+	sourcePrice, sourceCurrency, sourceSymbol := h.extractSourcePriceAndCurrency(item)
+	if sourcePrice <= 0 {
+		sourcePrice = extractNumericPrice(item)
 	}
-	h.saveOrder(order)
+	if sourceCurrency == "" {
+		sourceCurrency = "RUB"
+	}
 
-	price := extractNumericPrice(item)
-	if price <= 0 {
-		h.markOrderFailed(order.ID, "Invalid item price from provider")
-		detail, _ := h.getOrderForUser(order.ID, userID)
-		c.JSON(http.StatusBadGateway, gin.H{
-			"error": "Invalid item price from provider",
-			"order": detail,
-		})
+	priceIDR, fxRate, pricingErr := h.computeIDRPrice(sourcePrice, sourceCurrency)
+	if pricingErr != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to compute realtime IDR price"})
 		return
 	}
 
+	order := &publicMarketOrder{
+		ID:             newPublicMarketOrderID(),
+		UserID:         userID,
+		ItemID:         itemID,
+		Title:          normalizeItemTitle(item),
+		Price:          normalizeItemPrice(item),
+		Status:         "processing",
+		Seller:         normalizeSeller(item),
+		SourcePrice:    sourcePrice,
+		SourceCurrency: sourceCurrency,
+		SourceSymbol:   sourceSymbol,
+		PriceIDR:       priceIDR,
+		FXRateToIDR:    fxRate,
+		PriceDisplay:   formatIDR(priceIDR),
+		SourceDisplay:  formatSourcePrice(sourcePrice, sourceSymbol, sourceCurrency),
+		PricingNote:    "Harga realtime + margin platform",
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+	order.Steps = []publicOrderStep{
+		{
+			Code:   "INIT",
+			Label:  "Order dibuat",
+			Status: "done",
+			At:     now,
+		},
+	}
+	h.saveOrder(order)
+	h.appendOrderStep(order.ID, publicOrderStep{
+		Code:   "PROCESSING",
+		Label:  "Memulai proses pembelian",
+		Status: "processing",
+		At:     time.Now().UTC(),
+	})
+
 	if !extractCanBuyItem(item) {
-		h.markOrderFailed(order.ID, "Item cannot be purchased right now")
+		h.markOrderFailed(order.ID, "ITEM_NOT_PURCHASABLE", "Item cannot be purchased right now")
 		detail, _ := h.getOrderForUser(order.ID, userID)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Item cannot be purchased right now",
@@ -318,35 +373,10 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		return
 	}
 
-	resp, failureReason, buyErr := h.buyChatGPTItem(c, itemID, i18n, price)
-	if buyErr != nil {
-		h.markOrderFailed(order.ID, buyErr.Error())
-		detail, _ := h.getOrderForUser(order.ID, userID)
-		c.JSON(http.StatusBadGateway, gin.H{
-			"error": "Failed to purchase item from provider",
-			"order": detail,
-		})
-		return
-	}
+	go h.processOrderAsync(order.ID, userID, itemID, i18n, sourcePrice, authHeader)
 
-	if resp == nil || resp.StatusCode >= http.StatusBadRequest || !hasPurchasingPayload(resp) {
-		if strings.TrimSpace(failureReason) == "" {
-			failureReason = normalizeProviderFailureReason(resp, "Provider purchase failed")
-		}
-		h.markOrderFailed(order.ID, failureReason)
-		detail, _ := h.getOrderForUser(order.ID, userID)
-		c.JSON(http.StatusBadGateway, gin.H{
-			"error": "Provider purchase failed",
-			"order": detail,
-		})
-		return
-	}
-
-	delivery := extractDeliveryPayload(resp)
-	h.markOrderFulfilled(order.ID, delivery)
 	detail, _ := h.getOrderForUser(order.ID, userID)
-
-	c.JSON(http.StatusCreated, gin.H{
+	c.JSON(http.StatusAccepted, gin.H{
 		"order": detail,
 	})
 }
@@ -414,7 +444,7 @@ func buildLZTItemURL(itemID string) string {
 	return fmt.Sprintf(template, itemID)
 }
 
-func (h *LZTMarketHandler) buyChatGPTItem(c *gin.Context, itemID, i18n string, price float64) (*services.LZTMarketResponse, string, error) {
+func (h *LZTMarketHandler) buyChatGPTItem(ctx context.Context, itemID, i18n string, price float64) (*services.LZTMarketResponse, string, error) {
 	method := strings.ToUpper(strings.TrimSpace(os.Getenv("LZT_MARKET_BUY_METHOD")))
 	if method == "" {
 		method = http.MethodPost
@@ -451,7 +481,7 @@ func (h *LZTMarketHandler) buyChatGPTItem(c *gin.Context, itemID, i18n string, p
 
 	// 1) Fast-buy with retry_request handling.
 	for attempt := 0; attempt < maxRetries; attempt++ {
-		resp, err := h.client.Do(c.Request.Context(), services.LZTMarketRequest{
+		resp, err := h.client.Do(ctx, services.LZTMarketRequest{
 			Method:      method,
 			Path:        fastBuyPath,
 			Query:       map[string]string{"i18n": i18n},
@@ -486,7 +516,7 @@ func (h *LZTMarketHandler) buyChatGPTItem(c *gin.Context, itemID, i18n string, p
 		return lastResp, normalizeProviderFailureReason(lastResp, "Fast-buy failed"), nil
 	}
 
-	checkResp, checkErr := h.client.Do(c.Request.Context(), services.LZTMarketRequest{
+	checkResp, checkErr := h.client.Do(ctx, services.LZTMarketRequest{
 		Method:      method,
 		Path:        checkPath,
 		Query:       map[string]string{"i18n": i18n},
@@ -499,7 +529,7 @@ func (h *LZTMarketHandler) buyChatGPTItem(c *gin.Context, itemID, i18n string, p
 		return checkResp, normalizeProviderFailureReason(checkResp, "Check-account rejected purchase"), nil
 	}
 
-	confirmResp, confirmErr := h.client.Do(c.Request.Context(), services.LZTMarketRequest{
+	confirmResp, confirmErr := h.client.Do(ctx, services.LZTMarketRequest{
 		Method:      method,
 		Path:        confirmPath,
 		Query:       map[string]string{"i18n": i18n},
@@ -637,6 +667,129 @@ func extractNumericPrice(item map[string]interface{}) float64 {
 	return 0
 }
 
+func (h *LZTMarketHandler) extractSourcePriceAndCurrency(item map[string]interface{}) (float64, string, string) {
+	price := extractNumericPrice(item)
+	currency := strings.ToUpper(strings.TrimSpace(fmt.Sprintf("%v", item["price_currency"])))
+	if currency == "" || currency == "<nil>" {
+		currency = strings.ToUpper(strings.TrimSpace(fmt.Sprintf("%v", item["currency"])))
+	}
+	if currency == "" || currency == "<nil>" {
+		currency = "RUB"
+	}
+	return price, currency, currencySymbol(currency)
+}
+
+func (h *LZTMarketHandler) computeIDRPrice(sourcePrice float64, sourceCurrency string) (int64, float64, error) {
+	if h.fxRates == nil {
+		return 0, 0, fmt.Errorf("fx service is not configured")
+	}
+	baseIDR, fxRate, err := h.fxRates.ConvertToIDR(sourcePrice, sourceCurrency)
+	if err != nil {
+		return 0, 0, err
+	}
+	finalIDR := applyPricingMargin(baseIDR)
+	return finalIDR, fxRate, nil
+}
+
+func applyPricingMargin(baseIDR float64) int64 {
+	marginPercent := 0.0
+	if raw := strings.TrimSpace(os.Getenv("MARKET_PRICE_MARGIN_PERCENT")); raw != "" {
+		if parsed, err := strconv.ParseFloat(raw, 64); err == nil && parsed >= 0 {
+			marginPercent = parsed
+		}
+	}
+
+	fixedFee := int64(0)
+	if raw := strings.TrimSpace(os.Getenv("MARKET_PRICE_FIXED_FEE_IDR")); raw != "" {
+		if parsed, err := strconv.ParseInt(raw, 10, 64); err == nil && parsed >= 0 {
+			fixedFee = parsed
+		}
+	}
+
+	withMargin := baseIDR + (baseIDR * (marginPercent / 100))
+	withFee := withMargin + float64(fixedFee)
+	if withFee < 0 {
+		withFee = 0
+	}
+	rounded := int64(math.Ceil(withFee/100.0) * 100)
+	if rounded <= 0 {
+		rounded = int64(math.Ceil(withFee))
+	}
+	return rounded
+}
+
+func formatIDR(amount int64) string {
+	return fmt.Sprintf("Rp %s", formatThousands(amount))
+}
+
+func formatSourcePrice(price float64, symbol, currency string) string {
+	if symbol == "" {
+		symbol = currency
+	}
+	value := strconv.FormatFloat(price, 'f', 2, 64)
+	return fmt.Sprintf("%s %s", symbol, value)
+}
+
+func formatThousands(value int64) string {
+	negative := value < 0
+	if negative {
+		value = -value
+	}
+	raw := strconv.FormatInt(value, 10)
+	if len(raw) <= 3 {
+		if negative {
+			return "-" + raw
+		}
+		return raw
+	}
+
+	var out []byte
+	mod := len(raw) % 3
+	if mod > 0 {
+		out = append(out, raw[:mod]...)
+		if len(raw) > mod {
+			out = append(out, '.')
+		}
+	}
+	for i := mod; i < len(raw); i += 3 {
+		out = append(out, raw[i:i+3]...)
+		if i+3 < len(raw) {
+			out = append(out, '.')
+		}
+	}
+	if negative {
+		return "-" + string(out)
+	}
+	return string(out)
+}
+
+func currencySymbol(currency string) string {
+	switch strings.ToUpper(strings.TrimSpace(currency)) {
+	case "RUB":
+		return "₽"
+	case "USD":
+		return "$"
+	case "EUR":
+		return "€"
+	case "GBP":
+		return "£"
+	case "CNY":
+		return "¥"
+	case "JPY":
+		return "¥"
+	case "TRY":
+		return "₺"
+	case "UAH":
+		return "₴"
+	case "KZT":
+		return "₸"
+	case "IDR":
+		return "Rp"
+	default:
+		return strings.ToUpper(strings.TrimSpace(currency))
+	}
+}
+
 func normalizeItemState(item map[string]interface{}) string {
 	for _, key := range []string{"item_state", "status", "state", "availability"} {
 		if v, ok := item[key]; ok {
@@ -741,6 +894,88 @@ func extractListMaps(payload interface{}) []map[string]interface{} {
 	return []map[string]interface{}{}
 }
 
+func (h *LZTMarketHandler) withDisplayPricing(payload interface{}) interface{} {
+	root, ok := payload.(map[string]interface{})
+	if !ok {
+		return payload
+	}
+
+	items := extractListMaps(root)
+	for _, item := range items {
+		sourcePrice, sourceCurrency, sourceSymbol := h.extractSourcePriceAndCurrency(item)
+		if sourcePrice <= 0 {
+			continue
+		}
+		priceIDR, fxRate, err := h.computeIDRPrice(sourcePrice, sourceCurrency)
+		if err != nil {
+			continue
+		}
+
+		item["display_price_source"] = formatSourcePrice(sourcePrice, sourceSymbol, sourceCurrency)
+		item["display_price_idr"] = formatIDR(priceIDR)
+		item["price_idr"] = priceIDR
+		item["price_source_currency"] = sourceCurrency
+		item["price_source_symbol"] = sourceSymbol
+		item["fx_rate_to_idr"] = fxRate
+		item["pricing_note"] = "Harga realtime + margin platform"
+	}
+	return root
+}
+
+func (h *LZTMarketHandler) checkSupplierBalance(ctx context.Context, needed float64) bool {
+	resp, err := h.client.Do(ctx, services.LZTMarketRequest{
+		Method: http.MethodGet,
+		Path:   "/me",
+		Query:  map[string]string{"fields_include": "*"},
+	})
+	if err != nil || resp == nil || resp.StatusCode >= http.StatusBadRequest || resp.JSON == nil {
+		return false
+	}
+	root, ok := resp.JSON.(map[string]interface{})
+	if !ok {
+		return false
+	}
+
+	userMap, ok := root["user"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+
+	balance := extractFloatFromMap(userMap, "balance", "Balance", "money")
+	if balance <= 0 {
+		return false
+	}
+
+	return balance >= needed
+}
+
+func extractFloatFromMap(m map[string]interface{}, keys ...string) float64 {
+	for _, key := range keys {
+		v, ok := m[key]
+		if !ok || v == nil {
+			continue
+		}
+		switch n := v.(type) {
+		case float64:
+			return n
+		case float32:
+			return float64(n)
+		case int:
+			return float64(n)
+		case int32:
+			return float64(n)
+		case int64:
+			return float64(n)
+		case string:
+			parsed, err := strconv.ParseFloat(strings.TrimSpace(n), 64)
+			if err == nil {
+				return parsed
+			}
+		}
+	}
+	return 0
+}
+
 func (h *LZTMarketHandler) saveOrder(order *publicMarketOrder) {
 	h.ordersMu.Lock()
 	defer h.ordersMu.Unlock()
@@ -748,7 +983,20 @@ func (h *LZTMarketHandler) saveOrder(order *publicMarketOrder) {
 	h.userOrders[order.UserID] = append(h.userOrders[order.UserID], order.ID)
 }
 
-func (h *LZTMarketHandler) markOrderFailed(orderID, reason string) {
+func (h *LZTMarketHandler) appendOrderStep(orderID string, step publicOrderStep) {
+	h.ordersMu.Lock()
+	defer h.ordersMu.Unlock()
+	order, ok := h.orders[orderID]
+	if !ok {
+		return
+	}
+	step.At = step.At.UTC()
+	order.Steps = append(order.Steps, step)
+	order.LastStepCode = step.Code
+	order.UpdatedAt = step.At
+}
+
+func (h *LZTMarketHandler) markOrderFailed(orderID, code, reason string) {
 	h.ordersMu.Lock()
 	defer h.ordersMu.Unlock()
 	order, ok := h.orders[orderID]
@@ -756,8 +1004,9 @@ func (h *LZTMarketHandler) markOrderFailed(orderID, reason string) {
 		return
 	}
 	order.Status = "failed"
+	order.FailureCode = strings.TrimSpace(code)
 	order.FailureReason = strings.TrimSpace(reason)
-	order.UpdatedAt = time.Now()
+	order.UpdatedAt = time.Now().UTC()
 }
 
 func (h *LZTMarketHandler) markOrderFulfilled(orderID string, delivery map[string]interface{}) {
@@ -768,9 +1017,10 @@ func (h *LZTMarketHandler) markOrderFulfilled(orderID string, delivery map[strin
 		return
 	}
 	order.Status = "fulfilled"
+	order.FailureCode = ""
 	order.FailureReason = ""
 	order.Delivery = delivery
-	order.UpdatedAt = time.Now()
+	order.UpdatedAt = time.Now().UTC()
 }
 
 func (h *LZTMarketHandler) getOrderForUser(orderID string, userID uint) (publicMarketOrder, bool) {
@@ -781,6 +1031,155 @@ func (h *LZTMarketHandler) getOrderForUser(orderID string, userID uint) (publicM
 		return publicMarketOrder{}, false
 	}
 	return order.toClientDTO(true), true
+}
+
+func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID, i18n string, sourcePrice float64, authHeader string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	defer cancel()
+
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "USER_BALANCE_RESERVE",
+		Label:  "Memeriksa dan reserve saldo user",
+		Status: "processing",
+		At:     time.Now().UTC(),
+	})
+
+	if h.featureWallet == nil {
+		h.markOrderFailed(orderID, "SYSTEM_CONFIG_ERROR", "Feature wallet client belum terkonfigurasi")
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "USER_BALANCE_RESERVE",
+			Label:   "Reserve saldo user gagal",
+			Status:  "failed",
+			Message: "Sistem pembayaran internal belum siap.",
+			At:      time.Now().UTC(),
+		})
+		return
+	}
+
+	orderSnapshot, ok := h.getOrderForUser(orderID, userID)
+	if !ok {
+		return
+	}
+
+	if _, err := h.featureWallet.ReserveMarketPurchase(ctx, authHeader, orderID, orderSnapshot.PriceIDR); err != nil {
+		h.markOrderFailed(orderID, "USER_BALANCE_NOT_ENOUGH", "Saldo kamu tidak mencukupi.")
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "USER_BALANCE_RESERVE",
+			Label:   "Reserve saldo user gagal",
+			Status:  "failed",
+			Message: "Saldo kamu tidak mencukupi.",
+			At:      time.Now().UTC(),
+		})
+		return
+	}
+
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "USER_BALANCE_RESERVE",
+		Label:  "Reserve saldo user berhasil",
+		Status: "done",
+		At:     time.Now().UTC(),
+	})
+
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "SUPPLIER_BALANCE_CHECK",
+		Label:  "Memeriksa saldo akun supplier",
+		Status: "processing",
+		At:     time.Now().UTC(),
+	})
+	supplierEnough := h.checkSupplierBalance(ctx, sourcePrice)
+	if !supplierEnough {
+		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Saldo supplier tidak cukup")
+		h.markOrderFailed(orderID, "SUPPLIER_BALANCE_NOT_ENOUGH", "Akun belum siap untuk dijual saat ini.")
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "SUPPLIER_BALANCE_CHECK",
+			Label:   "Saldo supplier tidak cukup",
+			Status:  "failed",
+			Message: "Akun belum siap untuk dijual saat ini.",
+			At:      time.Now().UTC(),
+		})
+		return
+	}
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "SUPPLIER_BALANCE_CHECK",
+		Label:  "Saldo supplier cukup",
+		Status: "done",
+		At:     time.Now().UTC(),
+	})
+
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "PROVIDER_PURCHASE",
+		Label:  "Membeli akun ke market supplier",
+		Status: "processing",
+		At:     time.Now().UTC(),
+	})
+	resp, failureReason, buyErr := h.buyChatGPTItem(ctx, itemID, i18n, sourcePrice)
+	if buyErr != nil {
+		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Provider transport error")
+		h.markOrderFailed(orderID, "PROVIDER_ERROR", "Gagal membeli akun dari provider")
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "PROVIDER_PURCHASE",
+			Label:   "Pembelian ke provider gagal",
+			Status:  "failed",
+			Message: "Gagal membeli akun dari provider",
+			At:      time.Now().UTC(),
+		})
+		return
+	}
+	if resp == nil || resp.StatusCode >= http.StatusBadRequest || !hasPurchasingPayload(resp) {
+		if strings.TrimSpace(failureReason) == "" {
+			failureReason = normalizeProviderFailureReason(resp, "Provider purchase failed")
+		}
+		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, failureReason)
+		h.markOrderFailed(orderID, "PROVIDER_PURCHASE_FAILED", failureReason)
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "PROVIDER_PURCHASE",
+			Label:   "Pembelian ke provider gagal",
+			Status:  "failed",
+			Message: failureReason,
+			At:      time.Now().UTC(),
+		})
+		return
+	}
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "PROVIDER_PURCHASE",
+		Label:  "Pembelian ke provider berhasil",
+		Status: "done",
+		At:     time.Now().UTC(),
+	})
+
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "USER_BALANCE_CAPTURE",
+		Label:  "Menyelesaikan potongan saldo user",
+		Status: "processing",
+		At:     time.Now().UTC(),
+	})
+	if _, err := h.featureWallet.CaptureMarketPurchase(ctx, authHeader, orderID); err != nil {
+		// Critical mismatch: provider succeeded but capture failed.
+		h.markOrderFailed(orderID, "CAPTURE_FAILED", "Pembelian berhasil di supplier tetapi finalisasi saldo gagal.")
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "USER_BALANCE_CAPTURE",
+			Label:   "Finalisasi saldo gagal",
+			Status:  "failed",
+			Message: "Hubungi admin: pembelian provider sudah sukses namun capture gagal.",
+			At:      time.Now().UTC(),
+		})
+		return
+	}
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "USER_BALANCE_CAPTURE",
+		Label:  "Saldo user berhasil difinalisasi",
+		Status: "done",
+		At:     time.Now().UTC(),
+	})
+
+	delivery := extractDeliveryPayload(resp)
+	h.markOrderFulfilled(orderID, delivery)
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "DELIVERY_READY",
+		Label:  "Data akun siap dikirim ke user",
+		Status: "done",
+		At:     time.Now().UTC(),
+	})
 }
 
 func (o *publicMarketOrder) toClientDTO(withDelivery bool) publicMarketOrder {

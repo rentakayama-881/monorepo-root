@@ -719,6 +719,8 @@ public class WalletService : IWalletService
 	            TransactionType.EscrowRelease => "escrow_release",
 	            TransactionType.GuaranteeLock => "guarantee_lock",
 	            TransactionType.GuaranteeRelease => "guarantee_release",
+	            TransactionType.MarketPurchaseReserve => "market_purchase_reserve",
+	            TransactionType.MarketPurchaseRelease => "market_purchase_release",
 	            _ => type.ToString().ToLowerInvariant()
 	        };
 	    }

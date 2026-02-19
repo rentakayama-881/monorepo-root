@@ -56,5 +56,7 @@ public enum TransactionType
     Reserved8 = 8,     // Reserved (legacy data)
     Reserved9 = 9,     // Reserved (legacy data)
     GuaranteeLock = 10,    // Money frozen for profile guarantee
-    GuaranteeRelease = 11  // Guarantee released back to wallet
+    GuaranteeRelease = 11, // Guarantee released back to wallet
+    MarketPurchaseReserve = 12, // Reserve wallet balance for market purchase
+    MarketPurchaseRelease = 13  // Release reserved balance back to wallet
 }
