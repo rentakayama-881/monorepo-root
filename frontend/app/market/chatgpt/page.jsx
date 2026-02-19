@@ -3,7 +3,7 @@ import MarketChatGPTClient from "./MarketChatGPTClient";
 export const metadata = {
   title: "Marketplace ChatGPT Accounts",
   description:
-    "Jelajahi listing akun ChatGPT dari marketplace partner dan lanjutkan checkout dengan aman lewat alur backend.",
+    "Jelajahi listing akun ChatGPT dan lakukan pembelian langsung di platform ini.",
   alternates: {
     canonical: "https://aivalid.id/market/chatgpt",
   },

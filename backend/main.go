@@ -582,6 +582,9 @@ func main() {
 			{
 				market.GET("/chatgpt", enhancedRateLimiter.SearchMiddleware(), lztMarketHandler.GetPublicChatGPTAccounts)
 				market.GET("/chatgpt/:itemId/checkout", lztMarketHandler.GetPublicChatGPTCheckout)
+				market.POST("/chatgpt/orders", middleware.AuthMiddleware(), lztMarketHandler.CreatePublicChatGPTOrder)
+				market.GET("/chatgpt/orders", middleware.AuthMiddleware(), lztMarketHandler.ListMyPublicChatGPTOrders)
+				market.GET("/chatgpt/orders/:orderId", middleware.AuthMiddleware(), lztMarketHandler.GetMyPublicChatGPTOrderDetail)
 			}
 
 			badges := apiRateLimited.Group("/badges")
