@@ -44,6 +44,16 @@ function classifyNetworkError(err, controller) {
 }
 
 export function getApiBase() {
+  const isServer = typeof window === "undefined";
+
+  if (isServer) {
+    // Build/server-side requests must use an explicit backend origin.
+    const serverBase = String(process.env.API_BASE_URL || "").trim();
+    if (serverBase) {
+      return serverBase.replace(/\/+$/, "");
+    }
+  }
+
   // Support multiple env var names used across deployments/docs.
   // Prefer explicit API base; fall back to documented backend URL; then a safe default.
   const envBase =

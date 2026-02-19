@@ -159,6 +159,9 @@ npm run format        # Format with Prettier
 ## Environment Variables
 
 ```env
+# Required for server-side/static build fetches
+API_BASE_URL=https://api.aivalid.id
+
 # API URLs
 NEXT_PUBLIC_BACKEND_URL=https://api.aivalid.id
 NEXT_PUBLIC_FEATURE_SERVICE_URL=https://feature.aivalid.id

@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import { fetchJson } from "@/lib/api";
 import ValidationCaseIndexClient from "./ValidationCaseIndexClient";
 
+export const revalidate = 30;
+
 export const metadata = {
   title: "Daftar Kasus Validasi AI Terbaru",
   description:
@@ -35,13 +37,35 @@ async function CaseList() {
   const params = new URLSearchParams();
   params.set("limit", "50");
 
-  const data = await fetchJson(`/api/validation-cases/latest?${params.toString()}`, {
-    method: "GET",
-    next: { revalidate: 30 },
-  });
+  const data = await fetchLatestCases(params);
   const cases = Array.isArray(data?.validation_cases) ? data.validation_cases : [];
 
   return <ValidationCaseIndexClient cases={cases} />;
+}
+
+async function fetchLatestCases(params) {
+  const maxAttempts = 3;
+  let lastErr = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await fetchJson(`/api/validation-cases/latest?${params.toString()}`, {
+        method: "GET",
+        next: { revalidate: 30 },
+        timeout: 12000,
+      });
+    } catch (err) {
+      lastErr = err;
+      if (attempt >= maxAttempts) break;
+      await waitBeforeRetry(attempt * 300);
+    }
+  }
+
+  throw lastErr || new Error("Gagal memuat daftar kasus validasi.");
+}
+
+function waitBeforeRetry(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export default function ValidationCaseIndexPage() {
