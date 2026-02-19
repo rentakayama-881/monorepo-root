@@ -6,30 +6,47 @@ const toBool = (value, fallback = false) => {
   return fallback;
 };
 
+const pickBaseUrl = () => {
+  const serverBase = String(process.env.API_BASE_URL || "").trim();
+  const publicBase = String(process.env.NEXT_PUBLIC_API_BASE_URL || "").trim();
+
+  if (serverBase) {
+    return { value: serverBase, source: "API_BASE_URL" };
+  }
+
+  if (publicBase) {
+    return { value: publicBase, source: "NEXT_PUBLIC_API_BASE_URL" };
+  }
+
+  return { value: "", source: "" };
+};
+
 if (toBool(process.env.SKIP_PREBUILD_CHECK, false)) {
   console.warn("[prebuild-check] SKIP_PREBUILD_CHECK=true, skipping API health prebuild check.");
   process.exit(0);
 }
 
-const requiredServerBase = String(process.env.API_BASE_URL || "").trim();
+const selectedBase = pickBaseUrl();
 const healthPath = String(process.env.API_HEALTH_PATH || "/api/health").trim() || "/api/health";
 const strictMode = toBool(process.env.PREBUILD_HEALTHCHECK_STRICT, true);
 
-if (!requiredServerBase) {
-  console.error("[prebuild-check] API_BASE_URL is required for static server-side data fetching.");
+if (!selectedBase.value) {
+  console.error("[prebuild-check] API base URL is required for static server-side data fetching.");
+  console.error("[prebuild-check] Set API_BASE_URL (preferred) or NEXT_PUBLIC_API_BASE_URL.");
   console.error("[prebuild-check] Example: API_BASE_URL=https://api.aivalid.id");
   process.exit(1);
 }
 
 let baseUrl;
 try {
-  baseUrl = new URL(requiredServerBase);
+  baseUrl = new URL(selectedBase.value);
 } catch {
-  console.error("[prebuild-check] API_BASE_URL is invalid:", requiredServerBase);
+  console.error(`[prebuild-check] ${selectedBase.source} is invalid:`, selectedBase.value);
   process.exit(1);
 }
 
 const healthUrl = new URL(healthPath, baseUrl);
+console.log(`[prebuild-check] Using ${selectedBase.source} for health check.`);
 
 try {
   const response = await fetch(healthUrl, {

@@ -159,8 +159,16 @@ npm run format        # Format with Prettier
 ## Environment Variables
 
 ```env
-# Required for server-side/static build fetches
+# Required for server-side/static build fetches (preferred)
 API_BASE_URL=https://api.aivalid.id
+
+# Fallback used by prebuild-check when API_BASE_URL is not set
+NEXT_PUBLIC_API_BASE_URL=https://api.aivalid.id
+
+# Optional prebuild controls
+# PREBUILD_HEALTHCHECK_STRICT=true
+# SKIP_PREBUILD_CHECK=false
+# API_HEALTH_PATH=/api/health
 
 # API URLs
 NEXT_PUBLIC_BACKEND_URL=https://api.aivalid.id
@@ -222,8 +230,27 @@ export default function MyPage() {
 ### Vercel (Recommended)
 
 1. Connect GitHub repository
-2. Set environment variables
-3. Deploy
+2. Set environment variables in Project Settings
+3. Ensure envs are set for Production, Preview, and Development scopes
+4. Deploy
+
+#### Vercel Required Variables
+
+- `API_BASE_URL` (preferred)
+- `NEXT_PUBLIC_API_BASE_URL` (fallback for build-time checks)
+
+#### Vercel Optional Variables
+
+- `PREBUILD_HEALTHCHECK_STRICT=true` (default, recommended for production safety)
+- `API_HEALTH_PATH=/api/health`
+- `SKIP_PREBUILD_CHECK=true` (emergency-only, temporary)
+
+#### Common Misconfiguration Checklist
+
+- Environment variable was added only to Preview, but deployment is Production (or vice versa)
+- Variable name typo (`API_BASE_URL` vs `NEXT_PUBLIC_API_BASE_URL`)
+- URL missing protocol (`https://`)
+- Value was changed but deployment was not redeployed
 
 ### Manual Build
 
