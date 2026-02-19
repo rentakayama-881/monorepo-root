@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchJsonAuth, getApiBase } from "@/lib/api";
+import { FEATURE_ENDPOINTS, fetchFeatureAuth, unwrapFeatureData } from "@/lib/featureApi";
 
 function extractList(payload) {
   if (!payload) return [];
@@ -155,6 +156,14 @@ export default function MarketChatGPTClient() {
     setCheckingOut(itemID);
     setError("");
     try {
+      // Hard stop on client side for zero/insufficient balance before checkout request.
+      const walletPayload = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
+      const wallet = unwrapFeatureData(walletPayload) || {};
+      const balance = Number(wallet?.balance ?? wallet?.Balance ?? 0) || 0;
+      if (balance <= 0) {
+        throw new Error("Saldo kamu tidak mencukupi.");
+      }
+
       const data = await fetchJsonAuth("/api/market/chatgpt/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
