@@ -115,23 +115,37 @@ export default function MarketChatGPTClient() {
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError("");
+    let timer = null;
+
+    async function load(isInitial = false) {
+      if (isInitial) {
+        setLoading(true);
+      }
       try {
         const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US`, { method: "GET" });
         const data = await parseApiResponseSafe(res);
         if (!res.ok) throw new Error(data?.error || "Gagal memuat listing market.");
-        if (!cancelled) setResponse(data);
+        if (!cancelled) {
+          setResponse(data);
+          setError("");
+        }
       } catch (err) {
-        if (!cancelled) setError(err?.message || "Gagal memuat listing market.");
+        if (!cancelled && isInitial) {
+          setError(err?.message || "Gagal memuat listing market.");
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && isInitial) setLoading(false);
       }
     }
-    load();
+
+    load(true);
+    timer = setInterval(() => {
+      load(false);
+    }, 8000);
+
     return () => {
       cancelled = true;
+      if (timer) clearInterval(timer);
     };
   }, [apiBase]);
 

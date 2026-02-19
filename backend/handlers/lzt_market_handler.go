@@ -38,11 +38,12 @@ type LZTMarketHandler struct {
 }
 
 func NewLZTMarketHandler(client *services.LZTMarketClient) *LZTMarketHandler {
+	cacheSeconds := readPositiveIntEnvLocal("MARKET_CHATGPT_CACHE_SECONDS", 8)
 	return &LZTMarketHandler{
 		client:        client,
 		featureWallet: services.NewFeatureWalletClientFromConfig(),
 		fxRates:       services.NewFXRateServiceFromEnv(),
-		cacheTTL:      30 * time.Second,
+		cacheTTL:      time.Duration(cacheSeconds) * time.Second,
 		orders:        make(map[string]*publicMarketOrder),
 		userOrders:    make(map[uint][]string),
 	}
@@ -377,7 +378,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		FXRateToIDR:    fxRate,
 		PriceDisplay:   formatIDR(priceIDR),
 		SourceDisplay:  formatSourcePrice(sourcePrice, sourceSymbol, sourceCurrency),
-		PricingNote:    "Harga realtime + margin platform",
+		PricingNote:    "Harga Lolz realtime dikonversi ke IDR lalu dibagi faktor platform",
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
@@ -727,33 +728,28 @@ func (h *LZTMarketHandler) computeIDRPrice(sourcePrice float64, sourceCurrency s
 	if err != nil {
 		return 0, 0, err
 	}
-	finalIDR := applyPricingMargin(baseIDR)
+	finalIDR := applyPriceFactor(baseIDR)
 	return finalIDR, fxRate, nil
 }
 
-func applyPricingMargin(baseIDR float64) int64 {
-	marginPercent := 0.0
-	if raw := strings.TrimSpace(os.Getenv("MARKET_PRICE_MARGIN_PERCENT")); raw != "" {
-		if parsed, err := strconv.ParseFloat(raw, 64); err == nil && parsed >= 0 {
-			marginPercent = parsed
+func applyPriceFactor(baseIDR float64) int64 {
+	factor := 0.80
+	if raw := strings.TrimSpace(os.Getenv("MARKET_PRICE_FACTOR")); raw != "" {
+		if parsed, err := strconv.ParseFloat(raw, 64); err == nil && parsed > 0 {
+			factor = parsed
 		}
 	}
 
-	fixedFee := int64(0)
-	if raw := strings.TrimSpace(os.Getenv("MARKET_PRICE_FIXED_FEE_IDR")); raw != "" {
-		if parsed, err := strconv.ParseInt(raw, 10, 64); err == nil && parsed >= 0 {
-			fixedFee = parsed
-		}
+	finalValue := baseIDR / factor
+	if finalValue < 0 {
+		finalValue = 0
 	}
-
-	withMargin := baseIDR + (baseIDR * (marginPercent / 100))
-	withFee := withMargin + float64(fixedFee)
-	if withFee < 0 {
-		withFee = 0
-	}
-	rounded := int64(math.Ceil(withFee/100.0) * 100)
+	rounded := int64(math.Round(finalValue))
 	if rounded <= 0 {
-		rounded = int64(math.Ceil(withFee))
+		rounded = int64(math.Ceil(finalValue))
+	}
+	if rounded <= 0 {
+		rounded = 1
 	}
 	return rounded
 }
@@ -957,7 +953,7 @@ func (h *LZTMarketHandler) withDisplayPricing(payload interface{}) interface{} {
 		item["price_source_currency"] = sourceCurrency
 		item["price_source_symbol"] = sourceSymbol
 		item["fx_rate_to_idr"] = fxRate
-		item["pricing_note"] = "Harga realtime + margin platform"
+		item["pricing_note"] = "Harga Lolz realtime dikonversi ke IDR lalu dibagi faktor platform"
 	}
 	return root
 }
