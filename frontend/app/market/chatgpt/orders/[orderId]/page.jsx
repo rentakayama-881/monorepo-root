@@ -11,11 +11,37 @@ function normalizeFailure(message) {
   const raw = String(message || "").trim();
   const lower = raw.toLowerCase();
   if (lower.includes("saldo kamu tidak mencukupi") || lower.includes("insufficient")) return "Saldo kamu tidak mencukupi.";
-  if (lower.includes("supplier") || lower.includes("akun belum siap")) return "Akun belum siap untuk dijual saat ini.";
+  if (lower.includes("akun belum siap")) return "Akun belum siap untuk dijual saat ini.";
   if (lower.includes("item not found") || lower.includes("current listing") || lower.includes("sold")) {
     return "Akun belum siap untuk dijual saat ini.";
   }
-  return raw;
+  if (lower.includes("checker")) return "Sistem sedang memeriksa akun. Coba lagi sebentar.";
+  if (
+    lower.includes("provider") ||
+    lower.includes("supplier") ||
+    lower.includes("feature wallet") ||
+    lower.includes("internal") ||
+    lower.includes("transport")
+  ) {
+    return "Sedang ada kendala sistem. Coba lagi beberapa saat.";
+  }
+  return raw || "Sedang ada kendala sistem. Coba lagi beberapa saat.";
+}
+
+function getStepLabel(step) {
+  const code = String(step?.code || "").toUpperCase();
+  const map = {
+    INIT: "Pesanan dibuat",
+    PROCESSING: "Memproses pesanan",
+    USER_BALANCE_CHECK: "Verifikasi saldo akun",
+    FETCH_PROVIDER_ITEM: "Validasi ketersediaan akun",
+    USER_BALANCE_RESERVE: "Mengunci saldo pesanan",
+    SUPPLIER_BALANCE_CHECK: "Validasi stok akun",
+    PROVIDER_PURCHASE: "Eksekusi pembelian akun",
+    USER_BALANCE_CAPTURE: "Finalisasi pembayaran",
+    DELIVERY_READY: "Data akun siap digunakan",
+  };
+  return map[code] || step?.label || "Proses";
 }
 
 export default function MarketChatGPTOrderDetailPage() {
@@ -90,12 +116,10 @@ export default function MarketChatGPTOrderDetailPage() {
         {!loading && !error && order ? (
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Row label="Title" value={order?.title} />
+              <Row label="Produk" value={order?.title} />
               <Row label="Harga" value={order?.price_display || order?.price || "-"} />
-              <Row label="Harga Sumber" value={order?.source_display || "-"} />
               <Row label="Status" value={statusText} />
-              <Row label="Seller" value={order?.seller || "-"} />
-              <Row label="Kode Gagal" value={order?.failure_code || "-"} />
+              <Row label="Order ID" value={order?.id || "-"} />
             </div>
 
             {order?.failure_reason ? (
@@ -113,10 +137,10 @@ export default function MarketChatGPTOrderDetailPage() {
                   order.steps.map((step, idx) => (
                     <div key={`${step?.code || "step"}-${idx}`} className="rounded-md border border-border bg-card p-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <div className="text-xs font-medium text-foreground">{step?.label || step?.code || "Step"}</div>
+                        <div className="text-xs font-medium text-foreground">{getStepLabel(step)}</div>
                         <StepBadge status={step?.status} />
                       </div>
-                      {step?.message ? <div className="mt-1 text-xs text-muted-foreground">{step.message}</div> : null}
+                      {step?.message ? <div className="mt-1 text-xs text-muted-foreground">{normalizeFailure(step.message)}</div> : null}
                       <div className="mt-1 text-[11px] text-muted-foreground">{formatDateTime(step?.at)}</div>
                     </div>
                   ))
@@ -128,6 +152,17 @@ export default function MarketChatGPTOrderDetailPage() {
               <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Data Akun</div>
               {order?.status === "fulfilled" ? (
                 <div className="mt-3 space-y-3">
+                  <CredentialBlock
+                    title="Ringkasan Akun"
+                    rows={[
+                      ["Judul", order?.delivery?.account?.title],
+                      ["Status", order?.delivery?.account?.status],
+                      ["Tier", order?.delivery?.account?.openai_tier],
+                      ["Langganan", order?.delivery?.account?.subscription],
+                      ["Negara", order?.delivery?.account?.country],
+                      ["Domain Email", order?.delivery?.account?.email_domain],
+                    ]}
+                  />
                   <CredentialBlock
                     title="Login Akun"
                     rows={[
@@ -142,12 +177,6 @@ export default function MarketChatGPTOrderDetailPage() {
                       ["Password", order?.delivery?.credentials?.email_password],
                     ]}
                   />
-                  <details className="rounded-md border border-border bg-card p-2">
-                    <summary className="cursor-pointer text-xs font-medium text-muted-foreground">Lihat response mentah</summary>
-                    <pre className="mt-2 max-h-[320px] overflow-auto text-xs text-foreground">
-                      {JSON.stringify(order?.delivery ?? {}, null, 2)}
-                    </pre>
-                  </details>
                 </div>
               ) : (
                 <p className="mt-2 text-sm text-muted-foreground">Data akun akan muncul setelah order berstatus selesai.</p>
@@ -157,9 +186,14 @@ export default function MarketChatGPTOrderDetailPage() {
         ) : null}
       </section>
 
-      <Link href="/market/chatgpt" className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40">
-        Kembali ke listing
-      </Link>
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href="/market/chatgpt" className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40">
+          Kembali ke listing
+        </Link>
+        <Link href="/account/my-purchases" className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40">
+          Lihat My Purchase
+        </Link>
+      </div>
     </main>
   );
 }

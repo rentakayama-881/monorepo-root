@@ -42,6 +42,11 @@ const accountLinks = [
     iconPath: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
   },
   {
+    href: "/account/my-purchases",
+    label: "My Purchase",
+    iconPath: "M3 7h18M6 7V5a2 2 0 012-2h8a2 2 0 012 2v2m-1 0v12a2 2 0 01-2 2H9a2 2 0 01-2-2V7m3 4h4m-4 4h4",
+  },
+  {
     href: "/account/validation-cases",
     label: "My Validation Cases",
     iconPath:

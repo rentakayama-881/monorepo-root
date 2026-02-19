@@ -1387,19 +1387,15 @@ func (o *publicMarketOrder) toClientDTO(withDelivery bool) publicMarketOrder {
 
 func extractDeliveryPayload(resp *services.LZTMarketResponse) map[string]interface{} {
 	payload := map[string]interface{}{
-		"provider_status": resp.StatusCode,
+		"delivered_at": time.Now().UTC(),
 	}
 	if resp.JSON != nil {
 		if extracted := extractCredentialsFromBuyResponse(resp.JSON); len(extracted) > 0 {
 			payload["credentials"] = extracted
 		}
 		if summary := extractPurchasedItemSummary(resp.JSON); len(summary) > 0 {
-			payload["item"] = summary
+			payload["account"] = summary
 		}
-		payload["provider_response"] = resp.JSON
-	}
-	if strings.TrimSpace(resp.Raw) != "" {
-		payload["provider_raw"] = resp.Raw
 	}
 	return payload
 }
@@ -1451,9 +1447,12 @@ func extractPurchasedItemSummary(jsonPayload interface{}) map[string]interface{}
 	summary := map[string]interface{}{
 		"item_id":      firstNonEmptyString(item, "item_id"),
 		"title":        firstNonEmptyString(item, "title"),
-		"item_state":   firstNonEmptyString(item, "item_state"),
+		"status":       firstNonEmptyString(item, "item_state"),
 		"price":        firstNonEmptyString(item, "price", "priceWithSellerFee"),
 		"email_domain": firstNonEmptyString(item, "item_domain"),
+		"openai_tier":  firstNonEmptyString(item, "openai_tier"),
+		"country":      firstNonEmptyString(item, "chatgpt_country"),
+		"subscription": firstNonEmptyString(item, "chatgpt_subscription"),
 	}
 	for key, value := range summary {
 		if strings.TrimSpace(fmt.Sprintf("%v", value)) == "" {
