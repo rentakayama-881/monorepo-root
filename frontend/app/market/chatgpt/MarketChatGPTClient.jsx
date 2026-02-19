@@ -35,6 +35,19 @@ function toDisplayAccount(item, index) {
   };
 }
 
+async function parseApiResponseSafe(res) {
+  const contentType = (res.headers.get("content-type") || "").toLowerCase();
+  if (contentType.includes("application/json")) {
+    try {
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+  const text = await res.text().catch(() => "");
+  return { error: text || `HTTP ${res.status}` };
+}
+
 export default function MarketChatGPTClient() {
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState("");
@@ -53,7 +66,7 @@ export default function MarketChatGPTClient() {
         const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US`, {
           method: "GET",
         });
-        const data = await res.json();
+        const data = await parseApiResponseSafe(res);
         if (!res.ok) throw new Error(data?.error || "Gagal memuat listing market.");
         if (!cancelled) setResponse(data);
       } catch (err) {
@@ -88,7 +101,7 @@ export default function MarketChatGPTClient() {
       const res = await fetch(`${apiBase}/api/market/chatgpt/${encodeURIComponent(itemID)}/checkout`, {
         method: "GET",
       });
-      const data = await res.json();
+      const data = await parseApiResponseSafe(res);
       if (!res.ok) throw new Error(data?.error || "Gagal membuat checkout URL.");
       const checkoutURL = data?.checkout_url;
       if (!checkoutURL) throw new Error("Checkout URL tidak tersedia.");
