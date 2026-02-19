@@ -577,6 +577,13 @@ func main() {
 
 			// Financial endpoints are handled by the ASP.NET service; omitted here to keep responsibilities separated.
 
+			// Public marketplace endpoints (LZT-backed listing via backend proxy)
+			market := apiRateLimited.Group("/market")
+			{
+				market.GET("/chatgpt", enhancedRateLimiter.SearchMiddleware(), lztMarketHandler.GetPublicChatGPTAccounts)
+				market.GET("/chatgpt/:itemId/checkout", lztMarketHandler.GetPublicChatGPTCheckout)
+			}
+
 			badges := apiRateLimited.Group("/badges")
 			{
 				badges.GET("/:id", handlers.GetBadgeDetailHandler)
@@ -622,6 +629,7 @@ func main() {
 
 			// External integration (LZT Market API)
 			adminProtected.GET("/integrations/lzt/config", lztMarketHandler.GetConfig)
+			adminProtected.GET("/integrations/lzt/chatgpt", lztMarketHandler.GetChatGPTAccounts)
 			adminProtected.POST("/integrations/lzt/request", lztMarketHandler.ProxyRequest)
 
 		}

@@ -95,6 +95,14 @@ export default function Sidebar({ open, onClose }) {
             >
               Case Index
             </Link>
+            <Link
+              href="/market/chatgpt"
+              prefetch={false}
+              className="block rounded-[var(--radius)] px-2.5 py-2 font-semibold text-foreground hover:bg-accent transition-colors"
+              onClick={handleClose}
+            >
+              Market
+            </Link>
           </nav>
         </div>
       </aside>

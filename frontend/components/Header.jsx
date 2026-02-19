@@ -187,6 +187,9 @@ export default function Header() {
           <Link href="/" className={navItem}>
             Home
           </Link>
+          <Link href="/market/chatgpt" prefetch={false} className={navItem}>
+            Market
+          </Link>
           <Link href="/validation-cases" prefetch={false} className={navItem}>
             Case Index
           </Link>

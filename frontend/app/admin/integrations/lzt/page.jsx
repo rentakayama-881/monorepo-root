@@ -25,12 +25,36 @@ function parseKeyValueLines(raw) {
   return out;
 }
 
+function extractAccounts(payload) {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+
+  const candidates = [
+    payload.items,
+    payload.accounts,
+    payload.data,
+    payload.result,
+    payload.chatgpt,
+    payload.rows,
+    payload.list,
+  ];
+
+  for (const value of candidates) {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === "object" && Array.isArray(value.items)) return value.items;
+  }
+
+  return [];
+}
+
 export default function AdminLZTIntegrationPage() {
   const [config, setConfig] = useState(null);
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingChatGPT, setLoadingChatGPT] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
+  const [chatgptResult, setChatgptResult] = useState(null);
 
   const [method, setMethod] = useState("POST");
   const [path, setPath] = useState("/123456789/tag/add");
@@ -115,6 +139,37 @@ export default function AdminLZTIntegrationPage() {
       setSubmitting(false);
     }
   };
+
+  const handleLoadChatGPT = async () => {
+    setLoadingChatGPT(true);
+    setError("");
+    setChatgptResult(null);
+    try {
+      const token = getAdminToken();
+      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
+
+      const res = await fetch(`${apiBase}/admin/integrations/lzt/chatgpt`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Gagal mengambil akun ChatGPT dari LZT.");
+      }
+      setChatgptResult(data);
+    } catch (err) {
+      setError(err?.message || "Gagal mengambil akun ChatGPT dari LZT.");
+    } finally {
+      setLoadingChatGPT(false);
+    }
+  };
+
+  const chatgptAccounts = useMemo(
+    () => extractAccounts(chatgptResult?.json),
+    [chatgptResult]
+  );
 
   return (
     <div className="space-y-6">
@@ -232,6 +287,80 @@ export default function AdminLZTIntegrationPage() {
           {submitting ? "Sending..." : "Send to LZT"}
         </button>
       </form>
+
+      <section className="rounded-lg border border-border bg-card p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">ChatGPT Accounts (LZT)</h2>
+          <button
+            type="button"
+            disabled={loadingChatGPT}
+            onClick={handleLoadChatGPT}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+          >
+            {loadingChatGPT ? "Loading..." : "Load ChatGPT Accounts"}
+          </button>
+        </div>
+
+        {chatgptResult ? (
+          <div className="space-y-3">
+            <div className="text-sm">
+              Upstream status:{" "}
+              <span className="font-semibold">{chatgptResult.upstream_status}</span>
+            </div>
+
+            {chatgptAccounts.length > 0 ? (
+              <div className="overflow-auto rounded-md border border-border">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-muted/40">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium">#</th>
+                      <th className="px-3 py-2 text-left font-medium">Title/Name</th>
+                      <th className="px-3 py-2 text-left font-medium">Price</th>
+                      <th className="px-3 py-2 text-left font-medium">Status</th>
+                      <th className="px-3 py-2 text-left font-medium">ID</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chatgptAccounts.map((item, idx) => {
+                      const title =
+                        item?.title ??
+                        item?.name ??
+                        item?.account_title ??
+                        item?.description ??
+                        "-";
+                      const price = item?.price ?? item?.amount ?? item?.cost ?? "-";
+                      const status = item?.status ?? item?.state ?? item?.availability ?? "-";
+                      const id = item?.id ?? item?.item_id ?? item?.account_id ?? "-";
+
+                      return (
+                        <tr key={`${id}-${idx}`} className="border-t border-border">
+                          <td className="px-3 py-2">{idx + 1}</td>
+                          <td className="px-3 py-2">{String(title)}</td>
+                          <td className="px-3 py-2">{String(price)}</td>
+                          <td className="px-3 py-2">{String(status)}</td>
+                          <td className="px-3 py-2 font-mono text-xs">{String(id)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Data akun tidak terdeteksi sebagai array terstruktur. Cek raw response di bawah.
+              </p>
+            )}
+
+            <pre className="max-h-[360px] overflow-auto rounded-md border border-border bg-background p-3 text-xs">
+              {JSON.stringify(chatgptResult.json ?? chatgptResult.raw ?? chatgptResult, null, 2)}
+            </pre>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Klik tombol di atas untuk ambil daftar akun ChatGPT dari LZT.
+          </p>
+        )}
+      </section>
 
       {error ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
