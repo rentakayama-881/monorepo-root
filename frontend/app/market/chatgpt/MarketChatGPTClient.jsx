@@ -32,7 +32,7 @@ function normalizeBool(value) {
 }
 
 function toDisplayAccount(item, index) {
-  const id = item?.id ?? item?.item_id ?? item?.account_id ?? item?.chatgpt_item_id ?? `row-${index}`;
+  const id = item?.chatgpt_item_id ?? item?.item_id ?? item?.account_id ?? item?.id ?? `row-${index}`;
   const isFallbackID = String(id).startsWith("row-");
   const seller =
     typeof item?.seller === "object" && item?.seller !== null
