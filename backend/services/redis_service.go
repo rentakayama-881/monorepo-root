@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"backend-gin/logger"
@@ -28,16 +30,9 @@ type RedisConfig struct {
 // Returns nil if Redis is not configured (optional dependency)
 func InitRedis() error {
 	redisURL := os.Getenv("REDIS_URL")
-	
+
 	// If REDIS_URL is provided, use it directly (for cloud Redis like Upstash)
-	if redisURL != "" {
-		opt, err := redis.ParseURL(redisURL)
-		if err != nil {
-			logger.Error("Failed to parse REDIS_URL", zap.Error(err))
-			return err
-		}
-		RedisClient = redis.NewClient(opt)
-	} else {
+	if redisURL == "" {
 		// Fallback to individual config values
 		host := os.Getenv("REDIS_HOST")
 		if host == "" {
@@ -54,21 +49,94 @@ func InitRedis() error {
 			Password: password,
 			DB:       0,
 		})
+
+		if err := pingRedisWithTimeout(RedisClient, 5*time.Second); err != nil {
+			logger.Error("Failed to connect to Redis", zap.Error(err))
+			RedisClient = nil
+			return err
+		}
+
+		logger.Info("Redis connected successfully")
+		return nil
 	}
 
-	// Test connection
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	_, err := RedisClient.Ping(ctx).Result()
+	opt, err := redis.ParseURL(redisURL)
 	if err != nil {
-		logger.Error("Failed to connect to Redis", zap.Error(err))
-		RedisClient = nil
+		logger.Error("Failed to parse REDIS_URL", zap.Error(err))
 		return err
 	}
 
-	logger.Info("Redis connected successfully")
-	return nil
+	RedisClient = redis.NewClient(opt)
+	if err := pingRedisWithTimeout(RedisClient, 5*time.Second); err == nil {
+		logger.Info("Redis connected successfully")
+		return nil
+	}
+
+	// Optional fallback for environments where URL is configured as TLS but endpoint is plain TCP.
+	// This is disabled by default and must be explicitly enabled.
+	if allowInsecureRedisFallback() && isTLSHandshakeError(err) {
+		logger.Warn(
+			"Redis TLS handshake failed; retrying without TLS due to REDIS_ALLOW_INSECURE_FALLBACK=true",
+			zap.Error(err),
+		)
+
+		insecureClient, insecureErr := buildInsecureRedisClient(redisURL)
+		if insecureErr != nil {
+			logger.Error("Failed to build insecure Redis fallback client", zap.Error(insecureErr))
+			RedisClient = nil
+			return err
+		}
+
+		if pingErr := pingRedisWithTimeout(insecureClient, 5*time.Second); pingErr == nil {
+			_ = RedisClient.Close()
+			RedisClient = insecureClient
+			logger.Warn("Redis connected without TLS fallback")
+			return nil
+		}
+
+		_ = insecureClient.Close()
+	}
+
+	logger.Error("Failed to connect to Redis", zap.Error(err))
+	RedisClient = nil
+	return err
+}
+
+func pingRedisWithTimeout(client *redis.Client, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	_, err := client.Ping(ctx).Result()
+	return err
+}
+
+func allowInsecureRedisFallback() bool {
+	return strings.EqualFold(strings.TrimSpace(os.Getenv("REDIS_ALLOW_INSECURE_FALLBACK")), "true")
+}
+
+func isTLSHandshakeError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "tls handshake") ||
+		strings.Contains(msg, "first record does not look like a tls handshake")
+}
+
+func buildInsecureRedisClient(redisURL string) (*redis.Client, error) {
+	parsed, err := url.Parse(redisURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse redis URL for fallback: %w", err)
+	}
+
+	parsed.Scheme = "redis"
+	insecureOpts, err := redis.ParseURL(parsed.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse insecure redis URL: %w", err)
+	}
+
+	// Ensure TLS is disabled explicitly.
+	insecureOpts.TLSConfig = nil
+	return redis.NewClient(insecureOpts), nil
 }
 
 // CloseRedis closes the Redis connection
@@ -165,7 +233,7 @@ func CheckRateLimit(ctx context.Context, key string, limit int, window time.Dura
 	pipe := RedisClient.Pipeline()
 	incr := pipe.Incr(ctx, key)
 	pipe.ExpireAt(ctx, key, resetAt)
-	
+
 	_, err := pipe.Exec(ctx)
 	if err != nil && err != redis.Nil {
 		logger.Error("Rate limit check failed", zap.Error(err))
@@ -191,7 +259,7 @@ func IncrementRateLimit(ctx context.Context, key string, window time.Duration) (
 	pipe := RedisClient.Pipeline()
 	incr := pipe.Incr(ctx, key)
 	pipe.Expire(ctx, key, window)
-	
+
 	_, err := pipe.Exec(ctx)
 	if err != nil {
 		return 0, err
@@ -262,10 +330,10 @@ const (
 	// Cache key prefixes
 	CacheKeyValidationCases = "validation_cases"
 	CacheKeyValidationCase  = "validation_case"
-	CacheKeyUser         = "user"
-	CacheKeyCategories   = "categories"
-	CacheKeyUserProfile  = "user_profile"
-	
+	CacheKeyUser            = "user"
+	CacheKeyCategories      = "categories"
+	CacheKeyUserProfile     = "user_profile"
+
 	// Default cache TTLs
 	CacheTTLShort   = 1 * time.Minute
 	CacheTTLMedium  = 5 * time.Minute
@@ -305,11 +373,11 @@ func InvalidateValidationCaseCache(ctx context.Context, validationCaseID string)
 	if err != nil {
 		return err
 	}
-	
+
 	if len(keys) > 0 {
 		return CacheDelete(ctx, keys...)
 	}
-	
+
 	return nil
 }
 
