@@ -186,26 +186,23 @@ public class DepositServiceTests
         long updateModifiedCount)
     {
         var collection = new Mock<IMongoCollection<DepositRequest>>(MockBehavior.Loose);
-        var findFluent = new Mock<IFindFluent<DepositRequest, DepositRequest>>(MockBehavior.Loose);
         var cursor = CreateCursor(findResult is null
             ? Array.Empty<DepositRequest>()
             : new[] { findResult });
 
-        findFluent
-            .Setup(f => f.ToCursorAsync(It.IsAny<CancellationToken>()))
+        collection
+            .Setup(c => c.FindAsync(
+                It.IsAny<FilterDefinition<DepositRequest>>(),
+                It.IsAny<FindOptions<DepositRequest, DepositRequest>>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(cursor.Object);
-        findFluent
-            .Setup(f => f.ToCursor(It.IsAny<CancellationToken>()))
-            .Returns(cursor.Object);
-        findFluent
-            .Setup(f => f.Limit(It.IsAny<int?>()))
-            .Returns(findFluent.Object);
 
         collection
-            .Setup(c => c.Find(
+            .Setup(c => c.FindSync(
                 It.IsAny<FilterDefinition<DepositRequest>>(),
-                It.IsAny<FindOptions>()))
-            .Returns(findFluent.Object);
+                It.IsAny<FindOptions<DepositRequest, DepositRequest>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(cursor.Object);
 
         collection
             .Setup(c => c.UpdateOneAsync(
