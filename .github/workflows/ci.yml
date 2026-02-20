@@ -70,7 +70,7 @@ jobs:
   secrets-scan:
     name: 🔐 Secrets Detection
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     permissions:
       contents: read
       security-events: write
@@ -100,7 +100,7 @@ jobs:
   license-check:
     name: 📋 License Compliance
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -468,7 +468,7 @@ jobs:
     name: 🔒 Backend Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     env:
       GOCACHE: ${{ github.workspace }}/.cache/go-build
       GOMODCACHE: ${{ github.workspace }}/.cache/go-mod
@@ -585,7 +585,7 @@ jobs:
     name: 🔒 Feature Service Security
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     env:
       DOTNET_CLI_HOME: ${{ github.workspace }}/.cache/dotnet
       NUGET_PACKAGES: ${{ github.workspace }}/.cache/nuget
@@ -659,7 +659,7 @@ jobs:
     name: 🔐 PQC Cryptography Validation
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     needs: [backend-build, feature-service-build]
     env:
       DOTNET_CLI_HOME: ${{ github.workspace }}/.cache/dotnet
@@ -698,7 +698,7 @@ jobs:
     name: 🐳 Container Security
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -716,7 +716,7 @@ jobs:
     name: 🏗️ Infrastructure Security
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -759,7 +759,7 @@ jobs:
   quality-gate-full:
     name: ✅ Quality Gate (Full Lane)
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     needs:
       - secrets-scan
       - license-check
