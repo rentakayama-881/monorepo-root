@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 // Note: Cannot use logger here as this is a root error boundary
 // and may not have access to all modules
@@ -10,8 +11,11 @@ export default function GlobalError({ error, reset }) {
   useEffect(() => {
     if (isDev) {
       console.error("Global application error:", error);
+      return;
     }
-    // TODO: Send to error tracking service in production
+
+    // Capture root boundary errors to improve production incident visibility.
+    Sentry.captureException(error);
   }, [error]);
 
   return (

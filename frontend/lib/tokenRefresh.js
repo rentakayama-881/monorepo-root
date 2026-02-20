@@ -9,6 +9,27 @@ import {
 
 let refreshPromise = null;
 
+function shouldSkipNavigationRedirect() {
+  if (typeof navigator === "undefined") return false;
+  return /jsdom/i.test(String(navigator.userAgent || ""));
+}
+
+function redirectToAccountLockedLogin() {
+  if (typeof window === "undefined") return;
+  if (window.location.pathname.includes("/login")) return;
+  if (shouldSkipNavigationRedirect()) return;
+
+  try {
+    if (typeof window.location.assign === "function") {
+      window.location.assign("/login?error=account_locked");
+      return;
+    }
+    window.location.href = "/login?error=account_locked";
+  } catch {
+    // Ignore redirect failures in restricted environments.
+  }
+}
+
 export async function refreshAccessToken() {
   const refreshToken = getRefreshToken();
 
@@ -42,11 +63,7 @@ export async function refreshAccessToken() {
         if (res.status === 403 && (data?.code === "AUTH009" || data?.code === "AUTH012" || data?.message?.includes("terkunci") || data?.error?.includes("terkunci"))) {
           // Account locked - redirect silently
           clearToken();
-          if (typeof window !== "undefined") {
-            if (!window.location.pathname.includes("/login")) {
-              window.location.href = "/login?error=account_locked";
-            }
-          }
+          redirectToAccountLockedLogin();
           return null;
         }
 
