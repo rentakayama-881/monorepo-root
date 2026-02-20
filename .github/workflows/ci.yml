@@ -354,6 +354,9 @@ jobs:
         with:
           version: v2.8
           working-directory: backend
+          # On PRs, fail only on new issues introduced by the change set.
+          # Full baseline lint debt remains visible on push/schedule lanes.
+          only-new-issues: ${{ github.event_name == 'pull_request' }}
           args: --timeout=5m
 
       - name: Check go mod tidy
