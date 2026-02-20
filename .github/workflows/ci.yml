@@ -126,6 +126,7 @@ jobs:
   frontend-lint:
     name: 🎨 Frontend Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     defaults:
@@ -155,6 +156,7 @@ jobs:
   frontend-typecheck:
     name: 📝 Frontend TypeScript
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     defaults:
@@ -180,6 +182,7 @@ jobs:
   frontend-test:
     name: 🧪 Frontend Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     permissions:
       contents: read
     defaults:
@@ -205,6 +208,7 @@ jobs:
   frontend-build:
     name: 🏗️ Frontend Build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [frontend-lint, frontend-typecheck, frontend-test]
     permissions:
       contents: read
@@ -243,6 +247,7 @@ jobs:
   frontend-security:
     name: 🔒 Frontend Security Audit
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: frontend
@@ -321,6 +326,7 @@ jobs:
   backend-lint:
     name: 🔍 Backend Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     env:
       GOCACHE: ${{ env.GO_CACHE_DIR }}
       GOMODCACHE: ${{ env.GO_MOD_CACHE_DIR }}
@@ -358,6 +364,7 @@ jobs:
   backend-build:
     name: 🏗️ Backend Build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: backend-lint
     env:
       GOCACHE: ${{ env.GO_CACHE_DIR }}
@@ -398,6 +405,7 @@ jobs:
   backend-test:
     name: 🧪 Backend Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     needs: backend-build
     services:
       postgres:
@@ -459,6 +467,7 @@ jobs:
   backend-security:
     name: 🔒 Backend Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     env:
       GOCACHE: ${{ env.GO_CACHE_DIR }}
@@ -496,6 +505,7 @@ jobs:
   feature-service-build:
     name: 🏗️ Feature Service Build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       DOTNET_CLI_HOME: ${{ env.DOTNET_CLI_HOME }}
       NUGET_PACKAGES: ${{ env.NUGET_PACKAGES }}
@@ -523,6 +533,7 @@ jobs:
   feature-service-test:
     name: 🧪 Feature Service Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     needs: feature-service-build
     services:
       mongodb:
@@ -573,6 +584,7 @@ jobs:
   feature-service-security:
     name: 🔒 Feature Service Security
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     env:
       DOTNET_CLI_HOME: ${{ env.DOTNET_CLI_HOME }}
@@ -646,6 +658,7 @@ jobs:
   pqc-validation:
     name: 🔐 PQC Cryptography Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     needs: [backend-build, feature-service-build]
     env:
@@ -684,6 +697,7 @@ jobs:
   security-container:
     name: 🐳 Container Security
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     steps:
       - name: Checkout code
@@ -701,6 +715,7 @@ jobs:
   security-infrastructure:
     name: 🏗️ Infrastructure Security
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     steps:
       - name: Checkout code
@@ -771,6 +786,135 @@ jobs:
           echo "🛡️ PQC: Post-Quantum Crypto validated"
           echo ""
           echo "Ready for deployment to production!"
+
+  # --------------------------------------------------------------------------
+  # CI Stability Report (evidence artifact for quick/full lane streak tracking)
+  # --------------------------------------------------------------------------
+  ci-stability-report:
+    name: 📈 CI Stability Report
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - secrets-scan
+      - license-check
+      - frontend-lint
+      - frontend-typecheck
+      - frontend-test
+      - frontend-build
+      - frontend-security
+      - backend-lint
+      - backend-build
+      - backend-test
+      - backend-security
+      - feature-service-build
+      - feature-service-test
+      - feature-service-security
+      - pqc-validation
+      - security-container
+      - security-infrastructure
+      - quality-gate-quick
+      - quality-gate-full
+    env:
+      QUICK_GATE_RESULT: ${{ needs.quality-gate-quick.result }}
+      FULL_GATE_RESULT: ${{ needs.quality-gate-full.result }}
+      FRONTEND_BUILD_RESULT: ${{ needs.frontend-build.result }}
+      FRONTEND_SECURITY_RESULT: ${{ needs.frontend-security.result }}
+      BACKEND_TEST_RESULT: ${{ needs.backend-test.result }}
+      BACKEND_SECURITY_RESULT: ${{ needs.backend-security.result }}
+      FEATURE_SERVICE_TEST_RESULT: ${{ needs.feature-service-test.result }}
+      FEATURE_SERVICE_SECURITY_RESULT: ${{ needs.feature-service-security.result }}
+      SECRETS_SCAN_RESULT: ${{ needs.secrets-scan.result }}
+      LICENSE_CHECK_RESULT: ${{ needs.license-check.result }}
+      SECURITY_CONTAINER_RESULT: ${{ needs.security-container.result }}
+      SECURITY_INFRA_RESULT: ${{ needs.security-infrastructure.result }}
+      PQC_RESULT: ${{ needs.pqc-validation.result }}
+    steps:
+      - name: Generate lane stability snapshot
+        run: |
+          set -euo pipefail
+          mkdir -p ci-stability
+
+          event="${{ github.event_name }}"
+          ref="${{ github.ref }}"
+
+          lane="full"
+          gate_result="${FULL_GATE_RESULT:-skipped}"
+          if [ "${event}" = "pull_request" ] || { [ "${event}" = "push" ] && [ "${ref}" = "refs/heads/develop" ]; }; then
+            lane="quick"
+            gate_result="${QUICK_GATE_RESULT:-skipped}"
+          fi
+
+          failed_jobs=()
+          cancelled_jobs=()
+          for item in \
+            "frontend-build:${FRONTEND_BUILD_RESULT:-unknown}" \
+            "frontend-security:${FRONTEND_SECURITY_RESULT:-unknown}" \
+            "backend-test:${BACKEND_TEST_RESULT:-unknown}" \
+            "backend-security:${BACKEND_SECURITY_RESULT:-unknown}" \
+            "feature-service-test:${FEATURE_SERVICE_TEST_RESULT:-unknown}" \
+            "feature-service-security:${FEATURE_SERVICE_SECURITY_RESULT:-unknown}" \
+            "secrets-scan:${SECRETS_SCAN_RESULT:-unknown}" \
+            "license-check:${LICENSE_CHECK_RESULT:-unknown}" \
+            "security-container:${SECURITY_CONTAINER_RESULT:-unknown}" \
+            "security-infrastructure:${SECURITY_INFRA_RESULT:-unknown}" \
+            "pqc-validation:${PQC_RESULT:-unknown}"; do
+            name="${item%%:*}"
+            status="${item##*:}"
+            if [ "${status}" = "failure" ] || [ "${status}" = "cancelled" ]; then
+              failed_jobs+=("${name}")
+              if [ "${status}" = "cancelled" ]; then
+                cancelled_jobs+=("${name}")
+              fi
+            fi
+          done
+
+          failure_class="none"
+          if [ "${gate_result}" != "success" ]; then
+            if [ "${#cancelled_jobs[@]}" -gt 0 ]; then
+              failure_class="timeout"
+            elif printf '%s\n' "${failed_jobs[@]}" | grep -Eq 'security|license-check'; then
+              failure_class="dependency_registry"
+            elif [ "${#failed_jobs[@]}" -ge 2 ]; then
+              failure_class="infra_network"
+            else
+              failure_class="code_failure"
+            fi
+          fi
+
+          failed_jobs_csv=""
+          if [ "${#failed_jobs[@]}" -gt 0 ]; then
+            failed_jobs_csv="$(IFS=,; echo "${failed_jobs[*]}")"
+          fi
+
+          cat > "ci-stability/ci-stability-${{ github.run_id }}.json" <<EOF
+          {
+            "lane": "${lane}",
+            "result": "${gate_result}",
+            "failure_class": "${failure_class}",
+            "failed_jobs": "${failed_jobs_csv}",
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}",
+            "workflow": "${{ github.workflow }}",
+            "event_name": "${{ github.event_name }}",
+            "ref": "${{ github.ref }}",
+            "sha": "${{ github.sha }}",
+            "timestamp_utc": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+          echo "## CI Stability Snapshot" >> "$GITHUB_STEP_SUMMARY"
+          echo "- lane: ${lane}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- result: ${gate_result}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- failure_class: ${failure_class}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- failed_jobs: ${failed_jobs_csv:-none}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- run_id: ${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload stability artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-stability-report-${{ github.run_id }}
+          path: ci-stability/*.json
+          retention-days: 30
 
   # ==========================================================================
   # Stage 8: Deployment Readiness Report

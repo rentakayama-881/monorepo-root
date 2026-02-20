@@ -35,6 +35,7 @@ Primary scripts:
 
 - `deploy/scripts/quality-baseline.sh`
 - `deploy/scripts/generate-score-summary.sh`
+- `deploy/scripts/check-ci-streak.sh`
 
 Latest quick-lane production-like baseline log:
 
@@ -45,6 +46,12 @@ Auto summary snapshot:
 - Overall gate: `PASS`
 - Gate totals: `pass=3, fail=0, timeout=0`
 - Initial heuristic band: `90-100 (Excellent trajectory)`
+
+CI stability artifact:
+
+- Workflow job: `📈 CI Stability Report`
+- Artifact name: `ci-stability-report-<run_id>`
+- Failure classes: `none`, `code_failure`, `infra_network`, `dependency_registry`, `timeout`
 
 Notes:
 
@@ -69,12 +76,12 @@ Notes:
 ## Phase Status
 
 1. Phase 0 - Baseline & Governance: In progress
-- Done: baseline scripts + score summary generation + quality contract doc.
+- Done: baseline scripts + score summary generation + quality contract doc + branch protection runbook.
 - Pending: enforce branch protection settings at repository level.
 
 2. Phase 1 - CI Determinism: In progress
-- Done: vulnerability gates are explicit and enforced.
-- Pending: complete quick-vs-full lane separation and achieve 10 consecutive green runs.
+- Done: vulnerability gates explicit, quick/full lane split, CI stability collector artifact.
+- Pending: achieve 10 consecutive green runs for quick and full lanes.
 
 3. Phase 2 - Safety Harness: Planned
 4. Phase 3 - Structural Refactor: Planned
@@ -93,4 +100,4 @@ Notes:
 
 - `docs/QUALITY_CONTRACT_2026.md`
 - `docs/ROADMAP_100_STRICT_2026.md`
-
+- `docs/BRANCH_PROTECTION_2026.md`

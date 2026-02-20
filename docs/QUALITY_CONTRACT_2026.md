@@ -42,6 +42,30 @@ In addition to quick-lane checks:
 - Full CI security jobs (Trivy, .NET vulnerable dependency audit, Go vulnerability scanning).
 - E2E + performance smoke on nightly pipeline.
 
+## CI Stability Evidence Rule
+
+Evidence is mandatory for Phase 1 completion:
+
+1. CI run artifact
+- `ci-stability-report-<run_id>` from job `📈 CI Stability Report`.
+
+2. Record format
+- `lane`, `result`, `failure_class`, `failed_jobs`, `run_id`, `sha`, `timestamp_utc`.
+
+3. Streak threshold
+- Quick lane streak: `>= 10` consecutive `success`.
+- Full lane streak: `>= 10` consecutive `success`.
+
+4. Streak evaluator
+- `deploy/scripts/check-ci-streak.sh --input <stability-json-dir> --target 10`.
+
+5. Failure class vocabulary
+- `none`
+- `code_failure`
+- `infra_network`
+- `dependency_registry`
+- `timeout`
+
 ## Coverage Floors
 
 Current minimum floors (can only go up):
@@ -69,3 +93,16 @@ Quality target is reached only when all are true:
 4. No open critical issue; no unmitigated high issue in critical flows.
 5. Auth and financial critical paths have stable regression harness (unit + integration + e2e/contract).
 
+## Branch Protection Alignment
+
+Repository settings must enforce the contract:
+
+1. Required checks:
+- `✅ Quality Gate (Quick Lane)` for `develop`.
+- `✅ Quality Gate (Full Lane)` for `main`.
+
+2. Required review:
+- Minimum one reviewer, with stricter owner review on auth/financial/security scope.
+
+3. Operational runbook:
+- `docs/BRANCH_PROTECTION_2026.md`
