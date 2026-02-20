@@ -21,6 +21,17 @@ const pickBaseUrl = () => {
   return { value: "", source: "" };
 };
 
+const toPositiveInt = (value, fallback) => {
+  const parsed = Number.parseInt(String(value ?? "").trim(), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+};
+
+const isVercelBuildEnv = () => {
+  if (toBool(process.env.VERCEL, false)) return true;
+  return String(process.env.VERCEL_ENV || "").trim().length > 0;
+};
+
 if (toBool(process.env.SKIP_PREBUILD_CHECK, false)) {
   console.warn("[prebuild-check] SKIP_PREBUILD_CHECK=true, skipping API health prebuild check.");
   process.exit(0);
@@ -28,7 +39,10 @@ if (toBool(process.env.SKIP_PREBUILD_CHECK, false)) {
 
 const selectedBase = pickBaseUrl();
 const healthPath = String(process.env.API_HEALTH_PATH || "/api/health").trim() || "/api/health";
-const strictMode = toBool(process.env.PREBUILD_HEALTHCHECK_STRICT, true);
+const requestTimeoutMs = toPositiveInt(process.env.PREBUILD_HEALTHCHECK_TIMEOUT_MS, 10000);
+const isVercel = isVercelBuildEnv();
+const strictDefault = !isVercel;
+const strictMode = toBool(process.env.PREBUILD_HEALTHCHECK_STRICT, strictDefault);
 
 if (!selectedBase.value) {
   console.error("[prebuild-check] API base URL is required for static server-side data fetching.");
@@ -47,11 +61,19 @@ try {
 
 const healthUrl = new URL(healthPath, baseUrl);
 console.log(`[prebuild-check] Using ${selectedBase.source} for health check.`);
+if (isVercel && process.env.PREBUILD_HEALTHCHECK_STRICT == null) {
+  console.warn("[prebuild-check] Vercel environment detected. Falling back to non-strict mode by default.");
+  console.warn("[prebuild-check] Set PREBUILD_HEALTHCHECK_STRICT=true to fail build on health check errors.");
+}
+
+const abortController = new AbortController();
+const timeoutId = setTimeout(() => abortController.abort(new Error("timeout")), requestTimeoutMs);
 
 try {
   const response = await fetch(healthUrl, {
     method: "GET",
     headers: { Accept: "application/json" },
+    signal: abortController.signal,
   });
 
   if (!response.ok) {
@@ -66,7 +88,11 @@ try {
 
   console.log(`[prebuild-check] OK: ${healthUrl.toString()}`);
 } catch (err) {
-  const message = err instanceof Error ? err.message : String(err);
+  const message = abortController.signal.aborted
+    ? "timeout"
+    : err instanceof Error
+      ? err.message
+      : String(err);
   const msg = `[prebuild-check] Unable to reach API health endpoint: ${message}`;
   if (strictMode) {
     console.error(msg);
@@ -74,4 +100,6 @@ try {
   }
   console.warn(`${msg} (continuing because PREBUILD_HEALTHCHECK_STRICT=false)`);
   process.exit(0);
+} finally {
+  clearTimeout(timeoutId);
 }

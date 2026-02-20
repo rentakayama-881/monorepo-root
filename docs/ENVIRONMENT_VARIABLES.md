@@ -166,6 +166,10 @@ This document lists all required and optional environment variables for the AIVa
 | `NODE_ENV` | Node environment | `production` |
 | `NEXT_PUBLIC_API_URL` | Alias for API_BASE_URL | - |
 | `NEXT_PUBLIC_FEATURE_API_URL` | Alias for FEATURE_SERVICE_URL | - |
+| `PREBUILD_HEALTHCHECK_STRICT` | Fail build when API health check fails (`false` default on Vercel, `true` elsewhere) | auto |
+| `PREBUILD_HEALTHCHECK_TIMEOUT_MS` | Timeout for prebuild API health check request | `10000` |
+| `SKIP_PREBUILD_CHECK` | Skip prebuild API health check (emergency use only) | `false` |
+| `API_HEALTH_PATH` | Health path used by prebuild check | `/api/health` |
 
 ---
 

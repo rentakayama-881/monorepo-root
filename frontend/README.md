@@ -169,6 +169,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.aivalid.id
 # PREBUILD_HEALTHCHECK_STRICT=true
 # SKIP_PREBUILD_CHECK=false
 # API_HEALTH_PATH=/api/health
+# PREBUILD_HEALTHCHECK_TIMEOUT_MS=10000
 
 # API URLs
 NEXT_PUBLIC_BACKEND_URL=https://api.aivalid.id
@@ -241,8 +242,9 @@ export default function MyPage() {
 
 #### Vercel Optional Variables
 
-- `PREBUILD_HEALTHCHECK_STRICT=true` (default, recommended for production safety)
+- `PREBUILD_HEALTHCHECK_STRICT=true` (override: default is `false` on Vercel, `true` elsewhere)
 - `API_HEALTH_PATH=/api/health`
+- `PREBUILD_HEALTHCHECK_TIMEOUT_MS=10000`
 - `SKIP_PREBUILD_CHECK=true` (emergency-only, temporary)
 
 #### Common Misconfiguration Checklist
