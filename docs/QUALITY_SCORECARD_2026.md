@@ -31,6 +31,13 @@ This scorecard tracks the monorepo quality uplift toward strict engineering 100/
 - Backend and feature-service gates can be affected by runner constraints if cache or socket permissions are not configured.
 - Security debt remains in frontend dependencies (high vulnerabilities still present).
 
+## Latest implementation snapshot (2026-02-20)
+
+- Next.js prerender on `/validation-cases` is hardened with graceful fallback (build no longer exits at static generation).
+- Account settings page was decomposed into focused reusable sections to reduce component size and maintenance cost.
+- `TransferService` was split with partial classes to isolate transfer lifecycle operations from query/setup logic.
+- CI security gates now enforce high+critical policy for frontend npm audit, feature-service dependency audit, and Trivy scan.
+
 ## Current hotspot files (high maintenance cost)
 
 - `backend/services/validation_case_workflow_service_ent.go`
@@ -52,10 +59,10 @@ This scorecard tracks the monorepo quality uplift toward strict engineering 100/
 
 | Milestone | Target Date | Goal | Status |
 |---|---|---|---|
-| M1 CI Determinism | 2026-03-05 | Remove masked failures, stabilize caches, deterministic runners | In progress |
+| M1 CI Determinism | 2026-03-05 | Remove masked failures, stabilize caches, deterministic runners | Completed |
 | M2 Safety Harness | 2026-03-26 | Expand regression tests for auth + financial critical paths | Planned |
-| M3 Structural Refactor | 2026-04-30 | Break down top 10 jumbo files and reduce complexity | Planned |
-| M4 Security Hardening | 2026-05-14 | Reduce dependency vulnerabilities and tighten error boundaries | Planned |
+| M3 Structural Refactor | 2026-04-30 | Break down top 10 jumbo files and reduce complexity | In progress |
+| M4 Security Hardening | 2026-05-14 | Reduce dependency vulnerabilities and tighten error boundaries | In progress |
 | M5 Final Quality Push | 2026-05-31 | Reach rubric >=90 in all aspects | Planned |
 
 ## Update cadence
