@@ -257,7 +257,7 @@ jobs:
       - name: Run npm audit (JSON)
         run: npm audit --audit-level=high --json > audit.json || true
 
-      - name: Enforce critical vulnerability policy
+      - name: Enforce high+critical vulnerability policy
         run: |
           node -e '
           const fs = require("fs");
@@ -266,12 +266,9 @@ jobs:
           const critical = Number(vulns.critical || 0);
           const high = Number(vulns.high || 0);
           console.log(`npm audit summary -> critical=${critical}, high=${high}`);
-          if (critical > 0) {
-            console.error("Critical vulnerabilities detected. Failing security gate.");
+          if (critical > 0 || high > 0) {
+            console.error("High/Critical vulnerabilities detected. Failing security gate.");
             process.exit(1);
-          }
-          if (high > 0) {
-            console.warn("High vulnerabilities detected. Not blocking yet; remediation required.");
           }'
 
       - name: Upload audit artifact
@@ -560,8 +557,49 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Run .NET security audit
-        run: dotnet list package --vulnerable --include-transitive || true
+      - name: Run .NET security audit (JSON)
+        run: dotnet list package --vulnerable --include-transitive --format json > dotnet-audit.json || true
+
+      - name: Enforce high+critical vulnerability policy (.NET)
+        run: |
+          python3 - <<'PY'
+          import json
+          import sys
+
+          with open("dotnet-audit.json", "r", encoding="utf-8") as fh:
+            report = json.load(fh)
+
+          high = 0
+          critical = 0
+
+          def walk(node):
+            global high, critical
+            if isinstance(node, dict):
+              for key, value in node.items():
+                if key.lower() == "severity":
+                  level = str(value).strip().lower()
+                  if level == "high":
+                    high += 1
+                  elif level == "critical":
+                    critical += 1
+                walk(value)
+            elif isinstance(node, list):
+              for item in node:
+                walk(item)
+
+          walk(report)
+          print(f".NET audit summary -> critical={critical}, high={high}")
+          if high > 0 or critical > 0:
+            print("High/Critical vulnerabilities detected in .NET dependencies. Failing security gate.", file=sys.stderr)
+            sys.exit(1)
+          PY
+
+      - name: Upload .NET audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-service-dotnet-audit
+          path: feature-service/dotnet-audit.json
+          retention-days: 7
 
   # ==========================================================================
   # Stage 5: Post-Quantum Cryptography Validation
@@ -617,7 +655,7 @@ jobs:
           scan-type: "fs"
           scan-ref: "."
           severity: ${{ env.SECURITY_SEVERITY }}
-          exit-code: "0"
+          exit-code: "1"
           format: "table"
 
   security-infrastructure:
