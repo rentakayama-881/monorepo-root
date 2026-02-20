@@ -1,8 +1,12 @@
 # Quality Scorecard 2026
 
-This scorecard tracks the monorepo quality uplift toward strict engineering 100/100.
+Last updated: February 20, 2026
 
-## Scoring rubric
+## Target
+
+Strict engineering `100/100` with all rubric aspects `>= 90`, no critical risk open, and all required CI lanes green.
+
+## Rubric Weights
 
 - Correctness: 25
 - Readability: 15
@@ -11,10 +15,10 @@ This scorecard tracks the monorepo quality uplift toward strict engineering 100/
 - Performance: 10
 - Maintainability & Evolvability: 15
 
-## Baseline (2026-02-20)
+## Baseline Score (Manual, 2026-02-20)
 
-- Final score: 73/100
-- Band: Fair (needs focused improvements)
+- Final score: `73/100`
+- Band: Fair (stabilized foundation, major uplift still required)
 
 ### Aspect breakdown
 
@@ -25,20 +29,29 @@ This scorecard tracks the monorepo quality uplift toward strict engineering 100/
 - Performance: 74/100
 - Maintainability & Evolvability: 66/100
 
-### Notes from baseline gates
+## Baseline Gate Evidence
 
-- Frontend gates are stable (`lint`, `typecheck`, `test`).
-- Backend and feature-service gates can be affected by runner constraints if cache or socket permissions are not configured.
-- Security debt remains in frontend dependencies (high vulnerabilities still present).
+Primary scripts:
 
-## Latest implementation snapshot (2026-02-20)
+- `deploy/scripts/quality-baseline.sh`
+- `deploy/scripts/generate-score-summary.sh`
 
-- Next.js prerender on `/validation-cases` is hardened with graceful fallback (build no longer exits at static generation).
-- Account settings page was decomposed into focused reusable sections to reduce component size and maintenance cost.
-- `TransferService` was split with partial classes to isolate transfer lifecycle operations from query/setup logic.
-- CI security gates now enforce high+critical policy for frontend npm audit, feature-service dependency audit, and Trivy scan.
+Latest quick-lane production-like baseline log:
 
-## Current hotspot files (high maintenance cost)
+- `.quality/baseline-2026-02-20T3-network.log`
+
+Auto summary snapshot:
+
+- Overall gate: `PASS`
+- Gate totals: `pass=3, fail=0, timeout=0`
+- Initial heuristic band: `90-100 (Excellent trajectory)`
+
+Notes:
+
+- Sandbox-only baseline runs can fail because external package registries are blocked (`proxy.golang.org`, `api.nuget.org`).
+- Network-enabled baseline is the valid reference for CI parity.
+
+## Current Hotspots (High Leverage Refactor Targets)
 
 - `backend/services/validation_case_workflow_service_ent.go`
 - `backend/handlers/lzt_market_handler.go`
@@ -47,25 +60,37 @@ This scorecard tracks the monorepo quality uplift toward strict engineering 100/
 - `frontend/app/validation-cases/[id]/ValidationCaseDetailClient.jsx`
 - `frontend/app/account/page.jsx`
 
-## Definition of done for 100/100
+## Security Debt Snapshot
 
-- All rubric aspects >= 90.
-- No rubric aspect < 90.
-- All required CI quality gates pass without masking failures.
-- No critical security finding open without active mitigation.
-- Critical auth/financial flows covered by unit + integration + end-to-end regression tests.
+- .NET dependency vulnerabilities: cleared in current audit run.
+- Frontend production audit still uses temporary allowlist for Sentry chain (`@sentry/nextjs`, `@sentry/node`, `minimatch` transitive path).
+- Exit criteria requires removing temporary allowlist or replacing with upstream-fixed versions.
 
-## Milestone tracking
+## Phase Status
 
-| Milestone | Target Date | Goal | Status |
-|---|---|---|---|
-| M1 CI Determinism | 2026-03-05 | Remove masked failures, stabilize caches, deterministic runners | Completed |
-| M2 Safety Harness | 2026-03-26 | Expand regression tests for auth + financial critical paths | Planned |
-| M3 Structural Refactor | 2026-04-30 | Break down top 10 jumbo files and reduce complexity | In progress |
-| M4 Security Hardening | 2026-05-14 | Reduce dependency vulnerabilities and tighten error boundaries | In progress |
-| M5 Final Quality Push | 2026-05-31 | Reach rubric >=90 in all aspects | Planned |
+1. Phase 0 - Baseline & Governance: In progress
+- Done: baseline scripts + score summary generation + quality contract doc.
+- Pending: enforce branch protection settings at repository level.
 
-## Update cadence
+2. Phase 1 - CI Determinism: In progress
+- Done: vulnerability gates are explicit and enforced.
+- Pending: complete quick-vs-full lane separation and achieve 10 consecutive green runs.
 
-- Update scorecard weekly on `main`.
-- Recompute score after each milestone completion.
+3. Phase 2 - Safety Harness: Planned
+4. Phase 3 - Structural Refactor: Planned
+5. Phase 4 - Security/Observability Hardening: Planned
+6. Phase 5 - Final Performance + Quality Push: Planned
+
+## Definition of Done for 100/100
+
+1. All rubric aspects `>= 90`.
+2. No rubric aspect `< 90`.
+3. Required CI quick lane and full lane pass consistently in production-like runners.
+4. No open critical security issues and no unmitigated high issues in critical flows.
+5. Critical auth/financial workflows covered by stable unit + integration + e2e/contract tests.
+
+## Related Docs
+
+- `docs/QUALITY_CONTRACT_2026.md`
+- `docs/ROADMAP_100_STRICT_2026.md`
+
