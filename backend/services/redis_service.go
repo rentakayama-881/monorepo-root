@@ -67,17 +67,18 @@ func InitRedis() error {
 	}
 
 	RedisClient = redis.NewClient(opt)
-	if err := pingRedisWithTimeout(RedisClient, 5*time.Second); err == nil {
+	pingErr := pingRedisWithTimeout(RedisClient, 5*time.Second)
+	if pingErr == nil {
 		logger.Info("Redis connected successfully")
 		return nil
 	}
 
 	// Optional fallback for environments where URL is configured as TLS but endpoint is plain TCP.
 	// This is disabled by default and must be explicitly enabled.
-	if allowInsecureRedisFallback() && isTLSHandshakeError(err) {
+	if allowInsecureRedisFallback() && isTLSHandshakeError(pingErr) {
 		logger.Warn(
 			"Redis TLS handshake failed; retrying without TLS due to REDIS_ALLOW_INSECURE_FALLBACK=true",
-			zap.Error(err),
+			zap.Error(pingErr),
 		)
 
 		insecureClient, insecureErr := buildInsecureRedisClient(redisURL)
@@ -87,19 +88,23 @@ func InitRedis() error {
 			return err
 		}
 
-		if pingErr := pingRedisWithTimeout(insecureClient, 5*time.Second); pingErr == nil {
-			_ = RedisClient.Close()
+		if retryPingErr := pingRedisWithTimeout(insecureClient, 5*time.Second); retryPingErr == nil {
+			if closeErr := RedisClient.Close(); closeErr != nil {
+				logger.Warn("Failed to close previous Redis client before fallback swap", zap.Error(closeErr))
+			}
 			RedisClient = insecureClient
 			logger.Warn("Redis connected without TLS fallback")
 			return nil
 		}
 
-		_ = insecureClient.Close()
+		if closeErr := insecureClient.Close(); closeErr != nil {
+			logger.Warn("Failed to close insecure Redis fallback client", zap.Error(closeErr))
+		}
 	}
 
-	logger.Error("Failed to connect to Redis", zap.Error(err))
+	logger.Error("Failed to connect to Redis", zap.Error(pingErr))
 	RedisClient = nil
-	return err
+	return pingErr
 }
 
 func pingRedisWithTimeout(client *redis.Client, timeout time.Duration) error {
