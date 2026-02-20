@@ -36,6 +36,8 @@ Primary scripts:
 - `deploy/scripts/quality-baseline.sh`
 - `deploy/scripts/generate-score-summary.sh`
 - `deploy/scripts/check-ci-streak.sh`
+- `deploy/scripts/collect-ci-stability.sh`
+- `deploy/scripts/apply-branch-protection.sh`
 
 Latest quick-lane production-like baseline log:
 
@@ -52,6 +54,7 @@ CI stability artifact:
 - Workflow job: `📈 CI Stability Report`
 - Artifact name: `ci-stability-report-<run_id>`
 - Failure classes: `none`, `code_failure`, `infra_network`, `dependency_registry`, `timeout`
+- Streak monitor workflow: `.github/workflows/ci-streak-monitor.yml`
 
 Notes:
 
@@ -76,11 +79,11 @@ Notes:
 ## Phase Status
 
 1. Phase 0 - Baseline & Governance: In progress
-- Done: baseline scripts + score summary generation + quality contract doc + branch protection runbook.
+- Done: baseline scripts + score summary generation + quality contract doc + branch protection runbook + API automation script.
 - Pending: enforce branch protection settings at repository level.
 
 2. Phase 1 - CI Determinism: In progress
-- Done: vulnerability gates explicit, quick/full lane split, CI stability collector artifact.
+- Done: vulnerability gates explicit, quick/full lane split, CI stability collector artifact, streak monitor workflow.
 - Pending: achieve 10 consecutive green runs for quick and full lanes.
 
 3. Phase 2 - Safety Harness: Planned

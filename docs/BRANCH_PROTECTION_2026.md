@@ -57,7 +57,21 @@ Enable all of the following:
 3. Validate main merge requires full lane pass.
 4. Capture screenshots or settings export and link in `docs/QUALITY_SCORECARD_2026.md`.
 
+## CLI Automation
+
+Use the script below to apply branch protection via GitHub API:
+
+```bash
+GITHUB_ADMIN_TOKEN=<token> \
+bash deploy/scripts/apply-branch-protection.sh --repo rentakayama-881/monorepo-root
+```
+
+Dry-run preview:
+
+```bash
+bash deploy/scripts/apply-branch-protection.sh --repo rentakayama-881/monorepo-root --dry-run
+```
+
 ## Notes
 
 This document is operational guidance; enforcement must be enabled in GitHub repository settings.
-

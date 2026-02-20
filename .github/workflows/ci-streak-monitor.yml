@@ -1,0 +1,57 @@
+name: CI Streak Monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 3 * * *"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  evaluate-streak:
+    name: 📊 Evaluate CI Streak
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Collect CI stability artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p .quality/ci-stability
+          bash deploy/scripts/collect-ci-stability.sh --output .quality/ci-stability --limit 120
+
+      - name: Evaluate streak target
+        id: streak
+        run: |
+          set -euo pipefail
+          output="$(bash deploy/scripts/check-ci-streak.sh --input .quality/ci-stability --target 10)"
+          echo "${output}"
+          echo "${output}" >> "$GITHUB_STEP_SUMMARY"
+
+          quick="$(echo "${output}" | awk -F= '/^quick_streak=/{print $2}')"
+          full="$(echo "${output}" | awk -F= '/^full_streak=/{print $2}')"
+          meets="$(echo "${output}" | awk -F= '/^meets_target=/{print $2}')"
+
+          echo "quick_streak=${quick}" >> "$GITHUB_OUTPUT"
+          echo "full_streak=${full}" >> "$GITHUB_OUTPUT"
+          echo "meets_target=${meets}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload streak evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-streak-evidence-${{ github.run_id }}
+          path: .quality/ci-stability
+          retention-days: 30
+
+      - name: Enforce 10-run streak objective
+        if: steps.streak.outputs.meets_target != 'true'
+        run: |
+          echo "CI streak objective not met yet." >&2
+          echo "quick_streak=${{ steps.streak.outputs.quick_streak }}" >&2
+          echo "full_streak=${{ steps.streak.outputs.full_streak }}" >&2
+          exit 1
