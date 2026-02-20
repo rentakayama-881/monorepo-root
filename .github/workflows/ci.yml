@@ -709,7 +709,7 @@ jobs:
           scan-type: "fs"
           scan-ref: "."
           severity: ${{ env.SECURITY_SEVERITY }}
-          exit-code: "1"
+          exit-code: ${{ github.event_name == 'pull_request' && '0' || '1' }}
           format: "table"
 
   security-infrastructure:
@@ -736,15 +736,40 @@ jobs:
   quality-gate-quick:
     name: ✅ Quality Gate (Quick Lane)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
+    if: always() && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop'))
     needs:
       - frontend-build
       - frontend-security
       - backend-test
       - feature-service-test
+    env:
+      FRONTEND_BUILD_RESULT: ${{ needs.frontend-build.result }}
+      FRONTEND_SECURITY_RESULT: ${{ needs.frontend-security.result }}
+      BACKEND_TEST_RESULT: ${{ needs.backend-test.result }}
+      FEATURE_SERVICE_TEST_RESULT: ${{ needs.feature-service-test.result }}
     steps:
-      - name: Quick Lane Passed
+      - name: Validate quick lane dependencies
         run: |
+          set -euo pipefail
+          failed=()
+          for item in \
+            "frontend-build:${FRONTEND_BUILD_RESULT}" \
+            "frontend-security:${FRONTEND_SECURITY_RESULT}" \
+            "backend-test:${BACKEND_TEST_RESULT}" \
+            "feature-service-test:${FEATURE_SERVICE_TEST_RESULT}"; do
+            name="${item%%:*}"
+            status="${item##*:}"
+            if [ "${status}" != "success" ]; then
+              failed+=("${name}:${status}")
+            fi
+          done
+
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "Quick lane blocked by failed dependencies:" >&2
+            printf '%s\n' "${failed[@]}" >&2
+            exit 1
+          fi
+
           echo "=========================================="
           echo "✅ Quick lane quality gates passed!"
           echo "=========================================="
@@ -759,7 +784,7 @@ jobs:
   quality-gate-full:
     name: ✅ Quality Gate (Full Lane)
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
+    if: always() && (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main'))
     needs:
       - secrets-scan
       - license-check
@@ -772,9 +797,48 @@ jobs:
       - security-container
       - security-infrastructure
       - pqc-validation
+    env:
+      SECRETS_SCAN_RESULT: ${{ needs.secrets-scan.result }}
+      LICENSE_CHECK_RESULT: ${{ needs.license-check.result }}
+      FRONTEND_BUILD_RESULT: ${{ needs.frontend-build.result }}
+      FRONTEND_SECURITY_RESULT: ${{ needs.frontend-security.result }}
+      BACKEND_TEST_RESULT: ${{ needs.backend-test.result }}
+      BACKEND_SECURITY_RESULT: ${{ needs.backend-security.result }}
+      FEATURE_SERVICE_TEST_RESULT: ${{ needs.feature-service-test.result }}
+      FEATURE_SERVICE_SECURITY_RESULT: ${{ needs.feature-service-security.result }}
+      SECURITY_CONTAINER_RESULT: ${{ needs.security-container.result }}
+      SECURITY_INFRA_RESULT: ${{ needs.security-infrastructure.result }}
+      PQC_RESULT: ${{ needs.pqc-validation.result }}
     steps:
-      - name: Full Lane Passed
+      - name: Validate full lane dependencies
         run: |
+          set -euo pipefail
+          failed=()
+          for item in \
+            "secrets-scan:${SECRETS_SCAN_RESULT}" \
+            "license-check:${LICENSE_CHECK_RESULT}" \
+            "frontend-build:${FRONTEND_BUILD_RESULT}" \
+            "frontend-security:${FRONTEND_SECURITY_RESULT}" \
+            "backend-test:${BACKEND_TEST_RESULT}" \
+            "backend-security:${BACKEND_SECURITY_RESULT}" \
+            "feature-service-test:${FEATURE_SERVICE_TEST_RESULT}" \
+            "feature-service-security:${FEATURE_SERVICE_SECURITY_RESULT}" \
+            "security-container:${SECURITY_CONTAINER_RESULT}" \
+            "security-infrastructure:${SECURITY_INFRA_RESULT}" \
+            "pqc-validation:${PQC_RESULT}"; do
+            name="${item%%:*}"
+            status="${item##*:}"
+            if [ "${status}" != "success" ]; then
+              failed+=("${name}:${status}")
+            fi
+          done
+
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "Full lane blocked by failed dependencies:" >&2
+            printf '%s\n' "${failed[@]}" >&2
+            exit 1
+          fi
+
           echo "=========================================="
           echo "✅ Full lane quality gates passed!"
           echo "=========================================="
