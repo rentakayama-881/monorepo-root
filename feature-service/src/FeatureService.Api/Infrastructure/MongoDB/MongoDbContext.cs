@@ -1,4 +1,3 @@
-using MongoDB.Bson;
 using MongoDB.Driver;
 using FeatureService.Api.Models.Entities;
 using Microsoft.Extensions.Logging;
@@ -200,11 +199,7 @@ public class MongoDbContext
                     Name = "caseLockKey_pending_unique",
                     // Keep expression compatible with older MongoDB versions by avoiding "$ne null".
                     // "caseLockKey exists" works because null values are ignored by BsonIgnoreIfNull.
-                    PartialFilterExpression = new BsonDocument
-                    {
-                        { "caseLockKey", new BsonDocument("$exists", true) },
-                        { "status", (int)TransferStatus.Pending }
-                    }
+                    PartialFilterExpression = MongoIndexFilters.PendingTransferCaseLockPartialFilter()
                 }
             ));
         }
@@ -314,9 +309,7 @@ public class MongoDbContext
                     Unique = true,
                     Name = "userId_active_withdrawal_unique",
                     // Use range comparison instead of "$in" for wider MongoDB compatibility.
-                    PartialFilterExpression = new BsonDocument(
-                        "status",
-                        new BsonDocument("$lte", (int)WithdrawalStatus.Processing))
+                    PartialFilterExpression = MongoIndexFilters.ActiveWithdrawalByUserPartialFilter()
                 }
             ));
         }
