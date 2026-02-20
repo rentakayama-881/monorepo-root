@@ -37,10 +37,19 @@ async function CaseList() {
   const params = new URLSearchParams();
   params.set("limit", "50");
 
-  const data = await fetchLatestCases(params);
-  const cases = Array.isArray(data?.validation_cases) ? data.validation_cases : [];
+  let cases = [];
+  let fetchError = "";
 
-  return <ValidationCaseIndexClient cases={cases} />;
+  try {
+    const data = await fetchLatestCases(params);
+    cases = Array.isArray(data?.validation_cases) ? data.validation_cases : [];
+  } catch (err) {
+    fetchError = "Data sementara belum tersedia. Silakan muat ulang beberapa saat lagi.";
+    const reason = err instanceof Error ? err.message : String(err);
+    console.error("[validation-cases] Failed to fetch latest cases during render:", reason);
+  }
+
+  return <ValidationCaseIndexClient cases={cases} fetchError={fetchError} />;
 }
 
 async function fetchLatestCases(params) {

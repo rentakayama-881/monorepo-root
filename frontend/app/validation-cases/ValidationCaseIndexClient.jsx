@@ -12,7 +12,7 @@ function parseMinIDR(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-export default function ValidationCaseIndexClient({ cases }) {
+export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
   const items = Array.isArray(cases) ? cases : [];
 
   const [q, setQ] = useState("");
@@ -74,6 +74,16 @@ export default function ValidationCaseIndexClient({ cases }) {
 
   return (
     <div className="space-y-4">
+      {fetchError ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="rounded-[var(--radius)] border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+        >
+          {fetchError}
+        </div>
+      ) : null}
+
       <section className="grid grid-cols-1 gap-3 md:grid-cols-12">
         <div className="md:col-span-6">
           <div className={fieldLabel}>Search</div>
@@ -152,4 +162,3 @@ export default function ValidationCaseIndexClient({ cases }) {
     </div>
   );
 }
-
