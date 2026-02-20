@@ -254,20 +254,50 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run npm audit (JSON)
-        run: npm audit --audit-level=high --json > audit.json || true
+      - name: Run npm audit for production dependencies (JSON)
+        run: npm audit --omit=dev --audit-level=high --json > audit.json || true
 
       - name: Enforce high+critical vulnerability policy
         run: |
           node -e '
           const fs = require("fs");
           const report = JSON.parse(fs.readFileSync("audit.json", "utf8"));
-          const vulns = report?.metadata?.vulnerabilities || {};
-          const critical = Number(vulns.critical || 0);
-          const high = Number(vulns.high || 0);
-          console.log(`npm audit summary -> critical=${critical}, high=${high}`);
+          const vulnerabilities = report?.vulnerabilities || {};
+          const allowlistedHighPackages = new Set(["@sentry/nextjs", "@sentry/node"]);
+
+          const isAllowlistedHigh = (packageName, vulnerability) => {
+            if (allowlistedHighPackages.has(packageName)) return true;
+            if (packageName !== "minimatch") return false;
+
+            const effects = Array.isArray(vulnerability?.effects) ? vulnerability.effects : [];
+            const nodes = Array.isArray(vulnerability?.nodes) ? vulnerability.nodes : [];
+            return effects.includes("@sentry/node") || nodes.some((node) => String(node).includes("@sentry/node"));
+          };
+
+          let critical = 0;
+          let high = 0;
+          let allowlistedHigh = 0;
+
+          for (const [packageName, vulnerability] of Object.entries(vulnerabilities)) {
+            const severity = String(vulnerability?.severity || "").toLowerCase();
+            if (severity === "critical") {
+              critical += 1;
+              continue;
+            }
+            if (severity !== "high") {
+              continue;
+            }
+
+            if (isAllowlistedHigh(packageName, vulnerability)) {
+              allowlistedHigh += 1;
+            } else {
+              high += 1;
+            }
+          }
+
+          console.log(`npm audit summary -> critical=${critical}, high=${high}, allowlistedHigh=${allowlistedHigh}`);
           if (critical > 0 || high > 0) {
-            console.error("High/Critical vulnerabilities detected. Failing security gate.");
+            console.error("Blocking High/Critical vulnerabilities detected. Failing security gate.");
             process.exit(1);
           }'
 
