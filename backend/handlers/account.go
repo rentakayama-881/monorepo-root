@@ -217,19 +217,21 @@ func BuildPublicProfileFromEnt(c *gin.Context, u *ent.User) gin.H {
 	}
 
 	// Get active badges via Ent
-	userBadges, _ := database.GetEntClient().UserBadge.Query().
+	userBadges, err := database.GetEntClient().UserBadge.Query().
 		Where(userbadge.UserIDEQ(u.ID), userbadge.RevokedAtIsNil()).
 		WithBadge().
 		All(ctx)
-	for _, ub := range userBadges {
-		if ub.Edges.Badge != nil {
-			badges = append(badges, gin.H{
-				"id":        ub.Edges.Badge.ID,
-				"name":      ub.Edges.Badge.Name,
-				"slug":      ub.Edges.Badge.Slug,
-				"icon_type": ub.Edges.Badge.IconType,
-				"color":     ub.Edges.Badge.Color,
-			})
+	if err == nil {
+		for _, ub := range userBadges {
+			if ub.Edges.Badge != nil {
+				badges = append(badges, gin.H{
+					"id":        ub.Edges.Badge.ID,
+					"name":      ub.Edges.Badge.Name,
+					"slug":      ub.Edges.Badge.Slug,
+					"icon_type": ub.Edges.Badge.IconType,
+					"color":     ub.Edges.Badge.Color,
+				})
+			}
 		}
 	}
 
@@ -242,18 +244,18 @@ func BuildPublicProfileFromEnt(c *gin.Context, u *ent.User) gin.H {
 	}
 
 	return gin.H{
-		"username":         name,
-		"full_name":        u.FullName,
-		"bio":              u.Bio,
-		"pronouns":         u.Pronouns,
-		"company":          u.Company,
-		"social_accounts":  socials,
-		"avatar_url":       u.AvatarURL,
-		"id":               u.ID,
+		"username":              name,
+		"full_name":             u.FullName,
+		"bio":                   u.Bio,
+		"pronouns":              u.Pronouns,
+		"company":               u.Company,
+		"social_accounts":       socials,
+		"avatar_url":            u.AvatarURL,
+		"id":                    u.ID,
 		"validation_case_count": validationCaseCount,
-		"guarantee_amount": u.GuaranteeAmount,
-		"primary_badge":    primaryBadge,
-		"badges":           badges,
+		"guarantee_amount":      u.GuaranteeAmount,
+		"primary_badge":         primaryBadge,
+		"badges":                badges,
 	}
 }
 
@@ -425,7 +427,10 @@ func callFeatureServiceValidation(c *gin.Context, userID uint) (*FeatureServiceV
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return nil, fmt.Errorf("feature-service error (status=%d, read body failed): %w", resp.StatusCode, readErr)
+		}
 		return nil, fmt.Errorf("feature-service error: %s", string(body))
 	}
 
@@ -459,7 +464,10 @@ func callFeatureServiceCleanup(c *gin.Context, userID uint) (*FeatureServiceClea
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return nil, fmt.Errorf("failed reading feature-service cleanup response: %w", readErr)
+	}
 
 	var result FeatureServiceCleanupResult
 	if err := json.Unmarshal(body, &result); err != nil {
@@ -547,48 +555,58 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
+	rollbackWithLog := func() {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			logger.Warn(
+				"rollback failed while deleting account",
+				zap.Int("user_id", user.ID),
+				zap.Error(rbErr),
+			)
+		}
+	}
+
 	ownerUserID := int(user.ID)
 
 	// 1. Delete Validation Case child tables for cases owned by this user (FK safety)
 	if _, err := tx.ValidationCaseLog.Delete().
 		Where(validationcaselog.HasValidationCaseWith(validationcase.UserIDEQ(ownerUserID))).
 		Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Case Log"})
 		return
 	}
 	if _, err := tx.ConsultationRequest.Delete().
 		Where(consultationrequest.HasValidationCaseWith(validationcase.UserIDEQ(ownerUserID))).
 		Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Consultation Request"})
 		return
 	}
 	if _, err := tx.FinalOffer.Delete().
 		Where(finaloffer.HasValidationCaseWith(validationcase.UserIDEQ(ownerUserID))).
 		Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Final Offer"})
 		return
 	}
 	if _, err := tx.ArtifactSubmission.Delete().
 		Where(artifactsubmission.HasValidationCaseWith(validationcase.UserIDEQ(ownerUserID))).
 		Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Artifact Submission"})
 		return
 	}
 	if _, err := tx.Endorsement.Delete().
 		Where(endorsement.HasValidationCaseWith(validationcase.UserIDEQ(ownerUserID))).
 		Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Endorsement"})
 		return
 	}
 
 	// 2. Delete all user's Validation Cases (domain replacement for legacy threads)
 	if _, err := tx.ValidationCase.Delete().Where(validationcase.UserIDEQ(ownerUserID)).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Validation Case"})
 		return
 	}
@@ -597,126 +615,126 @@ func DeleteAccountHandler(c *gin.Context) {
 	if _, err := tx.ConsultationRequest.Delete().
 		Where(consultationrequest.ValidatorUserIDEQ(ownerUserID)).
 		Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Consultation Request user"})
 		return
 	}
 	if _, err := tx.FinalOffer.Delete().
 		Where(finaloffer.ValidatorUserIDEQ(ownerUserID)).
 		Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Final Offer user"})
 		return
 	}
 	if _, err := tx.ArtifactSubmission.Delete().
 		Where(artifactsubmission.ValidatorUserIDEQ(ownerUserID)).
 		Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Artifact Submission user"})
 		return
 	}
 	if _, err := tx.Endorsement.Delete().
 		Where(endorsement.ValidatorUserIDEQ(ownerUserID)).
 		Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Endorsement user"})
 		return
 	}
 	if _, err := tx.ValidationCaseLog.Delete().
 		Where(validationcaselog.ActorUserIDEQ(ownerUserID)).
 		Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Case Log user"})
 		return
 	}
 
 	// 4. Delete all sessions
 	if _, err := tx.Session.Delete().Where(session.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus sesi"})
 		return
 	}
 
 	// 5. Delete sudo sessions
 	if _, err := tx.SudoSession.Delete().Where(sudosession.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus sesi sudo"})
 		return
 	}
 
 	// 6. Delete session locks
 	if _, err := tx.SessionLock.Delete().Where(sessionlock.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus session locks"})
 		return
 	}
 
 	// 7. Delete backup codes
 	if _, err := tx.BackupCode.Delete().Where(backupcode.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus backup codes"})
 		return
 	}
 
 	// 8. Delete passkeys
 	if _, err := tx.Passkey.Delete().Where(passkey.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus passkeys"})
 		return
 	}
 
 	// 9. Delete user credentials
 	if _, err := tx.Credential.Delete().Where(credential.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus kredensial"})
 		return
 	}
 
 	// 10. Delete user badges
 	if _, err := tx.UserBadge.Delete().Where(userbadge.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus badge"})
 		return
 	}
 
 	// 11. Delete security events
 	if _, err := tx.SecurityEvent.Delete().Where(securityevent.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus security events"})
 		return
 	}
 
 	// 12. Delete TOTP pending tokens
 	if _, err := tx.TOTPPendingToken.Delete().Where(totppendingtoken.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus TOTP tokens"})
 		return
 	}
 
 	// 13. Delete email verification tokens
 	if _, err := tx.EmailVerificationToken.Delete().Where(emailverificationtoken.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus email tokens"})
 		return
 	}
 
 	// 14. Delete password reset tokens
 	if _, err := tx.PasswordResetToken.Delete().Where(passwordresettoken.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus password tokens"})
 		return
 	}
 
 	// 15. Delete device fingerprints
 	if _, err := tx.DeviceFingerprint.Delete().Where(devicefingerprint.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus device fingerprints"})
 		return
 	}
 
 	// 16. Delete device user mappings
 	if _, err := tx.DeviceUserMapping.Delete().Where(deviceusermapping.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus device mappings"})
 		return
 	}
@@ -728,7 +746,7 @@ func DeleteAccountHandler(c *gin.Context) {
 
 	// 18. Delete user (finally)
 	if err := tx.User.DeleteOneID(int(user.ID)).Exec(ctx); err != nil {
-		_ = tx.Rollback()
+		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus akun"})
 		return
 	}

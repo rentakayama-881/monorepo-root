@@ -70,7 +70,7 @@ jobs:
   secrets-scan:
     name: 🔐 Secrets Detection
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     permissions:
       contents: read
       security-events: write
@@ -100,7 +100,7 @@ jobs:
   license-check:
     name: 📋 License Compliance
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -328,8 +328,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      GOCACHE: ${{ env.GO_CACHE_DIR }}
-      GOMODCACHE: ${{ env.GO_MOD_CACHE_DIR }}
+      GOCACHE: ${{ github.workspace }}/.cache/go-build
+      GOMODCACHE: ${{ github.workspace }}/.cache/go-mod
     defaults:
       run:
         working-directory: backend
@@ -354,6 +354,9 @@ jobs:
         with:
           version: v2.8
           working-directory: backend
+          # On PRs, fail only on new issues introduced by the change set.
+          # Full baseline lint debt remains visible on push/schedule lanes.
+          only-new-issues: ${{ github.event_name == 'pull_request' }}
           args: --timeout=5m
 
       - name: Check go mod tidy
@@ -367,8 +370,8 @@ jobs:
     timeout-minutes: 30
     needs: backend-lint
     env:
-      GOCACHE: ${{ env.GO_CACHE_DIR }}
-      GOMODCACHE: ${{ env.GO_MOD_CACHE_DIR }}
+      GOCACHE: ${{ github.workspace }}/.cache/go-build
+      GOMODCACHE: ${{ github.workspace }}/.cache/go-mod
     defaults:
       run:
         working-directory: backend
@@ -436,8 +439,8 @@ jobs:
     env:
       DATABASE_URL: postgres://test:test@localhost:5432/aivalid_test?sslmode=disable
       REDIS_URL: redis://localhost:6379
-      GOCACHE: ${{ env.GO_CACHE_DIR }}
-      GOMODCACHE: ${{ env.GO_MOD_CACHE_DIR }}
+      GOCACHE: ${{ github.workspace }}/.cache/go-build
+      GOMODCACHE: ${{ github.workspace }}/.cache/go-mod
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -468,10 +471,10 @@ jobs:
     name: 🔒 Backend Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     env:
-      GOCACHE: ${{ env.GO_CACHE_DIR }}
-      GOMODCACHE: ${{ env.GO_MOD_CACHE_DIR }}
+      GOCACHE: ${{ github.workspace }}/.cache/go-build
+      GOMODCACHE: ${{ github.workspace }}/.cache/go-mod
     defaults:
       run:
         working-directory: backend
@@ -507,8 +510,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      DOTNET_CLI_HOME: ${{ env.DOTNET_CLI_HOME }}
-      NUGET_PACKAGES: ${{ env.NUGET_PACKAGES }}
+      DOTNET_CLI_HOME: ${{ github.workspace }}/.cache/dotnet
+      NUGET_PACKAGES: ${{ github.workspace }}/.cache/nuget
     defaults:
       run:
         working-directory: feature-service
@@ -550,8 +553,8 @@ jobs:
     env:
       MONGODB_CONNECTION_STRING: mongodb://localhost:27017/aivalid_test
       REDIS_CONNECTION_STRING: localhost:6379
-      DOTNET_CLI_HOME: ${{ env.DOTNET_CLI_HOME }}
-      NUGET_PACKAGES: ${{ env.NUGET_PACKAGES }}
+      DOTNET_CLI_HOME: ${{ github.workspace }}/.cache/dotnet
+      NUGET_PACKAGES: ${{ github.workspace }}/.cache/nuget
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -585,10 +588,10 @@ jobs:
     name: 🔒 Feature Service Security
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     env:
-      DOTNET_CLI_HOME: ${{ env.DOTNET_CLI_HOME }}
-      NUGET_PACKAGES: ${{ env.NUGET_PACKAGES }}
+      DOTNET_CLI_HOME: ${{ github.workspace }}/.cache/dotnet
+      NUGET_PACKAGES: ${{ github.workspace }}/.cache/nuget
     defaults:
       run:
         working-directory: feature-service
@@ -659,11 +662,11 @@ jobs:
     name: 🔐 PQC Cryptography Validation
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     needs: [backend-build, feature-service-build]
     env:
-      DOTNET_CLI_HOME: ${{ env.DOTNET_CLI_HOME }}
-      NUGET_PACKAGES: ${{ env.NUGET_PACKAGES }}
+      DOTNET_CLI_HOME: ${{ github.workspace }}/.cache/dotnet
+      NUGET_PACKAGES: ${{ github.workspace }}/.cache/nuget
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -698,7 +701,7 @@ jobs:
     name: 🐳 Container Security
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -709,14 +712,14 @@ jobs:
           scan-type: "fs"
           scan-ref: "."
           severity: ${{ env.SECURITY_SEVERITY }}
-          exit-code: "1"
+          exit-code: ${{ github.event_name == 'pull_request' && '0' || '1' }}
           format: "table"
 
   security-infrastructure:
     name: 🏗️ Infrastructure Security
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -736,15 +739,40 @@ jobs:
   quality-gate-quick:
     name: ✅ Quality Gate (Quick Lane)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
+    if: always() && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop'))
     needs:
       - frontend-build
       - frontend-security
       - backend-test
       - feature-service-test
+    env:
+      FRONTEND_BUILD_RESULT: ${{ needs.frontend-build.result }}
+      FRONTEND_SECURITY_RESULT: ${{ needs.frontend-security.result }}
+      BACKEND_TEST_RESULT: ${{ needs.backend-test.result }}
+      FEATURE_SERVICE_TEST_RESULT: ${{ needs.feature-service-test.result }}
     steps:
-      - name: Quick Lane Passed
+      - name: Validate quick lane dependencies
         run: |
+          set -euo pipefail
+          failed=()
+          for item in \
+            "frontend-build:${FRONTEND_BUILD_RESULT}" \
+            "frontend-security:${FRONTEND_SECURITY_RESULT}" \
+            "backend-test:${BACKEND_TEST_RESULT}" \
+            "feature-service-test:${FEATURE_SERVICE_TEST_RESULT}"; do
+            name="${item%%:*}"
+            status="${item##*:}"
+            if [ "${status}" != "success" ]; then
+              failed+=("${name}:${status}")
+            fi
+          done
+
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "Quick lane blocked by failed dependencies:" >&2
+            printf '%s\n' "${failed[@]}" >&2
+            exit 1
+          fi
+
           echo "=========================================="
           echo "✅ Quick lane quality gates passed!"
           echo "=========================================="
@@ -759,7 +787,7 @@ jobs:
   quality-gate-full:
     name: ✅ Quality Gate (Full Lane)
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: always() && (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main'))
     needs:
       - secrets-scan
       - license-check
@@ -772,9 +800,48 @@ jobs:
       - security-container
       - security-infrastructure
       - pqc-validation
+    env:
+      SECRETS_SCAN_RESULT: ${{ needs.secrets-scan.result }}
+      LICENSE_CHECK_RESULT: ${{ needs.license-check.result }}
+      FRONTEND_BUILD_RESULT: ${{ needs.frontend-build.result }}
+      FRONTEND_SECURITY_RESULT: ${{ needs.frontend-security.result }}
+      BACKEND_TEST_RESULT: ${{ needs.backend-test.result }}
+      BACKEND_SECURITY_RESULT: ${{ needs.backend-security.result }}
+      FEATURE_SERVICE_TEST_RESULT: ${{ needs.feature-service-test.result }}
+      FEATURE_SERVICE_SECURITY_RESULT: ${{ needs.feature-service-security.result }}
+      SECURITY_CONTAINER_RESULT: ${{ needs.security-container.result }}
+      SECURITY_INFRA_RESULT: ${{ needs.security-infrastructure.result }}
+      PQC_RESULT: ${{ needs.pqc-validation.result }}
     steps:
-      - name: Full Lane Passed
+      - name: Validate full lane dependencies
         run: |
+          set -euo pipefail
+          failed=()
+          for item in \
+            "secrets-scan:${SECRETS_SCAN_RESULT}" \
+            "license-check:${LICENSE_CHECK_RESULT}" \
+            "frontend-build:${FRONTEND_BUILD_RESULT}" \
+            "frontend-security:${FRONTEND_SECURITY_RESULT}" \
+            "backend-test:${BACKEND_TEST_RESULT}" \
+            "backend-security:${BACKEND_SECURITY_RESULT}" \
+            "feature-service-test:${FEATURE_SERVICE_TEST_RESULT}" \
+            "feature-service-security:${FEATURE_SERVICE_SECURITY_RESULT}" \
+            "security-container:${SECURITY_CONTAINER_RESULT}" \
+            "security-infrastructure:${SECURITY_INFRA_RESULT}" \
+            "pqc-validation:${PQC_RESULT}"; do
+            name="${item%%:*}"
+            status="${item##*:}"
+            if [ "${status}" != "success" ]; then
+              failed+=("${name}:${status}")
+            fi
+          done
+
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "Full lane blocked by failed dependencies:" >&2
+            printf '%s\n' "${failed[@]}" >&2
+            exit 1
+          fi
+
           echo "=========================================="
           echo "✅ Full lane quality gates passed!"
           echo "=========================================="

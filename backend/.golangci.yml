@@ -22,12 +22,6 @@ run:
   timeout: 5m
   go: "1.24"
   tests: true
-  skip-dirs:
-    - ent
-    - vendor
-  skip-files:
-    - ".*_gen\\.go$"
-    - ".*_generated\\.go$"
 
 output:
   formats:
@@ -131,7 +125,7 @@ linters:
       comparison: true
 
     wrapcheck:
-      ignoreSigs:
+      ignore-sigs:
         - .Errorf(
         - errors.New(
         - errors.Unwrap(
@@ -141,7 +135,7 @@ linters:
         - .WithMessage(
         - .WithMessagef(
         - .WithStack(
-      ignorePackageGlobs:
+      ignore-package-globs:
         - github.com/gin-gonic/gin
         - entgo.io/ent/*
 

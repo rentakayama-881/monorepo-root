@@ -78,6 +78,7 @@ apply_rule() {
   local required_check="$2"
   local endpoint="https://api.github.com/repos/${REPO}/branches/${branch}/protection"
   local payload
+  local branch_exists_endpoint="https://api.github.com/repos/${REPO}/branches/${branch}"
 
   payload="$(cat <<EOF
 {
@@ -112,6 +113,15 @@ EOF
     echo "[dry-run] PUT ${endpoint}"
     echo "[dry-run] payload:"
     echo "${payload}"
+    return 0
+  fi
+
+  if ! curl -fsSL \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Accept: application/vnd.github+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "${branch_exists_endpoint}" >/dev/null; then
+    echo "Skip '${branch}': branch does not exist in '${REPO}'."
     return 0
   fi
 
