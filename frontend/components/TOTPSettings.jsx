@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { getApiBase } from "@/lib/api";
-import { getValidToken } from "@/lib/tokenRefresh";
+import { requireValidTokenOrThrow, readJsonSafe, throwApiError } from "@/lib/authRequest";
 import Button from "./ui/Button";
 import Alert from "./ui/Alert";
 import TOTPSetupWizard from "./TOTPSetupWizard";
@@ -11,7 +11,6 @@ import TOTPDisableForm from "./TOTPDisableForm";
 
 function TOTPSettingsContent() {
   const API = `${getApiBase()}/api`;
-  const router = useRouter();
   const searchParams = useSearchParams();
   const setup2fa = searchParams.get("setup2fa");
 
@@ -38,30 +37,30 @@ function TOTPSettingsContent() {
   const fetchStatus = useCallback(async () => {
     setLoading(true);
     try {
-      const token = await getValidToken();
-      if (!token) {
-        setError("Your session has expired. Please sign in again.");
-        setLoading(false);
-        return;
-      }
+      const token = await requireValidTokenOrThrow();
       const res = await fetch(`${API}/auth/totp/status`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Failed to load 2FA status.");
-      const data = await res.json();
-      setStatus(data);
+      if (!res.ok) {
+        await throwApiError(res, "Failed to load 2FA status.");
+      }
 
-      if (data.enabled) {
+      const data = await readJsonSafe(res);
+      setStatus(data || { enabled: false, verified_at: null });
+
+      if (data?.enabled) {
         const countRes = await fetch(`${API}/auth/totp/backup-codes/count`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (countRes.ok) {
-          const countData = await countRes.json();
-          setBackupCount(countData.count);
+          const countData = await readJsonSafe(countRes);
+          setBackupCount(countData?.count || 0);
         }
+      } else {
+        setBackupCount(0);
       }
     } catch (e) {
-      setError(e.message);
+      setError(e?.message || "Failed to load 2FA status.");
     } finally {
       setLoading(false);
     }
@@ -75,24 +74,22 @@ function TOTPSettingsContent() {
     setError("");
     setSetupLoading(true);
     try {
-      const token = await getValidToken();
-      if (!token) {
-        setError("Your session has expired. Please sign in again.");
-        setSetupLoading(false);
-        return;
-      }
+      const token = await requireValidTokenOrThrow();
       const res = await fetch(`${API}/auth/totp/setup`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to start 2FA setup.");
+        await throwApiError(res, "Failed to start 2FA setup.");
       }
-      const data = await res.json();
+
+      const data = await readJsonSafe(res);
+      if (!data) {
+        throw new Error("Failed to start 2FA setup.");
+      }
       setSetupData(data);
     } catch (e) {
-      setError(e.message);
+      setError(e?.message || "Failed to start 2FA setup.");
     } finally {
       setSetupLoading(false);
     }
@@ -108,12 +105,7 @@ function TOTPSettingsContent() {
     setError("");
     setSetupLoading(true);
     try {
-      const token = await getValidToken();
-      if (!token) {
-        setError("Your session has expired. Please sign in again.");
-        setSetupLoading(false);
-        return;
-      }
+      const token = await requireValidTokenOrThrow();
       const res = await fetch(`${API}/auth/totp/verify`, {
         method: "POST",
         headers: {
@@ -123,10 +115,13 @@ function TOTPSettingsContent() {
         body: JSON.stringify({ code: setupCode }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Invalid code.");
+        await throwApiError(res, "Invalid code.");
       }
-      const data = await res.json();
+
+      const data = await readJsonSafe(res);
+      if (!data) {
+        throw new Error("Invalid code.");
+      }
 
       if (data.backup_codes && data.backup_codes.length > 0) {
         setBackupCodes(data.backup_codes);
@@ -136,9 +131,9 @@ function TOTPSettingsContent() {
       setSuccess("2FA enabled successfully. Important: Save your backup codes now. They are shown only once.");
       setSetupData(null);
       setSetupCode("");
-      fetchStatus();
+      await fetchStatus();
     } catch (e) {
-      setError(e.message);
+      setError(e?.message || "Invalid code.");
     } finally {
       setSetupLoading(false);
     }
@@ -154,12 +149,7 @@ function TOTPSettingsContent() {
     setError("");
     setDisableLoading(true);
     try {
-      const token = await getValidToken();
-      if (!token) {
-        setError("Your session has expired. Please sign in again.");
-        setDisableLoading(false);
-        return;
-      }
+      const token = await requireValidTokenOrThrow();
       const res = await fetch(`${API}/auth/totp/disable`, {
         method: "POST",
         headers: {
@@ -169,27 +159,30 @@ function TOTPSettingsContent() {
         body: JSON.stringify({ password: disablePassword, code: disableCode }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to disable 2FA.");
+        await throwApiError(res, "Failed to disable 2FA.");
       }
       setSuccess("2FA disabled successfully.");
       setShowDisable(false);
       setDisablePassword("");
       setDisableCode("");
       setBackupCodes(null);
-      fetchStatus();
+      await fetchStatus();
     } catch (e) {
-      setError(e.message);
+      setError(e?.message || "Failed to disable 2FA.");
     } finally {
       setDisableLoading(false);
     }
   }
 
-  function copyBackupCodes() {
+  async function copyBackupCodes() {
     if (!backupCodes) return;
     const text = backupCodes.join("\n");
-    navigator.clipboard.writeText(text);
-    setSuccess("Backup codes disalin ke clipboard");
+    try {
+      await navigator.clipboard.writeText(text);
+      setSuccess("Backup codes disalin ke clipboard");
+    } catch {
+      setError("Failed to copy backup codes.");
+    }
   }
 
   if (loading) {

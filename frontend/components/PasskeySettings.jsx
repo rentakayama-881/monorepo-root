@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { requireValidTokenOrThrow, readJsonSafe, throwApiError } from "@/lib/authRequest";
 import { getApiBase } from "@/lib/api";
-import { getValidToken } from "@/lib/tokenRefresh";
 import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn";
 import PasskeyList from "./PasskeyList";
 
@@ -43,21 +43,20 @@ export default function PasskeySettings() {
   const API = `${getApiBase()}/api/auth/passkeys`;
 
   const fetchPasskeys = useCallback(async () => {
+    setLoading(true);
     try {
-      const token = await getValidToken();
-      if (!token) {
-        setError("Your session has expired. Please sign in again.");
-        setLoading(false);
-        return;
-      }
+      const token = await requireValidTokenOrThrow();
       const res = await fetch(API, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Failed to load passkeys.");
-      const data = await res.json();
-      setPasskeys(data.passkeys || []);
+      if (!res.ok) {
+        await throwApiError(res, "Failed to load passkeys.");
+      }
+
+      const data = await readJsonSafe(res);
+      setPasskeys(data?.passkeys || []);
     } catch (err) {
-      setError(err.message);
+      setError(err?.message || "Failed to load passkeys.");
     } finally {
       setLoading(false);
     }
@@ -69,6 +68,8 @@ export default function PasskeySettings() {
   }, [fetchPasskeys]);
 
   async function registerPasskey() {
+    if (registering) return;
+
     if (!isWebAuthnSupported()) {
       setError("Your browser does not support Passkey/WebAuthn");
       return;
@@ -79,11 +80,7 @@ export default function PasskeySettings() {
     setSuccess("");
 
     try {
-      const token = await getValidToken();
-      if (!token) {
-        setError("Your session has expired. Please sign in again.");
-        return;
-      }
+      const token = await requireValidTokenOrThrow();
 
       const beginRes = await fetch(`${API}/register/begin`, {
         method: "POST",
@@ -93,13 +90,17 @@ export default function PasskeySettings() {
         },
       });
       if (!beginRes.ok) {
-        const errData = await beginRes.json();
-        throw new Error(errData.error || "Failed to start registration.");
+        await throwApiError(beginRes, "Failed to start registration.");
       }
-      const beginData = await beginRes.json();
-      const { options, session_id: sessionId } = beginData;
 
-      const publicKeyOptions = options.publicKey;
+      const beginData = await readJsonSafe(beginRes);
+      const options = beginData?.options;
+      const sessionId = beginData?.session_id;
+      const publicKeyOptions = options?.publicKey;
+
+      if (!publicKeyOptions || !sessionId) {
+        throw new Error("Failed to start registration.");
+      }
       publicKeyOptions.challenge = base64URLToBuffer(publicKeyOptions.challenge);
       publicKeyOptions.user.id = base64URLToBuffer(publicKeyOptions.user.id);
 
@@ -135,12 +136,11 @@ export default function PasskeySettings() {
       });
 
       if (!finishRes.ok) {
-        const errData = await finishRes.json();
-        throw new Error(errData.error || "Failed to complete registration.");
+        await throwApiError(finishRes, "Failed to complete registration.");
       }
 
       setSuccess("Passkey registered successfully!");
-      fetchPasskeys();
+      await fetchPasskeys();
     } catch (err) {
       if (err.name === "NotAllowedError") {
         setError("Registration was canceled atau tidak diizinkan");
@@ -164,24 +164,18 @@ export default function PasskeySettings() {
     setSuccess("");
 
     try {
-      const token = await getValidToken();
-      if (!token) {
-        setError("Your session has expired. Please sign in again.");
-        setDeleting(null);
-        return;
-      }
+      const token = await requireValidTokenOrThrow();
       const res = await fetch(`${API}/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to delete passkey.");
+        await throwApiError(res, "Failed to delete passkey.");
       }
       setSuccess("Passkey removed successfully.");
-      fetchPasskeys();
+      await fetchPasskeys();
     } catch (err) {
-      setError(err.message);
+      setError(err?.message || "Failed to delete passkey.");
     } finally {
       setDeleting(null);
     }
@@ -192,11 +186,7 @@ export default function PasskeySettings() {
     setSuccess("");
 
     try {
-      const token = await getValidToken();
-      if (!token) {
-        setError("Your session has expired. Please sign in again.");
-        return;
-      }
+      const token = await requireValidTokenOrThrow();
       const res = await fetch(`${API}/${id}/name`, {
         method: "PUT",
         headers: {
@@ -206,13 +196,12 @@ export default function PasskeySettings() {
         body: JSON.stringify({ name }),
       });
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to update name.");
+        await throwApiError(res, "Failed to update name.");
       }
       setSuccess("Passkey name updated successfully.");
-      fetchPasskeys();
+      await fetchPasskeys();
     } catch (err) {
-      setError(err.message);
+      setError(err?.message || "Failed to update name.");
     }
   }
 

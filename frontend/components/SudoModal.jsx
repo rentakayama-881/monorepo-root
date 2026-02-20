@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, createContext, useContext, useCallback } from "react";
+import { requireValidTokenOrThrow, readJsonSafe, throwApiError } from "@/lib/authRequest";
 import { getApiBase } from "@/lib/api";
-import { getValidToken } from "@/lib/tokenRefresh";
 
 // Sudo Context for global state management
 const SudoContext = createContext(null);
@@ -19,6 +19,30 @@ export function useSudo() {
 const SUDO_TOKEN_KEY = "sudo_token";
 const SUDO_EXPIRES_KEY = "sudo_expires";
 
+function safeStorageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Ignore storage write failures for resilience in restricted environments.
+  }
+}
+
+function safeStorageRemove(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Ignore storage remove failures for resilience in restricted environments.
+  }
+}
+
 // Sudo Provider Component
 export function SudoProvider({ children }) {
   const [sudoToken, setSudoToken] = useState(null);
@@ -29,8 +53,8 @@ export function SudoProvider({ children }) {
 
   // Load sudo token from storage on mount
   useEffect(() => {
-    const token = localStorage.getItem(SUDO_TOKEN_KEY);
-    const expires = localStorage.getItem(SUDO_EXPIRES_KEY);
+    const token = safeStorageGet(SUDO_TOKEN_KEY);
+    const expires = safeStorageGet(SUDO_EXPIRES_KEY);
     if (token && expires) {
       const expiresAt = new Date(expires);
       if (expiresAt > new Date()) {
@@ -38,8 +62,8 @@ export function SudoProvider({ children }) {
         setSudoExpires(expiresAt);
       } else {
         // Expired, clear storage
-        localStorage.removeItem(SUDO_TOKEN_KEY);
-        localStorage.removeItem(SUDO_EXPIRES_KEY);
+        safeStorageRemove(SUDO_TOKEN_KEY);
+        safeStorageRemove(SUDO_EXPIRES_KEY);
       }
     }
   }, []);
@@ -54,16 +78,16 @@ export function SudoProvider({ children }) {
   const storeSudoToken = useCallback((token, expiresAt) => {
     setSudoToken(token);
     setSudoExpires(new Date(expiresAt));
-    localStorage.setItem(SUDO_TOKEN_KEY, token);
-    localStorage.setItem(SUDO_EXPIRES_KEY, expiresAt);
+    safeStorageSet(SUDO_TOKEN_KEY, token);
+    safeStorageSet(SUDO_EXPIRES_KEY, expiresAt);
   }, []);
 
   // Clear sudo token
   const clearSudoToken = useCallback(() => {
     setSudoToken(null);
     setSudoExpires(null);
-    localStorage.removeItem(SUDO_TOKEN_KEY);
-    localStorage.removeItem(SUDO_EXPIRES_KEY);
+    safeStorageRemove(SUDO_TOKEN_KEY);
+    safeStorageRemove(SUDO_EXPIRES_KEY);
   }, []);
 
   // Request sudo mode - returns promise that resolves when sudo is granted
@@ -100,8 +124,7 @@ export function SudoProvider({ children }) {
   // Fetch sudo status (to check if TOTP required)
   const fetchSudoStatus = useCallback(async () => {
     try {
-      const token = await getValidToken();
-      if (!token) return null;
+      const token = await requireValidTokenOrThrow();
       const res = await fetch(`${getApiBase()}/api/auth/sudo/status`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -109,8 +132,8 @@ export function SudoProvider({ children }) {
         },
       });
       if (res.ok) {
-        const data = await res.json();
-        setRequiresTOTP(data.requires_totp === true);
+        const data = await readJsonSafe(res);
+        setRequiresTOTP(data?.requires_totp === true);
         return data;
       }
     } catch (err) {
@@ -157,19 +180,29 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
 
   // Check sudo status on mount
   useEffect(() => {
+    let isMounted = true;
+
     async function checkStatus() {
       setChecking(true);
       try {
         const status = await onCheckStatus();
-        if (status && typeof status.requires_totp === 'boolean') {
+        if (!isMounted) return;
+        if (status && typeof status.requires_totp === "boolean") {
           setRequiresTOTP(status.requires_totp);
         }
       } catch {
         // Silently fail - status check is non-critical
       }
-      setChecking(false);
+      if (isMounted) {
+        setChecking(false);
+      }
     }
+
     checkStatus();
+
+    return () => {
+      isMounted = false;
+    };
   }, [onCheckStatus]);
 
   async function handleSubmit(e) {
@@ -178,12 +211,7 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
     setLoading(true);
 
     try {
-      const token = await getValidToken();
-      if (!token) {
-        setError("Your session has expired. Please sign in again.");
-        setLoading(false);
-        return;
-      }
+      const token = await requireValidTokenOrThrow();
       const body = {
         password,
       };
@@ -204,15 +232,18 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(data.error || "Verification failed");
+        await throwApiError(res, "Verification failed");
+      }
+
+      const data = await readJsonSafe(res);
+      if (!data?.sudo_token || !data?.expires_at) {
+        throw new Error("Verification failed");
       }
 
       onSuccess(data.sudo_token, data.expires_at);
     } catch (err) {
-      setError(err.message || "An error occurred");
+      setError(err?.message || "An error occurred");
     } finally {
       setLoading(false);
     }
