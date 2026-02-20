@@ -129,6 +129,53 @@ public class LiveTwoFactorVerifierTests
         Assert.Equal("http://go-backend/api/auth/totp/status", uri?.ToString());
     }
 
+    [Fact]
+    public async Task IsEnabledLiveAsync_UsesGoBackendBaseUrl_WhenBackendApiUrlMissing()
+    {
+        Uri? uri = null;
+
+        var handler = new StubHttpMessageHandler((request, _) =>
+        {
+            uri = request.RequestUri;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"enabled\":true}")
+            });
+        });
+
+        var sut = CreateSut(handler, new Dictionary<string, string?>
+        {
+            ["GoBackend:BaseUrl"] = "http://feature-go-backend/"
+        });
+
+        var result = await sut.IsEnabledLiveAsync("Bearer live-token");
+
+        Assert.True(result);
+        Assert.Equal("http://feature-go-backend/api/auth/totp/status", uri?.ToString());
+    }
+
+    [Fact]
+    public async Task IsEnabledLiveAsync_UsesDefaultLocalhost_WhenNoBackendConfigProvided()
+    {
+        Uri? uri = null;
+
+        var handler = new StubHttpMessageHandler((request, _) =>
+        {
+            uri = request.RequestUri;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"enabled\":true}")
+            });
+        });
+
+        var sut = CreateSut(handler, new Dictionary<string, string?>());
+
+        var result = await sut.IsEnabledLiveAsync("Bearer live-token");
+
+        Assert.True(result);
+        Assert.Equal("http://127.0.0.1:8080/api/auth/totp/status", uri?.ToString());
+    }
+
     private static LiveTwoFactorVerifier CreateSut(
         HttpMessageHandler handler,
         Dictionary<string, string?>? config = null)
