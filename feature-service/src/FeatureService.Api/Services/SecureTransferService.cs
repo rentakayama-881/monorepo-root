@@ -71,11 +71,28 @@ public class SecureTransferService : ISecureTransferService
         MongoDbContext dbContext,
         IConfiguration configuration,
         ILogger<SecureTransferService> logger)
+        : this(
+            innerService,
+            idempotencyService,
+            auditService,
+            dbContext.GetCollection<Transfer>("transfers"),
+            configuration,
+            logger)
+    {
+    }
+
+    internal SecureTransferService(
+        ITransferService innerService,
+        IIdempotencyService idempotencyService,
+        IAuditTrailService auditService,
+        IMongoCollection<Transfer> transfers,
+        IConfiguration configuration,
+        ILogger<SecureTransferService> logger)
     {
         _innerService = innerService;
         _idempotencyService = idempotencyService;
         _auditService = auditService;
-        _transfers = dbContext.GetCollection<Transfer>("transfers");
+        _transfers = transfers;
         _configuration = configuration;
         _logger = logger;
     }
@@ -212,7 +229,7 @@ public class SecureTransferService : ISecureTransferService
     {
         var key = BuildUserScopedIdempotencyKey("release", userId, idempotencyKey);
 
-        var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        var transfer = await FindTransferByIdAsync(transferId);
         var username = transfer?.ReceiverUsername ?? $"user_{userId}";
 
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
@@ -289,7 +306,7 @@ public class SecureTransferService : ISecureTransferService
     {
         var key = BuildUserScopedIdempotencyKey("cancel", userId, idempotencyKey);
 
-        var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        var transfer = await FindTransferByIdAsync(transferId);
         var username = transfer?.SenderUsername ?? $"user_{userId}";
 
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
@@ -368,7 +385,7 @@ public class SecureTransferService : ISecureTransferService
     {
         var key = BuildUserScopedIdempotencyKey("reject", receiverId, idempotencyKey);
 
-        var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        var transfer = await FindTransferByIdAsync(transferId);
         var username = transfer?.ReceiverUsername ?? $"user_{receiverId}";
 
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
@@ -438,6 +455,12 @@ public class SecureTransferService : ISecureTransferService
     }
 
     private record OperationResult(bool Success, string? Error);
+
+    private async Task<Transfer?> FindTransferByIdAsync(string transferId)
+    {
+        var cursor = await _transfers.FindAsync(t => t.Id == transferId);
+        return await cursor.FirstOrDefaultAsync();
+    }
 
     private string BuildUserScopedIdempotencyKey(string operation, uint userId, string? providedKey)
     {
