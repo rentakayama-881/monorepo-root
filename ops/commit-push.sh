@@ -8,8 +8,30 @@ source "$SCRIPT_DIR/lib/common.sh"
 
 ensure_command git
 
+deploy_mode="auto" # auto|yes|no
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --deploy-vps)
+      deploy_mode="yes"
+      shift
+      ;;
+    --skip-deploy)
+      deploy_mode="no"
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
 if [[ $# -lt 1 ]]; then
-  die "Usage: ./ops/commit-push.sh \"type(scope): message\""
+  die "Usage: ./ops/commit-push.sh [--deploy-vps|--skip-deploy] \"type(scope): message\""
 fi
 
 commit_message="$*"
@@ -19,10 +41,6 @@ cd "$OPS_ROOT"
 current_branch="$(git rev-parse --abbrev-ref HEAD)"
 if [[ "$current_branch" == "HEAD" ]]; then
   die "Detached HEAD is not allowed for commit+push workflow."
-fi
-
-if [[ "$current_branch" == "main" && "${ALLOW_MAIN_PUSH:-0}" != "1" ]]; then
-  die "Direct push from main is blocked. Create a working branch first or set ALLOW_MAIN_PUSH=1 intentionally."
 fi
 
 if [[ -z "$(git status --porcelain)" ]]; then
@@ -38,12 +56,25 @@ if git diff --cached --quiet; then
 fi
 
 run_step "git commit" git commit -m "$commit_message"
-run_step "git push" git push -u origin "$current_branch"
+run_step "git push" git push origin "$current_branch"
 
 origin_url="$(git config --get remote.origin.url || true)"
 if [[ "$origin_url" =~ github\.com[:/]([^/]+/[^/]+)\.git$ ]]; then
   repo="${BASH_REMATCH[1]}"
   log "INFO" "Open PR: https://github.com/$repo/pull/new/$current_branch"
+fi
+
+should_deploy="false"
+if [[ "$deploy_mode" == "yes" ]]; then
+  should_deploy="true"
+elif [[ "$deploy_mode" == "auto" && "$current_branch" == "main" ]]; then
+  should_deploy="true"
+fi
+
+if [[ "$should_deploy" == "true" ]]; then
+  target_sha="$(git rev-parse HEAD)"
+  run_step "sync VPS to latest sha $target_sha" \
+    "$OPS_ROOT/ops/vps-sync-deploy.sh" --env prod --ref "$target_sha"
 fi
 
 log "OK" "Commit+push workflow completed on branch $current_branch"

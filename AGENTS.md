@@ -44,7 +44,7 @@ These rules are required for every AI session, including when context memory is 
 1. Read `docs/AI_OPERATING_SYSTEM.md` before making significant changes.
 2. Run full quality gate before commit/push:
 - `./ops/preflight-full.sh`
-3. Use commit+push wrapper (enforces preflight):
+3. Use commit+push wrapper (enforces preflight, supports direct `main`, and auto-syncs VPS when running on `main`):
 - `./ops/commit-push.sh "type(scope): message"`
 4. Do not claim production is updated without runtime evidence from:
 - Go: `/health` and `/health/version`

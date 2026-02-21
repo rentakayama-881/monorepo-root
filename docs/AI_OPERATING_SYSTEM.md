@@ -30,6 +30,12 @@ Dokumen ini adalah single source of truth agar AI tetap konsisten walaupun pinda
 ./ops/commit-push.sh "type(scope): message"
 ```
 
+Catatan:
+
+- Jika command dijalankan dari branch `main`, script akan otomatis menjalankan deploy VPS ke SHA terbaru setelah push.
+- Gunakan `--skip-deploy` jika ingin push tanpa deploy.
+- Gunakan `--deploy-vps` untuk memaksa deploy walau bukan mode default.
+
 3. VPS sync deploy ke commit tertentu:
 ```bash
 ./ops/vps-sync-deploy.sh --env prod --ref <git_sha>

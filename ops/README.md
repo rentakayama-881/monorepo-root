@@ -10,7 +10,11 @@ Folder ini menyatukan command operasional wajib agar AI/human operator selalu ko
 - Menjalankan full gate lintas monorepo.
 
 2. `commit-push.sh`
-- Menjalankan preflight, lalu commit + push branch kerja.
+- Menjalankan preflight, lalu commit + push.
+- Jika dijalankan dari `main`, otomatis deploy VPS ke SHA terbaru (kecuali `--skip-deploy`).
+- Flags:
+  - `--skip-deploy`
+  - `--deploy-vps`
 
 3. `vps-sync-deploy.sh`
 - Sinkronkan backend Go + .NET ke SHA target, build fresh, restart service, verify live SHA.
