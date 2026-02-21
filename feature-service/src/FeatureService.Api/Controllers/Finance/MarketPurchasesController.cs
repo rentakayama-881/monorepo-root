@@ -11,6 +11,11 @@ namespace FeatureService.Api.Controllers.Finance;
 [Authorize]
 public class MarketPurchasesController : ApiControllerBase
 {
+    private const string ReservationNotFoundMessage = "Reservasi tidak ditemukan";
+    private const string ReservationReleasedMessage = "Reservasi sudah dilepas";
+    private const string ReservationAlreadyReleasedForOrderMessage = "Reservasi untuk order ini sudah dilepas";
+    private const string ReservationCannotBeReleasedMessage = "Reservasi tidak bisa direlease";
+
     private readonly IMarketPurchaseWalletService _marketPurchaseWalletService;
     private readonly IUserContextAccessor _userContextAccessor;
 
@@ -25,6 +30,7 @@ public class MarketPurchasesController : ApiControllerBase
     [HttpPost("reserve")]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 409)]
     [ProducesResponseType(typeof(ApiErrorResponse), 401)]
     public async Task<IActionResult> Reserve([FromBody] ReserveMarketPurchaseRequest request)
     {
@@ -43,6 +49,11 @@ public class MarketPurchasesController : ApiControllerBase
 
         if (!success)
         {
+            if (IsReservationConflict(error))
+            {
+                return ApiConflict(error ?? "Reservasi tidak valid untuk state saat ini");
+            }
+
             return ApiBadRequest(ApiErrorCodes.InsufficientBalance, error ?? "Saldo tidak mencukupi");
         }
 
@@ -59,6 +70,8 @@ public class MarketPurchasesController : ApiControllerBase
     [HttpPost("capture")]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 404)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 409)]
     [ProducesResponseType(typeof(ApiErrorResponse), 401)]
     public async Task<IActionResult> Capture([FromBody] CaptureMarketPurchaseRequest request)
     {
@@ -75,6 +88,16 @@ public class MarketPurchasesController : ApiControllerBase
 
         if (!success)
         {
+            if (IsReservationNotFound(error))
+            {
+                return ApiNotFound(error ?? ReservationNotFoundMessage);
+            }
+
+            if (IsReservationConflict(error))
+            {
+                return ApiConflict(error ?? "Reservasi tidak valid untuk state saat ini");
+            }
+
             return ApiBadRequest("CAPTURE_FAILED", error ?? "Gagal capture reserve");
         }
 
@@ -90,6 +113,8 @@ public class MarketPurchasesController : ApiControllerBase
     [HttpPost("release")]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 404)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 409)]
     [ProducesResponseType(typeof(ApiErrorResponse), 401)]
     public async Task<IActionResult> Release([FromBody] ReleaseMarketPurchaseRequest request)
     {
@@ -106,6 +131,16 @@ public class MarketPurchasesController : ApiControllerBase
 
         if (!success)
         {
+            if (IsReservationNotFound(error))
+            {
+                return ApiNotFound(error ?? ReservationNotFoundMessage);
+            }
+
+            if (IsReservationConflict(error))
+            {
+                return ApiConflict(error ?? "Reservasi tidak valid untuk state saat ini");
+            }
+
             return ApiBadRequest("RELEASE_FAILED", error ?? "Gagal release reserve");
         }
 
@@ -116,5 +151,21 @@ public class MarketPurchasesController : ApiControllerBase
             status = reservation?.Status,
             updatedAt = reservation?.UpdatedAt,
         }, "Reserve berhasil direlease");
+    }
+
+    private static bool IsReservationNotFound(string? error)
+        => string.Equals(error?.Trim(), ReservationNotFoundMessage, StringComparison.Ordinal);
+
+    private static bool IsReservationConflict(string? error)
+    {
+        var message = error?.Trim();
+        if (string.IsNullOrEmpty(message))
+        {
+            return false;
+        }
+
+        return string.Equals(message, ReservationReleasedMessage, StringComparison.Ordinal)
+               || string.Equals(message, ReservationAlreadyReleasedForOrderMessage, StringComparison.Ordinal)
+               || string.Equals(message, ReservationCannotBeReleasedMessage, StringComparison.Ordinal);
     }
 }

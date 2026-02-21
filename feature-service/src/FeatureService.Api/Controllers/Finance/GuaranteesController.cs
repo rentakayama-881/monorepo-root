@@ -12,6 +12,10 @@ namespace FeatureService.Api.Controllers.Finance;
 [Produces("application/json")]
 public class GuaranteesController : ApiControllerBase
 {
+    private const string ExistingActiveGuaranteeMessage = "Anda sudah memiliki jaminan aktif. Lepaskan terlebih dahulu.";
+    private const string NoActiveGuaranteeMessage = "Tidak ada jaminan aktif";
+    private const string GuaranteeProcessedByAnotherRequestMessage = "Jaminan sudah diproses oleh request lain";
+
     private readonly IGuaranteeService _guaranteeService;
     private readonly IUserContextAccessor _userContextAccessor;
     private readonly ILogger<GuaranteesController> _logger;
@@ -82,6 +86,7 @@ public class GuaranteesController : ApiControllerBase
     [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(GetGuaranteeResponse), 200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 409)]
     [ProducesResponseType(typeof(ApiErrorResponse), 401)]
     [ProducesResponseType(typeof(ApiErrorResponse), 403)]
     public async Task<IActionResult> SetGuarantee([FromBody] SetGuaranteeRequest request)
@@ -122,7 +127,17 @@ public class GuaranteesController : ApiControllerBase
             return ApiError(401, ApiErrorCodes.InvalidPin, ex.Message);
         }
         catch (InvalidOperationException ex)
+            when (IsInvalidCachedIdempotencyResult(ex.Message))
         {
+            return ApiIdempotencyStateInvalid(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            if (IsGuaranteeConflict(ex.Message))
+            {
+                return ApiConflict(ex.Message);
+            }
+
             return ApiBadRequest(ex.Message);
         }
         catch (Exception ex)
@@ -140,6 +155,7 @@ public class GuaranteesController : ApiControllerBase
     [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(GetGuaranteeResponse), 200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 409)]
     [ProducesResponseType(typeof(ApiErrorResponse), 401)]
     [ProducesResponseType(typeof(ApiErrorResponse), 403)]
     public async Task<IActionResult> ReleaseGuarantee([FromBody] ReleaseGuaranteeRequest request)
@@ -175,7 +191,17 @@ public class GuaranteesController : ApiControllerBase
             return ApiError(401, ApiErrorCodes.InvalidPin, ex.Message);
         }
         catch (InvalidOperationException ex)
+            when (IsInvalidCachedIdempotencyResult(ex.Message))
         {
+            return ApiIdempotencyStateInvalid(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            if (IsGuaranteeConflict(ex.Message))
+            {
+                return ApiConflict(ex.Message);
+            }
+
             return ApiBadRequest(ex.Message);
         }
         catch (Exception ex)
@@ -203,5 +229,18 @@ public class GuaranteesController : ApiControllerBase
             _logger.LogError(ex, "Error getting guarantee amount for user {UserId}", userId);
             return ApiInternalError("Gagal memuat data jaminan");
         }
+    }
+
+    private static bool IsGuaranteeConflict(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return false;
+        }
+
+        return string.Equals(message, ExistingActiveGuaranteeMessage, StringComparison.Ordinal)
+               || string.Equals(message, NoActiveGuaranteeMessage, StringComparison.Ordinal)
+               || string.Equals(message, GuaranteeProcessedByAnotherRequestMessage, StringComparison.Ordinal)
+               || message.StartsWith("Jaminan tidak bisa dilepas karena", StringComparison.Ordinal);
     }
 }
