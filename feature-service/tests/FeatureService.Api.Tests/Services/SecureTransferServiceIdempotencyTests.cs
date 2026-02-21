@@ -14,6 +14,9 @@ namespace FeatureService.Api.Tests.Services;
 
 public class SecureTransferServiceIdempotencyTests
 {
+    private const string InvalidCachedIdempotencyResultMessage =
+        "Data idempotency tidak valid. Permintaan diblokir untuk mencegah duplikasi transaksi.";
+
     [Fact]
     public async Task CreateTransferAsync_WhenAlreadyProcessed_ReturnsCachedResultWithoutCallingInnerService()
     {
@@ -87,6 +90,252 @@ public class SecureTransferServiceIdempotencyTests
             Times.Never);
         idempotencyService.VerifyAll();
         auditService.VerifyAll();
+    }
+
+    [Fact]
+    public async Task CreateTransferAsync_WhenCachedResultJsonMalformed_ThrowsControlledErrorAndSkipsInnerService()
+    {
+        const uint senderId = 88;
+        const string expectedKey = "transfer:88:cached-malformed";
+
+        var innerService = new Mock<ITransferService>(MockBehavior.Strict);
+        var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
+        var auditService = new Mock<IAuditTrailService>(MockBehavior.Strict);
+        var transfers = new Mock<IMongoCollection<Transfer>>(MockBehavior.Strict);
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKey,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: "{ malformed-json"));
+
+        var sut = CreateSut(
+            innerService.Object,
+            idempotencyService.Object,
+            auditService.Object,
+            transfers.Object);
+
+        var request = new CreateTransferRequest(
+            ReceiverUsername: "receiver_99",
+            Amount: 150_000,
+            Message: "hello",
+            Pin: "123456");
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => sut.CreateTransferAsync(
+            senderId,
+            request,
+            idempotencyKey: "cached-malformed",
+            senderUsername: "sender_88"));
+
+        Assert.Equal(InvalidCachedIdempotencyResultMessage, exception.Message);
+
+        innerService.Verify(
+            s => s.CreateTransferAsync(
+                It.IsAny<uint>(),
+                It.IsAny<CreateTransferRequest>(),
+                It.IsAny<string?>()),
+            Times.Never);
+        auditService.Verify(
+            s => s.RecordEventAsync(It.IsAny<AuditEventRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.ReleaseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.VerifyAll();
+    }
+
+    [Fact]
+    public async Task ReleaseTransferAsync_WhenCachedResultIsNull_ReturnsBlockedErrorAndSkipsInnerService()
+    {
+        const uint userId = 77;
+        const string expectedKey = "release:77:cached-null";
+        const string transferId = "trf_release_cached_null";
+
+        var transfer = CreatePendingTransfer(transferId, senderId: 10, receiverId: userId);
+
+        var innerService = new Mock<ITransferService>(MockBehavior.Strict);
+        var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
+        var auditService = new Mock<IAuditTrailService>(MockBehavior.Strict);
+        var transfers = new Mock<IMongoCollection<Transfer>>(MockBehavior.Strict);
+
+        SetupFindSequence(transfers, transfer);
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKey,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: null));
+
+        var sut = CreateSut(
+            innerService.Object,
+            idempotencyService.Object,
+            auditService.Object,
+            transfers.Object);
+
+        var (success, error) = await sut.ReleaseTransferAsync(
+            transferId,
+            userId,
+            pin: "123456",
+            idempotencyKey: "cached-null");
+
+        Assert.False(success);
+        Assert.Equal(InvalidCachedIdempotencyResultMessage, error);
+
+        innerService.Verify(
+            s => s.ReleaseTransferAsync(It.IsAny<string>(), It.IsAny<uint>(), It.IsAny<string>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.StoreResultAsync(
+                It.IsAny<string>(),
+                It.IsAny<object>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.ReleaseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        auditService.Verify(
+            s => s.RecordEventAsync(It.IsAny<AuditEventRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.VerifyAll();
+    }
+
+    [Fact]
+    public async Task CancelTransferAsync_WhenCachedResultPayloadMissingSuccess_ReturnsBlockedError()
+    {
+        const uint userId = 66;
+        const string expectedKey = "cancel:66:cached-schema-mismatch";
+        const string transferId = "trf_cancel_cached_schema";
+
+        var transfer = CreatePendingTransfer(transferId, senderId: userId, receiverId: 20);
+
+        var innerService = new Mock<ITransferService>(MockBehavior.Strict);
+        var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
+        var auditService = new Mock<IAuditTrailService>(MockBehavior.Strict);
+        var transfers = new Mock<IMongoCollection<Transfer>>(MockBehavior.Strict);
+
+        SetupFindSequence(transfers, transfer);
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKey,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: "{\"Error\":\"missing success field\"}"));
+
+        var sut = CreateSut(
+            innerService.Object,
+            idempotencyService.Object,
+            auditService.Object,
+            transfers.Object);
+
+        var (success, error) = await sut.CancelTransferAsync(
+            transferId,
+            userId,
+            pin: "123456",
+            reason: "test",
+            idempotencyKey: "cached-schema-mismatch");
+
+        Assert.False(success);
+        Assert.Equal(InvalidCachedIdempotencyResultMessage, error);
+
+        innerService.Verify(
+            s => s.CancelTransferAsync(
+                It.IsAny<string>(),
+                It.IsAny<uint>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.StoreResultAsync(
+                It.IsAny<string>(),
+                It.IsAny<object>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.ReleaseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        auditService.Verify(
+            s => s.RecordEventAsync(It.IsAny<AuditEventRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.VerifyAll();
+    }
+
+    [Fact]
+    public async Task RejectTransferAsync_WhenCachedResultJsonMalformed_ReturnsBlockedError()
+    {
+        const uint receiverId = 55;
+        const string expectedKey = "reject:55:cached-malformed";
+        const string transferId = "trf_reject_cached_malformed";
+
+        var transfer = CreatePendingTransfer(transferId, senderId: 10, receiverId: receiverId);
+
+        var innerService = new Mock<ITransferService>(MockBehavior.Strict);
+        var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
+        var auditService = new Mock<IAuditTrailService>(MockBehavior.Strict);
+        var transfers = new Mock<IMongoCollection<Transfer>>(MockBehavior.Strict);
+
+        SetupFindSequence(transfers, transfer);
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKey,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: "null"));
+
+        var sut = CreateSut(
+            innerService.Object,
+            idempotencyService.Object,
+            auditService.Object,
+            transfers.Object);
+
+        var (success, error) = await sut.RejectTransferAsync(
+            transferId,
+            receiverId,
+            pin: "123456",
+            reason: "late",
+            idempotencyKey: "cached-malformed");
+
+        Assert.False(success);
+        Assert.Equal(InvalidCachedIdempotencyResultMessage, error);
+
+        innerService.Verify(
+            s => s.RejectTransferAsync(
+                It.IsAny<string>(),
+                It.IsAny<uint>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.StoreResultAsync(
+                It.IsAny<string>(),
+                It.IsAny<object>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.ReleaseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        auditService.Verify(
+            s => s.RecordEventAsync(It.IsAny<AuditEventRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.VerifyAll();
     }
 
     [Fact]
