@@ -10,6 +10,11 @@ This contract defines mandatory quality gates and release rules to drive the mon
 
 All impacted modules must pass the required checks below:
 
+Operational command contract:
+
+- `./ops/preflight-full.sh` is the default local gate command before commit/push.
+- `./ops/commit-push.sh` is the default commit/push wrapper.
+
 1. Backend (`backend/`)
 - `go vet ./...`
 - `go test -v ./...`

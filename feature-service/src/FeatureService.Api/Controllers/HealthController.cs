@@ -35,17 +35,27 @@ public class HealthController : ControllerBase
     [ProducesResponseType(typeof(HealthResponse), StatusCodes.Status200OK)]
     public IActionResult GetHealth()
     {
-        var version =
-            Assembly.GetExecutingAssembly()
-                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                ?.InformationalVersion
-            ?? Environment.GetEnvironmentVariable("VERSION")
-            ?? "1.0.0";
-
         return Ok(new HealthResponse(
             Status: "healthy",
             Service: "feature-service",
-            Version: version,
+            Version: ResolveVersion(),
+            Timestamp: DateTime.UtcNow
+        ));
+    }
+
+    /// <summary>
+    /// Deployment metadata for runtime SHA verification.
+    /// </summary>
+    [HttpGet("version")]
+    [ProducesResponseType(typeof(HealthVersionResponse), StatusCodes.Status200OK)]
+    public IActionResult GetVersion()
+    {
+        return Ok(new HealthVersionResponse(
+            Status: "ok",
+            Service: "feature-service",
+            Version: ResolveVersion(),
+            GitSha: ResolveGitSha(),
+            BuildTimeUtc: ResolveBuildTimeUtc(),
             Timestamp: DateTime.UtcNow
         ));
     }
@@ -118,6 +128,74 @@ public class HealthController : ControllerBase
             return Task.FromResult(false);
         }
     }
+
+    private static string ResolveVersion()
+    {
+        return Assembly.GetExecutingAssembly()
+                   .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                   ?.InformationalVersion
+               ?? Environment.GetEnvironmentVariable("VERSION")
+               ?? "1.0.0";
+    }
+
+    private static string ResolveGitSha()
+    {
+        var explicitSha =
+            Environment.GetEnvironmentVariable("GIT_SHA")
+            ?? Environment.GetEnvironmentVariable("SOURCE_VERSION");
+
+        if (!string.IsNullOrWhiteSpace(explicitSha))
+        {
+            return explicitSha.Trim();
+        }
+
+        var informationalVersion = Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion;
+
+        if (!string.IsNullOrWhiteSpace(informationalVersion))
+        {
+            var chunks = informationalVersion
+                .Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (chunks.Length > 0)
+            {
+                return chunks[^1];
+            }
+        }
+
+        return "unknown";
+    }
+
+    private static string ResolveBuildTimeUtc()
+    {
+        var explicitBuildTime = Environment.GetEnvironmentVariable("BUILD_TIME_UTC");
+        if (!string.IsNullOrWhiteSpace(explicitBuildTime))
+        {
+            return explicitBuildTime.Trim();
+        }
+
+        try
+        {
+            var assemblyPath = Assembly.GetExecutingAssembly().Location;
+            if (!string.IsNullOrWhiteSpace(assemblyPath) && System.IO.File.Exists(assemblyPath))
+            {
+                return System.IO.File.GetLastWriteTimeUtc(assemblyPath).ToString("O");
+            }
+        }
+        catch
+        {
+            // ignore and fall back to unknown for deterministic response payload
+        }
+
+        return "unknown";
+    }
 }
 
 public record HealthResponse(string Status, string Service, string Version, DateTime Timestamp);
+public record HealthVersionResponse(
+    string Status,
+    string Service,
+    string Version,
+    string GitSha,
+    string BuildTimeUtc,
+    DateTime Timestamp);

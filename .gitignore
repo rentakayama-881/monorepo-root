@@ -69,6 +69,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 logs/
+.ops/reports/
+.quality/
 
 # ----- Testing -----
 coverage/

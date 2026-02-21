@@ -417,11 +417,13 @@ func main() {
 	// Health endpoints are kept outside request rate limits.
 	// Also exposed at root because production deployment scripts curl /health directly.
 	router.GET("/health", handlers.HealthHandler)
+	router.GET("/health/version", handlers.HealthVersionHandler)
 	router.GET("/ready", handlers.ReadinessHandler)
 
 	api := router.Group("/api")
 	{
 		api.GET("/health", handlers.HealthHandler)
+		api.GET("/health/version", handlers.HealthVersionHandler)
 		api.GET("/ready", handlers.ReadinessHandler)
 
 		// Keep health/readiness outside request rate limits.
