@@ -90,6 +90,135 @@ public class SecureTransferServiceIdempotencyTests
     }
 
     [Fact]
+    public async Task ReleaseTransferAsync_WhenAlreadyProcessed_ReturnsCachedResultAndSkipsInnerService()
+    {
+        const uint userId = 88;
+        const string providedKey = "  cached-release  ";
+        const string expectedKey = "release:88:cached-release";
+        const string transferId = "trf_release_cached_001";
+
+        var transfer = CreatePendingTransfer(transferId, senderId: 11, receiverId: userId);
+
+        var innerService = new Mock<ITransferService>(MockBehavior.Strict);
+        var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
+        var auditService = new Mock<IAuditTrailService>(MockBehavior.Strict);
+        var transfers = new Mock<IMongoCollection<Transfer>>(MockBehavior.Strict);
+
+        SetupFindSequence(transfers, transfer);
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKey,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: CreateOperationResultJson(success: true, error: null)));
+
+        var sut = CreateSut(
+            innerService.Object,
+            idempotencyService.Object,
+            auditService.Object,
+            transfers.Object);
+
+        var (success, error) = await sut.ReleaseTransferAsync(
+            transferId,
+            userId,
+            pin: "123456",
+            idempotencyKey: providedKey);
+
+        Assert.True(success);
+        Assert.Null(error);
+
+        innerService.Verify(
+            s => s.ReleaseTransferAsync(It.IsAny<string>(), It.IsAny<uint>(), It.IsAny<string>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.StoreResultAsync(
+                It.IsAny<string>(),
+                It.IsAny<object>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.ReleaseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        auditService.Verify(
+            s => s.RecordEventAsync(It.IsAny<AuditEventRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.VerifyAll();
+    }
+
+    [Fact]
+    public async Task RejectTransferAsync_WhenAlreadyProcessed_ReturnsCachedFailureAndSkipsInnerService()
+    {
+        const uint receiverId = 99;
+        const string providedKey = "cached-reject";
+        const string expectedKey = "reject:99:cached-reject";
+        const string transferId = "trf_reject_cached_001";
+
+        var transfer = CreatePendingTransfer(transferId, senderId: 12, receiverId: receiverId);
+
+        var innerService = new Mock<ITransferService>(MockBehavior.Strict);
+        var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
+        var auditService = new Mock<IAuditTrailService>(MockBehavior.Strict);
+        var transfers = new Mock<IMongoCollection<Transfer>>(MockBehavior.Strict);
+
+        SetupFindSequence(transfers, transfer);
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKey,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: CreateOperationResultJson(
+                    success: false,
+                    error: "Transfer sudah dibatalkan")));
+
+        var sut = CreateSut(
+            innerService.Object,
+            idempotencyService.Object,
+            auditService.Object,
+            transfers.Object);
+
+        var (success, error) = await sut.RejectTransferAsync(
+            transferId,
+            receiverId,
+            pin: "123456",
+            reason: "late",
+            idempotencyKey: providedKey);
+
+        Assert.False(success);
+        Assert.Equal("Transfer sudah dibatalkan", error);
+
+        innerService.Verify(
+            s => s.RejectTransferAsync(
+                It.IsAny<string>(),
+                It.IsAny<uint>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.StoreResultAsync(
+                It.IsAny<string>(),
+                It.IsAny<object>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.ReleaseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        auditService.Verify(
+            s => s.RecordEventAsync(It.IsAny<AuditEventRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.VerifyAll();
+    }
+
+    [Fact]
     public async Task ReleaseTransferAsync_WhenLockNotAcquired_ReturnsInProgressErrorAndSkipsInnerService()
     {
         const uint userId = 88;
@@ -295,6 +424,15 @@ public class SecureTransferServiceIdempotencyTests
         cursor.Setup(c => c.Dispose());
 
         return cursor;
+    }
+
+    private static string CreateOperationResultJson(bool success, string? error)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            Success = success,
+            Error = error
+        });
     }
 
     private static bool IsCancelInitiatedAuditEvent(
