@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+using System.Text.Json;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
@@ -42,6 +43,9 @@ public interface ISecureWithdrawalService
 
 public class SecureWithdrawalService : ISecureWithdrawalService
 {
+    private const string InvalidCachedIdempotencyResultMessage =
+        "Data idempotency tidak valid. Permintaan diblokir untuk mencegah duplikasi transaksi.";
+
     private readonly IWithdrawalService _innerService;
     private readonly IIdempotencyService _idempotencyService;
     private readonly IAuditTrailService _auditService;
@@ -62,11 +66,28 @@ public class SecureWithdrawalService : ISecureWithdrawalService
         MongoDbContext dbContext,
         IConfiguration configuration,
         ILogger<SecureWithdrawalService> logger)
+        : this(
+            innerService,
+            idempotencyService,
+            auditService,
+            dbContext.GetCollection<Withdrawal>("withdrawals"),
+            configuration,
+            logger)
+    {
+    }
+
+    internal SecureWithdrawalService(
+        IWithdrawalService innerService,
+        IIdempotencyService idempotencyService,
+        IAuditTrailService auditService,
+        IMongoCollection<Withdrawal> withdrawals,
+        IConfiguration configuration,
+        ILogger<SecureWithdrawalService> logger)
     {
         _innerService = innerService;
         _idempotencyService = idempotencyService;
         _auditService = auditService;
-        _withdrawals = dbContext.GetCollection<Withdrawal>("withdrawals");
+        _withdrawals = withdrawals;
         _configuration = configuration;
         _logger = logger;
     }
@@ -83,8 +104,17 @@ public class SecureWithdrawalService : ISecureWithdrawalService
 
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
 
-        if (lockResult.AlreadyProcessed && lockResult.StoredResultJson != null)
+        if (lockResult.AlreadyProcessed)
         {
+            if (!TryParseCachedCreateWithdrawalResult(lockResult.StoredResultJson, key, out var cachedResult))
+            {
+                return new CreateWithdrawalResponse(
+                    false,
+                    null,
+                    null,
+                    InvalidCachedIdempotencyResultMessage);
+            }
+
             _logger.LogInformation("Returning cached withdrawal result for key {Key}", key);
 
             await _auditService.RecordEventAsync(new AuditEventRequest
@@ -103,8 +133,7 @@ public class SecureWithdrawalService : ISecureWithdrawalService
                 UserAgent = userAgent
             });
 
-            return System.Text.Json.JsonSerializer.Deserialize<CreateWithdrawalResponse>(
-                lockResult.StoredResultJson)!;
+            return cachedResult;
         }
 
         if (!lockResult.Acquired)
@@ -204,16 +233,19 @@ public class SecureWithdrawalService : ISecureWithdrawalService
     {
         var key = BuildUserScopedIdempotencyKey("wd_cancel", userId, idempotencyKey);
 
-        var withdrawal = await _withdrawals.Find(w => w.Id == withdrawalId).FirstOrDefaultAsync();
+        var withdrawal = await FindWithdrawalByIdAsync(withdrawalId);
         var username = withdrawal?.Username ?? $"user_{userId}";
 
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
 
-        if (lockResult.AlreadyProcessed && lockResult.StoredResultJson != null)
+        if (lockResult.AlreadyProcessed)
         {
-            var cached = System.Text.Json.JsonSerializer.Deserialize<OperationResult>(
-                lockResult.StoredResultJson);
-            return (cached?.Success ?? false, cached?.Error);
+            if (TryParseCachedOperationResult(lockResult.StoredResultJson, key, "wd_cancel", out var cached))
+            {
+                return (cached.Success, cached.Error);
+            }
+
+            return (false, InvalidCachedIdempotencyResultMessage);
         }
 
         if (!lockResult.Acquired)
@@ -283,15 +315,18 @@ public class SecureWithdrawalService : ISecureWithdrawalService
     {
         var key = BuildUserScopedIdempotencyKey("wd_process", adminId, idempotencyKey);
 
-        var withdrawal = await _withdrawals.Find(w => w.Id == withdrawalId).FirstOrDefaultAsync();
+        var withdrawal = await FindWithdrawalByIdAsync(withdrawalId);
 
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
 
-        if (lockResult.AlreadyProcessed && lockResult.StoredResultJson != null)
+        if (lockResult.AlreadyProcessed)
         {
-            var cached = System.Text.Json.JsonSerializer.Deserialize<OperationResult>(
-                lockResult.StoredResultJson);
-            return (cached?.Success ?? false, cached?.Error);
+            if (TryParseCachedOperationResult(lockResult.StoredResultJson, key, "wd_process", out var cached))
+            {
+                return (cached.Success, cached.Error);
+            }
+
+            return (false, InvalidCachedIdempotencyResultMessage);
         }
 
         if (!lockResult.Acquired)
@@ -360,6 +395,193 @@ public class SecureWithdrawalService : ISecureWithdrawalService
     }
 
     private record OperationResult(bool Success, string? Error);
+
+    private bool TryParseCachedCreateWithdrawalResult(
+        string? cachedResultJson,
+        string key,
+        out CreateWithdrawalResponse cachedResult)
+    {
+        const string operation = "withdrawal";
+
+        try
+        {
+            ValidateCreateWithdrawalPayloadOrThrow(cachedResultJson, operation, key);
+            cachedResult = DeserializeCachedResultOrThrow<CreateWithdrawalResponse>(
+                cachedResultJson,
+                operation,
+                key);
+
+            if (cachedResult.Success &&
+                (string.IsNullOrWhiteSpace(cachedResult.WithdrawalId) ||
+                 string.IsNullOrWhiteSpace(cachedResult.Reference)))
+            {
+                throw BuildInvalidCachedResultException(operation, key);
+            }
+
+            return true;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Blocked duplicate withdrawal request due to invalid cached idempotency result. Key={Key}",
+                key);
+            cachedResult = new CreateWithdrawalResponse(false, null, null, null);
+            return false;
+        }
+    }
+
+    private bool TryParseCachedOperationResult(
+        string? cachedResultJson,
+        string key,
+        string operation,
+        out OperationResult cachedResult)
+    {
+        try
+        {
+            ValidateOperationResultPayloadOrThrow(cachedResultJson, operation, key);
+            cachedResult = DeserializeCachedResultOrThrow<OperationResult>(cachedResultJson, operation, key);
+            return true;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Blocked duplicate {Operation} request due to invalid cached idempotency result. Key={Key}",
+                operation,
+                key);
+            cachedResult = new OperationResult(false, null);
+            return false;
+        }
+    }
+
+    private static void ValidateCreateWithdrawalPayloadOrThrow(
+        string? cachedResultJson,
+        string operation,
+        string key)
+    {
+        var root = ParseJsonObjectOrThrow(cachedResultJson, operation, key);
+
+        if (!root.TryGetProperty("Success", out var successProperty) ||
+            (successProperty.ValueKind != JsonValueKind.True &&
+             successProperty.ValueKind != JsonValueKind.False))
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+
+        if (root.TryGetProperty("Error", out var errorProperty) &&
+            errorProperty.ValueKind != JsonValueKind.String &&
+            errorProperty.ValueKind != JsonValueKind.Null)
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+
+        if (root.TryGetProperty("WithdrawalId", out var withdrawalIdProperty) &&
+            withdrawalIdProperty.ValueKind != JsonValueKind.String &&
+            withdrawalIdProperty.ValueKind != JsonValueKind.Null)
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+
+        if (root.TryGetProperty("Reference", out var referenceProperty) &&
+            referenceProperty.ValueKind != JsonValueKind.String &&
+            referenceProperty.ValueKind != JsonValueKind.Null)
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+    }
+
+    private static void ValidateOperationResultPayloadOrThrow(
+        string? cachedResultJson,
+        string operation,
+        string key)
+    {
+        var root = ParseJsonObjectOrThrow(cachedResultJson, operation, key);
+
+        if (!root.TryGetProperty("Success", out var successProperty) ||
+            (successProperty.ValueKind != JsonValueKind.True &&
+             successProperty.ValueKind != JsonValueKind.False))
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+
+        if (root.TryGetProperty("Error", out var errorProperty) &&
+            errorProperty.ValueKind != JsonValueKind.String &&
+            errorProperty.ValueKind != JsonValueKind.Null)
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+    }
+
+    private static JsonElement ParseJsonObjectOrThrow(
+        string? cachedResultJson,
+        string operation,
+        string key)
+    {
+        if (string.IsNullOrWhiteSpace(cachedResultJson))
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(cachedResultJson);
+            var root = document.RootElement.Clone();
+
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                throw BuildInvalidCachedResultException(operation, key);
+            }
+
+            return root;
+        }
+        catch (JsonException ex)
+        {
+            throw BuildInvalidCachedResultException(operation, key, ex);
+        }
+    }
+
+    private static T DeserializeCachedResultOrThrow<T>(
+        string? cachedResultJson,
+        string operation,
+        string key)
+    {
+        if (string.IsNullOrWhiteSpace(cachedResultJson))
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+
+        try
+        {
+            var result = JsonSerializer.Deserialize<T>(cachedResultJson);
+            return result ?? throw BuildInvalidCachedResultException(operation, key);
+        }
+        catch (JsonException ex)
+        {
+            throw BuildInvalidCachedResultException(operation, key, ex);
+        }
+    }
+
+    private static InvalidOperationException BuildInvalidCachedResultException(
+        string operation,
+        string key,
+        Exception? innerException = null)
+    {
+        var message = InvalidCachedIdempotencyResultMessage;
+        var exception = innerException is null
+            ? new InvalidOperationException(message)
+            : new InvalidOperationException(message, innerException);
+
+        exception.Data["operation"] = operation;
+        exception.Data["idempotencyKey"] = key;
+        return exception;
+    }
+
+    private async Task<Withdrawal?> FindWithdrawalByIdAsync(string withdrawalId)
+    {
+        var cursor = await _withdrawals.FindAsync(w => w.Id == withdrawalId);
+        return await cursor.FirstOrDefaultAsync();
+    }
 
     private string BuildUserScopedIdempotencyKey(string operation, uint userId, string? providedKey)
     {
