@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+using System.Text.Json;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
@@ -51,6 +52,9 @@ public interface ISecureTransferService
 
 public class SecureTransferService : ISecureTransferService
 {
+    private const string InvalidCachedIdempotencyResultMessage =
+        "Data idempotency tidak valid. Permintaan diblokir untuk mencegah duplikasi transaksi.";
+
     private readonly ITransferService _innerService;
     private readonly IIdempotencyService _idempotencyService;
     private readonly IAuditTrailService _auditService;
@@ -113,8 +117,22 @@ public class SecureTransferService : ISecureTransferService
         // Try to acquire idempotency lock
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
 
-        if (lockResult.AlreadyProcessed && lockResult.StoredResultJson != null)
+        if (lockResult.AlreadyProcessed)
         {
+            CreateTransferResponse cachedResult;
+            try
+            {
+                cachedResult = ParseCachedCreateTransferResult(lockResult.StoredResultJson, key);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Blocked duplicate transfer request due to invalid cached idempotency result. Key={Key}",
+                    key);
+                throw;
+            }
+
             _logger.LogInformation("Returning cached transfer result for key {Key}", key);
 
             await _auditService.RecordEventAsync(new AuditEventRequest
@@ -133,8 +151,7 @@ public class SecureTransferService : ISecureTransferService
                 UserAgent = userAgent
             });
 
-            return System.Text.Json.JsonSerializer.Deserialize<CreateTransferResponse>(
-                lockResult.StoredResultJson)!;
+            return cachedResult;
         }
 
         if (!lockResult.Acquired)
@@ -234,11 +251,14 @@ public class SecureTransferService : ISecureTransferService
 
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
 
-        if (lockResult.AlreadyProcessed && lockResult.StoredResultJson != null)
+        if (lockResult.AlreadyProcessed)
         {
-            var cached = System.Text.Json.JsonSerializer.Deserialize<OperationResult>(
-                lockResult.StoredResultJson);
-            return (cached?.Success ?? false, cached?.Error);
+            if (TryParseCachedOperationResult(lockResult.StoredResultJson, key, "release", out var cached))
+            {
+                return (cached.Success, cached.Error);
+            }
+
+            return (false, InvalidCachedIdempotencyResultMessage);
         }
 
         if (!lockResult.Acquired)
@@ -311,11 +331,14 @@ public class SecureTransferService : ISecureTransferService
 
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
 
-        if (lockResult.AlreadyProcessed && lockResult.StoredResultJson != null)
+        if (lockResult.AlreadyProcessed)
         {
-            var cached = System.Text.Json.JsonSerializer.Deserialize<OperationResult>(
-                lockResult.StoredResultJson);
-            return (cached?.Success ?? false, cached?.Error);
+            if (TryParseCachedOperationResult(lockResult.StoredResultJson, key, "cancel", out var cached))
+            {
+                return (cached.Success, cached.Error);
+            }
+
+            return (false, InvalidCachedIdempotencyResultMessage);
         }
 
         if (!lockResult.Acquired)
@@ -390,11 +413,14 @@ public class SecureTransferService : ISecureTransferService
 
         var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
 
-        if (lockResult.AlreadyProcessed && lockResult.StoredResultJson != null)
+        if (lockResult.AlreadyProcessed)
         {
-            var cached = System.Text.Json.JsonSerializer.Deserialize<OperationResult>(
-                lockResult.StoredResultJson);
-            return (cached?.Success ?? false, cached?.Error);
+            if (TryParseCachedOperationResult(lockResult.StoredResultJson, key, "reject", out var cached))
+            {
+                return (cached.Success, cached.Error);
+            }
+
+            return (false, InvalidCachedIdempotencyResultMessage);
         }
 
         if (!lockResult.Acquired)
@@ -455,6 +481,119 @@ public class SecureTransferService : ISecureTransferService
     }
 
     private record OperationResult(bool Success, string? Error);
+
+    private CreateTransferResponse ParseCachedCreateTransferResult(string? cachedResultJson, string key)
+    {
+        const string operation = "transfer";
+        var result = DeserializeCachedResultOrThrow<CreateTransferResponse>(cachedResultJson, operation, key);
+
+        if (string.IsNullOrWhiteSpace(result.TransferId) ||
+            string.IsNullOrWhiteSpace(result.Code) ||
+            string.IsNullOrWhiteSpace(result.ReceiverUsername) ||
+            result.Amount <= 0)
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+
+        return result;
+    }
+
+    private bool TryParseCachedOperationResult(
+        string? cachedResultJson,
+        string key,
+        string operation,
+        out OperationResult cachedResult)
+    {
+        try
+        {
+            ValidateOperationResultPayloadOrThrow(cachedResultJson, operation, key);
+            cachedResult = DeserializeCachedResultOrThrow<OperationResult>(cachedResultJson, operation, key);
+            return true;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Blocked duplicate {Operation} request due to invalid cached idempotency result. Key={Key}",
+                operation,
+                key);
+            cachedResult = new OperationResult(false, null);
+            return false;
+        }
+    }
+
+    private static void ValidateOperationResultPayloadOrThrow(
+        string? cachedResultJson,
+        string operation,
+        string key)
+    {
+        if (string.IsNullOrWhiteSpace(cachedResultJson))
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+
+        JsonElement root;
+        try
+        {
+            using var document = JsonDocument.Parse(cachedResultJson);
+            root = document.RootElement.Clone();
+        }
+        catch (JsonException ex)
+        {
+            throw BuildInvalidCachedResultException(operation, key, ex);
+        }
+
+        if (root.ValueKind != JsonValueKind.Object ||
+            !root.TryGetProperty("Success", out var successProperty) ||
+            (successProperty.ValueKind != JsonValueKind.True &&
+             successProperty.ValueKind != JsonValueKind.False))
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+
+        if (root.TryGetProperty("Error", out var errorProperty) &&
+            errorProperty.ValueKind != JsonValueKind.String &&
+            errorProperty.ValueKind != JsonValueKind.Null)
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+    }
+
+    private static T DeserializeCachedResultOrThrow<T>(
+        string? cachedResultJson,
+        string operation,
+        string key)
+    {
+        if (string.IsNullOrWhiteSpace(cachedResultJson))
+        {
+            throw BuildInvalidCachedResultException(operation, key);
+        }
+
+        try
+        {
+            var result = JsonSerializer.Deserialize<T>(cachedResultJson);
+            return result ?? throw BuildInvalidCachedResultException(operation, key);
+        }
+        catch (JsonException ex)
+        {
+            throw BuildInvalidCachedResultException(operation, key, ex);
+        }
+    }
+
+    private static InvalidOperationException BuildInvalidCachedResultException(
+        string operation,
+        string key,
+        Exception? innerException = null)
+    {
+        var message = InvalidCachedIdempotencyResultMessage;
+        var exception = innerException is null
+            ? new InvalidOperationException(message)
+            : new InvalidOperationException(message, innerException);
+
+        exception.Data["operation"] = operation;
+        exception.Data["idempotencyKey"] = key;
+        return exception;
+    }
 
     private async Task<Transfer?> FindTransferByIdAsync(string transferId)
     {
