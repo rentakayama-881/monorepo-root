@@ -56,3 +56,8 @@ These rules are required for every AI session, including when context memory is 
 7. Frontend quality must follow objective rubric:
 - `docs/frontend/QUALITY_RUBRIC.md`
 - `docs/frontend/REFERENCE_PATTERNS.md`
+
+## Custom Global Skill
+
+- `monorepo-strict-ops`: `/home/alep/.codex/skills/monorepo-strict-ops/SKILL.md`
+- If the skill list does not refresh in the current chat session, start a new session.
