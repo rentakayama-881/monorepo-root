@@ -278,6 +278,206 @@ public class SecureTransferServiceIdempotencyTests
     }
 
     [Fact]
+    public async Task CancelTransferAsync_WhenGeneratedKeyCollidesAcrossUsers_UsesDistinctScopedKeys()
+    {
+        const uint userA = 401;
+        const uint userB = 402;
+        const string sharedRawGeneratedKey = "generated-key";
+        const string expectedKeyA = "cancel:401:generated-key";
+        const string expectedKeyB = "cancel:402:generated-key";
+
+        var transferA = CreatePendingTransfer("trf_cancel_generated_a", senderId: userA, receiverId: 71);
+        var transferB = CreatePendingTransfer("trf_cancel_generated_b", senderId: userB, receiverId: 72);
+
+        var innerService = new Mock<ITransferService>(MockBehavior.Strict);
+        var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
+        var auditService = new Mock<IAuditTrailService>(MockBehavior.Strict);
+        var transfers = new Mock<IMongoCollection<Transfer>>(MockBehavior.Strict);
+
+        SetupFindSequence(transfers, transferA, transferB);
+
+        idempotencyService
+            .SetupSequence(s => s.GenerateKey("cancel"))
+            .Returns(sharedRawGeneratedKey)
+            .Returns(sharedRawGeneratedKey);
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKeyA,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: CreateOperationResultJson(success: true, error: null)));
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKeyB,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: CreateOperationResultJson(
+                    success: false,
+                    error: "Transfer sudah dibatalkan")));
+
+        var sut = CreateSut(
+            innerService.Object,
+            idempotencyService.Object,
+            auditService.Object,
+            transfers.Object);
+
+        var (successA, errorA) = await sut.CancelTransferAsync(
+            transferA.Id,
+            userA,
+            pin: "123456",
+            reason: "obsolete");
+        var (successB, errorB) = await sut.CancelTransferAsync(
+            transferB.Id,
+            userB,
+            pin: "123456",
+            reason: "obsolete");
+
+        Assert.True(successA);
+        Assert.Null(errorA);
+        Assert.False(successB);
+        Assert.Equal("Transfer sudah dibatalkan", errorB);
+
+        innerService.Verify(
+            s => s.CancelTransferAsync(
+                It.IsAny<string>(),
+                It.IsAny<uint>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.GenerateKey("cancel"),
+            Times.Exactly(2));
+        idempotencyService.Verify(
+            s => s.TryAcquireAsync(expectedKeyA, TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>()),
+            Times.Once);
+        idempotencyService.Verify(
+            s => s.TryAcquireAsync(expectedKeyB, TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>()),
+            Times.Once);
+        idempotencyService.Verify(
+            s => s.StoreResultAsync(
+                It.IsAny<string>(),
+                It.IsAny<object>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.ReleaseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        auditService.Verify(
+            s => s.RecordEventAsync(It.IsAny<AuditEventRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.VerifyAll();
+    }
+
+    [Fact]
+    public async Task RejectTransferAsync_WhenGeneratedKeyCollidesAcrossUsers_UsesDistinctScopedKeys()
+    {
+        const uint receiverA = 501;
+        const uint receiverB = 502;
+        const string sharedRawGeneratedKey = "generated-key";
+        const string expectedKeyA = "reject:501:generated-key";
+        const string expectedKeyB = "reject:502:generated-key";
+
+        var transferA = CreatePendingTransfer("trf_reject_generated_a", senderId: 81, receiverId: receiverA);
+        var transferB = CreatePendingTransfer("trf_reject_generated_b", senderId: 82, receiverId: receiverB);
+
+        var innerService = new Mock<ITransferService>(MockBehavior.Strict);
+        var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
+        var auditService = new Mock<IAuditTrailService>(MockBehavior.Strict);
+        var transfers = new Mock<IMongoCollection<Transfer>>(MockBehavior.Strict);
+
+        SetupFindSequence(transfers, transferA, transferB);
+
+        idempotencyService
+            .SetupSequence(s => s.GenerateKey("reject"))
+            .Returns(sharedRawGeneratedKey)
+            .Returns(sharedRawGeneratedKey);
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKeyA,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: CreateOperationResultJson(success: true, error: null)));
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKeyB,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: CreateOperationResultJson(
+                    success: false,
+                    error: "Transfer sudah ditolak")));
+
+        var sut = CreateSut(
+            innerService.Object,
+            idempotencyService.Object,
+            auditService.Object,
+            transfers.Object);
+
+        var (successA, errorA) = await sut.RejectTransferAsync(
+            transferA.Id,
+            receiverA,
+            pin: "123456",
+            reason: "invalid");
+        var (successB, errorB) = await sut.RejectTransferAsync(
+            transferB.Id,
+            receiverB,
+            pin: "123456",
+            reason: "invalid");
+
+        Assert.True(successA);
+        Assert.Null(errorA);
+        Assert.False(successB);
+        Assert.Equal("Transfer sudah ditolak", errorB);
+
+        innerService.Verify(
+            s => s.RejectTransferAsync(
+                It.IsAny<string>(),
+                It.IsAny<uint>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.GenerateKey("reject"),
+            Times.Exactly(2));
+        idempotencyService.Verify(
+            s => s.TryAcquireAsync(expectedKeyA, TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>()),
+            Times.Once);
+        idempotencyService.Verify(
+            s => s.TryAcquireAsync(expectedKeyB, TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>()),
+            Times.Once);
+        idempotencyService.Verify(
+            s => s.StoreResultAsync(
+                It.IsAny<string>(),
+                It.IsAny<object>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.ReleaseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        auditService.Verify(
+            s => s.RecordEventAsync(It.IsAny<AuditEventRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        idempotencyService.VerifyAll();
+    }
+
+    [Fact]
     public async Task ReleaseTransferAsync_WhenAlreadyProcessed_ReturnsCachedResultAndSkipsInnerService()
     {
         const uint userId = 88;
