@@ -82,7 +82,12 @@ public class WithdrawalsController : ApiControllerBase
             var result = await _secureWithdrawalService.CreateWithdrawalAsync(
                 userId, username, request, idempotencyKey, ipAddress, userAgent);
             if (!result.Success)
+            {
+                if (IsInvalidCachedIdempotencyResult(result.Error))
+                    return ApiIdempotencyStateInvalid(result.Error);
+
                 return ApiBadRequest("WITHDRAWAL_FAILED", result.Error ?? "Failed to create withdrawal");
+            }
 
             return ApiCreated(result, "Withdrawal request created successfully");
         }
@@ -178,7 +183,12 @@ public class WithdrawalsController : ApiControllerBase
             var (success, error) = await _secureWithdrawalService.CancelWithdrawalAsync(
                 id, userId, request.Pin, idempotencyKey, ipAddress, userAgent);
             if (!success)
+            {
+                if (IsInvalidCachedIdempotencyResult(error))
+                    return ApiIdempotencyStateInvalid(error);
+
                 return ApiBadRequest("CANCEL_FAILED", error ?? "Gagal membatalkan penarikan");
+            }
 
             return ApiOk(new { cancelled = true }, "Penarikan berhasil dibatalkan");
         }
