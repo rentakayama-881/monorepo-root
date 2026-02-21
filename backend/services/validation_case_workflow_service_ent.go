@@ -40,8 +40,14 @@ func NewEntValidationCaseWorkflowService() *EntValidationCaseWorkflowService {
 
 const (
 	caseStatusOpen                 = "open"
+	caseStatusDisputed             = "disputed"
+	caseStatusCompleted            = "completed"
+	caseStatusArtifactSubmitted    = "artifact_submitted"
 	caseStatusWaitingOwnerResponse = "waiting_owner_response"
 	caseStatusOnHoldOwnerInactive  = "on_hold_owner_inactive"
+
+	disputeSettlementOutcomeOwnerRefund      = "owner_refund"
+	disputeSettlementOutcomeValidatorRelease = "validator_release"
 
 	clarificationStateNone                    = "none"
 	clarificationStateWaitingOwnerResponse    = "waiting_owner_response"
@@ -90,6 +96,13 @@ func normalizeStatus(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
 }
 
+func currentWorkflowCycle(vc *ent.ValidationCase) int {
+	if vc == nil || vc.WorkflowCycle < 1 {
+		return 1
+	}
+	return vc.WorkflowCycle
+}
+
 func unixPtr(t *time.Time) *int64 {
 	if t == nil {
 		return nil
@@ -103,6 +116,17 @@ func valueOrEmpty(v *string) string {
 		return ""
 	}
 	return *v
+}
+
+func normalizeDisputeSettlementOutcome(outcome string) string {
+	switch normalizeStatus(outcome) {
+	case disputeSettlementOutcomeOwnerRefund:
+		return disputeSettlementOutcomeOwnerRefund
+	case disputeSettlementOutcomeValidatorRelease:
+		return disputeSettlementOutcomeValidatorRelease
+	default:
+		return ""
+	}
 }
 
 func requiredStakeForConsultation(vc *ent.ValidationCase) int64 {
@@ -127,8 +151,8 @@ func requiredStakeForConsultation(vc *ent.ValidationCase) int64 {
 	}
 }
 
-func finalOfferSubmissionKey(validationCaseID int, validatorUserID uint) string {
-	return fmt.Sprintf("vc:%d:validator:%d", validationCaseID, validatorUserID)
+func finalOfferSubmissionKey(validationCaseID int, validatorUserID uint, workflowCycle int) string {
+	return fmt.Sprintf("vc:%d:validator:%d:cycle:%d", validationCaseID, validatorUserID, workflowCycle)
 }
 
 func dueTimeFromNow(now time.Time) time.Time {
@@ -485,10 +509,12 @@ func (s *EntValidationCaseWorkflowService) RequestConsultation(ctx context.Conte
 		)
 	}
 
+	cycle := currentWorkflowCycle(vc)
 	exists, err := s.client.ConsultationRequest.Query().
 		Where(
 			consultationrequest.ValidationCaseIDEQ(int(validationCaseID)),
 			consultationrequest.ValidatorUserIDEQ(int(validatorUserID)),
+			consultationrequest.WorkflowCycleEQ(cycle),
 		).
 		Exist(ctx)
 	if err != nil {
@@ -502,6 +528,7 @@ func (s *EntValidationCaseWorkflowService) RequestConsultation(ctx context.Conte
 		Create().
 		SetValidationCaseID(int(validationCaseID)).
 		SetValidatorUserID(int(validatorUserID)).
+		SetWorkflowCycle(cycle).
 		SetStatus(consultationStatusPending).
 		SetReminderCount(0).
 		Save(ctx)
@@ -513,6 +540,7 @@ func (s *EntValidationCaseWorkflowService) RequestConsultation(ctx context.Conte
 	s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, "consultation_requested", map[string]interface{}{
 		"validator_user_id": validatorUserID,
 		"required_stake":    requiredStake,
+		"workflow_cycle":    cycle,
 	})
 
 	return uint(req.ID), nil
@@ -523,18 +551,20 @@ func (s *EntValidationCaseWorkflowService) GetConsultationRequestForValidator(
 	validationCaseID uint,
 	validatorUserID uint,
 ) (*ValidatorConsultationRequestSummary, error) {
-	_, err := s.client.ValidationCase.Get(ctx, int(validationCaseID))
+	vc, err := s.client.ValidationCase.Get(ctx, int(validationCaseID))
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, apperrors.ErrValidationCaseNotFound
 		}
 		return nil, apperrors.ErrDatabase
 	}
+	cycle := currentWorkflowCycle(vc)
 
 	req, err := s.client.ConsultationRequest.Query().
 		Where(
 			consultationrequest.ValidationCaseIDEQ(int(validationCaseID)),
 			consultationrequest.ValidatorUserIDEQ(int(validatorUserID)),
+			consultationrequest.WorkflowCycleEQ(cycle),
 		).
 		Order(ent.Desc(consultationrequest.FieldCreatedAt)).
 		First(ctx)
@@ -582,6 +612,9 @@ func (s *EntValidationCaseWorkflowService) ListConsultationGuaranteeLocksForVali
 		if vc == nil {
 			continue
 		}
+		if req.WorkflowCycle != currentWorkflowCycle(vc) {
+			continue
+		}
 
 		escrowTransferID := strings.TrimSpace(valueOrEmpty(vc.EscrowTransferID))
 		validationStatus := normalizeStatus(vc.Status)
@@ -619,9 +652,13 @@ func (s *EntValidationCaseWorkflowService) ListConsultationRequestsForOwner(ctx 
 	if vc.UserID != int(ownerUserID) {
 		return nil, apperrors.ErrValidationCaseOwnership
 	}
+	cycle := currentWorkflowCycle(vc)
 
 	items, err := s.client.ConsultationRequest.Query().
-		Where(consultationrequest.ValidationCaseIDEQ(int(validationCaseID))).
+		Where(
+			consultationrequest.ValidationCaseIDEQ(int(validationCaseID)),
+			consultationrequest.WorkflowCycleEQ(cycle),
+		).
 		WithValidatorUser(func(q *ent.UserQuery) {
 			q.WithPrimaryBadge()
 		}).
@@ -640,6 +677,9 @@ func (s *EntValidationCaseWorkflowService) ListConsultationRequestsForOwner(ctx 
 			validatorIDSet[it.ValidatorUserID] = struct{}{}
 			validatorIDs = append(validatorIDs, it.ValidatorUserID)
 		}
+	}
+	if len(validatorIDs) == 0 {
+		return []ConsultationRequestItem{}, nil
 	}
 
 	// Batch load all FinalOffers for these validators
@@ -776,6 +816,9 @@ func (s *EntValidationCaseWorkflowService) ApproveConsultationRequest(ctx contex
 		}
 		return apperrors.ErrDatabase
 	}
+	if req.WorkflowCycle != currentWorkflowCycle(vc) {
+		return apperrors.ErrInvalidInput.WithDetails("Consultation Request berasal dari siklus workflow sebelumnya")
+	}
 
 	if normalizeStatus(req.Status) != consultationStatusPending {
 		return apperrors.ErrInvalidInput.WithDetails("Consultation Request tidak dalam status pending")
@@ -843,6 +886,9 @@ func (s *EntValidationCaseWorkflowService) RejectConsultationRequest(ctx context
 		}
 		return apperrors.ErrDatabase
 	}
+	if req.WorkflowCycle != currentWorkflowCycle(vc) {
+		return apperrors.ErrInvalidInput.WithDetails("Consultation Request berasal dari siklus workflow sebelumnya")
+	}
 
 	if normalizeStatus(req.Status) != consultationStatusPending {
 		return apperrors.ErrInvalidInput.WithDetails("Consultation Request tidak dalam status pending")
@@ -896,6 +942,9 @@ func (s *EntValidationCaseWorkflowService) RequestOwnerClarification(
 			return apperrors.ErrInvalidInput.WithDetails("Consultation Request tidak ditemukan")
 		}
 		return apperrors.ErrDatabase
+	}
+	if req.WorkflowCycle != currentWorkflowCycle(vc) {
+		return apperrors.ErrInvalidInput.WithDetails("Consultation Request berasal dari siklus workflow sebelumnya")
 	}
 	if req.ValidatorUserID != int(validatorUserID) {
 		return apperrors.ErrValidationCaseOwnership
@@ -992,11 +1041,21 @@ func (s *EntValidationCaseWorkflowService) RequestOwnerClarificationForValidator
 	validatorUserID uint,
 	input ClarificationRequestInput,
 ) error {
+	vc, err := s.client.ValidationCase.Get(ctx, int(validationCaseID))
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return apperrors.ErrValidationCaseNotFound
+		}
+		return apperrors.ErrDatabase
+	}
+	cycle := currentWorkflowCycle(vc)
+
 	req, err := s.client.ConsultationRequest.Query().
 		Where(
 			consultationrequest.ValidationCaseIDEQ(int(validationCaseID)),
 			consultationrequest.ValidatorUserIDEQ(int(validatorUserID)),
 			consultationrequest.StatusEQ(consultationStatusApproved),
+			consultationrequest.WorkflowCycleEQ(cycle),
 		).
 		Order(ent.Desc(consultationrequest.FieldCreatedAt)).
 		First(ctx)
@@ -1038,6 +1097,9 @@ func (s *EntValidationCaseWorkflowService) RespondOwnerClarification(
 			return apperrors.ErrInvalidInput.WithDetails("Consultation Request tidak ditemukan")
 		}
 		return apperrors.ErrDatabase
+	}
+	if req.WorkflowCycle != currentWorkflowCycle(vc) {
+		return apperrors.ErrInvalidInput.WithDetails("Consultation Request berasal dari siklus workflow sebelumnya")
 	}
 
 	status := normalizeStatus(req.Status)
@@ -1161,6 +1223,9 @@ func (s *EntValidationCaseWorkflowService) ProcessOwnerResponseSLA(ctx context.C
 			}
 			return reminderEvents, timeoutEvents, apperrors.ErrDatabase
 		}
+		if req.WorkflowCycle != currentWorkflowCycle(vc) {
+			continue
+		}
 
 		due := req.OwnerResponseDueAt
 		start := due.Add(-ownerResponseSLAHours * time.Hour)
@@ -1254,6 +1319,7 @@ func (s *EntValidationCaseWorkflowService) RevealOwnerTelegramContact(ctx contex
 			consultationrequest.ValidationCaseIDEQ(vc.ID),
 			consultationrequest.ValidatorUserIDEQ(int(validatorUserID)),
 			consultationrequest.StatusEQ(consultationStatusApproved),
+			consultationrequest.WorkflowCycleEQ(currentWorkflowCycle(vc)),
 		).
 		Only(ctx)
 	if err != nil {
@@ -1314,6 +1380,7 @@ func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context,
 	if normalizeStatus(vc.Status) != caseStatusOpen {
 		return 0, apperrors.ErrInvalidInput.WithDetails("Final Offer hanya dapat diajukan saat status kasus open")
 	}
+	cycle := currentWorkflowCycle(vc)
 
 	// Require approved consultation to submit an offer.
 	approved, err := s.client.ConsultationRequest.Query().
@@ -1321,6 +1388,7 @@ func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context,
 			consultationrequest.ValidationCaseIDEQ(vc.ID),
 			consultationrequest.ValidatorUserIDEQ(int(validatorUserID)),
 			consultationrequest.StatusEQ(consultationStatusApproved),
+			consultationrequest.WorkflowCycleEQ(cycle),
 		).
 		Exist(ctx)
 	if err != nil {
@@ -1337,6 +1405,7 @@ func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context,
 		Where(
 			finaloffer.ValidationCaseIDEQ(vc.ID),
 			finaloffer.ValidatorUserIDEQ(int(validatorUserID)),
+			finaloffer.WorkflowCycleEQ(cycle),
 		).
 		Order(ent.Desc(finaloffer.FieldCreatedAt)).
 		First(ctx)
@@ -1368,12 +1437,13 @@ func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context,
 		return 0, apperrors.ErrInvalidInput.WithDetails("hold_hours harus 32, 168, atau 720")
 	}
 
-	submissionKey := finalOfferSubmissionKey(vc.ID, validatorUserID)
+	submissionKey := finalOfferSubmissionKey(vc.ID, validatorUserID, cycle)
 
 	offer, err := s.client.FinalOffer.Create().
 		SetValidationCaseID(vc.ID).
 		SetValidatorUserID(int(validatorUserID)).
 		SetSubmissionKey(submissionKey).
+		SetWorkflowCycle(cycle).
 		SetAmount(amount).
 		SetHoldHours(holdHours).
 		SetTerms(strings.TrimSpace(terms)).
@@ -1392,6 +1462,7 @@ func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context,
 		"final_offer_id": offer.ID,
 		"amount":         amount,
 		"hold_hours":     holdHours,
+		"workflow_cycle": cycle,
 	})
 
 	return uint(offer.ID), nil
@@ -1408,9 +1479,13 @@ func (s *EntValidationCaseWorkflowService) ListFinalOffers(ctx context.Context, 
 
 	// Owner can list all offers. Validators can list their own offers.
 	isOwner := vc.UserID == int(viewerUserID)
+	cycle := currentWorkflowCycle(vc)
 
 	query := s.client.FinalOffer.Query().
-		Where(finaloffer.ValidationCaseIDEQ(vc.ID)).
+		Where(
+			finaloffer.ValidationCaseIDEQ(vc.ID),
+			finaloffer.WorkflowCycleEQ(cycle),
+		).
 		WithValidatorUser(func(q *ent.UserQuery) {
 			q.WithPrimaryBadge()
 		}).
@@ -1464,11 +1539,13 @@ func (s *EntValidationCaseWorkflowService) AcceptFinalOffer(ctx context.Context,
 	if vc.DisputeID != nil && strings.TrimSpace(*vc.DisputeID) != "" {
 		return nil, apperrors.ErrInvalidInput.WithDetails("Kasus sedang dalam Dispute")
 	}
+	cycle := currentWorkflowCycle(vc)
 
 	offer, err := s.client.FinalOffer.Query().
 		Where(
 			finaloffer.IDEQ(int(offerID)),
 			finaloffer.ValidationCaseIDEQ(vc.ID),
+			finaloffer.WorkflowCycleEQ(cycle),
 		).
 		Only(ctx)
 	if err != nil {
@@ -1654,6 +1731,9 @@ func (s *EntValidationCaseWorkflowService) ConfirmLockFunds(ctx context.Context,
 	if err != nil {
 		return apperrors.ErrDatabase
 	}
+	if offer.WorkflowCycle != currentWorkflowCycle(vc) {
+		return apperrors.ErrInvalidInput.WithDetails("Final Offer berasal dari siklus workflow sebelumnya")
+	}
 
 	ft, err := s.getFeatureTransfer(ctx, authHeader, transferID)
 	if err != nil {
@@ -1747,7 +1827,7 @@ func (s *EntValidationCaseWorkflowService) SubmitArtifact(ctx context.Context, v
 
 	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
 		SetArtifactDocumentID(documentID).
-		SetStatus("artifact_submitted").
+		SetStatus(caseStatusArtifactSubmitted).
 		Save(ctx); err != nil {
 		return apperrors.ErrDatabase
 	}
@@ -1827,7 +1907,7 @@ func (s *EntValidationCaseWorkflowService) MarkEscrowReleased(ctx context.Contex
 
 	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
 		SetCertifiedArtifactDocumentID(strings.TrimSpace(*certifiedID)).
-		SetStatus("completed").
+		SetStatus(caseStatusCompleted).
 		Save(ctx); err != nil {
 		return apperrors.ErrDatabase
 	}
@@ -1871,14 +1951,14 @@ func (s *EntValidationCaseWorkflowService) MarkEscrowReleasedInternalByTransferI
 	}
 
 	// Idempotent: if already completed and certified artifact set, no-op.
-	if normalizeStatus(vc.Status) == "completed" && vc.CertifiedArtifactDocumentID != nil && strings.TrimSpace(*vc.CertifiedArtifactDocumentID) != "" {
+	if normalizeStatus(vc.Status) == caseStatusCompleted && vc.CertifiedArtifactDocumentID != nil && strings.TrimSpace(*vc.CertifiedArtifactDocumentID) != "" {
 		return &vc.ID, nil
 	}
 
 	certified := strings.TrimSpace(*artifactID)
 	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
 		SetCertifiedArtifactDocumentID(certified).
-		SetStatus("completed").
+		SetStatus(caseStatusCompleted).
 		Save(ctx); err != nil {
 		return nil, apperrors.ErrDatabase
 	}
@@ -1892,6 +1972,122 @@ func (s *EntValidationCaseWorkflowService) MarkEscrowReleasedInternalByTransferI
 		"certified_artifact_document_id": certified,
 		"source":                         "feature_service_auto_release",
 	})
+
+	return &vc.ID, nil
+}
+
+// SettleDisputeInternalByTransferID is called by Feature Service after dispute settlement.
+// Protected by InternalServiceAuth middleware (X-Internal-Api-Key).
+func (s *EntValidationCaseWorkflowService) SettleDisputeInternalByTransferID(
+	ctx context.Context,
+	transferID string,
+	disputeID string,
+	outcome string,
+	source string,
+) (*int, error) {
+	transferID = strings.TrimSpace(transferID)
+	if transferID == "" {
+		return nil, apperrors.ErrMissingField.WithDetails("transfer_id")
+	}
+	disputeID = strings.TrimSpace(disputeID)
+	if disputeID == "" {
+		return nil, apperrors.ErrMissingField.WithDetails("dispute_id")
+	}
+	normalizedOutcome := normalizeDisputeSettlementOutcome(outcome)
+	if normalizedOutcome == "" {
+		return nil, apperrors.ErrInvalidInput.WithDetails("outcome harus owner_refund atau validator_release")
+	}
+	source = strings.TrimSpace(source)
+
+	vc, err := s.client.ValidationCase.Query().
+		Where(validationcase.EscrowTransferIDEQ(transferID)).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, apperrors.ErrValidationCaseNotFound
+		}
+		return nil, apperrors.ErrDatabase
+	}
+
+	currentDisputeID := strings.TrimSpace(valueOrEmpty(vc.DisputeID))
+	if currentDisputeID != "" && currentDisputeID != disputeID {
+		return nil, apperrors.ErrInvalidInput.WithDetails("dispute_id tidak sesuai dengan transfer pada kasus ini")
+	}
+
+	previousStatus := normalizeStatus(vc.Status)
+	cycle := currentWorkflowCycle(vc)
+
+	switch normalizedOutcome {
+	case disputeSettlementOutcomeOwnerRefund:
+		nextCycle := cycle + 1
+		if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
+			SetStatus(caseStatusOpen).
+			SetClarificationState(clarificationStateNone).
+			SetWorkflowCycle(nextCycle).
+			ClearDisputeID().
+			ClearEscrowTransferID().
+			ClearAcceptedFinalOfferID().
+			ClearArtifactDocumentID().
+			ClearCertifiedArtifactDocumentID().
+			Save(ctx); err != nil {
+			return nil, apperrors.ErrDatabase
+		}
+
+		s.appendCaseLogBestEffort(ctx, vc.ID, nil, "dispute_settled", map[string]interface{}{
+			"transfer_id":     transferID,
+			"dispute_id":      disputeID,
+			"outcome":         normalizedOutcome,
+			"source":          source,
+			"workflow_cycle":  cycle,
+			"next_cycle":      nextCycle,
+			"previous_status": previousStatus,
+		})
+		s.appendCaseLogBestEffort(ctx, vc.ID, nil, "case_status_changed", map[string]interface{}{
+			"from":   previousStatus,
+			"to":     caseStatusOpen,
+			"reason": "dispute_refund_to_owner",
+		})
+		s.appendCaseLogBestEffort(ctx, vc.ID, nil, "workflow_cycle_incremented", map[string]interface{}{
+			"from_cycle": cycle,
+			"to_cycle":   nextCycle,
+			"reason":     "dispute_refund_to_owner",
+		})
+		s.appendCaseLogBestEffort(ctx, vc.ID, nil, "financial_linkage_cleared", map[string]interface{}{
+			"cleared_fields": []string{
+				"dispute_id",
+				"escrow_transfer_id",
+				"accepted_final_offer_id",
+				"artifact_document_id",
+				"certified_artifact_document_id",
+			},
+			"reason": "dispute_refund_to_owner",
+		})
+
+	case disputeSettlementOutcomeValidatorRelease:
+		if previousStatus == caseStatusCompleted && currentDisputeID == "" {
+			return &vc.ID, nil
+		}
+		if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
+			SetStatus(caseStatusCompleted).
+			ClearDisputeID().
+			Save(ctx); err != nil {
+			return nil, apperrors.ErrDatabase
+		}
+
+		s.appendCaseLogBestEffort(ctx, vc.ID, nil, "dispute_settled", map[string]interface{}{
+			"transfer_id":     transferID,
+			"dispute_id":      disputeID,
+			"outcome":         normalizedOutcome,
+			"source":          source,
+			"workflow_cycle":  cycle,
+			"previous_status": previousStatus,
+		})
+		s.appendCaseLogBestEffort(ctx, vc.ID, nil, "case_status_changed", map[string]interface{}{
+			"from":   previousStatus,
+			"to":     caseStatusCompleted,
+			"reason": "dispute_release_to_validator",
+		})
+	}
 
 	return &vc.ID, nil
 }
@@ -1929,7 +2125,7 @@ func (s *EntValidationCaseWorkflowService) AttachDispute(ctx context.Context, va
 
 	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
 		SetDisputeID(disputeID).
-		SetStatus("disputed").
+		SetStatus(caseStatusDisputed).
 		Save(ctx); err != nil {
 		return apperrors.ErrDatabase
 	}

@@ -67,6 +67,23 @@ func constraintExists(ctx context.Context, q interface {
 	return exists, nil
 }
 
+func indexExists(ctx context.Context, q interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}, indexName string) (bool, error) {
+	var exists bool
+	if err := q.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM pg_indexes
+			WHERE schemaname = 'public'
+			  AND indexname = $1
+		)
+	`, indexName).Scan(&exists); err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 // applyDomainRenames performs an idempotent, production-safe rename from legacy "thread" naming
 // to the new "validation case" naming at the DB level.
 //
@@ -171,6 +188,55 @@ func applyDomainRenames(ctx context.Context, db *sql.DB) error {
 	return tx.Commit()
 }
 
+func applyWorkflowCycleMigrations(ctx context.Context, db *sql.DB) error {
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	statements := []string{
+		`ALTER TABLE validation_cases ADD COLUMN IF NOT EXISTS workflow_cycle INTEGER NOT NULL DEFAULT 1`,
+		`ALTER TABLE consultation_requests ADD COLUMN IF NOT EXISTS workflow_cycle INTEGER NOT NULL DEFAULT 1`,
+		`ALTER TABLE final_offers ADD COLUMN IF NOT EXISTS workflow_cycle INTEGER NOT NULL DEFAULT 1`,
+		`UPDATE validation_cases SET workflow_cycle = 1 WHERE workflow_cycle < 1`,
+		`UPDATE consultation_requests SET workflow_cycle = 1 WHERE workflow_cycle < 1`,
+		`UPDATE final_offers SET workflow_cycle = 1 WHERE workflow_cycle < 1`,
+	}
+
+	for _, stmt := range statements {
+		if _, err := tx.ExecContext(ctx, stmt); err != nil {
+			return err
+		}
+	}
+
+	// Legacy index blocked validators from re-requesting after dispute refund.
+	legacyIndexName := "consultationrequest_validation_case_id_validator_user_id"
+	legacyExists, err := indexExists(ctx, tx, legacyIndexName)
+	if err != nil {
+		return err
+	}
+	if legacyExists {
+		if _, err := tx.ExecContext(ctx, `DROP INDEX IF EXISTS consultationrequest_validation_case_id_validator_user_id`); err != nil {
+			return err
+		}
+	}
+
+	indexStatements := []string{
+		`CREATE UNIQUE INDEX IF NOT EXISTS consultationrequest_validation_case_id_validator_user_id_workflow_cycle ON consultation_requests (validation_case_id, validator_user_id, workflow_cycle)`,
+		`CREATE INDEX IF NOT EXISTS consultationrequest_validation_case_id_workflow_cycle ON consultation_requests (validation_case_id, workflow_cycle)`,
+		`CREATE INDEX IF NOT EXISTS consultationrequest_validator_user_id_status_workflow_cycle ON consultation_requests (validator_user_id, status, workflow_cycle)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS finaloffer_validation_case_id_validator_user_id_workflow_cycle ON final_offers (validation_case_id, validator_user_id, workflow_cycle)`,
+	}
+	for _, stmt := range indexStatements {
+		if _, err := tx.ExecContext(ctx, stmt); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
 // InitEntDB initializes the Ent client and SQL DB connection.
 func InitEntDB() {
 	// Prefer DATABASE_URL (recommended for Neon)
@@ -262,6 +328,12 @@ func InitEntDB() {
 	defer cancel2()
 	if err := EntClient.Schema.Create(ctx2); err != nil {
 		logger.Fatal("Failed to run Ent migrations", zap.Error(err))
+	}
+
+	cycleCtx, cycleCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cycleCancel()
+	if err := applyWorkflowCycleMigrations(cycleCtx, db); err != nil {
+		logger.Fatal("Failed to apply workflow cycle migrations", zap.Error(err))
 	}
 
 	logger.Info("Ent database initialized successfully (PGX Simple Protocol)")

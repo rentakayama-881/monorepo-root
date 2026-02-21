@@ -2,6 +2,8 @@ using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
+using System.Text;
+using System.Text.Json;
 
 namespace FeatureService.Api.Services;
 
@@ -27,19 +29,28 @@ public interface IDisputeService
 
 public class DisputeService : IDisputeService
 {
+    private const string DisputeSettlementOutcomeOwnerRefund = "owner_refund";
+    private const string DisputeSettlementOutcomeValidatorRelease = "validator_release";
+
     private readonly IMongoCollection<Dispute> _disputes;
     private readonly IMongoCollection<Transfer> _transfers;
     private readonly IWalletService _walletService;
+    private readonly HttpClient _httpClient;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<DisputeService> _logger;
 
     public DisputeService(
         MongoDbContext dbContext,
         IWalletService walletService,
+        HttpClient httpClient,
+        IConfiguration configuration,
         ILogger<DisputeService> logger)
     {
         _disputes = dbContext.GetCollection<Dispute>("disputes");
         _transfers = dbContext.GetCollection<Transfer>("transfers");
         _walletService = walletService;
+        _httpClient = httpClient;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -524,6 +535,27 @@ public class DisputeService : IDisputeService
             disputeId, adminId, request.Type, refundToSender, releaseToReceiver
         );
 
+        var settlementSource = request.Type switch
+        {
+            ResolutionType.FullRefundToSender => "admin_refund",
+            ResolutionType.FullReleaseToReceiver => "admin_force_release",
+            _ => null
+        };
+        var settlementOutcome = request.Type switch
+        {
+            ResolutionType.FullRefundToSender => DisputeSettlementOutcomeOwnerRefund,
+            ResolutionType.FullReleaseToReceiver => DisputeSettlementOutcomeValidatorRelease,
+            _ => null
+        };
+        if (!string.IsNullOrWhiteSpace(settlementSource) && !string.IsNullOrWhiteSpace(settlementOutcome))
+        {
+            await BestEffortNotifyGoBackendDisputeSettledAsync(
+                transfer.Id,
+                disputeId,
+                settlementOutcome,
+                settlementSource);
+        }
+
         return (true, null);
     }
 
@@ -750,7 +782,78 @@ public class DisputeService : IDisputeService
         }
 
         _logger.LogInformation("Mutual refund completed for dispute {DisputeId} by user {UserId}", disputeId, userId);
+        await BestEffortNotifyGoBackendDisputeSettledAsync(
+            transfer.Id,
+            disputeId,
+            DisputeSettlementOutcomeOwnerRefund,
+            "mutual_refund");
         return (true, null);
+    }
+
+    private string GetGoBackendBaseUrl()
+    {
+        return (_configuration["Backend:ApiUrl"]
+                ?? _configuration["GoBackend:BaseUrl"]
+                ?? "http://127.0.0.1:8080").TrimEnd('/');
+    }
+
+    private async Task BestEffortNotifyGoBackendDisputeSettledAsync(
+        string transferId,
+        string disputeId,
+        string outcome,
+        string source)
+    {
+        var baseUrl = GetGoBackendBaseUrl();
+        var internalKey = _configuration["GoBackend:InternalApiKey"];
+        if (string.IsNullOrWhiteSpace(internalKey))
+        {
+            _logger.LogWarning(
+                "GoBackend:InternalApiKey is not configured; skipping validation-case dispute callback. TransferId: {TransferId}, DisputeId: {DisputeId}",
+                transferId,
+                disputeId);
+            return;
+        }
+
+        try
+        {
+            var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                $"{baseUrl}/api/internal/validation-cases/disputes/settled");
+
+            request.Headers.Add("X-Internal-Api-Key", internalKey);
+            request.Content = new StringContent(
+                JsonSerializer.Serialize(new
+                {
+                    transfer_id = transferId,
+                    dispute_id = disputeId,
+                    outcome,
+                    source
+                }),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning(
+                    "Go backend dispute-settlement callback failed. Status: {StatusCode}. Body: {Body}. TransferId: {TransferId}, DisputeId: {DisputeId}, Outcome: {Outcome}",
+                    (int)response.StatusCode,
+                    body,
+                    transferId,
+                    disputeId,
+                    outcome);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Error calling Go backend dispute-settlement callback. TransferId: {TransferId}, DisputeId: {DisputeId}, Outcome: {Outcome}",
+                transferId,
+                disputeId,
+                outcome);
+        }
     }
 
     private async Task TryRollbackTransferToPendingAsync(string transferId)

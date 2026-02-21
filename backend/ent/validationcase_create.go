@@ -212,6 +212,20 @@ func (_c *ValidationCaseCreate) SetNillableOwnerInactivityCount(v *int) *Validat
 	return _c
 }
 
+// SetWorkflowCycle sets the "workflow_cycle" field.
+func (_c *ValidationCaseCreate) SetWorkflowCycle(v int) *ValidationCaseCreate {
+	_c.mutation.SetWorkflowCycle(v)
+	return _c
+}
+
+// SetNillableWorkflowCycle sets the "workflow_cycle" field if the given value is not nil.
+func (_c *ValidationCaseCreate) SetNillableWorkflowCycle(v *int) *ValidationCaseCreate {
+	if v != nil {
+		_c.SetWorkflowCycle(*v)
+	}
+	return _c
+}
+
 // SetEscrowTransferID sets the "escrow_transfer_id" field.
 func (_c *ValidationCaseCreate) SetEscrowTransferID(v string) *ValidationCaseCreate {
 	_c.mutation.SetEscrowTransferID(v)
@@ -457,6 +471,10 @@ func (_c *ValidationCaseCreate) defaults() {
 		v := validationcase.DefaultOwnerInactivityCount
 		_c.mutation.SetOwnerInactivityCount(v)
 	}
+	if _, ok := _c.mutation.WorkflowCycle(); !ok {
+		v := validationcase.DefaultWorkflowCycle
+		_c.mutation.SetWorkflowCycle(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -540,6 +558,14 @@ func (_c *ValidationCaseCreate) check() error {
 	if v, ok := _c.mutation.OwnerInactivityCount(); ok {
 		if err := validationcase.OwnerInactivityCountValidator(v); err != nil {
 			return &ValidationError{Name: "owner_inactivity_count", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.owner_inactivity_count": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.WorkflowCycle(); !ok {
+		return &ValidationError{Name: "workflow_cycle", err: errors.New(`ent: missing required field "ValidationCase.workflow_cycle"`)}
+	}
+	if v, ok := _c.mutation.WorkflowCycle(); ok {
+		if err := validationcase.WorkflowCycleValidator(v); err != nil {
+			return &ValidationError{Name: "workflow_cycle", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.workflow_cycle": %w`, err)}
 		}
 	}
 	if v, ok := _c.mutation.AcceptedFinalOfferID(); ok {
@@ -634,6 +660,10 @@ func (_c *ValidationCaseCreate) createSpec() (*ValidationCase, *sqlgraph.CreateS
 	if value, ok := _c.mutation.OwnerInactivityCount(); ok {
 		_spec.SetField(validationcase.FieldOwnerInactivityCount, field.TypeInt, value)
 		_node.OwnerInactivityCount = value
+	}
+	if value, ok := _c.mutation.WorkflowCycle(); ok {
+		_spec.SetField(validationcase.FieldWorkflowCycle, field.TypeInt, value)
+		_node.WorkflowCycle = value
 	}
 	if value, ok := _c.mutation.EscrowTransferID(); ok {
 		_spec.SetField(validationcase.FieldEscrowTransferID, field.TypeString, value)

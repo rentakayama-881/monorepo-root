@@ -46,6 +46,8 @@ const (
 	FieldClarificationState = "clarification_state"
 	// FieldOwnerInactivityCount holds the string denoting the owner_inactivity_count field in the database.
 	FieldOwnerInactivityCount = "owner_inactivity_count"
+	// FieldWorkflowCycle holds the string denoting the workflow_cycle field in the database.
+	FieldWorkflowCycle = "workflow_cycle"
 	// FieldEscrowTransferID holds the string denoting the escrow_transfer_id field in the database.
 	FieldEscrowTransferID = "escrow_transfer_id"
 	// FieldDisputeID holds the string denoting the dispute_id field in the database.
@@ -149,6 +151,7 @@ var Columns = []string{
 	FieldIntakeSchemaVersion,
 	FieldClarificationState,
 	FieldOwnerInactivityCount,
+	FieldWorkflowCycle,
 	FieldEscrowTransferID,
 	FieldDisputeID,
 	FieldAcceptedFinalOfferID,
@@ -213,6 +216,10 @@ var (
 	DefaultOwnerInactivityCount int
 	// OwnerInactivityCountValidator is a validator for the "owner_inactivity_count" field. It is called by the builders before save.
 	OwnerInactivityCountValidator func(int) error
+	// DefaultWorkflowCycle holds the default value on creation for the "workflow_cycle" field.
+	DefaultWorkflowCycle int
+	// WorkflowCycleValidator is a validator for the "workflow_cycle" field. It is called by the builders before save.
+	WorkflowCycleValidator func(int) error
 	// AcceptedFinalOfferIDValidator is a validator for the "accepted_final_offer_id" field. It is called by the builders before save.
 	AcceptedFinalOfferIDValidator func(int) error
 )
@@ -293,6 +300,11 @@ func ByClarificationState(opts ...sql.OrderTermOption) OrderOption {
 // ByOwnerInactivityCount orders the results by the owner_inactivity_count field.
 func ByOwnerInactivityCount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOwnerInactivityCount, opts...).ToFunc()
+}
+
+// ByWorkflowCycle orders the results by the workflow_cycle field.
+func ByWorkflowCycle(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWorkflowCycle, opts...).ToFunc()
 }
 
 // ByEscrowTransferID orders the results by the escrow_transfer_id field.

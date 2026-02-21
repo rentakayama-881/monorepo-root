@@ -529,6 +529,8 @@ func main() {
 				internal.GET("/users/:id/consultation-locks", workflowHandler.InternalGetValidatorConsultationLocks)
 				// Feature-service callback: finalize Validation Case after escrow is auto-released.
 				internal.POST("/validation-cases/escrow/released", workflowHandler.InternalMarkEscrowReleasedByTransfer)
+				// Feature-service callback: sync Validation Case status after dispute settlement.
+				internal.POST("/validation-cases/disputes/settled", workflowHandler.InternalSettleDisputeByTransfer)
 			}
 
 			validationCases := apiRateLimited.Group("/validation-cases")

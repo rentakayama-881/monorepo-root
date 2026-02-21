@@ -90,6 +90,20 @@ func (_c *ConsultationRequestCreate) SetNillableStatus(v *string) *ConsultationR
 	return _c
 }
 
+// SetWorkflowCycle sets the "workflow_cycle" field.
+func (_c *ConsultationRequestCreate) SetWorkflowCycle(v int) *ConsultationRequestCreate {
+	_c.mutation.SetWorkflowCycle(v)
+	return _c
+}
+
+// SetNillableWorkflowCycle sets the "workflow_cycle" field if the given value is not nil.
+func (_c *ConsultationRequestCreate) SetNillableWorkflowCycle(v *int) *ConsultationRequestCreate {
+	if v != nil {
+		_c.SetWorkflowCycle(*v)
+	}
+	return _c
+}
+
 // SetApprovedAt sets the "approved_at" field.
 func (_c *ConsultationRequestCreate) SetApprovedAt(v time.Time) *ConsultationRequestCreate {
 	_c.mutation.SetApprovedAt(v)
@@ -231,6 +245,10 @@ func (_c *ConsultationRequestCreate) defaults() {
 		v := consultationrequest.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.WorkflowCycle(); !ok {
+		v := consultationrequest.DefaultWorkflowCycle
+		_c.mutation.SetWorkflowCycle(v)
+	}
 	if _, ok := _c.mutation.ReminderCount(); !ok {
 		v := consultationrequest.DefaultReminderCount
 		_c.mutation.SetReminderCount(v)
@@ -267,6 +285,14 @@ func (_c *ConsultationRequestCreate) check() error {
 	if v, ok := _c.mutation.Status(); ok {
 		if err := consultationrequest.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "ConsultationRequest.status": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.WorkflowCycle(); !ok {
+		return &ValidationError{Name: "workflow_cycle", err: errors.New(`ent: missing required field "ConsultationRequest.workflow_cycle"`)}
+	}
+	if v, ok := _c.mutation.WorkflowCycle(); ok {
+		if err := consultationrequest.WorkflowCycleValidator(v); err != nil {
+			return &ValidationError{Name: "workflow_cycle", err: fmt.Errorf(`ent: validator failed for field "ConsultationRequest.workflow_cycle": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.ReminderCount(); !ok {
@@ -329,6 +355,10 @@ func (_c *ConsultationRequestCreate) createSpec() (*ConsultationRequest, *sqlgra
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(consultationrequest.FieldStatus, field.TypeString, value)
 		_node.Status = value
+	}
+	if value, ok := _c.mutation.WorkflowCycle(); ok {
+		_spec.SetField(consultationrequest.FieldWorkflowCycle, field.TypeInt, value)
+		_node.WorkflowCycle = value
 	}
 	if value, ok := _c.mutation.ApprovedAt(); ok {
 		_spec.SetField(consultationrequest.FieldApprovedAt, field.TypeTime, value)

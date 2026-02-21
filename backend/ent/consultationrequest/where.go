@@ -85,6 +85,11 @@ func Status(v string) predicate.ConsultationRequest {
 	return predicate.ConsultationRequest(sql.FieldEQ(FieldStatus, v))
 }
 
+// WorkflowCycle applies equality check predicate on the "workflow_cycle" field. It's identical to WorkflowCycleEQ.
+func WorkflowCycle(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldEQ(FieldWorkflowCycle, v))
+}
+
 // ApprovedAt applies equality check predicate on the "approved_at" field. It's identical to ApprovedAtEQ.
 func ApprovedAt(v time.Time) predicate.ConsultationRequest {
 	return predicate.ConsultationRequest(sql.FieldEQ(FieldApprovedAt, v))
@@ -348,6 +353,46 @@ func StatusEqualFold(v string) predicate.ConsultationRequest {
 // StatusContainsFold applies the ContainsFold predicate on the "status" field.
 func StatusContainsFold(v string) predicate.ConsultationRequest {
 	return predicate.ConsultationRequest(sql.FieldContainsFold(FieldStatus, v))
+}
+
+// WorkflowCycleEQ applies the EQ predicate on the "workflow_cycle" field.
+func WorkflowCycleEQ(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldEQ(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleNEQ applies the NEQ predicate on the "workflow_cycle" field.
+func WorkflowCycleNEQ(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNEQ(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleIn applies the In predicate on the "workflow_cycle" field.
+func WorkflowCycleIn(vs ...int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldIn(FieldWorkflowCycle, vs...))
+}
+
+// WorkflowCycleNotIn applies the NotIn predicate on the "workflow_cycle" field.
+func WorkflowCycleNotIn(vs ...int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldNotIn(FieldWorkflowCycle, vs...))
+}
+
+// WorkflowCycleGT applies the GT predicate on the "workflow_cycle" field.
+func WorkflowCycleGT(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldGT(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleGTE applies the GTE predicate on the "workflow_cycle" field.
+func WorkflowCycleGTE(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldGTE(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleLT applies the LT predicate on the "workflow_cycle" field.
+func WorkflowCycleLT(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldLT(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleLTE applies the LTE predicate on the "workflow_cycle" field.
+func WorkflowCycleLTE(v int) predicate.ConsultationRequest {
+	return predicate.ConsultationRequest(sql.FieldLTE(FieldWorkflowCycle, v))
 }
 
 // ApprovedAtEQ applies the EQ predicate on the "approved_at" field.

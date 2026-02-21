@@ -239,14 +239,20 @@ func init() {
 	consultationrequest.DefaultStatus = consultationrequestDescStatus.Default.(string)
 	// consultationrequest.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	consultationrequest.StatusValidator = consultationrequestDescStatus.Validators[0].(func(string) error)
+	// consultationrequestDescWorkflowCycle is the schema descriptor for workflow_cycle field.
+	consultationrequestDescWorkflowCycle := consultationrequestFields[3].Descriptor()
+	// consultationrequest.DefaultWorkflowCycle holds the default value on creation for the workflow_cycle field.
+	consultationrequest.DefaultWorkflowCycle = consultationrequestDescWorkflowCycle.Default.(int)
+	// consultationrequest.WorkflowCycleValidator is a validator for the "workflow_cycle" field. It is called by the builders before save.
+	consultationrequest.WorkflowCycleValidator = consultationrequestDescWorkflowCycle.Validators[0].(func(int) error)
 	// consultationrequestDescReminderCount is the schema descriptor for reminder_count field.
-	consultationrequestDescReminderCount := consultationrequestFields[7].Descriptor()
+	consultationrequestDescReminderCount := consultationrequestFields[8].Descriptor()
 	// consultationrequest.DefaultReminderCount holds the default value on creation for the reminder_count field.
 	consultationrequest.DefaultReminderCount = consultationrequestDescReminderCount.Default.(int)
 	// consultationrequest.ReminderCountValidator is a validator for the "reminder_count" field. It is called by the builders before save.
 	consultationrequest.ReminderCountValidator = consultationrequestDescReminderCount.Validators[0].(func(int) error)
 	// consultationrequestDescAutoClosedReason is the schema descriptor for auto_closed_reason field.
-	consultationrequestDescAutoClosedReason := consultationrequestFields[8].Descriptor()
+	consultationrequestDescAutoClosedReason := consultationrequestFields[9].Descriptor()
 	// consultationrequest.AutoClosedReasonValidator is a validator for the "auto_closed_reason" field. It is called by the builders before save.
 	consultationrequest.AutoClosedReasonValidator = consultationrequestDescAutoClosedReason.Validators[0].(func(string) error)
 	credentialMixin := schema.Credential{}.Mixin()
@@ -475,22 +481,28 @@ func init() {
 	finalofferDescSubmissionKey := finalofferFields[2].Descriptor()
 	// finaloffer.SubmissionKeyValidator is a validator for the "submission_key" field. It is called by the builders before save.
 	finaloffer.SubmissionKeyValidator = finalofferDescSubmissionKey.Validators[0].(func(string) error)
+	// finalofferDescWorkflowCycle is the schema descriptor for workflow_cycle field.
+	finalofferDescWorkflowCycle := finalofferFields[3].Descriptor()
+	// finaloffer.DefaultWorkflowCycle holds the default value on creation for the workflow_cycle field.
+	finaloffer.DefaultWorkflowCycle = finalofferDescWorkflowCycle.Default.(int)
+	// finaloffer.WorkflowCycleValidator is a validator for the "workflow_cycle" field. It is called by the builders before save.
+	finaloffer.WorkflowCycleValidator = finalofferDescWorkflowCycle.Validators[0].(func(int) error)
 	// finalofferDescAmount is the schema descriptor for amount field.
-	finalofferDescAmount := finalofferFields[3].Descriptor()
+	finalofferDescAmount := finalofferFields[4].Descriptor()
 	// finaloffer.AmountValidator is a validator for the "amount" field. It is called by the builders before save.
 	finaloffer.AmountValidator = finalofferDescAmount.Validators[0].(func(int64) error)
 	// finalofferDescHoldHours is the schema descriptor for hold_hours field.
-	finalofferDescHoldHours := finalofferFields[4].Descriptor()
+	finalofferDescHoldHours := finalofferFields[5].Descriptor()
 	// finaloffer.DefaultHoldHours holds the default value on creation for the hold_hours field.
 	finaloffer.DefaultHoldHours = finalofferDescHoldHours.Default.(int)
 	// finaloffer.HoldHoursValidator is a validator for the "hold_hours" field. It is called by the builders before save.
 	finaloffer.HoldHoursValidator = finalofferDescHoldHours.Validators[0].(func(int) error)
 	// finalofferDescTerms is the schema descriptor for terms field.
-	finalofferDescTerms := finalofferFields[5].Descriptor()
+	finalofferDescTerms := finalofferFields[6].Descriptor()
 	// finaloffer.DefaultTerms holds the default value on creation for the terms field.
 	finaloffer.DefaultTerms = finalofferDescTerms.Default.(string)
 	// finalofferDescStatus is the schema descriptor for status field.
-	finalofferDescStatus := finalofferFields[6].Descriptor()
+	finalofferDescStatus := finalofferFields[7].Descriptor()
 	// finaloffer.DefaultStatus holds the default value on creation for the status field.
 	finaloffer.DefaultStatus = finalofferDescStatus.Default.(string)
 	// finaloffer.StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -1103,8 +1115,14 @@ func init() {
 	validationcase.DefaultOwnerInactivityCount = validationcaseDescOwnerInactivityCount.Default.(int)
 	// validationcase.OwnerInactivityCountValidator is a validator for the "owner_inactivity_count" field. It is called by the builders before save.
 	validationcase.OwnerInactivityCountValidator = validationcaseDescOwnerInactivityCount.Validators[0].(func(int) error)
+	// validationcaseDescWorkflowCycle is the schema descriptor for workflow_cycle field.
+	validationcaseDescWorkflowCycle := validationcaseFields[13].Descriptor()
+	// validationcase.DefaultWorkflowCycle holds the default value on creation for the workflow_cycle field.
+	validationcase.DefaultWorkflowCycle = validationcaseDescWorkflowCycle.Default.(int)
+	// validationcase.WorkflowCycleValidator is a validator for the "workflow_cycle" field. It is called by the builders before save.
+	validationcase.WorkflowCycleValidator = validationcaseDescWorkflowCycle.Validators[0].(func(int) error)
 	// validationcaseDescAcceptedFinalOfferID is the schema descriptor for accepted_final_offer_id field.
-	validationcaseDescAcceptedFinalOfferID := validationcaseFields[15].Descriptor()
+	validationcaseDescAcceptedFinalOfferID := validationcaseFields[16].Descriptor()
 	// validationcase.AcceptedFinalOfferIDValidator is a validator for the "accepted_final_offer_id" field. It is called by the builders before save.
 	validationcase.AcceptedFinalOfferIDValidator = validationcaseDescAcceptedFinalOfferID.Validators[0].(func(int) error)
 	validationcaselogMixin := schema.ValidationCaseLog{}.Mixin()

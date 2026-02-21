@@ -26,6 +26,8 @@ const (
 	FieldValidatorUserID = "validator_user_id"
 	// FieldSubmissionKey holds the string denoting the submission_key field in the database.
 	FieldSubmissionKey = "submission_key"
+	// FieldWorkflowCycle holds the string denoting the workflow_cycle field in the database.
+	FieldWorkflowCycle = "workflow_cycle"
 	// FieldAmount holds the string denoting the amount field in the database.
 	FieldAmount = "amount"
 	// FieldHoldHours holds the string denoting the hold_hours field in the database.
@@ -69,6 +71,7 @@ var Columns = []string{
 	FieldValidationCaseID,
 	FieldValidatorUserID,
 	FieldSubmissionKey,
+	FieldWorkflowCycle,
 	FieldAmount,
 	FieldHoldHours,
 	FieldTerms,
@@ -100,6 +103,10 @@ var (
 	ValidatorUserIDValidator func(int) error
 	// SubmissionKeyValidator is a validator for the "submission_key" field. It is called by the builders before save.
 	SubmissionKeyValidator func(string) error
+	// DefaultWorkflowCycle holds the default value on creation for the "workflow_cycle" field.
+	DefaultWorkflowCycle int
+	// WorkflowCycleValidator is a validator for the "workflow_cycle" field. It is called by the builders before save.
+	WorkflowCycleValidator func(int) error
 	// AmountValidator is a validator for the "amount" field. It is called by the builders before save.
 	AmountValidator func(int64) error
 	// DefaultHoldHours holds the default value on creation for the "hold_hours" field.
@@ -150,6 +157,11 @@ func ByValidatorUserID(opts ...sql.OrderTermOption) OrderOption {
 // BySubmissionKey orders the results by the submission_key field.
 func BySubmissionKey(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSubmissionKey, opts...).ToFunc()
+}
+
+// ByWorkflowCycle orders the results by the workflow_cycle field.
+func ByWorkflowCycle(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWorkflowCycle, opts...).ToFunc()
 }
 
 // ByAmount orders the results by the amount field.

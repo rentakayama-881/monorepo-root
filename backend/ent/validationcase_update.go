@@ -260,6 +260,27 @@ func (_u *ValidationCaseUpdate) AddOwnerInactivityCount(v int) *ValidationCaseUp
 	return _u
 }
 
+// SetWorkflowCycle sets the "workflow_cycle" field.
+func (_u *ValidationCaseUpdate) SetWorkflowCycle(v int) *ValidationCaseUpdate {
+	_u.mutation.ResetWorkflowCycle()
+	_u.mutation.SetWorkflowCycle(v)
+	return _u
+}
+
+// SetNillableWorkflowCycle sets the "workflow_cycle" field if the given value is not nil.
+func (_u *ValidationCaseUpdate) SetNillableWorkflowCycle(v *int) *ValidationCaseUpdate {
+	if v != nil {
+		_u.SetWorkflowCycle(*v)
+	}
+	return _u
+}
+
+// AddWorkflowCycle adds value to the "workflow_cycle" field.
+func (_u *ValidationCaseUpdate) AddWorkflowCycle(v int) *ValidationCaseUpdate {
+	_u.mutation.AddWorkflowCycle(v)
+	return _u
+}
+
 // SetEscrowTransferID sets the "escrow_transfer_id" field.
 func (_u *ValidationCaseUpdate) SetEscrowTransferID(v string) *ValidationCaseUpdate {
 	_u.mutation.SetEscrowTransferID(v)
@@ -693,6 +714,11 @@ func (_u *ValidationCaseUpdate) check() error {
 			return &ValidationError{Name: "owner_inactivity_count", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.owner_inactivity_count": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.WorkflowCycle(); ok {
+		if err := validationcase.WorkflowCycleValidator(v); err != nil {
+			return &ValidationError{Name: "workflow_cycle", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.workflow_cycle": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.AcceptedFinalOfferID(); ok {
 		if err := validationcase.AcceptedFinalOfferIDValidator(v); err != nil {
 			return &ValidationError{Name: "accepted_final_offer_id", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.accepted_final_offer_id": %w`, err)}
@@ -775,6 +801,12 @@ func (_u *ValidationCaseUpdate) sqlSave(ctx context.Context) (_node int, err err
 	}
 	if value, ok := _u.mutation.AddedOwnerInactivityCount(); ok {
 		_spec.AddField(validationcase.FieldOwnerInactivityCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.WorkflowCycle(); ok {
+		_spec.SetField(validationcase.FieldWorkflowCycle, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedWorkflowCycle(); ok {
+		_spec.AddField(validationcase.FieldWorkflowCycle, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.EscrowTransferID(); ok {
 		_spec.SetField(validationcase.FieldEscrowTransferID, field.TypeString, value)
@@ -1381,6 +1413,27 @@ func (_u *ValidationCaseUpdateOne) AddOwnerInactivityCount(v int) *ValidationCas
 	return _u
 }
 
+// SetWorkflowCycle sets the "workflow_cycle" field.
+func (_u *ValidationCaseUpdateOne) SetWorkflowCycle(v int) *ValidationCaseUpdateOne {
+	_u.mutation.ResetWorkflowCycle()
+	_u.mutation.SetWorkflowCycle(v)
+	return _u
+}
+
+// SetNillableWorkflowCycle sets the "workflow_cycle" field if the given value is not nil.
+func (_u *ValidationCaseUpdateOne) SetNillableWorkflowCycle(v *int) *ValidationCaseUpdateOne {
+	if v != nil {
+		_u.SetWorkflowCycle(*v)
+	}
+	return _u
+}
+
+// AddWorkflowCycle adds value to the "workflow_cycle" field.
+func (_u *ValidationCaseUpdateOne) AddWorkflowCycle(v int) *ValidationCaseUpdateOne {
+	_u.mutation.AddWorkflowCycle(v)
+	return _u
+}
+
 // SetEscrowTransferID sets the "escrow_transfer_id" field.
 func (_u *ValidationCaseUpdateOne) SetEscrowTransferID(v string) *ValidationCaseUpdateOne {
 	_u.mutation.SetEscrowTransferID(v)
@@ -1827,6 +1880,11 @@ func (_u *ValidationCaseUpdateOne) check() error {
 			return &ValidationError{Name: "owner_inactivity_count", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.owner_inactivity_count": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.WorkflowCycle(); ok {
+		if err := validationcase.WorkflowCycleValidator(v); err != nil {
+			return &ValidationError{Name: "workflow_cycle", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.workflow_cycle": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.AcceptedFinalOfferID(); ok {
 		if err := validationcase.AcceptedFinalOfferIDValidator(v); err != nil {
 			return &ValidationError{Name: "accepted_final_offer_id", err: fmt.Errorf(`ent: validator failed for field "ValidationCase.accepted_final_offer_id": %w`, err)}
@@ -1926,6 +1984,12 @@ func (_u *ValidationCaseUpdateOne) sqlSave(ctx context.Context) (_node *Validati
 	}
 	if value, ok := _u.mutation.AddedOwnerInactivityCount(); ok {
 		_spec.AddField(validationcase.FieldOwnerInactivityCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.WorkflowCycle(); ok {
+		_spec.SetField(validationcase.FieldWorkflowCycle, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedWorkflowCycle(); ok {
+		_spec.AddField(validationcase.FieldWorkflowCycle, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.EscrowTransferID(); ok {
 		_spec.SetField(validationcase.FieldEscrowTransferID, field.TypeString, value)

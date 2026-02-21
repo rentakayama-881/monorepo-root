@@ -4475,6 +4475,8 @@ type ConsultationRequestMutation struct {
 	updated_at             *time.Time
 	deleted_at             *time.Time
 	status                 *string
+	workflow_cycle         *int
+	addworkflow_cycle      *int
 	approved_at            *time.Time
 	rejected_at            *time.Time
 	expires_at             *time.Time
@@ -4817,6 +4819,62 @@ func (m *ConsultationRequestMutation) OldStatus(ctx context.Context) (v string, 
 // ResetStatus resets all changes to the "status" field.
 func (m *ConsultationRequestMutation) ResetStatus() {
 	m.status = nil
+}
+
+// SetWorkflowCycle sets the "workflow_cycle" field.
+func (m *ConsultationRequestMutation) SetWorkflowCycle(i int) {
+	m.workflow_cycle = &i
+	m.addworkflow_cycle = nil
+}
+
+// WorkflowCycle returns the value of the "workflow_cycle" field in the mutation.
+func (m *ConsultationRequestMutation) WorkflowCycle() (r int, exists bool) {
+	v := m.workflow_cycle
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWorkflowCycle returns the old "workflow_cycle" field's value of the ConsultationRequest entity.
+// If the ConsultationRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsultationRequestMutation) OldWorkflowCycle(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWorkflowCycle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWorkflowCycle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWorkflowCycle: %w", err)
+	}
+	return oldValue.WorkflowCycle, nil
+}
+
+// AddWorkflowCycle adds i to the "workflow_cycle" field.
+func (m *ConsultationRequestMutation) AddWorkflowCycle(i int) {
+	if m.addworkflow_cycle != nil {
+		*m.addworkflow_cycle += i
+	} else {
+		m.addworkflow_cycle = &i
+	}
+}
+
+// AddedWorkflowCycle returns the value that was added to the "workflow_cycle" field in this mutation.
+func (m *ConsultationRequestMutation) AddedWorkflowCycle() (r int, exists bool) {
+	v := m.addworkflow_cycle
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetWorkflowCycle resets all changes to the "workflow_cycle" field.
+func (m *ConsultationRequestMutation) ResetWorkflowCycle() {
+	m.workflow_cycle = nil
+	m.addworkflow_cycle = nil
 }
 
 // SetApprovedAt sets the "approved_at" field.
@@ -5208,7 +5266,7 @@ func (m *ConsultationRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ConsultationRequestMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, consultationrequest.FieldCreatedAt)
 	}
@@ -5226,6 +5284,9 @@ func (m *ConsultationRequestMutation) Fields() []string {
 	}
 	if m.status != nil {
 		fields = append(fields, consultationrequest.FieldStatus)
+	}
+	if m.workflow_cycle != nil {
+		fields = append(fields, consultationrequest.FieldWorkflowCycle)
 	}
 	if m.approved_at != nil {
 		fields = append(fields, consultationrequest.FieldApprovedAt)
@@ -5265,6 +5326,8 @@ func (m *ConsultationRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.ValidatorUserID()
 	case consultationrequest.FieldStatus:
 		return m.Status()
+	case consultationrequest.FieldWorkflowCycle:
+		return m.WorkflowCycle()
 	case consultationrequest.FieldApprovedAt:
 		return m.ApprovedAt()
 	case consultationrequest.FieldRejectedAt:
@@ -5298,6 +5361,8 @@ func (m *ConsultationRequestMutation) OldField(ctx context.Context, name string)
 		return m.OldValidatorUserID(ctx)
 	case consultationrequest.FieldStatus:
 		return m.OldStatus(ctx)
+	case consultationrequest.FieldWorkflowCycle:
+		return m.OldWorkflowCycle(ctx)
 	case consultationrequest.FieldApprovedAt:
 		return m.OldApprovedAt(ctx)
 	case consultationrequest.FieldRejectedAt:
@@ -5361,6 +5426,13 @@ func (m *ConsultationRequestMutation) SetField(name string, value ent.Value) err
 		}
 		m.SetStatus(v)
 		return nil
+	case consultationrequest.FieldWorkflowCycle:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWorkflowCycle(v)
+		return nil
 	case consultationrequest.FieldApprovedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -5411,6 +5483,9 @@ func (m *ConsultationRequestMutation) SetField(name string, value ent.Value) err
 // this mutation.
 func (m *ConsultationRequestMutation) AddedFields() []string {
 	var fields []string
+	if m.addworkflow_cycle != nil {
+		fields = append(fields, consultationrequest.FieldWorkflowCycle)
+	}
 	if m.addreminder_count != nil {
 		fields = append(fields, consultationrequest.FieldReminderCount)
 	}
@@ -5422,6 +5497,8 @@ func (m *ConsultationRequestMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *ConsultationRequestMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case consultationrequest.FieldWorkflowCycle:
+		return m.AddedWorkflowCycle()
 	case consultationrequest.FieldReminderCount:
 		return m.AddedReminderCount()
 	}
@@ -5433,6 +5510,13 @@ func (m *ConsultationRequestMutation) AddedField(name string) (ent.Value, bool) 
 // type.
 func (m *ConsultationRequestMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case consultationrequest.FieldWorkflowCycle:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddWorkflowCycle(v)
+		return nil
 	case consultationrequest.FieldReminderCount:
 		v, ok := value.(int)
 		if !ok {
@@ -5523,6 +5607,9 @@ func (m *ConsultationRequestMutation) ResetField(name string) error {
 		return nil
 	case consultationrequest.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case consultationrequest.FieldWorkflowCycle:
+		m.ResetWorkflowCycle()
 		return nil
 	case consultationrequest.FieldApprovedAt:
 		m.ResetApprovedAt()
@@ -9778,6 +9865,8 @@ type FinalOfferMutation struct {
 	updated_at             *time.Time
 	deleted_at             *time.Time
 	submission_key         *string
+	workflow_cycle         *int
+	addworkflow_cycle      *int
 	amount                 *int64
 	addamount              *int64
 	hold_hours             *int
@@ -10134,6 +10223,62 @@ func (m *FinalOfferMutation) SubmissionKeyCleared() bool {
 func (m *FinalOfferMutation) ResetSubmissionKey() {
 	m.submission_key = nil
 	delete(m.clearedFields, finaloffer.FieldSubmissionKey)
+}
+
+// SetWorkflowCycle sets the "workflow_cycle" field.
+func (m *FinalOfferMutation) SetWorkflowCycle(i int) {
+	m.workflow_cycle = &i
+	m.addworkflow_cycle = nil
+}
+
+// WorkflowCycle returns the value of the "workflow_cycle" field in the mutation.
+func (m *FinalOfferMutation) WorkflowCycle() (r int, exists bool) {
+	v := m.workflow_cycle
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWorkflowCycle returns the old "workflow_cycle" field's value of the FinalOffer entity.
+// If the FinalOffer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FinalOfferMutation) OldWorkflowCycle(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWorkflowCycle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWorkflowCycle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWorkflowCycle: %w", err)
+	}
+	return oldValue.WorkflowCycle, nil
+}
+
+// AddWorkflowCycle adds i to the "workflow_cycle" field.
+func (m *FinalOfferMutation) AddWorkflowCycle(i int) {
+	if m.addworkflow_cycle != nil {
+		*m.addworkflow_cycle += i
+	} else {
+		m.addworkflow_cycle = &i
+	}
+}
+
+// AddedWorkflowCycle returns the value that was added to the "workflow_cycle" field in this mutation.
+func (m *FinalOfferMutation) AddedWorkflowCycle() (r int, exists bool) {
+	v := m.addworkflow_cycle
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetWorkflowCycle resets all changes to the "workflow_cycle" field.
+func (m *FinalOfferMutation) ResetWorkflowCycle() {
+	m.workflow_cycle = nil
+	m.addworkflow_cycle = nil
 }
 
 // SetAmount sets the "amount" field.
@@ -10519,7 +10664,7 @@ func (m *FinalOfferMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FinalOfferMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, finaloffer.FieldCreatedAt)
 	}
@@ -10537,6 +10682,9 @@ func (m *FinalOfferMutation) Fields() []string {
 	}
 	if m.submission_key != nil {
 		fields = append(fields, finaloffer.FieldSubmissionKey)
+	}
+	if m.workflow_cycle != nil {
+		fields = append(fields, finaloffer.FieldWorkflowCycle)
 	}
 	if m.amount != nil {
 		fields = append(fields, finaloffer.FieldAmount)
@@ -10576,6 +10724,8 @@ func (m *FinalOfferMutation) Field(name string) (ent.Value, bool) {
 		return m.ValidatorUserID()
 	case finaloffer.FieldSubmissionKey:
 		return m.SubmissionKey()
+	case finaloffer.FieldWorkflowCycle:
+		return m.WorkflowCycle()
 	case finaloffer.FieldAmount:
 		return m.Amount()
 	case finaloffer.FieldHoldHours:
@@ -10609,6 +10759,8 @@ func (m *FinalOfferMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldValidatorUserID(ctx)
 	case finaloffer.FieldSubmissionKey:
 		return m.OldSubmissionKey(ctx)
+	case finaloffer.FieldWorkflowCycle:
+		return m.OldWorkflowCycle(ctx)
 	case finaloffer.FieldAmount:
 		return m.OldAmount(ctx)
 	case finaloffer.FieldHoldHours:
@@ -10672,6 +10824,13 @@ func (m *FinalOfferMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSubmissionKey(v)
 		return nil
+	case finaloffer.FieldWorkflowCycle:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWorkflowCycle(v)
+		return nil
 	case finaloffer.FieldAmount:
 		v, ok := value.(int64)
 		if !ok {
@@ -10722,6 +10881,9 @@ func (m *FinalOfferMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *FinalOfferMutation) AddedFields() []string {
 	var fields []string
+	if m.addworkflow_cycle != nil {
+		fields = append(fields, finaloffer.FieldWorkflowCycle)
+	}
 	if m.addamount != nil {
 		fields = append(fields, finaloffer.FieldAmount)
 	}
@@ -10736,6 +10898,8 @@ func (m *FinalOfferMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *FinalOfferMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case finaloffer.FieldWorkflowCycle:
+		return m.AddedWorkflowCycle()
 	case finaloffer.FieldAmount:
 		return m.AddedAmount()
 	case finaloffer.FieldHoldHours:
@@ -10749,6 +10913,13 @@ func (m *FinalOfferMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *FinalOfferMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case finaloffer.FieldWorkflowCycle:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddWorkflowCycle(v)
+		return nil
 	case finaloffer.FieldAmount:
 		v, ok := value.(int64)
 		if !ok {
@@ -10840,6 +11011,9 @@ func (m *FinalOfferMutation) ResetField(name string) error {
 		return nil
 	case finaloffer.FieldSubmissionKey:
 		m.ResetSubmissionKey()
+		return nil
+	case finaloffer.FieldWorkflowCycle:
+		m.ResetWorkflowCycle()
 		return nil
 	case finaloffer.FieldAmount:
 		m.ResetAmount()
@@ -24494,6 +24668,8 @@ type ValidationCaseMutation struct {
 	clarification_state            *string
 	owner_inactivity_count         *int
 	addowner_inactivity_count      *int
+	workflow_cycle                 *int
+	addworkflow_cycle              *int
 	escrow_transfer_id             *string
 	dispute_id                     *string
 	accepted_final_offer_id        *int
@@ -25294,6 +25470,62 @@ func (m *ValidationCaseMutation) ResetOwnerInactivityCount() {
 	m.addowner_inactivity_count = nil
 }
 
+// SetWorkflowCycle sets the "workflow_cycle" field.
+func (m *ValidationCaseMutation) SetWorkflowCycle(i int) {
+	m.workflow_cycle = &i
+	m.addworkflow_cycle = nil
+}
+
+// WorkflowCycle returns the value of the "workflow_cycle" field in the mutation.
+func (m *ValidationCaseMutation) WorkflowCycle() (r int, exists bool) {
+	v := m.workflow_cycle
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWorkflowCycle returns the old "workflow_cycle" field's value of the ValidationCase entity.
+// If the ValidationCase object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ValidationCaseMutation) OldWorkflowCycle(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWorkflowCycle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWorkflowCycle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWorkflowCycle: %w", err)
+	}
+	return oldValue.WorkflowCycle, nil
+}
+
+// AddWorkflowCycle adds i to the "workflow_cycle" field.
+func (m *ValidationCaseMutation) AddWorkflowCycle(i int) {
+	if m.addworkflow_cycle != nil {
+		*m.addworkflow_cycle += i
+	} else {
+		m.addworkflow_cycle = &i
+	}
+}
+
+// AddedWorkflowCycle returns the value that was added to the "workflow_cycle" field in this mutation.
+func (m *ValidationCaseMutation) AddedWorkflowCycle() (r int, exists bool) {
+	v := m.addworkflow_cycle
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetWorkflowCycle resets all changes to the "workflow_cycle" field.
+func (m *ValidationCaseMutation) ResetWorkflowCycle() {
+	m.workflow_cycle = nil
+	m.addworkflow_cycle = nil
+}
+
 // SetEscrowTransferID sets the "escrow_transfer_id" field.
 func (m *ValidationCaseMutation) SetEscrowTransferID(s string) {
 	m.escrow_transfer_id = &s
@@ -25972,7 +26204,7 @@ func (m *ValidationCaseMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ValidationCaseMutation) Fields() []string {
-	fields := make([]string, 0, 21)
+	fields := make([]string, 0, 22)
 	if m.created_at != nil {
 		fields = append(fields, validationcase.FieldCreatedAt)
 	}
@@ -26020,6 +26252,9 @@ func (m *ValidationCaseMutation) Fields() []string {
 	}
 	if m.owner_inactivity_count != nil {
 		fields = append(fields, validationcase.FieldOwnerInactivityCount)
+	}
+	if m.workflow_cycle != nil {
+		fields = append(fields, validationcase.FieldWorkflowCycle)
 	}
 	if m.escrow_transfer_id != nil {
 		fields = append(fields, validationcase.FieldEscrowTransferID)
@@ -26076,6 +26311,8 @@ func (m *ValidationCaseMutation) Field(name string) (ent.Value, bool) {
 		return m.ClarificationState()
 	case validationcase.FieldOwnerInactivityCount:
 		return m.OwnerInactivityCount()
+	case validationcase.FieldWorkflowCycle:
+		return m.WorkflowCycle()
 	case validationcase.FieldEscrowTransferID:
 		return m.EscrowTransferID()
 	case validationcase.FieldDisputeID:
@@ -26127,6 +26364,8 @@ func (m *ValidationCaseMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldClarificationState(ctx)
 	case validationcase.FieldOwnerInactivityCount:
 		return m.OldOwnerInactivityCount(ctx)
+	case validationcase.FieldWorkflowCycle:
+		return m.OldWorkflowCycle(ctx)
 	case validationcase.FieldEscrowTransferID:
 		return m.OldEscrowTransferID(ctx)
 	case validationcase.FieldDisputeID:
@@ -26258,6 +26497,13 @@ func (m *ValidationCaseMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetOwnerInactivityCount(v)
 		return nil
+	case validationcase.FieldWorkflowCycle:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWorkflowCycle(v)
+		return nil
 	case validationcase.FieldEscrowTransferID:
 		v, ok := value.(string)
 		if !ok {
@@ -26307,6 +26553,9 @@ func (m *ValidationCaseMutation) AddedFields() []string {
 	if m.addowner_inactivity_count != nil {
 		fields = append(fields, validationcase.FieldOwnerInactivityCount)
 	}
+	if m.addworkflow_cycle != nil {
+		fields = append(fields, validationcase.FieldWorkflowCycle)
+	}
 	if m.addaccepted_final_offer_id != nil {
 		fields = append(fields, validationcase.FieldAcceptedFinalOfferID)
 	}
@@ -26322,6 +26571,8 @@ func (m *ValidationCaseMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedBountyAmount()
 	case validationcase.FieldOwnerInactivityCount:
 		return m.AddedOwnerInactivityCount()
+	case validationcase.FieldWorkflowCycle:
+		return m.AddedWorkflowCycle()
 	case validationcase.FieldAcceptedFinalOfferID:
 		return m.AddedAcceptedFinalOfferID()
 	}
@@ -26346,6 +26597,13 @@ func (m *ValidationCaseMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddOwnerInactivityCount(v)
+		return nil
+	case validationcase.FieldWorkflowCycle:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddWorkflowCycle(v)
 		return nil
 	case validationcase.FieldAcceptedFinalOfferID:
 		v, ok := value.(int)
@@ -26485,6 +26743,9 @@ func (m *ValidationCaseMutation) ResetField(name string) error {
 		return nil
 	case validationcase.FieldOwnerInactivityCount:
 		m.ResetOwnerInactivityCount()
+		return nil
+	case validationcase.FieldWorkflowCycle:
+		m.ResetWorkflowCycle()
 		return nil
 	case validationcase.FieldEscrowTransferID:
 		m.ResetEscrowTransferID()

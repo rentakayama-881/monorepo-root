@@ -35,6 +35,9 @@ func (ConsultationRequest) Fields() []ent.Field {
 		field.String("status").
 			MaxLen(32).
 			Default("pending"),
+		field.Int("workflow_cycle").
+			Positive().
+			Default(1),
 		field.Time("approved_at").
 			Optional().
 			Nillable(),
@@ -74,12 +77,14 @@ func (ConsultationRequest) Edges() []ent.Edge {
 
 func (ConsultationRequest) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("validation_case_id", "validator_user_id").
+		index.Fields("validation_case_id", "validator_user_id", "workflow_cycle").
 			Unique(),
 		index.Fields("validation_case_id"),
 		index.Fields("validator_user_id"),
+		index.Fields("validation_case_id", "workflow_cycle"),
 		index.Fields("status"),
 		index.Fields("owner_response_due_at"),
 		index.Fields("validator_user_id", "status"),
+		index.Fields("validator_user_id", "status", "workflow_cycle"),
 	}
 }

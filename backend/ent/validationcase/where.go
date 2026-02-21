@@ -125,6 +125,11 @@ func OwnerInactivityCount(v int) predicate.ValidationCase {
 	return predicate.ValidationCase(sql.FieldEQ(FieldOwnerInactivityCount, v))
 }
 
+// WorkflowCycle applies equality check predicate on the "workflow_cycle" field. It's identical to WorkflowCycleEQ.
+func WorkflowCycle(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEQ(FieldWorkflowCycle, v))
+}
+
 // EscrowTransferID applies equality check predicate on the "escrow_transfer_id" field. It's identical to EscrowTransferIDEQ.
 func EscrowTransferID(v string) predicate.ValidationCase {
 	return predicate.ValidationCase(sql.FieldEQ(FieldEscrowTransferID, v))
@@ -883,6 +888,46 @@ func OwnerInactivityCountLT(v int) predicate.ValidationCase {
 // OwnerInactivityCountLTE applies the LTE predicate on the "owner_inactivity_count" field.
 func OwnerInactivityCountLTE(v int) predicate.ValidationCase {
 	return predicate.ValidationCase(sql.FieldLTE(FieldOwnerInactivityCount, v))
+}
+
+// WorkflowCycleEQ applies the EQ predicate on the "workflow_cycle" field.
+func WorkflowCycleEQ(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldEQ(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleNEQ applies the NEQ predicate on the "workflow_cycle" field.
+func WorkflowCycleNEQ(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldNEQ(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleIn applies the In predicate on the "workflow_cycle" field.
+func WorkflowCycleIn(vs ...int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldIn(FieldWorkflowCycle, vs...))
+}
+
+// WorkflowCycleNotIn applies the NotIn predicate on the "workflow_cycle" field.
+func WorkflowCycleNotIn(vs ...int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldNotIn(FieldWorkflowCycle, vs...))
+}
+
+// WorkflowCycleGT applies the GT predicate on the "workflow_cycle" field.
+func WorkflowCycleGT(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldGT(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleGTE applies the GTE predicate on the "workflow_cycle" field.
+func WorkflowCycleGTE(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldGTE(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleLT applies the LT predicate on the "workflow_cycle" field.
+func WorkflowCycleLT(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldLT(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleLTE applies the LTE predicate on the "workflow_cycle" field.
+func WorkflowCycleLTE(v int) predicate.ValidationCase {
+	return predicate.ValidationCase(sql.FieldLTE(FieldWorkflowCycle, v))
 }
 
 // EscrowTransferIDEQ applies the EQ predicate on the "escrow_transfer_id" field.

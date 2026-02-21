@@ -31,6 +31,8 @@ type ConsultationRequest struct {
 	ValidatorUserID int `json:"validator_user_id,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
+	// WorkflowCycle holds the value of the "workflow_cycle" field.
+	WorkflowCycle int `json:"workflow_cycle,omitempty"`
 	// ApprovedAt holds the value of the "approved_at" field.
 	ApprovedAt *time.Time `json:"approved_at,omitempty"`
 	// RejectedAt holds the value of the "rejected_at" field.
@@ -87,7 +89,7 @@ func (*ConsultationRequest) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case consultationrequest.FieldID, consultationrequest.FieldValidationCaseID, consultationrequest.FieldValidatorUserID, consultationrequest.FieldReminderCount:
+		case consultationrequest.FieldID, consultationrequest.FieldValidationCaseID, consultationrequest.FieldValidatorUserID, consultationrequest.FieldWorkflowCycle, consultationrequest.FieldReminderCount:
 			values[i] = new(sql.NullInt64)
 		case consultationrequest.FieldStatus, consultationrequest.FieldAutoClosedReason:
 			values[i] = new(sql.NullString)
@@ -150,6 +152,12 @@ func (_m *ConsultationRequest) assignValues(columns []string, values []any) erro
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = value.String
+			}
+		case consultationrequest.FieldWorkflowCycle:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field workflow_cycle", values[i])
+			} else if value.Valid {
+				_m.WorkflowCycle = int(value.Int64)
 			}
 		case consultationrequest.FieldApprovedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -257,6 +265,9 @@ func (_m *ConsultationRequest) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)
+	builder.WriteString(", ")
+	builder.WriteString("workflow_cycle=")
+	builder.WriteString(fmt.Sprintf("%v", _m.WorkflowCycle))
 	builder.WriteString(", ")
 	if v := _m.ApprovedAt; v != nil {
 		builder.WriteString("approved_at=")

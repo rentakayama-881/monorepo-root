@@ -329,6 +329,7 @@ try
     builder.Services.AddHttpClient<ITransferService, TransferService>();
     builder.Services.AddHostedService<TransferAutoReleaseHostedService>();
     builder.Services.AddScoped<IDisputeService, DisputeService>();
+    builder.Services.AddHttpClient<IDisputeService, DisputeService>();
     builder.Services.AddScoped<IWithdrawalService, WithdrawalService>();
 
     // Configure Redis Sentinel for idempotency

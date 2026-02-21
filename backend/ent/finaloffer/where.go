@@ -85,6 +85,11 @@ func SubmissionKey(v string) predicate.FinalOffer {
 	return predicate.FinalOffer(sql.FieldEQ(FieldSubmissionKey, v))
 }
 
+// WorkflowCycle applies equality check predicate on the "workflow_cycle" field. It's identical to WorkflowCycleEQ.
+func WorkflowCycle(v int) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldEQ(FieldWorkflowCycle, v))
+}
+
 // Amount applies equality check predicate on the "amount" field. It's identical to AmountEQ.
 func Amount(v int64) predicate.FinalOffer {
 	return predicate.FinalOffer(sql.FieldEQ(FieldAmount, v))
@@ -358,6 +363,46 @@ func SubmissionKeyEqualFold(v string) predicate.FinalOffer {
 // SubmissionKeyContainsFold applies the ContainsFold predicate on the "submission_key" field.
 func SubmissionKeyContainsFold(v string) predicate.FinalOffer {
 	return predicate.FinalOffer(sql.FieldContainsFold(FieldSubmissionKey, v))
+}
+
+// WorkflowCycleEQ applies the EQ predicate on the "workflow_cycle" field.
+func WorkflowCycleEQ(v int) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldEQ(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleNEQ applies the NEQ predicate on the "workflow_cycle" field.
+func WorkflowCycleNEQ(v int) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldNEQ(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleIn applies the In predicate on the "workflow_cycle" field.
+func WorkflowCycleIn(vs ...int) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldIn(FieldWorkflowCycle, vs...))
+}
+
+// WorkflowCycleNotIn applies the NotIn predicate on the "workflow_cycle" field.
+func WorkflowCycleNotIn(vs ...int) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldNotIn(FieldWorkflowCycle, vs...))
+}
+
+// WorkflowCycleGT applies the GT predicate on the "workflow_cycle" field.
+func WorkflowCycleGT(v int) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldGT(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleGTE applies the GTE predicate on the "workflow_cycle" field.
+func WorkflowCycleGTE(v int) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldGTE(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleLT applies the LT predicate on the "workflow_cycle" field.
+func WorkflowCycleLT(v int) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldLT(FieldWorkflowCycle, v))
+}
+
+// WorkflowCycleLTE applies the LTE predicate on the "workflow_cycle" field.
+func WorkflowCycleLTE(v int) predicate.FinalOffer {
+	return predicate.FinalOffer(sql.FieldLTE(FieldWorkflowCycle, v))
 }
 
 // AmountEQ applies the EQ predicate on the "amount" field.

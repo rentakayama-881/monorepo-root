@@ -98,6 +98,27 @@ func (_u *ConsultationRequestUpdate) SetNillableStatus(v *string) *ConsultationR
 	return _u
 }
 
+// SetWorkflowCycle sets the "workflow_cycle" field.
+func (_u *ConsultationRequestUpdate) SetWorkflowCycle(v int) *ConsultationRequestUpdate {
+	_u.mutation.ResetWorkflowCycle()
+	_u.mutation.SetWorkflowCycle(v)
+	return _u
+}
+
+// SetNillableWorkflowCycle sets the "workflow_cycle" field if the given value is not nil.
+func (_u *ConsultationRequestUpdate) SetNillableWorkflowCycle(v *int) *ConsultationRequestUpdate {
+	if v != nil {
+		_u.SetWorkflowCycle(*v)
+	}
+	return _u
+}
+
+// AddWorkflowCycle adds value to the "workflow_cycle" field.
+func (_u *ConsultationRequestUpdate) AddWorkflowCycle(v int) *ConsultationRequestUpdate {
+	_u.mutation.AddWorkflowCycle(v)
+	return _u
+}
+
 // SetApprovedAt sets the "approved_at" field.
 func (_u *ConsultationRequestUpdate) SetApprovedAt(v time.Time) *ConsultationRequestUpdate {
 	_u.mutation.SetApprovedAt(v)
@@ -299,6 +320,11 @@ func (_u *ConsultationRequestUpdate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "ConsultationRequest.status": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.WorkflowCycle(); ok {
+		if err := consultationrequest.WorkflowCycleValidator(v); err != nil {
+			return &ValidationError{Name: "workflow_cycle", err: fmt.Errorf(`ent: validator failed for field "ConsultationRequest.workflow_cycle": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ReminderCount(); ok {
 		if err := consultationrequest.ReminderCountValidator(v); err != nil {
 			return &ValidationError{Name: "reminder_count", err: fmt.Errorf(`ent: validator failed for field "ConsultationRequest.reminder_count": %w`, err)}
@@ -341,6 +367,12 @@ func (_u *ConsultationRequestUpdate) sqlSave(ctx context.Context) (_node int, er
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(consultationrequest.FieldStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.WorkflowCycle(); ok {
+		_spec.SetField(consultationrequest.FieldWorkflowCycle, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedWorkflowCycle(); ok {
+		_spec.AddField(consultationrequest.FieldWorkflowCycle, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ApprovedAt(); ok {
 		_spec.SetField(consultationrequest.FieldApprovedAt, field.TypeTime, value)
@@ -521,6 +553,27 @@ func (_u *ConsultationRequestUpdateOne) SetNillableStatus(v *string) *Consultati
 	if v != nil {
 		_u.SetStatus(*v)
 	}
+	return _u
+}
+
+// SetWorkflowCycle sets the "workflow_cycle" field.
+func (_u *ConsultationRequestUpdateOne) SetWorkflowCycle(v int) *ConsultationRequestUpdateOne {
+	_u.mutation.ResetWorkflowCycle()
+	_u.mutation.SetWorkflowCycle(v)
+	return _u
+}
+
+// SetNillableWorkflowCycle sets the "workflow_cycle" field if the given value is not nil.
+func (_u *ConsultationRequestUpdateOne) SetNillableWorkflowCycle(v *int) *ConsultationRequestUpdateOne {
+	if v != nil {
+		_u.SetWorkflowCycle(*v)
+	}
+	return _u
+}
+
+// AddWorkflowCycle adds value to the "workflow_cycle" field.
+func (_u *ConsultationRequestUpdateOne) AddWorkflowCycle(v int) *ConsultationRequestUpdateOne {
+	_u.mutation.AddWorkflowCycle(v)
 	return _u
 }
 
@@ -738,6 +791,11 @@ func (_u *ConsultationRequestUpdateOne) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "ConsultationRequest.status": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.WorkflowCycle(); ok {
+		if err := consultationrequest.WorkflowCycleValidator(v); err != nil {
+			return &ValidationError{Name: "workflow_cycle", err: fmt.Errorf(`ent: validator failed for field "ConsultationRequest.workflow_cycle": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ReminderCount(); ok {
 		if err := consultationrequest.ReminderCountValidator(v); err != nil {
 			return &ValidationError{Name: "reminder_count", err: fmt.Errorf(`ent: validator failed for field "ConsultationRequest.reminder_count": %w`, err)}
@@ -797,6 +855,12 @@ func (_u *ConsultationRequestUpdateOne) sqlSave(ctx context.Context) (_node *Con
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(consultationrequest.FieldStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.WorkflowCycle(); ok {
+		_spec.SetField(consultationrequest.FieldWorkflowCycle, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedWorkflowCycle(); ok {
+		_spec.AddField(consultationrequest.FieldWorkflowCycle, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ApprovedAt(); ok {
 		_spec.SetField(consultationrequest.FieldApprovedAt, field.TypeTime, value)

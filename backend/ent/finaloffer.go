@@ -31,6 +31,8 @@ type FinalOffer struct {
 	ValidatorUserID int `json:"validator_user_id,omitempty"`
 	// SubmissionKey holds the value of the "submission_key" field.
 	SubmissionKey *string `json:"submission_key,omitempty"`
+	// WorkflowCycle holds the value of the "workflow_cycle" field.
+	WorkflowCycle int `json:"workflow_cycle,omitempty"`
 	// Amount holds the value of the "amount" field.
 	Amount int64 `json:"amount,omitempty"`
 	// HoldHours holds the value of the "hold_hours" field.
@@ -87,7 +89,7 @@ func (*FinalOffer) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case finaloffer.FieldID, finaloffer.FieldValidationCaseID, finaloffer.FieldValidatorUserID, finaloffer.FieldAmount, finaloffer.FieldHoldHours:
+		case finaloffer.FieldID, finaloffer.FieldValidationCaseID, finaloffer.FieldValidatorUserID, finaloffer.FieldWorkflowCycle, finaloffer.FieldAmount, finaloffer.FieldHoldHours:
 			values[i] = new(sql.NullInt64)
 		case finaloffer.FieldSubmissionKey, finaloffer.FieldTerms, finaloffer.FieldStatus:
 			values[i] = new(sql.NullString)
@@ -151,6 +153,12 @@ func (_m *FinalOffer) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.SubmissionKey = new(string)
 				*_m.SubmissionKey = value.String
+			}
+		case finaloffer.FieldWorkflowCycle:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field workflow_cycle", values[i])
+			} else if value.Valid {
+				_m.WorkflowCycle = int(value.Int64)
 			}
 		case finaloffer.FieldAmount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -257,6 +265,9 @@ func (_m *FinalOffer) String() string {
 		builder.WriteString("submission_key=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
+	builder.WriteString("workflow_cycle=")
+	builder.WriteString(fmt.Sprintf("%v", _m.WorkflowCycle))
 	builder.WriteString(", ")
 	builder.WriteString("amount=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Amount))

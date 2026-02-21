@@ -52,6 +52,8 @@ type ValidationCase struct {
 	ClarificationState string `json:"clarification_state,omitempty"`
 	// OwnerInactivityCount holds the value of the "owner_inactivity_count" field.
 	OwnerInactivityCount int `json:"owner_inactivity_count,omitempty"`
+	// WorkflowCycle holds the value of the "workflow_cycle" field.
+	WorkflowCycle int `json:"workflow_cycle,omitempty"`
 	// EscrowTransferID holds the value of the "escrow_transfer_id" field.
 	EscrowTransferID *string `json:"escrow_transfer_id,omitempty"`
 	// DisputeID holds the value of the "dispute_id" field.
@@ -174,7 +176,7 @@ func (*ValidationCase) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case validationcase.FieldContentJSON, validationcase.FieldMeta:
 			values[i] = new([]byte)
-		case validationcase.FieldID, validationcase.FieldCategoryID, validationcase.FieldUserID, validationcase.FieldBountyAmount, validationcase.FieldOwnerInactivityCount, validationcase.FieldAcceptedFinalOfferID:
+		case validationcase.FieldID, validationcase.FieldCategoryID, validationcase.FieldUserID, validationcase.FieldBountyAmount, validationcase.FieldOwnerInactivityCount, validationcase.FieldWorkflowCycle, validationcase.FieldAcceptedFinalOfferID:
 			values[i] = new(sql.NullInt64)
 		case validationcase.FieldTitle, validationcase.FieldSummary, validationcase.FieldContentType, validationcase.FieldStatus, validationcase.FieldSensitivityLevel, validationcase.FieldIntakeSchemaVersion, validationcase.FieldClarificationState, validationcase.FieldEscrowTransferID, validationcase.FieldDisputeID, validationcase.FieldArtifactDocumentID, validationcase.FieldCertifiedArtifactDocumentID:
 			values[i] = new(sql.NullString)
@@ -301,6 +303,12 @@ func (_m *ValidationCase) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field owner_inactivity_count", values[i])
 			} else if value.Valid {
 				_m.OwnerInactivityCount = int(value.Int64)
+			}
+		case validationcase.FieldWorkflowCycle:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field workflow_cycle", values[i])
+			} else if value.Valid {
+				_m.WorkflowCycle = int(value.Int64)
 			}
 		case validationcase.FieldEscrowTransferID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -462,6 +470,9 @@ func (_m *ValidationCase) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("owner_inactivity_count=")
 	builder.WriteString(fmt.Sprintf("%v", _m.OwnerInactivityCount))
+	builder.WriteString(", ")
+	builder.WriteString("workflow_cycle=")
+	builder.WriteString(fmt.Sprintf("%v", _m.WorkflowCycle))
 	builder.WriteString(", ")
 	if v := _m.EscrowTransferID; v != nil {
 		builder.WriteString("escrow_transfer_id=")

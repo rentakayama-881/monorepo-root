@@ -66,6 +66,9 @@ func (ValidationCase) Fields() []ent.Field {
 		field.Int("owner_inactivity_count").
 			NonNegative().
 			Default(0),
+		field.Int("workflow_cycle").
+			Positive().
+			Default(1),
 
 		// Feature-service linkage (escrow/dispute/document IDs).
 		field.String("escrow_transfer_id").
@@ -118,6 +121,7 @@ func (ValidationCase) Indexes() []ent.Index {
 		index.Fields("status"),
 		index.Fields("sensitivity_level"),
 		index.Fields("clarification_state"),
+		index.Fields("workflow_cycle"),
 		index.Fields("created_at"),
 		index.Fields("user_id", "status"),
 	}

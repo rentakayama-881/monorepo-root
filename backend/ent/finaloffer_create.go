@@ -90,6 +90,20 @@ func (_c *FinalOfferCreate) SetNillableSubmissionKey(v *string) *FinalOfferCreat
 	return _c
 }
 
+// SetWorkflowCycle sets the "workflow_cycle" field.
+func (_c *FinalOfferCreate) SetWorkflowCycle(v int) *FinalOfferCreate {
+	_c.mutation.SetWorkflowCycle(v)
+	return _c
+}
+
+// SetNillableWorkflowCycle sets the "workflow_cycle" field if the given value is not nil.
+func (_c *FinalOfferCreate) SetNillableWorkflowCycle(v *int) *FinalOfferCreate {
+	if v != nil {
+		_c.SetWorkflowCycle(*v)
+	}
+	return _c
+}
+
 // SetAmount sets the "amount" field.
 func (_c *FinalOfferCreate) SetAmount(v int64) *FinalOfferCreate {
 	_c.mutation.SetAmount(v)
@@ -219,6 +233,10 @@ func (_c *FinalOfferCreate) defaults() {
 		v := finaloffer.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.WorkflowCycle(); !ok {
+		v := finaloffer.DefaultWorkflowCycle
+		_c.mutation.SetWorkflowCycle(v)
+	}
 	if _, ok := _c.mutation.HoldHours(); !ok {
 		v := finaloffer.DefaultHoldHours
 		_c.mutation.SetHoldHours(v)
@@ -260,6 +278,14 @@ func (_c *FinalOfferCreate) check() error {
 	if v, ok := _c.mutation.SubmissionKey(); ok {
 		if err := finaloffer.SubmissionKeyValidator(v); err != nil {
 			return &ValidationError{Name: "submission_key", err: fmt.Errorf(`ent: validator failed for field "FinalOffer.submission_key": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.WorkflowCycle(); !ok {
+		return &ValidationError{Name: "workflow_cycle", err: errors.New(`ent: missing required field "FinalOffer.workflow_cycle"`)}
+	}
+	if v, ok := _c.mutation.WorkflowCycle(); ok {
+		if err := finaloffer.WorkflowCycleValidator(v); err != nil {
+			return &ValidationError{Name: "workflow_cycle", err: fmt.Errorf(`ent: validator failed for field "FinalOffer.workflow_cycle": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Amount(); !ok {
@@ -333,6 +359,10 @@ func (_c *FinalOfferCreate) createSpec() (*FinalOffer, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.SubmissionKey(); ok {
 		_spec.SetField(finaloffer.FieldSubmissionKey, field.TypeString, value)
 		_node.SubmissionKey = &value
+	}
+	if value, ok := _c.mutation.WorkflowCycle(); ok {
+		_spec.SetField(finaloffer.FieldWorkflowCycle, field.TypeInt, value)
+		_node.WorkflowCycle = value
 	}
 	if value, ok := _c.mutation.Amount(); ok {
 		_spec.SetField(finaloffer.FieldAmount, field.TypeInt64, value)

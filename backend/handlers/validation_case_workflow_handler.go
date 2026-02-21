@@ -385,6 +385,42 @@ func (h *ValidationCaseWorkflowHandler) InternalMarkEscrowReleasedByTransfer(c *
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "validation_case_id": validationCaseID})
 }
 
+// Called by Feature Service after dispute settlement (refund/release).
+// Protected by InternalServiceAuth middleware (X-Internal-Api-Key).
+func (h *ValidationCaseWorkflowHandler) InternalSettleDisputeByTransfer(c *gin.Context) {
+	var req struct {
+		TransferID string `json:"transfer_id" binding:"required"`
+		DisputeID  string `json:"dispute_id" binding:"required"`
+		Outcome    string `json:"outcome" binding:"required"`
+		Source     string `json:"source"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		return
+	}
+
+	id, err := h.workflow.SettleDisputeInternalByTransferID(
+		c.Request.Context(),
+		req.TransferID,
+		req.DisputeID,
+		req.Outcome,
+		req.Source,
+	)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	validationCaseID := 0
+	if id != nil {
+		validationCaseID = *id
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":             "ok",
+		"validation_case_id": validationCaseID,
+	})
+}
+
 // Called by Feature Service before guarantee release.
 // Protected by InternalServiceAuth middleware (X-Internal-Api-Key).
 func (h *ValidationCaseWorkflowHandler) InternalGetValidatorConsultationLocks(c *gin.Context) {

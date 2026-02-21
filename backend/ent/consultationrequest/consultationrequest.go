@@ -26,6 +26,8 @@ const (
 	FieldValidatorUserID = "validator_user_id"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldWorkflowCycle holds the string denoting the workflow_cycle field in the database.
+	FieldWorkflowCycle = "workflow_cycle"
 	// FieldApprovedAt holds the string denoting the approved_at field in the database.
 	FieldApprovedAt = "approved_at"
 	// FieldRejectedAt holds the string denoting the rejected_at field in the database.
@@ -69,6 +71,7 @@ var Columns = []string{
 	FieldValidationCaseID,
 	FieldValidatorUserID,
 	FieldStatus,
+	FieldWorkflowCycle,
 	FieldApprovedAt,
 	FieldRejectedAt,
 	FieldExpiresAt,
@@ -102,6 +105,10 @@ var (
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	StatusValidator func(string) error
+	// DefaultWorkflowCycle holds the default value on creation for the "workflow_cycle" field.
+	DefaultWorkflowCycle int
+	// WorkflowCycleValidator is a validator for the "workflow_cycle" field. It is called by the builders before save.
+	WorkflowCycleValidator func(int) error
 	// DefaultReminderCount holds the default value on creation for the "reminder_count" field.
 	DefaultReminderCount int
 	// ReminderCountValidator is a validator for the "reminder_count" field. It is called by the builders before save.
@@ -146,6 +153,11 @@ func ByValidatorUserID(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByWorkflowCycle orders the results by the workflow_cycle field.
+func ByWorkflowCycle(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWorkflowCycle, opts...).ToFunc()
 }
 
 // ByApprovedAt orders the results by the approved_at field.

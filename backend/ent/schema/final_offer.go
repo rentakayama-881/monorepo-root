@@ -39,6 +39,9 @@ func (FinalOffer) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Unique(),
+		field.Int("workflow_cycle").
+			Positive().
+			Default(1),
 		field.Int64("amount").
 			Positive(),
 		field.Int("hold_hours").
@@ -79,6 +82,8 @@ func (FinalOffer) Indexes() []ent.Index {
 		index.Fields("validation_case_id"),
 		index.Fields("validator_user_id"),
 		index.Fields("validation_case_id", "validator_user_id"),
+		index.Fields("validation_case_id", "validator_user_id", "workflow_cycle").
+			Unique(),
 		index.Fields("status"),
 	}
 }
