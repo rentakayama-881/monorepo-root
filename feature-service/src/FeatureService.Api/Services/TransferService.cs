@@ -51,8 +51,23 @@ public partial class TransferService : ITransferService
         HttpClient httpClient,
         IConfiguration configuration,
         ILogger<TransferService> logger)
+        : this(
+            dbContext.GetCollection<Transfer>("transfers"),
+            walletService,
+            httpClient,
+            configuration,
+            logger)
     {
-        _transfers = dbContext.GetCollection<Transfer>("transfers");
+    }
+
+    internal TransferService(
+        IMongoCollection<Transfer> transfers,
+        IWalletService walletService,
+        HttpClient httpClient,
+        IConfiguration configuration,
+        ILogger<TransferService> logger)
+    {
+        _transfers = transfers;
         _walletService = walletService;
         _httpClient = httpClient;
         _configuration = configuration;

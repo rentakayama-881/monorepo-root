@@ -8,7 +8,7 @@ public partial class TransferService
 {
     public async Task<(bool success, string? error)> ReleaseTransferAsync(string transferId, uint userId, string pin)
     {
-        var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        var transfer = await FindTransferByIdAsync(transferId);
 
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
@@ -129,7 +129,7 @@ public partial class TransferService
 
     public async Task<(bool success, string? error)> CancelTransferAsync(string transferId, uint userId, string pin, string reason)
     {
-        var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        var transfer = await FindTransferByIdAsync(transferId);
 
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
@@ -221,7 +221,7 @@ public partial class TransferService
 
     public async Task<(bool success, string? error)> RejectTransferAsync(string transferId, uint receiverId, string pin, string reason)
     {
-        var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        var transfer = await FindTransferByIdAsync(transferId);
 
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
@@ -306,7 +306,7 @@ public partial class TransferService
 
     private async Task<string> BuildReleaseConflictMessageAsync(string transferId, uint actorUserId, DateTime now)
     {
-        var latest = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        var latest = await FindTransferByIdAsync(transferId);
         if (latest == null)
             return "Transfer tidak ditemukan";
 
@@ -329,7 +329,7 @@ public partial class TransferService
 
     private async Task<string> BuildCancelConflictMessageAsync(string transferId, DateTime now)
     {
-        var latest = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        var latest = await FindTransferByIdAsync(transferId);
         if (latest == null)
             return "Transfer tidak ditemukan";
 
@@ -344,7 +344,7 @@ public partial class TransferService
 
     private async Task<string> BuildRejectConflictMessageAsync(string transferId)
     {
-        var latest = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        var latest = await FindTransferByIdAsync(transferId);
         if (latest == null)
             return "Transfer tidak ditemukan";
 
@@ -352,6 +352,17 @@ public partial class TransferService
             return $"Transfer sudah {latest.Status}";
 
         return "Transfer sedang diproses oleh request lain";
+    }
+
+    private async Task<Transfer?> FindTransferByIdAsync(string transferId)
+    {
+        using var cursor = await _transfers.FindAsync(
+            Builders<Transfer>.Filter.Eq(t => t.Id, transferId));
+
+        if (!await cursor.MoveNextAsync())
+            return null;
+
+        return cursor.Current.FirstOrDefault();
     }
 
     public async Task<SearchUserResponse> SearchUserAsync(string username)
