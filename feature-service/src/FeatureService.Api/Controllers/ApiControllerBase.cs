@@ -6,6 +6,9 @@ namespace FeatureService.Api.Controllers;
 
 public abstract class ApiControllerBase : ControllerBase
 {
+    protected const string InvalidCachedIdempotencyResultMessage =
+        "Data idempotency tidak valid. Permintaan diblokir untuk mencegah duplikasi transaksi.";
+
     protected string GetRequestId()
     {
         return HttpContext.Items["RequestId"]?.ToString() ?? Guid.NewGuid().ToString();
@@ -91,6 +94,15 @@ public abstract class ApiControllerBase : ControllerBase
 
     protected ObjectResult ApiConflict(string message)
         => ApiError(409, ApiErrorCodes.Conflict, message);
+
+    protected ObjectResult ApiIdempotencyStateInvalid(string? message = null)
+        => ApiError(409, ApiErrorCodes.IdempotencyStateInvalid, message ?? InvalidCachedIdempotencyResultMessage);
+
+    protected static bool IsInvalidCachedIdempotencyResult(string? message)
+        => string.Equals(
+            message?.Trim(),
+            InvalidCachedIdempotencyResultMessage,
+            StringComparison.Ordinal);
 
     protected ObjectResult ApiPayloadTooLarge(string message)
         => ApiError(413, ApiErrorCodes.PayloadTooLarge, message);

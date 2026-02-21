@@ -67,4 +67,5 @@ public static class ApiErrorCodes
     public const string PinLocked = "PIN_LOCKED";
     public const string InsufficientBalance = "INSUFFICIENT_BALANCE";
     public const string InvalidPin = "INVALID_PIN";
+    public const string IdempotencyStateInvalid = "IDEMPOTENCY_STATE_INVALID";
 }

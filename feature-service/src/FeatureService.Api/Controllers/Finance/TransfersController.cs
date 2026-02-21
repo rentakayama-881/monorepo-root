@@ -95,6 +95,11 @@ public class TransfersController : ApiControllerBase
             return ApiError(400, "INVALID_PIN", ex.Message);
         }
         catch (InvalidOperationException ex)
+            when (IsInvalidCachedIdempotencyResult(ex.Message))
+        {
+            return ApiIdempotencyStateInvalid(ex.Message);
+        }
+        catch (InvalidOperationException ex)
         {
             return ApiBadRequest("TRANSFER_FAILED", ex.Message);
         }
@@ -253,7 +258,12 @@ public class TransfersController : ApiControllerBase
             var (success, error) = await _secureTransferService.ReleaseTransferAsync(
                 id, userId, request.Pin, idempotencyKey, ipAddress, userAgent);
             if (!success)
+            {
+                if (IsInvalidCachedIdempotencyResult(error))
+                    return ApiIdempotencyStateInvalid(error);
+
                 return ApiBadRequest("RELEASE_FAILED", error ?? "Gagal melepaskan dana");
+            }
 
             return ApiOk(new { released = true }, "Dana berhasil dilepaskan");
         }
@@ -293,7 +303,12 @@ public class TransfersController : ApiControllerBase
                 id, userId, request.Pin, request.Reason ?? "Dibatalkan oleh pengirim",
                 idempotencyKey, ipAddress, userAgent);
             if (!success)
+            {
+                if (IsInvalidCachedIdempotencyResult(error))
+                    return ApiIdempotencyStateInvalid(error);
+
                 return ApiBadRequest("CANCEL_FAILED", error ?? "Gagal membatalkan transfer");
+            }
 
             return ApiOk(new { cancelled = true }, "Transfer berhasil dibatalkan");
         }
@@ -334,7 +349,12 @@ public class TransfersController : ApiControllerBase
                 id, userId, request.Pin, request.Reason ?? "Ditolak oleh penerima",
                 idempotencyKey, ipAddress, userAgent);
             if (!success)
+            {
+                if (IsInvalidCachedIdempotencyResult(error))
+                    return ApiIdempotencyStateInvalid(error);
+
                 return ApiBadRequest("REJECT_FAILED", error ?? "Gagal menolak transfer");
+            }
 
             return ApiOk(new { rejected = true }, "Transfer berhasil ditolak, dana dikembalikan ke pengirim");
         }
