@@ -14,23 +14,67 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func readBuildSetting(key string) string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok || info == nil {
+		return ""
+	}
+
+	for _, setting := range info.Settings {
+		if setting.Key == key {
+			return strings.TrimSpace(setting.Value)
+		}
+	}
+
+	return ""
+}
+
 func effectiveVersion() string {
 	if v := strings.TrimSpace(buildinfo.Version); v != "" && v != "dev" {
 		return v
 	}
-	if info, ok := debug.ReadBuildInfo(); ok && info != nil {
-		for _, s := range info.Settings {
-			if s.Key == "vcs.revision" {
-				if v := strings.TrimSpace(s.Value); v != "" {
-					return v
-				}
-			}
-		}
-	}
+
 	if v := strings.TrimSpace(os.Getenv("VERSION")); v != "" {
 		return v
 	}
+
+	if v := readBuildSetting("vcs.revision"); v != "" {
+		return v
+	}
+
 	return "1.0.0"
+}
+
+func effectiveGitSHA() string {
+	if v := strings.TrimSpace(buildinfo.Version); v != "" && v != "dev" {
+		return v
+	}
+
+	if v := strings.TrimSpace(os.Getenv("GIT_SHA")); v != "" {
+		return v
+	}
+
+	if v := strings.TrimSpace(os.Getenv("SOURCE_VERSION")); v != "" {
+		return v
+	}
+
+	if v := readBuildSetting("vcs.revision"); v != "" {
+		return v
+	}
+
+	return "unknown"
+}
+
+func effectiveBuildTimeUTC() string {
+	if v := strings.TrimSpace(os.Getenv("BUILD_TIME_UTC")); v != "" {
+		return v
+	}
+
+	if v := readBuildSetting("vcs.time"); v != "" {
+		return v
+	}
+
+	return "unknown"
 }
 
 // HealthHandler responds with backend readiness information without touching the database.
@@ -78,5 +122,17 @@ func ReadinessHandler(c *gin.Context) {
 		"version": version,
 		"checks":  checks,
 		"mode":    os.Getenv("GIN_MODE"),
+	})
+}
+
+// HealthVersionHandler responds with deploy metadata used to verify runtime SHA drift.
+func HealthVersionHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"status":         "ok",
+		"service":        "backend-gin",
+		"version":        effectiveVersion(),
+		"git_sha":        effectiveGitSHA(),
+		"build_time_utc": effectiveBuildTimeUTC(),
+		"timestamp":      time.Now().UTC().Format(time.RFC3339),
 	})
 }

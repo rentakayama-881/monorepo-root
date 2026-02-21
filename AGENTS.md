@@ -36,3 +36,23 @@ Use commands from each module root:
 - Never commit secrets; start from each module's `.env.example`.
 - Validate auth/authorization and input handling on sensitive endpoints.
 - For financial or auth flows, include regression tests in the same PR.
+
+## AI Operating System (Session-Proof, Mandatory)
+
+These rules are required for every AI session, including when context memory is empty.
+
+1. Read `docs/AI_OPERATING_SYSTEM.md` before making significant changes.
+2. Run full quality gate before commit/push:
+- `./ops/preflight-full.sh`
+3. Use commit+push wrapper (enforces preflight):
+- `./ops/commit-push.sh "type(scope): message"`
+4. Do not claim production is updated without runtime evidence from:
+- Go: `/health` and `/health/version`
+- Feature Service: `/api/v1/health` and `/api/v1/health/version`
+5. For post-merge backend updates on VPS, use:
+- `./ops/vps-sync-deploy.sh --env prod --ref <sha>`
+6. If deployment verification fails, rollback using:
+- `./ops/vps-rollback.sh --env prod --backup-dir <path>`
+7. Frontend quality must follow objective rubric:
+- `docs/frontend/QUALITY_RUBRIC.md`
+- `docs/frontend/REFERENCE_PATTERNS.md`

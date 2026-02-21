@@ -33,6 +33,24 @@ Health endpoints (dari kode):
 
 Frontend deploy melalui Vercel (sesuai fakta produk). Verifikasi branch auto-deploy dan domain di Vercel dashboard.
 
+## 1.1 Standard Ops Commands (Recommended)
+
+Gunakan command contract berikut agar workflow deploy konsisten lintas sesi AI:
+
+```bash
+# Full gate sebelum commit/push
+./ops/preflight-full.sh
+
+# Commit + push dengan guardrail
+./ops/commit-push.sh "type(scope): message"
+
+# Deploy backend services ke SHA tertentu di VPS
+./ops/vps-sync-deploy.sh --env prod --ref <git_sha>
+
+# Verifikasi live SHA
+./ops/verify-live.sh --env prod --expect-sha <git_sha>
+```
+
 ## 2. Backends (Go + .NET) - Deployment Options
 
 ### Opsi A: GitHub Actions (CI/CD)
