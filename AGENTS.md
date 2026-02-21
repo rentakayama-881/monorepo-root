@@ -56,6 +56,10 @@ These rules are required for every AI session, including when context memory is 
 7. Frontend quality must follow objective rubric:
 - `docs/frontend/QUALITY_RUBRIC.md`
 - `docs/frontend/REFERENCE_PATTERNS.md`
+8. Operator mode:
+- User gives intent only.
+- AI executes commands, tests, commit/push, and deploy flow end-to-end.
+- Ask user only for external approvals/credentials or irreversible high-risk actions.
 
 ## Custom Global Skill
 
