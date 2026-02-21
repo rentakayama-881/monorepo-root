@@ -90,6 +90,194 @@ public class SecureTransferServiceIdempotencyTests
     }
 
     [Fact]
+    public async Task CreateTransferAsync_WhenSameProvidedKeyUsedByDifferentUsers_UsesDistinctScopedCacheEntries()
+    {
+        const uint senderA = 101;
+        const uint senderB = 202;
+        const string providedKey = "shared-key";
+        const string expectedKeyA = "transfer:101:shared-key";
+        const string expectedKeyB = "transfer:202:shared-key";
+
+        var cachedResultA = new CreateTransferResponse(
+            TransferId: "trf_cached_a",
+            Code: "11112222",
+            Amount: 120_000,
+            ReceiverUsername: "receiver_a",
+            HoldUntil: DateTime.UtcNow.AddDays(1));
+
+        var cachedResultB = new CreateTransferResponse(
+            TransferId: "trf_cached_b",
+            Code: "33334444",
+            Amount: 130_000,
+            ReceiverUsername: "receiver_b",
+            HoldUntil: DateTime.UtcNow.AddDays(2));
+
+        var innerService = new Mock<ITransferService>(MockBehavior.Strict);
+        var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
+        var auditService = new Mock<IAuditTrailService>(MockBehavior.Strict);
+        var transfers = new Mock<IMongoCollection<Transfer>>(MockBehavior.Strict);
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKeyA,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: JsonSerializer.Serialize(cachedResultA)));
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKeyB,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: JsonSerializer.Serialize(cachedResultB)));
+
+        auditService
+            .Setup(s => s.RecordEventAsync(
+                It.IsAny<AuditEventRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateAuditTrail());
+
+        var sut = CreateSut(
+            innerService.Object,
+            idempotencyService.Object,
+            auditService.Object,
+            transfers.Object);
+
+        var request = new CreateTransferRequest(
+            ReceiverUsername: "receiver_any",
+            Amount: 100_000,
+            Message: "cross user cache isolation",
+            Pin: "123456");
+
+        var resultA = await sut.CreateTransferAsync(
+            senderA,
+            request,
+            idempotencyKey: providedKey,
+            senderUsername: "sender_a");
+        var resultB = await sut.CreateTransferAsync(
+            senderB,
+            request,
+            idempotencyKey: providedKey,
+            senderUsername: "sender_b");
+
+        Assert.Equal(cachedResultA.TransferId, resultA.TransferId);
+        Assert.Equal(cachedResultB.TransferId, resultB.TransferId);
+
+        innerService.Verify(
+            s => s.CreateTransferAsync(
+                It.IsAny<uint>(),
+                It.IsAny<CreateTransferRequest>(),
+                It.IsAny<string?>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.TryAcquireAsync(expectedKeyA, TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>()),
+            Times.Once);
+        idempotencyService.Verify(
+            s => s.TryAcquireAsync(expectedKeyB, TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>()),
+            Times.Once);
+        auditService.Verify(
+            s => s.RecordEventAsync(
+                It.Is<AuditEventRequest>(request =>
+                    IsDuplicateBlockedAuditEvent(request, expectedKeyA, senderA)),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        auditService.Verify(
+            s => s.RecordEventAsync(
+                It.Is<AuditEventRequest>(request =>
+                    IsDuplicateBlockedAuditEvent(request, expectedKeyB, senderB)),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        idempotencyService.VerifyAll();
+    }
+
+    [Fact]
+    public async Task ReleaseTransferAsync_WhenGeneratedKeyCollidesAcrossUsers_UsesDistinctScopedKeys()
+    {
+        const uint userA = 301;
+        const uint userB = 302;
+        const string sharedRawGeneratedKey = "generated-key";
+        const string expectedKeyA = "release:301:generated-key";
+        const string expectedKeyB = "release:302:generated-key";
+
+        var transferA = CreatePendingTransfer("trf_release_generated_a", senderId: 11, receiverId: userA);
+        var transferB = CreatePendingTransfer("trf_release_generated_b", senderId: 12, receiverId: userB);
+
+        var innerService = new Mock<ITransferService>(MockBehavior.Strict);
+        var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
+        var auditService = new Mock<IAuditTrailService>(MockBehavior.Strict);
+        var transfers = new Mock<IMongoCollection<Transfer>>(MockBehavior.Strict);
+
+        SetupFindSequence(transfers, transferA, transferB);
+
+        idempotencyService
+            .SetupSequence(s => s.GenerateKey("release"))
+            .Returns(sharedRawGeneratedKey)
+            .Returns(sharedRawGeneratedKey);
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKeyA,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: CreateOperationResultJson(success: true, error: null)));
+
+        idempotencyService
+            .Setup(s => s.TryAcquireAsync(
+                expectedKeyB,
+                TimeSpan.FromSeconds(30),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdempotencyResult(
+                Acquired: false,
+                AlreadyProcessed: true,
+                StoredResultJson: CreateOperationResultJson(
+                    success: false,
+                    error: "Transfer sudah direlease")));
+
+        var sut = CreateSut(
+            innerService.Object,
+            idempotencyService.Object,
+            auditService.Object,
+            transfers.Object);
+
+        var (successA, errorA) = await sut.ReleaseTransferAsync(
+            transferA.Id,
+            userA,
+            pin: "123456");
+        var (successB, errorB) = await sut.ReleaseTransferAsync(
+            transferB.Id,
+            userB,
+            pin: "123456");
+
+        Assert.True(successA);
+        Assert.Null(errorA);
+        Assert.False(successB);
+        Assert.Equal("Transfer sudah direlease", errorB);
+
+        innerService.Verify(
+            s => s.ReleaseTransferAsync(It.IsAny<string>(), It.IsAny<uint>(), It.IsAny<string>()),
+            Times.Never);
+        idempotencyService.Verify(
+            s => s.GenerateKey("release"),
+            Times.Exactly(2));
+        idempotencyService.Verify(
+            s => s.TryAcquireAsync(expectedKeyA, TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>()),
+            Times.Once);
+        idempotencyService.Verify(
+            s => s.TryAcquireAsync(expectedKeyB, TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>()),
+            Times.Once);
+        idempotencyService.VerifyAll();
+    }
+
+    [Fact]
     public async Task ReleaseTransferAsync_WhenAlreadyProcessed_ReturnsCachedResultAndSkipsInnerService()
     {
         const uint userId = 88;
@@ -453,5 +641,24 @@ public class SecureTransferServiceIdempotencyTests
                request.Details.TryGetValue("idempotencyKey", out var key) &&
                action == "CANCEL_INITIATED" &&
                key == expectedKey;
+    }
+
+    private static bool IsDuplicateBlockedAuditEvent(
+        AuditEventRequest request,
+        string expectedTransactionId,
+        uint expectedActorUserId)
+    {
+        if (request.TransactionId != expectedTransactionId ||
+            request.EventType != AuditEventType.SecurityCheck ||
+            request.ActorUserId != expectedActorUserId ||
+            request.Details is null)
+        {
+            return false;
+        }
+
+        return request.Details.TryGetValue("action", out var action) &&
+               request.Details.TryGetValue("idempotencyKey", out var key) &&
+               action == "DUPLICATE_REQUEST_BLOCKED" &&
+               key == expectedTransactionId;
     }
 }
