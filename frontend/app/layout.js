@@ -1,5 +1,4 @@
 import "./globals.css";
-import Script from "next/script";
 import Header from "../components/Header";
 import FooterGate from "../components/FooterGate";
 import ApiStatusBanner from "../components/ApiStatusBanner";
@@ -126,44 +125,47 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
+        {/* Preload critical fonts to prevent FOUT (text size jump) */}
+        <link
+          rel="preload"
+          href="/fonts/ibm-plex/sans/IBMPlexSans-Bold.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/ibm-plex/sans/IBMPlexSans-Regular.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/ibm-plex/sans/IBMPlexSans-Medium.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/ibm-plex/sans/IBMPlexSans-SemiBold.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        {/* Synchronous theme init — must run before first paint to prevent flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var d=document.documentElement;d.classList.add("theme-init");try{var t=null;try{t=localStorage.getItem("theme")}catch(e){}var r=t==="light"||t==="dark"?t:window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";d.classList.remove("light","dark");d.classList.add(r)}catch(e){}requestAnimationFrame(function(){requestAnimationFrame(function(){d.classList.remove("theme-init")})})})();`,
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body className="flex min-h-screen flex-col antialiased bg-background text-foreground">
-        <Script id="theme-init" strategy="beforeInteractive">{`
-(() => {
-  const root = document.documentElement;
-
-  // Disable transitions for the very first theme application to avoid a visible
-  // light->dark animation on refresh.
-  root.classList.add("theme-init");
-
-  try {
-    let pref = null;
-    try {
-      pref = localStorage.getItem("theme");
-    } catch (_) {}
-
-    const resolved =
-      pref === "light" || pref === "dark"
-        ? pref
-        : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-
-    root.classList.remove("light", "dark");
-    root.classList.add(resolved);
-  } catch (_) {
-    // Never block rendering if theme init fails.
-  } finally {
-    // Re-enable transitions after the initial sync theme is applied.
-    setTimeout(() => {
-      root.classList.remove("theme-init");
-      root.style.backgroundColor = "";
-    }, 0);
-  }
-})();
-        `}</Script>
 
         {/* Skip to main content link for accessibility */}
         <a href="#main-content" className="skip-link">
@@ -178,7 +180,7 @@ export default function RootLayout({ children }) {
                   <Header />
                   <ApiStatusBanner />
 
-                  <div id="main-content" role="main" tabIndex={-1} className="flex-1">
+                  <div id="main-content" role="main" tabIndex={-1} className="flex-1 pt-[var(--header-height)]">
                     {children}
                   </div>
 

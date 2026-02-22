@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 export const AUTH_INPUT_CLASS =
-  "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
+  "w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
 
 export const AUTH_PRIMARY_BUTTON_CLASS =
   "w-full inline-flex justify-center items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -29,7 +29,7 @@ export function AuthHeader({ title, description }) {
 }
 
 export function AuthCard({ children, className = "" }) {
-  return <div className={cn("rounded-lg border border-border bg-card p-4 shadow-soft", className)}>{children}</div>;
+  return <div className={cn("rounded-lg border border-input bg-card p-4 shadow-soft", className)}>{children}</div>;
 }
 
 export function AuthField({ label, htmlFor, children }) {

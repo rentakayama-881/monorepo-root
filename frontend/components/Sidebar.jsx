@@ -11,14 +11,11 @@ export default function Sidebar({ open, onClose }) {
     if (!open) return;
     const prevBodyOverflow = document.body.style.overflow;
     const prevBodyOverscroll = document.body.style.overscrollBehavior;
-    const prevHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
     document.body.style.overscrollBehavior = "none";
-    document.documentElement.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prevBodyOverflow;
       document.body.style.overscrollBehavior = prevBodyOverscroll;
-      document.documentElement.style.overflow = prevHtmlOverflow;
     };
   }, [open]);
 

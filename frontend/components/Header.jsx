@@ -143,7 +143,7 @@ export default function Header() {
     "inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius)] transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
   return (
-    <header className="sticky top-[0px] z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed top-0 left-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-[var(--header-height)] items-center gap-1">
         {/* Mobile menu */}
         <button
