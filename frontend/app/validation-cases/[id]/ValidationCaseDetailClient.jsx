@@ -98,20 +98,6 @@ function sensitivityMeta(levelRaw) {
   }
 }
 
-function clarificationStateLabel(stateRaw) {
-  const s = normalizeStatus(stateRaw);
-  const map = {
-    none: "None",
-    waiting_owner_response: "Waiting Owner Response",
-    assumption_pending_owner_decision: "Assumption Pending Owner Decision",
-    owner_responded: "Owner Responded",
-    assumption_approved: "Assumption Approved",
-    assumption_rejected: "Assumption Rejected",
-    owner_inactive_sla_expired: "Owner Inactive SLA Expired",
-  };
-  return map[s] || (s ? s.replace(/_/g, " ") : "-");
-}
-
 function contentAsText(content) {
   if (content == null) return "";
   if (typeof content === "string") return content;
@@ -213,21 +199,10 @@ export default function ValidationCaseRecordPage() {
   const [myConsultationRequest, setMyConsultationRequest] = useState(null);
   const [myConsultationLoading, setMyConsultationLoading] = useState(false);
   const [requestConsultationLoading, setRequestConsultationLoading] = useState(false);
-  const [clarificationMsg, setClarificationMsg] = useState("");
-  const [clarificationSubmitting, setClarificationSubmitting] = useState(false);
-  const [clarificationForm, setClarificationForm] = useState({
-    mode: "question",
-    message: "",
-    assumptions: "",
-  });
 
   // Inline form states for reject consultation
   const [rejectForms, setRejectForms] = useState({});
   const [rejectOpen, setRejectOpen] = useState({});
-
-  // Inline form states for respond to clarification
-  const [clarifyForms, setClarifyForms] = useState({});
-  const [clarifyOpen, setClarifyOpen] = useState({});
 
   const [contactTelegram, setContactTelegram] = useState("");
   const [contactMsg, setContactMsg] = useState("");
@@ -536,106 +511,6 @@ export default function ValidationCaseRecordPage() {
     }
   }
 
-  async function requestOwnerClarification() {
-    if (!isAuthed) {
-      router.push("/login");
-      return;
-    }
-    const mode = String(clarificationForm.mode || "question").toLowerCase();
-    const message = String(clarificationForm.message || "").trim();
-    if (message.length < 8) {
-      setClarificationMsg("Message klarifikasi minimal 8 karakter.");
-      return;
-    }
-
-    let assumptions = [];
-    if (mode === "assumption") {
-      assumptions = String(clarificationForm.assumptions || "")
-        .split("\n")
-        .map((line) => String(line || "").trim())
-        .filter(Boolean)
-        .map((line) => ({ item: line }));
-      if (assumptions.length === 0) {
-        setClarificationMsg("Mode assumption memerlukan minimal 1 asumsi.");
-        return;
-      }
-    }
-
-    setClarificationMsg("");
-    setClarificationSubmitting(true);
-    try {
-      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/clarification/request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode,
-          message,
-          assumptions,
-        }),
-      });
-      setClarificationMsg("Permintaan klarifikasi dikirim. Status kasus beralih ke WAITING_OWNER_RESPONSE.");
-      setClarificationForm((prev) => ({ ...prev, message: "", assumptions: "" }));
-      await reloadCase();
-      await loadNonOwnerWorkflow();
-    } catch (e) {
-      setClarificationMsg(e?.message || "Gagal mengirim klarifikasi");
-    } finally {
-      setClarificationSubmitting(false);
-    }
-  }
-
-  function toggleClarifyForm(requestId, action) {
-    const key = `${requestId}-${action}`;
-    setClarifyOpen((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-    if (!clarifyOpen[key]) {
-      setClarifyForms((prev) => ({
-        ...prev,
-        [requestId]: { action, text: "" },
-      }));
-    }
-  }
-
-  async function submitClarifyResponse(requestId, action) {
-    const form = clarifyForms[requestId] || {};
-    let clarification = "";
-
-    if (action === "clarify" || action === "reject") {
-      clarification = String(form.text || "").trim();
-      if (!clarification || clarification.length < 8) {
-        setConsultationMsg("Klarifikasi minimal 8 karakter.");
-        return;
-      }
-    }
-
-    setConsultationMsg("");
-    try {
-      await fetchJsonAuth(
-        `/api/validation-cases/${encodeURIComponent(String(id))}/consultation-requests/${encodeURIComponent(String(requestId))}/clarification/respond`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action, clarification }),
-        }
-      );
-      if (action === "approve") {
-        setConsultationMsg("Assumption disetujui. Kasus kembali ke status open.");
-      } else if (action === "reject") {
-        setConsultationMsg("Assumption ditolak dengan klarifikasi owner.");
-      } else {
-        setConsultationMsg("Klarifikasi owner terkirim. Kasus kembali ke status open.");
-      }
-      setClarifyForms((prev) => ({ ...prev, [requestId]: {} }));
-      setClarifyOpen({});
-      await reloadCase();
-      await loadOwnerWorkflow();
-    } catch (e) {
-      setConsultationMsg(e?.message || "Gagal merespons klarifikasi");
-    }
-  }
-
   async function revealContact() {
     if (!isAuthed) {
       router.push("/login");
@@ -820,11 +695,11 @@ export default function ValidationCaseRecordPage() {
         body: JSON.stringify({}),
       });
 
-      setArtifactMsg("Artifact submission berhasil dicatat.");
+      setArtifactMsg("Konfirmasi delivery berhasil dicatat.");
       await reloadCase();
       await loadNonOwnerWorkflow();
     } catch (e) {
-      setArtifactMsg(e?.message || "Gagal submit Artifact Submission");
+      setArtifactMsg(e?.message || "Gagal mengirim konfirmasi delivery");
     } finally {
       setArtifactSubmitting(false);
     }
@@ -1222,65 +1097,6 @@ export default function ValidationCaseRecordPage() {
                                   </div>
                                 ) : null}
                               </div>
-                            ) : normalizeStatus(r.status) === "waiting_owner_response" || normalizeStatus(r.status) === "owner_timeout" ? (
-                              <div className="space-y-2">
-                                <div className="flex flex-wrap gap-2">
-                                  <button
-                                    className="rounded-[var(--radius)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
-                                    onClick={() => submitClarifyResponse(r.id, "approve")}
-                                  >
-                                    Approve Assumption
-                                  </button>
-                                  <button
-                                    className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
-                                    onClick={() => toggleClarifyForm(r.id, "clarify")}
-                                  >
-                                    Clarify
-                                  </button>
-                                  <button
-                                    className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60"
-                                    onClick={() => toggleClarifyForm(r.id, "reject")}
-                                  >
-                                    Reject Assumption
-                                  </button>
-                                </div>
-                                {clarifyOpen[`${r.id}-clarify`] || clarifyOpen[`${r.id}-reject`] ? (
-                                  <div className="space-y-2 rounded-lg border border-border bg-secondary/20 p-2">
-                                    <textarea
-                                      value={(clarifyForms[r.id] || {}).text || ""}
-                                      onChange={(e) =>
-                                        setClarifyForms((prev) => ({
-                                          ...prev,
-                                          [r.id]: { ...(prev[r.id] || {}), text: e.target.value },
-                                        }))
-                                      }
-                                      placeholder="Klarifikasi/Alasan (min 8 karakter)"
-                                      rows={3}
-                                      className="w-full rounded-[var(--radius)] border border-input bg-card px-2 py-1.5 text-xs text-foreground"
-                                    />
-                                    <div className="flex gap-1.5">
-                                      <button
-                                        onClick={() => {
-                                          const action = clarifyOpen[`${r.id}-clarify`] ? "clarify" : "reject";
-                                          submitClarifyResponse(r.id, action);
-                                        }}
-                                        className="rounded-[var(--radius)] bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90"
-                                      >
-                                        Submit
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setClarifyOpen({});
-                                          setClarifyForms((prev) => ({ ...prev, [r.id]: {} }));
-                                        }}
-                                        className="rounded-[var(--radius)] border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary/60"
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : null}
-                              </div>
                             ) : (
                               <span className="text-xs text-muted-foreground">-</span>
                             )}
@@ -1292,60 +1108,6 @@ export default function ValidationCaseRecordPage() {
                 </div>
               )}
               {consultationMsg ? <div className="mt-3 text-xs text-muted-foreground">{consultationMsg}</div> : null}
-            </CaseSection>
-          ) : null}
-
-          {isAuthed && !isOwner && status === "waiting_owner_response" ? (
-            <CaseSection title="Klarifikasi ke Owner" subtitle="Validator">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="text-sm text-muted-foreground">
-                  <div className="font-semibold text-foreground">Status Kasus</div>
-                  <p className="mt-2">
-                    Kasus ini sedang menunggu respons dari pemilik kasus atas pertanyaan atau asumsi yang Anda kirimkan. Silakan tunggu sampai pemilik memberikan klarifikasi.
-                  </p>
-                </div>
-                <div className="md:border-l md:border-border md:pl-6">
-                  <div className="text-sm font-semibold text-foreground mb-3">Kirim Klarifikasi / Asumsi Baru</div>
-                  <div className="space-y-2">
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground">Mode</label>
-                      <select
-                        value={clarificationForm.mode}
-                        onChange={(e) => setClarificationForm((f) => ({ ...f, mode: e.target.value }))}
-                        className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                      >
-                        <option value="question">Question</option>
-                        <option value="assumption">Assumption</option>
-                      </select>
-                    </div>
-                    <textarea
-                      value={clarificationForm.message}
-                      onChange={(e) => setClarificationForm((f) => ({ ...f, message: e.target.value }))}
-                      rows={3}
-                      placeholder="Jelaskan kebutuhan klarifikasi secara terstruktur."
-                      className="w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                    />
-                    {String(clarificationForm.mode) === "assumption" ? (
-                      <textarea
-                        value={clarificationForm.assumptions}
-                        onChange={(e) => setClarificationForm((f) => ({ ...f, assumptions: e.target.value }))}
-                        rows={4}
-                        placeholder="Satu asumsi per baris."
-                        className="w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                      />
-                    ) : null}
-                    <button
-                      onClick={requestOwnerClarification}
-                      disabled={clarificationSubmitting}
-                      className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60 disabled:opacity-60"
-                      type="button"
-                    >
-                      {clarificationSubmitting ? "Submitting..." : "Submit Clarification"}
-                    </button>
-                    {clarificationMsg ? <div className="text-xs text-muted-foreground">{clarificationMsg}</div> : null}
-                  </div>
-                </div>
-              </div>
             </CaseSection>
           ) : null}
 
@@ -1618,7 +1380,7 @@ export default function ValidationCaseRecordPage() {
               ) : (
                 <div className="space-y-3">
                   <div className="text-sm text-muted-foreground">
-                    Tidak perlu upload file. Cukup submit untuk menandai bahwa deliverable sudah dikirim.
+                    Tidak perlu upload file. Klik konfirmasi ini setelah deliverable selesai dikirim via Telegram.
                   </div>
                   <button
                     onClick={submitArtifact}
@@ -1626,7 +1388,7 @@ export default function ValidationCaseRecordPage() {
                     disabled={artifactSubmitting}
                     type="button"
                   >
-                    {artifactSubmitting ? "Submitting..." : "Submit Artifact"}
+                    {artifactSubmitting ? "Submitting..." : "Confirm Delivery"}
                   </button>
                   {artifactMsg ? <div className="text-xs text-muted-foreground">{artifactMsg}</div> : null}
                 </div>
@@ -1854,10 +1616,6 @@ export default function ValidationCaseRecordPage() {
                       </span>
                       <div className="mt-1 text-xs text-muted-foreground">{sensitivity.label}</div>
                     </dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-4 py-2">
-                    <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Clarification</dt>
-                    <dd className="font-mono text-xs text-muted-foreground">{clarificationStateLabel(vc?.clarification_state)}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-4 py-2">
                     <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Workflow</dt>

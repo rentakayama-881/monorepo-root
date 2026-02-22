@@ -66,23 +66,6 @@ type CaseLogItem struct {
 	CreatedAt        int64                  `json:"created_at"`
 }
 
-type AssumptionItem struct {
-	Item      string `json:"item"`
-	Rationale string `json:"rationale,omitempty"`
-	Impact    string `json:"impact,omitempty"`
-}
-
-type ClarificationRequestInput struct {
-	Mode        string           `json:"mode"`
-	Message     string           `json:"message"`
-	Assumptions []AssumptionItem `json:"assumptions,omitempty"`
-}
-
-type ClarificationResponseInput struct {
-	Action        string `json:"action"`
-	Clarification string `json:"clarification,omitempty"`
-}
-
 // EscrowDraft is a client-facing instruction for how to Lock Funds in Feature Service.
 // The client should call Feature Service transfers endpoint using these fields, then confirm to Go backend.
 type EscrowDraft struct {

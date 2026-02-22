@@ -554,9 +554,6 @@ func main() {
 				validationCases.GET("/:id/consultation-requests/me", middleware.AuthMiddleware(), workflowHandler.GetMyConsultationRequest)
 				validationCases.POST("/:id/consultation-requests/:requestId/approve", middleware.AuthMiddleware(), workflowHandler.ApproveConsultationRequest)
 				validationCases.POST("/:id/consultation-requests/:requestId/reject", middleware.AuthMiddleware(), workflowHandler.RejectConsultationRequest)
-				validationCases.POST("/:id/clarification/request", middleware.AuthMiddleware(), workflowHandler.RequestOwnerClarificationFromValidator)
-				validationCases.POST("/:id/consultation-requests/:requestId/clarification/request", middleware.AuthMiddleware(), workflowHandler.RequestOwnerClarification)
-				validationCases.POST("/:id/consultation-requests/:requestId/clarification/respond", middleware.AuthMiddleware(), workflowHandler.RespondOwnerClarification)
 				validationCases.GET("/:id/contact", middleware.AuthMiddleware(), workflowHandler.RevealContact)
 
 				validationCases.POST("/:id/final-offers", middleware.AuthMiddleware(), workflowHandler.SubmitFinalOffer)
