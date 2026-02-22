@@ -56,6 +56,19 @@ function statusStyle(statusRaw) {
   }
 }
 
+function sensitivityText(levelRaw) {
+  const level = String(levelRaw || "S1").toUpperCase().trim() || "S1";
+  const labels = {
+    S0: "Public",
+    S1: "Restricted",
+    S2: "Confidential",
+    S3: "Critical",
+  };
+
+  if (labels[level]) return `${level} ${labels[level]}`;
+  return level;
+}
+
 function StatusPill({ status }) {
   return (
     <span
@@ -116,6 +129,10 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
                     <dt className="text-muted-foreground">Filed</dt>
                     <dd className="mt-0.5 font-mono text-muted-foreground">{formatDate(vc?.created_at)}</dd>
                   </div>
+                  <div>
+                    <dt className="text-muted-foreground">Sensitivity</dt>
+                    <dd className="mt-0.5 font-mono text-foreground">{sensitivityText(vc?.sensitivity_level)}</dd>
+                  </div>
                   {showCategory ? (
                     <div className="col-span-2">
                       <dt className="text-muted-foreground">Type</dt>
@@ -152,12 +169,13 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
 
       <div className="hidden sm:block overflow-hidden rounded-[var(--radius)] border border-border bg-card">
         <div className="w-full overflow-x-auto">
-          <table className="w-full min-w-[900px] text-sm">
+          <table className="w-full min-w-[980px] text-sm">
             <thead className="bg-secondary/60 text-muted-foreground [&_th]:whitespace-nowrap">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Case</th>
                 <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Title</th>
                 <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Status</th>
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Sensitivity</th>
                 {showCategory && (
                   <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Type</th>
                 )}
@@ -169,7 +187,7 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
             <tbody className="divide-y divide-border">
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={showCategory ? 7 : 6} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={showCategory ? 8 : 7} className="px-4 py-10 text-center text-muted-foreground">
                     Tidak ada Validation Case pada indeks ini.
                   </td>
                 </tr>
@@ -206,6 +224,9 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
                       </td>
                       <td className="px-4 py-3 align-top whitespace-nowrap">
                         <StatusPill status={vc?.status} />
+                      </td>
+                      <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground whitespace-nowrap">
+                        {sensitivityText(vc?.sensitivity_level)}
                       </td>
                       {showCategory && (
                         <td className="px-4 py-3 align-top text-muted-foreground whitespace-nowrap">

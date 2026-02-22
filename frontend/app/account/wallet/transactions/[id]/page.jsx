@@ -11,6 +11,7 @@ import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
+import { PageLoadingBlock } from "@/components/ui/LoadingState";
 
 // Dispute categories matching backend
 const DISPUTE_CATEGORIES = [
@@ -281,13 +282,7 @@ export default function TransactionDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-2xl px-4 py-8 text-center text-muted-foreground">
-          Loading...
-        </div>
-      </div>
-    );
+    return <PageLoadingBlock className="min-h-screen bg-background" maxWidthClass="max-w-2xl" lines={4} />;
   }
 
   if (!transfer) {

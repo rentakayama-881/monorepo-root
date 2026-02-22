@@ -5,6 +5,7 @@ import { requireValidTokenOrThrow, readJsonSafe, throwApiError } from "@/lib/aut
 import { getApiBase } from "@/lib/api";
 import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn";
 import PasskeyList from "./PasskeyList";
+import { SectionLoadingBlock } from "./ui/LoadingState";
 
 function isWebAuthnSupported() {
   return typeof window !== "undefined" && !!(
@@ -253,9 +254,8 @@ export default function PasskeySettings() {
       )}
 
       {loading ?  (
-        <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" />
-          Loading...
+        <div className="mt-4">
+          <SectionLoadingBlock lines={2} compact srLabel="Loading passkeys" />
         </div>
       ) : (
         <>

@@ -7,6 +7,7 @@ import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
+import Skeleton from "@/components/ui/Skeleton";
 import { TagList } from "@/components/ui/TagPill";
 import ValidationCaseRecordSkeleton from "./ValidationCaseRecordSkeleton";
 import { fetchJson, fetchJsonAuth } from "@/lib/api";
@@ -1060,7 +1061,9 @@ export default function ValidationCaseRecordPage() {
                       </div>
                     ) : null}
                     {myConsultationLoading ? (
-                      <div className="text-xs text-muted-foreground">Memuat status consultation request...</div>
+                      <div className="w-44">
+                        <Skeleton className="h-3.5 w-44" />
+                      </div>
                     ) : null}
                     {consultationMsg ? <div className="text-xs text-muted-foreground">{consultationMsg}</div> : null}
 
@@ -1099,7 +1102,22 @@ export default function ValidationCaseRecordPage() {
           {isAuthed && isOwner && (status === "open" || status === "waiting_owner_response") ? (
             <CaseSection title="Consultation Requests" subtitle="Owner Review">
               {consultationLoading ? (
-                <div className="text-sm text-muted-foreground">Memuat Consultation Requests...</div>
+                <div className="rounded-[var(--radius)] border border-border bg-card p-4" aria-busy="true" aria-live="polite">
+                  <div className="grid grid-cols-6 gap-3 border-b border-border pb-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <Skeleton key={`consult-head-${i}`} className="h-3.5 w-16" />
+                    ))}
+                  </div>
+                  <div className="space-y-3 pt-3">
+                    {Array.from({ length: 3 }).map((_, row) => (
+                      <div key={`consult-row-${row}`} className="grid grid-cols-6 gap-3">
+                        {Array.from({ length: 6 }).map((__, col) => (
+                          <Skeleton key={`consult-cell-${row}-${col}`} className="h-4 w-full" />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ) : consultationRequests.length === 0 ? (
                 <div className="text-sm text-muted-foreground">Belum ada Request Consultation.</div>
               ) : (
@@ -1428,7 +1446,22 @@ export default function ValidationCaseRecordPage() {
             ) : null}
 
             {offersLoading ? (
-              <div className="text-sm text-muted-foreground">Memuat Final Offers...</div>
+              <div className="rounded-[var(--radius)] border border-border bg-card p-4" aria-busy="true" aria-live="polite">
+                <div className="grid grid-cols-6 gap-3 border-b border-border pb-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={`offer-head-${i}`} className="h-3.5 w-16" />
+                  ))}
+                </div>
+                <div className="space-y-3 pt-3">
+                  {Array.from({ length: 3 }).map((_, row) => (
+                    <div key={`offer-row-${row}`} className="grid grid-cols-6 gap-3">
+                      {Array.from({ length: 6 }).map((__, col) => (
+                        <Skeleton key={`offer-cell-${row}-${col}`} className="h-4 w-full" />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : finalOffers.length === 0 ? (
               <div className="text-sm text-muted-foreground">Belum ada Final Offer.</div>
             ) : (
@@ -1729,7 +1762,18 @@ export default function ValidationCaseRecordPage() {
                 Case Log tersedia untuk pemilik kasus dan validator yang telah disetujui.
               </div>
             ) : caseLogLoading ? (
-              <div className="text-sm text-muted-foreground">Memuat Case Log...</div>
+              <div className="space-y-4" aria-busy="true" aria-live="polite">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={`case-log-${i}`} className="relative border-l border-border pl-5">
+                    <span className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-border" aria-hidden="true" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="h-3.5 w-1/3" />
+                      <Skeleton className="h-3.5 w-3/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : caseLogError ? (
               <div className="rounded-[var(--radius)] border border-border bg-secondary/30 px-4 py-3 text-sm text-muted-foreground">
                 {caseLogError}

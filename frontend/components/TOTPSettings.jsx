@@ -8,6 +8,7 @@ import Button from "./ui/Button";
 import Alert from "./ui/Alert";
 import TOTPSetupWizard from "./TOTPSetupWizard";
 import TOTPDisableForm from "./TOTPDisableForm";
+import { SectionLoadingBlock } from "./ui/LoadingState";
 
 function TOTPSettingsContent() {
   const API = `${getApiBase()}/api`;
@@ -188,10 +189,7 @@ function TOTPSettingsContent() {
   if (loading) {
     return (
       <div className="rounded-[var(--radius)] border bg-card p-6">
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
-          <span className="text-sm text-muted-foreground">Loading 2FA settings...</span>
-        </div>
+        <SectionLoadingBlock lines={3} compact srLabel="Loading 2FA settings" />
       </div>
     );
   }
@@ -338,10 +336,7 @@ function TOTPSettingsContent() {
 function TOTPSettingsLoading() {
   return (
     <div className="rounded-[var(--radius)] border bg-card p-6">
-      <div className="flex items-center gap-2">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
-        <span className="text-sm text-muted-foreground">Loading 2FA settings...</span>
-      </div>
+      <SectionLoadingBlock lines={3} compact srLabel="Loading 2FA settings" />
     </div>
   );
 }

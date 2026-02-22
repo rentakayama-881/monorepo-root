@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LoginCredentialsForm from "@/components/auth/LoginCredentialsForm";
 import LoginTotpForm from "@/components/auth/LoginTotpForm";
+import AuthPageLoading from "@/components/auth/AuthPageLoading";
 import { fetchJson, getApiBase } from "@/lib/api";
 import { finalizeAuthSession } from "@/lib/authResponse";
 import { readJsonSafe, throwApiError } from "@/lib/authRequest";
@@ -20,13 +21,7 @@ function isWebAuthnSupported() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="auth-page-bg">
-          <div className="text-sm text-muted-foreground">Loading sign-in form...</div>
-        </div>
-      }
-    >
+    <Suspense fallback={<AuthPageLoading fullPage={false} className="auth-page-bg" message="Loading sign-in form" />}>
       <div className="auth-page-bg">
         <LoginContent />
       </div>

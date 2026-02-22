@@ -3,11 +3,12 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import AuthPageLoading from "@/components/auth/AuthPageLoading";
 import { fetchJson } from "@/lib/api";
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="text-center text-sm text-muted-foreground">Memuat...</div>}>
+    <Suspense fallback={<AuthPageLoading fullPage={false} message="Memuat reset password" />}>
       <ResetPasswordForm />
     </Suspense>
   );

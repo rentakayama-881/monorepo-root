@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { SectionLoadingBlock } from "@/components/ui/LoadingState";
 import { fetchJsonAuth } from "@/lib/api";
 
 const FINAL_STATUSES = new Set(["fulfilled", "failed"]);
@@ -105,7 +106,7 @@ export default function MarketChatGPTOrderDetailPage() {
       </header>
 
       <section className="rounded-lg border border-border bg-card p-4 space-y-4">
-        {loading ? <p className="text-sm text-muted-foreground">Loading order details...</p> : null}
+        {loading ? <SectionLoadingBlock lines={4} compact srLabel="Loading order details" /> : null}
 
         {error ? (
           <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>

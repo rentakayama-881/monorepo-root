@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { getApiBase } from "@/lib/api";
+import { SectionLoadingBlock } from "@/components/ui/LoadingState";
 
 export default function BadgeDetailPage({ params }) {
   const { id } = use(params);
@@ -17,7 +18,7 @@ export default function BadgeDetailPage({ params }) {
     return () => { cancelled = true; };
   }, [API, id]);
 
-  if (!badge) return <div className="text-sm text-muted-foreground">Loading...</div>;
+  if (!badge) return <SectionLoadingBlock lines={3} compact />;
 
   return (
     <div className="max-w-2xl">

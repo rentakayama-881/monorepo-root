@@ -11,6 +11,7 @@ import UsernameSection from "@/components/account/UsernameSection";
 import PasskeySettings from "@/components/PasskeySettings";
 import TOTPSettings from "@/components/TOTPSettings";
 import Alert from "@/components/ui/Alert";
+import { CenteredSpinner } from "@/components/ui/LoadingState";
 import { getToken } from "@/lib/auth";
 import { getApiBase } from "@/lib/api";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
@@ -487,8 +488,8 @@ function AccountPageContent() {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" /> Loading...
+        <div className="rounded-[var(--radius)] border border-border bg-card p-4">
+          <CenteredSpinner className="justify-start" sizeClass="h-5 w-5" />
         </div>
       ) : (
         <div className="space-y-6">
@@ -560,8 +561,8 @@ export default function AccountPage() {
     <Suspense
       fallback={
         <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" /> Loading...
+          <div className="rounded-[var(--radius)] border border-border bg-card p-4">
+            <CenteredSpinner className="justify-start" sizeClass="h-5 w-5" />
           </div>
         </main>
       }

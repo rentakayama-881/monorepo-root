@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import { TagList } from "@/components/ui/TagPill";
+import Skeleton from "@/components/ui/Skeleton";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
@@ -95,6 +96,59 @@ function deleteStatusHint(statusRaw) {
   return `Case status "${s}" tidak dapat dihapus.`;
 }
 
+function sensitivityText(levelRaw) {
+  const level = String(levelRaw || "S1").toUpperCase().trim() || "S1";
+  const labels = {
+    S0: "Public",
+    S1: "Restricted",
+    S2: "Confidential",
+    S3: "Critical",
+  };
+  if (labels[level]) return `${level} ${labels[level]}`;
+  return level;
+}
+
+function MyValidationCasesLoading() {
+  return (
+    <div className="space-y-3" aria-busy="true" aria-live="polite">
+      <div className="space-y-3 sm:hidden">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={`mobile-${i}`} className="rounded-[var(--radius)] border border-border bg-card p-4">
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-3.5 w-full" />
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden sm:block overflow-hidden rounded-[var(--radius)] border border-border bg-card">
+        <div className="p-4">
+          <div className="grid grid-cols-7 gap-3 border-b border-border pb-3">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Skeleton key={`head-${i}`} className="h-3.5 w-16" />
+            ))}
+          </div>
+          <div className="space-y-3 pt-3">
+            {Array.from({ length: 4 }).map((_, row) => (
+              <div key={`row-${row}`} className="grid grid-cols-7 gap-3">
+                {Array.from({ length: 7 }).map((__, col) => (
+                  <Skeleton key={`cell-${row}-${col}`} className="h-4 w-full" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MyValidationCasesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -164,9 +218,7 @@ export default function MyValidationCasesPage() {
       ) : null}
 
       {loading ? (
-        <div className="rounded-[var(--radius)] border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">
-          Memuat...
-        </div>
+        <MyValidationCasesLoading />
       ) : items.length === 0 ? (
         <div className="rounded-[var(--radius)] border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">
           Belum ada Validation Case.
@@ -213,6 +265,10 @@ export default function MyValidationCasesPage() {
                     <div>
                       <dt className="text-muted-foreground">Filed</dt>
                       <dd className="mt-0.5 font-mono text-muted-foreground">{formatDate(vc?.created_at)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Sensitivity</dt>
+                      <dd className="mt-0.5 font-mono text-foreground">{sensitivityText(vc?.sensitivity_level)}</dd>
                     </div>
                   </dl>
 
@@ -261,12 +317,13 @@ export default function MyValidationCasesPage() {
 
           <div className="hidden sm:block overflow-hidden rounded-[var(--radius)] border border-border bg-card">
             <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[900px] text-sm">
+              <table className="w-full min-w-[980px] text-sm">
                 <thead className="bg-secondary/60 text-muted-foreground [&_th]:whitespace-nowrap">
                   <tr>
                     <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Case</th>
                     <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Title</th>
                     <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Status</th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Sensitivity</th>
                     <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Bounty</th>
                     <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Filed</th>
                     <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Action</th>
@@ -304,6 +361,9 @@ export default function MyValidationCasesPage() {
                         </td>
                         <td className="px-4 py-3 align-top whitespace-nowrap">
                           <StatusPill status={vc?.status} />
+                        </td>
+                        <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground whitespace-nowrap">
+                          {sensitivityText(vc?.sensitivity_level)}
                         </td>
                         <td className="px-4 py-3 align-top font-semibold text-foreground whitespace-nowrap">
                           {formatIDR(vc?.bounty_amount)}

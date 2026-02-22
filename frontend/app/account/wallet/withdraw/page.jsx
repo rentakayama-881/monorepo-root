@@ -10,6 +10,7 @@ import {
 import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
+import { PageLoadingBlock } from "@/components/ui/LoadingState";
 
 const BANKS = [
   { code: "bca", name: "Bank Central Asia (BCA)" },
@@ -128,13 +129,7 @@ export default function WithdrawPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-md px-4 py-8 text-center text-muted-foreground">
-          Loading...
-        </div>
-      </div>
-    );
+    return <PageLoadingBlock className="min-h-screen bg-background" maxWidthClass="max-w-md" lines={4} />;
   }
 
   return (

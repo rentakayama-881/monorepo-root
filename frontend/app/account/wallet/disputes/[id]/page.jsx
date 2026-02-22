@@ -11,6 +11,7 @@ import {
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
+import { PageLoadingBlock } from "@/components/ui/LoadingState";
 
 function normalizeCurrentUser(payload) {
   return {
@@ -331,13 +332,7 @@ export default function DisputeDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-3xl px-4 py-8 text-center text-muted-foreground">
-          Loading...
-        </div>
-      </div>
-    );
+    return <PageLoadingBlock className="min-h-screen bg-background" maxWidthClass="max-w-3xl" lines={4} />;
   }
 
   if (!dispute) {

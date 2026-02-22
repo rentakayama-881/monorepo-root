@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { fetchJsonAuth } from "@/lib/api";
+import { SectionLoadingBlock } from "@/components/ui/LoadingState";
 
 const FINAL_STATUSES = new Set(["fulfilled", "failed"]);
 
@@ -54,7 +55,7 @@ export default function MyPurchasesPage() {
       </header>
 
       <section className="rounded-xl border border-border bg-card p-3">
-        {loading ? <p className="text-sm text-muted-foreground">Loading purchase history...</p> : null}
+        {loading ? <SectionLoadingBlock lines={3} compact /> : null}
 
         {error ? (
           <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">

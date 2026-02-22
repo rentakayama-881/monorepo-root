@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
+import { CenteredSpinner } from "@/components/ui/LoadingState";
 import logger from "@/lib/logger";
 import { getApiBase } from "@/lib/api";
 import { getAdminToken } from "@/lib/adminAuth";
@@ -401,9 +402,7 @@ export default function AdminDashboardPage() {
             {depositLoading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
-        {depositLoading && (
-          <p className="text-sm text-muted-foreground">Memuat deposit pending...</p>
-        )}
+        {depositLoading && <CenteredSpinner className="justify-start py-2" sizeClass="h-5 w-5" />}
         {depositError && (
           <p className="text-sm text-destructive">{depositError}</p>
         )}

@@ -10,6 +10,7 @@ import {
 } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
+import { SectionLoadingBlock } from "@/components/ui/LoadingState";
 
 function normalizeDispute(item) {
   return {
@@ -151,7 +152,7 @@ export default function DisputesPage() {
 
           {/* Disputes List */}
           {loading ? (
-            <div className="text-center py-12 text-muted-foreground">Loading...</div>
+            <SectionLoadingBlock lines={4} />
           ) : displayDisputes.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-4">🎉</div>

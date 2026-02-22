@@ -29,15 +29,15 @@ export default function ValidationCaseIndexLoading() {
 
       <div className="mt-4 overflow-x-auto rounded-[var(--radius)] border border-border bg-card">
         <div className="min-w-[860px]">
-          <div className="grid grid-cols-6 gap-4 border-b border-border bg-secondary/60 px-4 py-3">
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className="grid grid-cols-7 gap-4 border-b border-border bg-secondary/60 px-4 py-3">
+            {Array.from({ length: 7 }).map((_, i) => (
               <Skeleton key={i} className="h-4 w-32" />
             ))}
           </div>
           <div className="divide-y divide-border">
             {Array.from({ length: 8 }).map((_, row) => (
-              <div key={row} className="grid grid-cols-6 gap-4 px-4 py-4">
-                {Array.from({ length: 6 }).map((__, col) => (
+              <div key={row} className="grid grid-cols-7 gap-4 px-4 py-4">
+                {Array.from({ length: 7 }).map((__, col) => (
                   <Skeleton key={col} className="h-4 w-full" />
                 ))}
               </div>
@@ -48,4 +48,3 @@ export default function ValidationCaseIndexLoading() {
     </main>
   );
 }
-

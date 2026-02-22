@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CenteredSpinner } from "@/components/ui/LoadingState";
 import { fetchJsonAuth, getApiBase } from "@/lib/api";
 import { FEATURE_ENDPOINTS, fetchFeatureAuth, unwrapFeatureData } from "@/lib/featureApi";
 
@@ -212,7 +213,11 @@ export default function MarketChatGPTClient() {
 
       <section className="rounded-xl border border-border bg-card p-3 space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs text-muted-foreground">{loading ? "Loading listings..." : `${filtered.length} items`}</div>
+          {loading ? (
+            <CenteredSpinner className="justify-start" sizeClass="h-3.5 w-3.5" srLabel="Loading listings" />
+          ) : (
+            <div className="text-xs text-muted-foreground">{`${filtered.length} items`}</div>
+          )}
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}

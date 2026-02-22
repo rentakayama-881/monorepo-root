@@ -10,6 +10,7 @@ import {
 import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
+import { PageLoadingBlock } from "@/components/ui/LoadingState";
 
 const QRIS_IMAGE_URL =
   "https://i.ibb.co.com/TDR9Grs3/Kode-QRIS-ALEPHDRAAD-UTILITY-STACK-Elektronik-1.png";
@@ -241,13 +242,7 @@ export default function DepositPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-lg px-4 py-8 text-center text-muted-foreground">
-          Loading...
-        </div>
-      </div>
-    );
+    return <PageLoadingBlock className="min-h-screen bg-background" maxWidthClass="max-w-lg" lines={4} />;
   }
 
   return (
