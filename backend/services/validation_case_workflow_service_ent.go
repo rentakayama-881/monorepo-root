@@ -1576,37 +1576,102 @@ func (s *EntValidationCaseWorkflowService) AcceptFinalOffer(ctx context.Context,
 	}()
 
 	now := time.Now()
+	acceptApplied := false
 
-	// Mark offer accepted (pending funding confirmation).
-	if _, err := tx.FinalOffer.UpdateOneID(offer.ID).
-		SetStatus("accepted_pending_funding").
-		SetAcceptedAt(now).
-		Save(ctx); err != nil {
+	// Claim offer acceptance atomically.
+	// If another request has already accepted the same offer, treat it as idempotent success.
+	updatedCases, err := tx.ValidationCase.Update().
+		Where(
+			validationcase.IDEQ(vc.ID),
+			validationcase.UserIDEQ(int(ownerUserID)),
+			validationcase.WorkflowCycleEQ(cycle),
+			validationcase.StatusEQ(caseStatusOpen),
+			validationcase.Or(validationcase.EscrowTransferIDIsNil(), validationcase.EscrowTransferIDEQ("")),
+			validationcase.Or(validationcase.DisputeIDIsNil(), validationcase.DisputeIDEQ("")),
+			validationcase.AcceptedFinalOfferIDIsNil(),
+		).
+		SetAcceptedFinalOfferID(offer.ID).
+		SetStatus("offer_accepted").
+		Save(ctx)
+	if err != nil {
 		_ = tx.Rollback()
 		return nil, apperrors.ErrDatabase
 	}
 
-	// Remember accepted offer on the case.
-	if _, err := tx.ValidationCase.UpdateOneID(vc.ID).
-		SetAcceptedFinalOfferID(offer.ID).
-		SetStatus("offer_accepted").
-		Save(ctx); err != nil {
-		_ = tx.Rollback()
-		return nil, apperrors.ErrDatabase
+	if updatedCases == 1 {
+		updatedOffers, err := tx.FinalOffer.Update().
+			Where(
+				finaloffer.IDEQ(offer.ID),
+				finaloffer.ValidationCaseIDEQ(vc.ID),
+				finaloffer.WorkflowCycleEQ(cycle),
+				finaloffer.StatusEQ("submitted"),
+				finaloffer.AcceptedAtIsNil(),
+			).
+			SetStatus("accepted_pending_funding").
+			SetAcceptedAt(now).
+			Save(ctx)
+		if err != nil {
+			_ = tx.Rollback()
+			return nil, apperrors.ErrDatabase
+		}
+		if updatedOffers != 1 {
+			_ = tx.Rollback()
+			return nil, apperrors.ErrInvalidInput.WithDetails("Final Offer tidak lagi tersedia untuk diterima")
+		}
+		acceptApplied = true
+	} else {
+		currentCase, err := tx.ValidationCase.Query().
+			Where(validationcase.IDEQ(vc.ID)).
+			Only(ctx)
+		if err != nil {
+			_ = tx.Rollback()
+			if ent.IsNotFound(err) {
+				return nil, apperrors.ErrValidationCaseNotFound
+			}
+			return nil, apperrors.ErrDatabase
+		}
+		if currentCase.AcceptedFinalOfferID == nil || *currentCase.AcceptedFinalOfferID != offer.ID || normalizeStatus(currentCase.Status) != "offer_accepted" {
+			_ = tx.Rollback()
+			return nil, apperrors.ErrInvalidInput.WithDetails("Final Offer sudah diproses atau status kasus berubah. Muat ulang halaman lalu coba lagi.")
+		}
+
+		currentOffer, err := tx.FinalOffer.Query().
+			Where(
+				finaloffer.IDEQ(offer.ID),
+				finaloffer.ValidationCaseIDEQ(vc.ID),
+				finaloffer.WorkflowCycleEQ(cycle),
+			).
+			Only(ctx)
+		if err != nil {
+			_ = tx.Rollback()
+			if ent.IsNotFound(err) {
+				return nil, apperrors.ErrInvalidInput.WithDetails("Final Offer tidak ditemukan")
+			}
+			return nil, apperrors.ErrDatabase
+		}
+		if normalizeStatus(currentOffer.Status) != "accepted_pending_funding" {
+			_ = tx.Rollback()
+			return nil, apperrors.ErrInvalidInput.WithDetails("Final Offer sedang diproses. Silakan muat ulang halaman.")
+		}
+		if currentOffer.AcceptedAt != nil {
+			now = *currentOffer.AcceptedAt
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, apperrors.ErrDatabase
 	}
 
-	actorID := int(ownerUserID)
-	s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, "final_offer_accepted", map[string]interface{}{
-		"final_offer_id":    offer.ID,
-		"validator_user_id": offer.ValidatorUserID,
-		"amount":            offer.Amount,
-		"hold_hours":        offer.HoldHours,
-		"accepted_at_unix":  now.Unix(),
-	})
+	if acceptApplied {
+		actorID := int(ownerUserID)
+		s.appendCaseLogBestEffort(ctx, vc.ID, &actorID, "final_offer_accepted", map[string]interface{}{
+			"final_offer_id":    offer.ID,
+			"validator_user_id": offer.ValidatorUserID,
+			"amount":            offer.Amount,
+			"hold_hours":        offer.HoldHours,
+			"accepted_at_unix":  now.Unix(),
+		})
+	}
 
 	return &EscrowDraft{
 		ReceiverUsername: strings.TrimSpace(*validator.Username),

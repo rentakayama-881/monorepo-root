@@ -143,6 +143,34 @@ function formatCaseLogLoadError(err, ownerView = false) {
   return err?.message || "Case Log belum bisa dimuat saat ini.";
 }
 
+function caseLogEventLabel(eventTypeRaw) {
+  const eventType = normalizeStatus(eventTypeRaw);
+  const labels = {
+    consultation_requested: "Permintaan konsultasi diajukan.",
+    consultation_approved: "Permintaan konsultasi disetujui.",
+    consultation_rejected: "Permintaan konsultasi ditolak.",
+    owner_clarification_submitted: "Pemilik kasus memberikan klarifikasi.",
+    assumption_mode_submitted: "Asumsi kerja diajukan untuk persetujuan pemilik kasus.",
+    case_status_changed: "Status kasus diperbarui.",
+    case_resumed_from_owner_inactive: "Kasus dibuka kembali setelah respons pemilik diterima.",
+    owner_response_sla_reminder: "Pengingat respons dikirim ke pemilik kasus.",
+    owner_response_sla_expired: "Batas waktu respons pemilik kasus telah berakhir.",
+    validator_released_without_penalty: "Validator dilepas tanpa penalti.",
+    contact_revealed: "Kontak privat dibuka untuk pihak terkait.",
+    final_offer_submitted: "Final offer diajukan oleh validator.",
+    final_offer_accepted: "Final offer diterima oleh pemilik kasus.",
+    funds_locked: "Dana berhasil dikunci di escrow.",
+    artifact_submitted: "Hasil validasi telah diserahkan.",
+    escrow_released_confirmed: "Dana escrow telah dirilis.",
+    certified_artifact_issued: "Sertifikasi artefak diterbitkan.",
+    dispute_attached: "Dispute diajukan.",
+    dispute_settled: "Dispute telah diselesaikan oleh admin.",
+    workflow_cycle_incremented: "Siklus workflow dilanjutkan ke tahap berikutnya.",
+    financial_linkage_cleared: "Keterkaitan finansial sebelumnya telah dibersihkan.",
+  };
+  return labels[eventType] || "Aktivitas kasus diperbarui.";
+}
+
 function CaseSection({ title, subtitle, children }) {
   return (
     <section className="space-y-4">
@@ -210,6 +238,8 @@ export default function ValidationCaseRecordPage() {
   const [finalOfferSubmitting, setFinalOfferSubmitting] = useState(false);
   const [offerForm, setOfferForm] = useState({ hold_hours: 168, terms: "" });
   const finalOfferSubmitRef = useRef(false);
+  const [acceptingOfferId, setAcceptingOfferId] = useState(null);
+  const acceptFinalOfferRef = useRef(false);
 
   const [escrowDraft, setEscrowDraft] = useState(null);
   const [lockFundsPin, setLockFundsPin] = useState("");
@@ -686,10 +716,25 @@ export default function ValidationCaseRecordPage() {
   }
 
   async function acceptFinalOffer(offerId) {
+    if (!isAuthed) {
+      router.push("/login");
+      return;
+    }
+    const targetOfferId = Number(offerId || 0);
+    if (!Number.isFinite(targetOfferId) || targetOfferId <= 0) {
+      setOffersMsg("Final Offer tidak valid.");
+      return;
+    }
+    if (acceptFinalOfferRef.current) {
+      return;
+    }
+
+    acceptFinalOfferRef.current = true;
+    setAcceptingOfferId(targetOfferId);
     setOffersMsg("");
     try {
       const data = await fetchJsonAuth(
-        `/api/validation-cases/${encodeURIComponent(String(id))}/final-offers/${encodeURIComponent(String(offerId))}/accept`,
+        `/api/validation-cases/${encodeURIComponent(String(id))}/final-offers/${encodeURIComponent(String(targetOfferId))}/accept`,
         { method: "POST" }
       );
       const draft = data?.escrow_draft || null;
@@ -706,6 +751,9 @@ export default function ValidationCaseRecordPage() {
       await loadOwnerWorkflow();
     } catch (e) {
       setOffersMsg(e?.message || "Gagal menerima Final Offer");
+    } finally {
+      setAcceptingOfferId(null);
+      acceptFinalOfferRef.current = false;
     }
   }
 
@@ -1428,10 +1476,11 @@ export default function ValidationCaseRecordPage() {
                             {normalizeStatus(o.status) === "submitted" && !transferId && !disputeId ? (
                               <button
                                 onClick={() => acceptFinalOffer(o.id)}
-                                className="rounded-[var(--radius)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                                className="rounded-[var(--radius)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={acceptingOfferId !== null}
                                 type="button"
                               >
-                                Accept
+                                {Number(acceptingOfferId) === Number(o.id) ? "Memproses..." : "Terima"}
                               </button>
                             ) : (
                               <span className="text-xs text-muted-foreground">-</span>
@@ -1694,9 +1743,7 @@ export default function ValidationCaseRecordPage() {
                       aria-hidden="true"
                     />
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        {String(ev.event_type || "").replace(/_/g, " ")}
-                      </div>
+                      <div className="text-sm font-semibold text-foreground">{caseLogEventLabel(ev?.event_type)}</div>
                       <div className="font-mono text-xs text-muted-foreground">{formatDateTime(ev.created_at)}</div>
                     </div>
                     <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
@@ -1704,16 +1751,12 @@ export default function ValidationCaseRecordPage() {
                         <>
                           <Avatar src={ev?.actor?.avatar_url} name={ev?.actor?.username || ""} size="xs" />
                           <span className="font-semibold text-foreground">@{ev.actor.username}</span>
+                          <span>melakukan pembaruan ini.</span>
                         </>
                       ) : (
-                        <span className="text-xs text-muted-foreground">system</span>
+                        <span className="text-xs text-muted-foreground">Pembaruan otomatis oleh sistem.</span>
                       )}
                     </div>
-                    {ev?.detail ? (
-                      <pre className="mt-2 overflow-x-auto rounded-[var(--radius)] bg-secondary/20 p-3 text-xs text-muted-foreground">
-                        {safeJson(ev.detail)}
-                      </pre>
-                    ) : null}
                   </li>
                 ))}
               </ol>
