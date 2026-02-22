@@ -353,7 +353,12 @@ func main() {
 	caseHandler := handlers.NewValidationCaseHandler(caseService)
 	workflowHandler := handlers.NewValidationCaseWorkflowHandler(workflowService)
 	totpHandler := handlers.NewTOTPHandler(totpEntService)
-	passkeyHandler := handlers.NewPasskeyHandler(passkeyService, authEntService, logger.GetLogger())
+	passkeyHandler := handlers.NewPasskeyHandler(
+		passkeyService,
+		authEntService,
+		services.NewFeatureWalletClientFromConfig(),
+		logger.GetLogger(),
+	)
 	sudoHandler := handlers.NewEntSudoHandler(sudoEntService, logger.GetLogger())
 	sudoValidator := services.NewSudoValidatorAdapter(sudoEntService)
 	lztMarketClient := services.NewLZTMarketClientFromEnv()

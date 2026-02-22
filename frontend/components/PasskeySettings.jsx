@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { requireValidTokenOrThrow, readJsonSafe, throwApiError } from "@/lib/authRequest";
 import { getApiBase } from "@/lib/api";
+import {
+  fetchFeatureAuth,
+  FEATURE_ENDPOINTS,
+  unwrapFeatureData,
+} from "@/lib/featureApi";
 import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn";
 import PasskeyList from "./PasskeyList";
 import { SectionLoadingBlock } from "./ui/LoadingState";
@@ -12,6 +18,13 @@ function isWebAuthnSupported() {
     window.PublicKeyCredential &&
     typeof window.PublicKeyCredential === "function"
   );
+}
+
+function normalizePinStatus(payload) {
+  const data = unwrapFeatureData(payload) || {};
+  const pinSetRaw =
+    data.pinSet ?? data.PinSet ?? data.pin_set ?? data.hasPin ?? data.has_pin ?? false;
+  return Boolean(pinSetRaw);
 }
 
 const PasskeyIcon = (
@@ -33,6 +46,7 @@ const PlusIcon = (
 );
 
 export default function PasskeySettings() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [passkeys, setPasskeys] = useState([]);
   const [error, setError] = useState("");
@@ -81,6 +95,13 @@ export default function PasskeySettings() {
     setSuccess("");
 
     try {
+      const pinStatus = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.PIN_STATUS);
+      const hasPin = normalizePinStatus(pinStatus);
+      if (!hasPin) {
+        router.push("/account/wallet/set-pin?redirect=passkey");
+        return;
+      }
+
       const token = await requireValidTokenOrThrow();
 
       const beginRes = await fetch(`${API}/register/begin`, {
@@ -143,6 +164,11 @@ export default function PasskeySettings() {
       setSuccess("Passkey registered successfully!");
       await fetchPasskeys();
     } catch (err) {
+      if (err?.code === "PIN_REQUIRED") {
+        router.push("/account/wallet/set-pin?redirect=passkey");
+        return;
+      }
+
       if (err.name === "NotAllowedError") {
         setError("Registration was canceled atau tidak diizinkan");
       } else if (err.name === "InvalidStateError") {

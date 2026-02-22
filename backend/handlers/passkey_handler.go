@@ -2,13 +2,15 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"backend-gin/dto"
 	"backend-gin/ent"
-	"backend-gin/errors"
+	apperrors "backend-gin/errors"
 	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
@@ -16,25 +18,95 @@ import (
 	"go.uber.org/zap"
 )
 
+type passkeyService interface {
+	GetPasskeyCount(ctx context.Context, userID int) (int, error)
+	ListPasskeys(ctx context.Context, userID int) ([]*ent.Passkey, error)
+	BeginRegistration(ctx context.Context, userID int) (*protocol.CredentialCreation, string, error)
+	FinishRegistration(ctx context.Context, userID int, sessionID string, name string, response *protocol.ParsedCredentialCreationData) (*ent.Passkey, error)
+	DeletePasskey(ctx context.Context, userID int, passkeyID int) error
+	RenamePasskey(ctx context.Context, userID int, passkeyID int, newName string) error
+	HasPasskeysByEmail(ctx context.Context, email string) (bool, error)
+	BeginLogin(ctx context.Context, email string) (*protocol.CredentialAssertion, string, error)
+	BeginDiscoverableLogin() (*protocol.CredentialAssertion, string, error)
+	FinishLogin(ctx context.Context, email string, sessionID string, response *protocol.ParsedCredentialAssertionData) (*ent.User, error)
+	FinishDiscoverableLogin(ctx context.Context, sessionID string, response *protocol.ParsedCredentialAssertionData) (*ent.User, error)
+}
+
+type passkeyAuthService interface {
+	LoginWithPasskey(ctx context.Context, u *ent.User, ipAddress, userAgent, deviceFingerprint string) (*services.LoginResponse, error)
+}
+
+type passkeyWalletStatusClient interface {
+	GetPinStatus(ctx context.Context, authHeader string) (*services.FeaturePinStatusResult, error)
+}
+
 type PasskeyHandler struct {
-	passkeyService *services.EntPasskeyService
-	authService    *services.EntAuthService
+	passkeyService passkeyService
+	authService    passkeyAuthService
+	walletClient   passkeyWalletStatusClient
 	logger         *zap.Logger
 }
 
-func NewPasskeyHandler(passkeyService *services.EntPasskeyService, authService *services.EntAuthService, logger *zap.Logger) *PasskeyHandler {
+func NewPasskeyHandler(passkeyService *services.EntPasskeyService, authService *services.EntAuthService, walletClient *services.FeatureWalletClient, logger *zap.Logger) *PasskeyHandler {
 	return &PasskeyHandler{
 		passkeyService: passkeyService,
 		authService:    authService,
+		walletClient:   walletClient,
 		logger:         logger,
 	}
+}
+
+func (h *PasskeyHandler) ensurePinSetForPasskeyRegistration(c *gin.Context, userID uint) bool {
+	if h.walletClient == nil {
+		h.logger.Error("Passkey PIN guard is not configured", zap.Uint("user_id", userID))
+		appErr := apperrors.NewAppError(
+			"PASSKEY_SECURITY_CHECK_UNAVAILABLE",
+			"Tidak dapat memverifikasi status keamanan PIN saat ini. Silakan coba lagi.",
+			http.StatusServiceUnavailable,
+		)
+		c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
+		return false
+	}
+
+	authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
+		return false
+	}
+
+	status, err := h.walletClient.GetPinStatus(c.Request.Context(), authHeader)
+	if err != nil {
+		h.logger.Warn("Failed to validate PIN status before passkey registration",
+			zap.Uint("user_id", userID),
+			zap.Error(err),
+		)
+		appErr := apperrors.NewAppError(
+			"PASSKEY_SECURITY_CHECK_UNAVAILABLE",
+			"Tidak dapat memverifikasi status keamanan PIN saat ini. Silakan coba lagi.",
+			http.StatusServiceUnavailable,
+		)
+		c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
+		return false
+	}
+
+	if status == nil || !status.PinSet {
+		appErr := apperrors.NewAppError(
+			"PIN_REQUIRED",
+			"Anda harus membuat PIN transaksi terlebih dahulu sebelum menambahkan passkey.",
+			http.StatusForbidden,
+		)
+		c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
+		return false
+	}
+
+	return true
 }
 
 // GetStatus returns passkey status for current user
 func (h *PasskeyHandler) GetStatus(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
+		c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
 		return
 	}
 
@@ -55,7 +127,7 @@ func (h *PasskeyHandler) GetStatus(c *gin.Context) {
 func (h *PasskeyHandler) ListPasskeys(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
+		c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
 		return
 	}
 
@@ -87,7 +159,11 @@ func (h *PasskeyHandler) ListPasskeys(c *gin.Context) {
 func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
+		c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
+		return
+	}
+
+	if !h.ensurePinSetForPasskeyRegistration(c, userID) {
 		return
 	}
 
@@ -108,7 +184,11 @@ func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
+		c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
+		return
+	}
+
+	if !h.ensurePinSetForPasskeyRegistration(c, userID) {
 		return
 	}
 
@@ -168,7 +248,7 @@ func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 func (h *PasskeyHandler) DeletePasskey(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
+		c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
 		return
 	}
 
@@ -192,7 +272,7 @@ func (h *PasskeyHandler) DeletePasskey(c *gin.Context) {
 func (h *PasskeyHandler) RenamePasskey(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, errors.ErrorResponse(errors.ErrUnauthorized))
+		c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
 		return
 	}
 

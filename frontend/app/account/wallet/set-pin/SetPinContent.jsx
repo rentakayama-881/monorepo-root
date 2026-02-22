@@ -119,6 +119,8 @@ export default function SetPinContent() {
         router.push("/account/wallet/send");
       } else if (redirect === "deposit") {
         router.push("/account/wallet/deposit");
+      } else if (redirect === "passkey") {
+        router.push("/account?focus=passkeys");
       } else {
         router.push("/account/wallet/transactions?success=pin");
       }

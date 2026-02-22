@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AvatarSection from "@/components/account/AvatarSection";
 import BadgesSection from "@/components/account/BadgesSection";
@@ -52,6 +52,7 @@ function normalizeTelegramAuth(value = {}) {
 function AccountPageContent() {
   const searchParams = useSearchParams();
   const setup2fa = searchParams.get("setup2fa");
+  const focus = searchParams.get("focus");
   const apiBase = `${getApiBase()}/api`;
 
   const authed = useMemo(() => {
@@ -95,6 +96,8 @@ function AccountPageContent() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaveMessage, setProfileSaveMessage] = useState("");
   const [savedProfileSignature, setSavedProfileSignature] = useState(JSON.stringify(normalizeAccountPayload({}, [])));
+  const passkeySectionRef = useRef(null);
+  const [highlightPasskeySection, setHighlightPasskeySection] = useState(false);
 
   const profilePayload = useMemo(() => normalizeAccountPayload(form, socials), [form, socials]);
   const profilePayloadSignature = useMemo(() => JSON.stringify(profilePayload), [profilePayload]);
@@ -215,6 +218,23 @@ function AccountPageContent() {
     loadWalletAndGuarantee();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authed, featureBase]);
+
+  useEffect(() => {
+    if (focus !== "passkeys" || loading) return;
+    if (!passkeySectionRef.current) return;
+
+    passkeySectionRef.current.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    setHighlightPasskeySection(true);
+
+    const timeoutId = window.setTimeout(() => {
+      setHighlightPasskeySection(false);
+    }, 2000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [focus, loading]);
 
   async function submitSetGuarantee(event) {
     event.preventDefault();
@@ -569,7 +589,17 @@ function AccountPageContent() {
           <UsernameSection username={username} />
 
           <TOTPSettings />
-          <PasskeySettings />
+          <div
+            id="passkey-settings"
+            ref={passkeySectionRef}
+            className={`rounded-[var(--radius)] transition-shadow duration-300 ${
+              highlightPasskeySection
+                ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
+                : ""
+            }`}
+          >
+            <PasskeySettings />
+          </div>
           <DeleteAccountSection apiBase={apiBase} />
         </div>
       )}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -20,6 +21,14 @@ type FeatureWalletClient struct {
 type FeatureWalletBalanceResult struct {
 	UserID  uint  `json:"userId"`
 	Balance int64 `json:"balance"`
+}
+
+type FeaturePinStatusResult struct {
+	PinSet         bool       `json:"pinSet"`
+	IsLocked       bool       `json:"isLocked"`
+	LockedUntil    *time.Time `json:"lockedUntil"`
+	FailedAttempts int        `json:"failedAttempts"`
+	MaxAttempts    int        `json:"maxAttempts"`
 }
 
 type featureApiEnvelope[T any] struct {
@@ -91,6 +100,50 @@ func (c *FeatureWalletClient) GetMyWalletBalance(ctx context.Context, authHeader
 	return &parsed.Data, nil
 }
 
+func (c *FeatureWalletClient) GetPinStatus(ctx context.Context, authHeader string) (*FeaturePinStatusResult, error) {
+	if c == nil || c.baseURL == "" {
+		return nil, fmt.Errorf("feature wallet client is not configured")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v1/wallets/pin/status", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+	if strings.TrimSpace(authHeader) != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		return nil, parseFeatureWalletError(resp.StatusCode, body)
+	}
+
+	// Wallet PIN status endpoint can be returned either in a wrapped envelope
+	// or as raw JSON object depending on deployment/version.
+	var wrapped featureApiEnvelope[FeaturePinStatusResult]
+	if err := json.Unmarshal(body, &wrapped); err == nil && wrapped.Success {
+		return &wrapped.Data, nil
+	}
+
+	var raw FeaturePinStatusResult
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("failed to decode pin status response: %w", err)
+	}
+
+	return &raw, nil
+}
+
 func (c *FeatureWalletClient) CaptureMarketPurchase(ctx context.Context, authHeader, orderID string) (*FeatureMarketWalletResult, error) {
 	payload := map[string]interface{}{
 		"orderId": orderID,
@@ -146,4 +199,27 @@ func (c *FeatureWalletClient) postMarketWallet(ctx context.Context, authHeader, 
 	}
 
 	return &parsed.Data, nil
+}
+
+func parseFeatureWalletError(statusCode int, body []byte) error {
+	var wrapped featureApiEnvelope[json.RawMessage]
+	if err := json.Unmarshal(body, &wrapped); err == nil {
+		if wrapped.Error != nil && strings.TrimSpace(wrapped.Error.Message) != "" {
+			return fmt.Errorf("%s", wrapped.Error.Message)
+		}
+	}
+
+	var generic map[string]interface{}
+	if err := json.Unmarshal(body, &generic); err == nil {
+		if msg, ok := generic["message"].(string); ok && strings.TrimSpace(msg) != "" {
+			return fmt.Errorf("%s", msg)
+		}
+		if errObj, ok := generic["error"].(map[string]interface{}); ok {
+			if msg, ok := errObj["message"].(string); ok && strings.TrimSpace(msg) != "" {
+				return fmt.Errorf("%s", msg)
+			}
+		}
+	}
+
+	return fmt.Errorf("feature wallet request failed with status %d", statusCode)
 }
