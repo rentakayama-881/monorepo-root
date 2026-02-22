@@ -114,12 +114,6 @@ export const FEATURE_ENDPOINTS = {
   // Health
   HEALTH: "/api/v1/health",
 
-  // Reports
-  REPORTS: {
-    CREATE: "/api/v1/reports",
-    REASONS: "/api/v1/reports/reasons",
-  },
-
   // Documents
   DOCUMENTS: {
     LIST: "/api/v1/documents",
@@ -175,8 +169,6 @@ export const FEATURE_ENDPOINTS = {
   // Admin Moderation
   ADMIN: {
     DASHBOARD: "/api/v1/admin/moderation/dashboard",
-    REPORTS: "/api/v1/admin/moderation/reports",
-    REPORT_ACTION: (id) => `/api/v1/admin/moderation/reports/${id}/action`,
     DEVICE_BANS: "/api/v1/admin/moderation/device-bans",
     DEVICE_BAN_DETAIL: (id) => `/api/v1/admin/moderation/device-bans/${id}`,
     WARNINGS: (userId) => `/api/v1/admin/moderation/users/${userId}/warnings`,

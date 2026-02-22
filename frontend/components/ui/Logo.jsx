@@ -59,7 +59,6 @@ export function Logo({
       {showText && (
         <span
           className={`leading-none font-bold tracking-tight ${textSizeClass}`}
-          style={{ fontFamily: 'var(--font-aref-ruqaa), serif' }}
         >
           {text}
         </span>
@@ -84,6 +83,4 @@ export function Logo({
   return <span className={baseClassName}>{content}</span>;
 }
 
-// Named export untuk kompatibilitas
-export const LogoSVG = Logo;
 export default Logo;

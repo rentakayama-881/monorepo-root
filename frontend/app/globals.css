@@ -334,25 +334,6 @@
   --warning-foreground: oklch(0.205 0 0);
   --error: oklch(0.577 0.245 27.325);
 
-  /* ===== Legacy token mappings (biar hljs & bagian lama aman) ===== */
-  --bg: 255, 255, 255;
-  --fg: 40, 42, 72;          /* Space Indigo #282A48 */
-  --surface: 255, 255, 255;
-  --surface-2: 246, 248, 250;
-
-  /* Brand: pakai Space Indigo supaya konsisten */
-  --brand: 40, 42, 72;       /* #282A48 */
-  --brand-2: 196, 78, 151;   /* Fuchsia Plum #C44E97 */
-
-  --skeleton: 208, 215, 222;
-  --muted-2: 110, 118, 129;
-
-  --success-bg: 240, 253, 244;
-  --success-border: 187, 247, 208;
-  --error-bg: 254, 242, 242;
-  --error-border: 254, 202, 202;
-  --warning-bg: 254, 252, 232;
-  --warning-border: 254, 240, 138;
   }
 
 
