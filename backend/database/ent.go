@@ -237,6 +237,109 @@ func applyWorkflowCycleMigrations(ctx context.Context, db *sql.DB) error {
 	return tx.Commit()
 }
 
+// applyWorkflowCyclePreSchemaCleanup prepares legacy data before Ent tries to create
+// unique workflow_cycle indexes. This prevents startup crash loops on historical duplicates.
+func applyWorkflowCyclePreSchemaCleanup(ctx context.Context, db *sql.DB) error {
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	validationCasesExists, err := tableExists(ctx, tx, "validation_cases")
+	if err != nil {
+		return err
+	}
+	if validationCasesExists {
+		if _, err := tx.ExecContext(ctx, `ALTER TABLE validation_cases ADD COLUMN IF NOT EXISTS workflow_cycle INTEGER NOT NULL DEFAULT 1`); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE validation_cases SET workflow_cycle = 1 WHERE workflow_cycle < 1`); err != nil {
+			return err
+		}
+	}
+
+	consultationRequestsExists, err := tableExists(ctx, tx, "consultation_requests")
+	if err != nil {
+		return err
+	}
+	if consultationRequestsExists {
+		if _, err := tx.ExecContext(ctx, `ALTER TABLE consultation_requests ADD COLUMN IF NOT EXISTS workflow_cycle INTEGER NOT NULL DEFAULT 1`); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE consultation_requests SET workflow_cycle = 1 WHERE workflow_cycle < 1`); err != nil {
+			return err
+		}
+
+		res, err := tx.ExecContext(ctx, `
+			WITH ranked AS (
+				SELECT
+					cr.id,
+					ROW_NUMBER() OVER (
+						PARTITION BY cr.validation_case_id, cr.validator_user_id, cr.workflow_cycle
+						ORDER BY cr.created_at DESC, cr.id DESC
+					) AS rn
+				FROM consultation_requests cr
+			)
+			DELETE FROM consultation_requests cr
+			USING ranked r
+			WHERE cr.id = r.id
+			  AND r.rn > 1
+		`)
+		if err != nil {
+			return err
+		}
+		if deleted, _ := res.RowsAffected(); deleted > 0 {
+			logger.Warn("Deduplicated consultation_requests before schema migration", zap.Int64("rows_deleted", deleted))
+		}
+	}
+
+	finalOffersExists, err := tableExists(ctx, tx, "final_offers")
+	if err != nil {
+		return err
+	}
+	if finalOffersExists {
+		if _, err := tx.ExecContext(ctx, `ALTER TABLE final_offers ADD COLUMN IF NOT EXISTS workflow_cycle INTEGER NOT NULL DEFAULT 1`); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE final_offers SET workflow_cycle = 1 WHERE workflow_cycle < 1`); err != nil {
+			return err
+		}
+
+		// Keep the accepted final offer if linked from validation_cases; otherwise keep newest row.
+		res, err := tx.ExecContext(ctx, `
+			WITH ranked AS (
+				SELECT
+					fo.id,
+					ROW_NUMBER() OVER (
+						PARTITION BY fo.validation_case_id, fo.validator_user_id, fo.workflow_cycle
+						ORDER BY
+							CASE
+								WHEN vc.accepted_final_offer_id = fo.id THEN 0
+								ELSE 1
+							END ASC,
+							fo.created_at DESC,
+							fo.id DESC
+					) AS rn
+				FROM final_offers fo
+				LEFT JOIN validation_cases vc ON vc.id = fo.validation_case_id
+			)
+			DELETE FROM final_offers fo
+			USING ranked r
+			WHERE fo.id = r.id
+			  AND r.rn > 1
+		`)
+		if err != nil {
+			return err
+		}
+		if deleted, _ := res.RowsAffected(); deleted > 0 {
+			logger.Warn("Deduplicated final_offers before schema migration", zap.Int64("rows_deleted", deleted))
+		}
+	}
+
+	return tx.Commit()
+}
+
 // InitEntDB initializes the Ent client and SQL DB connection.
 func InitEntDB() {
 	// Prefer DATABASE_URL (recommended for Neon)
@@ -313,6 +416,12 @@ func InitEntDB() {
 	defer renameCancel()
 	if err := applyDomainRenames(renameCtx, db); err != nil {
 		logger.Warn("Skipping domain rename migration on startup", zap.Error(err))
+	}
+
+	preSchemaCtx, preSchemaCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer preSchemaCancel()
+	if err := applyWorkflowCyclePreSchemaCleanup(preSchemaCtx, db); err != nil {
+		logger.Fatal("Failed to prepare workflow cycle migrations", zap.Error(err))
 	}
 
 	SQLDB = db

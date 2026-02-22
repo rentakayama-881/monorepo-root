@@ -102,12 +102,21 @@ restart_first_available_unit() {
 copy_tree() {
   local source_dir="$1"
   local target_dir="$2"
+  local preserve_env="${3:-false}"
 
   if command -v rsync >/dev/null 2>&1; then
-    run_as_root rsync -a --delete "${source_dir}/" "${target_dir}/"
+    if [[ "$preserve_env" == "true" ]]; then
+      run_as_root rsync -a --delete --exclude '.env' "${source_dir}/" "${target_dir}/"
+    else
+      run_as_root rsync -a --delete "${source_dir}/" "${target_dir}/"
+    fi
   else
     run_as_root mkdir -p "$target_dir"
-    run_as_root find "$target_dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+    if [[ "$preserve_env" == "true" ]]; then
+      run_as_root find "$target_dir" -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +
+    else
+      run_as_root find "$target_dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+    fi
     run_as_root cp -a "${source_dir}/." "$target_dir/"
   fi
 }
@@ -171,7 +180,10 @@ if [[ "$DEPLOY_FEATURE" -eq 1 ]]; then
 
   run_as_root mkdir -p "$FEATURE_DEPLOY_DIR"
   run_step "backup feature-service artifacts" run_as_root cp -a "$FEATURE_DEPLOY_DIR" "$feature_backup_dir"
-  run_step "sync feature-service artifacts" copy_tree "$tmp_dir/feature-publish" "$FEATURE_DEPLOY_DIR"
+  run_step "sync feature-service artifacts" copy_tree "$tmp_dir/feature-publish" "$FEATURE_DEPLOY_DIR" true
+  if ! run_as_root test -f "$FEATURE_DEPLOY_DIR/.env"; then
+    die "Feature-service environment file missing at $FEATURE_DEPLOY_DIR/.env after sync."
+  fi
 fi
 
 if [[ "$DEPLOY_BACKEND" -eq 1 ]]; then
