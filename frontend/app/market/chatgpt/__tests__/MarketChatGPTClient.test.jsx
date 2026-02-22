@@ -77,10 +77,11 @@ describe("MarketChatGPTClient", () => {
 
     expect(mockFetchFeatureAuth).toHaveBeenCalledWith("/api/v1/wallets/me");
 
-    const modalTitle = await screen.findByText("Insufficient balance");
-    expect(modalTitle).toBeInTheDocument();
-    expect(screen.getByText("Your balance is insufficient.")).toBeInTheDocument();
+    expect(await screen.findByText("Your balance is insufficient.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Refresh listings" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
+    expect(screen.queryByText("Insufficient balance")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Close modal")).not.toBeInTheDocument();
   });
 
   it("refreshes listings from modal action and closes modal on success", async () => {
@@ -90,7 +91,7 @@ describe("MarketChatGPTClient", () => {
     render(<MarketChatGPTClient />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Buy" }));
-    await screen.findByText("Insufficient balance");
+    await screen.findByText("Your balance is insufficient.");
 
     fireEvent.click(screen.getByRole("button", { name: "Refresh listings" }));
 
@@ -99,7 +100,27 @@ describe("MarketChatGPTClient", () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText("Insufficient balance")).not.toBeInTheDocument();
+      expect(screen.queryByText("Your balance is insufficient.")).not.toBeInTheDocument();
+    });
+  });
+
+  it("uses sidebar-style overlay and allows explicit close", async () => {
+    mockFetchFeatureAuth.mockResolvedValue({ data: { balance: 0 } });
+    mockUnwrapFeatureData.mockReturnValue({ balance: 0 });
+
+    render(<MarketChatGPTClient />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Buy" }));
+    await screen.findByText("Your balance is insufficient.");
+
+    const overlay = screen.getByTestId("checkout-feedback-overlay");
+    expect(overlay).toHaveClass("bg-black/50");
+    expect(overlay).not.toHaveClass("backdrop-blur-md");
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Your balance is insufficient.")).not.toBeInTheDocument();
     });
   });
 
@@ -121,6 +142,6 @@ describe("MarketChatGPTClient", () => {
       expect(pushMock).toHaveBeenCalledWith("/market/chatgpt/orders/order%2F123");
     });
 
-    expect(screen.queryByText("Checkout failed")).not.toBeInTheDocument();
+    expect(screen.queryByText("Your balance is insufficient.")).not.toBeInTheDocument();
   });
 });

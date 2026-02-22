@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CenteredSpinner } from "@/components/ui/LoadingState";
-import Modal from "@/components/ui/Modal";
 import { fetchJsonAuth, getApiBase } from "@/lib/api";
 import { FEATURE_ENDPOINTS, fetchFeatureAuth, unwrapFeatureData } from "@/lib/featureApi";
 
@@ -110,12 +109,9 @@ function toCheckoutFeedback(message) {
   const normalized = normalizeCheckoutErrorMessage(message);
   const lower = normalized.toLowerCase();
   const isUnavailable = lower.includes("unavailable") || lower.includes("not available");
-  const isInsufficient = lower.includes("insufficient");
   const variant = isUnavailable ? "warning" : "error";
-  const title = isUnavailable ? "Account unavailable" : isInsufficient ? "Insufficient balance" : "Checkout failed";
 
   return {
-    title,
     message: normalized,
     variant,
   };
@@ -238,7 +234,6 @@ export default function MarketChatGPTClient() {
       setCheckoutFeedback(null);
     } else {
       setCheckoutFeedback({
-        title: "Unable to refresh listings",
         message: result.error || "Unable to load marketplace listings.",
         variant: "error",
       });
@@ -415,6 +410,28 @@ function SpecDrawer({ item, onClose }) {
 }
 
 function CheckoutFeedbackModal({ feedback, onClose, onRefresh, refreshing }) {
+  useEffect(() => {
+    if (!feedback) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [feedback]);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose?.();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [feedback, onClose]);
+
   if (!feedback) return null;
 
   const toneClass =
@@ -422,42 +439,41 @@ function CheckoutFeedbackModal({ feedback, onClose, onRefresh, refreshing }) {
       ? "border-warning/30 bg-warning/10 text-warning"
       : "border-destructive/30 bg-destructive/10 text-destructive";
 
-  const iconPath =
-    feedback.variant === "warning"
-      ? "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-      : "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z";
-
   return (
-    <Modal open={Boolean(feedback)} onClose={onClose} title={feedback.title} size="sm">
-      <div className="space-y-4">
-        <div className={`rounded-md border px-3 py-2.5 text-sm ${toneClass}`}>
-          <div className="flex items-start gap-2">
-            <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconPath} />
-            </svg>
+    <>
+      <button
+        type="button"
+        aria-label="Close checkout feedback"
+        data-testid="checkout-feedback-overlay"
+        className="fixed inset-0 z-[100] bg-black/50 transition-opacity duration-300"
+        onClick={onClose}
+      />
+      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div className="w-full max-w-sm rounded-xl border border-border bg-card p-3.5 shadow-[0_14px_28px_rgba(0,0,0,0.18)]">
+          <div className={`rounded-md border px-3 py-2.5 text-sm ${toneClass}`}>
             <p className="leading-relaxed">{feedback.message}</p>
           </div>
-        </div>
 
-        <div className="flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40"
-          >
-            Close
-          </button>
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={refreshing}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
-          >
-            {refreshing ? "Refreshing..." : "Refresh listings"}
-          </button>
+          <div className="mt-3 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing}
+              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+            >
+              {refreshing ? "Refreshing..." : "Refresh listings"}
+            </button>
+          </div>
         </div>
       </div>
-    </Modal>
+    </>
   );
 }
 
