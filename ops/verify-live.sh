@@ -65,6 +65,9 @@ verify_sha_match() {
   local live_sha
   live_sha="$(extract_json_field "git_sha" "$version_payload")"
   if [[ -z "$live_sha" ]]; then
+    live_sha="$(extract_json_field "gitSha" "$version_payload")"
+  fi
+  if [[ -z "$live_sha" ]]; then
     live_sha="$(extract_json_field "version" "$version_payload")"
   fi
 
