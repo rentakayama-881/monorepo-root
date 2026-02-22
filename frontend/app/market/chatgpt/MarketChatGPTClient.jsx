@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CenteredSpinner } from "@/components/ui/LoadingState";
+import Modal from "@/components/ui/Modal";
 import { fetchJsonAuth, getApiBase } from "@/lib/api";
 import { FEATURE_ENDPOINTS, fetchFeatureAuth, unwrapFeatureData } from "@/lib/featureApi";
 
@@ -105,52 +106,79 @@ function normalizeCheckoutErrorMessage(message) {
   return raw || "Unable to continue checkout at the moment.";
 }
 
+function toCheckoutFeedback(message) {
+  const normalized = normalizeCheckoutErrorMessage(message);
+  const lower = normalized.toLowerCase();
+  const isUnavailable = lower.includes("unavailable") || lower.includes("not available");
+  const isInsufficient = lower.includes("insufficient");
+  const variant = isUnavailable ? "warning" : "error";
+  const title = isUnavailable ? "Account unavailable" : isInsufficient ? "Insufficient balance" : "Checkout failed";
+
+  return {
+    title,
+    message: normalized,
+    variant,
+  };
+}
+
 export default function MarketChatGPTClient() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState("");
-  const [error, setError] = useState("");
+  const [listingError, setListingError] = useState("");
+  const [checkoutFeedback, setCheckoutFeedback] = useState(null);
+  const [refreshingListings, setRefreshingListings] = useState(false);
   const [query, setQuery] = useState("");
   const [response, setResponse] = useState(null);
   const [drawerItem, setDrawerItem] = useState(null);
+  const isMountedRef = useRef(false);
 
   const apiBase = useMemo(() => getApiBase(), []);
 
   useEffect(() => {
-    let cancelled = false;
-    let timer = null;
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-    async function load(isInitial = false) {
-      if (isInitial) {
+  const loadListings = useCallback(
+    async ({ initial = false, silent = false } = {}) => {
+      if (initial && isMountedRef.current) {
         setLoading(true);
       }
       try {
         const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US`, { method: "GET" });
         const data = await parseApiResponseSafe(res);
         if (!res.ok) throw new Error(data?.error || "Unable to load marketplace listings.");
-        if (!cancelled) {
+        if (isMountedRef.current) {
           setResponse(data);
-          setError("");
+          setListingError("");
         }
+        return { ok: true };
       } catch (err) {
-        if (!cancelled && isInitial) {
-          setError(err?.message || "Unable to load marketplace listings.");
+        const nextError = err?.message || "Unable to load marketplace listings.";
+        if (isMountedRef.current && (initial || !silent)) {
+          setListingError(nextError);
         }
+        return { ok: false, error: nextError };
       } finally {
-        if (!cancelled && isInitial) setLoading(false);
+        if (initial && isMountedRef.current) setLoading(false);
       }
-    }
+    },
+    [apiBase]
+  );
 
-    load(true);
-    timer = setInterval(() => {
-      load(false);
+  useEffect(() => {
+    void loadListings({ initial: true });
+    const timer = setInterval(() => {
+      void loadListings({ initial: false, silent: true });
     }, 8000);
 
     return () => {
-      cancelled = true;
-      if (timer) clearInterval(timer);
+      clearInterval(timer);
     };
-  }, [apiBase]);
+  }, [loadListings]);
 
   const accounts = useMemo(() => {
     const list = extractList(response?.json);
@@ -167,11 +195,11 @@ export default function MarketChatGPTClient() {
 
   async function handleCheckout(itemID, canBuy) {
     if (!canBuy) {
-      setError("This item is not available for purchase right now. Please refresh the listing.");
+      setCheckoutFeedback(toCheckoutFeedback("This item is not available for purchase right now. Please refresh the listing."));
       return;
     }
     setCheckingOut(itemID);
-    setError("");
+    setCheckoutFeedback(null);
     try {
       // Hard stop on client side for zero/insufficient balance before checkout request.
       const walletPayload = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
@@ -190,11 +218,33 @@ export default function MarketChatGPTClient() {
       if (!orderID) throw new Error("The order was created, but the order ID is missing.");
       router.push(`/market/chatgpt/orders/${encodeURIComponent(orderID)}`);
     } catch (err) {
-      setError(normalizeCheckoutErrorMessage(err?.message));
+      setCheckoutFeedback(toCheckoutFeedback(err?.message));
     } finally {
       setCheckingOut("");
     }
   }
+
+  const handleRefreshListings = useCallback(async () => {
+    if (isMountedRef.current) {
+      setRefreshingListings(true);
+    }
+
+    const result = await loadListings({ initial: true });
+    if (!isMountedRef.current) {
+      return;
+    }
+
+    if (result.ok) {
+      setCheckoutFeedback(null);
+    } else {
+      setCheckoutFeedback({
+        title: "Unable to refresh listings",
+        message: result.error || "Unable to load marketplace listings.",
+        variant: "error",
+      });
+    }
+    setRefreshingListings(false);
+  }, [loadListings]);
 
   const cachedBadge = response?.cached ? "cached" : "live";
   const staleBadge = response?.stale ? "stale" : "";
@@ -226,8 +276,8 @@ export default function MarketChatGPTClient() {
           />
         </div>
 
-        {error ? (
-          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">{error}</div>
+        {listingError ? (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">{listingError}</div>
         ) : null}
 
         {loading ? (
@@ -297,6 +347,12 @@ export default function MarketChatGPTClient() {
       </section>
 
       <SpecDrawer item={drawerItem} onClose={() => setDrawerItem(null)} />
+      <CheckoutFeedbackModal
+        feedback={checkoutFeedback}
+        onClose={() => setCheckoutFeedback(null)}
+        onRefresh={handleRefreshListings}
+        refreshing={refreshingListings}
+      />
     </div>
   );
 }
@@ -355,6 +411,53 @@ function SpecDrawer({ item, onClose }) {
         </div>
       </aside>
     </>
+  );
+}
+
+function CheckoutFeedbackModal({ feedback, onClose, onRefresh, refreshing }) {
+  if (!feedback) return null;
+
+  const toneClass =
+    feedback.variant === "warning"
+      ? "border-warning/30 bg-warning/10 text-warning"
+      : "border-destructive/30 bg-destructive/10 text-destructive";
+
+  const iconPath =
+    feedback.variant === "warning"
+      ? "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+      : "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z";
+
+  return (
+    <Modal open={Boolean(feedback)} onClose={onClose} title={feedback.title} size="sm">
+      <div className="space-y-4">
+        <div className={`rounded-md border px-3 py-2.5 text-sm ${toneClass}`}>
+          <div className="flex items-start gap-2">
+            <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconPath} />
+            </svg>
+            <p className="leading-relaxed">{feedback.message}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={refreshing}
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+          >
+            {refreshing ? "Refreshing..." : "Refresh listings"}
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
