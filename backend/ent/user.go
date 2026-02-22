@@ -45,6 +45,20 @@ type User struct {
 	Company string `json:"company,omitempty"`
 	// Telegram holds the value of the "telegram" field.
 	Telegram string `json:"telegram,omitempty"`
+	// TelegramAuthUserID holds the value of the "telegram_auth_user_id" field.
+	TelegramAuthUserID *int64 `json:"telegram_auth_user_id,omitempty"`
+	// TelegramAuthUsername holds the value of the "telegram_auth_username" field.
+	TelegramAuthUsername string `json:"telegram_auth_username,omitempty"`
+	// TelegramAuthFirstName holds the value of the "telegram_auth_first_name" field.
+	TelegramAuthFirstName string `json:"telegram_auth_first_name,omitempty"`
+	// TelegramAuthLastName holds the value of the "telegram_auth_last_name" field.
+	TelegramAuthLastName string `json:"telegram_auth_last_name,omitempty"`
+	// TelegramAuthPhotoURL holds the value of the "telegram_auth_photo_url" field.
+	TelegramAuthPhotoURL string `json:"telegram_auth_photo_url,omitempty"`
+	// TelegramAuthVerifiedAt holds the value of the "telegram_auth_verified_at" field.
+	TelegramAuthVerifiedAt *time.Time `json:"telegram_auth_verified_at,omitempty"`
+	// TelegramAuthLastAuthDate holds the value of the "telegram_auth_last_auth_date" field.
+	TelegramAuthLastAuthDate int64 `json:"telegram_auth_last_auth_date,omitempty"`
 	// SocialAccounts holds the value of the "social_accounts" field.
 	SocialAccounts map[string]interface{} `json:"social_accounts,omitempty"`
 	// PrimaryBadgeID holds the value of the "primary_badge_id" field.
@@ -315,11 +329,11 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case user.FieldEmailVerified, user.FieldTotpEnabled, user.FieldTotpVerified:
 			values[i] = new(sql.NullBool)
-		case user.FieldID, user.FieldPrimaryBadgeID, user.FieldFailedLoginAttempts, user.FieldGuaranteeAmount:
+		case user.FieldID, user.FieldTelegramAuthUserID, user.FieldTelegramAuthLastAuthDate, user.FieldPrimaryBadgeID, user.FieldFailedLoginAttempts, user.FieldGuaranteeAmount:
 			values[i] = new(sql.NullInt64)
-		case user.FieldEmail, user.FieldUsername, user.FieldPasswordHash, user.FieldAvatarURL, user.FieldFullName, user.FieldBio, user.FieldPronouns, user.FieldCompany, user.FieldTelegram, user.FieldTotpSecret, user.FieldLastLoginIP, user.FieldLockReason:
+		case user.FieldEmail, user.FieldUsername, user.FieldPasswordHash, user.FieldAvatarURL, user.FieldFullName, user.FieldBio, user.FieldPronouns, user.FieldCompany, user.FieldTelegram, user.FieldTelegramAuthUsername, user.FieldTelegramAuthFirstName, user.FieldTelegramAuthLastName, user.FieldTelegramAuthPhotoURL, user.FieldTotpSecret, user.FieldLastLoginIP, user.FieldLockReason:
 			values[i] = new(sql.NullString)
-		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt, user.FieldTotpVerifiedAt, user.FieldLastFailedAt, user.FieldLastLoginAt, user.FieldLockedUntil:
+		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt, user.FieldTelegramAuthVerifiedAt, user.FieldTotpVerifiedAt, user.FieldLastFailedAt, user.FieldLastLoginAt, user.FieldLockedUntil:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -422,6 +436,50 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field telegram", values[i])
 			} else if value.Valid {
 				_m.Telegram = value.String
+			}
+		case user.FieldTelegramAuthUserID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field telegram_auth_user_id", values[i])
+			} else if value.Valid {
+				_m.TelegramAuthUserID = new(int64)
+				*_m.TelegramAuthUserID = value.Int64
+			}
+		case user.FieldTelegramAuthUsername:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field telegram_auth_username", values[i])
+			} else if value.Valid {
+				_m.TelegramAuthUsername = value.String
+			}
+		case user.FieldTelegramAuthFirstName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field telegram_auth_first_name", values[i])
+			} else if value.Valid {
+				_m.TelegramAuthFirstName = value.String
+			}
+		case user.FieldTelegramAuthLastName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field telegram_auth_last_name", values[i])
+			} else if value.Valid {
+				_m.TelegramAuthLastName = value.String
+			}
+		case user.FieldTelegramAuthPhotoURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field telegram_auth_photo_url", values[i])
+			} else if value.Valid {
+				_m.TelegramAuthPhotoURL = value.String
+			}
+		case user.FieldTelegramAuthVerifiedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field telegram_auth_verified_at", values[i])
+			} else if value.Valid {
+				_m.TelegramAuthVerifiedAt = new(time.Time)
+				*_m.TelegramAuthVerifiedAt = value.Time
+			}
+		case user.FieldTelegramAuthLastAuthDate:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field telegram_auth_last_auth_date", values[i])
+			} else if value.Valid {
+				_m.TelegramAuthLastAuthDate = value.Int64
 			}
 		case user.FieldSocialAccounts:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -688,6 +746,31 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("telegram=")
 	builder.WriteString(_m.Telegram)
+	builder.WriteString(", ")
+	if v := _m.TelegramAuthUserID; v != nil {
+		builder.WriteString("telegram_auth_user_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("telegram_auth_username=")
+	builder.WriteString(_m.TelegramAuthUsername)
+	builder.WriteString(", ")
+	builder.WriteString("telegram_auth_first_name=")
+	builder.WriteString(_m.TelegramAuthFirstName)
+	builder.WriteString(", ")
+	builder.WriteString("telegram_auth_last_name=")
+	builder.WriteString(_m.TelegramAuthLastName)
+	builder.WriteString(", ")
+	builder.WriteString("telegram_auth_photo_url=")
+	builder.WriteString(_m.TelegramAuthPhotoURL)
+	builder.WriteString(", ")
+	if v := _m.TelegramAuthVerifiedAt; v != nil {
+		builder.WriteString("telegram_auth_verified_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("telegram_auth_last_auth_date=")
+	builder.WriteString(fmt.Sprintf("%v", _m.TelegramAuthLastAuthDate))
 	builder.WriteString(", ")
 	builder.WriteString("social_accounts=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SocialAccounts))

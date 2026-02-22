@@ -225,8 +225,8 @@ func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, own
 		}
 		return nil, apperrors.ErrDatabase
 	}
-	if strings.TrimSpace(owner.Telegram) == "" {
-		return nil, apperrors.ErrInvalidInput.WithDetails("Atur URL/username Telegram di Account Settings sebelum membuat Validation Case")
+	if owner.TelegramAuthUserID == nil || *owner.TelegramAuthUserID <= 0 || owner.TelegramAuthVerifiedAt == nil {
+		return nil, apperrors.ErrTelegramVerificationRequired.WithDetails("Sambungkan akun Telegram terverifikasi di Account Settings sebelum membuat Validation Case")
 	}
 
 	cat, err := s.client.Category.

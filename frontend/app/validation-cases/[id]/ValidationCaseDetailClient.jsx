@@ -130,6 +130,26 @@ function formatCaseLogLoadError(err, ownerView = false) {
   return err?.message || "Case Log belum bisa dimuat saat ini.";
 }
 
+function resolveTelegramContactHref(rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value) return "";
+  if (/^tg:\/\//i.test(value)) return value;
+  if (/^https?:\/\//i.test(value)) return value;
+  const username = value.replace(/^@/, "").trim();
+  if (!username) return "";
+  return `https://t.me/${username}`;
+}
+
+function formatTelegramContactLabel(rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value) return "";
+  const tgIdMatch = value.match(/^tg:\/\/user\?id=(\d+)$/i);
+  if (tgIdMatch) {
+    return `Open Telegram App (ID: ${tgIdMatch[1]})`;
+  }
+  return value;
+}
+
 function caseLogEventLabel(eventTypeRaw) {
   const eventType = normalizeStatus(eventTypeRaw);
   const labels = {
@@ -237,6 +257,9 @@ export default function ValidationCaseRecordPage() {
   const [caseLog, setCaseLog] = useState([]);
   const [caseLogLoading, setCaseLogLoading] = useState(false);
   const [caseLogError, setCaseLogError] = useState("");
+
+  const contactTelegramHref = useMemo(() => resolveTelegramContactHref(contactTelegram), [contactTelegram]);
+  const contactTelegramLabel = useMemo(() => formatTelegramContactLabel(contactTelegram), [contactTelegram]);
 
   const isOwner = Boolean(me?.id && vc?.owner?.id && Number(me.id) === Number(vc.owner.id));
 
@@ -526,7 +549,11 @@ export default function ValidationCaseRecordPage() {
         return;
       }
       setContactTelegram(telegram);
-      setContactMsg("Kontak dibuka secara privat dan dicatat pada Case Log.");
+      if (/^tg:\/\/user\?id=/i.test(telegram)) {
+        setContactMsg("Akun Telegram pemilik belum memiliki username publik. Gunakan tombol untuk membuka Telegram app.");
+      } else {
+        setContactMsg("Kontak dibuka secara privat dan dicatat pada Case Log.");
+      }
     } catch (e) {
       setContactMsg(e?.message || "Gagal membuka kontak");
     } finally {
@@ -958,12 +985,12 @@ export default function ValidationCaseRecordPage() {
                     {contactTelegram ? (
                       <div className="text-sm">
                         <a
-                          href={`https://t.me/${String(contactTelegram).replace(/^@/, "")}`}
+                          href={contactTelegramHref || "#"}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="font-semibold text-primary hover:underline"
                         >
-                          {contactTelegram}
+                          {contactTelegramLabel}
                         </a>
                       </div>
                     ) : null}

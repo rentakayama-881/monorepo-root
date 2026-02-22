@@ -7,6 +7,7 @@ import BadgesSection from "@/components/account/BadgesSection";
 import DeleteAccountSection from "@/components/account/DeleteAccountSection";
 import GuaranteeSection from "@/components/account/GuaranteeSection";
 import ProfileSection from "@/components/account/ProfileSection";
+import TelegramAuthSection from "@/components/account/TelegramAuthSection";
 import UsernameSection from "@/components/account/UsernameSection";
 import PasskeySettings from "@/components/PasskeySettings";
 import TOTPSettings from "@/components/TOTPSettings";
@@ -29,8 +30,22 @@ function normalizeAccountPayload(formValue = {}, socialsValue = []) {
     bio: String(formValue.bio || ""),
     pronouns: String(formValue.pronouns || ""),
     company: String(formValue.company || ""),
-    telegram: String(formValue.telegram || ""),
     social_accounts: normalizedSocials,
+  };
+}
+
+function normalizeTelegramAuth(value = {}) {
+  const src = value && typeof value === "object" ? value : {};
+  return {
+    connected: Boolean(src.connected),
+    telegram_user_id: String(src.telegram_user_id || ""),
+    username: String(src.username || ""),
+    display_username: String(src.display_username || ""),
+    deep_link: String(src.deep_link || ""),
+    verified_at: String(src.verified_at || ""),
+    first_name: String(src.first_name || ""),
+    last_name: String(src.last_name || ""),
+    photo_url: String(src.photo_url || ""),
   };
 }
 
@@ -53,8 +68,9 @@ function AccountPageContent() {
 
   const [me, setMe] = useState(null);
   const [username, setUsername] = useState("");
-  const [form, setForm] = useState({ full_name: "", bio: "", pronouns: "", company: "", telegram: "" });
+  const [form, setForm] = useState({ full_name: "", bio: "", pronouns: "", company: "" });
   const [socials, setSocials] = useState([{ label: "", url: "" }]);
+  const [telegramAuth, setTelegramAuth] = useState(() => normalizeTelegramAuth({ connected: false }));
 
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
@@ -116,7 +132,6 @@ function AccountPageContent() {
           bio: data.bio || "",
           pronouns: data.pronouns || "",
           company: data.company || "",
-          telegram: data.telegram || "",
         };
 
         const socialAccounts = Array.isArray(data.social_accounts) ? data.social_accounts : [];
@@ -124,6 +139,7 @@ function AccountPageContent() {
 
         setForm(nextForm);
         setSocials(normalized.social_accounts.length ? normalized.social_accounts : [{ label: "", url: "" }]);
+        setTelegramAuth(normalizeTelegramAuth(data.telegram_auth));
         setSavedProfileSignature(JSON.stringify(normalized));
         setProfileSaveMessage("");
       } catch (err) {
@@ -543,6 +559,11 @@ function AccountPageContent() {
             profileSaving={profileSaving}
             profileSaveMessage={profileSaveMessage}
             onSaveAccount={saveAccount}
+          />
+
+          <TelegramAuthSection
+            telegramAuth={telegramAuth}
+            onTelegramAuthChange={setTelegramAuth}
           />
 
           <UsernameSection username={username} />

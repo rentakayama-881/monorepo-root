@@ -1198,12 +1198,29 @@ func (s *EntValidationCaseWorkflowService) RevealOwnerTelegramContact(ctx contex
 		return "", apperrors.ErrDatabase
 	}
 
-	telegram := strings.TrimSpace(owner.Telegram)
-	if telegram == "" {
-		return "", apperrors.ErrInvalidInput.WithDetails("Pemilik kasus belum mengatur Telegram di akun")
+	var telegram string
+	if owner.TelegramAuthUserID != nil && *owner.TelegramAuthUserID > 0 && owner.TelegramAuthVerifiedAt != nil {
+		normalizedUsername := NormalizeTelegramUsername(owner.TelegramAuthUsername)
+		if normalizedUsername != "" {
+			telegram = "@" + normalizedUsername
+		} else {
+			telegram = BuildTelegramDeepLink("", owner.TelegramAuthUserID)
+		}
+	} else {
+		// Backward compatibility for historical cases created before Telegram verification rollout.
+		legacyTelegram := strings.TrimSpace(owner.Telegram)
+		if legacyTelegram != "" {
+			if strings.HasPrefix(legacyTelegram, "tg://") || strings.HasPrefix(legacyTelegram, "http://") || strings.HasPrefix(legacyTelegram, "https://") {
+				telegram = legacyTelegram
+			} else if strings.HasPrefix(legacyTelegram, "@") {
+				telegram = legacyTelegram
+			} else {
+				telegram = "@" + strings.TrimPrefix(legacyTelegram, "@")
+			}
+		}
 	}
-	if !strings.HasPrefix(telegram, "@") {
-		telegram = "@" + strings.TrimPrefix(telegram, "@")
+	if strings.TrimSpace(telegram) == "" {
+		return "", apperrors.ErrInvalidInput.WithDetails("Pemilik kasus belum menghubungkan Telegram terverifikasi")
 	}
 
 	// Log reveal at most once per validator to avoid spam.

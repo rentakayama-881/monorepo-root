@@ -981,28 +981,48 @@ func init() {
 	userDescTelegram := userFields[9].Descriptor()
 	// user.DefaultTelegram holds the default value on creation for the telegram field.
 	user.DefaultTelegram = userDescTelegram.Default.(string)
+	// userDescTelegramAuthUsername is the schema descriptor for telegram_auth_username field.
+	userDescTelegramAuthUsername := userFields[11].Descriptor()
+	// user.DefaultTelegramAuthUsername holds the default value on creation for the telegram_auth_username field.
+	user.DefaultTelegramAuthUsername = userDescTelegramAuthUsername.Default.(string)
+	// userDescTelegramAuthFirstName is the schema descriptor for telegram_auth_first_name field.
+	userDescTelegramAuthFirstName := userFields[12].Descriptor()
+	// user.DefaultTelegramAuthFirstName holds the default value on creation for the telegram_auth_first_name field.
+	user.DefaultTelegramAuthFirstName = userDescTelegramAuthFirstName.Default.(string)
+	// userDescTelegramAuthLastName is the schema descriptor for telegram_auth_last_name field.
+	userDescTelegramAuthLastName := userFields[13].Descriptor()
+	// user.DefaultTelegramAuthLastName holds the default value on creation for the telegram_auth_last_name field.
+	user.DefaultTelegramAuthLastName = userDescTelegramAuthLastName.Default.(string)
+	// userDescTelegramAuthPhotoURL is the schema descriptor for telegram_auth_photo_url field.
+	userDescTelegramAuthPhotoURL := userFields[14].Descriptor()
+	// user.DefaultTelegramAuthPhotoURL holds the default value on creation for the telegram_auth_photo_url field.
+	user.DefaultTelegramAuthPhotoURL = userDescTelegramAuthPhotoURL.Default.(string)
+	// userDescTelegramAuthLastAuthDate is the schema descriptor for telegram_auth_last_auth_date field.
+	userDescTelegramAuthLastAuthDate := userFields[16].Descriptor()
+	// user.DefaultTelegramAuthLastAuthDate holds the default value on creation for the telegram_auth_last_auth_date field.
+	user.DefaultTelegramAuthLastAuthDate = userDescTelegramAuthLastAuthDate.Default.(int64)
 	// userDescTotpEnabled is the schema descriptor for totp_enabled field.
-	userDescTotpEnabled := userFields[13].Descriptor()
+	userDescTotpEnabled := userFields[20].Descriptor()
 	// user.DefaultTotpEnabled holds the default value on creation for the totp_enabled field.
 	user.DefaultTotpEnabled = userDescTotpEnabled.Default.(bool)
 	// userDescTotpVerified is the schema descriptor for totp_verified field.
-	userDescTotpVerified := userFields[14].Descriptor()
+	userDescTotpVerified := userFields[21].Descriptor()
 	// user.DefaultTotpVerified holds the default value on creation for the totp_verified field.
 	user.DefaultTotpVerified = userDescTotpVerified.Default.(bool)
 	// userDescFailedLoginAttempts is the schema descriptor for failed_login_attempts field.
-	userDescFailedLoginAttempts := userFields[16].Descriptor()
+	userDescFailedLoginAttempts := userFields[23].Descriptor()
 	// user.DefaultFailedLoginAttempts holds the default value on creation for the failed_login_attempts field.
 	user.DefaultFailedLoginAttempts = userDescFailedLoginAttempts.Default.(int)
 	// userDescLastLoginIP is the schema descriptor for last_login_ip field.
-	userDescLastLoginIP := userFields[19].Descriptor()
+	userDescLastLoginIP := userFields[26].Descriptor()
 	// user.LastLoginIPValidator is a validator for the "last_login_ip" field. It is called by the builders before save.
 	user.LastLoginIPValidator = userDescLastLoginIP.Validators[0].(func(string) error)
 	// userDescLockReason is the schema descriptor for lock_reason field.
-	userDescLockReason := userFields[21].Descriptor()
+	userDescLockReason := userFields[28].Descriptor()
 	// user.LockReasonValidator is a validator for the "lock_reason" field. It is called by the builders before save.
 	user.LockReasonValidator = userDescLockReason.Validators[0].(func(string) error)
 	// userDescGuaranteeAmount is the schema descriptor for guarantee_amount field.
-	userDescGuaranteeAmount := userFields[22].Descriptor()
+	userDescGuaranteeAmount := userFields[29].Descriptor()
 	// user.DefaultGuaranteeAmount holds the default value on creation for the guarantee_amount field.
 	user.DefaultGuaranteeAmount = userDescGuaranteeAmount.Default.(int64)
 	userbadgeMixin := schema.UserBadge{}.Mixin()

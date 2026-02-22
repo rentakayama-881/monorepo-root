@@ -82,6 +82,27 @@ func (User) Fields() []ent.Field {
 		field.String("telegram").
 			Optional().
 			Default(""),
+		field.Int64("telegram_auth_user_id").
+			Optional().
+			Nillable().
+			Unique(),
+		field.String("telegram_auth_username").
+			Optional().
+			Default(""),
+		field.String("telegram_auth_first_name").
+			Optional().
+			Default(""),
+		field.String("telegram_auth_last_name").
+			Optional().
+			Default(""),
+		field.String("telegram_auth_photo_url").
+			Optional().
+			Default(""),
+		field.Time("telegram_auth_verified_at").
+			Optional().
+			Nillable(),
+		field.Int64("telegram_auth_last_auth_date").
+			Default(0),
 		field.JSON("social_accounts", map[string]interface{}{}).
 			Optional(),
 		field.Int("primary_badge_id").
@@ -117,11 +138,11 @@ func (User) Fields() []ent.Field {
 		field.String("lock_reason").
 			Optional().
 			MaxLen(255),
-			// Cached from Feature-Service (MongoDB) for fast validation case/profile reads
-			field.Int64("guarantee_amount").
-				Default(0),
-		}
+		// Cached from Feature-Service (MongoDB) for fast validation case/profile reads.
+		field.Int64("guarantee_amount").
+			Default(0),
 	}
+}
 
 // Edges of the User.
 func (User) Edges() []ent.Edge {

@@ -99,8 +99,9 @@ function sanitizeNumericInput(raw) {
     .replace(/^0+(?=\d)/, "");
 }
 
-function hasTelegramContact(value) {
-  return String(value || "").trim().length > 0;
+function hasConnectedTelegramAuth(value) {
+  if (!value || typeof value !== "object") return false;
+  return Boolean(value.connected);
 }
 
 function getTagDimensionFromSlug(rawSlug) {
@@ -261,9 +262,8 @@ export default function NewValidationCaseClient() {
       setTelegramChecking(true);
       try {
         const account = await fetchJsonAuth("/api/account/me", { method: "GET", clearSessionOn401: false });
-        const telegram = String(account?.telegram || "").trim();
         if (!cancelled) {
-          setTelegramReady(hasTelegramContact(telegram));
+          setTelegramReady(hasConnectedTelegramAuth(account?.telegram_auth));
         }
       } catch {
         if (!cancelled) {
@@ -317,7 +317,7 @@ export default function NewValidationCaseClient() {
       return;
     }
     if (telegramGateLocked) {
-      setError("Sebelum membuat Validation Case, atur URL/username Telegram di Account Settings.");
+      setError("Sebelum membuat Validation Case, sambungkan akun Telegram terverifikasi di Account Settings.");
       return;
     }
 
@@ -469,10 +469,10 @@ export default function NewValidationCaseClient() {
       {!telegramReady ? (
         <div className="mb-5 rounded-[var(--radius)] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
           {telegramChecking ? (
-            "Memverifikasi kontak Telegram akun Anda..."
+            "Memverifikasi Telegram Auth akun Anda..."
           ) : (
             <>
-              Anda wajib set URL/username Telegram di
+              Anda wajib menyambungkan akun Telegram terverifikasi di
               {" "}
               <Link href="/account" className="font-semibold underline">
                 Account Settings

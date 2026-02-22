@@ -174,6 +174,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.aivalid.id
 # API URLs
 NEXT_PUBLIC_BACKEND_URL=https://api.aivalid.id
 NEXT_PUBLIC_FEATURE_SERVICE_URL=https://feature.aivalid.id
+NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=your_bot_username
 
 # App Config
 NEXT_PUBLIC_APP_NAME=AIvalid

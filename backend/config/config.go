@@ -3,16 +3,19 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
 var (
-	JWTKey        []byte
-	JWTIssuer     string
-	JWTAudience   string
-	ServiceToken  string
+	JWTKey       []byte
+	JWTIssuer    string
+	JWTAudience  string
+	ServiceToken string
 
-	FeatureServiceURL string
+	FeatureServiceURL         string
+	TelegramBotToken          string
+	TelegramAuthMaxAgeSeconds int64
 )
 
 func InitConfig() {
@@ -51,5 +54,17 @@ func InitConfig() {
 		}
 		// Default for development only - should be set in production
 		ServiceToken = "dev-service-token"
+	}
+
+	// Telegram Login Widget configuration.
+	TelegramBotToken = strings.TrimSpace(os.Getenv("TELEGRAM_BOT_TOKEN"))
+	TelegramAuthMaxAgeSeconds = 600
+	if rawMaxAge := strings.TrimSpace(os.Getenv("TELEGRAM_AUTH_MAX_AGE_SECONDS")); rawMaxAge != "" {
+		parsed, err := strconv.ParseInt(rawMaxAge, 10, 64)
+		if err != nil || parsed <= 0 {
+			log.Printf("WARN: invalid TELEGRAM_AUTH_MAX_AGE_SECONDS=%q, using default 600", rawMaxAge)
+		} else {
+			TelegramAuthMaxAgeSeconds = parsed
+		}
 	}
 }

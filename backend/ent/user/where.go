@@ -120,6 +120,41 @@ func Telegram(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldTelegram, v))
 }
 
+// TelegramAuthUserID applies equality check predicate on the "telegram_auth_user_id" field. It's identical to TelegramAuthUserIDEQ.
+func TelegramAuthUserID(v int64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthUserID, v))
+}
+
+// TelegramAuthUsername applies equality check predicate on the "telegram_auth_username" field. It's identical to TelegramAuthUsernameEQ.
+func TelegramAuthUsername(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthFirstName applies equality check predicate on the "telegram_auth_first_name" field. It's identical to TelegramAuthFirstNameEQ.
+func TelegramAuthFirstName(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthLastName applies equality check predicate on the "telegram_auth_last_name" field. It's identical to TelegramAuthLastNameEQ.
+func TelegramAuthLastName(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthPhotoURL applies equality check predicate on the "telegram_auth_photo_url" field. It's identical to TelegramAuthPhotoURLEQ.
+func TelegramAuthPhotoURL(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthVerifiedAt applies equality check predicate on the "telegram_auth_verified_at" field. It's identical to TelegramAuthVerifiedAtEQ.
+func TelegramAuthVerifiedAt(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthVerifiedAt, v))
+}
+
+// TelegramAuthLastAuthDate applies equality check predicate on the "telegram_auth_last_auth_date" field. It's identical to TelegramAuthLastAuthDateEQ.
+func TelegramAuthLastAuthDate(v int64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthLastAuthDate, v))
+}
+
 // PrimaryBadgeID applies equality check predicate on the "primary_badge_id" field. It's identical to PrimaryBadgeIDEQ.
 func PrimaryBadgeID(v int) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldPrimaryBadgeID, v))
@@ -973,6 +1008,446 @@ func TelegramEqualFold(v string) predicate.User {
 // TelegramContainsFold applies the ContainsFold predicate on the "telegram" field.
 func TelegramContainsFold(v string) predicate.User {
 	return predicate.User(sql.FieldContainsFold(FieldTelegram, v))
+}
+
+// TelegramAuthUserIDEQ applies the EQ predicate on the "telegram_auth_user_id" field.
+func TelegramAuthUserIDEQ(v int64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthUserID, v))
+}
+
+// TelegramAuthUserIDNEQ applies the NEQ predicate on the "telegram_auth_user_id" field.
+func TelegramAuthUserIDNEQ(v int64) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTelegramAuthUserID, v))
+}
+
+// TelegramAuthUserIDIn applies the In predicate on the "telegram_auth_user_id" field.
+func TelegramAuthUserIDIn(vs ...int64) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTelegramAuthUserID, vs...))
+}
+
+// TelegramAuthUserIDNotIn applies the NotIn predicate on the "telegram_auth_user_id" field.
+func TelegramAuthUserIDNotIn(vs ...int64) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTelegramAuthUserID, vs...))
+}
+
+// TelegramAuthUserIDGT applies the GT predicate on the "telegram_auth_user_id" field.
+func TelegramAuthUserIDGT(v int64) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTelegramAuthUserID, v))
+}
+
+// TelegramAuthUserIDGTE applies the GTE predicate on the "telegram_auth_user_id" field.
+func TelegramAuthUserIDGTE(v int64) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTelegramAuthUserID, v))
+}
+
+// TelegramAuthUserIDLT applies the LT predicate on the "telegram_auth_user_id" field.
+func TelegramAuthUserIDLT(v int64) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTelegramAuthUserID, v))
+}
+
+// TelegramAuthUserIDLTE applies the LTE predicate on the "telegram_auth_user_id" field.
+func TelegramAuthUserIDLTE(v int64) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTelegramAuthUserID, v))
+}
+
+// TelegramAuthUserIDIsNil applies the IsNil predicate on the "telegram_auth_user_id" field.
+func TelegramAuthUserIDIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldTelegramAuthUserID))
+}
+
+// TelegramAuthUserIDNotNil applies the NotNil predicate on the "telegram_auth_user_id" field.
+func TelegramAuthUserIDNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldTelegramAuthUserID))
+}
+
+// TelegramAuthUsernameEQ applies the EQ predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthUsernameNEQ applies the NEQ predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthUsernameIn applies the In predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTelegramAuthUsername, vs...))
+}
+
+// TelegramAuthUsernameNotIn applies the NotIn predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTelegramAuthUsername, vs...))
+}
+
+// TelegramAuthUsernameGT applies the GT predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthUsernameGTE applies the GTE predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthUsernameLT applies the LT predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthUsernameLTE applies the LTE predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthUsernameContains applies the Contains predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthUsernameHasPrefix applies the HasPrefix predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthUsernameHasSuffix applies the HasSuffix predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthUsernameIsNil applies the IsNil predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldTelegramAuthUsername))
+}
+
+// TelegramAuthUsernameNotNil applies the NotNil predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldTelegramAuthUsername))
+}
+
+// TelegramAuthUsernameEqualFold applies the EqualFold predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthUsernameContainsFold applies the ContainsFold predicate on the "telegram_auth_username" field.
+func TelegramAuthUsernameContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldTelegramAuthUsername, v))
+}
+
+// TelegramAuthFirstNameEQ applies the EQ predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthFirstNameNEQ applies the NEQ predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthFirstNameIn applies the In predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTelegramAuthFirstName, vs...))
+}
+
+// TelegramAuthFirstNameNotIn applies the NotIn predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTelegramAuthFirstName, vs...))
+}
+
+// TelegramAuthFirstNameGT applies the GT predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthFirstNameGTE applies the GTE predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthFirstNameLT applies the LT predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthFirstNameLTE applies the LTE predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthFirstNameContains applies the Contains predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthFirstNameHasPrefix applies the HasPrefix predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthFirstNameHasSuffix applies the HasSuffix predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthFirstNameIsNil applies the IsNil predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldTelegramAuthFirstName))
+}
+
+// TelegramAuthFirstNameNotNil applies the NotNil predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldTelegramAuthFirstName))
+}
+
+// TelegramAuthFirstNameEqualFold applies the EqualFold predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthFirstNameContainsFold applies the ContainsFold predicate on the "telegram_auth_first_name" field.
+func TelegramAuthFirstNameContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldTelegramAuthFirstName, v))
+}
+
+// TelegramAuthLastNameEQ applies the EQ predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthLastNameNEQ applies the NEQ predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthLastNameIn applies the In predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTelegramAuthLastName, vs...))
+}
+
+// TelegramAuthLastNameNotIn applies the NotIn predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTelegramAuthLastName, vs...))
+}
+
+// TelegramAuthLastNameGT applies the GT predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthLastNameGTE applies the GTE predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthLastNameLT applies the LT predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthLastNameLTE applies the LTE predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthLastNameContains applies the Contains predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthLastNameHasPrefix applies the HasPrefix predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthLastNameHasSuffix applies the HasSuffix predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthLastNameIsNil applies the IsNil predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldTelegramAuthLastName))
+}
+
+// TelegramAuthLastNameNotNil applies the NotNil predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldTelegramAuthLastName))
+}
+
+// TelegramAuthLastNameEqualFold applies the EqualFold predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthLastNameContainsFold applies the ContainsFold predicate on the "telegram_auth_last_name" field.
+func TelegramAuthLastNameContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldTelegramAuthLastName, v))
+}
+
+// TelegramAuthPhotoURLEQ applies the EQ predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthPhotoURLNEQ applies the NEQ predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthPhotoURLIn applies the In predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTelegramAuthPhotoURL, vs...))
+}
+
+// TelegramAuthPhotoURLNotIn applies the NotIn predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTelegramAuthPhotoURL, vs...))
+}
+
+// TelegramAuthPhotoURLGT applies the GT predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthPhotoURLGTE applies the GTE predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthPhotoURLLT applies the LT predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthPhotoURLLTE applies the LTE predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthPhotoURLContains applies the Contains predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthPhotoURLHasPrefix applies the HasPrefix predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthPhotoURLHasSuffix applies the HasSuffix predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthPhotoURLIsNil applies the IsNil predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldTelegramAuthPhotoURL))
+}
+
+// TelegramAuthPhotoURLNotNil applies the NotNil predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldTelegramAuthPhotoURL))
+}
+
+// TelegramAuthPhotoURLEqualFold applies the EqualFold predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthPhotoURLContainsFold applies the ContainsFold predicate on the "telegram_auth_photo_url" field.
+func TelegramAuthPhotoURLContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldTelegramAuthPhotoURL, v))
+}
+
+// TelegramAuthVerifiedAtEQ applies the EQ predicate on the "telegram_auth_verified_at" field.
+func TelegramAuthVerifiedAtEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthVerifiedAt, v))
+}
+
+// TelegramAuthVerifiedAtNEQ applies the NEQ predicate on the "telegram_auth_verified_at" field.
+func TelegramAuthVerifiedAtNEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTelegramAuthVerifiedAt, v))
+}
+
+// TelegramAuthVerifiedAtIn applies the In predicate on the "telegram_auth_verified_at" field.
+func TelegramAuthVerifiedAtIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTelegramAuthVerifiedAt, vs...))
+}
+
+// TelegramAuthVerifiedAtNotIn applies the NotIn predicate on the "telegram_auth_verified_at" field.
+func TelegramAuthVerifiedAtNotIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTelegramAuthVerifiedAt, vs...))
+}
+
+// TelegramAuthVerifiedAtGT applies the GT predicate on the "telegram_auth_verified_at" field.
+func TelegramAuthVerifiedAtGT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTelegramAuthVerifiedAt, v))
+}
+
+// TelegramAuthVerifiedAtGTE applies the GTE predicate on the "telegram_auth_verified_at" field.
+func TelegramAuthVerifiedAtGTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTelegramAuthVerifiedAt, v))
+}
+
+// TelegramAuthVerifiedAtLT applies the LT predicate on the "telegram_auth_verified_at" field.
+func TelegramAuthVerifiedAtLT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTelegramAuthVerifiedAt, v))
+}
+
+// TelegramAuthVerifiedAtLTE applies the LTE predicate on the "telegram_auth_verified_at" field.
+func TelegramAuthVerifiedAtLTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTelegramAuthVerifiedAt, v))
+}
+
+// TelegramAuthVerifiedAtIsNil applies the IsNil predicate on the "telegram_auth_verified_at" field.
+func TelegramAuthVerifiedAtIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldTelegramAuthVerifiedAt))
+}
+
+// TelegramAuthVerifiedAtNotNil applies the NotNil predicate on the "telegram_auth_verified_at" field.
+func TelegramAuthVerifiedAtNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldTelegramAuthVerifiedAt))
+}
+
+// TelegramAuthLastAuthDateEQ applies the EQ predicate on the "telegram_auth_last_auth_date" field.
+func TelegramAuthLastAuthDateEQ(v int64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTelegramAuthLastAuthDate, v))
+}
+
+// TelegramAuthLastAuthDateNEQ applies the NEQ predicate on the "telegram_auth_last_auth_date" field.
+func TelegramAuthLastAuthDateNEQ(v int64) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTelegramAuthLastAuthDate, v))
+}
+
+// TelegramAuthLastAuthDateIn applies the In predicate on the "telegram_auth_last_auth_date" field.
+func TelegramAuthLastAuthDateIn(vs ...int64) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTelegramAuthLastAuthDate, vs...))
+}
+
+// TelegramAuthLastAuthDateNotIn applies the NotIn predicate on the "telegram_auth_last_auth_date" field.
+func TelegramAuthLastAuthDateNotIn(vs ...int64) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTelegramAuthLastAuthDate, vs...))
+}
+
+// TelegramAuthLastAuthDateGT applies the GT predicate on the "telegram_auth_last_auth_date" field.
+func TelegramAuthLastAuthDateGT(v int64) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTelegramAuthLastAuthDate, v))
+}
+
+// TelegramAuthLastAuthDateGTE applies the GTE predicate on the "telegram_auth_last_auth_date" field.
+func TelegramAuthLastAuthDateGTE(v int64) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTelegramAuthLastAuthDate, v))
+}
+
+// TelegramAuthLastAuthDateLT applies the LT predicate on the "telegram_auth_last_auth_date" field.
+func TelegramAuthLastAuthDateLT(v int64) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTelegramAuthLastAuthDate, v))
+}
+
+// TelegramAuthLastAuthDateLTE applies the LTE predicate on the "telegram_auth_last_auth_date" field.
+func TelegramAuthLastAuthDateLTE(v int64) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTelegramAuthLastAuthDate, v))
 }
 
 // SocialAccountsIsNil applies the IsNil predicate on the "social_accounts" field.

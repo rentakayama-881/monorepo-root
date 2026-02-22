@@ -864,6 +864,13 @@ var (
 		{Name: "pronouns", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "company", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "telegram", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "telegram_auth_user_id", Type: field.TypeInt64, Unique: true, Nullable: true},
+		{Name: "telegram_auth_username", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "telegram_auth_first_name", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "telegram_auth_last_name", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "telegram_auth_photo_url", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "telegram_auth_verified_at", Type: field.TypeTime, Nullable: true},
+		{Name: "telegram_auth_last_auth_date", Type: field.TypeInt64, Default: 0},
 		{Name: "social_accounts", Type: field.TypeJSON, Nullable: true},
 		{Name: "totp_secret", Type: field.TypeString, Nullable: true},
 		{Name: "totp_enabled", Type: field.TypeBool, Default: false},
@@ -886,7 +893,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "users_badges_primary_badge",
-				Columns:    []*schema.Column{UsersColumns[26]},
+				Columns:    []*schema.Column{UsersColumns[33]},
 				RefColumns: []*schema.Column{BadgesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

@@ -19908,6 +19908,15 @@ type UserMutation struct {
 	pronouns                         *string
 	company                          *string
 	telegram                         *string
+	telegram_auth_user_id            *int64
+	addtelegram_auth_user_id         *int64
+	telegram_auth_username           *string
+	telegram_auth_first_name         *string
+	telegram_auth_last_name          *string
+	telegram_auth_photo_url          *string
+	telegram_auth_verified_at        *time.Time
+	telegram_auth_last_auth_date     *int64
+	addtelegram_auth_last_auth_date  *int64
 	social_accounts                  *map[string]interface{}
 	totp_secret                      *string
 	totp_enabled                     *bool
@@ -20655,6 +20664,377 @@ func (m *UserMutation) TelegramCleared() bool {
 func (m *UserMutation) ResetTelegram() {
 	m.telegram = nil
 	delete(m.clearedFields, user.FieldTelegram)
+}
+
+// SetTelegramAuthUserID sets the "telegram_auth_user_id" field.
+func (m *UserMutation) SetTelegramAuthUserID(i int64) {
+	m.telegram_auth_user_id = &i
+	m.addtelegram_auth_user_id = nil
+}
+
+// TelegramAuthUserID returns the value of the "telegram_auth_user_id" field in the mutation.
+func (m *UserMutation) TelegramAuthUserID() (r int64, exists bool) {
+	v := m.telegram_auth_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTelegramAuthUserID returns the old "telegram_auth_user_id" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTelegramAuthUserID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTelegramAuthUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTelegramAuthUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTelegramAuthUserID: %w", err)
+	}
+	return oldValue.TelegramAuthUserID, nil
+}
+
+// AddTelegramAuthUserID adds i to the "telegram_auth_user_id" field.
+func (m *UserMutation) AddTelegramAuthUserID(i int64) {
+	if m.addtelegram_auth_user_id != nil {
+		*m.addtelegram_auth_user_id += i
+	} else {
+		m.addtelegram_auth_user_id = &i
+	}
+}
+
+// AddedTelegramAuthUserID returns the value that was added to the "telegram_auth_user_id" field in this mutation.
+func (m *UserMutation) AddedTelegramAuthUserID() (r int64, exists bool) {
+	v := m.addtelegram_auth_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearTelegramAuthUserID clears the value of the "telegram_auth_user_id" field.
+func (m *UserMutation) ClearTelegramAuthUserID() {
+	m.telegram_auth_user_id = nil
+	m.addtelegram_auth_user_id = nil
+	m.clearedFields[user.FieldTelegramAuthUserID] = struct{}{}
+}
+
+// TelegramAuthUserIDCleared returns if the "telegram_auth_user_id" field was cleared in this mutation.
+func (m *UserMutation) TelegramAuthUserIDCleared() bool {
+	_, ok := m.clearedFields[user.FieldTelegramAuthUserID]
+	return ok
+}
+
+// ResetTelegramAuthUserID resets all changes to the "telegram_auth_user_id" field.
+func (m *UserMutation) ResetTelegramAuthUserID() {
+	m.telegram_auth_user_id = nil
+	m.addtelegram_auth_user_id = nil
+	delete(m.clearedFields, user.FieldTelegramAuthUserID)
+}
+
+// SetTelegramAuthUsername sets the "telegram_auth_username" field.
+func (m *UserMutation) SetTelegramAuthUsername(s string) {
+	m.telegram_auth_username = &s
+}
+
+// TelegramAuthUsername returns the value of the "telegram_auth_username" field in the mutation.
+func (m *UserMutation) TelegramAuthUsername() (r string, exists bool) {
+	v := m.telegram_auth_username
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTelegramAuthUsername returns the old "telegram_auth_username" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTelegramAuthUsername(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTelegramAuthUsername is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTelegramAuthUsername requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTelegramAuthUsername: %w", err)
+	}
+	return oldValue.TelegramAuthUsername, nil
+}
+
+// ClearTelegramAuthUsername clears the value of the "telegram_auth_username" field.
+func (m *UserMutation) ClearTelegramAuthUsername() {
+	m.telegram_auth_username = nil
+	m.clearedFields[user.FieldTelegramAuthUsername] = struct{}{}
+}
+
+// TelegramAuthUsernameCleared returns if the "telegram_auth_username" field was cleared in this mutation.
+func (m *UserMutation) TelegramAuthUsernameCleared() bool {
+	_, ok := m.clearedFields[user.FieldTelegramAuthUsername]
+	return ok
+}
+
+// ResetTelegramAuthUsername resets all changes to the "telegram_auth_username" field.
+func (m *UserMutation) ResetTelegramAuthUsername() {
+	m.telegram_auth_username = nil
+	delete(m.clearedFields, user.FieldTelegramAuthUsername)
+}
+
+// SetTelegramAuthFirstName sets the "telegram_auth_first_name" field.
+func (m *UserMutation) SetTelegramAuthFirstName(s string) {
+	m.telegram_auth_first_name = &s
+}
+
+// TelegramAuthFirstName returns the value of the "telegram_auth_first_name" field in the mutation.
+func (m *UserMutation) TelegramAuthFirstName() (r string, exists bool) {
+	v := m.telegram_auth_first_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTelegramAuthFirstName returns the old "telegram_auth_first_name" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTelegramAuthFirstName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTelegramAuthFirstName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTelegramAuthFirstName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTelegramAuthFirstName: %w", err)
+	}
+	return oldValue.TelegramAuthFirstName, nil
+}
+
+// ClearTelegramAuthFirstName clears the value of the "telegram_auth_first_name" field.
+func (m *UserMutation) ClearTelegramAuthFirstName() {
+	m.telegram_auth_first_name = nil
+	m.clearedFields[user.FieldTelegramAuthFirstName] = struct{}{}
+}
+
+// TelegramAuthFirstNameCleared returns if the "telegram_auth_first_name" field was cleared in this mutation.
+func (m *UserMutation) TelegramAuthFirstNameCleared() bool {
+	_, ok := m.clearedFields[user.FieldTelegramAuthFirstName]
+	return ok
+}
+
+// ResetTelegramAuthFirstName resets all changes to the "telegram_auth_first_name" field.
+func (m *UserMutation) ResetTelegramAuthFirstName() {
+	m.telegram_auth_first_name = nil
+	delete(m.clearedFields, user.FieldTelegramAuthFirstName)
+}
+
+// SetTelegramAuthLastName sets the "telegram_auth_last_name" field.
+func (m *UserMutation) SetTelegramAuthLastName(s string) {
+	m.telegram_auth_last_name = &s
+}
+
+// TelegramAuthLastName returns the value of the "telegram_auth_last_name" field in the mutation.
+func (m *UserMutation) TelegramAuthLastName() (r string, exists bool) {
+	v := m.telegram_auth_last_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTelegramAuthLastName returns the old "telegram_auth_last_name" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTelegramAuthLastName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTelegramAuthLastName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTelegramAuthLastName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTelegramAuthLastName: %w", err)
+	}
+	return oldValue.TelegramAuthLastName, nil
+}
+
+// ClearTelegramAuthLastName clears the value of the "telegram_auth_last_name" field.
+func (m *UserMutation) ClearTelegramAuthLastName() {
+	m.telegram_auth_last_name = nil
+	m.clearedFields[user.FieldTelegramAuthLastName] = struct{}{}
+}
+
+// TelegramAuthLastNameCleared returns if the "telegram_auth_last_name" field was cleared in this mutation.
+func (m *UserMutation) TelegramAuthLastNameCleared() bool {
+	_, ok := m.clearedFields[user.FieldTelegramAuthLastName]
+	return ok
+}
+
+// ResetTelegramAuthLastName resets all changes to the "telegram_auth_last_name" field.
+func (m *UserMutation) ResetTelegramAuthLastName() {
+	m.telegram_auth_last_name = nil
+	delete(m.clearedFields, user.FieldTelegramAuthLastName)
+}
+
+// SetTelegramAuthPhotoURL sets the "telegram_auth_photo_url" field.
+func (m *UserMutation) SetTelegramAuthPhotoURL(s string) {
+	m.telegram_auth_photo_url = &s
+}
+
+// TelegramAuthPhotoURL returns the value of the "telegram_auth_photo_url" field in the mutation.
+func (m *UserMutation) TelegramAuthPhotoURL() (r string, exists bool) {
+	v := m.telegram_auth_photo_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTelegramAuthPhotoURL returns the old "telegram_auth_photo_url" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTelegramAuthPhotoURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTelegramAuthPhotoURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTelegramAuthPhotoURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTelegramAuthPhotoURL: %w", err)
+	}
+	return oldValue.TelegramAuthPhotoURL, nil
+}
+
+// ClearTelegramAuthPhotoURL clears the value of the "telegram_auth_photo_url" field.
+func (m *UserMutation) ClearTelegramAuthPhotoURL() {
+	m.telegram_auth_photo_url = nil
+	m.clearedFields[user.FieldTelegramAuthPhotoURL] = struct{}{}
+}
+
+// TelegramAuthPhotoURLCleared returns if the "telegram_auth_photo_url" field was cleared in this mutation.
+func (m *UserMutation) TelegramAuthPhotoURLCleared() bool {
+	_, ok := m.clearedFields[user.FieldTelegramAuthPhotoURL]
+	return ok
+}
+
+// ResetTelegramAuthPhotoURL resets all changes to the "telegram_auth_photo_url" field.
+func (m *UserMutation) ResetTelegramAuthPhotoURL() {
+	m.telegram_auth_photo_url = nil
+	delete(m.clearedFields, user.FieldTelegramAuthPhotoURL)
+}
+
+// SetTelegramAuthVerifiedAt sets the "telegram_auth_verified_at" field.
+func (m *UserMutation) SetTelegramAuthVerifiedAt(t time.Time) {
+	m.telegram_auth_verified_at = &t
+}
+
+// TelegramAuthVerifiedAt returns the value of the "telegram_auth_verified_at" field in the mutation.
+func (m *UserMutation) TelegramAuthVerifiedAt() (r time.Time, exists bool) {
+	v := m.telegram_auth_verified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTelegramAuthVerifiedAt returns the old "telegram_auth_verified_at" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTelegramAuthVerifiedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTelegramAuthVerifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTelegramAuthVerifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTelegramAuthVerifiedAt: %w", err)
+	}
+	return oldValue.TelegramAuthVerifiedAt, nil
+}
+
+// ClearTelegramAuthVerifiedAt clears the value of the "telegram_auth_verified_at" field.
+func (m *UserMutation) ClearTelegramAuthVerifiedAt() {
+	m.telegram_auth_verified_at = nil
+	m.clearedFields[user.FieldTelegramAuthVerifiedAt] = struct{}{}
+}
+
+// TelegramAuthVerifiedAtCleared returns if the "telegram_auth_verified_at" field was cleared in this mutation.
+func (m *UserMutation) TelegramAuthVerifiedAtCleared() bool {
+	_, ok := m.clearedFields[user.FieldTelegramAuthVerifiedAt]
+	return ok
+}
+
+// ResetTelegramAuthVerifiedAt resets all changes to the "telegram_auth_verified_at" field.
+func (m *UserMutation) ResetTelegramAuthVerifiedAt() {
+	m.telegram_auth_verified_at = nil
+	delete(m.clearedFields, user.FieldTelegramAuthVerifiedAt)
+}
+
+// SetTelegramAuthLastAuthDate sets the "telegram_auth_last_auth_date" field.
+func (m *UserMutation) SetTelegramAuthLastAuthDate(i int64) {
+	m.telegram_auth_last_auth_date = &i
+	m.addtelegram_auth_last_auth_date = nil
+}
+
+// TelegramAuthLastAuthDate returns the value of the "telegram_auth_last_auth_date" field in the mutation.
+func (m *UserMutation) TelegramAuthLastAuthDate() (r int64, exists bool) {
+	v := m.telegram_auth_last_auth_date
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTelegramAuthLastAuthDate returns the old "telegram_auth_last_auth_date" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTelegramAuthLastAuthDate(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTelegramAuthLastAuthDate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTelegramAuthLastAuthDate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTelegramAuthLastAuthDate: %w", err)
+	}
+	return oldValue.TelegramAuthLastAuthDate, nil
+}
+
+// AddTelegramAuthLastAuthDate adds i to the "telegram_auth_last_auth_date" field.
+func (m *UserMutation) AddTelegramAuthLastAuthDate(i int64) {
+	if m.addtelegram_auth_last_auth_date != nil {
+		*m.addtelegram_auth_last_auth_date += i
+	} else {
+		m.addtelegram_auth_last_auth_date = &i
+	}
+}
+
+// AddedTelegramAuthLastAuthDate returns the value that was added to the "telegram_auth_last_auth_date" field in this mutation.
+func (m *UserMutation) AddedTelegramAuthLastAuthDate() (r int64, exists bool) {
+	v := m.addtelegram_auth_last_auth_date
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTelegramAuthLastAuthDate resets all changes to the "telegram_auth_last_auth_date" field.
+func (m *UserMutation) ResetTelegramAuthLastAuthDate() {
+	m.telegram_auth_last_auth_date = nil
+	m.addtelegram_auth_last_auth_date = nil
 }
 
 // SetSocialAccounts sets the "social_accounts" field.
@@ -22369,7 +22749,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 26)
+	fields := make([]string, 0, 33)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -22408,6 +22788,27 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.telegram != nil {
 		fields = append(fields, user.FieldTelegram)
+	}
+	if m.telegram_auth_user_id != nil {
+		fields = append(fields, user.FieldTelegramAuthUserID)
+	}
+	if m.telegram_auth_username != nil {
+		fields = append(fields, user.FieldTelegramAuthUsername)
+	}
+	if m.telegram_auth_first_name != nil {
+		fields = append(fields, user.FieldTelegramAuthFirstName)
+	}
+	if m.telegram_auth_last_name != nil {
+		fields = append(fields, user.FieldTelegramAuthLastName)
+	}
+	if m.telegram_auth_photo_url != nil {
+		fields = append(fields, user.FieldTelegramAuthPhotoURL)
+	}
+	if m.telegram_auth_verified_at != nil {
+		fields = append(fields, user.FieldTelegramAuthVerifiedAt)
+	}
+	if m.telegram_auth_last_auth_date != nil {
+		fields = append(fields, user.FieldTelegramAuthLastAuthDate)
 	}
 	if m.social_accounts != nil {
 		fields = append(fields, user.FieldSocialAccounts)
@@ -22482,6 +22883,20 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Company()
 	case user.FieldTelegram:
 		return m.Telegram()
+	case user.FieldTelegramAuthUserID:
+		return m.TelegramAuthUserID()
+	case user.FieldTelegramAuthUsername:
+		return m.TelegramAuthUsername()
+	case user.FieldTelegramAuthFirstName:
+		return m.TelegramAuthFirstName()
+	case user.FieldTelegramAuthLastName:
+		return m.TelegramAuthLastName()
+	case user.FieldTelegramAuthPhotoURL:
+		return m.TelegramAuthPhotoURL()
+	case user.FieldTelegramAuthVerifiedAt:
+		return m.TelegramAuthVerifiedAt()
+	case user.FieldTelegramAuthLastAuthDate:
+		return m.TelegramAuthLastAuthDate()
 	case user.FieldSocialAccounts:
 		return m.SocialAccounts()
 	case user.FieldPrimaryBadgeID:
@@ -22543,6 +22958,20 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldCompany(ctx)
 	case user.FieldTelegram:
 		return m.OldTelegram(ctx)
+	case user.FieldTelegramAuthUserID:
+		return m.OldTelegramAuthUserID(ctx)
+	case user.FieldTelegramAuthUsername:
+		return m.OldTelegramAuthUsername(ctx)
+	case user.FieldTelegramAuthFirstName:
+		return m.OldTelegramAuthFirstName(ctx)
+	case user.FieldTelegramAuthLastName:
+		return m.OldTelegramAuthLastName(ctx)
+	case user.FieldTelegramAuthPhotoURL:
+		return m.OldTelegramAuthPhotoURL(ctx)
+	case user.FieldTelegramAuthVerifiedAt:
+		return m.OldTelegramAuthVerifiedAt(ctx)
+	case user.FieldTelegramAuthLastAuthDate:
+		return m.OldTelegramAuthLastAuthDate(ctx)
 	case user.FieldSocialAccounts:
 		return m.OldSocialAccounts(ctx)
 	case user.FieldPrimaryBadgeID:
@@ -22669,6 +23098,55 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTelegram(v)
 		return nil
+	case user.FieldTelegramAuthUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTelegramAuthUserID(v)
+		return nil
+	case user.FieldTelegramAuthUsername:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTelegramAuthUsername(v)
+		return nil
+	case user.FieldTelegramAuthFirstName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTelegramAuthFirstName(v)
+		return nil
+	case user.FieldTelegramAuthLastName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTelegramAuthLastName(v)
+		return nil
+	case user.FieldTelegramAuthPhotoURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTelegramAuthPhotoURL(v)
+		return nil
+	case user.FieldTelegramAuthVerifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTelegramAuthVerifiedAt(v)
+		return nil
+	case user.FieldTelegramAuthLastAuthDate:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTelegramAuthLastAuthDate(v)
+		return nil
 	case user.FieldSocialAccounts:
 		v, ok := value.(map[string]interface{})
 		if !ok {
@@ -22768,6 +23246,12 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *UserMutation) AddedFields() []string {
 	var fields []string
+	if m.addtelegram_auth_user_id != nil {
+		fields = append(fields, user.FieldTelegramAuthUserID)
+	}
+	if m.addtelegram_auth_last_auth_date != nil {
+		fields = append(fields, user.FieldTelegramAuthLastAuthDate)
+	}
 	if m.addfailed_login_attempts != nil {
 		fields = append(fields, user.FieldFailedLoginAttempts)
 	}
@@ -22782,6 +23266,10 @@ func (m *UserMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case user.FieldTelegramAuthUserID:
+		return m.AddedTelegramAuthUserID()
+	case user.FieldTelegramAuthLastAuthDate:
+		return m.AddedTelegramAuthLastAuthDate()
 	case user.FieldFailedLoginAttempts:
 		return m.AddedFailedLoginAttempts()
 	case user.FieldGuaranteeAmount:
@@ -22795,6 +23283,20 @@ func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *UserMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case user.FieldTelegramAuthUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTelegramAuthUserID(v)
+		return nil
+	case user.FieldTelegramAuthLastAuthDate:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTelegramAuthLastAuthDate(v)
+		return nil
 	case user.FieldFailedLoginAttempts:
 		v, ok := value.(int)
 		if !ok {
@@ -22840,6 +23342,24 @@ func (m *UserMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(user.FieldTelegram) {
 		fields = append(fields, user.FieldTelegram)
+	}
+	if m.FieldCleared(user.FieldTelegramAuthUserID) {
+		fields = append(fields, user.FieldTelegramAuthUserID)
+	}
+	if m.FieldCleared(user.FieldTelegramAuthUsername) {
+		fields = append(fields, user.FieldTelegramAuthUsername)
+	}
+	if m.FieldCleared(user.FieldTelegramAuthFirstName) {
+		fields = append(fields, user.FieldTelegramAuthFirstName)
+	}
+	if m.FieldCleared(user.FieldTelegramAuthLastName) {
+		fields = append(fields, user.FieldTelegramAuthLastName)
+	}
+	if m.FieldCleared(user.FieldTelegramAuthPhotoURL) {
+		fields = append(fields, user.FieldTelegramAuthPhotoURL)
+	}
+	if m.FieldCleared(user.FieldTelegramAuthVerifiedAt) {
+		fields = append(fields, user.FieldTelegramAuthVerifiedAt)
 	}
 	if m.FieldCleared(user.FieldSocialAccounts) {
 		fields = append(fields, user.FieldSocialAccounts)
@@ -22905,6 +23425,24 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldTelegram:
 		m.ClearTelegram()
+		return nil
+	case user.FieldTelegramAuthUserID:
+		m.ClearTelegramAuthUserID()
+		return nil
+	case user.FieldTelegramAuthUsername:
+		m.ClearTelegramAuthUsername()
+		return nil
+	case user.FieldTelegramAuthFirstName:
+		m.ClearTelegramAuthFirstName()
+		return nil
+	case user.FieldTelegramAuthLastName:
+		m.ClearTelegramAuthLastName()
+		return nil
+	case user.FieldTelegramAuthPhotoURL:
+		m.ClearTelegramAuthPhotoURL()
+		return nil
+	case user.FieldTelegramAuthVerifiedAt:
+		m.ClearTelegramAuthVerifiedAt()
 		return nil
 	case user.FieldSocialAccounts:
 		m.ClearSocialAccounts()
@@ -22979,6 +23517,27 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldTelegram:
 		m.ResetTelegram()
+		return nil
+	case user.FieldTelegramAuthUserID:
+		m.ResetTelegramAuthUserID()
+		return nil
+	case user.FieldTelegramAuthUsername:
+		m.ResetTelegramAuthUsername()
+		return nil
+	case user.FieldTelegramAuthFirstName:
+		m.ResetTelegramAuthFirstName()
+		return nil
+	case user.FieldTelegramAuthLastName:
+		m.ResetTelegramAuthLastName()
+		return nil
+	case user.FieldTelegramAuthPhotoURL:
+		m.ResetTelegramAuthPhotoURL()
+		return nil
+	case user.FieldTelegramAuthVerifiedAt:
+		m.ResetTelegramAuthVerifiedAt()
+		return nil
+	case user.FieldTelegramAuthLastAuthDate:
+		m.ResetTelegramAuthLastAuthDate()
 		return nil
 	case user.FieldSocialAccounts:
 		m.ResetSocialAccounts()

@@ -44,12 +44,6 @@ export default function ProfileSection({
             onChange={(e) => setForm((prev) => ({ ...prev, company: e.target.value }))}
           />
         </div>
-        <Input
-          label="Telegram (Private Consultation Contact)"
-          placeholder="@username (tidak ditampilkan publik)"
-          value={form.telegram}
-          onChange={(e) => setForm((prev) => ({ ...prev, telegram: e.target.value }))}
-        />
         <div>
           <label className="text-sm font-medium">Social Accounts</label>
           <div className="space-y-2 mt-2">

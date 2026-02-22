@@ -498,6 +498,8 @@ func main() {
 			{
 				account.GET("/me", middleware.AuthMiddleware(), handlers.GetMyAccountHandler)
 				account.PUT("", middleware.AuthMiddleware(), handlers.UpdateMyAccountHandler)
+				account.POST("/telegram/connect", middleware.AuthMiddleware(), handlers.ConnectTelegramAuthHandler)
+				account.POST("/telegram/disconnect", middleware.AuthMiddleware(), handlers.DisconnectTelegramAuthHandler)
 				account.POST("/change-username", middleware.AuthMiddleware(), handlers.ChangeUsernamePaidHandler)
 				account.PUT("/avatar", middleware.AuthMiddleware(), handlers.UploadAvatarHandler)
 				account.DELETE("/avatar", middleware.AuthMiddleware(), handlers.DeleteAvatarHandler)

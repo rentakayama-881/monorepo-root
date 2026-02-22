@@ -63,13 +63,15 @@ var (
 	ErrIPEmailLimitReached       = NewAppError("AUTH018", "Terlalu banyak permintaan email dari IP ini. Coba lagi nanti.", http.StatusTooManyRequests)
 
 	// Device tracking errors
-	ErrDeviceLimitReached = NewAppError("AUTH019", "Perangkat ini sudah digunakan untuk maksimal akun yang diizinkan", http.StatusForbidden)
-	ErrDeviceBlocked      = NewAppError("AUTH020", "Perangkat ini diblokir karena aktivitas mencurigakan", http.StatusForbidden)
+	ErrDeviceLimitReached  = NewAppError("AUTH019", "Perangkat ini sudah digunakan untuk maksimal akun yang diizinkan", http.StatusForbidden)
+	ErrDeviceBlocked       = NewAppError("AUTH020", "Perangkat ini diblokir karena aktivitas mencurigakan", http.StatusForbidden)
+	ErrTelegramAuthInvalid = NewAppError("AUTH021", "Telegram auth tidak valid atau sudah kedaluwarsa", http.StatusBadRequest)
 
 	// User errors
-	ErrUserNotFound     = NewAppError("USER001", "Pengguna tidak ditemukan", http.StatusNotFound)
-	ErrUnauthorized     = NewAppError("USER002", "Tidak memiliki akses", http.StatusUnauthorized)
-	ErrInvalidUserInput = NewAppError("USER003", "Username harus menggunakan huruf kecil, tanpa spasi, dan minimal 7 character", http.StatusBadRequest)
+	ErrUserNotFound          = NewAppError("USER001", "Pengguna tidak ditemukan", http.StatusNotFound)
+	ErrUnauthorized          = NewAppError("USER002", "Tidak memiliki akses", http.StatusUnauthorized)
+	ErrInvalidUserInput      = NewAppError("USER003", "Username harus menggunakan huruf kecil, tanpa spasi, dan minimal 7 character", http.StatusBadRequest)
+	ErrTelegramAlreadyLinked = NewAppError("USER004", "Akun Telegram ini sudah terhubung ke akun lain", http.StatusConflict)
 
 	// Validation Case errors (domain replacement for legacy "Thread")
 	ErrValidationCaseNotFound    = NewAppError("CASE001", "Validation Case tidak ditemukan", http.StatusNotFound)
@@ -81,6 +83,7 @@ var (
 	ErrConsultationNotApproved        = NewAppError("CASE006", "Consultation Request belum disetujui oleh pemilik kasus", http.StatusForbidden)
 	ErrFinalOfferRequiresApproval     = NewAppError("CASE007", "Final Offer hanya dapat diajukan setelah Consultation disetujui", http.StatusForbidden)
 	ErrArtifactSubmissionAccessDenied = NewAppError("CASE008", "Artifact Submission hanya dapat diunggah oleh validator yang Final Offer-nya diterima", http.StatusForbidden)
+	ErrTelegramVerificationRequired   = NewAppError("CASE009", "Akun Telegram belum terverifikasi", http.StatusForbidden)
 
 	// Order errors
 	ErrOrderNotFound      = NewAppError("ORDER001", "Order tidak ditemukan", http.StatusNotFound)

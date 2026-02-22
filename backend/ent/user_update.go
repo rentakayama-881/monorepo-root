@@ -256,6 +256,154 @@ func (_u *UserUpdate) ClearTelegram() *UserUpdate {
 	return _u
 }
 
+// SetTelegramAuthUserID sets the "telegram_auth_user_id" field.
+func (_u *UserUpdate) SetTelegramAuthUserID(v int64) *UserUpdate {
+	_u.mutation.ResetTelegramAuthUserID()
+	_u.mutation.SetTelegramAuthUserID(v)
+	return _u
+}
+
+// SetNillableTelegramAuthUserID sets the "telegram_auth_user_id" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTelegramAuthUserID(v *int64) *UserUpdate {
+	if v != nil {
+		_u.SetTelegramAuthUserID(*v)
+	}
+	return _u
+}
+
+// AddTelegramAuthUserID adds value to the "telegram_auth_user_id" field.
+func (_u *UserUpdate) AddTelegramAuthUserID(v int64) *UserUpdate {
+	_u.mutation.AddTelegramAuthUserID(v)
+	return _u
+}
+
+// ClearTelegramAuthUserID clears the value of the "telegram_auth_user_id" field.
+func (_u *UserUpdate) ClearTelegramAuthUserID() *UserUpdate {
+	_u.mutation.ClearTelegramAuthUserID()
+	return _u
+}
+
+// SetTelegramAuthUsername sets the "telegram_auth_username" field.
+func (_u *UserUpdate) SetTelegramAuthUsername(v string) *UserUpdate {
+	_u.mutation.SetTelegramAuthUsername(v)
+	return _u
+}
+
+// SetNillableTelegramAuthUsername sets the "telegram_auth_username" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTelegramAuthUsername(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetTelegramAuthUsername(*v)
+	}
+	return _u
+}
+
+// ClearTelegramAuthUsername clears the value of the "telegram_auth_username" field.
+func (_u *UserUpdate) ClearTelegramAuthUsername() *UserUpdate {
+	_u.mutation.ClearTelegramAuthUsername()
+	return _u
+}
+
+// SetTelegramAuthFirstName sets the "telegram_auth_first_name" field.
+func (_u *UserUpdate) SetTelegramAuthFirstName(v string) *UserUpdate {
+	_u.mutation.SetTelegramAuthFirstName(v)
+	return _u
+}
+
+// SetNillableTelegramAuthFirstName sets the "telegram_auth_first_name" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTelegramAuthFirstName(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetTelegramAuthFirstName(*v)
+	}
+	return _u
+}
+
+// ClearTelegramAuthFirstName clears the value of the "telegram_auth_first_name" field.
+func (_u *UserUpdate) ClearTelegramAuthFirstName() *UserUpdate {
+	_u.mutation.ClearTelegramAuthFirstName()
+	return _u
+}
+
+// SetTelegramAuthLastName sets the "telegram_auth_last_name" field.
+func (_u *UserUpdate) SetTelegramAuthLastName(v string) *UserUpdate {
+	_u.mutation.SetTelegramAuthLastName(v)
+	return _u
+}
+
+// SetNillableTelegramAuthLastName sets the "telegram_auth_last_name" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTelegramAuthLastName(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetTelegramAuthLastName(*v)
+	}
+	return _u
+}
+
+// ClearTelegramAuthLastName clears the value of the "telegram_auth_last_name" field.
+func (_u *UserUpdate) ClearTelegramAuthLastName() *UserUpdate {
+	_u.mutation.ClearTelegramAuthLastName()
+	return _u
+}
+
+// SetTelegramAuthPhotoURL sets the "telegram_auth_photo_url" field.
+func (_u *UserUpdate) SetTelegramAuthPhotoURL(v string) *UserUpdate {
+	_u.mutation.SetTelegramAuthPhotoURL(v)
+	return _u
+}
+
+// SetNillableTelegramAuthPhotoURL sets the "telegram_auth_photo_url" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTelegramAuthPhotoURL(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetTelegramAuthPhotoURL(*v)
+	}
+	return _u
+}
+
+// ClearTelegramAuthPhotoURL clears the value of the "telegram_auth_photo_url" field.
+func (_u *UserUpdate) ClearTelegramAuthPhotoURL() *UserUpdate {
+	_u.mutation.ClearTelegramAuthPhotoURL()
+	return _u
+}
+
+// SetTelegramAuthVerifiedAt sets the "telegram_auth_verified_at" field.
+func (_u *UserUpdate) SetTelegramAuthVerifiedAt(v time.Time) *UserUpdate {
+	_u.mutation.SetTelegramAuthVerifiedAt(v)
+	return _u
+}
+
+// SetNillableTelegramAuthVerifiedAt sets the "telegram_auth_verified_at" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTelegramAuthVerifiedAt(v *time.Time) *UserUpdate {
+	if v != nil {
+		_u.SetTelegramAuthVerifiedAt(*v)
+	}
+	return _u
+}
+
+// ClearTelegramAuthVerifiedAt clears the value of the "telegram_auth_verified_at" field.
+func (_u *UserUpdate) ClearTelegramAuthVerifiedAt() *UserUpdate {
+	_u.mutation.ClearTelegramAuthVerifiedAt()
+	return _u
+}
+
+// SetTelegramAuthLastAuthDate sets the "telegram_auth_last_auth_date" field.
+func (_u *UserUpdate) SetTelegramAuthLastAuthDate(v int64) *UserUpdate {
+	_u.mutation.ResetTelegramAuthLastAuthDate()
+	_u.mutation.SetTelegramAuthLastAuthDate(v)
+	return _u
+}
+
+// SetNillableTelegramAuthLastAuthDate sets the "telegram_auth_last_auth_date" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTelegramAuthLastAuthDate(v *int64) *UserUpdate {
+	if v != nil {
+		_u.SetTelegramAuthLastAuthDate(*v)
+	}
+	return _u
+}
+
+// AddTelegramAuthLastAuthDate adds value to the "telegram_auth_last_auth_date" field.
+func (_u *UserUpdate) AddTelegramAuthLastAuthDate(v int64) *UserUpdate {
+	_u.mutation.AddTelegramAuthLastAuthDate(v)
+	return _u
+}
+
 // SetSocialAccounts sets the "social_accounts" field.
 func (_u *UserUpdate) SetSocialAccounts(v map[string]interface{}) *UserUpdate {
 	_u.mutation.SetSocialAccounts(v)
@@ -1330,6 +1478,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.TelegramCleared() {
 		_spec.ClearField(user.FieldTelegram, field.TypeString)
+	}
+	if value, ok := _u.mutation.TelegramAuthUserID(); ok {
+		_spec.SetField(user.FieldTelegramAuthUserID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedTelegramAuthUserID(); ok {
+		_spec.AddField(user.FieldTelegramAuthUserID, field.TypeInt64, value)
+	}
+	if _u.mutation.TelegramAuthUserIDCleared() {
+		_spec.ClearField(user.FieldTelegramAuthUserID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.TelegramAuthUsername(); ok {
+		_spec.SetField(user.FieldTelegramAuthUsername, field.TypeString, value)
+	}
+	if _u.mutation.TelegramAuthUsernameCleared() {
+		_spec.ClearField(user.FieldTelegramAuthUsername, field.TypeString)
+	}
+	if value, ok := _u.mutation.TelegramAuthFirstName(); ok {
+		_spec.SetField(user.FieldTelegramAuthFirstName, field.TypeString, value)
+	}
+	if _u.mutation.TelegramAuthFirstNameCleared() {
+		_spec.ClearField(user.FieldTelegramAuthFirstName, field.TypeString)
+	}
+	if value, ok := _u.mutation.TelegramAuthLastName(); ok {
+		_spec.SetField(user.FieldTelegramAuthLastName, field.TypeString, value)
+	}
+	if _u.mutation.TelegramAuthLastNameCleared() {
+		_spec.ClearField(user.FieldTelegramAuthLastName, field.TypeString)
+	}
+	if value, ok := _u.mutation.TelegramAuthPhotoURL(); ok {
+		_spec.SetField(user.FieldTelegramAuthPhotoURL, field.TypeString, value)
+	}
+	if _u.mutation.TelegramAuthPhotoURLCleared() {
+		_spec.ClearField(user.FieldTelegramAuthPhotoURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.TelegramAuthVerifiedAt(); ok {
+		_spec.SetField(user.FieldTelegramAuthVerifiedAt, field.TypeTime, value)
+	}
+	if _u.mutation.TelegramAuthVerifiedAtCleared() {
+		_spec.ClearField(user.FieldTelegramAuthVerifiedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.TelegramAuthLastAuthDate(); ok {
+		_spec.SetField(user.FieldTelegramAuthLastAuthDate, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedTelegramAuthLastAuthDate(); ok {
+		_spec.AddField(user.FieldTelegramAuthLastAuthDate, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.SocialAccounts(); ok {
 		_spec.SetField(user.FieldSocialAccounts, field.TypeJSON, value)
@@ -2509,6 +2702,154 @@ func (_u *UserUpdateOne) ClearTelegram() *UserUpdateOne {
 	return _u
 }
 
+// SetTelegramAuthUserID sets the "telegram_auth_user_id" field.
+func (_u *UserUpdateOne) SetTelegramAuthUserID(v int64) *UserUpdateOne {
+	_u.mutation.ResetTelegramAuthUserID()
+	_u.mutation.SetTelegramAuthUserID(v)
+	return _u
+}
+
+// SetNillableTelegramAuthUserID sets the "telegram_auth_user_id" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTelegramAuthUserID(v *int64) *UserUpdateOne {
+	if v != nil {
+		_u.SetTelegramAuthUserID(*v)
+	}
+	return _u
+}
+
+// AddTelegramAuthUserID adds value to the "telegram_auth_user_id" field.
+func (_u *UserUpdateOne) AddTelegramAuthUserID(v int64) *UserUpdateOne {
+	_u.mutation.AddTelegramAuthUserID(v)
+	return _u
+}
+
+// ClearTelegramAuthUserID clears the value of the "telegram_auth_user_id" field.
+func (_u *UserUpdateOne) ClearTelegramAuthUserID() *UserUpdateOne {
+	_u.mutation.ClearTelegramAuthUserID()
+	return _u
+}
+
+// SetTelegramAuthUsername sets the "telegram_auth_username" field.
+func (_u *UserUpdateOne) SetTelegramAuthUsername(v string) *UserUpdateOne {
+	_u.mutation.SetTelegramAuthUsername(v)
+	return _u
+}
+
+// SetNillableTelegramAuthUsername sets the "telegram_auth_username" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTelegramAuthUsername(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetTelegramAuthUsername(*v)
+	}
+	return _u
+}
+
+// ClearTelegramAuthUsername clears the value of the "telegram_auth_username" field.
+func (_u *UserUpdateOne) ClearTelegramAuthUsername() *UserUpdateOne {
+	_u.mutation.ClearTelegramAuthUsername()
+	return _u
+}
+
+// SetTelegramAuthFirstName sets the "telegram_auth_first_name" field.
+func (_u *UserUpdateOne) SetTelegramAuthFirstName(v string) *UserUpdateOne {
+	_u.mutation.SetTelegramAuthFirstName(v)
+	return _u
+}
+
+// SetNillableTelegramAuthFirstName sets the "telegram_auth_first_name" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTelegramAuthFirstName(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetTelegramAuthFirstName(*v)
+	}
+	return _u
+}
+
+// ClearTelegramAuthFirstName clears the value of the "telegram_auth_first_name" field.
+func (_u *UserUpdateOne) ClearTelegramAuthFirstName() *UserUpdateOne {
+	_u.mutation.ClearTelegramAuthFirstName()
+	return _u
+}
+
+// SetTelegramAuthLastName sets the "telegram_auth_last_name" field.
+func (_u *UserUpdateOne) SetTelegramAuthLastName(v string) *UserUpdateOne {
+	_u.mutation.SetTelegramAuthLastName(v)
+	return _u
+}
+
+// SetNillableTelegramAuthLastName sets the "telegram_auth_last_name" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTelegramAuthLastName(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetTelegramAuthLastName(*v)
+	}
+	return _u
+}
+
+// ClearTelegramAuthLastName clears the value of the "telegram_auth_last_name" field.
+func (_u *UserUpdateOne) ClearTelegramAuthLastName() *UserUpdateOne {
+	_u.mutation.ClearTelegramAuthLastName()
+	return _u
+}
+
+// SetTelegramAuthPhotoURL sets the "telegram_auth_photo_url" field.
+func (_u *UserUpdateOne) SetTelegramAuthPhotoURL(v string) *UserUpdateOne {
+	_u.mutation.SetTelegramAuthPhotoURL(v)
+	return _u
+}
+
+// SetNillableTelegramAuthPhotoURL sets the "telegram_auth_photo_url" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTelegramAuthPhotoURL(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetTelegramAuthPhotoURL(*v)
+	}
+	return _u
+}
+
+// ClearTelegramAuthPhotoURL clears the value of the "telegram_auth_photo_url" field.
+func (_u *UserUpdateOne) ClearTelegramAuthPhotoURL() *UserUpdateOne {
+	_u.mutation.ClearTelegramAuthPhotoURL()
+	return _u
+}
+
+// SetTelegramAuthVerifiedAt sets the "telegram_auth_verified_at" field.
+func (_u *UserUpdateOne) SetTelegramAuthVerifiedAt(v time.Time) *UserUpdateOne {
+	_u.mutation.SetTelegramAuthVerifiedAt(v)
+	return _u
+}
+
+// SetNillableTelegramAuthVerifiedAt sets the "telegram_auth_verified_at" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTelegramAuthVerifiedAt(v *time.Time) *UserUpdateOne {
+	if v != nil {
+		_u.SetTelegramAuthVerifiedAt(*v)
+	}
+	return _u
+}
+
+// ClearTelegramAuthVerifiedAt clears the value of the "telegram_auth_verified_at" field.
+func (_u *UserUpdateOne) ClearTelegramAuthVerifiedAt() *UserUpdateOne {
+	_u.mutation.ClearTelegramAuthVerifiedAt()
+	return _u
+}
+
+// SetTelegramAuthLastAuthDate sets the "telegram_auth_last_auth_date" field.
+func (_u *UserUpdateOne) SetTelegramAuthLastAuthDate(v int64) *UserUpdateOne {
+	_u.mutation.ResetTelegramAuthLastAuthDate()
+	_u.mutation.SetTelegramAuthLastAuthDate(v)
+	return _u
+}
+
+// SetNillableTelegramAuthLastAuthDate sets the "telegram_auth_last_auth_date" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTelegramAuthLastAuthDate(v *int64) *UserUpdateOne {
+	if v != nil {
+		_u.SetTelegramAuthLastAuthDate(*v)
+	}
+	return _u
+}
+
+// AddTelegramAuthLastAuthDate adds value to the "telegram_auth_last_auth_date" field.
+func (_u *UserUpdateOne) AddTelegramAuthLastAuthDate(v int64) *UserUpdateOne {
+	_u.mutation.AddTelegramAuthLastAuthDate(v)
+	return _u
+}
+
 // SetSocialAccounts sets the "social_accounts" field.
 func (_u *UserUpdateOne) SetSocialAccounts(v map[string]interface{}) *UserUpdateOne {
 	_u.mutation.SetSocialAccounts(v)
@@ -3613,6 +3954,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.TelegramCleared() {
 		_spec.ClearField(user.FieldTelegram, field.TypeString)
+	}
+	if value, ok := _u.mutation.TelegramAuthUserID(); ok {
+		_spec.SetField(user.FieldTelegramAuthUserID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedTelegramAuthUserID(); ok {
+		_spec.AddField(user.FieldTelegramAuthUserID, field.TypeInt64, value)
+	}
+	if _u.mutation.TelegramAuthUserIDCleared() {
+		_spec.ClearField(user.FieldTelegramAuthUserID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.TelegramAuthUsername(); ok {
+		_spec.SetField(user.FieldTelegramAuthUsername, field.TypeString, value)
+	}
+	if _u.mutation.TelegramAuthUsernameCleared() {
+		_spec.ClearField(user.FieldTelegramAuthUsername, field.TypeString)
+	}
+	if value, ok := _u.mutation.TelegramAuthFirstName(); ok {
+		_spec.SetField(user.FieldTelegramAuthFirstName, field.TypeString, value)
+	}
+	if _u.mutation.TelegramAuthFirstNameCleared() {
+		_spec.ClearField(user.FieldTelegramAuthFirstName, field.TypeString)
+	}
+	if value, ok := _u.mutation.TelegramAuthLastName(); ok {
+		_spec.SetField(user.FieldTelegramAuthLastName, field.TypeString, value)
+	}
+	if _u.mutation.TelegramAuthLastNameCleared() {
+		_spec.ClearField(user.FieldTelegramAuthLastName, field.TypeString)
+	}
+	if value, ok := _u.mutation.TelegramAuthPhotoURL(); ok {
+		_spec.SetField(user.FieldTelegramAuthPhotoURL, field.TypeString, value)
+	}
+	if _u.mutation.TelegramAuthPhotoURLCleared() {
+		_spec.ClearField(user.FieldTelegramAuthPhotoURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.TelegramAuthVerifiedAt(); ok {
+		_spec.SetField(user.FieldTelegramAuthVerifiedAt, field.TypeTime, value)
+	}
+	if _u.mutation.TelegramAuthVerifiedAtCleared() {
+		_spec.ClearField(user.FieldTelegramAuthVerifiedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.TelegramAuthLastAuthDate(); ok {
+		_spec.SetField(user.FieldTelegramAuthLastAuthDate, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedTelegramAuthLastAuthDate(); ok {
+		_spec.AddField(user.FieldTelegramAuthLastAuthDate, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.SocialAccounts(); ok {
 		_spec.SetField(user.FieldSocialAccounts, field.TypeJSON, value)

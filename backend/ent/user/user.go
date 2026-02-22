@@ -40,6 +40,20 @@ const (
 	FieldCompany = "company"
 	// FieldTelegram holds the string denoting the telegram field in the database.
 	FieldTelegram = "telegram"
+	// FieldTelegramAuthUserID holds the string denoting the telegram_auth_user_id field in the database.
+	FieldTelegramAuthUserID = "telegram_auth_user_id"
+	// FieldTelegramAuthUsername holds the string denoting the telegram_auth_username field in the database.
+	FieldTelegramAuthUsername = "telegram_auth_username"
+	// FieldTelegramAuthFirstName holds the string denoting the telegram_auth_first_name field in the database.
+	FieldTelegramAuthFirstName = "telegram_auth_first_name"
+	// FieldTelegramAuthLastName holds the string denoting the telegram_auth_last_name field in the database.
+	FieldTelegramAuthLastName = "telegram_auth_last_name"
+	// FieldTelegramAuthPhotoURL holds the string denoting the telegram_auth_photo_url field in the database.
+	FieldTelegramAuthPhotoURL = "telegram_auth_photo_url"
+	// FieldTelegramAuthVerifiedAt holds the string denoting the telegram_auth_verified_at field in the database.
+	FieldTelegramAuthVerifiedAt = "telegram_auth_verified_at"
+	// FieldTelegramAuthLastAuthDate holds the string denoting the telegram_auth_last_auth_date field in the database.
+	FieldTelegramAuthLastAuthDate = "telegram_auth_last_auth_date"
 	// FieldSocialAccounts holds the string denoting the social_accounts field in the database.
 	FieldSocialAccounts = "social_accounts"
 	// FieldPrimaryBadgeID holds the string denoting the primary_badge_id field in the database.
@@ -266,6 +280,13 @@ var Columns = []string{
 	FieldPronouns,
 	FieldCompany,
 	FieldTelegram,
+	FieldTelegramAuthUserID,
+	FieldTelegramAuthUsername,
+	FieldTelegramAuthFirstName,
+	FieldTelegramAuthLastName,
+	FieldTelegramAuthPhotoURL,
+	FieldTelegramAuthVerifiedAt,
+	FieldTelegramAuthLastAuthDate,
 	FieldSocialAccounts,
 	FieldPrimaryBadgeID,
 	FieldTotpSecret,
@@ -314,6 +335,16 @@ var (
 	DefaultCompany string
 	// DefaultTelegram holds the default value on creation for the "telegram" field.
 	DefaultTelegram string
+	// DefaultTelegramAuthUsername holds the default value on creation for the "telegram_auth_username" field.
+	DefaultTelegramAuthUsername string
+	// DefaultTelegramAuthFirstName holds the default value on creation for the "telegram_auth_first_name" field.
+	DefaultTelegramAuthFirstName string
+	// DefaultTelegramAuthLastName holds the default value on creation for the "telegram_auth_last_name" field.
+	DefaultTelegramAuthLastName string
+	// DefaultTelegramAuthPhotoURL holds the default value on creation for the "telegram_auth_photo_url" field.
+	DefaultTelegramAuthPhotoURL string
+	// DefaultTelegramAuthLastAuthDate holds the default value on creation for the "telegram_auth_last_auth_date" field.
+	DefaultTelegramAuthLastAuthDate int64
 	// DefaultTotpEnabled holds the default value on creation for the "totp_enabled" field.
 	DefaultTotpEnabled bool
 	// DefaultTotpVerified holds the default value on creation for the "totp_verified" field.
@@ -399,6 +430,41 @@ func ByCompany(opts ...sql.OrderTermOption) OrderOption {
 // ByTelegram orders the results by the telegram field.
 func ByTelegram(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTelegram, opts...).ToFunc()
+}
+
+// ByTelegramAuthUserID orders the results by the telegram_auth_user_id field.
+func ByTelegramAuthUserID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTelegramAuthUserID, opts...).ToFunc()
+}
+
+// ByTelegramAuthUsername orders the results by the telegram_auth_username field.
+func ByTelegramAuthUsername(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTelegramAuthUsername, opts...).ToFunc()
+}
+
+// ByTelegramAuthFirstName orders the results by the telegram_auth_first_name field.
+func ByTelegramAuthFirstName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTelegramAuthFirstName, opts...).ToFunc()
+}
+
+// ByTelegramAuthLastName orders the results by the telegram_auth_last_name field.
+func ByTelegramAuthLastName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTelegramAuthLastName, opts...).ToFunc()
+}
+
+// ByTelegramAuthPhotoURL orders the results by the telegram_auth_photo_url field.
+func ByTelegramAuthPhotoURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTelegramAuthPhotoURL, opts...).ToFunc()
+}
+
+// ByTelegramAuthVerifiedAt orders the results by the telegram_auth_verified_at field.
+func ByTelegramAuthVerifiedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTelegramAuthVerifiedAt, opts...).ToFunc()
+}
+
+// ByTelegramAuthLastAuthDate orders the results by the telegram_auth_last_auth_date field.
+func ByTelegramAuthLastAuthDate(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTelegramAuthLastAuthDate, opts...).ToFunc()
 }
 
 // ByPrimaryBadgeID orders the results by the primary_badge_id field.
