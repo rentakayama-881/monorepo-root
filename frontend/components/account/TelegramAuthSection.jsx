@@ -96,7 +96,8 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
     script.src = TELEGRAM_WIDGET_SRC;
     script.async = true;
     script.setAttribute("data-telegram-login", botUsername);
-    script.setAttribute("data-size", "large");
+    script.setAttribute("data-size", "small");
+    script.setAttribute("data-radius", "1");
     script.setAttribute("data-userpic", "false");
     script.setAttribute("data-request-access", "write");
     script.setAttribute("data-lang", "en");
@@ -192,7 +193,10 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
                 compact
               />
             ) : null}
-            <div ref={widgetContainerRef} />
+            <div
+              ref={widgetContainerRef}
+              className="text-sm text-foreground [&_*]:!text-foreground"
+            />
             <div className="text-xs text-muted-foreground">
               Setelah login Telegram berhasil, sistem akan memverifikasi signature resmi dari Telegram.
             </div>
