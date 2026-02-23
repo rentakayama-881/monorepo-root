@@ -12,7 +12,7 @@ describe('logger.js', () => {
     beforeEach(() => {
       process.env.NODE_ENV = 'development';
       jest.resetModules();
-      jest.mock('@sentry/nextjs', () => ({
+      jest.mock('@sentry/browser', () => ({
         captureException: jest.fn(),
         captureMessage: jest.fn(),
       }));
@@ -62,11 +62,11 @@ describe('logger.js', () => {
     beforeEach(() => {
       process.env.NODE_ENV = 'production';
       jest.resetModules();
-      jest.mock('@sentry/nextjs', () => ({
+      jest.mock('@sentry/browser', () => ({
         captureException: jest.fn(),
         captureMessage: jest.fn(),
       }));
-      Sentry = require('@sentry/nextjs');
+      Sentry = require('@sentry/browser');
       logger = require('../logger').logger;
     });
 

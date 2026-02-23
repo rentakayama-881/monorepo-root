@@ -41,7 +41,7 @@ run_step "feature-service: dotnet build -c Release" \
 run_step "feature-service: dotnet test -c Release" \
   run_in_dir "$OPS_ROOT/feature-service" dotnet test -c Release --nologo
 
-run_step "frontend: npm ci" run_in_dir "$OPS_ROOT/frontend" npm ci
+run_step "frontend: npm ci --no-audit" run_in_dir "$OPS_ROOT/frontend" npm ci --no-audit
 run_step "frontend: npm run lint" run_in_dir "$OPS_ROOT/frontend" npm run lint
 run_step "frontend: npm run typecheck" run_in_dir "$OPS_ROOT/frontend" npm run typecheck
 run_step "frontend: npm test -- --ci --runInBand --forceExit" \
@@ -53,5 +53,7 @@ run_step "frontend: npm run build (prebuild check relaxed for CI portability)" \
       NEXT_PUBLIC_API_BASE_URL="$next_public_api_base_url" \
       NEXT_PUBLIC_BACKEND_URL="$next_public_backend_url" \
       bash -c "cd \"$OPS_ROOT/frontend\" && npm run build"
+run_step "frontend: npm run audit:prod" \
+  run_in_dir "$OPS_ROOT/frontend" npm run audit:prod
 
 log "OK" "All full preflight gates passed"

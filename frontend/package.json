@@ -6,6 +6,7 @@
     "dev": "next dev",
     "prebuild": "node scripts/prebuild-check.mjs",
     "build": "next build --webpack",
+    "audit:prod": "node scripts/audit-prod-allowlist.mjs",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -23,6 +24,7 @@
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^4.4.1",
+    "@sentry/browser": "^10.39.0",
     "@sentry/nextjs": "^10.39.0",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/typography": "^0.5.19",
@@ -56,6 +58,12 @@
     "typescript": "^5.9.3"
   },
   "overrides": {
+    "schema-utils": {
+      "ajv": "8.18.0"
+    },
+    "ajv-formats": {
+      "ajv": "8.18.0"
+    },
     "glob": "11.1.0",
     "jsdom": "28.0.0",
     "test-exclude": "7.0.1"

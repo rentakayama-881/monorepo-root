@@ -3,7 +3,7 @@
  * In development: logs to console
  * In production: sends errors/warnings to Sentry
  */
-import * as Sentry from "@sentry/nextjs";
+import * as Sentry from "@sentry/browser";
 
 const isDev = process.env.NODE_ENV === "development";
 

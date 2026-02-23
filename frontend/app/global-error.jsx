@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import * as Sentry from "@sentry/nextjs";
+import * as Sentry from "@sentry/browser";
 
 // Note: Cannot use logger here as this is a root error boundary
 // and may not have access to all modules

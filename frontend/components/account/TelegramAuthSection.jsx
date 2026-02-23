@@ -8,6 +8,76 @@ import { fetchJsonAuth } from "@/lib/api";
 const TELEGRAM_WIDGET_SRC = "https://telegram.org/js/telegram-widget.js?22";
 const TELEGRAM_WIDGET_HANDLER = "__aivalidTelegramLoginHandler";
 
+function normalizeBotUsername(value) {
+  return String(value || "").trim().replace(/^@/, "").toLowerCase();
+}
+
+function isTelegramWidgetIframe(iframe) {
+  if (!iframe) return false;
+  const src = String(iframe.getAttribute("src") || iframe.src || "").toLowerCase();
+  const id = String(iframe.id || "").toLowerCase();
+  const className = typeof iframe.className === "string" ? iframe.className.toLowerCase() : "";
+  return (
+    src.includes("oauth.telegram.org/embed") ||
+    src.includes("telegram.org/embed") ||
+    id.includes("telegram-login") ||
+    className.includes("telegram-login")
+  );
+}
+
+function iframeMatchesBot(iframe, botUsername) {
+  const normalizedBot = normalizeBotUsername(botUsername);
+  if (!normalizedBot) return true;
+  const src = String(iframe?.getAttribute("src") || iframe?.src || "").toLowerCase();
+  const id = String(iframe?.id || "").toLowerCase();
+  const className = typeof iframe?.className === "string" ? iframe.className.toLowerCase() : "";
+  return src.includes(`/embed/${normalizedBot}`) || id.includes(normalizedBot) || className.includes(normalizedBot);
+}
+
+function cleanupTelegramWidgetArtifacts({ container, sectionRoot, botUsername }) {
+  if (container) {
+    container.innerHTML = "";
+  }
+
+  if (!sectionRoot || typeof document === "undefined") {
+    return;
+  }
+
+  sectionRoot.querySelectorAll('script[src*="telegram-widget.js"]').forEach((scriptNode) => {
+    scriptNode.remove();
+  });
+
+  sectionRoot.querySelectorAll("iframe").forEach((iframe) => {
+    if (isTelegramWidgetIframe(iframe)) {
+      iframe.remove();
+    }
+  });
+
+  const normalizedBot = normalizeBotUsername(botUsername);
+  if (!normalizedBot) {
+    return;
+  }
+
+  document.body.querySelectorAll("script[src*='telegram-widget.js']").forEach((scriptNode) => {
+    if (sectionRoot.contains(scriptNode)) {
+      scriptNode.remove();
+      return;
+    }
+
+    const scriptBot = normalizeBotUsername(scriptNode.getAttribute("data-telegram-login"));
+    if (!normalizedBot || scriptBot === normalizedBot) {
+      scriptNode.remove();
+    }
+  });
+
+  document.body.querySelectorAll("iframe").forEach((iframe) => {
+    if (sectionRoot.contains(iframe)) return;
+    if (!isTelegramWidgetIframe(iframe)) return;
+    if (!iframeMatchesBot(iframe, normalizedBot)) return;
+    iframe.remove();
+  });
+}
+
 function formatVerifiedAt(rawValue) {
   const raw = String(rawValue || "").trim();
   if (!raw) return "-";
@@ -42,6 +112,7 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
   const [loadingDisconnect, setLoadingDisconnect] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const sectionRef = useRef(null);
   const widgetContainerRef = useRef(null);
 
   const botUsername = useMemo(
@@ -70,6 +141,11 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
         if (typeof onTelegramAuthChange === "function") {
           onTelegramAuthChange(next);
         }
+        cleanupTelegramWidgetArtifacts({
+          container: widgetContainerRef.current,
+          sectionRoot: sectionRef.current,
+          botUsername,
+        });
         setMessage("Akun Telegram berhasil terhubung.");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Gagal menghubungkan Telegram.");
@@ -81,14 +157,16 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
     return () => {
       delete window[TELEGRAM_WIDGET_HANDLER];
     };
-  }, [onTelegramAuthChange]);
+  }, [botUsername, onTelegramAuthChange]);
 
   useEffect(() => {
+    const sectionRoot = sectionRef.current;
     const container = widgetContainerRef.current;
-    if (!container) return;
-    container.innerHTML = "";
+    if (!sectionRoot) return;
 
-    if (connected || !botUsername) {
+    cleanupTelegramWidgetArtifacts({ container, sectionRoot, botUsername });
+
+    if (connected || !botUsername || !container) {
       return;
     }
 
@@ -103,6 +181,14 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
     script.setAttribute("data-lang", "en");
     script.setAttribute("data-onauth", `window.${TELEGRAM_WIDGET_HANDLER}(user)`);
     container.appendChild(script);
+
+    return () => {
+      cleanupTelegramWidgetArtifacts({
+        container: widgetContainerRef.current,
+        sectionRoot,
+        botUsername,
+      });
+    };
   }, [botUsername, connected]);
 
   async function disconnectTelegram() {
@@ -126,7 +212,7 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
   }
 
   return (
-    <section className="settings-section">
+    <section ref={sectionRef} className="settings-section">
       <h3 className="settings-section-title mb-3">Telegram Auth</h3>
       <div className="rounded-lg border border-border bg-card p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -195,6 +281,7 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
             ) : null}
             <div
               ref={widgetContainerRef}
+              data-testid="telegram-widget-container"
               className="text-sm text-foreground [&_*]:!text-foreground"
             />
             <div className="text-xs text-muted-foreground">
