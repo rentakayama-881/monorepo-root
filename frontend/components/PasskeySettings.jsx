@@ -52,6 +52,9 @@ export default function PasskeySettings() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [registering, setRegistering] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
   const [deleting, setDeleting] = useState(null);
   const [webAuthnSupported, setWebAuthnSupported] = useState(true);
 
@@ -90,9 +93,10 @@ export default function PasskeySettings() {
       return;
     }
 
-    setRegistering(true);
     setError("");
     setSuccess("");
+    setPin("");
+    setPinError("");
 
     try {
       const pinStatus = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.PIN_STATUS);
@@ -102,6 +106,39 @@ export default function PasskeySettings() {
         return;
       }
 
+      setShowPinModal(true);
+    } catch (err) {
+      if (err?.code === "TWO_FACTOR_REQUIRED") {
+        router.push(
+          "/account/security?setup2fa=true&redirect=" +
+            encodeURIComponent("/account/wallet/set-pin?redirect=passkey")
+        );
+        return;
+      }
+
+      if (err?.code === "PIN_REQUIRED") {
+        router.push("/account/wallet/set-pin?redirect=passkey");
+        return;
+      }
+
+      setError(err?.message || "Failed to prepare passkey registration.");
+    }
+  }
+
+  async function confirmRegisterPasskey() {
+    if (registering) return;
+
+    const normalizedPin = String(pin || "").replace(/\D/g, "");
+    if (normalizedPin.length !== 6) {
+      setPinError("PIN harus 6 digit.");
+      return;
+    }
+
+    setRegistering(true);
+    setPinError("");
+    setError("");
+
+    try {
       const token = await requireValidTokenOrThrow();
 
       const beginRes = await fetch(`${API}/register/begin`, {
@@ -110,6 +147,7 @@ export default function PasskeySettings() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ pin: normalizedPin }),
       });
       if (!beginRes.ok) {
         await throwApiError(beginRes, "Failed to start registration.");
@@ -132,6 +170,8 @@ export default function PasskeySettings() {
           id: base64URLToBuffer(cred.id),
         }));
       }
+
+      setShowPinModal(false);
 
       const credential = await navigator.credentials.create({
         publicKey: publicKeyOptions,
@@ -161,10 +201,12 @@ export default function PasskeySettings() {
         await throwApiError(finishRes, "Failed to complete registration.");
       }
 
+      setPin("");
       setSuccess("Passkey registered successfully!");
       await fetchPasskeys();
     } catch (err) {
       if (err?.code === "TWO_FACTOR_REQUIRED") {
+        setShowPinModal(false);
         router.push(
           "/account/security?setup2fa=true&redirect=" +
             encodeURIComponent("/account/wallet/set-pin?redirect=passkey")
@@ -173,7 +215,13 @@ export default function PasskeySettings() {
       }
 
       if (err?.code === "PIN_REQUIRED") {
+        setShowPinModal(false);
         router.push("/account/wallet/set-pin?redirect=passkey");
+        return;
+      }
+
+      if (err?.code === "INVALID_PIN") {
+        setPinError(err?.message || "PIN transaksi tidak valid.");
         return;
       }
 
@@ -182,7 +230,7 @@ export default function PasskeySettings() {
       } else if (err.name === "InvalidStateError") {
         setError("Passkey ini sudah terdaftar");
       } else {
-        setError(err.message || "Failed to register passkey.");
+        setError(err?.message || "Failed to register passkey.");
       }
     } finally {
       setRegistering(false);
@@ -260,73 +308,128 @@ export default function PasskeySettings() {
   }
 
   return (
-    <section className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-          {PasskeyIcon}
-          Passkeys
-        </h3>
-        <span className="text-xs text-muted-foreground">
-          {passkeys.length} terdaftar
-        </span>
-      </div>
-
-      <p className="mt-2 text-xs text-muted-foreground">
-        Passkeys memungkinkan Anda login tanpa password menggunakan fingerprint, face ID, atau security key.
-      </p>
-
-      {error && (
-        <div className="mt-3 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-sm text-destructive">
-          {error}
+    <>
+      <section className="rounded-lg border border-border bg-card p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+            {PasskeyIcon}
+            Passkeys
+          </h3>
+          <span className="text-xs text-muted-foreground">
+            {passkeys.length} terdaftar
+          </span>
         </div>
-      )}
 
-      {success && (
-        <div className="mt-3 p-2 rounded-md bg-success/10 border border-success/20 text-sm text-success">
-          {success}
-        </div>
-      )}
+        <p className="mt-2 text-xs text-muted-foreground">
+          Passkeys memungkinkan Anda login tanpa password menggunakan fingerprint, face ID, atau security key.
+        </p>
 
-      {loading ?  (
-        <div className="mt-4">
-          <SectionLoadingBlock lines={2} compact srLabel="Loading passkeys" />
-        </div>
-      ) : (
-        <>
-          <PasskeyList
-            passkeys={passkeys}
-            onDelete={deletePasskey}
-            onRename={renamePasskey}
-            deleting={deleting}
-          />
-
-          <div className="mt-4">
-            <button
-              onClick={registerPasskey}
-              disabled={registering}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            >
-              {registering ? (
-                <>
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Mendaftarkan...
-                </>
-              ) : (
-                <>
-                  {PlusIcon}
-                  Tambah Passkey
-                </>
-              )}
-            </button>
+        {error && (
+          <div className="mt-3 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-sm text-destructive">
+            {error}
           </div>
+        )}
 
-          {passkeys.length === 0 && (
-            <p className="mt-3 text-xs text-muted-foreground">
-              Belum ada passkey terdaftar. Tambahkan passkey untuk login lebih aman dan mudah.
+        {success && (
+          <div className="mt-3 p-2 rounded-md bg-success/10 border border-success/20 text-sm text-success">
+            {success}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="mt-4">
+            <SectionLoadingBlock lines={2} compact srLabel="Loading passkeys" />
+          </div>
+        ) : (
+          <>
+            <PasskeyList
+              passkeys={passkeys}
+              onDelete={deletePasskey}
+              onRename={renamePasskey}
+              deleting={deleting}
+            />
+
+            <div className="mt-4">
+              <button
+                onClick={registerPasskey}
+                disabled={registering}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                {registering ? (
+                  <>
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Memverifikasi...
+                  </>
+                ) : (
+                  <>
+                    {PlusIcon}
+                    Tambah Passkey
+                  </>
+                )}
+              </button>
+            </div>
+
+            {passkeys.length === 0 && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Belum ada passkey terdaftar. Tambahkan passkey untuk login lebih aman dan mudah.
+              </p>
+            )}
+          </>
+        )}
+      </section>
+
+      {showPinModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6">
+            <h3 className="text-lg font-bold text-foreground">Konfirmasi PIN</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Masukkan PIN transaksi untuk melanjutkan pendaftaran passkey.
             </p>
-          )}
-        </>
+
+            <div className="mt-4">
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={pin}
+                onChange={(e) => {
+                  setPin(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  setPinError("");
+                }}
+                placeholder="••••••"
+                className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-primary"
+                autoFocus
+              />
+            </div>
+
+            {pinError && (
+              <p className="mt-2 text-sm text-destructive">{pinError}</p>
+            )}
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => {
+                  if (registering) return;
+                  setShowPinModal(false);
+                  setPin("");
+                  setPinError("");
+                }}
+                disabled={registering}
+                className="flex-1 rounded-md border border-border py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmRegisterPasskey}
+                disabled={registering || pin.length !== 6}
+                className="flex-1 rounded-md bg-primary py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                {registering ? "Memverifikasi..." : "Verifikasi PIN"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-    </section>
+    </>
   );
 }

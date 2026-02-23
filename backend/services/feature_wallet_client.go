@@ -31,6 +31,12 @@ type FeaturePinStatusResult struct {
 	MaxAttempts    int        `json:"maxAttempts"`
 }
 
+type FeaturePinVerifyResult struct {
+	Valid             bool   `json:"valid"`
+	Message           string `json:"message"`
+	RemainingAttempts *int   `json:"remainingAttempts"`
+}
+
 type FeatureWalletError struct {
 	StatusCode int
 	Code       string
@@ -158,6 +164,57 @@ func (c *FeatureWalletClient) GetPinStatus(ctx context.Context, authHeader strin
 	var raw FeaturePinStatusResult
 	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, fmt.Errorf("failed to decode pin status response: %w", err)
+	}
+
+	return &raw, nil
+}
+
+func (c *FeatureWalletClient) VerifyPin(ctx context.Context, authHeader, pin string) (*FeaturePinVerifyResult, error) {
+	if c == nil || c.baseURL == "" {
+		return nil, fmt.Errorf("feature wallet client is not configured")
+	}
+
+	payload := map[string]string{
+		"pin": pin,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/v1/wallets/pin/verify", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	if strings.TrimSpace(authHeader) != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		return nil, parseFeatureWalletError(resp.StatusCode, respBody)
+	}
+
+	var wrapped featureApiEnvelope[FeaturePinVerifyResult]
+	if err := json.Unmarshal(respBody, &wrapped); err == nil && wrapped.Success {
+		return &wrapped.Data, nil
+	}
+
+	var raw FeaturePinVerifyResult
+	if err := json.Unmarshal(respBody, &raw); err != nil {
+		return nil, fmt.Errorf("failed to decode verify pin response: %w", err)
 	}
 
 	return &raw, nil

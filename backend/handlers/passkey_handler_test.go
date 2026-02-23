@@ -74,12 +74,22 @@ func (f *fakeAuthService) LoginWithPasskey(ctx context.Context, u *ent.User, ipA
 }
 
 type fakeWalletStatusClient struct {
-	status *services.FeaturePinStatusResult
-	err    error
+	status       *services.FeaturePinStatusResult
+	err          error
+	verifyResult *services.FeaturePinVerifyResult
+	verifyErr    error
+	verifyCalled bool
+	verifyPin    string
 }
 
 func (f *fakeWalletStatusClient) GetPinStatus(ctx context.Context, authHeader string) (*services.FeaturePinStatusResult, error) {
 	return f.status, f.err
+}
+
+func (f *fakeWalletStatusClient) VerifyPin(ctx context.Context, authHeader, pin string) (*services.FeaturePinVerifyResult, error) {
+	f.verifyCalled = true
+	f.verifyPin = pin
+	return f.verifyResult, f.verifyErr
 }
 
 func setupPasskeyProtectedRouter(handlerFn gin.HandlerFunc) *gin.Engine {
@@ -103,6 +113,14 @@ func decodeBodyMap(t *testing.T, rec *httptest.ResponseRecorder) map[string]inte
 	return body
 }
 
+func newBeginRegistrationRequest(pin string) *http.Request {
+	reqBody := bytes.NewBufferString(`{"pin":"` + pin + `"}`)
+	req := httptest.NewRequest(http.MethodPost, "/passkeys/register/begin", reqBody)
+	req.Header.Set("Authorization", "Bearer token")
+	req.Header.Set("Content-Type", "application/json")
+	return req
+}
+
 func TestPasskeyBeginRegistration_Returns403WhenPinNotSet(t *testing.T) {
 	passkeySvc := &fakePasskeyService{}
 	walletSvc := &fakeWalletStatusClient{
@@ -116,8 +134,7 @@ func TestPasskeyBeginRegistration_Returns403WhenPinNotSet(t *testing.T) {
 	}
 
 	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
-	req := httptest.NewRequest(http.MethodPost, "/passkeys/register/begin", nil)
-	req.Header.Set("Authorization", "Bearer token")
+	req := newBeginRegistrationRequest("123456")
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -147,8 +164,7 @@ func TestPasskeyBeginRegistration_Returns503WhenPinCheckUnavailable(t *testing.T
 	}
 
 	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
-	req := httptest.NewRequest(http.MethodPost, "/passkeys/register/begin", nil)
-	req.Header.Set("Authorization", "Bearer token")
+	req := newBeginRegistrationRequest("123456")
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -182,8 +198,7 @@ func TestPasskeyBeginRegistration_Returns401WhenPinStatusUnauthorized(t *testing
 	}
 
 	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
-	req := httptest.NewRequest(http.MethodPost, "/passkeys/register/begin", nil)
-	req.Header.Set("Authorization", "Bearer token")
+	req := newBeginRegistrationRequest("123456")
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -212,8 +227,7 @@ func TestPasskeyBeginRegistration_Returns403WhenWalletRequiresTwoFactor(t *testi
 	}
 
 	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
-	req := httptest.NewRequest(http.MethodPost, "/passkeys/register/begin", nil)
-	req.Header.Set("Authorization", "Bearer token")
+	req := newBeginRegistrationRequest("123456")
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -247,8 +261,7 @@ func TestPasskeyBeginRegistration_Returns403PinRequiredForGenericForbidden(t *te
 	}
 
 	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
-	req := httptest.NewRequest(http.MethodPost, "/passkeys/register/begin", nil)
-	req.Header.Set("Authorization", "Bearer token")
+	req := newBeginRegistrationRequest("123456")
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -265,7 +278,7 @@ func TestPasskeyBeginRegistration_Returns403PinRequiredForGenericForbidden(t *te
 	}
 }
 
-func TestPasskeyBeginRegistration_AllowsWhenPinSet(t *testing.T) {
+func TestPasskeyBeginRegistration_Returns400WhenPinPayloadMissing(t *testing.T) {
 	passkeySvc := &fakePasskeyService{}
 	walletSvc := &fakeWalletStatusClient{
 		status: &services.FeaturePinStatusResult{PinSet: true},
@@ -280,6 +293,102 @@ func TestPasskeyBeginRegistration_AllowsWhenPinSet(t *testing.T) {
 	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
 	req := httptest.NewRequest(http.MethodPost, "/passkeys/register/begin", nil)
 	req.Header.Set("Authorization", "Bearer token")
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusBadRequest)
+	}
+	if passkeySvc.beginCalled {
+		t.Fatalf("begin registration should not be called when PIN payload is missing")
+	}
+	if walletSvc.verifyCalled {
+		t.Fatalf("verify pin should not be called when PIN payload is invalid")
+	}
+}
+
+func TestPasskeyBeginRegistration_Returns400WhenPinFormatInvalid(t *testing.T) {
+	passkeySvc := &fakePasskeyService{}
+	walletSvc := &fakeWalletStatusClient{
+		status: &services.FeaturePinStatusResult{PinSet: true},
+	}
+	handler := &PasskeyHandler{
+		passkeyService: passkeySvc,
+		authService:    &fakeAuthService{},
+		walletClient:   walletSvc,
+		logger:         zap.NewNop(),
+	}
+
+	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
+	req := newBeginRegistrationRequest("12ab")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusBadRequest)
+	}
+	if passkeySvc.beginCalled {
+		t.Fatalf("begin registration should not be called when PIN format is invalid")
+	}
+	if walletSvc.verifyCalled {
+		t.Fatalf("verify pin should not be called when PIN format is invalid")
+	}
+}
+
+func TestPasskeyBeginRegistration_Returns401WhenPinVerificationFails(t *testing.T) {
+	passkeySvc := &fakePasskeyService{}
+	walletSvc := &fakeWalletStatusClient{
+		status: &services.FeaturePinStatusResult{PinSet: true},
+		verifyErr: &services.FeatureWalletError{
+			StatusCode: http.StatusUnauthorized,
+			Code:       "INVALID_PIN",
+			Message:    "PIN salah. Sisa percobaan: 2",
+		},
+	}
+	handler := &PasskeyHandler{
+		passkeyService: passkeySvc,
+		authService:    &fakeAuthService{},
+		walletClient:   walletSvc,
+		logger:         zap.NewNop(),
+	}
+
+	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
+	req := newBeginRegistrationRequest("123456")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusUnauthorized)
+	}
+
+	body := decodeBodyMap(t, rec)
+	if body["code"] != "INVALID_PIN" {
+		t.Fatalf("unexpected code: got %v want INVALID_PIN", body["code"])
+	}
+	if passkeySvc.beginCalled {
+		t.Fatalf("begin registration should not be called when PIN is invalid")
+	}
+	if !walletSvc.verifyCalled {
+		t.Fatalf("verify pin should be called when PIN payload is valid")
+	}
+}
+
+func TestPasskeyBeginRegistration_AllowsWhenPinSetAndVerified(t *testing.T) {
+	passkeySvc := &fakePasskeyService{}
+	walletSvc := &fakeWalletStatusClient{
+		status:       &services.FeaturePinStatusResult{PinSet: true},
+		verifyResult: &services.FeaturePinVerifyResult{Valid: true, Message: "PIN valid"},
+	}
+	handler := &PasskeyHandler{
+		passkeyService: passkeySvc,
+		authService:    &fakeAuthService{},
+		walletClient:   walletSvc,
+		logger:         zap.NewNop(),
+	}
+
+	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
+	req := newBeginRegistrationRequest("123456")
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -293,6 +402,12 @@ func TestPasskeyBeginRegistration_AllowsWhenPinSet(t *testing.T) {
 	}
 	if !passkeySvc.beginCalled {
 		t.Fatalf("begin registration should be called when PIN is set")
+	}
+	if !walletSvc.verifyCalled {
+		t.Fatalf("verify pin should be called before begin registration")
+	}
+	if walletSvc.verifyPin != "123456" {
+		t.Fatalf("unexpected verified pin: got %q want %q", walletSvc.verifyPin, "123456")
 	}
 }
 

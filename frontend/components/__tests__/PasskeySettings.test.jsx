@@ -50,6 +50,13 @@ describe("PasskeySettings", () => {
     global.fetch.mockReset();
 
     window.PublicKeyCredential = function PublicKeyCredential() {};
+    Object.defineProperty(window.navigator, "credentials", {
+      value: {
+        create: jest.fn(),
+      },
+      configurable: true,
+    });
+
     mockRequireValidTokenOrThrow.mockResolvedValue("token-123");
     mockReadJsonSafe.mockImplementation(async (res) => {
       if (!res || typeof res.json !== "function") return null;
@@ -82,7 +89,22 @@ describe("PasskeySettings", () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  it("redirects to set-pin when backend enforces PIN_REQUIRED on begin registration", async () => {
+  it("opens PIN modal before starting passkey registration", async () => {
+    global.fetch.mockResolvedValueOnce(
+      createResponse({ ok: true, jsonData: { passkeys: [] } })
+    );
+    mockFetchFeatureAuth.mockResolvedValue({ pinSet: true });
+
+    render(<PasskeySettings />);
+
+    const addButton = await screen.findByRole("button", { name: /Tambah Passkey/i });
+    fireEvent.click(addButton);
+
+    expect(await screen.findByText(/Konfirmasi PIN/i)).toBeTruthy();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("sends PIN to begin registration and redirects to set-pin when backend enforces PIN_REQUIRED", async () => {
     global.fetch
       .mockResolvedValueOnce(
         createResponse({ ok: true, jsonData: { passkeys: [] } })
@@ -103,9 +125,46 @@ describe("PasskeySettings", () => {
     const addButton = await screen.findByRole("button", { name: /Tambah Passkey/i });
     fireEvent.click(addButton);
 
+    const pinInput = await screen.findByPlaceholderText("••••••");
+    fireEvent.change(pinInput, { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: /Verifikasi PIN/i }));
+
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith("/account/wallet/set-pin?redirect=passkey");
     });
+
+    const beginCall = global.fetch.mock.calls[1];
+    expect(beginCall[1]?.body).toBe(JSON.stringify({ pin: "123456" }));
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows invalid PIN error in modal when backend returns INVALID_PIN", async () => {
+    global.fetch
+      .mockResolvedValueOnce(
+        createResponse({ ok: true, jsonData: { passkeys: [] } })
+      )
+      .mockResolvedValueOnce(
+        createResponse({
+          ok: false,
+          jsonData: {
+            code: "INVALID_PIN",
+            message: "PIN salah. Sisa percobaan: 2",
+          },
+        })
+      );
+    mockFetchFeatureAuth.mockResolvedValue({ pinSet: true });
+
+    render(<PasskeySettings />);
+
+    const addButton = await screen.findByRole("button", { name: /Tambah Passkey/i });
+    fireEvent.click(addButton);
+
+    const pinInput = await screen.findByPlaceholderText("••••••");
+    fireEvent.change(pinInput, { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: /Verifikasi PIN/i }));
+
+    expect(await screen.findByText(/PIN salah\. Sisa percobaan: 2/i)).toBeTruthy();
+    expect(pushMock).not.toHaveBeenCalled();
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
@@ -150,6 +209,10 @@ describe("PasskeySettings", () => {
 
     const addButton = await screen.findByRole("button", { name: /Tambah Passkey/i });
     fireEvent.click(addButton);
+
+    const pinInput = await screen.findByPlaceholderText("••••••");
+    fireEvent.change(pinInput, { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: /Verifikasi PIN/i }));
 
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith(

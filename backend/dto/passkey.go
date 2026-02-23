@@ -29,6 +29,12 @@ type PasskeyRegisterBeginResponse struct {
 	SessionID string      `json:"session_id"`
 }
 
+// PasskeyRegisterBeginRequest is sent from client before starting registration.
+// PIN verification is required before WebAuthn options are issued.
+type PasskeyRegisterBeginRequest struct {
+	Pin string `json:"pin" binding:"required,len=6,numeric"`
+}
+
 // PasskeyRegisterFinishRequest is sent from client to complete registration
 type PasskeyRegisterFinishRequest struct {
 	Name       string      `json:"name"`

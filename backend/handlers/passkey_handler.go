@@ -39,6 +39,7 @@ type passkeyAuthService interface {
 
 type passkeyWalletStatusClient interface {
 	GetPinStatus(ctx context.Context, authHeader string) (*services.FeaturePinStatusResult, error)
+	VerifyPin(ctx context.Context, authHeader, pin string) (*services.FeaturePinVerifyResult, error)
 }
 
 type PasskeyHandler struct {
@@ -124,6 +125,65 @@ func (h *PasskeyHandler) ensurePinSetForPasskeyRegistration(c *gin.Context, user
 	return true
 }
 
+func (h *PasskeyHandler) verifyPinForPasskeyRegistration(c *gin.Context, userID uint, authHeader, pin string) bool {
+	result, err := h.walletClient.VerifyPin(c.Request.Context(), authHeader, pin)
+	if err != nil {
+		var walletErr *services.FeatureWalletError
+		if errors.As(err, &walletErr) {
+			if walletErr.StatusCode == http.StatusUnauthorized {
+				if strings.EqualFold(strings.TrimSpace(walletErr.Code), "INVALID_PIN") {
+					message := strings.TrimSpace(walletErr.Message)
+					if message == "" {
+						message = "PIN transaksi tidak valid."
+					}
+					appErr := apperrors.NewAppError("INVALID_PIN", message, http.StatusUnauthorized)
+					c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
+					return false
+				}
+
+				c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
+				return false
+			}
+
+			if walletErr.StatusCode == http.StatusForbidden {
+				appCode := "PIN_REQUIRED"
+				message := "Anda harus membuat PIN transaksi terlebih dahulu sebelum menambahkan passkey."
+				if strings.EqualFold(strings.TrimSpace(walletErr.Code), "TWO_FACTOR_REQUIRED") {
+					appCode = "TWO_FACTOR_REQUIRED"
+					message = "Anda harus mengaktifkan 2FA terlebih dahulu sebelum membuat PIN transaksi dan menambahkan passkey."
+				}
+				appErr := apperrors.NewAppError(appCode, message, http.StatusForbidden)
+				c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
+				return false
+			}
+		}
+
+		h.logger.Warn("Failed to verify PIN before passkey registration",
+			zap.Uint("user_id", userID),
+			zap.Error(err),
+		)
+		appErr := apperrors.NewAppError(
+			"PASSKEY_PIN_VERIFICATION_UNAVAILABLE",
+			"Tidak dapat memverifikasi PIN transaksi saat ini. Silakan coba lagi.",
+			http.StatusServiceUnavailable,
+		)
+		c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
+		return false
+	}
+
+	if result == nil || !result.Valid {
+		message := "PIN transaksi tidak valid."
+		if result != nil && strings.TrimSpace(result.Message) != "" {
+			message = strings.TrimSpace(result.Message)
+		}
+		appErr := apperrors.NewAppError("INVALID_PIN", message, http.StatusUnauthorized)
+		c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
+		return false
+	}
+
+	return true
+}
+
 // GetStatus returns passkey status for current user
 func (h *PasskeyHandler) GetStatus(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -186,6 +246,22 @@ func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 	}
 
 	if !h.ensurePinSetForPasskeyRegistration(c, userID) {
+		return
+	}
+
+	var req dto.PasskeyRegisterBeginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, apperrors.ErrorResponse(apperrors.ErrInvalidRequestBody))
+		return
+	}
+
+	authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
+		return
+	}
+
+	if !h.verifyPinForPasskeyRegistration(c, userID, authHeader, req.Pin) {
 		return
 	}
 
