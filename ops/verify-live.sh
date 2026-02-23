@@ -11,6 +11,8 @@ ensure_command curl
 ENV_NAME="prod"
 EXPECT_SHA=""
 TIMEOUT_SECONDS="${OPS_HEALTH_TIMEOUT_SECONDS:-20}"
+RETRY_ATTEMPTS="${OPS_HEALTH_RETRY_ATTEMPTS:-12}"
+RETRY_INTERVAL_SECONDS="${OPS_HEALTH_RETRY_INTERVAL_SECONDS:-5}"
 
 GO_HEALTH_URL="${GO_HEALTH_URL:-https://api.aivalid.id/health}"
 GO_VERSION_URL="${GO_VERSION_URL:-https://api.aivalid.id/health/version}"
@@ -47,15 +49,65 @@ while [[ $# -gt 0 ]]; do
       TIMEOUT_SECONDS="$2"
       shift 2
       ;;
+    --retries)
+      RETRY_ATTEMPTS="$2"
+      shift 2
+      ;;
+    --retry-interval)
+      RETRY_INTERVAL_SECONDS="$2"
+      shift 2
+      ;;
     *)
       die "Unknown argument: $1"
       ;;
   esac
 done
 
-fetch_json() {
+if ! [[ "$RETRY_ATTEMPTS" =~ ^[0-9]+$ ]] || [[ "$RETRY_ATTEMPTS" -lt 1 ]]; then
+  die "Invalid retries value: $RETRY_ATTEMPTS"
+fi
+
+if ! [[ "$RETRY_INTERVAL_SECONDS" =~ ^[0-9]+$ ]] || [[ "$RETRY_INTERVAL_SECONDS" -lt 1 ]]; then
+  die "Invalid retry interval value: $RETRY_INTERVAL_SECONDS"
+fi
+
+fetch_json_once() {
   local url="$1"
   curl -fsS --max-time "$TIMEOUT_SECONDS" "$url"
+}
+
+fetch_json_with_retry() {
+  local url="$1"
+  local label="$2"
+  local attempt=1
+  local tmp_err
+  tmp_err="$(mktemp)"
+
+  while (( attempt <= RETRY_ATTEMPTS )); do
+    if fetch_json_once "$url" 2>"$tmp_err"; then
+      rm -f "$tmp_err"
+      return 0
+    fi
+
+    local err_msg
+    err_msg="$(tr '\n' ' ' <"$tmp_err" | sed -E 's/[[:space:]]+/ /g; s/[[:space:]]+$//')"
+    if [[ -z "$err_msg" ]]; then
+      err_msg="request failed"
+    fi
+
+    if (( attempt < RETRY_ATTEMPTS )); then
+      log "WARN" "$label not ready (attempt $attempt/$RETRY_ATTEMPTS): $err_msg. Retrying in ${RETRY_INTERVAL_SECONDS}s."
+      sleep "$RETRY_INTERVAL_SECONDS"
+    else
+      log "ERROR" "$label failed after $RETRY_ATTEMPTS attempts: $err_msg"
+      rm -f "$tmp_err"
+      return 1
+    fi
+
+    attempt=$((attempt + 1))
+  done
+
+  rm -f "$tmp_err"
 }
 
 verify_sha_match() {
@@ -84,13 +136,13 @@ verify_sha_match() {
 
 log "INFO" "Verifying live environment: $ENV_NAME"
 
-run_step "go health" fetch_json "$GO_HEALTH_URL" >/dev/null
-go_version_payload="$(fetch_json "$GO_VERSION_URL")"
+run_step "go health" fetch_json_with_retry "$GO_HEALTH_URL" "go health" >/dev/null
+go_version_payload="$(fetch_json_with_retry "$GO_VERSION_URL" "go health/version")"
 run_step "go health/version payload" printf '%s\n' "$go_version_payload"
 verify_sha_match "go-backend" "$go_version_payload"
 
-run_step "feature-service health" fetch_json "$FEATURE_HEALTH_URL" >/dev/null
-feature_version_payload="$(fetch_json "$FEATURE_VERSION_URL")"
+run_step "feature-service health" fetch_json_with_retry "$FEATURE_HEALTH_URL" "feature-service health" >/dev/null
+feature_version_payload="$(fetch_json_with_retry "$FEATURE_VERSION_URL" "feature-service health/version")"
 run_step "feature-service health/version payload" printf '%s\n' "$feature_version_payload"
 verify_sha_match "feature-service" "$feature_version_payload"
 

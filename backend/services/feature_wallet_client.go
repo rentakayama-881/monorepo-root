@@ -31,6 +31,25 @@ type FeaturePinStatusResult struct {
 	MaxAttempts    int        `json:"maxAttempts"`
 }
 
+type FeatureWalletError struct {
+	StatusCode int
+	Code       string
+	Message    string
+}
+
+func (e *FeatureWalletError) Error() string {
+	if e == nil {
+		return "feature wallet request failed"
+	}
+	if strings.TrimSpace(e.Message) != "" {
+		return e.Message
+	}
+	if strings.TrimSpace(e.Code) != "" {
+		return fmt.Sprintf("feature wallet request failed (%s) with status %d", e.Code, e.StatusCode)
+	}
+	return fmt.Sprintf("feature wallet request failed with status %d", e.StatusCode)
+}
+
 type featureApiEnvelope[T any] struct {
 	Success bool `json:"success"`
 	Data    T    `json:"data"`
@@ -203,23 +222,56 @@ func (c *FeatureWalletClient) postMarketWallet(ctx context.Context, authHeader, 
 
 func parseFeatureWalletError(statusCode int, body []byte) error {
 	var wrapped featureApiEnvelope[json.RawMessage]
+	wrappedCode := ""
+	wrappedMessage := ""
 	if err := json.Unmarshal(body, &wrapped); err == nil {
-		if wrapped.Error != nil && strings.TrimSpace(wrapped.Error.Message) != "" {
-			return fmt.Errorf("%s", wrapped.Error.Message)
+		if wrapped.Error != nil {
+			wrappedCode = strings.TrimSpace(wrapped.Error.Code)
+			wrappedMessage = strings.TrimSpace(wrapped.Error.Message)
+			if wrappedMessage != "" {
+				return &FeatureWalletError{
+					StatusCode: statusCode,
+					Code:       wrappedCode,
+					Message:    wrappedMessage,
+				}
+			}
 		}
 	}
 
 	var generic map[string]interface{}
 	if err := json.Unmarshal(body, &generic); err == nil {
+		code := wrappedCode
+		if code == "" {
+			if v, ok := generic["code"].(string); ok {
+				code = strings.TrimSpace(v)
+			} else if errObj, ok := generic["error"].(map[string]interface{}); ok {
+				if v, ok := errObj["code"].(string); ok {
+					code = strings.TrimSpace(v)
+				}
+			}
+		}
+
 		if msg, ok := generic["message"].(string); ok && strings.TrimSpace(msg) != "" {
-			return fmt.Errorf("%s", msg)
+			return &FeatureWalletError{
+				StatusCode: statusCode,
+				Code:       code,
+				Message:    strings.TrimSpace(msg),
+			}
 		}
 		if errObj, ok := generic["error"].(map[string]interface{}); ok {
 			if msg, ok := errObj["message"].(string); ok && strings.TrimSpace(msg) != "" {
-				return fmt.Errorf("%s", msg)
+				return &FeatureWalletError{
+					StatusCode: statusCode,
+					Code:       code,
+					Message:    strings.TrimSpace(msg),
+				}
 			}
 		}
 	}
 
-	return fmt.Errorf("feature wallet request failed with status %d", statusCode)
+	return &FeatureWalletError{
+		StatusCode: statusCode,
+		Code:       wrappedCode,
+		Message:    wrappedMessage,
+	}
 }

@@ -164,6 +164,14 @@ export default function PasskeySettings() {
       setSuccess("Passkey registered successfully!");
       await fetchPasskeys();
     } catch (err) {
+      if (err?.code === "TWO_FACTOR_REQUIRED") {
+        router.push(
+          "/account/security?setup2fa=true&redirect=" +
+            encodeURIComponent("/account/wallet/set-pin?redirect=passkey")
+        );
+        return;
+      }
+
       if (err?.code === "PIN_REQUIRED") {
         router.push("/account/wallet/set-pin?redirect=passkey");
         return;

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -76,6 +77,27 @@ func (h *PasskeyHandler) ensurePinSetForPasskeyRegistration(c *gin.Context, user
 
 	status, err := h.walletClient.GetPinStatus(c.Request.Context(), authHeader)
 	if err != nil {
+		var walletErr *services.FeatureWalletError
+		if errors.As(err, &walletErr) {
+			if walletErr.StatusCode == http.StatusUnauthorized {
+				c.JSON(http.StatusUnauthorized, apperrors.ErrorResponse(apperrors.ErrUnauthorized))
+				return false
+			}
+
+			if walletErr.StatusCode == http.StatusForbidden {
+				appCode := "PIN_REQUIRED"
+				message := "Anda harus membuat PIN transaksi terlebih dahulu sebelum menambahkan passkey."
+				if strings.EqualFold(strings.TrimSpace(walletErr.Code), "TWO_FACTOR_REQUIRED") {
+					appCode = "TWO_FACTOR_REQUIRED"
+					message = "Anda harus mengaktifkan 2FA terlebih dahulu sebelum membuat PIN transaksi dan menambahkan passkey."
+				}
+
+				appErr := apperrors.NewAppError(appCode, message, http.StatusForbidden)
+				c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
+				return false
+			}
+		}
+
 		h.logger.Warn("Failed to validate PIN status before passkey registration",
 			zap.Uint("user_id", userID),
 			zap.Error(err),

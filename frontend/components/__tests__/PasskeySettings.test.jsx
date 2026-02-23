@@ -108,4 +108,54 @@ describe("PasskeySettings", () => {
     });
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
+
+  it("redirects to 2FA setup when wallet check returns TWO_FACTOR_REQUIRED", async () => {
+    global.fetch.mockResolvedValueOnce(
+      createResponse({ ok: true, jsonData: { passkeys: [] } })
+    );
+    const twoFactorError = new Error("Two-factor required");
+    twoFactorError.code = "TWO_FACTOR_REQUIRED";
+    mockFetchFeatureAuth.mockRejectedValue(twoFactorError);
+
+    render(<PasskeySettings />);
+
+    const addButton = await screen.findByRole("button", { name: /Tambah Passkey/i });
+    fireEvent.click(addButton);
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith(
+        "/account/security?setup2fa=true&redirect=%2Faccount%2Fwallet%2Fset-pin%3Fredirect%3Dpasskey"
+      );
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("redirects to 2FA setup when backend enforces TWO_FACTOR_REQUIRED on begin registration", async () => {
+    global.fetch
+      .mockResolvedValueOnce(
+        createResponse({ ok: true, jsonData: { passkeys: [] } })
+      )
+      .mockResolvedValueOnce(
+        createResponse({
+          ok: false,
+          jsonData: {
+            code: "TWO_FACTOR_REQUIRED",
+            message: "Two-factor authentication required",
+          },
+        })
+      );
+    mockFetchFeatureAuth.mockResolvedValue({ pinSet: true });
+
+    render(<PasskeySettings />);
+
+    const addButton = await screen.findByRole("button", { name: /Tambah Passkey/i });
+    fireEvent.click(addButton);
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith(
+        "/account/security?setup2fa=true&redirect=%2Faccount%2Fwallet%2Fset-pin%3Fredirect%3Dpasskey"
+      );
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
 });

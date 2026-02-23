@@ -165,6 +165,106 @@ func TestPasskeyBeginRegistration_Returns503WhenPinCheckUnavailable(t *testing.T
 	}
 }
 
+func TestPasskeyBeginRegistration_Returns401WhenPinStatusUnauthorized(t *testing.T) {
+	passkeySvc := &fakePasskeyService{}
+	walletSvc := &fakeWalletStatusClient{
+		err: &services.FeatureWalletError{
+			StatusCode: http.StatusUnauthorized,
+			Code:       "UNAUTHORIZED",
+			Message:    "Unauthorized",
+		},
+	}
+	handler := &PasskeyHandler{
+		passkeyService: passkeySvc,
+		authService:    &fakeAuthService{},
+		walletClient:   walletSvc,
+		logger:         zap.NewNop(),
+	}
+
+	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
+	req := httptest.NewRequest(http.MethodPost, "/passkeys/register/begin", nil)
+	req.Header.Set("Authorization", "Bearer token")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusUnauthorized)
+	}
+	if passkeySvc.beginCalled {
+		t.Fatalf("begin registration should not be called when wallet status check is unauthorized")
+	}
+}
+
+func TestPasskeyBeginRegistration_Returns403WhenWalletRequiresTwoFactor(t *testing.T) {
+	passkeySvc := &fakePasskeyService{}
+	walletSvc := &fakeWalletStatusClient{
+		err: &services.FeatureWalletError{
+			StatusCode: http.StatusForbidden,
+			Code:       "TWO_FACTOR_REQUIRED",
+			Message:    "Two-factor authentication required",
+		},
+	}
+	handler := &PasskeyHandler{
+		passkeyService: passkeySvc,
+		authService:    &fakeAuthService{},
+		walletClient:   walletSvc,
+		logger:         zap.NewNop(),
+	}
+
+	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
+	req := httptest.NewRequest(http.MethodPost, "/passkeys/register/begin", nil)
+	req.Header.Set("Authorization", "Bearer token")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusForbidden)
+	}
+
+	body := decodeBodyMap(t, rec)
+	if body["code"] != "TWO_FACTOR_REQUIRED" {
+		t.Fatalf("unexpected code: got %v want TWO_FACTOR_REQUIRED", body["code"])
+	}
+	if passkeySvc.beginCalled {
+		t.Fatalf("begin registration should not be called when 2FA is required")
+	}
+}
+
+func TestPasskeyBeginRegistration_Returns403PinRequiredForGenericForbidden(t *testing.T) {
+	passkeySvc := &fakePasskeyService{}
+	walletSvc := &fakeWalletStatusClient{
+		err: &services.FeatureWalletError{
+			StatusCode: http.StatusForbidden,
+			Code:       "FORBIDDEN",
+			Message:    "Forbidden",
+		},
+	}
+	handler := &PasskeyHandler{
+		passkeyService: passkeySvc,
+		authService:    &fakeAuthService{},
+		walletClient:   walletSvc,
+		logger:         zap.NewNop(),
+	}
+
+	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
+	req := httptest.NewRequest(http.MethodPost, "/passkeys/register/begin", nil)
+	req.Header.Set("Authorization", "Bearer token")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusForbidden)
+	}
+
+	body := decodeBodyMap(t, rec)
+	if body["code"] != "PIN_REQUIRED" {
+		t.Fatalf("unexpected code: got %v want PIN_REQUIRED", body["code"])
+	}
+	if passkeySvc.beginCalled {
+		t.Fatalf("begin registration should not be called when wallet returns generic forbidden")
+	}
+}
+
 func TestPasskeyBeginRegistration_AllowsWhenPinSet(t *testing.T) {
 	passkeySvc := &fakePasskeyService{}
 	walletSvc := &fakeWalletStatusClient{
