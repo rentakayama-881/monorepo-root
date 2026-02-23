@@ -18,6 +18,11 @@ import (
 // RedisClient is the global Redis client instance
 var RedisClient *redis.Client
 
+var (
+	redisPingWithTimeout     = pingRedisWithTimeout
+	redisBuildInsecureClient = buildInsecureRedisClient
+)
+
 // RedisConfig holds Redis connection configuration
 type RedisConfig struct {
 	Host     string
@@ -50,7 +55,7 @@ func InitRedis() error {
 			DB:       0,
 		})
 
-		if err := pingRedisWithTimeout(RedisClient, 5*time.Second); err != nil {
+		if err := redisPingWithTimeout(RedisClient, 5*time.Second); err != nil {
 			logger.Error("Failed to connect to Redis", zap.Error(err))
 			RedisClient = nil
 			return err
@@ -67,7 +72,7 @@ func InitRedis() error {
 	}
 
 	RedisClient = redis.NewClient(opt)
-	pingErr := pingRedisWithTimeout(RedisClient, 5*time.Second)
+	pingErr := redisPingWithTimeout(RedisClient, 5*time.Second)
 	if pingErr == nil {
 		logger.Info("Redis connected successfully")
 		return nil
@@ -81,14 +86,19 @@ func InitRedis() error {
 			zap.Error(pingErr),
 		)
 
-		insecureClient, insecureErr := buildInsecureRedisClient(redisURL)
+		insecureClient, insecureErr := redisBuildInsecureClient(redisURL)
 		if insecureErr != nil {
 			logger.Error("Failed to build insecure Redis fallback client", zap.Error(insecureErr))
+			if RedisClient != nil {
+				if closeErr := RedisClient.Close(); closeErr != nil {
+					logger.Warn("Failed to close Redis client after insecure fallback build error", zap.Error(closeErr))
+				}
+			}
 			RedisClient = nil
-			return err
+			return insecureErr
 		}
 
-		if retryPingErr := pingRedisWithTimeout(insecureClient, 5*time.Second); retryPingErr == nil {
+		if retryPingErr := redisPingWithTimeout(insecureClient, 5*time.Second); retryPingErr == nil {
 			if closeErr := RedisClient.Close(); closeErr != nil {
 				logger.Warn("Failed to close previous Redis client before fallback swap", zap.Error(closeErr))
 			}

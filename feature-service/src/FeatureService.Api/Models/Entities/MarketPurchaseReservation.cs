@@ -51,6 +51,7 @@ public class MarketPurchaseReservation
 public static class ReservationStatus
 {
     public const string Reserved = "reserved";
+    public const string Releasing = "releasing";
     public const string Captured = "captured";
     public const string Released = "released";
 }

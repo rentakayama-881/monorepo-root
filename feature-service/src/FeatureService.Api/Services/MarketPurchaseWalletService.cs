@@ -18,8 +18,16 @@ public class MarketPurchaseWalletService : IMarketPurchaseWalletService
     private readonly ILogger<MarketPurchaseWalletService> _logger;
 
     public MarketPurchaseWalletService(MongoDbContext dbContext, IWalletService walletService, ILogger<MarketPurchaseWalletService> logger)
+        : this(dbContext.GetCollection<MarketPurchaseReservation>("market_purchase_reservations"), walletService, logger)
     {
-        _reservations = dbContext.GetCollection<MarketPurchaseReservation>("market_purchase_reservations");
+    }
+
+    internal MarketPurchaseWalletService(
+        IMongoCollection<MarketPurchaseReservation> reservations,
+        IWalletService walletService,
+        ILogger<MarketPurchaseWalletService> logger)
+    {
+        _reservations = reservations;
         _walletService = walletService;
         _logger = logger;
     }
@@ -186,12 +194,45 @@ public class MarketPurchaseWalletService : IMarketPurchaseWalletService
 
         if (string.Equals(reservation.Status, ReservationStatus.Released, StringComparison.OrdinalIgnoreCase))
         {
-            return (true, null, reservation);
+            return (false, "Reservasi sudah dilepas", reservation);
         }
 
         if (!string.Equals(reservation.Status, ReservationStatus.Reserved, StringComparison.OrdinalIgnoreCase))
         {
             return (false, "Reservasi tidak bisa direlease", reservation);
+        }
+
+        var claimNow = DateTime.UtcNow;
+        var claimReservedFilter = Builders<MarketPurchaseReservation>.Filter.And(
+            filter,
+            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, ReservationStatus.Reserved));
+        var claimUpdate = Builders<MarketPurchaseReservation>.Update
+            .Set(r => r.Status, ReservationStatus.Releasing)
+            .Set(r => r.UpdatedAt, claimNow);
+
+        var claimResult = await _reservations.UpdateOneAsync(claimReservedFilter, claimUpdate);
+        if (claimResult.ModifiedCount == 0)
+        {
+            var latest = await _reservations.Find(filter).FirstOrDefaultAsync();
+            var latestStatus = latest?.Status ?? "missing";
+
+            _logger.LogWarning(
+                "Release reservation claim skipped because state already processed. orderId={OrderId}, userId={UserId}, latestStatus={LatestStatus}",
+                orderId,
+                userId,
+                latestStatus);
+
+            if (latest == null)
+            {
+                return (false, "Reservasi tidak ditemukan", null);
+            }
+
+            if (string.Equals(latest.Status, ReservationStatus.Released, StringComparison.OrdinalIgnoreCase))
+            {
+                return (false, "Reservasi sudah dilepas", latest);
+            }
+
+            return (false, "Reservasi tidak bisa direlease", latest);
         }
 
         var releaseReason = string.IsNullOrWhiteSpace(reason)
@@ -212,7 +253,24 @@ public class MarketPurchaseWalletService : IMarketPurchaseWalletService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to release reservation for orderId={OrderId}, userId={UserId}", orderId, userId);
-            return (false, "Gagal mengembalikan saldo", reservation);
+            var rollbackResult = await _reservations.UpdateOneAsync(
+                Builders<MarketPurchaseReservation>.Filter.And(
+                    filter,
+                    Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, ReservationStatus.Releasing)),
+                Builders<MarketPurchaseReservation>.Update
+                    .Set(r => r.Status, ReservationStatus.Reserved)
+                    .Set(r => r.UpdatedAt, DateTime.UtcNow));
+
+            if (rollbackResult.ModifiedCount == 0)
+            {
+                _logger.LogCritical(
+                    "Failed to rollback reservation status after release credit failure. orderId={OrderId}, userId={UserId}",
+                    orderId,
+                    userId);
+            }
+
+            var latest = await _reservations.Find(filter).FirstOrDefaultAsync();
+            return (false, "Gagal mengembalikan saldo", latest ?? reservation);
         }
 
         var now = DateTime.UtcNow;
@@ -223,7 +281,22 @@ public class MarketPurchaseWalletService : IMarketPurchaseWalletService
             .Set(r => r.UpdatedAt, now)
             .Set(r => r.ReleaseTransactionId, transactionId);
 
-        await _reservations.UpdateOneAsync(filter, update);
+        var finalizeFilter = Builders<MarketPurchaseReservation>.Filter.And(
+            filter,
+            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, ReservationStatus.Releasing));
+
+        var finalizeResult = await _reservations.UpdateOneAsync(finalizeFilter, update);
+        if (finalizeResult.ModifiedCount == 0)
+        {
+            _logger.LogCritical(
+                "Failed to finalize reservation release because state ownership was lost. orderId={OrderId}, userId={UserId}, transactionId={TransactionId}",
+                orderId,
+                userId,
+                transactionId);
+
+            var latest = await _reservations.Find(filter).FirstOrDefaultAsync();
+            return (false, "Gagal finalize release reservation", latest ?? reservation);
+        }
 
         var updated = await _reservations.Find(filter).FirstOrDefaultAsync();
         return (true, null, updated);
