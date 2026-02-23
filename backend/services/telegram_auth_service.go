@@ -61,7 +61,7 @@ func buildTelegramDataCheckString(payload TelegramLoginPayload) string {
 		"id":         strconv.FormatInt(payload.ID, 10),
 		"last_name":  strings.TrimSpace(payload.LastName),
 		"photo_url":  strings.TrimSpace(payload.PhotoURL),
-		"username":   NormalizeTelegramUsername(payload.Username),
+		"username":   strings.TrimSpace(payload.Username),
 	}
 
 	keys := make([]string, 0, len(values))

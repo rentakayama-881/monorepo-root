@@ -39,7 +39,7 @@ type passkeyAuthService interface {
 
 type passkeyWalletStatusClient interface {
 	GetPinStatus(ctx context.Context, authHeader string) (*services.FeaturePinStatusResult, error)
-	VerifyPin(ctx context.Context, authHeader, pin string) (*services.FeaturePinVerifyResult, error)
+	VerifyPin(ctx context.Context, authHeader, pin string, pqc *services.PqcHeaders) (*services.FeaturePinVerifyResult, error)
 }
 
 type PasskeyHandler struct {
@@ -125,8 +125,8 @@ func (h *PasskeyHandler) ensurePinSetForPasskeyRegistration(c *gin.Context, user
 	return true
 }
 
-func (h *PasskeyHandler) verifyPinForPasskeyRegistration(c *gin.Context, userID uint, authHeader, pin string) bool {
-	result, err := h.walletClient.VerifyPin(c.Request.Context(), authHeader, pin)
+func (h *PasskeyHandler) verifyPinForPasskeyRegistration(c *gin.Context, userID uint, authHeader, pin string, pqc *services.PqcHeaders) bool {
+	result, err := h.walletClient.VerifyPin(c.Request.Context(), authHeader, pin, pqc)
 	if err != nil {
 		var walletErr *services.FeatureWalletError
 		if errors.As(err, &walletErr) {
@@ -137,6 +137,16 @@ func (h *PasskeyHandler) verifyPinForPasskeyRegistration(c *gin.Context, userID 
 						message = "PIN transaksi tidak valid."
 					}
 					appErr := apperrors.NewAppError("INVALID_PIN", message, http.StatusUnauthorized)
+					c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
+					return false
+				}
+
+				if strings.EqualFold(strings.TrimSpace(walletErr.Code), "PQC_SIGNATURE_INVALID") {
+					h.logger.Warn("PQC signature rejected during passkey PIN verification",
+						zap.Uint("user_id", userID),
+					)
+					appErr := apperrors.NewAppError("PQC_SIGNATURE_INVALID",
+						"Verifikasi tanda tangan PQC gagal. Silakan coba lagi.", http.StatusUnauthorized)
 					c.JSON(appErr.StatusCode, apperrors.ErrorResponse(appErr))
 					return false
 				}
@@ -261,7 +271,16 @@ func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 		return
 	}
 
-	if !h.verifyPinForPasskeyRegistration(c, userID, authHeader, req.Pin) {
+	var pqc *services.PqcHeaders
+	if sig := strings.TrimSpace(c.GetHeader("X-PQC-Signature")); sig != "" {
+		pqc = &services.PqcHeaders{
+			Signature: sig,
+			KeyID:     strings.TrimSpace(c.GetHeader("X-PQC-Key-Id")),
+			Timestamp: strings.TrimSpace(c.GetHeader("X-PQC-Timestamp")),
+		}
+	}
+
+	if !h.verifyPinForPasskeyRegistration(c, userID, authHeader, req.Pin, pqc) {
 		return
 	}
 

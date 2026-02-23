@@ -106,7 +106,7 @@ func TestFeatureWalletClient_VerifyPin_Success(t *testing.T) {
 		client:  httpClient,
 	}
 
-	result, err := client.VerifyPin(context.Background(), "Bearer test-token", "123456")
+	result, err := client.VerifyPin(context.Background(), "Bearer test-token", "123456", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -142,7 +142,7 @@ func TestFeatureWalletClient_VerifyPin_ReturnsFeatureWalletErrorOnInvalidPin(t *
 		client:  httpClient,
 	}
 
-	_, err := client.VerifyPin(context.Background(), "Bearer test-token", "123456")
+	_, err := client.VerifyPin(context.Background(), "Bearer test-token", "123456", nil)
 	var walletErr *FeatureWalletError
 	if !errors.As(err, &walletErr) {
 		t.Fatalf("expected FeatureWalletError, got %T", err)
@@ -155,5 +155,112 @@ func TestFeatureWalletClient_VerifyPin_ReturnsFeatureWalletErrorOnInvalidPin(t *
 	}
 	if walletErr.Message != "PIN salah" {
 		t.Fatalf("unexpected message: got %q want %q", walletErr.Message, "PIN salah")
+	}
+}
+
+func TestFeatureWalletClient_VerifyPin_ForwardsPqcHeaders(t *testing.T) {
+	httpClient := &http.Client{
+		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			if got := r.Header.Get("X-PQC-Signature"); got != "dGVzdC1zaWc=" {
+				t.Fatalf("unexpected X-PQC-Signature: got %q want %q", got, "dGVzdC1zaWc=")
+			}
+			if got := r.Header.Get("X-PQC-Key-Id"); got != "pqc_key123" {
+				t.Fatalf("unexpected X-PQC-Key-Id: got %q want %q", got, "pqc_key123")
+			}
+			if got := r.Header.Get("X-PQC-Timestamp"); got != "2025-01-15T10:00:00Z" {
+				t.Fatalf("unexpected X-PQC-Timestamp: got %q want %q", got, "2025-01-15T10:00:00Z")
+			}
+
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"valid":true,"message":"PIN valid"}`)),
+			}, nil
+		}),
+	}
+
+	client := &FeatureWalletClient{
+		baseURL: "https://feature.example",
+		client:  httpClient,
+	}
+
+	pqc := &PqcHeaders{
+		Signature: "dGVzdC1zaWc=",
+		KeyID:     "pqc_key123",
+		Timestamp: "2025-01-15T10:00:00Z",
+	}
+	result, err := client.VerifyPin(context.Background(), "Bearer test-token", "123456", pqc)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Valid {
+		t.Fatalf("expected pin to be valid")
+	}
+}
+
+func TestFeatureWalletClient_VerifyPin_NilPqcOmitsHeaders(t *testing.T) {
+	httpClient := &http.Client{
+		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			if got := r.Header.Get("X-PQC-Signature"); got != "" {
+				t.Fatalf("X-PQC-Signature should be absent, got %q", got)
+			}
+			if got := r.Header.Get("X-PQC-Key-Id"); got != "" {
+				t.Fatalf("X-PQC-Key-Id should be absent, got %q", got)
+			}
+			if got := r.Header.Get("X-PQC-Timestamp"); got != "" {
+				t.Fatalf("X-PQC-Timestamp should be absent, got %q", got)
+			}
+
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"valid":true,"message":"PIN valid"}`)),
+			}, nil
+		}),
+	}
+
+	client := &FeatureWalletClient{
+		baseURL: "https://feature.example",
+		client:  httpClient,
+	}
+
+	result, err := client.VerifyPin(context.Background(), "Bearer test-token", "123456", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Valid {
+		t.Fatalf("expected pin to be valid")
+	}
+}
+
+func TestFeatureWalletClient_VerifyPin_PqcSignatureInvalidError(t *testing.T) {
+	httpClient := &http.Client{
+		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusUnauthorized,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"success":false,"error":{"code":"PQC_SIGNATURE_INVALID","message":"Missing X-PQC-Signature header"}}`)),
+			}, nil
+		}),
+	}
+
+	client := &FeatureWalletClient{
+		baseURL: "https://feature.example",
+		client:  httpClient,
+	}
+
+	_, err := client.VerifyPin(context.Background(), "Bearer test-token", "123456", nil)
+	var walletErr *FeatureWalletError
+	if !errors.As(err, &walletErr) {
+		t.Fatalf("expected FeatureWalletError, got %T", err)
+	}
+	if walletErr.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("unexpected status code: got %d want %d", walletErr.StatusCode, http.StatusUnauthorized)
+	}
+	if walletErr.Code != "PQC_SIGNATURE_INVALID" {
+		t.Fatalf("unexpected code: got %q want %q", walletErr.Code, "PQC_SIGNATURE_INVALID")
+	}
+	if walletErr.Message != "Missing X-PQC-Signature header" {
+		t.Fatalf("unexpected message: got %q want %q", walletErr.Message, "Missing X-PQC-Signature header")
 	}
 }

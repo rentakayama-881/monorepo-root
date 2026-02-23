@@ -80,15 +80,17 @@ type fakeWalletStatusClient struct {
 	verifyErr    error
 	verifyCalled bool
 	verifyPin    string
+	verifyPqc    *services.PqcHeaders
 }
 
 func (f *fakeWalletStatusClient) GetPinStatus(ctx context.Context, authHeader string) (*services.FeaturePinStatusResult, error) {
 	return f.status, f.err
 }
 
-func (f *fakeWalletStatusClient) VerifyPin(ctx context.Context, authHeader, pin string) (*services.FeaturePinVerifyResult, error) {
+func (f *fakeWalletStatusClient) VerifyPin(ctx context.Context, authHeader, pin string, pqc *services.PqcHeaders) (*services.FeaturePinVerifyResult, error) {
 	f.verifyCalled = true
 	f.verifyPin = pin
+	f.verifyPqc = pqc
 	return f.verifyResult, f.verifyErr
 }
 
@@ -441,5 +443,104 @@ func TestPasskeyFinishRegistration_Returns403WhenPinNotSet(t *testing.T) {
 	}
 	if passkeySvc.finishCalled {
 		t.Fatalf("finish registration should not be called when PIN is not set")
+	}
+}
+
+func TestPasskeyBeginRegistration_ForwardsPqcHeaders(t *testing.T) {
+	passkeySvc := &fakePasskeyService{}
+	walletSvc := &fakeWalletStatusClient{
+		status:       &services.FeaturePinStatusResult{PinSet: true},
+		verifyResult: &services.FeaturePinVerifyResult{Valid: true, Message: "PIN valid"},
+	}
+	handler := &PasskeyHandler{
+		passkeyService: passkeySvc,
+		authService:    &fakeAuthService{},
+		walletClient:   walletSvc,
+		logger:         zap.NewNop(),
+	}
+
+	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
+	req := newBeginRegistrationRequest("123456")
+	req.Header.Set("X-PQC-Signature", "dGVzdC1zaWduYXR1cmU=")
+	req.Header.Set("X-PQC-Key-Id", "pqc_abc123")
+	req.Header.Set("X-PQC-Timestamp", "2025-01-15T10:00:00Z")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusOK)
+	}
+	if walletSvc.verifyPqc == nil {
+		t.Fatalf("PQC headers should be forwarded to wallet client")
+	}
+	if walletSvc.verifyPqc.Signature != "dGVzdC1zaWduYXR1cmU=" {
+		t.Fatalf("unexpected PQC signature: got %q", walletSvc.verifyPqc.Signature)
+	}
+	if walletSvc.verifyPqc.KeyID != "pqc_abc123" {
+		t.Fatalf("unexpected PQC key ID: got %q", walletSvc.verifyPqc.KeyID)
+	}
+	if walletSvc.verifyPqc.Timestamp != "2025-01-15T10:00:00Z" {
+		t.Fatalf("unexpected PQC timestamp: got %q", walletSvc.verifyPqc.Timestamp)
+	}
+}
+
+func TestPasskeyBeginRegistration_NoPqcHeadersPassesNil(t *testing.T) {
+	passkeySvc := &fakePasskeyService{}
+	walletSvc := &fakeWalletStatusClient{
+		status:       &services.FeaturePinStatusResult{PinSet: true},
+		verifyResult: &services.FeaturePinVerifyResult{Valid: true, Message: "PIN valid"},
+	}
+	handler := &PasskeyHandler{
+		passkeyService: passkeySvc,
+		authService:    &fakeAuthService{},
+		walletClient:   walletSvc,
+		logger:         zap.NewNop(),
+	}
+
+	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
+	req := newBeginRegistrationRequest("123456")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusOK)
+	}
+	if walletSvc.verifyPqc != nil {
+		t.Fatalf("PQC headers should be nil when not present in request")
+	}
+}
+
+func TestPasskeyBeginRegistration_Returns401OnPqcSignatureInvalid(t *testing.T) {
+	passkeySvc := &fakePasskeyService{}
+	walletSvc := &fakeWalletStatusClient{
+		status: &services.FeaturePinStatusResult{PinSet: true},
+		verifyErr: &services.FeatureWalletError{
+			StatusCode: http.StatusUnauthorized,
+			Code:       "PQC_SIGNATURE_INVALID",
+			Message:    "Missing X-PQC-Signature header",
+		},
+	}
+	handler := &PasskeyHandler{
+		passkeyService: passkeySvc,
+		authService:    &fakeAuthService{},
+		walletClient:   walletSvc,
+		logger:         zap.NewNop(),
+	}
+
+	router := setupPasskeyProtectedRouter(handler.BeginRegistration)
+	req := newBeginRegistrationRequest("123456")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusUnauthorized)
+	}
+
+	body := decodeBodyMap(t, rec)
+	if body["code"] != "PQC_SIGNATURE_INVALID" {
+		t.Fatalf("unexpected code: got %v want PQC_SIGNATURE_INVALID", body["code"])
+	}
+	if passkeySvc.beginCalled {
+		t.Fatalf("begin registration should not be called when PQC signature is invalid")
 	}
 }

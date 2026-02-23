@@ -37,6 +37,14 @@ type FeaturePinVerifyResult struct {
 	RemainingAttempts *int   `json:"remainingAttempts"`
 }
 
+// PqcHeaders carries post-quantum cryptography signature headers
+// that the frontend generates and the Feature Service validates.
+type PqcHeaders struct {
+	Signature string
+	KeyID     string
+	Timestamp string
+}
+
 type FeatureWalletError struct {
 	StatusCode int
 	Code       string
@@ -169,7 +177,7 @@ func (c *FeatureWalletClient) GetPinStatus(ctx context.Context, authHeader strin
 	return &raw, nil
 }
 
-func (c *FeatureWalletClient) VerifyPin(ctx context.Context, authHeader, pin string) (*FeaturePinVerifyResult, error) {
+func (c *FeatureWalletClient) VerifyPin(ctx context.Context, authHeader, pin string, pqc *PqcHeaders) (*FeaturePinVerifyResult, error) {
 	if c == nil || c.baseURL == "" {
 		return nil, fmt.Errorf("feature wallet client is not configured")
 	}
@@ -190,6 +198,17 @@ func (c *FeatureWalletClient) VerifyPin(ctx context.Context, authHeader, pin str
 	req.Header.Set("Accept", "application/json")
 	if strings.TrimSpace(authHeader) != "" {
 		req.Header.Set("Authorization", authHeader)
+	}
+	if pqc != nil {
+		if s := strings.TrimSpace(pqc.Signature); s != "" {
+			req.Header.Set("X-PQC-Signature", s)
+		}
+		if s := strings.TrimSpace(pqc.KeyID); s != "" {
+			req.Header.Set("X-PQC-Key-Id", s)
+		}
+		if s := strings.TrimSpace(pqc.Timestamp); s != "" {
+			req.Header.Set("X-PQC-Timestamp", s)
+		}
 	}
 
 	resp, err := c.client.Do(req)
