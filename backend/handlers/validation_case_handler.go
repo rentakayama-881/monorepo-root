@@ -116,14 +116,20 @@ func (h *ValidationCaseHandler) CreateValidationCase(c *gin.Context) {
 	}
 
 	var req struct {
-		CategorySlug string      `json:"category_slug" binding:"required"`
-		Title        string      `json:"title" binding:"required"`
-		Summary      string      `json:"summary"`
-		ContentType  string      `json:"content_type"`
-		Content      interface{} `json:"content" binding:"required"`
-		BountyAmount int64       `json:"bounty_amount" binding:"required"`
-		Meta         interface{} `json:"meta"`
-		TagSlugs     []string    `json:"tag_slugs"`
+		CategorySlug            string      `json:"category_slug" binding:"required"`
+		Title                   string      `json:"title" binding:"required"`
+		Summary                 string      `json:"summary"`
+		ContentType             string      `json:"content_type"`
+		Content                 interface{} `json:"content" binding:"required"`
+		BountyAmount            int64       `json:"bounty_amount" binding:"required"`
+		Meta                    interface{} `json:"meta"`
+		TagSlugs                []string    `json:"tag_slugs"`
+		WorkspaceBootstrapFiles []struct {
+			DocumentID string `json:"document_id"`
+			Kind       string `json:"kind"`
+			Label      string `json:"label"`
+			Visibility string `json:"visibility"`
+		} `json:"workspace_bootstrap_files"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -131,15 +137,26 @@ func (h *ValidationCaseHandler) CreateValidationCase(c *gin.Context) {
 		return
 	}
 
+	bootstrapFiles := make([]validators.WorkspaceBootstrapFileInput, 0, len(req.WorkspaceBootstrapFiles))
+	for _, file := range req.WorkspaceBootstrapFiles {
+		bootstrapFiles = append(bootstrapFiles, validators.WorkspaceBootstrapFileInput{
+			DocumentID: file.DocumentID,
+			Kind:       file.Kind,
+			Label:      file.Label,
+			Visibility: file.Visibility,
+		})
+	}
+
 	input := validators.CreateValidationCaseInput{
-		CategorySlug: req.CategorySlug,
-		Title:        req.Title,
-		Summary:      req.Summary,
-		ContentType:  req.ContentType,
-		Content:      req.Content,
-		BountyAmount: req.BountyAmount,
-		Meta:         req.Meta,
-		TagSlugs:     req.TagSlugs,
+		CategorySlug:            req.CategorySlug,
+		Title:                   req.Title,
+		Summary:                 req.Summary,
+		ContentType:             req.ContentType,
+		Content:                 req.Content,
+		BountyAmount:            req.BountyAmount,
+		Meta:                    req.Meta,
+		TagSlugs:                req.TagSlugs,
+		WorkspaceBootstrapFiles: bootstrapFiles,
 	}
 
 	vc, err := h.caseService.CreateValidationCase(c.Request.Context(), uint(user.ID), input)

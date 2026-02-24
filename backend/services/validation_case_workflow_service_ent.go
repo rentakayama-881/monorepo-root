@@ -474,9 +474,8 @@ func ensureWorkflowV1Case(vc *ent.ValidationCase) error {
 	if vc == nil {
 		return apperrors.ErrValidationCaseNotFound
 	}
-	state := loadRepoMetaState(vc.Meta)
-	if normalizeRepoMode(state.ProtocolMode) == repoProtocolModeV2 {
-		return apperrors.ErrInvalidInput.WithDetails("case ini menggunakan repo_validation_v2. Gunakan endpoint repo workflow.")
+	if isWorkspaceCaseMeta(vc.Meta) {
+		return apperrors.ErrInvalidInput.WithDetails("case ini menggunakan Evidence Validation Workspace. Gunakan endpoint workspace.")
 	}
 	return nil
 }

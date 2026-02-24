@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { useUploadDocument } from "@/lib/useDocuments";
 
 function formatDateTime(ts) {
   if (!ts) return "-";
@@ -32,7 +33,33 @@ function normalizeErr(err, fallback) {
   return `${message}: ${details}`;
 }
 
-export default function RepoWorkflowClient() {
+function extractDocumentId(uploadResult) {
+  if (!uploadResult || typeof uploadResult !== "object") return "";
+  const candidates = [
+    uploadResult.document_id,
+    uploadResult.documentId,
+    uploadResult.id,
+    uploadResult.DocumentId,
+    uploadResult.DocumentID,
+    uploadResult.ID,
+  ];
+  for (const candidate of candidates) {
+    const value = String(candidate || "").trim();
+    if (value) return value;
+  }
+  return "";
+}
+
+function legacyWorkspacePath(path) {
+  switch (path) {
+    case "files":
+      return "repo/files";
+    default:
+      return path;
+  }
+}
+
+export default function WorkspaceWorkflowClient() {
   const params = useParams();
   const router = useRouter();
   const id = useMemo(() => String(params?.id || ""), [params?.id]);
@@ -45,21 +72,22 @@ export default function RepoWorkflowClient() {
   const [msg, setMsg] = useState("");
 
   const [attachForm, setAttachForm] = useState({
-    document_id: "",
+    file: null,
     kind: "task_input",
     label: "",
     visibility: "public",
   });
-  const [assignForm, setAssignForm] = useState({
-    panel_size: 3,
-    validator_user_ids: "",
-  });
+  const [attachFileInputKey, setAttachFileInputKey] = useState(0);
+  const [assignForm, setAssignForm] = useState({ panel_size: 3 });
   const [verdictForm, setVerdictForm] = useState({
     verdict: "valid",
     confidence: 80,
     notes: "",
-    document_id: "",
+    attachmentFile: null,
   });
+  const [verdictFileInputKey, setVerdictFileInputKey] = useState(0);
+
+  const { uploadDocument, loading: uploadingDocument, progress: uploadProgress } = useUploadDocument();
 
   const isAuthed = useMemo(() => {
     try {
@@ -79,26 +107,75 @@ export default function RepoWorkflowClient() {
   const requiredStake = Number(repoTree?.required_stake || 0);
   const viewerStake = Number(repoTree?.viewer_stake || 0);
   const stakeEligible = Boolean(repoTree?.stake_eligible);
-  const applyDisabled = busy || isAssigned || !stakeEligible;
+  const actionLocked = busy || uploadingDocument;
+  const applyDisabled = actionLocked || isAssigned || !stakeEligible;
   const attachKindOptions = useMemo(
-    () => (isOwner ? ["case_readme", "task_input", "sensitive_context"] : ["validator_output"]),
+    () => (isOwner ? ["task_input", "case_readme", "sensitive_context"] : ["validator_output"]),
     [isOwner]
   );
   const sensitiveKindSelected = attachForm.kind === "sensitive_context";
+
+  async function getWorkspaceTree() {
+    try {
+      return await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/workspace/tree`, {
+        method: "GET",
+        clearSessionOn401: false,
+      });
+    } catch (err) {
+      if (err?.status === 404) {
+        return fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/repo/tree`, {
+          method: "GET",
+          clearSessionOn401: false,
+        });
+      }
+      throw err;
+    }
+  }
+
+  async function getWorkspaceConsensus() {
+    try {
+      return await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/workspace/consensus`, {
+        method: "GET",
+        clearSessionOn401: false,
+      });
+    } catch (err) {
+      if (err?.status === 404) {
+        return fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/consensus`, {
+          method: "GET",
+          clearSessionOn401: false,
+        });
+      }
+      throw err;
+    }
+  }
+
+  async function postWorkspace(path, payload) {
+    const options = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    };
+
+    try {
+      return await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/workspace/${path}`, options);
+    } catch (err) {
+      if (err?.status === 404) {
+        return fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/${legacyWorkspacePath(path)}`, options);
+      }
+      throw err;
+    }
+  }
 
   async function loadAll() {
     if (!id) return;
     setLoading(true);
     setError("");
     try {
-      const [repoResp, consensusResp] = await Promise.all([
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/repo/tree`, { method: "GET", clearSessionOn401: false }),
-        fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/consensus`, { method: "GET", clearSessionOn401: false }),
-      ]);
+      const [repoResp, consensusResp] = await Promise.all([getWorkspaceTree(), getWorkspaceConsensus()]);
       setRepoTree(repoResp?.repo_tree || null);
       setConsensus(consensusResp?.consensus || null);
     } catch (e) {
-      setError(normalizeErr(e, "Gagal memuat repo workflow"));
+      setError(normalizeErr(e, "Gagal memuat Evidence Validation Workspace"));
       setRepoTree(null);
       setConsensus(null);
     } finally {
@@ -108,7 +185,7 @@ export default function RepoWorkflowClient() {
 
   useEffect(() => {
     if (!isAuthed) {
-      router.push(`/login?redirect=/validation-cases/${encodeURIComponent(id)}/repo`);
+      router.push(`/login?redirect=/validation-cases/${encodeURIComponent(id)}/workspace`);
       return;
     }
     loadAll();
@@ -137,7 +214,7 @@ export default function RepoWorkflowClient() {
     try {
       await fn();
       await loadAll();
-      setMsg("Berhasil diperbarui.");
+      setMsg("Workspace berhasil diperbarui.");
     } catch (e) {
       setError(normalizeErr(e, "Aksi gagal"));
     } finally {
@@ -147,60 +224,97 @@ export default function RepoWorkflowClient() {
 
   async function onAttachFile(e) {
     e.preventDefault();
+    const file = attachForm.file;
+    const label = String(attachForm.label || "").trim();
+    if (!file) {
+      setError("Pilih file dulu sebelum upload.");
+      return;
+    }
+    if (!label) {
+      setError("Label file wajib diisi.");
+      return;
+    }
+
     await runAction(async () => {
-      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/repo/files`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(attachForm),
+      const uploaded = await uploadDocument(file, {
+        title: label,
+        description: `Validation workspace file (${attachForm.kind})`,
+        category: "other",
+        visibility: "private",
       });
-      setAttachForm((prev) => ({ ...prev, document_id: "", label: "" }));
+      const documentId = extractDocumentId(uploaded);
+      if (!documentId) {
+        throw new Error("Upload berhasil tetapi document_id tidak ditemukan.");
+      }
+
+      await postWorkspace("files", {
+        document_id: documentId,
+        kind: attachForm.kind,
+        label,
+        visibility: attachForm.kind === "sensitive_context" ? "assigned_validators" : attachForm.visibility,
+      });
+
+      setAttachForm((prev) => ({
+        ...prev,
+        file: null,
+        label: "",
+      }));
+      setAttachFileInputKey((prev) => prev + 1);
     });
   }
 
   async function onPublish() {
     await runAction(async () => {
-      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/publish`, { method: "POST" });
+      await postWorkspace("publish", {});
     });
   }
 
   async function onApply() {
     await runAction(async () => {
-      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/apply`, { method: "POST" });
+      await postWorkspace("apply", {});
     });
   }
 
-  async function onAssign(e) {
+  async function onAutoAssign(e) {
     e.preventDefault();
-    const ids = String(assignForm.validator_user_ids || "")
-      .split(",")
-      .map((v) => Number(v.trim()))
-      .filter((v) => Number.isInteger(v) && v > 0);
-
     await runAction(async () => {
-      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/validators/assign`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          panel_size: Number(assignForm.panel_size) === 10 ? 10 : 3,
-          validator_user_ids: ids,
-        }),
+      await postWorkspace("validators/auto-assign", {
+        panel_size: Number(assignForm.panel_size) === 10 ? 10 : 3,
       });
     });
   }
 
   async function onSubmitVerdict(e) {
     e.preventDefault();
+
     await runAction(async () => {
-      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/verdicts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          verdict: verdictForm.verdict,
-          confidence: Number(verdictForm.confidence),
-          notes: verdictForm.notes,
-          document_id: verdictForm.document_id,
-        }),
+      let documentId = "";
+      if (verdictForm.attachmentFile) {
+        const uploaded = await uploadDocument(verdictForm.attachmentFile, {
+          title: `Verdict attachment case #${id}`,
+          description: `Validator verdict attachment (${verdictForm.verdict})`,
+          category: "other",
+          visibility: "private",
+        });
+        documentId = extractDocumentId(uploaded);
+        if (!documentId) {
+          throw new Error("Upload verdict attachment berhasil, tetapi document_id tidak ditemukan.");
+        }
+      }
+
+      await postWorkspace("verdicts", {
+        verdict: verdictForm.verdict,
+        confidence: Number(verdictForm.confidence),
+        notes: verdictForm.notes,
+        document_id: documentId,
       });
+
+      setVerdictForm((prev) => ({
+        ...prev,
+        notes: "",
+        attachmentFile: null,
+      }));
+      setVerdictFileInputKey((prev) => prev + 1);
     });
   }
 
@@ -208,7 +322,7 @@ export default function RepoWorkflowClient() {
     return (
       <main className="container py-10">
         <div className="rounded-[var(--radius)] border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
-          Memuat repo workflow...
+          Memuat Evidence Validation Workspace...
         </div>
       </main>
     );
@@ -225,7 +339,7 @@ export default function RepoWorkflowClient() {
           Case #{id}
         </Link>
         <span>/</span>
-        <span className="text-foreground">Repo Workflow</span>
+        <span className="text-foreground">Evidence Validation Workspace</span>
       </nav>
 
       {error ? (
@@ -236,14 +350,26 @@ export default function RepoWorkflowClient() {
       ) : null}
 
       <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-3">
-        <h1 className="text-xl font-semibold text-foreground">Repo Validation v2</h1>
+        <h1 className="text-xl font-semibold text-foreground">{repoTree?.workflow_name || "Evidence Validation Workspace"}</h1>
         <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
-          <div>Protocol: <span className="font-semibold text-foreground">{repoTree?.protocol_mode || "-"}</span></div>
-          <div>Stage: <span className="font-semibold text-foreground">{repoTree?.repo_stage || "-"}</span></div>
-          <div>Completion Mode: <span className="font-semibold text-foreground">{repoTree?.completion_mode || "-"}</span></div>
-          <div>Consensus: <span className="font-semibold text-foreground">{repoTree?.consensus_status || "-"}</span></div>
-          <div>Required Stake: <span className="font-semibold text-foreground">{formatIDR(requiredStake)}</span></div>
-          <div>Your Stake: <span className="font-semibold text-foreground">{formatIDR(viewerStake)}</span></div>
+          <div>
+            Workflow: <span className="font-semibold text-foreground">{repoTree?.workflow_family || "-"}</span>
+          </div>
+          <div>
+            Stage: <span className="font-semibold text-foreground">{repoTree?.workspace_stage || repoTree?.repo_stage || "-"}</span>
+          </div>
+          <div>
+            Completion Mode: <span className="font-semibold text-foreground">{repoTree?.completion_mode || "-"}</span>
+          </div>
+          <div>
+            Consensus: <span className="font-semibold text-foreground">{repoTree?.consensus_status || "-"}</span>
+          </div>
+          <div>
+            Required Stake: <span className="font-semibold text-foreground">{formatIDR(requiredStake)}</span>
+          </div>
+          <div>
+            Your Stake: <span className="font-semibold text-foreground">{formatIDR(viewerStake)}</span>
+          </div>
         </div>
         {!stakeEligible ? (
           <div className="rounded-[var(--radius)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -253,9 +379,9 @@ export default function RepoWorkflowClient() {
       </section>
 
       <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Case Files</h2>
+        <h2 className="text-lg font-semibold text-foreground">Workspace Files</h2>
         <div className="text-sm text-muted-foreground">
-          Required: `case_readme` + minimal 1 `task_input` sebelum publish.
+          Publish butuh README (markdown case record atau `case_readme`) dan minimal 1 `task_input`.
         </div>
         {files.length === 0 ? (
           <div className="text-sm text-muted-foreground">Belum ada file yang terpasang.</div>
@@ -289,12 +415,12 @@ export default function RepoWorkflowClient() {
         {canAttach ? (
           <form onSubmit={onAttachFile} className="grid gap-3 rounded-[var(--radius)] border border-border p-4 md:grid-cols-2">
             <input
-              value={attachForm.document_id}
-              onChange={(e) => setAttachForm((prev) => ({ ...prev, document_id: e.target.value }))}
-              placeholder="document_id"
+              key={attachFileInputKey}
+              type="file"
+              onChange={(e) => setAttachForm((prev) => ({ ...prev, file: e.target.files?.[0] || null }))}
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
               required
-              disabled={busy}
+              disabled={actionLocked}
             />
             <input
               value={attachForm.label}
@@ -302,7 +428,7 @@ export default function RepoWorkflowClient() {
               placeholder="Label file"
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
               required
-              disabled={busy}
+              disabled={actionLocked}
             />
             <select
               value={attachForm.kind}
@@ -317,7 +443,7 @@ export default function RepoWorkflowClient() {
                 })
               }
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
-              disabled={busy}
+              disabled={actionLocked}
             >
               {attachKindOptions.map((kind) => (
                 <option key={kind} value={kind}>
@@ -329,7 +455,7 @@ export default function RepoWorkflowClient() {
               value={attachForm.visibility}
               onChange={(e) => setAttachForm((prev) => ({ ...prev, visibility: e.target.value }))}
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
-              disabled={busy || sensitiveKindSelected}
+              disabled={actionLocked || sensitiveKindSelected}
             >
               <option value="public">public</option>
               <option value="assigned_validators">assigned_validators</option>
@@ -339,12 +465,15 @@ export default function RepoWorkflowClient() {
                 `sensitive_context` selalu dibatasi ke `assigned_validators`.
               </div>
             ) : null}
+            {uploadingDocument ? (
+              <div className="text-xs text-muted-foreground md:col-span-2">Uploading file... {uploadProgress}%</div>
+            ) : null}
             <button
               type="submit"
               className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 md:col-span-2"
-              disabled={busy}
+              disabled={actionLocked}
             >
-              {busy ? "Memproses..." : "Attach File"}
+              {actionLocked ? "Memproses..." : "Upload & Attach File"}
             </button>
           </form>
         ) : null}
@@ -357,9 +486,9 @@ export default function RepoWorkflowClient() {
             <button
               onClick={onPublish}
               className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary"
-              disabled={busy}
+              disabled={actionLocked}
             >
-              Publish Case
+              Publish Workspace
             </button>
             <span className="text-sm text-muted-foreground">
               Publish readiness: {repoTree?.has_required_readme ? "README OK" : "README belum ada"} /{" "}
@@ -409,29 +538,25 @@ export default function RepoWorkflowClient() {
         </div>
 
         {isOwner ? (
-          <form onSubmit={onAssign} className="grid gap-3 rounded-[var(--radius)] border border-border p-4 md:grid-cols-2">
+          <form onSubmit={onAutoAssign} className="grid gap-3 rounded-[var(--radius)] border border-border p-4 md:grid-cols-2">
             <select
               value={assignForm.panel_size}
               onChange={(e) => setAssignForm((prev) => ({ ...prev, panel_size: Number(e.target.value) === 10 ? 10 : 3 }))}
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
-              disabled={busy}
+              disabled={actionLocked}
             >
-              <option value={3}>Panel 3</option>
-              <option value={10}>Panel 10</option>
+              <option value={3}>Panel 3 (default)</option>
+              <option value={10}>Panel 10 (escalated)</option>
             </select>
-            <input
-              value={assignForm.validator_user_ids}
-              onChange={(e) => setAssignForm((prev) => ({ ...prev, validator_user_ids: e.target.value }))}
-              placeholder="validator IDs (contoh: 12, 34, 56)"
-              className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
-              disabled={busy}
-            />
+            <div className="text-xs text-muted-foreground">
+              Auto-match memilih validator dari applicant pool sesuai stake, anti-pairing, dan limit maksimal 2 task aktif.
+            </div>
             <button
               type="submit"
               className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 md:col-span-2"
-              disabled={busy}
+              disabled={actionLocked}
             >
-              {busy ? "Memproses..." : "Assign Validators"}
+              {actionLocked ? "Memproses..." : "Auto-Match Validators"}
             </button>
           </form>
         ) : null}
@@ -445,7 +570,7 @@ export default function RepoWorkflowClient() {
               value={verdictForm.verdict}
               onChange={(e) => setVerdictForm((prev) => ({ ...prev, verdict: e.target.value }))}
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
-              disabled={busy}
+              disabled={actionLocked}
             >
               <option value="valid">valid</option>
               <option value="needs_revision">needs_revision</option>
@@ -459,14 +584,14 @@ export default function RepoWorkflowClient() {
               max={100}
               placeholder="confidence 0-100"
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
-              disabled={busy}
+              disabled={actionLocked}
             />
             <input
-              value={verdictForm.document_id}
-              onChange={(e) => setVerdictForm((prev) => ({ ...prev, document_id: e.target.value }))}
-              placeholder="document_id hasil validator (optional)"
+              key={verdictFileInputKey}
+              type="file"
+              onChange={(e) => setVerdictForm((prev) => ({ ...prev, attachmentFile: e.target.files?.[0] || null }))}
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm md:col-span-2"
-              disabled={busy}
+              disabled={actionLocked}
             />
             <textarea
               value={verdictForm.notes}
@@ -474,14 +599,17 @@ export default function RepoWorkflowClient() {
               placeholder="catatan verdict"
               rows={3}
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm md:col-span-2"
-              disabled={busy}
+              disabled={actionLocked}
             />
+            {uploadingDocument ? (
+              <div className="text-xs text-muted-foreground md:col-span-2">Uploading verdict attachment... {uploadProgress}%</div>
+            ) : null}
             <button
               type="submit"
               className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 md:col-span-2"
-              disabled={busy}
+              disabled={actionLocked}
             >
-              {busy ? "Memproses..." : "Submit Verdict"}
+              {actionLocked ? "Memproses..." : "Submit Verdict"}
             </button>
           </form>
         ) : (

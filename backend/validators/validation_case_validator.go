@@ -14,6 +14,8 @@ import (
 const (
 	// IntakeSchemaVersion identifies the currently enforced quick-intake format.
 	IntakeSchemaVersion = "quick-intake-v1"
+
+	workspaceBootstrapMaxFiles = 20
 )
 
 var (
@@ -44,17 +46,25 @@ type StructuredIntake struct {
 	Checklist        map[string]bool
 }
 
+type WorkspaceBootstrapFileInput struct {
+	DocumentID string
+	Kind       string
+	Label      string
+	Visibility string
+}
+
 // CreateValidationCaseInput represents Validation Case creation input.
 type CreateValidationCaseInput struct {
-	CategorySlug     string
-	Title            string
-	Summary          string
-	ContentType      string
-	Content          interface{}
-	Meta             interface{}
-	TagSlugs         []string
-	BountyAmount     int64
-	StructuredIntake *StructuredIntake
+	CategorySlug            string
+	Title                   string
+	Summary                 string
+	ContentType             string
+	Content                 interface{}
+	Meta                    interface{}
+	TagSlugs                []string
+	BountyAmount            int64
+	WorkspaceBootstrapFiles []WorkspaceBootstrapFileInput
+	StructuredIntake        *StructuredIntake
 }
 
 // UpdateValidationCaseInput represents Validation Case update input.
@@ -161,6 +171,12 @@ func (c *CreateValidationCaseInput) Validate() error {
 		return err
 	}
 	c.TagSlugs = normalized
+
+	bootstrapFiles, err := normalizeWorkspaceBootstrapFiles(c.WorkspaceBootstrapFiles)
+	if err != nil {
+		return err
+	}
+	c.WorkspaceBootstrapFiles = bootstrapFiles
 
 	return nil
 }
@@ -302,6 +318,83 @@ func validateMeta(meta interface{}) error {
 	}
 
 	return nil
+}
+
+func normalizeWorkspaceBootstrapFiles(files []WorkspaceBootstrapFileInput) ([]WorkspaceBootstrapFileInput, error) {
+	if len(files) == 0 {
+		return nil, nil
+	}
+	if len(files) > workspaceBootstrapMaxFiles {
+		return nil, apperrors.ErrInvalidInput.WithDetails(
+			fmt.Sprintf("workspace_bootstrap_files maksimal %d item", workspaceBootstrapMaxFiles),
+		)
+	}
+
+	seen := make(map[string]struct{}, len(files))
+	out := make([]WorkspaceBootstrapFileInput, 0, len(files))
+	for i, raw := range files {
+		documentID := strings.TrimSpace(raw.DocumentID)
+		kind := strings.ToLower(strings.TrimSpace(raw.Kind))
+		label := strings.TrimSpace(raw.Label)
+		visibility := strings.ToLower(strings.TrimSpace(raw.Visibility))
+
+		if documentID == "" {
+			return nil, apperrors.ErrMissingField.WithDetails(fmt.Sprintf("workspace_bootstrap_files[%d].document_id", i))
+		}
+		if len(documentID) > 200 {
+			return nil, apperrors.ErrInvalidInput.WithDetails(fmt.Sprintf("workspace_bootstrap_files[%d].document_id terlalu panjang", i))
+		}
+
+		switch kind {
+		case "case_readme", "task_input", "sensitive_context":
+			// allowed
+		default:
+			return nil, apperrors.ErrInvalidInput.WithDetails(
+				fmt.Sprintf("workspace_bootstrap_files[%d].kind tidak valid", i),
+			)
+		}
+
+		if label == "" {
+			return nil, apperrors.ErrMissingField.WithDetails(fmt.Sprintf("workspace_bootstrap_files[%d].label", i))
+		}
+		if len(label) > 120 {
+			return nil, apperrors.ErrInvalidInput.WithDetails(fmt.Sprintf("workspace_bootstrap_files[%d].label terlalu panjang", i))
+		}
+		if !utils.ValidateNoXSS(label) {
+			return nil, apperrors.ErrInvalidInput.WithDetails(fmt.Sprintf("workspace_bootstrap_files[%d].label tidak valid", i))
+		}
+		label = utils.SanitizeText(label)
+
+		switch visibility {
+		case "", "public", "assigned_validators":
+			// allowed
+		default:
+			return nil, apperrors.ErrInvalidInput.WithDetails(
+				fmt.Sprintf("workspace_bootstrap_files[%d].visibility tidak valid", i),
+			)
+		}
+		if visibility == "" {
+			visibility = "public"
+		}
+		if kind == "sensitive_context" {
+			visibility = "assigned_validators"
+		}
+
+		dedupeKey := documentID + "|" + kind
+		if _, ok := seen[dedupeKey]; ok {
+			continue
+		}
+		seen[dedupeKey] = struct{}{}
+
+		out = append(out, WorkspaceBootstrapFileInput{
+			DocumentID: documentID,
+			Kind:       kind,
+			Label:      label,
+			Visibility: visibility,
+		})
+	}
+
+	return out, nil
 }
 
 func normalizeTagSlugs(tags []string, requireMinimum bool) ([]string, error) {

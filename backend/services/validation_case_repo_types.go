@@ -47,7 +47,10 @@ type RepoPayoutLedger struct {
 
 type RepoTreeResponse struct {
 	CaseID              uint                 `json:"case_id"`
-	ProtocolMode        string               `json:"protocol_mode"`
+	WorkflowFamily      string               `json:"workflow_family"`
+	WorkflowName        string               `json:"workflow_name"`
+	ProtocolMode        string               `json:"protocol_mode,omitempty"`
+	WorkspaceStage      string               `json:"workspace_stage"`
 	RepoStage           string               `json:"repo_stage"`
 	CompletionMode      string               `json:"completion_mode"`
 	ConsensusStatus     string               `json:"consensus_status"`

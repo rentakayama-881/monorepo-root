@@ -3,7 +3,9 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
+	"time"
 
 	"backend-gin/database"
 	"backend-gin/ent"
@@ -250,6 +252,9 @@ func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, own
 	if err := json.Unmarshal(metaJSON, &metaMap); err != nil {
 		metaMap = make(map[string]interface{})
 	}
+	delete(metaMap, "protocol_mode")
+	delete(metaMap, "workflow_mode")
+	delete(metaMap, "workflow_version")
 
 	var tags []*ent.Tag
 	if len(input.TagSlugs) > 0 {
@@ -268,6 +273,38 @@ func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, own
 	}
 	contentMap := validators.BuildCanonicalStructuredContent(structuredIntake)
 	autoSummary := validators.BuildAutoSummary(structuredIntake)
+
+	workspaceState := defaultRepoMetaState()
+	workspaceState.WorkflowFamily = workspaceWorkflowFamily
+	workspaceState.CompletionMode = normalizeRepoCompletionMode(workspaceState.CompletionMode)
+	workspaceState.ConsensusStatus = normalizeRepoConsensusStatus(workspaceState.ConsensusStatus)
+	workspaceState.RepoStage = normalizeRepoStage(workspaceState.RepoStage)
+	if len(input.WorkspaceBootstrapFiles) > 0 {
+		createdAt := time.Now().Unix()
+		seed := time.Now().UnixNano()
+		workspaceFiles := make([]RepoCaseFileItem, 0, len(input.WorkspaceBootstrapFiles))
+		for idx, file := range input.WorkspaceBootstrapFiles {
+			kind := normalizeRepoFileKind(file.Kind)
+			if kind == "" {
+				continue
+			}
+			visibility := normalizeRepoFileVisibility(file.Visibility)
+			if kind == repoFileKindSensitive {
+				visibility = repoFileVisibilityAssignedValidators
+			}
+			workspaceFiles = append(workspaceFiles, RepoCaseFileItem{
+				ID:         fmt.Sprintf("wcf_%d_%d_%d", seed, ownerUserID, idx+1),
+				DocumentID: strings.TrimSpace(file.DocumentID),
+				Kind:       kind,
+				Label:      strings.TrimSpace(file.Label),
+				Visibility: visibility,
+				UploadedBy: ownerUserID,
+				UploadedAt: createdAt,
+			})
+		}
+		workspaceState.RepoFiles = workspaceFiles
+	}
+	metaMap = mergeRepoMeta(metaMap, workspaceState)
 
 	create := s.client.ValidationCase.
 		Create().
@@ -379,9 +416,8 @@ func (s *EntValidationCaseService) UpdateValidationCase(ctx context.Context, own
 		update.SetMeta(sanitizeCaseMeta(metaMap))
 	}
 	if input.BountyAmount != nil {
-		repoState := loadRepoMetaState(vc.Meta)
-		if normalizeRepoMode(repoState.ProtocolMode) == repoProtocolModeV2 {
-			return apperrors.ErrInvalidInput.WithDetails("bounty_amount tidak dapat diubah untuk repo_validation_v2")
+		if isWorkspaceCaseMeta(vc.Meta) {
+			return apperrors.ErrInvalidInput.WithDetails("bounty_amount tidak dapat diubah untuk Evidence Validation Workspace")
 		}
 
 		// Conservative: allow bounty edits only while still open.

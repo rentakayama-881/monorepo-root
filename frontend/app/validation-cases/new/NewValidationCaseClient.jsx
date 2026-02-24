@@ -7,6 +7,7 @@ import { fetchJson, fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { LOCKED_CATEGORIES } from "@/lib/constants";
 import { VALIDATION_CASE_README_TEMPLATES } from "@/lib/validationCaseReadmeTemplates";
+import { useUploadDocument } from "@/lib/useDocuments";
 import TagSelector from "@/components/ui/TagSelector";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
@@ -125,6 +126,23 @@ function formatCreateCaseError(err, fallback = "Gagal membuat Validation Case") 
   return `${message}: ${details}`;
 }
 
+function extractDocumentId(uploadResult) {
+  if (!uploadResult || typeof uploadResult !== "object") return "";
+  const candidates = [
+    uploadResult.document_id,
+    uploadResult.documentId,
+    uploadResult.id,
+    uploadResult.DocumentId,
+    uploadResult.DocumentID,
+    uploadResult.ID,
+  ];
+  for (const candidate of candidates) {
+    const value = String(candidate || "").trim();
+    if (value) return value;
+  }
+  return "";
+}
+
 function pickDefaultCategory(list) {
   const items = Array.isArray(list) ? list : [];
   if (items.length === 0) return null;
@@ -177,7 +195,6 @@ export default function NewValidationCaseClient() {
 
   const [form, setForm] = useState({
     title: "",
-    protocol_mode: "repo_validation_v2",
     bounty_amount: "10000",
     quick_intake: {
       validation_goal: "",
@@ -196,6 +213,15 @@ export default function NewValidationCaseClient() {
       no_contact_in_case_record: false,
     },
   });
+  const [workspaceUploadDraft, setWorkspaceUploadDraft] = useState({
+    file: null,
+    kind: "task_input",
+    label: "",
+    visibility: "public",
+  });
+  const [workspaceBootstrapFiles, setWorkspaceBootstrapFiles] = useState([]);
+  const [workspaceFileInputKey, setWorkspaceFileInputKey] = useState(0);
+  const [workspaceUploadStageMsg, setWorkspaceUploadStageMsg] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -204,10 +230,11 @@ export default function NewValidationCaseClient() {
   const [insertSnippetSignal, setInsertSnippetSignal] = useState(null);
   const [telegramChecking, setTelegramChecking] = useState(true);
   const [telegramReady, setTelegramReady] = useState(false);
+  const { uploadDocument, loading: uploadingDocument, progress: uploadProgress } = useUploadDocument();
 
   const locked = Boolean(caseType?.slug && LOCKED_CATEGORIES.includes(String(caseType.slug)));
   const telegramGateLocked = telegramChecking || !telegramReady;
-  const formDisabled = locked || submitting || telegramGateLocked;
+  const formDisabled = locked || submitting || telegramGateLocked || uploadingDocument;
   const autoSummary = useMemo(() => buildAutoSummary(form.quick_intake), [form.quick_intake]);
   const autoBrief = useMemo(() => buildAutoBrief(form.quick_intake), [form.quick_intake]);
 
@@ -318,9 +345,67 @@ export default function NewValidationCaseClient() {
     setInsertSnippetSignal((prev) => (prev?.id === snippetId ? null : prev));
   }
 
+  function onWorkspaceFilePicked(file) {
+    if (!file) {
+      setWorkspaceUploadDraft((prev) => ({ ...prev, file: null }));
+      return;
+    }
+    const fallbackLabel = String(file.name || "")
+      .trim()
+      .replace(/\.[^/.]+$/, "");
+    setWorkspaceUploadDraft((prev) => ({
+      ...prev,
+      file,
+      label: String(prev.label || "").trim() || fallbackLabel || "Case file",
+    }));
+  }
+
+  function addWorkspaceBootstrapFile() {
+    const file = workspaceUploadDraft.file;
+    if (!file) {
+      setError("Pilih file dulu sebelum menambahkan ke daftar upload.");
+      return;
+    }
+
+    const kind = String(workspaceUploadDraft.kind || "task_input").trim();
+    const label = String(workspaceUploadDraft.label || "").trim();
+    const visibility = kind === "sensitive_context"
+      ? "assigned_validators"
+      : String(workspaceUploadDraft.visibility || "public").trim();
+
+    if (!label) {
+      setError("Label file wajib diisi.");
+      return;
+    }
+
+    setWorkspaceBootstrapFiles((prev) => [
+      ...prev,
+      {
+        localId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        file,
+        kind,
+        label,
+        visibility,
+      },
+    ]);
+    setWorkspaceUploadDraft({
+      file: null,
+      kind: "task_input",
+      label: "",
+      visibility: "public",
+    });
+    setWorkspaceFileInputKey((prev) => prev + 1);
+    setError("");
+  }
+
+  function removeWorkspaceBootstrapFile(localId) {
+    setWorkspaceBootstrapFiles((prev) => prev.filter((item) => item.localId !== localId));
+  }
+
   async function submit() {
     setError("");
     setOk("");
+    setWorkspaceUploadStageMsg("");
 
     if (!caseType?.slug) {
       setError("Konfigurasi intake belum siap. Hubungi admin.");
@@ -414,6 +499,29 @@ export default function NewValidationCaseClient() {
 
     setSubmitting(true);
     try {
+      const workspaceBootstrapPayload = [];
+      for (let idx = 0; idx < workspaceBootstrapFiles.length; idx += 1) {
+        const item = workspaceBootstrapFiles[idx];
+        const progressLabel = `Uploading file ${idx + 1}/${workspaceBootstrapFiles.length}: ${item.label}`;
+        setWorkspaceUploadStageMsg(progressLabel);
+        const uploaded = await uploadDocument(item.file, {
+          title: item.label,
+          description: `Validation workspace bootstrap (${item.kind})`,
+          category: "other",
+          visibility: "private",
+        });
+        const documentId = extractDocumentId(uploaded);
+        if (!documentId) {
+          throw new Error(`Upload berhasil tetapi document_id tidak ditemukan untuk "${item.label}".`);
+        }
+        workspaceBootstrapPayload.push({
+          document_id: documentId,
+          kind: item.kind,
+          label: item.label,
+          visibility: item.kind === "sensitive_context" ? "assigned_validators" : item.visibility,
+        });
+      }
+
       const content = {
         quick_intake: {
           ...form.quick_intake,
@@ -431,19 +539,17 @@ export default function NewValidationCaseClient() {
         content,
         bounty_amount: bounty,
         tag_slugs: normalizedTagSlugs,
-        meta:
-          form.protocol_mode === "repo_validation_v2"
-            ? {
-                protocol_mode: "repo_validation_v2",
-                completion_mode: "panel_3",
-                consensus_status: "pending",
-                repo_stage: "draft",
-              }
-            : {
-                protocol_mode: "workflow_v1",
-              },
+        workspace_bootstrap_files: workspaceBootstrapPayload,
+        meta: {
+          workflow_family: "evidence_validation_workspace",
+          workflow_name: "Evidence Validation Workspace",
+          completion_mode: "panel_3",
+          consensus_status: "pending",
+          workspace_stage: "draft",
+        },
       };
 
+      setWorkspaceUploadStageMsg("Creating validation case...");
       const created = await fetchJsonAuth("/api/validation-cases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -458,6 +564,7 @@ export default function NewValidationCaseClient() {
     } catch (e) {
       setError(formatCreateCaseError(e));
     } finally {
+      setWorkspaceUploadStageMsg("");
       setSubmitting(false);
     }
   }
@@ -540,19 +647,6 @@ export default function NewValidationCaseClient() {
               placeholder="Ringkas dan spesifik."
               disabled={formDisabled}
             />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground">Validation Flow Mode</label>
-            <select
-              value={form.protocol_mode}
-              onChange={(e) => setForm((prev) => ({ ...prev, protocol_mode: e.target.value }))}
-              className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-              disabled={formDisabled}
-            >
-              <option value="repo_validation_v2">Repo Validation v2 (File-first, tanpa chat)</option>
-              <option value="workflow_v1">Workflow v1 (Consultation + Final Offer)</option>
-            </select>
           </div>
 
           <div className="rounded-[var(--radius)] border border-border bg-secondary/30 p-4">
@@ -721,6 +815,117 @@ export default function NewValidationCaseClient() {
             <div className="mt-2 text-[11px] text-muted-foreground">
               Gunakan markdown secukupnya. Jangan masukkan kontak langsung (Telegram/WhatsApp) di Case Record.
             </div>
+          </div>
+
+          <div className="rounded-[var(--radius)] border border-border bg-secondary/20 p-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Workspace Files (Optional di Create)
+            </div>
+            <div className="mt-2 text-xs text-muted-foreground">
+              Upload file sekarang agar validator bisa langsung kerja. File sensitif otomatis hanya untuk validator terpilih.
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <input
+                key={workspaceFileInputKey}
+                type="file"
+                onChange={(e) => onWorkspaceFilePicked(e.target.files?.[0] || null)}
+                className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                disabled={formDisabled}
+              />
+              <input
+                value={workspaceUploadDraft.label}
+                onChange={(e) => setWorkspaceUploadDraft((prev) => ({ ...prev, label: e.target.value }))}
+                placeholder="Label file (contoh: Draft Skripsi Bab 3)"
+                className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                disabled={formDisabled}
+              />
+              <select
+                value={workspaceUploadDraft.kind}
+                onChange={(e) =>
+                  setWorkspaceUploadDraft((prev) => {
+                    const nextKind = e.target.value;
+                    return {
+                      ...prev,
+                      kind: nextKind,
+                      visibility: nextKind === "sensitive_context" ? "assigned_validators" : prev.visibility,
+                    };
+                  })
+                }
+                className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                disabled={formDisabled}
+              >
+                <option value="task_input">task_input</option>
+                <option value="case_readme">case_readme</option>
+                <option value="sensitive_context">sensitive_context</option>
+              </select>
+              <select
+                value={workspaceUploadDraft.visibility}
+                onChange={(e) => setWorkspaceUploadDraft((prev) => ({ ...prev, visibility: e.target.value }))}
+                className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                disabled={formDisabled || workspaceUploadDraft.kind === "sensitive_context"}
+              >
+                <option value="public">public</option>
+                <option value="assigned_validators">assigned_validators</option>
+              </select>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={addWorkspaceBootstrapFile}
+                disabled={formDisabled}
+                className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Add File to Queue
+              </button>
+              {uploadingDocument ? (
+                <span className="text-xs text-muted-foreground">Upload progress: {uploadProgress}%</span>
+              ) : null}
+              {workspaceUploadStageMsg ? (
+                <span className="text-xs text-muted-foreground">{workspaceUploadStageMsg}</span>
+              ) : null}
+            </div>
+
+            {workspaceBootstrapFiles.length > 0 ? (
+              <div className="mt-3 overflow-x-auto rounded-[var(--radius)] border border-border bg-card">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                      <th className="px-3 py-2">Kind</th>
+                      <th className="px-3 py-2">Label</th>
+                      <th className="px-3 py-2">Visibility</th>
+                      <th className="px-3 py-2">File</th>
+                      <th className="px-3 py-2">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {workspaceBootstrapFiles.map((item) => (
+                      <tr key={item.localId} className="border-b border-border/70">
+                        <td className="px-3 py-2 font-mono text-xs text-foreground">{item.kind}</td>
+                        <td className="px-3 py-2 text-foreground">{item.label}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{item.visibility}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{item.file?.name || "-"}</td>
+                        <td className="px-3 py-2">
+                          <button
+                            type="button"
+                            onClick={() => removeWorkspaceBootstrapFile(item.localId)}
+                            disabled={formDisabled}
+                            className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-800 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="mt-3 text-xs text-muted-foreground">
+                Belum ada file di queue. Kamu tetap bisa create case sekarang dan upload nanti di Workspace.
+              </div>
+            )}
           </div>
 
           <div>

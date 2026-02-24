@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"sort"
 	"strings"
 	"time"
@@ -19,7 +20,13 @@ import (
 )
 
 const (
+	workspaceWorkflowFamily = "evidence_validation_workspace"
+	workspaceWorkflowName   = "Evidence Validation Workspace"
+
+	// Legacy marker (read compatibility only). New writes use workflow_family.
 	repoProtocolModeV2 = "repo_validation_v2"
+	// Legacy consultation workflow marker.
+	workflowProtocolV1 = "workflow_v1"
 
 	repoCompletionPanel3  = "panel_3"
 	repoCompletionPanel10 = "panel_10"
@@ -61,6 +68,7 @@ func NewEntValidationCaseRepoWorkflowService() *EntValidationCaseRepoWorkflowSer
 }
 
 type repoMetaState struct {
+	WorkflowFamily  string               `json:"workflow_family"`
 	ProtocolMode    string               `json:"protocol_mode"`
 	CompletionMode  string               `json:"completion_mode"`
 	ConsensusStatus string               `json:"consensus_status"`
@@ -75,6 +83,7 @@ type repoMetaState struct {
 
 func defaultRepoMetaState() repoMetaState {
 	return repoMetaState{
+		WorkflowFamily:  workspaceWorkflowFamily,
 		CompletionMode:  repoCompletionPanel3,
 		ConsensusStatus: repoConsensusPending,
 		RepoStage:       repoStageDraft,
@@ -86,10 +95,27 @@ func defaultRepoMetaState() repoMetaState {
 }
 
 func normalizeRepoMode(s string) string {
-	if strings.EqualFold(strings.TrimSpace(s), repoProtocolModeV2) {
+	mode := strings.ToLower(strings.TrimSpace(s))
+	switch mode {
+	case repoProtocolModeV2:
 		return repoProtocolModeV2
+	case workflowProtocolV1:
+		return workflowProtocolV1
+	default:
+		return mode
+	}
+}
+
+func normalizeWorkflowFamily(s string) string {
+	if strings.EqualFold(strings.TrimSpace(s), workspaceWorkflowFamily) {
+		return workspaceWorkflowFamily
 	}
 	return strings.ToLower(strings.TrimSpace(s))
+}
+
+func isWorkspaceMetaState(state repoMetaState) bool {
+	return normalizeWorkflowFamily(state.WorkflowFamily) == workspaceWorkflowFamily ||
+		normalizeRepoMode(state.ProtocolMode) == repoProtocolModeV2
 }
 
 func normalizeRepoStage(s string) string {
@@ -178,7 +204,11 @@ func loadRepoMetaState(meta map[string]interface{}) repoMetaState {
 	}
 	_ = json.Unmarshal(raw, &state)
 
+	state.WorkflowFamily = normalizeWorkflowFamily(state.WorkflowFamily)
 	state.ProtocolMode = normalizeRepoMode(state.ProtocolMode)
+	if state.WorkflowFamily == "" && state.ProtocolMode == repoProtocolModeV2 {
+		state.WorkflowFamily = workspaceWorkflowFamily
+	}
 	state.CompletionMode = normalizeRepoCompletionMode(state.CompletionMode)
 	state.ConsensusStatus = normalizeRepoConsensusStatus(state.ConsensusStatus)
 	state.RepoStage = normalizeRepoStage(state.RepoStage)
@@ -197,6 +227,10 @@ func loadRepoMetaState(meta map[string]interface{}) repoMetaState {
 	return state
 }
 
+func isWorkspaceCaseMeta(meta map[string]interface{}) bool {
+	return isWorkspaceMetaState(loadRepoMetaState(meta))
+}
+
 func cloneMeta(src map[string]interface{}) map[string]interface{} {
 	if src == nil {
 		return map[string]interface{}{}
@@ -208,19 +242,45 @@ func cloneMeta(src map[string]interface{}) map[string]interface{} {
 	return out
 }
 
+func metaString(value interface{}) string {
+	switch v := value.(type) {
+	case string:
+		return strings.TrimSpace(v)
+	default:
+		return ""
+	}
+}
+
 func mergeRepoMeta(existing map[string]interface{}, state repoMetaState) map[string]interface{} {
 	meta := cloneMeta(existing)
-	meta["protocol_mode"] = repoProtocolModeV2
+	meta["workflow_family"] = workspaceWorkflowFamily
+	meta["workflow_name"] = workspaceWorkflowName
 	meta["completion_mode"] = normalizeRepoCompletionMode(state.CompletionMode)
 	meta["consensus_status"] = normalizeRepoConsensusStatus(state.ConsensusStatus)
 	meta["consensus_result"] = strings.TrimSpace(state.ConsensusResult)
+	meta["workspace_stage"] = normalizeRepoStage(state.RepoStage)
 	meta["repo_stage"] = normalizeRepoStage(state.RepoStage)
+	meta["workspace_files"] = state.RepoFiles
 	meta["repo_files"] = state.RepoFiles
+	meta["workspace_applicants"] = state.RepoApplicants
 	meta["repo_applicants"] = state.RepoApplicants
+	meta["workspace_assignments"] = state.RepoAssignments
 	meta["repo_assignments"] = state.RepoAssignments
+	meta["workspace_verdicts"] = state.RepoVerdicts
 	meta["repo_verdicts"] = state.RepoVerdicts
 	if state.RepoPayout != nil {
+		meta["workspace_payout"] = state.RepoPayout
 		meta["repo_payout"] = state.RepoPayout
+	} else {
+		delete(meta, "workspace_payout")
+		delete(meta, "repo_payout")
+	}
+
+	// Keep legacy protocol marker only for old records that already used it.
+	if normalizeRepoMode(metaString(meta["protocol_mode"])) == repoProtocolModeV2 {
+		meta["protocol_mode"] = repoProtocolModeV2
+	} else {
+		delete(meta, "protocol_mode")
 	}
 	return sanitizeCaseMeta(meta)
 }
@@ -234,14 +294,17 @@ func (s *EntValidationCaseRepoWorkflowService) getValidationCase(ctx context.Con
 		return nil, apperrors.ErrDatabase
 	}
 	state := loadRepoMetaState(vc.Meta)
-	if normalizeRepoMode(state.ProtocolMode) != repoProtocolModeV2 {
-		return nil, apperrors.ErrInvalidInput.WithDetails("case ini bukan repo_validation_v2. Gunakan workflow_v1 untuk Consultation/Final Offer.")
+	if !isWorkspaceMetaState(state) {
+		return nil, apperrors.ErrInvalidInput.WithDetails("case ini menggunakan workflow legacy Consultation/Final Offer. Gunakan endpoint workflow legacy.")
 	}
 	return vc, nil
 }
 
 func (s *EntValidationCaseRepoWorkflowService) ensureRepoState(state repoMetaState) repoMetaState {
-	state.ProtocolMode = repoProtocolModeV2
+	state.WorkflowFamily = workspaceWorkflowFamily
+	if normalizeRepoMode(state.ProtocolMode) != repoProtocolModeV2 {
+		state.ProtocolMode = ""
+	}
 	state.CompletionMode = normalizeRepoCompletionMode(state.CompletionMode)
 	state.ConsensusStatus = normalizeRepoConsensusStatus(state.ConsensusStatus)
 	state.RepoStage = normalizeRepoStage(state.RepoStage)
@@ -322,7 +385,7 @@ func (s *EntValidationCaseRepoWorkflowService) countActiveRepoAssignmentsForVali
 	count := 0
 	for _, vc := range cases {
 		state := loadRepoMetaState(vc.Meta)
-		if state.ProtocolMode != repoProtocolModeV2 {
+		if !isWorkspaceMetaState(state) {
 			continue
 		}
 		if normalizeRepoStage(state.RepoStage) == repoStageFinalized {
@@ -353,7 +416,7 @@ func (s *EntValidationCaseRepoWorkflowService) pairSeenInRecentPanels(
 			continue
 		}
 		state := loadRepoMetaState(vc.Meta)
-		if state.ProtocolMode != repoProtocolModeV2 {
+		if !isWorkspaceMetaState(state) {
 			continue
 		}
 		var ids []uint
@@ -383,6 +446,20 @@ func repoFileRequirements(files []RepoCaseFileItem) (bool, bool) {
 	return hasReadme, hasTaskInput
 }
 
+func validationCaseHasReadmeContent(vc *ent.ValidationCase) bool {
+	if vc == nil || vc.ContentJSON == nil {
+		return false
+	}
+	caseRecord := strings.TrimSpace(metaString(vc.ContentJSON["case_record_text"]))
+	if caseRecord != "" {
+		return true
+	}
+
+	// Fallback for older payload shapes where free text was stored directly.
+	contentText := strings.TrimSpace(metaString(vc.ContentJSON["text"]))
+	return contentText != ""
+}
+
 func latestVerdictsByValidator(verdicts []RepoVerdictItem, activeAssignments []RepoAssignmentItem) map[uint]RepoVerdictItem {
 	active := make(map[uint]struct{}, len(activeAssignments))
 	for _, asn := range activeAssignments {
@@ -409,6 +486,25 @@ func requiredVotesByMode(mode string) int {
 		return 10
 	}
 	return 3
+}
+
+func normalizeRequestedPanelSize(panelSize int) int {
+	if panelSize == 10 {
+		return 10
+	}
+	return 3
+}
+
+func shuffledUint(values []uint) []uint {
+	out := append([]uint(nil), values...)
+	if len(out) <= 1 {
+		return out
+	}
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rng.Shuffle(len(out), func(i, j int) {
+		out[i], out[j] = out[j], out[i]
+	})
+	return out
 }
 
 func consensusBreakdown(latest map[uint]RepoVerdictItem) map[string]int {
@@ -567,7 +663,7 @@ func (s *EntValidationCaseRepoWorkflowService) unlockChainVestingForValidator(
 			continue
 		}
 		state := loadRepoMetaState(vc.Meta)
-		if state.ProtocolMode != repoProtocolModeV2 || state.RepoPayout == nil {
+		if !isWorkspaceMetaState(state) || state.RepoPayout == nil {
 			continue
 		}
 
@@ -635,7 +731,8 @@ func (s *EntValidationCaseRepoWorkflowService) buildRepoTreeResponse(
 ) (*RepoTreeResponse, error) {
 	isOwner := vc.UserID == int(viewerUserID)
 	isAssigned := s.isAssignedValidator(viewerUserID, state.RepoAssignments)
-	hasReadme, hasTaskInput := repoFileRequirements(state.RepoFiles)
+	hasReadmeFile, hasTaskInput := repoFileRequirements(state.RepoFiles)
+	hasReadme := hasReadmeFile || validationCaseHasReadmeContent(vc)
 	canPublish := isOwner && hasReadme && hasTaskInput && normalizeRepoStage(state.RepoStage) != repoStageFinalized
 	requiredStake := requiredStakeForRepoCase(vc)
 
@@ -725,7 +822,10 @@ func (s *EntValidationCaseRepoWorkflowService) buildRepoTreeResponse(
 
 	return &RepoTreeResponse{
 		CaseID:              uint(vc.ID),
-		ProtocolMode:        repoProtocolModeV2,
+		WorkflowFamily:      workspaceWorkflowFamily,
+		WorkflowName:        workspaceWorkflowName,
+		ProtocolMode:        normalizeRepoMode(state.ProtocolMode),
+		WorkspaceStage:      normalizeRepoStage(state.RepoStage),
 		RepoStage:           normalizeRepoStage(state.RepoStage),
 		CompletionMode:      normalizeRepoCompletionMode(state.CompletionMode),
 		ConsensusStatus:     normalizeRepoConsensusStatus(state.ConsensusStatus),
@@ -867,9 +967,10 @@ func (s *EntValidationCaseRepoWorkflowService) PublishRepoCase(
 	}
 
 	state := s.ensureRepoState(loadRepoMetaState(vc.Meta))
-	hasReadme, hasTaskInput := repoFileRequirements(state.RepoFiles)
+	hasReadmeFile, hasTaskInput := repoFileRequirements(state.RepoFiles)
+	hasReadme := hasReadmeFile || validationCaseHasReadmeContent(vc)
 	if !hasReadme {
-		return nil, apperrors.ErrInvalidInput.WithDetails("publish membutuhkan minimal 1 file kind=case_readme (setara CASE_README.md)")
+		return nil, apperrors.ErrInvalidInput.WithDetails("publish membutuhkan CASE_README (markdown case record) atau file kind=case_readme")
 	}
 	if !hasTaskInput {
 		return nil, apperrors.ErrInvalidInput.WithDetails("publish membutuhkan minimal 1 file kind=task_input")
@@ -987,10 +1088,10 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 		return nil, apperrors.ErrInvalidInput.WithDetails("publish case terlebih dahulu sebelum assign validator")
 	}
 
+	panelSize = normalizeRequestedPanelSize(panelSize)
 	if panelSize == 10 {
 		state.CompletionMode = repoCompletionPanel10
 	} else {
-		panelSize = 3
 		state.CompletionMode = repoCompletionPanel3
 	}
 
@@ -1116,6 +1217,141 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 	})
 
 	return s.buildRepoTreeResponse(ctx, vc, state, ownerUserID)
+}
+
+func (s *EntValidationCaseRepoWorkflowService) AutoAssignRepoValidators(
+	ctx context.Context,
+	validationCaseID uint,
+	ownerUserID uint,
+	panelSize int,
+) (*RepoTreeResponse, error) {
+	vc, err := s.getValidationCase(ctx, validationCaseID)
+	if err != nil {
+		return nil, err
+	}
+	if vc.UserID != int(ownerUserID) {
+		return nil, apperrors.ErrValidationCaseOwnership
+	}
+
+	state := s.ensureRepoState(loadRepoMetaState(vc.Meta))
+	if normalizeRepoStage(state.RepoStage) == repoStageFinalized {
+		return nil, apperrors.ErrInvalidInput.WithDetails("case sudah finalized")
+	}
+	if normalizeRepoStage(state.RepoStage) == repoStageDraft {
+		return nil, apperrors.ErrInvalidInput.WithDetails("publish case terlebih dahulu sebelum auto-match validator")
+	}
+
+	panelSize = normalizeRequestedPanelSize(panelSize)
+	candidateIDs := dedupeUint(state.RepoApplicants)
+	if len(candidateIDs) < panelSize {
+		return nil, apperrors.ErrInvalidInput.WithDetails(
+			fmt.Sprintf("applicant validator belum cukup untuk panel %d", panelSize),
+		)
+	}
+
+	intIDs := make([]int, 0, len(candidateIDs))
+	for _, id := range candidateIDs {
+		if id == 0 || id == ownerUserID {
+			continue
+		}
+		intIDs = append(intIDs, int(id))
+	}
+	usersByID := make(map[uint]*ent.User, len(intIDs))
+	if len(intIDs) > 0 {
+		users, qErr := s.client.User.Query().Where(user.IDIn(intIDs...)).All(ctx)
+		if qErr != nil {
+			return nil, apperrors.ErrDatabase
+		}
+		for _, u := range users {
+			usersByID[uint(u.ID)] = u
+		}
+	}
+
+	requiredStake := requiredStakeForRepoCase(vc)
+	eligible := make([]uint, 0, len(candidateIDs))
+	for _, id := range candidateIDs {
+		validator := usersByID[id]
+		if validator == nil {
+			continue
+		}
+		if validator.GuaranteeAmount < requiredStake {
+			continue
+		}
+
+		activeCount, countErr := s.countActiveRepoAssignmentsForValidator(ctx, id)
+		if countErr != nil {
+			return nil, countErr
+		}
+		if !s.isAssignedValidator(id, state.RepoAssignments) && activeCount >= 2 {
+			continue
+		}
+		eligible = append(eligible, id)
+	}
+	if len(eligible) < panelSize {
+		return nil, apperrors.ErrInvalidInput.WithDetails(
+			fmt.Sprintf("validator eligible belum cukup untuk panel %d", panelSize),
+		)
+	}
+
+	eligible = shuffledUint(eligible)
+	cutoff := time.Now().Add(-30 * 24 * time.Hour)
+	selected := make([]uint, 0, panelSize)
+
+	var pick func(start int) (bool, error)
+	pick = func(start int) (bool, error) {
+		if len(selected) == panelSize {
+			return true, nil
+		}
+		remainingNeeded := panelSize - len(selected)
+		for i := start; i <= len(eligible)-remainingNeeded; i++ {
+			candidate := eligible[i]
+			conflict := false
+			for _, existing := range selected {
+				seen, seenErr := s.pairSeenInRecentPanels(ctx, validationCaseID, candidate, existing, cutoff)
+				if seenErr != nil {
+					return false, seenErr
+				}
+				if seen {
+					conflict = true
+					break
+				}
+			}
+			if conflict {
+				continue
+			}
+
+			selected = append(selected, candidate)
+			ok, err := pick(i + 1)
+			if err != nil {
+				return false, err
+			}
+			if ok {
+				return true, nil
+			}
+			selected = selected[:len(selected)-1]
+		}
+		return false, nil
+	}
+
+	ok, err := pick(0)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, apperrors.ErrInvalidInput.WithDetails("tidak ditemukan kombinasi panel validator yang lolos aturan anti-pairing")
+	}
+
+	tree, err := s.AssignRepoValidators(ctx, validationCaseID, ownerUserID, selected, panelSize)
+	if err != nil {
+		return nil, err
+	}
+
+	actor := int(ownerUserID)
+	s.appendCaseLogBestEffort(ctx, int(validationCaseID), &actor, "workspace_validators_auto_matched", map[string]interface{}{
+		"validator_user_ids": selected,
+		"panel_size":         panelSize,
+	})
+	return tree, nil
 }
 
 func (s *EntValidationCaseRepoWorkflowService) buildConsensusResponse(

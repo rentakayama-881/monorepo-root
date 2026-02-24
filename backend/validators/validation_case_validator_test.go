@@ -41,6 +41,31 @@ func TestCreateValidationCaseInput_Validate_Valid(t *testing.T) {
 				TagSlugs: []string{"artifact-review", "domain-backend", "stage-ready"},
 			},
 		},
+		{
+			name: "Valid with workspace bootstrap files",
+			input: CreateValidationCaseInput{
+				CategorySlug: "diskusi",
+				Title:        "Workspace bootstrap files",
+				ContentType:  "json",
+				Content:      validStructuredContent(),
+				BountyAmount: 30_000,
+				TagSlugs:     []string{"artifact-review", "domain-backend"},
+				WorkspaceBootstrapFiles: []WorkspaceBootstrapFileInput{
+					{
+						DocumentID: "doc-readme-1",
+						Kind:       "case_readme",
+						Label:      "README Draft",
+						Visibility: "public",
+					},
+					{
+						DocumentID: "doc-sensitive-1",
+						Kind:       "sensitive_context",
+						Label:      "Sensitive Notes",
+						Visibility: "public",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -52,6 +77,11 @@ func TestCreateValidationCaseInput_Validate_Valid(t *testing.T) {
 			assert.NotNil(t, tt.input.StructuredIntake)
 			assert.Equal(t, "S1", tt.input.StructuredIntake.SensitivityLevel)
 			assert.GreaterOrEqual(t, len(tt.input.TagSlugs), 2)
+			for _, file := range tt.input.WorkspaceBootstrapFiles {
+				if file.Kind == "sensitive_context" {
+					assert.Equal(t, "assigned_validators", file.Visibility)
+				}
+			}
 		})
 	}
 }
@@ -202,6 +232,24 @@ func TestCreateValidationCaseInput_Validate_Invalid(t *testing.T) {
 				in.Meta = map[string]interface{}{"image": "not-a-url"}
 			},
 			expectedErr: apperrors.ErrInvalidInput,
+		},
+		{
+			name: "Invalid workspace bootstrap file kind",
+			mutate: func(in *CreateValidationCaseInput) {
+				in.WorkspaceBootstrapFiles = []WorkspaceBootstrapFileInput{
+					{DocumentID: "doc-1", Kind: "invalid_kind", Label: "File X", Visibility: "public"},
+				}
+			},
+			expectedErr: apperrors.ErrInvalidInput,
+		},
+		{
+			name: "Missing workspace bootstrap file label",
+			mutate: func(in *CreateValidationCaseInput) {
+				in.WorkspaceBootstrapFiles = []WorkspaceBootstrapFileInput{
+					{DocumentID: "doc-2", Kind: "task_input", Label: "", Visibility: "public"},
+				}
+			},
+			expectedErr: apperrors.ErrMissingField,
 		},
 	}
 
