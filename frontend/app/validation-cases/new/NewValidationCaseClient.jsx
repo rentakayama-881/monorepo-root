@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { fetchJson, fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { LOCKED_CATEGORIES } from "@/lib/constants";
+import { VALIDATION_CASE_README_TEMPLATES } from "@/lib/validationCaseReadmeTemplates";
 import TagSelector from "@/components/ui/TagSelector";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
@@ -199,6 +200,8 @@ export default function NewValidationCaseClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
+  const [activeReadmeTemplateId, setActiveReadmeTemplateId] = useState("");
+  const [insertSnippetSignal, setInsertSnippetSignal] = useState(null);
   const [telegramChecking, setTelegramChecking] = useState(true);
   const [telegramReady, setTelegramReady] = useState(false);
 
@@ -302,6 +305,17 @@ export default function NewValidationCaseClient() {
         [key]: checked,
       },
     }));
+  }
+
+  function insertReadmeTemplate(template) {
+    if (formDisabled || !template?.id || !template?.snippet) return;
+    const snippetId = `${template.id}-${Date.now()}`;
+    setActiveReadmeTemplateId(template.id);
+    setInsertSnippetSignal({ id: snippetId, text: template.snippet });
+  }
+
+  function handleSnippetInserted(snippetId) {
+    setInsertSnippetSignal((prev) => (prev?.id === snippetId ? null : prev));
   }
 
   async function submit() {
@@ -638,6 +652,59 @@ export default function NewValidationCaseClient() {
           </div>
 
           <div>
+            <label className="text-xs font-semibold text-muted-foreground">README Design Templates</label>
+            <div className="mt-2 rounded-[var(--radius)] border border-border bg-gradient-to-br from-slate-50 via-cyan-50 to-indigo-100 p-4">
+              <div className="text-sm font-semibold text-foreground">GitHub-style template siap edit</div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                Pilih template visual, lalu klik insert. Isi tetap custom dari kamu sendiri. Tag protocol tetap wajib.
+              </div>
+              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {VALIDATION_CASE_README_TEMPLATES.map((template) => {
+                  const selected = activeReadmeTemplateId === template.id;
+                  return (
+                    <article
+                      key={template.id}
+                      className={`rounded-[var(--radius)] border p-3 shadow-sm transition ${
+                        template.palette?.cardClass || "border-border bg-card"
+                      } ${selected ? "ring-2 ring-primary/60" : ""}`}
+                    >
+                      <div className="flex flex-wrap gap-1.5">
+                        {Array.isArray(template.previewBadges)
+                          ? template.previewBadges.map((badgeLabel) => (
+                              <span
+                                key={`${template.id}-${badgeLabel}`}
+                                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${
+                                  template.palette?.badgeClass || "border-border bg-secondary/40 text-foreground"
+                                }`}
+                              >
+                                {badgeLabel}
+                              </span>
+                            ))
+                          : null}
+                      </div>
+                      <div className="mt-2 text-sm font-semibold text-foreground">{template.name}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">{template.description}</div>
+                      <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        {template.category}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => insertReadmeTemplate(template)}
+                        disabled={formDisabled}
+                        className={`mt-3 inline-flex w-full items-center justify-center rounded-[var(--radius)] border px-3 py-1.5 text-xs font-semibold transition ${
+                          template.palette?.buttonClass || "border-border text-foreground hover:bg-secondary"
+                        } disabled:cursor-not-allowed disabled:opacity-60`}
+                      >
+                        Insert Template
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div>
             <label className="text-xs font-semibold text-muted-foreground">Case Record (Free Text)</label>
             <div className="mt-1">
               <MarkdownEditor
@@ -647,6 +714,8 @@ export default function NewValidationCaseClient() {
                 minHeight="280px"
                 preview={MarkdownPreview}
                 disabled={formDisabled}
+                insertSnippetSignal={insertSnippetSignal}
+                onSnippetInserted={handleSnippetInserted}
               />
             </div>
             <div className="mt-2 text-[11px] text-muted-foreground">

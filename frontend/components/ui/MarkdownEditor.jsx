@@ -11,6 +11,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
  * - Keyboard shortcuts (Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+E)
  * - Smart text wrapping and line insertion
  * - Proper code block insertion
+ * - Programmatic snippet insertion at cursor
  */
 
 // Toolbar button
@@ -63,9 +64,12 @@ export default function MarkdownEditor({
   minHeight = "200px",
   disabled = false,
   preview: PreviewComponent,
+  insertSnippetSignal = null,
+  onSnippetInserted,
 }) {
   const [tab, setTab] = useState("write");
   const ref = useRef(null);
+  const lastSnippetIdRef = useRef("");
 
   // Wrap selected text or insert at cursor
   const wrap = useCallback((before, after = "", defaultText = "") => {
@@ -192,6 +196,38 @@ export default function MarkdownEditor({
       ta.setSelectionRange(selectStart, selectStart + 8);
     });
   }, [value, onChange]);
+
+  // Insert snippet sent by parent component (for template/preset support)
+  useEffect(() => {
+    if (!insertSnippetSignal || typeof insertSnippetSignal !== "object") return;
+
+    const snippetId = String(insertSnippetSignal.id || "").trim();
+    const snippetText = String(insertSnippetSignal.text || "");
+    if (!snippetId || snippetText.length === 0) return;
+    if (snippetId === lastSnippetIdRef.current) return;
+
+    lastSnippetIdRef.current = snippetId;
+
+    const currentValue = String(value || "");
+    const ta = ref.current;
+    const start = ta ? ta.selectionStart : currentValue.length;
+    const end = ta ? ta.selectionEnd : currentValue.length;
+    const nextValue = currentValue.substring(0, start) + snippetText + currentValue.substring(end);
+    onChange(nextValue);
+
+    if (typeof onSnippetInserted === "function") {
+      onSnippetInserted(snippetId);
+    }
+
+    if (ta && !disabled) {
+      const nextFrame = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (cb) => setTimeout(cb, 0);
+      nextFrame(() => {
+        ta.focus();
+        const pos = start + snippetText.length;
+        ta.setSelectionRange(pos, pos);
+      });
+    }
+  }, [disabled, insertSnippetSignal, onChange, onSnippetInserted, value]);
 
   // Keyboard shortcuts
   useEffect(() => {
