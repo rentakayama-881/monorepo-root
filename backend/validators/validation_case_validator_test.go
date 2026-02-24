@@ -169,11 +169,10 @@ func TestCreateValidationCaseInput_Validate_Invalid(t *testing.T) {
 			expectedErr: apperrors.ErrMissingField,
 		},
 		{
-			name: "Missing quick intake field",
+			name: "Missing case record text",
 			mutate: func(in *CreateValidationCaseInput) {
 				content := validStructuredContent()
-				quick := content["quick_intake"].(map[string]interface{})
-				delete(quick, "validation_goal")
+				delete(content, "case_record_text")
 				in.Content = content
 			},
 			expectedErr: apperrors.ErrMissingField,
@@ -183,7 +182,7 @@ func TestCreateValidationCaseInput_Validate_Invalid(t *testing.T) {
 			mutate: func(in *CreateValidationCaseInput) {
 				content := validStructuredContent()
 				checklist := content["checklist"].(map[string]interface{})
-				checklist["constraints_defined"] = false
+				checklist["sensitive_data_filtered"] = false
 				in.Content = content
 			},
 			expectedErr: apperrors.ErrInvalidInput,
@@ -192,8 +191,7 @@ func TestCreateValidationCaseInput_Validate_Invalid(t *testing.T) {
 			name: "Invalid sensitivity",
 			mutate: func(in *CreateValidationCaseInput) {
 				content := validStructuredContent()
-				quick := content["quick_intake"].(map[string]interface{})
-				quick["sensitivity"] = "S9"
+				content["sensitivity_level"] = "S9"
 				in.Content = content
 			},
 			expectedErr: apperrors.ErrInvalidInput,
@@ -530,20 +528,17 @@ func stringPtr(s string) *string {
 
 func validStructuredContent() map[string]interface{} {
 	return map[string]interface{}{
-		"quick_intake": map[string]interface{}{
-			"validation_goal": "Memastikan output AI konsisten dengan objective user.",
-			"output_type":     "Dokumen analisis",
-			"evidence_input":  "Draft output AI, dataset ringkas, dan instruksi awal user.",
-			"pass_criteria":   "Semua klaim utama tervalidasi dengan evidence yang relevan.",
-			"constraints":     "Tidak mengubah scope, tidak menambah asumsi tanpa persetujuan.",
-			"sensitivity":     "S1",
-		},
+		"sensitivity_level": "S1",
+		"validation_goal":   "Memastikan output AI konsisten dengan objective user.",
+		"output_type":       "Dokumen analisis",
+		"evidence_input":    "Draft output AI, dataset ringkas, dan instruksi awal user.",
+		"pass_criteria":     "Semua klaim utama tervalidasi dengan evidence yang relevan.",
+		"constraints":       "Tidak mengubah scope, tidak menambah asumsi tanpa persetujuan.",
 		"checklist": map[string]interface{}{
-			"intake_complete":           true,
-			"evidence_attached":         true,
-			"pass_criteria_defined":     true,
-			"constraints_defined":       true,
-			"no_contact_in_case_record": true,
+			"scope_clearly_written":       true,
+			"acceptance_criteria_defined": true,
+			"sensitive_data_filtered":     true,
+			"no_contact_in_case_record":   true,
 		},
 		"case_record_text": "Owner membutuhkan verifikasi objektif atas output AI dan tidak ingin diskusi chat panjang.",
 	}

@@ -15,60 +15,18 @@ import Button from "@/components/ui/Button";
 import NewValidationCaseSkeleton from "./NewValidationCaseSkeleton";
 import Skeleton from "@/components/ui/Skeleton";
 
-const quickIntakeFields = [
-  {
-    key: "validation_goal",
-    label: "Masalah yang ingin diselesaikan",
-    placeholder: "Contoh: Saya perlu memastikan hasil kerja AI bisa dipakai untuk presentasi klien.",
-    minLen: 12,
-    maxLen: 800,
-  },
-  {
-    key: "output_type",
-    label: "Hasil akhir yang kamu butuhkan",
-    placeholder: "Contoh: File Excel final, dokumen revisi, video 30 detik, atau deck presentasi.",
-    minLen: 4,
-    maxLen: 240,
-  },
-  {
-    key: "evidence_input",
-    label: "Materi awal yang sudah tersedia",
-    placeholder: "Contoh: draft, raw file, catatan, prompt AI, screenshot, atau data pendukung.",
-    minLen: 8,
-    maxLen: 2000,
-  },
-  {
-    key: "pass_criteria",
-    label: "Standar hasil dianggap selesai",
-    placeholder: "Contoh: tidak ada error formula, style sesuai brand, typo <= 2, dan siap submit.",
-    minLen: 8,
-    maxLen: 2000,
-  },
-  {
-    key: "constraints",
-    label: "Batasan penting",
-    placeholder: "Contoh: deadline, format wajib, tools yang boleh/tidak boleh, aturan etika/akademik.",
-    minLen: 4,
-    maxLen: 2000,
-  },
-];
-
 const checklistItems = [
   {
-    key: "intake_complete",
-    label: "Quick Intake sudah lengkap dan sesuai konteks.",
+    key: "scope_clearly_written",
+    label: "README menjelaskan scope, tujuan validasi, dan output yang diharapkan.",
   },
   {
-    key: "evidence_attached",
-    label: "Bukti/input sudah disiapkan agar validator bisa langsung cek.",
+    key: "acceptance_criteria_defined",
+    label: "Acceptance criteria ditulis jelas dan bisa diverifikasi.",
   },
   {
-    key: "pass_criteria_defined",
-    label: "Kriteria lulus ditulis eksplisit dan bisa diverifikasi.",
-  },
-  {
-    key: "constraints_defined",
-    label: "Batasan dan ruang lingkup sudah jelas.",
+    key: "sensitive_data_filtered",
+    label: "Data sensitif sudah difilter dari file publik dan dipisahkan bila perlu.",
   },
   {
     key: "no_contact_in_case_record",
@@ -77,7 +35,7 @@ const checklistItems = [
 ];
 
 const createNavigationSections = [
-  { id: "quick-intake", label: "1. Quick Intake" },
+  { id: "case-setup", label: "1. Case Setup" },
   { id: "readme-design", label: "2. README Design" },
   { id: "workspace-files", label: "3. Workspace Files" },
   { id: "quality-gate", label: "4. Checklist & Tags" },
@@ -86,15 +44,6 @@ const createNavigationSections = [
 const sensitivityOptions = ["S0", "S1", "S2", "S3"];
 const titleMinLength = 3;
 const titleMaxLength = 200;
-const autoBriefLabelMap = {
-  objective: "Tujuan",
-  expected_output_type: "Output",
-  evidence_scope: "Materi awal",
-  pass_gate: "Kriteria lulus",
-  constraints: "Batasan",
-  sensitivity: "Sensitivitas",
-  owner_response_sla: "SLA owner",
-};
 
 function formatIDR(amount) {
   const n = Number(amount || 0);
@@ -161,29 +110,14 @@ function pickDefaultCategory(list) {
   );
 }
 
-function buildAutoSummary(quickIntake) {
-  const goal = String(quickIntake?.validation_goal || "").trim();
-  const outputType = String(quickIntake?.output_type || "").trim();
-  const passCriteria = String(quickIntake?.pass_criteria || "").trim();
-  if (!goal && !outputType && !passCriteria) return "";
-  return `Tujuan: ${goal || "-"}. Output: ${outputType || "-"}. Lulus jika: ${passCriteria || "-"}.`;
-}
-
-function buildAutoBrief(quickIntake) {
-  return {
-    objective: String(quickIntake?.validation_goal || "").trim(),
-    expected_output_type: String(quickIntake?.output_type || "").trim(),
-    evidence_scope: String(quickIntake?.evidence_input || "").trim(),
-    pass_gate: String(quickIntake?.pass_criteria || "").trim(),
-    constraints: String(quickIntake?.constraints || "").trim(),
-    sensitivity: String(quickIntake?.sensitivity || "S1").trim().toUpperCase(),
-    owner_response_sla: "Max 12 jam (reminder +2h, +8h, auto-hold +12h)",
-  };
-}
-
-function quickIntakeFieldIsValid(field, value) {
-  const text = String(value || "").trim();
-  return text.length >= field.minLen && text.length <= field.maxLen;
+function buildRecordPreview(markdownRaw) {
+  const text = String(markdownRaw || "")
+    .replace(/[#*_`>|-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return "";
+  if (text.length <= 180) return text;
+  return `${text.slice(0, 177)}...`;
 }
 
 export default function NewValidationCaseClient() {
@@ -208,20 +142,12 @@ export default function NewValidationCaseClient() {
   const [form, setForm] = useState({
     title: "",
     bounty_amount: "10000",
-    quick_intake: {
-      validation_goal: "",
-      output_type: "",
-      evidence_input: "",
-      pass_criteria: "",
-      constraints: "",
-      sensitivity: "S1",
-    },
+    sensitivity: "S1",
     case_record_text: "",
     checklist: {
-      intake_complete: false,
-      evidence_attached: false,
-      pass_criteria_defined: false,
-      constraints_defined: false,
+      scope_clearly_written: false,
+      acceptance_criteria_defined: false,
+      sensitive_data_filtered: false,
       no_contact_in_case_record: false,
     },
   });
@@ -247,8 +173,7 @@ export default function NewValidationCaseClient() {
   const locked = Boolean(caseType?.slug && LOCKED_CATEGORIES.includes(String(caseType.slug)));
   const telegramGateLocked = telegramChecking || !telegramReady;
   const formDisabled = locked || submitting || telegramGateLocked || uploadingDocument;
-  const autoSummary = useMemo(() => buildAutoSummary(form.quick_intake), [form.quick_intake]);
-  const autoBrief = useMemo(() => buildAutoBrief(form.quick_intake), [form.quick_intake]);
+  const recordPreview = useMemo(() => buildRecordPreview(form.case_record_text), [form.case_record_text]);
   const normalizedTagCount = useMemo(
     () =>
       Array.from(
@@ -260,23 +185,27 @@ export default function NewValidationCaseClient() {
       ).length,
     [selectedTags],
   );
-  const quickIntakeCompleted = useMemo(
-    () =>
-      quickIntakeFields.filter((field) =>
-        quickIntakeFieldIsValid(field, form.quick_intake?.[field.key]),
-      ).length,
-    [form.quick_intake],
-  );
   const checklistCompleted = useMemo(
     () => checklistItems.filter((item) => Boolean(form.checklist?.[item.key])).length,
     [form.checklist],
   );
+  const caseSetupReady = useMemo(() => {
+    const title = String(form.title || "").trim();
+    const bounty = Number(form.bounty_amount || 0);
+    return (
+      title.length >= titleMinLength &&
+      title.length <= titleMaxLength &&
+      Number.isSafeInteger(bounty) &&
+      bounty >= 10_000 &&
+      sensitivityOptions.includes(String(form.sensitivity || "").toUpperCase())
+    );
+  }, [form.title, form.bounty_amount, form.sensitivity]);
   const readinessItems = useMemo(
     () => [
       {
-        id: "quick-intake",
-        label: "Quick intake lengkap",
-        done: quickIntakeCompleted === quickIntakeFields.length,
+        id: "case-setup",
+        label: "Title, bounty, sensitivity valid",
+        done: caseSetupReady,
       },
       {
         id: "readme-design",
@@ -301,7 +230,7 @@ export default function NewValidationCaseClient() {
       },
     ],
     [
-      quickIntakeCompleted,
+      caseSetupReady,
       form.case_record_text,
       workspaceBootstrapFiles.length,
       checklistCompleted,
@@ -387,16 +316,6 @@ export default function NewValidationCaseClient() {
       cancelled = true;
     };
   }, [isAuthed]);
-
-  function setQuickIntake(key, value) {
-    setForm((prev) => ({
-      ...prev,
-      quick_intake: {
-        ...prev.quick_intake,
-        [key]: value,
-      },
-    }));
-  }
 
   function setChecklist(key, checked) {
     setForm((prev) => ({
@@ -498,7 +417,7 @@ export default function NewValidationCaseClient() {
     const title = String(form.title || "").trim();
     const bounty = Number(form.bounty_amount || 0);
     const caseRecord = String(form.case_record_text || "").trim();
-    const sensitivity = String(form.quick_intake?.sensitivity || "S1").trim().toUpperCase();
+    const sensitivity = String(form.sensitivity || "S1").trim().toUpperCase();
 
     if (title.length < titleMinLength) {
       setError(`Title minimal ${titleMinLength} karakter.`);
@@ -515,21 +434,6 @@ export default function NewValidationCaseClient() {
     if (!Number.isSafeInteger(bounty)) {
       setError("Nominal bounty terlalu besar.");
       return;
-    }
-    for (const item of quickIntakeFields) {
-      const value = String(form.quick_intake?.[item.key] || "").trim();
-      if (!value) {
-        setError(`${item.label} wajib diisi.`);
-        return;
-      }
-      if (value.length < item.minLen) {
-        setError(`${item.label} minimal ${item.minLen} karakter.`);
-        return;
-      }
-      if (value.length > item.maxLen) {
-        setError(`${item.label} maksimal ${item.maxLen} karakter.`);
-        return;
-      }
     }
     if (!sensitivityOptions.includes(sensitivity)) {
       setError("Sensitivitas harus S0, S1, S2, atau S3.");
@@ -597,18 +501,15 @@ export default function NewValidationCaseClient() {
       }
 
       const content = {
-        quick_intake: {
-          ...form.quick_intake,
-          sensitivity,
-        },
-        checklist: { ...form.checklist },
         case_record_text: caseRecord,
+        sensitivity_level: sensitivity,
+        checklist: { ...form.checklist },
       };
 
       const body = {
         category_slug: String(caseType.slug),
         title,
-        summary: autoSummary,
+        summary: "",
         content_type: "json",
         content,
         bounty_amount: bounty,
@@ -659,12 +560,12 @@ export default function NewValidationCaseClient() {
 
       <header className="mb-6">
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Brief Tugas Cepat
+          README-First Case Builder
         </div>
         <h1 className="mt-2 text-2xl font-semibold text-foreground">Create Validation Case</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Isi ringkas dulu agar validator langsung paham konteks kerja. Sistem akan menyusun ringkasan otomatis
-          agar proses cepat, jelas, dan bisa diaudit.
+          Jelaskan kebutuhan validasi langsung di README case, lalu lampirkan file pendukung.
+          Tidak perlu alur chat panjang sebelum case diproses validator.
         </p>
       </header>
 
@@ -736,48 +637,33 @@ export default function NewValidationCaseClient() {
 
       <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-card shadow-sm">
         <div className="border-b border-border px-5 py-4">
-          <div className="text-sm font-semibold text-foreground">Protocol Intake</div>
+          <div className="text-sm font-semibold text-foreground">Case Setup</div>
           <div className="mt-1 text-xs text-muted-foreground">
-            Isi brief inti, pilih minimal 2 tags, lalu tambahkan catatan tambahan jika perlu.
+            Tulis README case, set sensitivity + bounty, upload file yang relevan, lalu publish.
           </div>
         </div>
 
         <div className="space-y-6 px-5 py-5">
-          <div id="quick-intake">
-            <label className="text-xs font-semibold text-muted-foreground">Title</label>
-            <input
-              value={form.title}
-              onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-              className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-              placeholder="Ringkas dan spesifik."
-              disabled={formDisabled}
-            />
-          </div>
-
-          <div className="rounded-[var(--radius)] border border-border bg-secondary/30 p-4">
+          <div id="case-setup" className="rounded-[var(--radius)] border border-border bg-secondary/30 p-4">
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Layer 1 - Quick Intake (Wajib)
+              Case Setup (Wajib)
             </div>
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-              {quickIntakeFields.map((field) => (
-                <div key={field.key} className={field.key === "evidence_input" || field.key === "constraints" ? "md:col-span-2" : ""}>
-                  <label className="text-xs font-semibold text-muted-foreground">{field.label}</label>
-                  <textarea
-                    value={form.quick_intake?.[field.key] || ""}
-                    onChange={(e) => setQuickIntake(field.key, e.target.value)}
-                    rows={field.key === "evidence_input" || field.key === "constraints" ? 3 : 2}
-                    className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
-                    placeholder={field.placeholder}
-                    disabled={formDisabled}
-                  />
-                </div>
-              ))}
-
+              <div className="md:col-span-2">
+                <label className="text-xs font-semibold text-muted-foreground">Title</label>
+                <input
+                  value={form.title}
+                  onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                  className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                  placeholder="Contoh: Validasi draft skripsi Bab 3 hasil AI"
+                  disabled={formDisabled}
+                />
+              </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">Tingkat kerahasiaan</label>
                 <select
-                  value={form.quick_intake?.sensitivity || "S1"}
-                  onChange={(e) => setQuickIntake("sensitivity", e.target.value)}
+                  value={form.sensitivity || "S1"}
+                  onChange={(e) => setForm((prev) => ({ ...prev, sensitivity: e.target.value }))}
                   className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
                   disabled={formDisabled}
                 >
@@ -787,7 +673,6 @@ export default function NewValidationCaseClient() {
                   <option value="S3">S3 - Critical</option>
                 </select>
               </div>
-
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">Bounty (IDR)</label>
                 <input
@@ -807,47 +692,6 @@ export default function NewValidationCaseClient() {
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="rounded-[var(--radius)] border border-border bg-card p-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Layer 2 - Auto Validation Brief
-            </div>
-            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div className="overflow-x-auto rounded-[var(--radius)] border border-border">
-                <table className="w-full text-sm">
-                  <tbody className="divide-y divide-border">
-                    {Object.entries(autoBrief)
-                      .slice(0, 4)
-                      .map(([label, value]) => (
-                        <tr key={label}>
-                          <td className="w-40 bg-secondary/40 px-3 py-2 font-semibold text-foreground">
-                            {autoBriefLabelMap[label] || label}
-                          </td>
-                          <td className="px-3 py-2 text-muted-foreground">{String(value || "-")}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="overflow-x-auto rounded-[var(--radius)] border border-border">
-                <table className="w-full text-sm">
-                  <tbody className="divide-y divide-border">
-                    {Object.entries(autoBrief)
-                      .slice(4)
-                      .map(([label, value]) => (
-                        <tr key={label}>
-                          <td className="w-40 bg-secondary/40 px-3 py-2 font-semibold text-foreground">
-                            {autoBriefLabelMap[label] || label}
-                          </td>
-                          <td className="px-3 py-2 text-muted-foreground">{String(value || "-")}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="mt-2 text-[11px] text-muted-foreground">Summary otomatis: {autoSummary || "-"}</div>
           </div>
 
           <div id="readme-design">
@@ -919,6 +763,9 @@ export default function NewValidationCaseClient() {
             </div>
             <div className="mt-2 text-[11px] text-muted-foreground">
               Gunakan markdown secukupnya. Jangan masukkan kontak langsung (Telegram/WhatsApp) di Case Record.
+            </div>
+            <div className="mt-2 rounded-[var(--radius)] border border-border/80 bg-secondary/20 px-3 py-2 text-xs text-muted-foreground">
+              Preview ringkas: {recordPreview || "-"}
             </div>
           </div>
 

@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	// IntakeSchemaVersion identifies the currently enforced quick-intake format.
-	IntakeSchemaVersion = "quick-intake-v1"
+	// IntakeSchemaVersion identifies the README-first workspace payload format.
+	IntakeSchemaVersion = "workspace-readme-v1"
 
 	workspaceBootstrapMaxFiles = 20
 )
@@ -26,6 +26,12 @@ var (
 		"S3": {},
 	}
 	requiredChecklistKeys = []string{
+		"scope_clearly_written",
+		"acceptance_criteria_defined",
+		"sensitive_data_filtered",
+		"no_contact_in_case_record",
+	}
+	legacyChecklistKeys = []string{
 		"intake_complete",
 		"evidence_attached",
 		"pass_criteria_defined",
@@ -34,7 +40,7 @@ var (
 	}
 )
 
-// StructuredIntake is canonical normalized intake extracted from content payload.
+// StructuredIntake is canonical normalized case payload extracted from content.
 type StructuredIntake struct {
 	ValidationGoal   string
 	OutputType       string
@@ -451,51 +457,22 @@ func tagDimensionFromSlug(slug string) string {
 	}
 }
 
-// ParseStructuredIntakeContent validates and normalizes protocol payload inside content.
+// ParseStructuredIntakeContent validates and normalizes README-first protocol payload.
 func ParseStructuredIntakeContent(content interface{}) (*StructuredIntake, error) {
 	contentMap, err := toMap(content)
 	if err != nil {
 		return nil, err
 	}
 
-	quickIntakeRaw, ok := contentMap["quick_intake"]
-	if !ok {
-		return nil, apperrors.ErrMissingField.WithDetails("content.quick_intake")
-	}
-	quickIntake, err := toMap(quickIntakeRaw)
-	if err != nil {
-		return nil, apperrors.ErrInvalidInput.WithDetails("content.quick_intake harus berupa object")
-	}
-
 	intake := &StructuredIntake{}
-	if intake.ValidationGoal, err = requiredSanitizedText(quickIntake, []string{"validation_goal", "tujuan_validasi"}, "content.quick_intake.validation_goal", 12, 800); err != nil {
-		return nil, err
-	}
-	if intake.OutputType, err = requiredSanitizedText(quickIntake, []string{"output_type", "jenis_output"}, "content.quick_intake.output_type", 4, 240); err != nil {
-		return nil, err
-	}
-	if intake.EvidenceInput, err = requiredSanitizedText(quickIntake, []string{"evidence_input", "bukti_input"}, "content.quick_intake.evidence_input", 8, 2000); err != nil {
-		return nil, err
-	}
-	if intake.PassCriteria, err = requiredSanitizedText(quickIntake, []string{"pass_criteria", "kriteria_lulus"}, "content.quick_intake.pass_criteria", 8, 2000); err != nil {
-		return nil, err
-	}
-	if intake.Constraints, err = requiredSanitizedText(quickIntake, []string{"constraints", "batasan"}, "content.quick_intake.constraints", 4, 2000); err != nil {
-		return nil, err
-	}
 
-	sensitivity, err := requiredSanitizedText(quickIntake, []string{"sensitivity", "sensitivity_level", "sensitivitas"}, "content.quick_intake.sensitivity", 2, 16)
-	if err != nil {
-		return nil, err
-	}
-	sensitivity = strings.ToUpper(strings.TrimSpace(sensitivity))
-	if _, ok := validSensitivityLevels[sensitivity]; !ok {
-		return nil, apperrors.ErrInvalidInput.WithDetails("sensitivity harus salah satu: S0, S1, S2, S3")
-	}
-	intake.SensitivityLevel = sensitivity
-
-	// Case record is intentionally unlimited in length to support long markdown copy/paste.
-	caseRecord, err := optionalSanitizedText(contentMap, []string{"case_record_text", "case_record"}, "content.case_record_text", 0)
+	// Case record is the source of truth and intentionally unlimited in length.
+	caseRecord, err := optionalSanitizedText(
+		contentMap,
+		[]string{"case_record_text", "case_record", "readme", "readme_markdown"},
+		"content.case_record_text",
+		0,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -507,6 +484,92 @@ func ParseStructuredIntakeContent(content interface{}) (*StructuredIntake, error
 	}
 	intake.CaseRecord = caseRecord
 
+	quickIntake, hasLegacyQuickIntake, err := extractLegacyQuickIntake(contentMap)
+	if err != nil {
+		return nil, err
+	}
+
+	// Optional structured hints. New payload can omit these.
+	intake.ValidationGoal, err = optionalSanitizedText(
+		contentMap,
+		[]string{"validation_goal", "objective", "goal"},
+		"content.validation_goal",
+		800,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if intake.OutputType, err = optionalSanitizedText(contentMap, []string{"output_type", "expected_output_type"}, "content.output_type", 240); err != nil {
+		return nil, err
+	}
+	if intake.EvidenceInput, err = optionalSanitizedText(contentMap, []string{"evidence_input", "evidence_scope"}, "content.evidence_input", 2000); err != nil {
+		return nil, err
+	}
+	if intake.PassCriteria, err = optionalSanitizedText(contentMap, []string{"pass_criteria", "acceptance_criteria", "pass_gate"}, "content.pass_criteria", 2000); err != nil {
+		return nil, err
+	}
+	if intake.Constraints, err = optionalSanitizedText(contentMap, []string{"constraints"}, "content.constraints", 2000); err != nil {
+		return nil, err
+	}
+
+	// Legacy quick-intake fallback (read compatibility).
+	if hasLegacyQuickIntake {
+		if intake.ValidationGoal == "" {
+			intake.ValidationGoal, err = optionalSanitizedText(quickIntake, []string{"validation_goal", "tujuan_validasi"}, "content.quick_intake.validation_goal", 800)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if intake.OutputType == "" {
+			intake.OutputType, err = optionalSanitizedText(quickIntake, []string{"output_type", "jenis_output"}, "content.quick_intake.output_type", 240)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if intake.EvidenceInput == "" {
+			intake.EvidenceInput, err = optionalSanitizedText(quickIntake, []string{"evidence_input", "bukti_input"}, "content.quick_intake.evidence_input", 2000)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if intake.PassCriteria == "" {
+			intake.PassCriteria, err = optionalSanitizedText(quickIntake, []string{"pass_criteria", "kriteria_lulus"}, "content.quick_intake.pass_criteria", 2000)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if intake.Constraints == "" {
+			intake.Constraints, err = optionalSanitizedText(quickIntake, []string{"constraints", "batasan"}, "content.quick_intake.constraints", 2000)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	sensitivity, err := optionalSanitizedText(
+		contentMap,
+		[]string{"sensitivity_level", "sensitivity", "case_sensitivity"},
+		"content.sensitivity_level",
+		16,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if sensitivity == "" && hasLegacyQuickIntake {
+		sensitivity, err = optionalSanitizedText(quickIntake, []string{"sensitivity", "sensitivity_level", "sensitivitas"}, "content.quick_intake.sensitivity", 16)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if sensitivity == "" {
+		return nil, apperrors.ErrMissingField.WithDetails("content.sensitivity_level")
+	}
+	sensitivity = strings.ToUpper(strings.TrimSpace(sensitivity))
+	if _, ok := validSensitivityLevels[sensitivity]; !ok {
+		return nil, apperrors.ErrInvalidInput.WithDetails("sensitivity harus salah satu: S0, S1, S2, S3")
+	}
+	intake.SensitivityLevel = sensitivity
+
 	checklistRaw, ok := contentMap["checklist"]
 	if !ok {
 		return nil, apperrors.ErrMissingField.WithDetails("content.checklist")
@@ -516,54 +579,77 @@ func ParseStructuredIntakeContent(content interface{}) (*StructuredIntake, error
 		return nil, apperrors.ErrInvalidInput.WithDetails("content.checklist harus berupa object")
 	}
 
-	intake.Checklist = make(map[string]bool, len(requiredChecklistKeys))
-	for _, key := range requiredChecklistKeys {
-		v, ok := checklistMap[key]
-		if !ok {
-			return nil, apperrors.ErrMissingField.WithDetails("content.checklist." + key)
-		}
-		checked, ok := v.(bool)
-		if !ok {
-			return nil, apperrors.ErrInvalidInput.WithDetails("content.checklist." + key + " harus boolean")
-		}
-		if !checked {
-			return nil, apperrors.ErrInvalidInput.WithDetails("checklist '" + key + "' harus dicentang")
-		}
-		intake.Checklist[key] = checked
+	intake.Checklist, err = normalizeProtocolChecklist(checklistMap)
+	if err != nil {
+		return nil, err
 	}
 
 	return intake, nil
 }
 
-// BuildAutoSummary generates Layer-2 summary from Quick Intake.
+// BuildAutoSummary derives list summary from README-first payload.
 func BuildAutoSummary(intake *StructuredIntake) string {
 	if intake == nil {
 		return ""
 	}
-	base := fmt.Sprintf(
-		"Tujuan: %s. Output: %s. Bukti yang diperiksa: %s. Lulus jika: %s.",
-		intake.ValidationGoal,
-		intake.OutputType,
-		intake.EvidenceInput,
-		intake.PassCriteria,
-	)
-	if len(base) <= 500 {
-		return base
+	parts := make([]string, 0, 4)
+	if strings.TrimSpace(intake.ValidationGoal) != "" {
+		parts = append(parts, "Tujuan: "+strings.TrimSpace(intake.ValidationGoal))
 	}
-	return base[:500]
+	if strings.TrimSpace(intake.OutputType) != "" {
+		parts = append(parts, "Output: "+strings.TrimSpace(intake.OutputType))
+	}
+	if strings.TrimSpace(intake.PassCriteria) != "" {
+		parts = append(parts, "Lulus jika: "+strings.TrimSpace(intake.PassCriteria))
+	}
+	if strings.TrimSpace(intake.Constraints) != "" {
+		parts = append(parts, "Batasan: "+strings.TrimSpace(intake.Constraints))
+	}
+	summary := strings.Join(parts, ". ")
+	if summary == "" {
+		summary = strings.Join(strings.Fields(strings.TrimSpace(intake.CaseRecord)), " ")
+	}
+	summary = strings.TrimSpace(summary)
+	if len(summary) <= 500 {
+		return summary
+	}
+	return summary[:500]
 }
 
-// BuildAutoValidationBrief returns structured brief for validators.
+// BuildAutoValidationBrief returns protocol brief derived from README-first payload.
 func BuildAutoValidationBrief(intake *StructuredIntake) map[string]interface{} {
 	if intake == nil {
 		return map[string]interface{}{}
 	}
+
+	objective := intake.ValidationGoal
+	if strings.TrimSpace(objective) == "" {
+		objective = "Lihat README case pada case_record_text."
+	}
+	expectedOutput := intake.OutputType
+	if strings.TrimSpace(expectedOutput) == "" {
+		expectedOutput = "Mengikuti deskripsi output pada README case."
+	}
+	passGate := intake.PassCriteria
+	if strings.TrimSpace(passGate) == "" {
+		passGate = "Mengikuti acceptance criteria pada README case."
+	}
+	evidenceScope := intake.EvidenceInput
+	if strings.TrimSpace(evidenceScope) == "" {
+		evidenceScope = "Lihat workspace files berjenis task_input."
+	}
+	constraints := intake.Constraints
+	if strings.TrimSpace(constraints) == "" {
+		constraints = "Mengikuti batasan yang ditulis owner di README case."
+	}
+
 	return map[string]interface{}{
-		"objective":            intake.ValidationGoal,
-		"expected_output_type": intake.OutputType,
-		"evidence_scope":       intake.EvidenceInput,
-		"pass_gate":            intake.PassCriteria,
-		"constraints":          intake.Constraints,
+		"source_of_truth":      "case_record_text",
+		"objective":            objective,
+		"expected_output_type": expectedOutput,
+		"evidence_scope":       evidenceScope,
+		"pass_gate":            passGate,
+		"constraints":          constraints,
 		"sensitivity":          intake.SensitivityLevel,
 		"sensitivity_policy":   SensitivityPolicyByLevel(intake.SensitivityLevel),
 		"owner_response_sla": map[string]interface{}{
@@ -577,23 +663,26 @@ func BuildAutoValidationBrief(intake *StructuredIntake) map[string]interface{} {
 	}
 }
 
-// BuildCanonicalStructuredContent normalizes payload so validator can read without chat.
+// BuildCanonicalStructuredContent normalizes payload so validator can read directly from README.
 func BuildCanonicalStructuredContent(intake *StructuredIntake) map[string]interface{} {
 	brief := BuildAutoValidationBrief(intake)
 	sections := []map[string]interface{}{
 		{
-			"title": "Layer 1 — Quick Intake (60-90 detik)",
+			"title": "Case README (Owner Authored)",
 			"rows": []map[string]interface{}{
-				{"label": "Tujuan Validasi", "value": intake.ValidationGoal},
-				{"label": "Jenis Output", "value": intake.OutputType},
-				{"label": "Bukti / Input", "value": intake.EvidenceInput},
-				{"label": "Kriteria Lulus", "value": intake.PassCriteria},
-				{"label": "Batasan", "value": intake.Constraints},
-				{"label": "Sensitivitas", "value": intake.SensitivityLevel},
+				{"label": "README", "value": intake.CaseRecord},
 			},
 		},
 		{
-			"title": "Layer 2 — Auto Validation Brief",
+			"title": "Protocol Guardrails",
+			"rows": []map[string]interface{}{
+				{"label": "Sensitivity", "value": intake.SensitivityLevel},
+				{"label": "Checklist", "value": intake.Checklist},
+				{"label": "Source of Truth", "value": "case_record_text"},
+			},
+		},
+		{
+			"title": "Auto Validation Brief",
 			"rows": []map[string]interface{}{
 				{"label": "Objective", "value": brief["objective"]},
 				{"label": "Expected Output", "value": brief["expected_output_type"]},
@@ -604,29 +693,100 @@ func BuildCanonicalStructuredContent(intake *StructuredIntake) map[string]interf
 				{"label": "Owner Response SLA", "value": brief["owner_response_sla"]},
 			},
 		},
-		{
-			"title": "Case Record (Free Text)",
-			"rows": []map[string]interface{}{
-				{"label": "Record", "value": intake.CaseRecord},
-			},
-		},
 	}
 
-	return map[string]interface{}{
-		"schema_version": IntakeSchemaVersion,
-		"quick_intake": map[string]interface{}{
-			"validation_goal": intake.ValidationGoal,
-			"output_type":     intake.OutputType,
-			"evidence_input":  intake.EvidenceInput,
-			"pass_criteria":   intake.PassCriteria,
-			"constraints":     intake.Constraints,
-			"sensitivity":     intake.SensitivityLevel,
-		},
+	content := map[string]interface{}{
+		"schema_version":        IntakeSchemaVersion,
+		"source_of_truth":       "case_readme_markdown",
+		"sensitivity_level":     intake.SensitivityLevel,
 		"checklist":             intake.Checklist,
 		"auto_validation_brief": brief,
 		"case_record_text":      intake.CaseRecord,
 		"sections":              sections,
 	}
+	if strings.TrimSpace(intake.ValidationGoal) != "" {
+		content["validation_goal"] = intake.ValidationGoal
+	}
+	if strings.TrimSpace(intake.OutputType) != "" {
+		content["output_type"] = intake.OutputType
+	}
+	if strings.TrimSpace(intake.EvidenceInput) != "" {
+		content["evidence_input"] = intake.EvidenceInput
+	}
+	if strings.TrimSpace(intake.PassCriteria) != "" {
+		content["pass_criteria"] = intake.PassCriteria
+	}
+	if strings.TrimSpace(intake.Constraints) != "" {
+		content["constraints"] = intake.Constraints
+	}
+	return content
+}
+
+func extractLegacyQuickIntake(contentMap map[string]interface{}) (map[string]interface{}, bool, error) {
+	raw, ok := contentMap["quick_intake"]
+	if !ok {
+		return nil, false, nil
+	}
+	quickIntake, err := toMap(raw)
+	if err != nil {
+		return nil, false, apperrors.ErrInvalidInput.WithDetails("content.quick_intake harus berupa object")
+	}
+	return quickIntake, true, nil
+}
+
+func normalizeProtocolChecklist(checklistMap map[string]interface{}) (map[string]bool, error) {
+	if hasAllChecklistKeys(checklistMap, requiredChecklistKeys) {
+		out := make(map[string]bool, len(requiredChecklistKeys))
+		for _, key := range requiredChecklistKeys {
+			v, ok := checklistMap[key]
+			if !ok {
+				return nil, apperrors.ErrMissingField.WithDetails("content.checklist." + key)
+			}
+			checked, ok := v.(bool)
+			if !ok {
+				return nil, apperrors.ErrInvalidInput.WithDetails("content.checklist." + key + " harus boolean")
+			}
+			if !checked {
+				return nil, apperrors.ErrInvalidInput.WithDetails("checklist '" + key + "' harus dicentang")
+			}
+			out[key] = true
+		}
+		return out, nil
+	}
+
+	// Legacy checklist compatibility path.
+	if hasAllChecklistKeys(checklistMap, legacyChecklistKeys) {
+		for _, key := range legacyChecklistKeys {
+			v, ok := checklistMap[key]
+			if !ok {
+				return nil, apperrors.ErrMissingField.WithDetails("content.checklist." + key)
+			}
+			checked, ok := v.(bool)
+			if !ok {
+				return nil, apperrors.ErrInvalidInput.WithDetails("content.checklist." + key + " harus boolean")
+			}
+			if !checked {
+				return nil, apperrors.ErrInvalidInput.WithDetails("checklist '" + key + "' harus dicentang")
+			}
+		}
+		return map[string]bool{
+			"scope_clearly_written":       true,
+			"acceptance_criteria_defined": true,
+			"sensitive_data_filtered":     true,
+			"no_contact_in_case_record":   true,
+		}, nil
+	}
+
+	return nil, apperrors.ErrMissingField.WithDetails("content.checklist.scope_clearly_written")
+}
+
+func hasAllChecklistKeys(checklistMap map[string]interface{}, keys []string) bool {
+	for _, key := range keys {
+		if _, ok := checklistMap[key]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // SensitivityPolicyByLevel defines visibility and telegram gate by tier.
@@ -668,32 +828,6 @@ func SensitivityPolicyByLevel(level string) map[string]interface{} {
 			"requires_pre_moderation": false,
 		}
 	}
-}
-
-func requiredSanitizedText(input map[string]interface{}, keys []string, label string, minLen int, maxLen int) (string, error) {
-	var raw string
-	for _, key := range keys {
-		if v, ok := input[key]; ok {
-			if s, ok := v.(string); ok {
-				raw = s
-				break
-			}
-		}
-	}
-	value := strings.TrimSpace(raw)
-	if value == "" {
-		return "", apperrors.ErrMissingField.WithDetails(label)
-	}
-	if len(value) < minLen {
-		return "", apperrors.ErrInvalidInput.WithDetails(label + " terlalu pendek")
-	}
-	if maxLen > 0 && len(value) > maxLen {
-		return "", apperrors.ErrInvalidInput.WithDetails(label + " melebihi batas panjang")
-	}
-	if !utils.ValidateNoXSS(value) {
-		return "", apperrors.ErrInvalidInput.WithDetails(label + " mengandung karakter atau pola yang tidak diizinkan")
-	}
-	return utils.SanitizeText(value), nil
 }
 
 func optionalSanitizedText(input map[string]interface{}, keys []string, label string, maxLen int) (string, error) {
