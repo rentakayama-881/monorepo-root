@@ -368,6 +368,24 @@ func dedupeUint(values []uint) []uint {
 	return out
 }
 
+func validatorIDSet(values []uint) map[uint]struct{} {
+	set := make(map[uint]struct{}, len(values))
+	for _, id := range values {
+		if id == 0 {
+			continue
+		}
+		set[id] = struct{}{}
+	}
+	return set
+}
+
+func validatorPairKey(a uint, b uint) string {
+	if a > b {
+		a, b = b, a
+	}
+	return fmt.Sprintf("%d:%d", a, b)
+}
+
 func activeAssignmentValidatorIDs(assignments []RepoAssignmentItem) []uint {
 	out := make([]uint, 0, len(assignments))
 	for _, asn := range assignments {
@@ -486,15 +504,20 @@ func (s *EntValidationCaseRepoWorkflowService) syncWorkspaceFileSharing(
 	return s.updateWorkspaceDocumentSharing(ctx, authHeader, file.DocumentID, targets)
 }
 
-func (s *EntValidationCaseRepoWorkflowService) countActiveRepoAssignmentsForValidator(ctx context.Context, validatorUserID uint) (int, error) {
+func (s *EntValidationCaseRepoWorkflowService) countActiveRepoAssignmentsForValidators(
+	ctx context.Context,
+	validatorUserIDs []uint,
+) (map[uint]int, error) {
+	targets := validatorIDSet(validatorUserIDs)
+	counts := make(map[uint]int, len(targets))
+
 	cases, err := s.client.ValidationCase.Query().
 		Where(validationcase.StatusNEQ(caseStatusCompleted)).
 		All(ctx)
 	if err != nil {
-		return 0, apperrors.ErrDatabase
+		return nil, apperrors.ErrDatabase
 	}
 
-	count := 0
 	for _, vc := range cases {
 		state := loadRepoMetaState(vc.Meta)
 		if !isWorkspaceMetaState(state) {
@@ -503,25 +526,38 @@ func (s *EntValidationCaseRepoWorkflowService) countActiveRepoAssignmentsForVali
 		if normalizeRepoStage(state.RepoStage) == repoStageFinalized {
 			continue
 		}
-		if s.isAssignedValidator(validatorUserID, state.RepoAssignments) {
-			count++
+		for _, validatorID := range activeAssignmentValidatorIDs(state.RepoAssignments) {
+			if len(targets) > 0 {
+				if _, ok := targets[validatorID]; !ok {
+					continue
+				}
+			}
+			counts[validatorID]++
 		}
 	}
-	return count, nil
+	return counts, nil
 }
 
-func (s *EntValidationCaseRepoWorkflowService) pairSeenInRecentPanels(
+func (s *EntValidationCaseRepoWorkflowService) countActiveRepoAssignmentsForValidator(ctx context.Context, validatorUserID uint) (int, error) {
+	counts, err := s.countActiveRepoAssignmentsForValidators(ctx, []uint{validatorUserID})
+	if err != nil {
+		return 0, err
+	}
+	return counts[validatorUserID], nil
+}
+
+func (s *EntValidationCaseRepoWorkflowService) buildRecentPanelPairSet(
 	ctx context.Context,
 	currentValidationCaseID uint,
-	validatorA uint,
-	validatorB uint,
 	cutoff time.Time,
-) (bool, error) {
+) (map[string]struct{}, error) {
+	pairSet := make(map[string]struct{})
+
 	cases, err := s.client.ValidationCase.Query().
 		Where(validationcase.CreatedAtGTE(cutoff)).
 		All(ctx)
 	if err != nil {
-		return false, apperrors.ErrDatabase
+		return nil, apperrors.ErrDatabase
 	}
 	for _, vc := range cases {
 		if uint(vc.ID) == currentValidationCaseID {
@@ -531,15 +567,30 @@ func (s *EntValidationCaseRepoWorkflowService) pairSeenInRecentPanels(
 		if !isWorkspaceMetaState(state) {
 			continue
 		}
-		var ids []uint
-		for _, asn := range state.RepoAssignments {
-			if strings.EqualFold(asn.Status, repoAssignmentStatusActive) {
-				ids = append(ids, asn.ValidatorUserID)
+
+		ids := activeAssignmentValidatorIDs(state.RepoAssignments)
+		for i := 0; i < len(ids); i++ {
+			for j := i + 1; j < len(ids); j++ {
+				pairSet[validatorPairKey(ids[i], ids[j])] = struct{}{}
 			}
 		}
-		if containsUint(ids, validatorA) && containsUint(ids, validatorB) {
-			return true, nil
-		}
+	}
+	return pairSet, nil
+}
+
+func (s *EntValidationCaseRepoWorkflowService) pairSeenInRecentPanels(
+	ctx context.Context,
+	currentValidationCaseID uint,
+	validatorA uint,
+	validatorB uint,
+	cutoff time.Time,
+) (bool, error) {
+	pairSet, err := s.buildRecentPanelPairSet(ctx, currentValidationCaseID, cutoff)
+	if err != nil {
+		return false, err
+	}
+	if _, seen := pairSet[validatorPairKey(validatorA, validatorB)]; seen {
+		return true, nil
 	}
 	return false, nil
 }
@@ -1249,6 +1300,10 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 		}
 	}
 
+	activeCounts, countErr := s.countActiveRepoAssignmentsForValidators(ctx, filtered)
+	if countErr != nil {
+		return nil, countErr
+	}
 	for _, id := range filtered {
 		validator := usersByID[id]
 		if validator == nil {
@@ -1272,22 +1327,20 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 			)
 		}
 
-		activeCount, countErr := s.countActiveRepoAssignmentsForValidator(ctx, id)
-		if countErr != nil {
-			return nil, countErr
-		}
+		activeCount := activeCounts[id]
 		if !s.isAssignedValidator(id, state.RepoAssignments) && activeCount >= 2 {
 			return nil, apperrors.ErrInvalidInput.WithDetails(fmt.Sprintf("validator %d sudah mencapai batas 2 task aktif", id))
 		}
 	}
 
 	cutoff := time.Now().Add(-30 * 24 * time.Hour)
+	pairSet, err := s.buildRecentPanelPairSet(ctx, validationCaseID, cutoff)
+	if err != nil {
+		return nil, err
+	}
 	for i := 0; i < len(filtered); i++ {
 		for j := i + 1; j < len(filtered); j++ {
-			seen, seenErr := s.pairSeenInRecentPanels(ctx, validationCaseID, filtered[i], filtered[j], cutoff)
-			if seenErr != nil {
-				return nil, seenErr
-			}
+			_, seen := pairSet[validatorPairKey(filtered[i], filtered[j])]
 			if seen {
 				return nil, apperrors.ErrInvalidInput.WithDetails(
 					fmt.Sprintf("validator %d dan %d pernah satu panel dalam 30 hari terakhir", filtered[i], filtered[j]),
@@ -1395,6 +1448,10 @@ func (s *EntValidationCaseRepoWorkflowService) AutoAssignRepoValidators(
 	}
 
 	requiredStake := requiredStakeForRepoCase(vc)
+	activeCounts, countErr := s.countActiveRepoAssignmentsForValidators(ctx, candidateIDs)
+	if countErr != nil {
+		return nil, countErr
+	}
 	eligible := make([]uint, 0, len(candidateIDs))
 	for _, id := range candidateIDs {
 		validator := usersByID[id]
@@ -1405,10 +1462,7 @@ func (s *EntValidationCaseRepoWorkflowService) AutoAssignRepoValidators(
 			continue
 		}
 
-		activeCount, countErr := s.countActiveRepoAssignmentsForValidator(ctx, id)
-		if countErr != nil {
-			return nil, countErr
-		}
+		activeCount := activeCounts[id]
 		if !s.isAssignedValidator(id, state.RepoAssignments) && activeCount >= 2 {
 			continue
 		}
@@ -1422,6 +1476,10 @@ func (s *EntValidationCaseRepoWorkflowService) AutoAssignRepoValidators(
 
 	eligible = shuffledUint(eligible)
 	cutoff := time.Now().Add(-30 * 24 * time.Hour)
+	pairSet, err := s.buildRecentPanelPairSet(ctx, validationCaseID, cutoff)
+	if err != nil {
+		return nil, err
+	}
 	selected := make([]uint, 0, panelSize)
 
 	var pick func(start int) (bool, error)
@@ -1434,10 +1492,7 @@ func (s *EntValidationCaseRepoWorkflowService) AutoAssignRepoValidators(
 			candidate := eligible[i]
 			conflict := false
 			for _, existing := range selected {
-				seen, seenErr := s.pairSeenInRecentPanels(ctx, validationCaseID, candidate, existing, cutoff)
-				if seenErr != nil {
-					return false, seenErr
-				}
+				_, seen := pairSet[validatorPairKey(candidate, existing)]
 				if seen {
 					conflict = true
 					break

@@ -254,11 +254,12 @@ export default function WorkspaceWorkflowClient() {
     }
   }
 
-  async function postWorkspace(path, payload) {
+  async function postWorkspace(path, payload, requestOptions = {}) {
     const options = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload || {}),
+      ...requestOptions,
     };
 
     try {
@@ -470,7 +471,7 @@ export default function WorkspaceWorkflowClient() {
     await runAction(async () => {
       await postWorkspace("validators/auto-assign", {
         panel_size: panelSize,
-      });
+      }, { timeout: 60000 });
     });
   }
 
