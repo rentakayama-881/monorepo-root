@@ -227,11 +227,46 @@ export function useUploadDocument() {
           xhr.send(formData);
         });
 
-        if (result.success) {
-          return result.data;
-        } else {
-          throw new Error(result.message || "Failed to upload document");
+        // Support both response envelopes:
+        // 1) ApiResponse<T> -> { success:true, data:{...}, message }
+        // 2) DocumentController direct -> { documentId, message }
+        if (result && typeof result === "object") {
+          if (result.success === true) {
+            return result.data ?? result;
+          }
+          if (result.success === false) {
+            throw new Error(result.message || "Failed to upload document");
+          }
+
+          const hasDirectDocumentId = Boolean(
+            result.document_id ||
+              result.documentId ||
+              result.DocumentId ||
+              result.DocumentID ||
+              result.id ||
+              result.ID
+          );
+          if (hasDirectDocumentId) {
+            return result;
+          }
+
+          const data = result.data;
+          if (data && typeof data === "object") {
+            const hasNestedDocumentId = Boolean(
+              data.document_id ||
+                data.documentId ||
+                data.DocumentId ||
+                data.DocumentID ||
+                data.id ||
+                data.ID
+            );
+            if (hasNestedDocumentId) {
+              return data;
+            }
+          }
         }
+
+        throw new Error(result?.message || "Failed to upload document");
       } catch (err) {
         logger.error("Upload Document Error:", err.message);
         setError(err.message);

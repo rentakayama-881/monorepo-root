@@ -63,6 +63,12 @@ function extractDocumentId(uploadResult) {
     uploadResult.DocumentId,
     uploadResult.DocumentID,
     uploadResult.ID,
+    uploadResult?.data?.document_id,
+    uploadResult?.data?.documentId,
+    uploadResult?.data?.id,
+    uploadResult?.data?.DocumentId,
+    uploadResult?.data?.DocumentID,
+    uploadResult?.data?.ID,
   ];
   for (const candidate of candidates) {
     const value = String(candidate || "").trim();
