@@ -470,6 +470,17 @@ func (s *EntValidationCaseWorkflowService) appendCaseLogBestEffort(ctx context.C
 	}
 }
 
+func ensureWorkflowV1Case(vc *ent.ValidationCase) error {
+	if vc == nil {
+		return apperrors.ErrValidationCaseNotFound
+	}
+	state := loadRepoMetaState(vc.Meta)
+	if normalizeRepoMode(state.ProtocolMode) == repoProtocolModeV2 {
+		return apperrors.ErrInvalidInput.WithDetails("case ini menggunakan repo_validation_v2. Gunakan endpoint repo workflow.")
+	}
+	return nil
+}
+
 func (s *EntValidationCaseWorkflowService) RequestConsultation(ctx context.Context, validationCaseID uint, validatorUserID uint) (uint, error) {
 	vc, err := s.client.ValidationCase.Get(ctx, int(validationCaseID))
 	if err != nil {
@@ -477,6 +488,9 @@ func (s *EntValidationCaseWorkflowService) RequestConsultation(ctx context.Conte
 			return 0, apperrors.ErrValidationCaseNotFound
 		}
 		return 0, apperrors.ErrDatabase
+	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return 0, err
 	}
 
 	if vc.UserID == int(validatorUserID) {
@@ -559,6 +573,9 @@ func (s *EntValidationCaseWorkflowService) GetConsultationRequestForValidator(
 		}
 		return nil, apperrors.ErrDatabase
 	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return nil, err
+	}
 	cycle := currentWorkflowCycle(vc)
 
 	req, err := s.client.ConsultationRequest.Query().
@@ -613,6 +630,9 @@ func (s *EntValidationCaseWorkflowService) ListConsultationGuaranteeLocksForVali
 		if vc == nil {
 			continue
 		}
+		if err := ensureWorkflowV1Case(vc); err != nil {
+			continue
+		}
 		if req.WorkflowCycle != currentWorkflowCycle(vc) {
 			continue
 		}
@@ -649,6 +669,9 @@ func (s *EntValidationCaseWorkflowService) ListConsultationRequestsForOwner(ctx 
 			return nil, apperrors.ErrValidationCaseNotFound
 		}
 		return nil, apperrors.ErrDatabase
+	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return nil, err
 	}
 	if vc.UserID != int(ownerUserID) {
 		return nil, apperrors.ErrValidationCaseOwnership
@@ -801,6 +824,9 @@ func (s *EntValidationCaseWorkflowService) ApproveConsultationRequest(ctx contex
 		}
 		return apperrors.ErrDatabase
 	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return err
+	}
 	if vc.UserID != int(ownerUserID) {
 		return apperrors.ErrValidationCaseOwnership
 	}
@@ -870,6 +896,9 @@ func (s *EntValidationCaseWorkflowService) RejectConsultationRequest(ctx context
 			return apperrors.ErrValidationCaseNotFound
 		}
 		return apperrors.ErrDatabase
+	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return err
 	}
 	if vc.UserID != int(ownerUserID) {
 		return apperrors.ErrValidationCaseOwnership
@@ -952,6 +981,9 @@ func (s *EntValidationCaseWorkflowService) ProcessOwnerResponseSLA(ctx context.C
 				continue
 			}
 			return reminderEvents, timeoutEvents, apperrors.ErrDatabase
+		}
+		if err := ensureWorkflowV1Case(vc); err != nil {
+			continue
 		}
 		if req.WorkflowCycle != currentWorkflowCycle(vc) {
 			continue
@@ -1054,6 +1086,9 @@ func (s *EntValidationCaseWorkflowService) normalizeLegacyClarificationFlow(ctx 
 			}
 			return recovered, apperrors.ErrDatabase
 		}
+		if err := ensureWorkflowV1Case(vc); err != nil {
+			continue
+		}
 		if req.WorkflowCycle != currentWorkflowCycle(vc) {
 			continue
 		}
@@ -1123,6 +1158,9 @@ func (s *EntValidationCaseWorkflowService) normalizeLegacyClarificationFlow(ctx 
 	}
 
 	for _, vc := range legacyCases {
+		if err := ensureWorkflowV1Case(vc); err != nil {
+			continue
+		}
 		previousStatus := normalizeStatus(vc.Status)
 		needsStatusRecovery := previousStatus == caseStatusWaitingOwnerResponse || previousStatus == caseStatusOnHoldOwnerInactive
 		nextStatus := deriveCaseStatusFromWorkflowLinkage(vc)
@@ -1170,6 +1208,9 @@ func (s *EntValidationCaseWorkflowService) RevealOwnerTelegramContact(ctx contex
 			return "", apperrors.ErrValidationCaseNotFound
 		}
 		return "", apperrors.ErrDatabase
+	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return "", err
 	}
 	switch strings.ToUpper(strings.TrimSpace(vc.SensitivityLevel)) {
 	case "S2", "S3":
@@ -1251,6 +1292,9 @@ func (s *EntValidationCaseWorkflowService) SubmitFinalOffer(ctx context.Context,
 			return 0, apperrors.ErrValidationCaseNotFound
 		}
 		return 0, apperrors.ErrDatabase
+	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return 0, err
 	}
 
 	if vc.UserID == int(validatorUserID) {
@@ -1355,6 +1399,9 @@ func (s *EntValidationCaseWorkflowService) ListFinalOffers(ctx context.Context, 
 		}
 		return nil, apperrors.ErrDatabase
 	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return nil, err
+	}
 
 	// Owner can list all offers. Validators can list their own offers.
 	isOwner := vc.UserID == int(viewerUserID)
@@ -1405,6 +1452,9 @@ func (s *EntValidationCaseWorkflowService) AcceptFinalOffer(ctx context.Context,
 			return nil, apperrors.ErrValidationCaseNotFound
 		}
 		return nil, apperrors.ErrDatabase
+	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return nil, err
 	}
 	if vc.UserID != int(ownerUserID) {
 		return nil, apperrors.ErrValidationCaseOwnership
@@ -1661,6 +1711,9 @@ func (s *EntValidationCaseWorkflowService) ConfirmLockFunds(ctx context.Context,
 		}
 		return apperrors.ErrDatabase
 	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return err
+	}
 	if vc.UserID != int(ownerUserID) {
 		return apperrors.ErrValidationCaseOwnership
 	}
@@ -1734,6 +1787,9 @@ func (s *EntValidationCaseWorkflowService) SubmitArtifact(ctx context.Context, v
 			return apperrors.ErrValidationCaseNotFound
 		}
 		return apperrors.ErrDatabase
+	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return err
 	}
 	if vc.AcceptedFinalOfferID == nil || *vc.AcceptedFinalOfferID <= 0 {
 		return apperrors.ErrInvalidInput.WithDetails("Final Offer belum diterima")
@@ -1827,6 +1883,9 @@ func (s *EntValidationCaseWorkflowService) MarkEscrowReleased(ctx context.Contex
 		}
 		return apperrors.ErrDatabase
 	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return err
+	}
 	if vc.UserID != int(ownerUserID) {
 		return apperrors.ErrValidationCaseOwnership
 	}
@@ -1886,6 +1945,9 @@ func (s *EntValidationCaseWorkflowService) MarkEscrowReleasedInternalByTransferI
 			return nil, apperrors.ErrValidationCaseNotFound
 		}
 		return nil, apperrors.ErrDatabase
+	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return nil, err
 	}
 
 	// Promote Artifact Submission to Certified Artifact (in this model: same document id).
@@ -1951,6 +2013,9 @@ func (s *EntValidationCaseWorkflowService) SettleDisputeInternalByTransferID(
 			return nil, apperrors.ErrValidationCaseNotFound
 		}
 		return nil, apperrors.ErrDatabase
+	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return nil, err
 	}
 
 	currentDisputeID := strings.TrimSpace(valueOrEmpty(vc.DisputeID))
@@ -2049,6 +2114,9 @@ func (s *EntValidationCaseWorkflowService) AttachDispute(ctx context.Context, va
 		}
 		return apperrors.ErrDatabase
 	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return err
+	}
 	if vc.UserID != int(ownerUserID) {
 		return apperrors.ErrValidationCaseOwnership
 	}
@@ -2091,6 +2159,9 @@ func (s *EntValidationCaseWorkflowService) GetCaseLog(ctx context.Context, valid
 			return nil, apperrors.ErrValidationCaseNotFound
 		}
 		return nil, apperrors.ErrDatabase
+	}
+	if err := ensureWorkflowV1Case(vc); err != nil {
+		return nil, err
 	}
 
 	isOwner := vc.UserID == int(viewerUserID)

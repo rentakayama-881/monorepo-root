@@ -155,9 +155,18 @@ export function useUploadDocument() {
       const allowedTypes = [
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+        "text/markdown",
+        "text/csv",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        "application/zip",
       ];
-      if (!allowedTypes.includes(file.type)) {
-        throw new Error("Hanya file PDF dan DOCX yang diizinkan");
+      const allowedExtensions = [".pdf", ".docx", ".txt", ".md", ".csv", ".xlsx", ".xls", ".zip"];
+      const lowerName = String(file.name || "").toLowerCase();
+      const hasAllowedExtension = allowedExtensions.some((ext) => lowerName.endsWith(ext));
+      if (!allowedTypes.includes(file.type) && !hasAllowedExtension) {
+        throw new Error("Tipe file tidak diizinkan. Gunakan PDF, DOCX, TXT, MD, CSV, XLSX, XLS, atau ZIP.");
       }
 
       // Validate file size (10MB max)

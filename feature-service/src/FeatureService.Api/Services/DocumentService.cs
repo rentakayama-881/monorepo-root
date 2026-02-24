@@ -62,12 +62,7 @@ public class DocumentService : IDocumentService
         }
 
         // Determine MIME type
-        var mimeType = extension switch
-        {
-            ".pdf" => "application/pdf",
-            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            _ => "application/octet-stream"
-        };
+        var mimeType = DocumentFileType.ResolveMimeType(extension);
 
         var documentId = $"doc_{Ulid.NewUlid()}";
         var storagePath = $"documents/{userId}/{documentId}{extension}";

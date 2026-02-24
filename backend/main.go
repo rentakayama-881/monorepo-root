@@ -322,6 +322,7 @@ func main() {
 
 	var caseService services.ValidationCaseServiceInterface = services.NewEntValidationCaseService()
 	workflowService := services.NewEntValidationCaseWorkflowService()
+	repoWorkflowService := services.NewEntValidationCaseRepoWorkflowService()
 	ownerResponseSLAWorker := services.NewOwnerResponseSLAWorker(workflowService)
 	ownerResponseSLAWorker.Start()
 	defer ownerResponseSLAWorker.Stop()
@@ -352,6 +353,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authEntService, sessionEntService)
 	caseHandler := handlers.NewValidationCaseHandler(caseService)
 	workflowHandler := handlers.NewValidationCaseWorkflowHandler(workflowService)
+	repoWorkflowHandler := handlers.NewValidationCaseRepoWorkflowHandler(repoWorkflowService)
 	totpHandler := handlers.NewTOTPHandler(totpEntService)
 	passkeyHandler := handlers.NewPasskeyHandler(
 		passkeyService,
@@ -366,7 +368,7 @@ func main() {
 	// Financial features are handled by the ASP.NET service; keep Go focused on core identity/content.
 
 	// Verify all handlers are properly initialized
-	if authHandler == nil || caseHandler == nil || workflowHandler == nil || userHandler == nil {
+	if authHandler == nil || caseHandler == nil || workflowHandler == nil || repoWorkflowHandler == nil || userHandler == nil {
 		logger.Fatal("Failed to initialize handlers")
 	}
 
@@ -573,6 +575,15 @@ func main() {
 				validationCases.POST("/:id/dispute/attach", middleware.AuthMiddleware(), workflowHandler.AttachDispute)
 
 				validationCases.GET("/:id/case-log", middleware.AuthMiddleware(), workflowHandler.GetCaseLog)
+
+				// Repo-style validation flow (file-first, no chat).
+				validationCases.GET("/:id/repo/tree", middleware.AuthMiddleware(), repoWorkflowHandler.GetRepoTree)
+				validationCases.POST("/:id/repo/files", middleware.AuthMiddleware(), repoWorkflowHandler.AttachRepoFile)
+				validationCases.POST("/:id/publish", middleware.AuthMiddleware(), repoWorkflowHandler.PublishRepoCase)
+				validationCases.POST("/:id/apply", middleware.AuthMiddleware(), repoWorkflowHandler.ApplyForRepoCase)
+				validationCases.POST("/:id/validators/assign", middleware.AuthMiddleware(), repoWorkflowHandler.AssignValidators)
+				validationCases.POST("/:id/verdicts", middleware.AuthMiddleware(), repoWorkflowHandler.SubmitVerdict)
+				validationCases.GET("/:id/consensus", middleware.AuthMiddleware(), repoWorkflowHandler.GetConsensus)
 			}
 
 			// Tags endpoints

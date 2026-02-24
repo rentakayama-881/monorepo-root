@@ -421,13 +421,16 @@ export default function ValidationCaseRecordPage() {
   useEffect(() => {
     if (!vc || !me) return;
     if (!isAuthed) return;
+    if (String(vc?.meta?.protocol_mode || "workflow_v1").toLowerCase().trim() === "repo_validation_v2") {
+      return;
+    }
     if (isOwner) {
       loadOwnerWorkflow();
     } else {
       loadNonOwnerWorkflow();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vc?.id, me?.id, isAuthed, isOwner]);
+  }, [vc?.id, vc?.meta, me?.id, isAuthed, isOwner]);
 
   async function requestConsultation() {
     if (!isAuthed) {
@@ -828,6 +831,8 @@ export default function ValidationCaseRecordPage() {
   }
 
   const status = normalizeStatus(vc?.status);
+  const protocolMode = String(vc?.meta?.protocol_mode || "workflow_v1").toLowerCase().trim();
+  const isRepoMode = protocolMode === "repo_validation_v2";
   const consultationBlocked = status === "waiting_owner_response" || status === "on_hold_owner_inactive";
   const sensitivity = sensitivityMeta(vc?.sensitivity_level);
   const consultationStakeRequirement = (() => {
@@ -873,6 +878,56 @@ export default function ValidationCaseRecordPage() {
   const recordContent = vc?.content_type === "text" ? contentAsText(vc?.content) : vc?.content;
   const showSummaryFallback = Boolean(vc?.summary) && !hasOverviewContent(recordContent);
 
+  if (vc && isRepoMode) {
+    return (
+      <main className="container py-10 space-y-6">
+        <nav className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <Link href="/" className="hover:underline">
+            Home
+          </Link>
+          <span>/</span>
+          <Link href="/validation-cases" prefetch={false} className="hover:underline">
+            Validation Case Index
+          </Link>
+          <span>/</span>
+          <span className="font-mono text-xs text-foreground">#{String(id)}</span>
+          <span>/</span>
+          <Link href={`/validation-cases/${encodeURIComponent(String(id))}/repo`} prefetch={false} className="hover:underline">
+            Repo Workflow
+          </Link>
+        </nav>
+
+        {error ? (
+          <div className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
+            {error}
+          </div>
+        ) : null}
+
+        <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Validation Case Record</div>
+          <h1 className="text-2xl font-semibold text-foreground">{vc?.title || "(untitled)"}</h1>
+          {vc?.summary ? <p className="text-sm text-muted-foreground">{vc.summary}</p> : null}
+          <div className="text-sm text-muted-foreground">
+            Case ini menggunakan <span className="font-semibold text-foreground">Repo Validation v2</span>. Flow Consultation/Final Offer (workflow v1) tidak berlaku di case ini.
+          </div>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">Sensitivity {sensitivity.level}</span>
+            <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">Bounty {formatIDR(vc?.bounty_amount)}</span>
+          </div>
+          <div>
+            <Link
+              href={`/validation-cases/${encodeURIComponent(String(id))}/repo`}
+              prefetch={false}
+              className="inline-flex rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              Buka Repo Workflow
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="container py-10">
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -885,6 +940,10 @@ export default function ValidationCaseRecordPage() {
         </Link>
         <span>/</span>
         <span className="font-mono text-xs text-foreground">#{String(id)}</span>
+        <span>/</span>
+        <Link href={`/validation-cases/${encodeURIComponent(String(id))}/repo`} prefetch={false} className="hover:underline">
+          Repo Workflow
+        </Link>
       </nav>
 
       {error ? (

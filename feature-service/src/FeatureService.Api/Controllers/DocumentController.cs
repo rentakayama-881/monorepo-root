@@ -53,9 +53,9 @@ public class DocumentController : ControllerBase
 
         // Validate file type
         var extension = Path.GetExtension(request.File.FileName).ToLowerInvariant();
-        if (extension != ".pdf" && extension != ".docx")
+        if (!DocumentFileType.AllowedExtensions.Contains(extension))
         {
-            return BadRequest(new { error = "Invalid file type. Only PDF and DOCX files are allowed" });
+            return BadRequest(new { error = $"Invalid file type. Allowed types: {string.Join(", ", DocumentFileType.AllowedExtensions)}" });
         }
 
         // Validate category
@@ -201,7 +201,7 @@ public class DocumentController : ControllerBase
         // Increment download count
         await _documentService.IncrementDownloadCountAsync(id);
 
-        var contentType = access.FileType == "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        var contentType = DocumentFileType.ResolveMimeType($".{access.FileType}");
         return File(fileData, contentType, access.FileName);
     }
 

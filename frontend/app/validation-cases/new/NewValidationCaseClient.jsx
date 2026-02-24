@@ -176,6 +176,7 @@ export default function NewValidationCaseClient() {
 
   const [form, setForm] = useState({
     title: "",
+    protocol_mode: "repo_validation_v2",
     bounty_amount: "10000",
     quick_intake: {
       validation_goal: "",
@@ -416,6 +417,17 @@ export default function NewValidationCaseClient() {
         content,
         bounty_amount: bounty,
         tag_slugs: normalizedTagSlugs,
+        meta:
+          form.protocol_mode === "repo_validation_v2"
+            ? {
+                protocol_mode: "repo_validation_v2",
+                completion_mode: "panel_3",
+                consensus_status: "pending",
+                repo_stage: "draft",
+              }
+            : {
+                protocol_mode: "workflow_v1",
+              },
       };
 
       const created = await fetchJsonAuth("/api/validation-cases", {
@@ -514,6 +526,19 @@ export default function NewValidationCaseClient() {
               placeholder="Ringkas dan spesifik."
               disabled={formDisabled}
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground">Validation Flow Mode</label>
+            <select
+              value={form.protocol_mode}
+              onChange={(e) => setForm((prev) => ({ ...prev, protocol_mode: e.target.value }))}
+              className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+              disabled={formDisabled}
+            >
+              <option value="repo_validation_v2">Repo Validation v2 (File-first, tanpa chat)</option>
+              <option value="workflow_v1">Workflow v1 (Consultation + Final Offer)</option>
+            </select>
           </div>
 
           <div className="rounded-[var(--radius)] border border-border bg-secondary/30 p-4">

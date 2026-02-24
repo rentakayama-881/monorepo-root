@@ -379,6 +379,11 @@ func (s *EntValidationCaseService) UpdateValidationCase(ctx context.Context, own
 		update.SetMeta(sanitizeCaseMeta(metaMap))
 	}
 	if input.BountyAmount != nil {
+		repoState := loadRepoMetaState(vc.Meta)
+		if normalizeRepoMode(repoState.ProtocolMode) == repoProtocolModeV2 {
+			return apperrors.ErrInvalidInput.WithDetails("bounty_amount tidak dapat diubah untuk repo_validation_v2")
+		}
+
 		// Conservative: allow bounty edits only while still open.
 		if strings.ToLower(strings.TrimSpace(vc.Status)) != "open" {
 			return apperrors.ErrInvalidInput.WithDetails("bounty_amount hanya bisa diubah saat status masih 'open'")

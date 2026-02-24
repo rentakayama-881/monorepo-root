@@ -38,7 +38,7 @@ public class Document
     public string? Description { get; set; }
 
     /// <summary>
-    /// File type: pdf, docx
+    /// File type: pdf, docx, txt, md, csv, xlsx, xls, zip
     /// </summary>
     [BsonElement("fileType")]
     public string FileType { get; set; } = string.Empty;
@@ -149,13 +149,41 @@ public static class DocumentFileType
 {
     public const string Pdf = "pdf";
     public const string Docx = "docx";
+    public const string Txt = "txt";
+    public const string Md = "md";
+    public const string Csv = "csv";
+    public const string Xlsx = "xlsx";
+    public const string Xls = "xls";
+    public const string Zip = "zip";
 
-    public static readonly string[] AllowedExtensions = { ".pdf", ".docx" };
-    public static readonly string[] AllowedMimeTypes = { 
-        "application/pdf", 
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+    public static readonly string[] AllowedExtensions = { ".pdf", ".docx", ".txt", ".md", ".csv", ".xlsx", ".xls", ".zip" };
+    public static readonly string[] AllowedMimeTypes = {
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+        "text/markdown",
+        "text/csv",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        "application/zip"
     };
 
     public const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
     public const long MaxUserStorageBytes = 100 * 1024 * 1024; // 100 MB per user
+
+    public static string ResolveMimeType(string extension)
+    {
+        return extension.ToLowerInvariant() switch
+        {
+            ".pdf" => "application/pdf",
+            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".txt" => "text/plain",
+            ".md" => "text/markdown",
+            ".csv" => "text/csv",
+            ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".xls" => "application/vnd.ms-excel",
+            ".zip" => "application/zip",
+            _ => "application/octet-stream"
+        };
+    }
 }
