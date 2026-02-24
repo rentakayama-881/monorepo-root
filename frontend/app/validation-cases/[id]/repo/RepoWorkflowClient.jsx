@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { FEATURE_ENDPOINTS, getFeatureApiBase } from "@/lib/featureApi";
 import { useUploadDocument } from "@/lib/useDocuments";
 
 function formatDateTime(ts) {
@@ -52,6 +53,36 @@ function normalizeErr(err, fallback) {
   const details = String(err?.details || "").trim();
   if (!details) return message;
   return `${message}: ${details}`;
+}
+
+function parseFilenameFromContentDisposition(contentDisposition) {
+  const raw = String(contentDisposition || "").trim();
+  if (!raw) return "";
+  const utf8Match = raw.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]).trim();
+    } catch {
+      return String(utf8Match[1]).trim();
+    }
+  }
+  const asciiMatch = raw.match(/filename="?([^"]+)"?/i);
+  if (asciiMatch?.[1]) {
+    return String(asciiMatch[1]).trim();
+  }
+  return "";
+}
+
+function fallbackDownloadFileName(file) {
+  const label = String(file?.label || "").trim();
+  const documentId = String(file?.document_id || "").trim();
+  const safeLabel = label
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (safeLabel) return safeLabel;
+  if (documentId) return `workspace-file-${documentId}`;
+  return "workspace-file";
 }
 
 function extractDocumentId(uploadResult) {
@@ -113,6 +144,7 @@ export default function WorkspaceWorkflowClient() {
     attachmentFile: null,
   });
   const [verdictFileInputKey, setVerdictFileInputKey] = useState(0);
+  const [downloadingDocumentID, setDownloadingDocumentID] = useState("");
 
   const { uploadDocument, loading: uploadingDocument, progress: uploadProgress } = useUploadDocument();
 
@@ -277,16 +309,26 @@ export default function WorkspaceWorkflowClient() {
     if (!canAttach) return;
     setAttachForm((prev) => {
       if (attachKindOptions.includes(prev.kind)) {
+        if (!isOwner) {
+          return {
+            ...prev,
+            kind: "validator_output",
+            visibility: "assigned_validators",
+          };
+        }
         return prev;
       }
       const nextKind = attachKindOptions[0] || "task_input";
       return {
         ...prev,
         kind: nextKind,
-        visibility: nextKind === "sensitive_context" ? "assigned_validators" : prev.visibility,
+        visibility:
+          !isOwner || nextKind === "sensitive_context"
+            ? "assigned_validators"
+            : prev.visibility,
       };
     });
-  }, [attachKindOptions, canAttach]);
+  }, [attachKindOptions, canAttach, isOwner]);
 
   async function runAction(fn) {
     setBusy(true);
@@ -317,11 +359,15 @@ export default function WorkspaceWorkflowClient() {
     }
 
     await runAction(async () => {
+      const documentVisibility =
+        !isOwner || attachForm.kind === "sensitive_context" || attachForm.visibility !== "public"
+          ? "private"
+          : "public";
       const uploaded = await uploadDocument(file, {
         title: label,
         description: `Validation workspace file (${attachForm.kind})`,
         category: "other",
-        visibility: "private",
+        visibility: documentVisibility,
       });
       const documentId = extractDocumentId(uploaded);
       if (!documentId) {
@@ -332,7 +378,10 @@ export default function WorkspaceWorkflowClient() {
         document_id: documentId,
         kind: attachForm.kind,
         label,
-        visibility: attachForm.kind === "sensitive_context" ? "assigned_validators" : attachForm.visibility,
+        visibility:
+          !isOwner || attachForm.kind === "sensitive_context"
+            ? "assigned_validators"
+            : attachForm.visibility,
       });
 
       setAttachForm((prev) => ({
@@ -342,6 +391,65 @@ export default function WorkspaceWorkflowClient() {
       }));
       setAttachFileInputKey((prev) => prev + 1);
     });
+  }
+
+  async function onDownloadWorkspaceFile(file) {
+    const documentId = String(file?.document_id || "").trim();
+    if (!documentId) {
+      setError("Document ID tidak ditemukan untuk file ini.");
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      router.push(`/login?redirect=/validation-cases/${encodeURIComponent(id)}/workspace`);
+      return;
+    }
+
+    setDownloadingDocumentID(documentId);
+    setError("");
+    setMsg("");
+    try {
+      const endpoint = `${getFeatureApiBase()}${FEATURE_ENDPOINTS.DOCUMENTS.DOWNLOAD(encodeURIComponent(documentId))}`;
+      const res = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const errorPayload = await res.clone().json();
+          detail = String(errorPayload?.error || errorPayload?.message || "").trim();
+        } catch {
+          detail = "";
+        }
+        if (res.status === 403) {
+          throw new Error("Akses file ditolak. Pastikan owner sudah membagikan file ini ke panel validator.");
+        }
+        throw new Error(detail || `Gagal membuka file workspace (status ${res.status}).`);
+      }
+
+      const blob = await res.blob();
+      const contentDisposition = res.headers.get("content-disposition");
+      const filename = parseFilenameFromContentDisposition(contentDisposition) || fallbackDownloadFileName(file);
+      const objectURL = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectURL;
+      anchor.download = filename;
+      anchor.style.display = "none";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(objectURL);
+      setMsg(`File "${file?.label || documentId}" berhasil diunduh.`);
+    } catch (e) {
+      setError(normalizeErr(e, "Gagal membuka file workspace"));
+    } finally {
+      setDownloadingDocumentID("");
+    }
   }
 
   async function onPublish() {
@@ -557,6 +665,7 @@ export default function WorkspaceWorkflowClient() {
                   <th className="py-2 pr-3">Document ID</th>
                   <th className="py-2 pr-3">Visibility</th>
                   <th className="py-2 pr-3">Uploaded</th>
+                  <th className="py-2 pr-3">File</th>
                 </tr>
               </thead>
               <tbody>
@@ -567,6 +676,16 @@ export default function WorkspaceWorkflowClient() {
                     <td className="py-2 pr-3 font-mono text-xs text-foreground">{file.document_id}</td>
                     <td className="py-2 pr-3 text-muted-foreground">{file.visibility}</td>
                     <td className="py-2 pr-3 text-muted-foreground">{formatDateTime(file.uploaded_at)}</td>
+                    <td className="py-2 pr-3">
+                      <button
+                        type="button"
+                        onClick={() => onDownloadWorkspaceFile(file)}
+                        disabled={actionLocked || downloadingDocumentID === String(file.document_id || "")}
+                        className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {downloadingDocumentID === String(file.document_id || "") ? "Opening..." : "Open File"}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -617,7 +736,7 @@ export default function WorkspaceWorkflowClient() {
               value={attachForm.visibility}
               onChange={(e) => setAttachForm((prev) => ({ ...prev, visibility: e.target.value }))}
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
-              disabled={actionLocked || sensitiveKindSelected}
+              disabled={actionLocked || sensitiveKindSelected || !isOwner}
             >
               <option value="public">public</option>
               <option value="assigned_validators">assigned_validators</option>

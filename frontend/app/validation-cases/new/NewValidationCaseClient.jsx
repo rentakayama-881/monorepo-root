@@ -488,11 +488,13 @@ export default function NewValidationCaseClient() {
         const item = workspaceBootstrapFiles[idx];
         const progressLabel = `Uploading file ${idx + 1}/${workspaceBootstrapFiles.length}: ${item.label}`;
         setWorkspaceUploadStageMsg(progressLabel);
+        const documentVisibility =
+          item.kind === "sensitive_context" || item.visibility !== "public" ? "private" : "public";
         const uploaded = await uploadDocument(item.file, {
           title: item.label,
           description: `Validation workspace bootstrap (${item.kind})`,
           category: "other",
-          visibility: "private",
+          visibility: documentVisibility,
         });
         const documentId = extractDocumentId(uploaded);
         if (!documentId) {

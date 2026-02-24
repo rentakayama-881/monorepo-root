@@ -49,6 +49,7 @@ func (h *ValidationCaseRepoWorkflowHandler) AttachRepoFile(c *gin.Context) {
 		req.Kind,
 		req.Label,
 		req.Visibility,
+		strings.TrimSpace(c.GetHeader("Authorization")),
 	)
 	if err != nil {
 		handleError(c, err)
@@ -130,7 +131,14 @@ func (h *ValidationCaseRepoWorkflowHandler) AssignValidators(c *gin.Context) {
 		return
 	}
 
-	tree, err := h.repo.AssignRepoValidators(c.Request.Context(), validationCaseID, uint(user.ID), req.ValidatorUserIDs, req.PanelSize)
+	tree, err := h.repo.AssignRepoValidators(
+		c.Request.Context(),
+		validationCaseID,
+		uint(user.ID),
+		req.ValidatorUserIDs,
+		req.PanelSize,
+		strings.TrimSpace(c.GetHeader("Authorization")),
+	)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -156,7 +164,13 @@ func (h *ValidationCaseRepoWorkflowHandler) AutoAssignValidators(c *gin.Context)
 		return
 	}
 
-	tree, err := h.repo.AutoAssignRepoValidators(c.Request.Context(), validationCaseID, uint(user.ID), req.PanelSize)
+	tree, err := h.repo.AutoAssignRepoValidators(
+		c.Request.Context(),
+		validationCaseID,
+		uint(user.ID),
+		req.PanelSize,
+		strings.TrimSpace(c.GetHeader("Authorization")),
+	)
 	if err != nil {
 		handleError(c, err)
 		return

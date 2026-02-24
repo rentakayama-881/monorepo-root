@@ -1,14 +1,17 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
 
+	"backend-gin/config"
 	"backend-gin/database"
 	"backend-gin/ent"
 	"backend-gin/ent/user"
@@ -365,6 +368,25 @@ func dedupeUint(values []uint) []uint {
 	return out
 }
 
+func activeAssignmentValidatorIDs(assignments []RepoAssignmentItem) []uint {
+	out := make([]uint, 0, len(assignments))
+	for _, asn := range assignments {
+		if strings.EqualFold(strings.TrimSpace(asn.Status), repoAssignmentStatusActive) && asn.ValidatorUserID > 0 {
+			out = append(out, asn.ValidatorUserID)
+		}
+	}
+	return dedupeUint(out)
+}
+
+func shouldSyncWorkspaceFileSharing(file RepoCaseFileItem) bool {
+	switch normalizeRepoFileKind(file.Kind) {
+	case repoFileKindReadme, repoFileKindTaskInput, repoFileKindSensitive, repoFileKindOutput:
+		return strings.TrimSpace(file.DocumentID) != ""
+	default:
+		return false
+	}
+}
+
 func (s *EntValidationCaseRepoWorkflowService) isAssignedValidator(validatorUserID uint, assignments []RepoAssignmentItem) bool {
 	for _, it := range assignments {
 		if it.ValidatorUserID == validatorUserID && strings.EqualFold(it.Status, repoAssignmentStatusActive) {
@@ -372,6 +394,96 @@ func (s *EntValidationCaseRepoWorkflowService) isAssignedValidator(validatorUser
 		}
 	}
 	return false
+}
+
+func (s *EntValidationCaseRepoWorkflowService) workspaceFileShareTargets(
+	vc *ent.ValidationCase,
+	state repoMetaState,
+	file RepoCaseFileItem,
+) []uint {
+	if vc == nil {
+		return []uint{}
+	}
+
+	assignedValidatorIDs := activeAssignmentValidatorIDs(state.RepoAssignments)
+	kind := normalizeRepoFileKind(file.Kind)
+	targets := make([]uint, 0, len(assignedValidatorIDs)+1)
+
+	switch kind {
+	case repoFileKindSensitive, repoFileKindReadme, repoFileKindTaskInput:
+		targets = append(targets, assignedValidatorIDs...)
+	case repoFileKindOutput:
+		targets = append(targets, uint(vc.UserID))
+		targets = append(targets, assignedValidatorIDs...)
+	default:
+		return []uint{}
+	}
+
+	filtered := make([]uint, 0, len(targets))
+	for _, id := range dedupeUint(targets) {
+		if id == 0 || id == file.UploadedBy {
+			continue
+		}
+		filtered = append(filtered, id)
+	}
+	return dedupeUint(filtered)
+}
+
+func (s *EntValidationCaseRepoWorkflowService) updateWorkspaceDocumentSharing(
+	ctx context.Context,
+	authHeader string,
+	documentID string,
+	sharedWithUserIDs []uint,
+) error {
+	documentID = strings.TrimSpace(documentID)
+	authHeader = strings.TrimSpace(authHeader)
+	if documentID == "" || authHeader == "" {
+		return nil
+	}
+
+	url := fmt.Sprintf("%s/api/v1/documents/%s/sharing", strings.TrimRight(config.FeatureServiceURL, "/"), documentID)
+	payload := map[string]interface{}{
+		"sharedWithUserIds": dedupeUint(sharedWithUserIDs),
+	}
+	b, _ := json.Marshal(payload)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, url, bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", authHeader)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		var body map[string]interface{}
+		_ = json.NewDecoder(resp.Body).Decode(&body)
+		if msg, ok := body["error"].(string); ok && strings.TrimSpace(msg) != "" {
+			return fmt.Errorf("feature-service: %s", msg)
+		}
+		return fmt.Errorf("feature-service: gagal update sharing document (status %d)", resp.StatusCode)
+	}
+	return nil
+}
+
+func (s *EntValidationCaseRepoWorkflowService) syncWorkspaceFileSharing(
+	ctx context.Context,
+	authHeader string,
+	vc *ent.ValidationCase,
+	state repoMetaState,
+	file RepoCaseFileItem,
+) error {
+	if !shouldSyncWorkspaceFileSharing(file) {
+		return nil
+	}
+	targets := s.workspaceFileShareTargets(vc, state, file)
+	return s.updateWorkspaceDocumentSharing(ctx, authHeader, file.DocumentID, targets)
 }
 
 func (s *EntValidationCaseRepoWorkflowService) countActiveRepoAssignmentsForValidator(ctx context.Context, validatorUserID uint) (int, error) {
@@ -877,6 +989,7 @@ func (s *EntValidationCaseRepoWorkflowService) AttachRepoFile(
 	kind string,
 	label string,
 	visibility string,
+	authHeader string,
 ) (*RepoTreeResponse, error) {
 	vc, err := s.getValidationCase(ctx, validationCaseID)
 	if err != nil {
@@ -923,6 +1036,9 @@ func (s *EntValidationCaseRepoWorkflowService) AttachRepoFile(
 	}
 
 	state.RepoFiles = append(state.RepoFiles, item)
+	if err := s.syncWorkspaceFileSharing(ctx, authHeader, vc, state, item); err != nil {
+		return nil, apperrors.ErrInvalidInput.WithDetails(err.Error())
+	}
 
 	meta := mergeRepoMeta(vc.Meta, state)
 	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).SetMeta(meta).Save(ctx); err != nil {
@@ -1071,6 +1187,7 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 	ownerUserID uint,
 	validatorUserIDs []uint,
 	panelSize int,
+	authHeader string,
 ) (*RepoTreeResponse, error) {
 	vc, err := s.getValidationCase(ctx, validationCaseID)
 	if err != nil {
@@ -1204,6 +1321,15 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 	}
 	state.RepoApplicants = dedupeUint(remainingApplicants)
 
+	for _, file := range state.RepoFiles {
+		if file.UploadedBy != ownerUserID {
+			continue
+		}
+		if err := s.syncWorkspaceFileSharing(ctx, authHeader, vc, state, file); err != nil {
+			return nil, apperrors.ErrInvalidInput.WithDetails(err.Error())
+		}
+	}
+
 	meta := mergeRepoMeta(vc.Meta, state)
 	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).SetMeta(meta).Save(ctx); err != nil {
 		return nil, apperrors.ErrDatabase
@@ -1224,6 +1350,7 @@ func (s *EntValidationCaseRepoWorkflowService) AutoAssignRepoValidators(
 	validationCaseID uint,
 	ownerUserID uint,
 	panelSize int,
+	authHeader string,
 ) (*RepoTreeResponse, error) {
 	vc, err := s.getValidationCase(ctx, validationCaseID)
 	if err != nil {
@@ -1341,7 +1468,7 @@ func (s *EntValidationCaseRepoWorkflowService) AutoAssignRepoValidators(
 		return nil, apperrors.ErrInvalidInput.WithDetails("tidak ditemukan kombinasi panel validator yang lolos aturan anti-pairing")
 	}
 
-	tree, err := s.AssignRepoValidators(ctx, validationCaseID, ownerUserID, selected, panelSize)
+	tree, err := s.AssignRepoValidators(ctx, validationCaseID, ownerUserID, selected, panelSize, authHeader)
 	if err != nil {
 		return nil, err
 	}
