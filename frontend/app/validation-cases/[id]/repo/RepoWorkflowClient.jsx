@@ -26,6 +26,27 @@ function formatIDR(amount) {
   return `Rp ${Math.max(0, Math.trunc(n)).toLocaleString("id-ID")}`;
 }
 
+function formatCompletionModeLabel(rawMode) {
+  const mode = String(rawMode || "").trim().toLowerCase();
+  if (mode === "panel_10") return "Panel 10 (escalated)";
+  if (mode === "panel_3") return "Panel 3 (default)";
+  return rawMode || "-";
+}
+
+function formatWorkspaceStageLabel(rawStage) {
+  const stage = String(rawStage || "").trim().toLowerCase();
+  if (!stage) return "-";
+  const map = {
+    draft: "Draft",
+    published: "Published",
+    paneling: "Paneling",
+    reviewing: "Reviewing",
+    consensus_reached: "Consensus Reached",
+    completed: "Completed",
+  };
+  return map[stage] || stage.replace(/_/g, " ");
+}
+
 function normalizeErr(err, fallback) {
   const message = String(err?.message || fallback || "Terjadi kesalahan").trim();
   const details = String(err?.details || "").trim();
@@ -107,6 +128,52 @@ export default function WorkspaceWorkflowClient() {
   const requiredStake = Number(repoTree?.required_stake || 0);
   const viewerStake = Number(repoTree?.viewer_stake || 0);
   const stakeEligible = Boolean(repoTree?.stake_eligible);
+  const completionMode = String(repoTree?.completion_mode || "panel_3").trim().toLowerCase();
+  const requiredVotesFromMode = completionMode === "panel_10" ? 10 : 3;
+  const requiredVotes = Number(consensus?.required_votes || requiredVotesFromMode);
+  const submittedVotes = Number(consensus?.submitted_votes || verdicts.length || 0);
+  const hasRequiredReadme = Boolean(repoTree?.has_required_readme);
+  const hasTaskInput = Boolean(repoTree?.has_task_input);
+  const workspaceStageRaw = String(repoTree?.workspace_stage || repoTree?.repo_stage || "draft").trim().toLowerCase();
+  const workspacePublished = workspaceStageRaw !== "draft";
+  const assignmentsReady = assignments.length >= requiredVotes;
+  const votesReady = submittedVotes >= requiredVotes;
+  const readinessSteps = useMemo(
+    () => [
+      { key: "readme", label: "README tersedia", done: hasRequiredReadme },
+      { key: "task-input", label: "Task input tersedia", done: hasTaskInput },
+      { key: "published", label: "Workspace dipublish", done: workspacePublished },
+      { key: "panel", label: `Panel terassign (${requiredVotes})`, done: assignmentsReady },
+      { key: "votes", label: `Verdict masuk (${requiredVotes})`, done: votesReady },
+    ],
+    [hasRequiredReadme, hasTaskInput, workspacePublished, requiredVotes, assignmentsReady, votesReady],
+  );
+  const readinessDone = readinessSteps.filter((item) => item.done).length;
+  const readinessPercent = Math.round((readinessDone / readinessSteps.length) * 100);
+  const nextActionHint = useMemo(() => {
+    if (isOwner) {
+      if (!hasRequiredReadme || !hasTaskInput) {
+        return "Lengkapi README dan task input agar workspace bisa dipublish.";
+      }
+      if (!workspacePublished) {
+        return "Publish workspace supaya validator bisa apply.";
+      }
+      if (!assignmentsReady) {
+        return "Jalankan auto-match untuk mengunci panel validator.";
+      }
+      if (!votesReady) {
+        return "Pantau verdict hingga kuota suara terpenuhi.";
+      }
+      return "Consensus sudah siap. Review hasil dan payout ledger.";
+    }
+    if (isAssigned) {
+      return "Kamu sudah terassign. Upload output + submit verdict secepatnya.";
+    }
+    if (!stakeEligible) {
+      return "Stake belum memenuhi syarat. Top up stake untuk bisa apply.";
+    }
+    return "Apply as validator jika konteks case sesuai keahlianmu.";
+  }, [isOwner, isAssigned, hasRequiredReadme, hasTaskInput, workspacePublished, assignmentsReady, votesReady, stakeEligible]);
   const actionLocked = busy || uploadingDocument;
   const applyDisabled = actionLocked || isAssigned || !stakeEligible;
   const attachKindOptions = useMemo(
@@ -166,21 +233,29 @@ export default function WorkspaceWorkflowClient() {
     }
   }
 
-  async function loadAll() {
-    if (!id) return;
-    setLoading(true);
+  async function loadAll(options = {}) {
+    const showPageLoader = options.showPageLoader !== false;
+    let success = true;
+    if (!id) return false;
+    if (showPageLoader) {
+      setLoading(true);
+    }
     setError("");
     try {
       const [repoResp, consensusResp] = await Promise.all([getWorkspaceTree(), getWorkspaceConsensus()]);
       setRepoTree(repoResp?.repo_tree || null);
       setConsensus(consensusResp?.consensus || null);
     } catch (e) {
+      success = false;
       setError(normalizeErr(e, "Gagal memuat Evidence Validation Workspace"));
       setRepoTree(null);
       setConsensus(null);
     } finally {
-      setLoading(false);
+      if (showPageLoader) {
+        setLoading(false);
+      }
     }
+    return success;
   }
 
   useEffect(() => {
@@ -188,7 +263,7 @@ export default function WorkspaceWorkflowClient() {
       router.push(`/login?redirect=/validation-cases/${encodeURIComponent(id)}/workspace`);
       return;
     }
-    loadAll();
+    loadAll({ showPageLoader: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isAuthed]);
 
@@ -213,7 +288,7 @@ export default function WorkspaceWorkflowClient() {
     setError("");
     try {
       await fn();
-      await loadAll();
+      await loadAll({ showPageLoader: false });
       setMsg("Workspace berhasil diperbarui.");
     } catch (e) {
       setError(normalizeErr(e, "Aksi gagal"));
@@ -277,11 +352,28 @@ export default function WorkspaceWorkflowClient() {
 
   async function onAutoAssign(e) {
     e.preventDefault();
+    const panelSize = Number(assignForm.panel_size) === 10 ? 10 : 3;
     await runAction(async () => {
       await postWorkspace("validators/auto-assign", {
-        panel_size: Number(assignForm.panel_size) === 10 ? 10 : 3,
+        panel_size: panelSize,
       });
     });
+  }
+
+  async function onRefreshWorkspace() {
+    setBusy(true);
+    setMsg("");
+    setError("");
+    try {
+      const refreshed = await loadAll({ showPageLoader: false });
+      if (refreshed) {
+        setMsg("Snapshot workspace diperbarui.");
+      } else {
+        setError("Snapshot workspace belum bisa diperbarui.");
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function onSubmitVerdict(e) {
@@ -343,10 +435,10 @@ export default function WorkspaceWorkflowClient() {
       </nav>
 
       {error ? (
-        <div className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</div>
+        <div role="alert" aria-live="polite" className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</div>
       ) : null}
       {msg ? (
-        <div className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{msg}</div>
+        <div role="status" aria-live="polite" className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{msg}</div>
       ) : null}
 
       <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-3">
@@ -356,10 +448,10 @@ export default function WorkspaceWorkflowClient() {
             Workflow: <span className="font-semibold text-foreground">{repoTree?.workflow_family || "-"}</span>
           </div>
           <div>
-            Stage: <span className="font-semibold text-foreground">{repoTree?.workspace_stage || repoTree?.repo_stage || "-"}</span>
+            Stage: <span className="font-semibold text-foreground">{formatWorkspaceStageLabel(repoTree?.workspace_stage || repoTree?.repo_stage || "-")}</span>
           </div>
           <div>
-            Completion Mode: <span className="font-semibold text-foreground">{repoTree?.completion_mode || "-"}</span>
+            Completion Mode: <span className="font-semibold text-foreground">{formatCompletionModeLabel(repoTree?.completion_mode)}</span>
           </div>
           <div>
             Consensus: <span className="font-semibold text-foreground">{repoTree?.consensus_status || "-"}</span>
@@ -371,6 +463,70 @@ export default function WorkspaceWorkflowClient() {
             Your Stake: <span className="font-semibold text-foreground">{formatIDR(viewerStake)}</span>
           </div>
         </div>
+
+        <div className="rounded-[var(--radius)] border border-cyan-200/80 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-100 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-900/80">Workflow Progress</div>
+              <div className="mt-1 text-sm font-semibold text-slate-900">
+                Stage {formatWorkspaceStageLabel(workspaceStageRaw)} • {readinessDone}/{readinessSteps.length} milestone selesai
+              </div>
+            </div>
+            <div className="rounded-full border border-cyan-300 bg-white/80 px-3 py-1 text-xs font-semibold text-cyan-900">
+              {readinessPercent}% ready
+            </div>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-cyan-100">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 transition-all"
+              style={{ width: `${readinessPercent}%` }}
+            />
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {readinessSteps.map((step) => (
+              <div
+                key={step.key}
+                className={`rounded-[var(--radius)] border px-3 py-2 text-xs ${
+                  step.done ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-cyan-200 bg-white/75 text-slate-700"
+                }`}
+              >
+                {step.done ? "✓" : "•"} {step.label}
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 rounded-[var(--radius)] border border-cyan-200 bg-white/75 px-3 py-2 text-sm text-slate-700">
+            Next action: <span className="font-semibold text-slate-900">{nextActionHint}</span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onRefreshWorkspace}
+              disabled={actionLocked}
+              className="rounded-[var(--radius)] border border-cyan-300 bg-white px-3 py-1.5 text-xs font-semibold text-cyan-900 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {busy ? "Refreshing..." : "Refresh Snapshot"}
+            </button>
+            <a
+              href="#workspace-files"
+              className="rounded-[var(--radius)] border border-cyan-200 bg-white/85 px-3 py-1.5 text-xs font-semibold text-cyan-900 hover:bg-cyan-100"
+            >
+              Files
+            </a>
+            <a
+              href="#workspace-validators"
+              className="rounded-[var(--radius)] border border-cyan-200 bg-white/85 px-3 py-1.5 text-xs font-semibold text-cyan-900 hover:bg-cyan-100"
+            >
+              Validators
+            </a>
+            <a
+              href="#workspace-verdicts"
+              className="rounded-[var(--radius)] border border-cyan-200 bg-white/85 px-3 py-1.5 text-xs font-semibold text-cyan-900 hover:bg-cyan-100"
+            >
+              Verdicts
+            </a>
+          </div>
+        </div>
+
         {!stakeEligible ? (
           <div className="rounded-[var(--radius)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             Stake kamu belum memenuhi syarat untuk apply case ini.
@@ -378,7 +534,7 @@ export default function WorkspaceWorkflowClient() {
         ) : null}
       </section>
 
-      <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
+      <section id="workspace-files" className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Workspace Files</h2>
         <div className="text-sm text-muted-foreground">
           Publish butuh README (markdown case record atau `case_readme`) dan minimal 1 `task_input`.
@@ -479,7 +635,7 @@ export default function WorkspaceWorkflowClient() {
         ) : null}
       </section>
 
-      <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
+      <section id="workspace-validators" className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Validators</h2>
         {isOwner ? (
           <div className="flex flex-wrap items-center gap-3">
@@ -562,7 +718,7 @@ export default function WorkspaceWorkflowClient() {
         ) : null}
       </section>
 
-      <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
+      <section id="workspace-verdicts" className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Verdicts & Consensus</h2>
         {isAssigned ? (
           <form onSubmit={onSubmitVerdict} className="grid gap-3 rounded-[var(--radius)] border border-border p-4 md:grid-cols-2">

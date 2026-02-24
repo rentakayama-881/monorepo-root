@@ -76,6 +76,13 @@ const checklistItems = [
   },
 ];
 
+const createNavigationSections = [
+  { id: "quick-intake", label: "1. Quick Intake" },
+  { id: "readme-design", label: "2. README Design" },
+  { id: "workspace-files", label: "3. Workspace Files" },
+  { id: "quality-gate", label: "4. Checklist & Tags" },
+];
+
 const sensitivityOptions = ["S0", "S1", "S2", "S3"];
 const titleMinLength = 3;
 const titleMaxLength = 200;
@@ -174,6 +181,11 @@ function buildAutoBrief(quickIntake) {
   };
 }
 
+function quickIntakeFieldIsValid(field, value) {
+  const text = String(value || "").trim();
+  return text.length >= field.minLen && text.length <= field.maxLen;
+}
+
 export default function NewValidationCaseClient() {
   const router = useRouter();
 
@@ -237,6 +249,68 @@ export default function NewValidationCaseClient() {
   const formDisabled = locked || submitting || telegramGateLocked || uploadingDocument;
   const autoSummary = useMemo(() => buildAutoSummary(form.quick_intake), [form.quick_intake]);
   const autoBrief = useMemo(() => buildAutoBrief(form.quick_intake), [form.quick_intake]);
+  const normalizedTagCount = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          selectedTags
+            .map((tag) => String(tag?.slug || "").toLowerCase().trim())
+            .filter(Boolean),
+        ),
+      ).length,
+    [selectedTags],
+  );
+  const quickIntakeCompleted = useMemo(
+    () =>
+      quickIntakeFields.filter((field) =>
+        quickIntakeFieldIsValid(field, form.quick_intake?.[field.key]),
+      ).length,
+    [form.quick_intake],
+  );
+  const checklistCompleted = useMemo(
+    () => checklistItems.filter((item) => Boolean(form.checklist?.[item.key])).length,
+    [form.checklist],
+  );
+  const readinessItems = useMemo(
+    () => [
+      {
+        id: "quick-intake",
+        label: "Quick intake lengkap",
+        done: quickIntakeCompleted === quickIntakeFields.length,
+      },
+      {
+        id: "readme-design",
+        label: "README/case record terisi",
+        done: String(form.case_record_text || "").trim().length > 0,
+      },
+      {
+        id: "workspace-files",
+        label: "File awal disiapkan (opsional)",
+        done: workspaceBootstrapFiles.length > 0,
+        optional: true,
+      },
+      {
+        id: "quality-gate",
+        label: "Checklist protokol lengkap",
+        done: checklistCompleted === checklistItems.length,
+      },
+      {
+        id: "quality-gate",
+        label: "Tags 2-4 terpilih",
+        done: normalizedTagCount >= 2 && normalizedTagCount <= 4,
+      },
+    ],
+    [
+      quickIntakeCompleted,
+      form.case_record_text,
+      workspaceBootstrapFiles.length,
+      checklistCompleted,
+      normalizedTagCount,
+    ],
+  );
+  const requiredReadinessItems = readinessItems.filter((item) => !item.optional);
+  const readinessDoneCount = requiredReadinessItems.filter((item) => item.done).length;
+  const readinessPercent = Math.round((readinessDoneCount / requiredReadinessItems.length) * 100);
 
   useEffect(() => {
     if (!isAuthed) {
@@ -618,16 +692,47 @@ export default function NewValidationCaseClient() {
       ) : null}
 
       {error ? (
-        <div className="mb-5 rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
+        <div role="alert" aria-live="polite" className="mb-5 rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
           {error}
         </div>
       ) : null}
 
       {ok ? (
-        <div className="mb-5 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
+        <div role="status" aria-live="polite" className="mb-5 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
           {ok}
         </div>
       ) : null}
+
+      <section className="mb-5 rounded-[var(--radius)] border border-cyan-200/80 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-100 px-5 py-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-900/80">Workspace Readiness</div>
+            <div className="mt-1 text-sm font-semibold text-slate-900">
+              {readinessDoneCount}/{requiredReadinessItems.length} syarat wajib selesai
+            </div>
+          </div>
+          <div className="rounded-full border border-cyan-300 bg-white/80 px-3 py-1 text-xs font-semibold text-cyan-900">
+            {readinessPercent}% ready
+          </div>
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-cyan-100">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 transition-all"
+            style={{ width: `${readinessPercent}%` }}
+          />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {createNavigationSections.map((section) => (
+            <a
+              key={section.id}
+              href={`#${section.id}`}
+              className="rounded-full border border-cyan-300 bg-white/85 px-3 py-1 text-xs font-semibold text-cyan-900 hover:bg-cyan-100"
+            >
+              {section.label}
+            </a>
+          ))}
+        </div>
+      </section>
 
       <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-card shadow-sm">
         <div className="border-b border-border px-5 py-4">
@@ -638,7 +743,7 @@ export default function NewValidationCaseClient() {
         </div>
 
         <div className="space-y-6 px-5 py-5">
-          <div>
+          <div id="quick-intake">
             <label className="text-xs font-semibold text-muted-foreground">Title</label>
             <input
               value={form.title}
@@ -745,7 +850,7 @@ export default function NewValidationCaseClient() {
             <div className="mt-2 text-[11px] text-muted-foreground">Summary otomatis: {autoSummary || "-"}</div>
           </div>
 
-          <div>
+          <div id="readme-design">
             <label className="text-xs font-semibold text-muted-foreground">README Design Templates</label>
             <div className="mt-2 rounded-[var(--radius)] border border-border bg-gradient-to-br from-slate-50 via-cyan-50 to-indigo-100 p-4">
               <div className="text-sm font-semibold text-foreground">GitHub-style template siap edit</div>
@@ -817,12 +922,15 @@ export default function NewValidationCaseClient() {
             </div>
           </div>
 
-          <div className="rounded-[var(--radius)] border border-border bg-secondary/20 p-4">
+          <div id="workspace-files" className="rounded-[var(--radius)] border border-border bg-secondary/20 p-4">
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Workspace Files (Optional di Create)
             </div>
             <div className="mt-2 text-xs text-muted-foreground">
               Upload file sekarang agar validator bisa langsung kerja. File sensitif otomatis hanya untuk validator terpilih.
+            </div>
+            <div className="mt-2 text-[11px] text-muted-foreground">
+              Queue saat ini: {workspaceBootstrapFiles.length} file.
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -928,7 +1036,7 @@ export default function NewValidationCaseClient() {
             )}
           </div>
 
-          <div>
+          <div id="quality-gate">
             <label className="text-xs font-semibold text-muted-foreground">Checklist Protokol (Wajib)</label>
             <div className="mt-2 space-y-2 rounded-[var(--radius)] border border-border bg-secondary/20 p-3">
               {checklistItems.map((item) => (
@@ -946,7 +1054,7 @@ export default function NewValidationCaseClient() {
             </div>
           </div>
 
-          <div>
+          <div className="mt-6">
             <label className="text-xs font-semibold text-muted-foreground">Tags (Wajib)</label>
             {tagsAvailable ? (
               <TagSelector
