@@ -202,7 +202,7 @@ function CaseSection({ title, subtitle, children }) {
   );
 }
 
-export default function ValidationCaseRecordPage() {
+export default function ValidationCaseRecordPage({ initialCaseData = null }) {
   const params = useParams();
   const router = useRouter();
   const id = params?.id;
@@ -215,10 +215,11 @@ export default function ValidationCaseRecordPage() {
     }
   }, []);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !initialCaseData);
   const [error, setError] = useState("");
-  const [vc, setVc] = useState(null);
+  const [vc, setVc] = useState(() => initialCaseData);
   const [me, setMe] = useState(null);
+  const hasHydratedInitialCase = useRef(Boolean(initialCaseData));
 
   // Workflow state
   const [consultationRequests, setConsultationRequests] = useState([]);
@@ -271,9 +272,11 @@ export default function ValidationCaseRecordPage() {
 
   const isOwner = Boolean(me?.id && vc?.owner?.id && Number(me.id) === Number(vc.owner.id));
 
-  async function reloadCase() {
-    setError("");
-    setLoading(true);
+  async function reloadCase({ showSkeleton = true } = {}) {
+    if (showSkeleton) {
+      setError("");
+      setLoading(true);
+    }
     try {
       const data = await fetchJson(`/api/validation-cases/${encodeURIComponent(String(id))}/public`, {
         method: "GET",
@@ -281,10 +284,14 @@ export default function ValidationCaseRecordPage() {
       });
       setVc(data);
     } catch (e) {
-      setError(e?.message || "Gagal memuat Validation Case Record");
-      setVc(null);
+      if (showSkeleton) {
+        setError(e?.message || "Gagal memuat Validation Case Record");
+        setVc(null);
+      }
     } finally {
-      setLoading(false);
+      if (showSkeleton) {
+        setLoading(false);
+      }
     }
   }
 
@@ -304,7 +311,12 @@ export default function ValidationCaseRecordPage() {
   useEffect(() => {
     if (!id || id === "undefined") return;
     loadMeIfAuthed();
-    reloadCase();
+    if (hasHydratedInitialCase.current) {
+      hasHydratedInitialCase.current = false;
+      reloadCase({ showSkeleton: false });
+      return;
+    }
+    reloadCase({ showSkeleton: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

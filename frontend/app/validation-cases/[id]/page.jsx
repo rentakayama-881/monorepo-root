@@ -1,6 +1,4 @@
-import { Suspense } from "react";
 import ValidationCaseDetailClient from "./ValidationCaseDetailClient";
-import ValidationCaseRecordSkeleton from "./ValidationCaseRecordSkeleton";
 import { generateValidationCaseStructuredData } from "@/lib/seo";
 
 const API_BASE =
@@ -66,9 +64,7 @@ export default async function ValidationCaseDetailPage({ params }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <Suspense fallback={<ValidationCaseRecordSkeleton />}>
-        <ValidationCaseDetailClient />
-      </Suspense>
+      <ValidationCaseDetailClient initialCaseData={data || null} />
     </>
   );
 }

@@ -159,17 +159,25 @@ function RepoWorkspaceSkeleton({ embedded = false, caseTitle = "" }) {
       <section className="space-y-4">
         <SkeletonText width="w-40" height="h-3.5" />
         <div className="rounded-2xl bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
-          <div className="mb-3 grid grid-cols-6 gap-3 border-b border-border/60 pb-3">
+          <div className="mb-3 hidden gap-3 border-b border-border/60 pb-3 md:grid md:grid-cols-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={`repo-head-${i}`} className="h-4 w-20" />
             ))}
           </div>
           <div className="space-y-3">
             {Array.from({ length: 7 }).map((_, row) => (
-              <div key={`repo-row-${row}`} className="grid grid-cols-6 gap-3">
-                {Array.from({ length: 6 }).map((__, col) => (
-                  <Skeleton key={`repo-cell-${row}-${col}`} className="h-4 w-full" />
-                ))}
+              <div key={`repo-row-${row}`} className="rounded-xl border border-border/50 p-3 md:rounded-none md:border-0 md:p-0">
+                <div className="space-y-2 md:hidden">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-4/5" />
+                  <Skeleton className="h-4 w-3/5" />
+                </div>
+                <div className="hidden gap-3 md:grid md:grid-cols-6">
+                  {Array.from({ length: 6 }).map((__, col) => (
+                    <Skeleton key={`repo-cell-${row}-${col}`} className="h-4 w-full" />
+                  ))}
+                </div>
               </div>
             ))}
           </div>
