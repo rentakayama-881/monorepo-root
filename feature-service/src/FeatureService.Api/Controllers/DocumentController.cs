@@ -165,6 +165,47 @@ public class DocumentController : ControllerBase
     }
 
     /// <summary>
+    /// View a document file inline when supported by browser
+    /// </summary>
+    [HttpGet("{id}/view")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ViewDocument(string id)
+    {
+        var currentUserId = GetCurrentUserId();
+        var isAdmin = IsCurrentUserAdmin();
+        var access = await _documentService.GetDocumentAccessAsync(id);
+
+        if (access == null)
+        {
+            return NotFound(new { error = "Document not found" });
+        }
+
+        if (access.Visibility == DocumentVisibility.Private
+            && access.UserId != currentUserId
+            && !isAdmin
+            && !(access.SharedWithUserIds?.Contains(currentUserId) ?? false))
+        {
+            return Forbid();
+        }
+
+        var fileData = await _documentService.GetDocumentFileAsync(id);
+        if (fileData == null)
+        {
+            return NotFound(new { error = "Document file not found" });
+        }
+
+        var contentType = DocumentFileType.ResolveMimeType($".{access.FileType}");
+        var safeFileName = string.IsNullOrWhiteSpace(access.FileName)
+            ? $"document-{id}"
+            : access.FileName.Replace("\"", string.Empty);
+        Response.Headers.ContentDisposition = $"inline; filename=\"{safeFileName}\"";
+        return File(fileData, contentType);
+    }
+
+    /// <summary>
     /// Download a document file
     /// </summary>
     [HttpGet("{id}/download")]

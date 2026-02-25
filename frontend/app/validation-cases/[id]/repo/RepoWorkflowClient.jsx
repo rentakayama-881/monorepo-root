@@ -60,6 +60,40 @@ function fallbackDownloadFileName(file) {
   return "workspace-file";
 }
 
+function fileExtensionFromName(name) {
+  const value = String(name || "").trim().toLowerCase();
+  if (!value) return "";
+  const idx = value.lastIndexOf(".");
+  if (idx <= 0 || idx >= value.length - 1) return "";
+  return value.slice(idx + 1);
+}
+
+function inferMimeTypeFromFilename(name) {
+  const ext = fileExtensionFromName(name);
+  if (!ext) return "";
+
+  const map = {
+    pdf: "application/pdf",
+    txt: "text/plain",
+    md: "text/markdown",
+    json: "application/json",
+    csv: "text/csv",
+    xml: "application/xml",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+    svg: "image/svg+xml",
+    mp4: "video/mp4",
+    webm: "video/webm",
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+  };
+
+  return map[ext] || "";
+}
+
 function extractDocumentId(uploadResult) {
   if (!uploadResult || typeof uploadResult !== "object") return "";
   const candidates = [
@@ -347,7 +381,10 @@ export default function RepoWorkflowClient({
     setMsg("");
 
     try {
-      const endpoint = `${getFeatureApiBase()}${FEATURE_ENDPOINTS.DOCUMENTS.DOWNLOAD(encodeURIComponent(documentId))}`;
+      const endpointPath = download
+        ? FEATURE_ENDPOINTS.DOCUMENTS.DOWNLOAD(encodeURIComponent(documentId))
+        : FEATURE_ENDPOINTS.DOCUMENTS.VIEW(encodeURIComponent(documentId));
+      const endpoint = `${getFeatureApiBase()}${endpointPath}`;
       const res = await fetch(endpoint, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
@@ -370,9 +407,9 @@ export default function RepoWorkflowClient({
       const blob = await res.blob();
       const contentDisposition = res.headers.get("content-disposition");
       const filename = parseFilenameFromContentDisposition(contentDisposition) || fallbackDownloadFileName(file);
-      const objectURL = window.URL.createObjectURL(blob);
 
       if (download) {
+        const objectURL = window.URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = objectURL;
         anchor.download = filename;
@@ -385,10 +422,20 @@ export default function RepoWorkflowClient({
         return;
       }
 
-      const win = window.open("", "_blank", "noopener,noreferrer");
-      if (win) {
-        win.location.href = objectURL;
-      } else {
+      const contentType = String(res.headers.get("content-type") || "")
+        .split(";")[0]
+        .trim()
+        .toLowerCase();
+      const inferredType = !contentType || contentType === "application/octet-stream"
+        ? inferMimeTypeFromFilename(filename)
+        : "";
+      const previewBlob = inferredType
+        ? blob.slice(0, blob.size, inferredType)
+        : blob;
+      const objectURL = window.URL.createObjectURL(previewBlob);
+
+      const win = window.open(objectURL, "_blank", "noopener,noreferrer");
+      if (!win) {
         window.location.assign(objectURL);
       }
       window.setTimeout(() => window.URL.revokeObjectURL(objectURL), 60_000);
@@ -532,14 +579,7 @@ export default function RepoWorkflowClient({
                       <td className="py-2 pr-3 text-muted-foreground">{formatDateTime(file.uploaded_at)}</td>
                       <td className="py-2 pr-3">
                         <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openWorkspaceFile(file, { download: false })}
-                            disabled={actionLocked || processing}
-                            className="rounded-[var(--radius)] border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {processing ? "Opening..." : "Open"}
-                          </button>
+                          {processing ? <span className="text-xs text-muted-foreground">Opening...</span> : null}
                           <button
                             type="button"
                             onClick={() => openWorkspaceFile(file, { download: true })}

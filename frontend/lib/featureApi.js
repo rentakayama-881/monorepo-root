@@ -119,6 +119,7 @@ export const FEATURE_ENDPOINTS = {
     LIST: "/api/v1/documents",
     UPLOAD: "/api/v1/documents",
     DETAIL: (id) => `/api/v1/documents/${id}`,
+    VIEW: (id) => `/api/v1/documents/${id}/view`,
     DOWNLOAD: (id) => `/api/v1/documents/${id}/download`,
     DELETE: (id) => `/api/v1/documents/${id}`,
     STATS: "/api/v1/documents/stats",

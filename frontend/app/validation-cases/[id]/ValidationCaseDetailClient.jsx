@@ -13,7 +13,7 @@ import ValidationCaseRecordSkeleton from "./ValidationCaseRecordSkeleton";
 import { fetchJson, fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
-import { getWorkspaceDisplayName, isWorkspaceValidationCase } from "@/lib/validationCaseWorkflow";
+import { isWorkspaceValidationCase } from "@/lib/validationCaseWorkflow";
 import RepoWorkflowClient from "./repo/RepoWorkflowClient";
 
 function formatDateTime(ts) {
@@ -118,6 +118,12 @@ function stripLeadingRecordLabel(markdownRaw) {
   const markdown = String(markdownRaw || "").replace(/^\uFEFF/, "");
   const stripped = markdown.replace(/^\s*(?:#{1,6}\s*)?record\s*:?\s*(?:\r?\n)+/i, "");
   return stripped.trimStart();
+}
+
+function looksLikeMarkdownText(value) {
+  const text = String(value || "").trim();
+  if (!text) return false;
+  return /(^|\n)\s{0,3}(#{1,6}\s|[-*+]\s|\d+\.\s|>\s|!\[[^\]]*]\(|\|.+\|)/.test(text);
 }
 
 function formatCaseLogLoadError(err, ownerView = false) {
@@ -834,7 +840,6 @@ export default function ValidationCaseRecordPage() {
 
   const status = normalizeStatus(vc?.status);
   const isWorkspaceMode = isWorkspaceValidationCase(vc?.meta);
-  const workspaceName = getWorkspaceDisplayName(vc?.meta);
   const consultationBlocked = status === "waiting_owner_response" || status === "on_hold_owner_inactive";
   const sensitivity = sensitivityMeta(vc?.sensitivity_level);
   const consultationStakeRequirement = (() => {
@@ -910,10 +915,10 @@ export default function ValidationCaseRecordPage() {
         <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
           <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Validation Case Record</div>
           <h1 className="text-2xl font-semibold text-foreground">{vc?.title || "(untitled)"}</h1>
-          {vc?.summary ? <p className="text-sm text-muted-foreground">{vc.summary}</p> : null}
-          <div className="text-sm text-muted-foreground">
-            Case ini menggunakan <span className="font-semibold text-foreground">{workspaceName}</span>. Flow legacy Consultation/Final Offer tidak berlaku di case ini.
-          </div>
+          {vc?.summary && !looksLikeMarkdownText(vc?.summary) ? (
+            <p className="text-sm text-muted-foreground">{vc.summary}</p>
+          ) : null}
+          <div className="text-sm text-muted-foreground">Case langsung ready setelah dibuat dan validator bisa apply tanpa flow konsultasi legacy.</div>
           {Array.isArray(vc?.tags) && vc.tags.length > 0 ? <TagList tags={vc.tags} size="sm" /> : null}
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">Sensitivity {sensitivity.level}</span>
@@ -1995,7 +2000,6 @@ function buildOverviewColumns(content) {
     return cols;
   }
 
-  const quickRows = rowsFromObject(content.quick_intake);
   const checklistRows = rowsFromObject(content.checklist, (value) =>
     typeof value === "boolean" ? (value ? "Ya" : "Tidak") : value
   );
@@ -2003,16 +2007,6 @@ function buildOverviewColumns(content) {
     .filter(([key]) => !RESERVED_CONTENT_KEYS.has(canonicalContentKey(key)))
     .map(([label, value]) => ({ label, value }));
   const caseRecordText = stripLeadingRecordLabel(extractCaseRecordText(content));
-
-  if (quickRows.length > 0) {
-    cols.push({
-      key: "quick-intake",
-      title: "Quick Intake",
-      subtitle: "Kebutuhan inti untuk memahami ruang lingkup validasi.",
-      type: "rows",
-      value: quickRows,
-    });
-  }
 
   if (checklistRows.length > 0) {
     cols.push({
