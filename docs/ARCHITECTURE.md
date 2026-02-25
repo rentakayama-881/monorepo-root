@@ -26,7 +26,7 @@ AIValid menggunakan **Microservices Architecture** dengan tiga layer utama:
 ```
 ┌───────────────────────────────────────────────────────────────────┐
 │                        PRESENTATION LAYER                         │
-│                     (Next.js 15 + React 19)                       │
+│                     (Next.js 16 + React 19)                       │
 │                        Deployed: Vercel                            │
 └─────────────────────────────┬─────────────────────────────────────┘
                               │
