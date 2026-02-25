@@ -2,7 +2,7 @@ import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton
 
 export default function ValidationCaseRecordSkeleton() {
   return (
-    <main className="container py-10" aria-busy="true" aria-live="polite">
+    <main className="container min-h-screen py-10" aria-busy="true" aria-live="polite">
       <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <SkeletonText width="w-12" height="h-4" />
         <SkeletonText width="w-24" height="h-4" />
@@ -11,7 +11,7 @@ export default function ValidationCaseRecordSkeleton() {
 
       <div className="space-y-10 lg:grid lg:grid-cols-12 lg:gap-10 lg:space-y-0">
         <div className="lg:col-span-8 space-y-10">
-          <header className="space-y-4">
+          <header className="space-y-4 rounded-2xl bg-card/70 px-5 py-5 shadow-sm ring-1 ring-border/70">
             <SkeletonText width="w-44" height="h-3" />
             <SkeletonText width="w-full max-w-2xl" height="h-10" />
             <SkeletonText width="w-full max-w-3xl" height="h-4" />
@@ -22,7 +22,7 @@ export default function ValidationCaseRecordSkeleton() {
             </div>
           </header>
 
-          <section className="space-y-4">
+          <section className="space-y-4 rounded-2xl bg-card/70 px-5 py-5 shadow-sm ring-1 ring-border/70">
             <SkeletonText width="w-28" height="h-3" />
             <SkeletonText width="w-44" height="h-7" />
             <div className="overflow-hidden rounded-[var(--radius)] bg-card">
@@ -37,7 +37,7 @@ export default function ValidationCaseRecordSkeleton() {
             </div>
           </section>
 
-          <section className="space-y-4">
+          <section className="space-y-4 rounded-2xl bg-card/70 px-5 py-5 shadow-sm ring-1 ring-border/70">
             <SkeletonText width="w-36" height="h-3" />
             <SkeletonText width="w-56" height="h-7" />
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -46,14 +46,14 @@ export default function ValidationCaseRecordSkeleton() {
             </div>
           </section>
 
-          <section className="space-y-4">
+          <section className="space-y-4 rounded-2xl bg-card/70 px-5 py-5 shadow-sm ring-1 ring-border/70">
             <SkeletonText width="w-28" height="h-3" />
             <SkeletonText width="w-52" height="h-7" />
             <Skeleton className="h-56 w-full" />
           </section>
         </div>
 
-        <aside className="lg:col-span-4 space-y-6">
+        <aside className="lg:col-span-4 space-y-6 rounded-2xl bg-card/70 px-5 py-5 shadow-sm ring-1 ring-border/70">
           <SkeletonText width="w-28" height="h-3" />
 
           <div className="space-y-4">
@@ -81,6 +81,8 @@ export default function ValidationCaseRecordSkeleton() {
 
           <SkeletonText width="w-full max-w-sm" height="h-3" />
           <SkeletonText width="w-full max-w-xs" height="h-3" />
+          <Skeleton className="h-10 w-full rounded-xl" />
+          <Skeleton className="h-10 w-full rounded-xl" />
         </aside>
       </div>
     </main>

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { fetchJson } from "@/lib/api";
 import ValidationCaseIndexClient from "./ValidationCaseIndexClient";
+import { ValidationCaseIndexContentSkeleton } from "./ValidationCaseIndexSkeleton";
 
 export const revalidate = 30;
 
@@ -14,23 +15,7 @@ export const metadata = {
 };
 
 function CaseListSkeleton() {
-  return (
-    <div className="space-y-3 animate-pulse">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-lg border border-border bg-card p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-4 w-48 rounded bg-muted" />
-            <div className="h-4 w-16 rounded-full bg-muted" />
-          </div>
-          <div className="mt-2 h-3 w-72 rounded bg-muted" />
-          <div className="mt-2 flex gap-2">
-            <div className="h-3 w-20 rounded bg-muted" />
-            <div className="h-3 w-24 rounded bg-muted" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return <ValidationCaseIndexContentSkeleton fullHeight />;
 }
 
 async function CaseList() {

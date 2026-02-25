@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
+import Skeleton, { SkeletonText } from "@/components/ui/Skeleton";
+import Spinner from "@/components/ui/Spinner";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { FEATURE_ENDPOINTS, getFeatureApiBase } from "@/lib/featureApi";
@@ -151,6 +153,73 @@ function ConfidenceIcon({ active = false }) {
   );
 }
 
+function RepoWorkspaceSkeleton({ embedded = false, caseTitle = "" }) {
+  const skeletonContent = (
+    <div className="space-y-7" aria-busy="true" aria-live="polite">
+      <section className="space-y-4">
+        <SkeletonText width="w-40" height="h-3.5" />
+        <div className="rounded-2xl bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
+          <div className="mb-3 grid grid-cols-6 gap-3 border-b border-border/60 pb-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={`repo-head-${i}`} className="h-4 w-20" />
+            ))}
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 7 }).map((_, row) => (
+              <div key={`repo-row-${row}`} className="grid grid-cols-6 gap-3">
+                {Array.from({ length: 6 }).map((__, col) => (
+                  <Skeleton key={`repo-cell-${row}-${col}`} className="h-4 w-full" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <SkeletonText width="w-36" height="h-3.5" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2 rounded-2xl bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-4/5" />
+          </div>
+          <div className="space-y-2 rounded-2xl bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <SkeletonText width="w-24" height="h-3.5" />
+        <Skeleton className="h-5 w-full rounded-lg" />
+        <Skeleton className="h-5 w-4/5 rounded-lg" />
+        <Skeleton className="h-5 w-3/5 rounded-lg" />
+      </section>
+    </div>
+  );
+
+  if (embedded) {
+    return <section className="min-h-[62vh] py-1">{skeletonContent}</section>;
+  }
+
+  return (
+    <main className="container min-h-screen py-10 space-y-6">
+      <nav className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <Skeleton className="h-4 w-36" />
+        <span>/</span>
+        <Skeleton className="h-4 w-20" />
+        <span>/</span>
+        <Skeleton className="h-4 w-12" />
+      </nav>
+      {caseTitle ? <h1 className="text-2xl font-semibold text-foreground">{caseTitle}</h1> : <Skeleton className="h-8 w-72" />}
+      {skeletonContent}
+    </main>
+  );
+}
+
 export default function RepoWorkflowClient({
   embedded = false,
   caseReadmeMarkdown = "",
@@ -175,6 +244,7 @@ export default function RepoWorkflowClient({
   const [attachFileInputKey, setAttachFileInputKey] = useState(0);
 
   const [downloadingDocumentID, setDownloadingDocumentID] = useState("");
+  const [applyingValidator, setApplyingValidator] = useState(false);
   const [assigningValidatorID, setAssigningValidatorID] = useState("");
   const [votingValidatorID, setVotingValidatorID] = useState("");
 
@@ -208,7 +278,7 @@ export default function RepoWorkflowClient({
   const canAttach = isOwner || isAssigned;
   const actionLocked = busy || uploadingDocument;
   const stakeEligible = Boolean(repoTree?.stake_eligible);
-  const applyDisabled = actionLocked || isAssigned || !stakeEligible;
+  const applyDisabled = actionLocked || applyingValidator || isAssigned || !stakeEligible;
   const canFinalize = Boolean(repoTree?.can_finalize);
   const payout = repoTree?.payout || null;
 
@@ -448,9 +518,14 @@ export default function RepoWorkflowClient({
   }
 
   async function onApply() {
-    await runAction(async () => {
-      await postWorkspace("apply", {});
-    }, "Apply validator berhasil dikirim. Menunggu assign owner.");
+    setApplyingValidator(true);
+    try {
+      await runAction(async () => {
+        await postWorkspace("apply", {});
+      }, "Apply validator berhasil dikirim. Menunggu assign owner.");
+    } finally {
+      setApplyingValidator(false);
+    }
   }
 
   async function onAssignValidator(validatorUserID) {
@@ -480,20 +555,7 @@ export default function RepoWorkflowClient({
   }
 
   if (loading) {
-    if (embedded) {
-      return (
-        <section className="px-1 py-2 text-sm text-muted-foreground">
-          Memuat repo case...
-        </section>
-      );
-    }
-    return (
-      <main className="container py-10">
-        <div className="px-1 py-2 text-sm text-muted-foreground">
-          Memuat repo case...
-        </div>
-      </main>
-    );
+    return <RepoWorkspaceSkeleton embedded={embedded} caseTitle={caseTitle} />;
   }
 
   const content = (
@@ -640,11 +702,24 @@ export default function RepoWorkflowClient({
             <button
               type="button"
               onClick={onApply}
-              className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
               disabled={applyDisabled}
+              aria-live="polite"
             >
-              {isAssigned ? "Anda sudah diassign" : "Apply as Validator"}
+              {applyingValidator ? (
+                <>
+                  <Spinner className="h-3.5 w-3.5 border-border border-t-foreground" />
+                  <span>Mengirim apply...</span>
+                </>
+              ) : isAssigned ? (
+                "Anda sudah diassign"
+              ) : (
+                "Apply as Validator"
+              )}
             </button>
+            {applyingValidator ? (
+              <div className="text-xs text-primary">Request apply sedang diproses...</div>
+            ) : null}
             {!stakeEligible ? (
               <div className="text-xs text-amber-700">
                 Stake kamu belum memenuhi syarat untuk apply case ini.
