@@ -561,7 +561,7 @@ export default function NewValidationCaseClient() {
   }
 
   return (
-    <main className="container py-8 md:py-10">
+    <main className="container py-8 md:py-10 [scrollbar-gutter:stable]">
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/validation-cases" prefetch={false} className="hover:underline">
           Validation Case Index
@@ -604,7 +604,7 @@ export default function NewValidationCaseClient() {
         </div>
       ) : null}
 
-      <div className="mb-5 min-h-[56px]">
+      <div className="mb-5 min-h-[64px]">
         {error ? (
           <div role="alert" aria-live="polite" className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
             {error}
@@ -847,7 +847,7 @@ export default function NewValidationCaseClient() {
                 Add File to Queue
               </button>
             </div>
-            <div className="mt-1 min-h-[18px] text-xs text-muted-foreground">
+            <div className="mt-1 min-h-[18px] truncate text-xs text-muted-foreground" title={processStatusText || ""}>
               {processStatusText || "\u00A0"}
             </div>
 
@@ -908,7 +908,7 @@ export default function NewValidationCaseClient() {
             </div>
           </div>
 
-          <div className="mt-6 relative z-[40]">
+          <div className="mt-6 relative z-[120]">
             <label className="text-xs font-semibold text-muted-foreground">Tags (Wajib)</label>
             {tagsAvailable ? (
               <TagSelector

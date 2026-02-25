@@ -920,12 +920,12 @@ export default function ValidationCaseRecordPage() {
           ) : null}
           <div className="text-sm text-muted-foreground">Case langsung ready setelah dibuat dan validator bisa apply tanpa flow konsultasi legacy.</div>
           {Array.isArray(vc?.tags) && vc.tags.length > 0 ? <TagList tags={vc.tags} size="sm" /> : null}
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="rounded-full bg-secondary px-3 py-1 text-muted-foreground">Sensitivity {sensitivity.level}</span>
-            <span className="rounded-full bg-secondary px-3 py-1 text-muted-foreground">Bounty {formatIDR(vc?.bounty_amount)}</span>
-            <span className="rounded-full bg-secondary px-3 py-1 text-muted-foreground">
-              Owner {owner?.username ? `@${owner.username}` : `#${owner?.id || "-"}`}
-            </span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            <span>Sensitivity {sensitivity.level}</span>
+            <span aria-hidden="true">•</span>
+            <span>Bounty {formatIDR(vc?.bounty_amount)}</span>
+            <span aria-hidden="true">•</span>
+            <span>Owner {owner?.username ? `@${owner.username}` : `#${owner?.id || "-"}`}</span>
           </div>
         </section>
 

@@ -482,14 +482,14 @@ export default function RepoWorkflowClient({
   if (loading) {
     if (embedded) {
       return (
-        <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
+        <section className="px-1 py-2 text-sm text-muted-foreground">
           Memuat repo case...
         </section>
       );
     }
     return (
       <main className="container py-10">
-        <div className="rounded-[var(--radius)] border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
+        <div className="px-1 py-2 text-sm text-muted-foreground">
           Memuat repo case...
         </div>
       </main>
@@ -497,14 +497,14 @@ export default function RepoWorkflowClient({
   }
 
   const content = (
-    <div className="space-y-5">
+    <div className="space-y-7">
       {error ? (
-        <div role="alert" aria-live="polite" className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+        <div role="alert" aria-live="polite" className="rounded-[var(--radius)] bg-red-50 px-4 py-3 text-sm text-red-900">
           {error}
         </div>
       ) : null}
       {msg ? (
-        <div role="status" aria-live="polite" className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <div role="status" aria-live="polite" className="rounded-[var(--radius)] bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
           {msg}
         </div>
       ) : null}
@@ -517,7 +517,7 @@ export default function RepoWorkflowClient({
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
+                <tr className="text-left text-muted-foreground">
                   <th className="py-2 pr-3">Kind</th>
                   <th className="py-2 pr-3">Label</th>
                   <th className="py-2 pr-3">Uploader</th>
@@ -526,12 +526,12 @@ export default function RepoWorkflowClient({
                   <th className="py-2 pr-3">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/40">
                 {files.map((file) => {
                   const documentId = String(file?.document_id || "");
                   const processing = downloadingDocumentID === documentId;
                   return (
-                    <tr key={file.id} className="border-b border-border/60">
+                    <tr key={file.id}>
                       <td className="py-2 pr-3 font-mono text-xs text-foreground">{file.kind}</td>
                       <td className="py-2 pr-3">
                         <button
@@ -632,7 +632,7 @@ export default function RepoWorkflowClient({
         ) : null}
       </section>
 
-      <section className="space-y-4 border-t border-border/40 pt-4">
+      <section className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Validators</h2>
 
         {!isOwner ? (
@@ -696,7 +696,7 @@ export default function RepoWorkflowClient({
                   const viewerVoted = Boolean(score?.viewer_voted);
                   const hasOutput = Boolean(score?.has_uploaded_output);
                   return (
-                    <li key={`as-${validatorId}`} className="border-b border-border/40 py-2 last:border-b-0">
+                    <li key={`as-${validatorId}`} className="py-1">
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-foreground">#{validatorId} {item?.validator?.username ? `@${item.validator.username}` : ""}</div>
                         <div className="text-xs text-muted-foreground">{formatDateTime(item?.assigned_at)}</div>
@@ -727,7 +727,7 @@ export default function RepoWorkflowClient({
       </section>
 
       {isOwner ? (
-        <section className="space-y-2 border-t border-border/40 pt-4">
+        <section className="space-y-2">
           <h2 className="text-lg font-semibold text-foreground">Finalisasi Case</h2>
           <div className="text-sm text-muted-foreground">
             Finalisasi membutuhkan minimal <span className="font-semibold text-foreground">{repoTree?.minimum_validator_uploads || 3}</span> validator upload hasil.
@@ -747,21 +747,21 @@ export default function RepoWorkflowClient({
       ) : null}
 
       {payout ? (
-        <section className="space-y-3 border-t border-border/40 pt-4">
+        <section className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Payout Result</h2>
           <div className="text-sm text-muted-foreground">Total bounty: {formatIDR(payout?.bounty_amount || 0)}</div>
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
+                <tr className="text-left text-muted-foreground">
                   <th className="py-2 pr-3">Validator</th>
                   <th className="py-2 pr-3">Confidence Votes</th>
                   <th className="py-2 pr-3">Amount</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/40">
                 {(payout?.entries || []).map((entry) => (
-                  <tr key={`pay-${entry.validator_user_id}`} className="border-b border-border/60">
+                  <tr key={`pay-${entry.validator_user_id}`}>
                     <td className="py-2 pr-3 text-foreground">#{entry.validator_user_id}</td>
                     <td className="py-2 pr-3 text-foreground">{entry.confidence_votes || 0}</td>
                     <td className="py-2 pr-3 font-semibold text-foreground">{formatIDR(entry.amount || 0)}</td>
@@ -773,7 +773,7 @@ export default function RepoWorkflowClient({
         </section>
       ) : null}
 
-      <section className="space-y-2 border-t border-border/40 pt-4">
+      <section className="space-y-2">
         <h2 className="text-lg font-semibold text-foreground">README</h2>
         <div className="mt-2">
           {String(caseReadmeMarkdown || "").trim() ? (
