@@ -509,35 +509,6 @@ export default function RepoWorkflowClient({
         </div>
       ) : null}
 
-      <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-3">
-        <h2 className="text-lg font-semibold text-foreground">Repo Case Overview</h2>
-        <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2 lg:grid-cols-3">
-          <div>
-            Workflow: <span className="font-semibold text-foreground">{repoTree?.workflow_name || "Evidence Validation Workspace"}</span>
-          </div>
-          <div>
-            Stage: <span className="font-semibold text-foreground">{repoTree?.workspace_stage || repoTree?.repo_stage || "-"}</span>
-          </div>
-          <div>
-            Consensus: <span className="font-semibold text-foreground">{repoTree?.consensus_status || "-"}</span>
-          </div>
-          <div>
-            Required Stake: <span className="font-semibold text-foreground">{formatIDR(repoTree?.required_stake || 0)}</span>
-          </div>
-          <div>
-            Your Stake: <span className="font-semibold text-foreground">{formatIDR(repoTree?.viewer_stake || 0)}</span>
-          </div>
-          <div>
-            Upload Progress: <span className="font-semibold text-foreground">{repoTree?.uploaded_validator_count || 0}/{repoTree?.minimum_validator_uploads || 3}</span>
-          </div>
-        </div>
-        {!stakeEligible ? (
-          <div className="rounded-[var(--radius)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            Stake kamu belum memenuhi syarat untuk apply case ini.
-          </div>
-        ) : null}
-      </section>
-
       <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Repo Files</h2>
         {files.length === 0 ? (
@@ -665,14 +636,21 @@ export default function RepoWorkflowClient({
         <h2 className="text-lg font-semibold text-foreground">Validators</h2>
 
         {!isOwner ? (
-          <button
-            type="button"
-            onClick={onApply}
-            className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={applyDisabled}
-          >
-            {isAssigned ? "Anda sudah diassign" : "Apply as Validator"}
-          </button>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={onApply}
+              className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={applyDisabled}
+            >
+              {isAssigned ? "Anda sudah diassign" : "Apply as Validator"}
+            </button>
+            {!stakeEligible ? (
+              <div className="text-xs text-amber-700">
+                Stake kamu belum memenuhi syarat untuk apply case ini.
+              </div>
+            ) : null}
+          </div>
         ) : (
           <div className="text-sm text-muted-foreground">
             Owner melakukan assign validator manual dari daftar applicant.
