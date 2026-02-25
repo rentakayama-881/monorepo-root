@@ -153,6 +153,56 @@ public class MarketPurchasesController : ApiControllerBase
         }, "Reserve berhasil direlease");
     }
 
+    [HttpPost("distribute")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 400)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 404)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 409)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 401)]
+    public async Task<IActionResult> Distribute([FromBody] DistributeMarketPurchaseRequest request)
+    {
+        var user = _userContextAccessor.GetCurrentUser();
+        if (user == null)
+        {
+            return ApiUnauthorized("User tidak terautentikasi");
+        }
+
+        var recipients = (request.Recipients ?? new List<DistributeMarketPurchaseRecipient>())
+            .Select(r => (r.UserId, r.AmountIdr))
+            .ToList();
+
+        var (success, error, reservation) = await _marketPurchaseWalletService.DistributeAsync(
+            user.UserId,
+            request.OrderId,
+            recipients,
+            request.Reason,
+            request.ReferenceType);
+
+        if (!success)
+        {
+            if (IsReservationNotFound(error))
+            {
+                return ApiNotFound(error ?? ReservationNotFoundMessage);
+            }
+
+            if (IsReservationConflict(error))
+            {
+                return ApiConflict(error ?? "Reservasi tidak valid untuk state saat ini");
+            }
+
+            return ApiBadRequest("DISTRIBUTE_FAILED", error ?? "Gagal distribusi reserve");
+        }
+
+        return ApiOk(new
+        {
+            reservationId = reservation?.Id,
+            orderId = reservation?.OrderId,
+            status = reservation?.Status,
+            amountIdr = reservation?.AmountIdr,
+            updatedAt = reservation?.UpdatedAt,
+        }, "Reserve berhasil didistribusikan");
+    }
+
     private static bool IsReservationNotFound(string? error)
         => string.Equals(error?.Trim(), ReservationNotFoundMessage, StringComparison.Ordinal);
 

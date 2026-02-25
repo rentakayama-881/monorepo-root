@@ -232,7 +232,11 @@ export function useUploadDocument() {
         // 2) DocumentController direct -> { documentId, message }
         if (result && typeof result === "object") {
           if (result.success === true) {
-            return result.data ?? result;
+            const payload = result.data ?? result;
+            if (typeof payload === "string" && payload.trim()) {
+              return { documentId: payload.trim() };
+            }
+            return payload;
           }
           if (result.success === false) {
             throw new Error(result.message || "Failed to upload document");
@@ -251,6 +255,9 @@ export function useUploadDocument() {
           }
 
           const data = result.data;
+          if (typeof data === "string" && data.trim()) {
+            return { documentId: data.trim() };
+          }
           if (data && typeof data === "object") {
             const hasNestedDocumentId = Boolean(
               data.document_id ||

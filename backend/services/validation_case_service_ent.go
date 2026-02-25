@@ -214,7 +214,7 @@ func (s *EntValidationCaseService) GetValidationCaseByID(ctx context.Context, va
 	return s.validationCaseToDetailResponse(vc, assignedValidator), nil
 }
 
-func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, ownerUserID uint, input validators.CreateValidationCaseInput) (*ValidationCaseDetailResponse, error) {
+func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, ownerUserID uint, input validators.CreateValidationCaseInput, authHeader string) (*ValidationCaseDetailResponse, error) {
 	if err := input.Validate(); err != nil {
 		logger.Error("ValidationCase validation failed", zap.Uint("user_id", ownerUserID), zap.Error(err))
 		return nil, err
@@ -278,7 +278,9 @@ func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, own
 	workspaceState.WorkflowFamily = workspaceWorkflowFamily
 	workspaceState.CompletionMode = normalizeRepoCompletionMode(workspaceState.CompletionMode)
 	workspaceState.ConsensusStatus = normalizeRepoConsensusStatus(workspaceState.ConsensusStatus)
-	workspaceState.RepoStage = normalizeRepoStage(workspaceState.RepoStage)
+	workspaceState.RepoStage = repoStageReady
+	workspaceState.BountyReserveStatus = repoBountyReserveStatusNone
+	workspaceState.BountyReserveOrderID = ""
 	if len(input.WorkspaceBootstrapFiles) > 0 {
 		createdAt := time.Now().Unix()
 		seed := time.Now().UnixNano()
@@ -332,7 +334,39 @@ func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, own
 		return nil, apperrors.ErrDatabase.WithDetails("Gagal membuat Validation Case")
 	}
 
-	// Append Case Log entry (best effort).
+	authHeader = strings.TrimSpace(authHeader)
+	if authHeader == "" {
+		_ = s.DeleteValidationCase(ctx, ownerUserID, uint(vc.ID))
+		return nil, apperrors.ErrInvalidInput.WithDetails("Authorization header tidak ditemukan. Silakan login ulang.")
+	}
+
+	reserveOrderID := fmt.Sprintf("validation-case:%d:bounty", vc.ID)
+	walletClient := NewFeatureWalletClientFromConfig()
+	if _, reserveErr := walletClient.ReserveMarketPurchase(
+		ctx,
+		authHeader,
+		reserveOrderID,
+		input.BountyAmount,
+	); reserveErr != nil {
+		_ = s.DeleteValidationCase(ctx, ownerUserID, uint(vc.ID))
+		return nil, apperrors.ErrInvalidInput.WithDetails(
+			fmt.Sprintf("Saldo wallet tidak cukup atau reserve bounty gagal: %s", reserveErr.Error()),
+		)
+	}
+
+	workspaceState.BountyReserveOrderID = reserveOrderID
+	workspaceState.BountyReserveStatus = repoBountyReserveStatusReserved
+	metaWithReserve := mergeRepoMeta(vc.Meta, workspaceState)
+	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).SetMeta(metaWithReserve).Save(ctx); err != nil {
+		logger.Error("Failed to persist validation case reserve metadata",
+			zap.Int("validation_case_id", vc.ID),
+			zap.Error(err),
+		)
+		_ = s.DeleteValidationCase(ctx, ownerUserID, uint(vc.ID))
+		return nil, apperrors.ErrDatabase.WithDetails("Gagal menyimpan metadata reserve bounty")
+	}
+
+	// Append Case Log entries (best effort).
 	_, _ = s.client.ValidationCaseLog.
 		Create().
 		SetValidationCaseID(vc.ID).
@@ -342,6 +376,17 @@ func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, own
 			"bounty_amount":         input.BountyAmount,
 			"sensitivity_level":     structuredIntake.SensitivityLevel,
 			"intake_schema_version": validators.IntakeSchemaVersion,
+			"repo_stage":            workspaceState.RepoStage,
+		}).
+		Save(ctx)
+	_, _ = s.client.ValidationCaseLog.
+		Create().
+		SetValidationCaseID(vc.ID).
+		SetActorUserID(int(ownerUserID)).
+		SetEventType("repo_bounty_reserved").
+		SetDetailJSON(map[string]interface{}{
+			"reserve_order_id": reserveOrderID,
+			"bounty_amount":    input.BountyAmount,
 		}).
 		Save(ctx)
 

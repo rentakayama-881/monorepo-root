@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { FEATURE_ENDPOINTS, getFeatureApiBase } from "@/lib/featureApi";
@@ -27,27 +28,6 @@ function formatIDR(amount) {
   return `Rp ${Math.max(0, Math.trunc(n)).toLocaleString("id-ID")}`;
 }
 
-function formatCompletionModeLabel(rawMode) {
-  const mode = String(rawMode || "").trim().toLowerCase();
-  if (mode === "panel_10") return "Panel 10 (escalated)";
-  if (mode === "panel_3") return "Panel 3 (default)";
-  return rawMode || "-";
-}
-
-function formatWorkspaceStageLabel(rawStage) {
-  const stage = String(rawStage || "").trim().toLowerCase();
-  if (!stage) return "-";
-  const map = {
-    draft: "Draft",
-    published: "Published",
-    paneling: "Paneling",
-    reviewing: "Reviewing",
-    consensus_reached: "Consensus Reached",
-    completed: "Completed",
-  };
-  return map[stage] || stage.replace(/_/g, " ");
-}
-
 function normalizeErr(err, fallback) {
   const message = String(err?.message || fallback || "Terjadi kesalahan").trim();
   const details = String(err?.details || "").trim();
@@ -67,19 +47,14 @@ function parseFilenameFromContentDisposition(contentDisposition) {
     }
   }
   const asciiMatch = raw.match(/filename="?([^"]+)"?/i);
-  if (asciiMatch?.[1]) {
-    return String(asciiMatch[1]).trim();
-  }
+  if (asciiMatch?.[1]) return String(asciiMatch[1]).trim();
   return "";
 }
 
 function fallbackDownloadFileName(file) {
   const label = String(file?.label || "").trim();
   const documentId = String(file?.document_id || "").trim();
-  const safeLabel = label
-    .replace(/[\\/:*?"<>|]+/g, "-")
-    .replace(/\s+/g, " ")
-    .trim();
+  const safeLabel = label.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim();
   if (safeLabel) return safeLabel;
   if (documentId) return `workspace-file-${documentId}`;
   return "workspace-file";
@@ -112,22 +87,50 @@ function legacyWorkspacePath(path) {
   switch (path) {
     case "files":
       return "repo/files";
+    case "validators/assign":
+      return "validators/assign";
+    case "confidence/vote":
+      return "confidence/vote";
+    case "finalize":
+      return "finalize";
     default:
       return path;
   }
 }
 
-export default function WorkspaceWorkflowClient() {
+function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
+      <path d="M12 3v11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="m8 11 4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 19h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ConfidenceIcon({ active = false }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={`h-4 w-4 ${active ? "text-emerald-600" : "text-muted-foreground"}`} aria-hidden="true">
+      <path d="m12 3 7 3v5c0 4.3-2.6 8.4-7 10-4.4-1.6-7-5.7-7-10V6l7-3Z" stroke="currentColor" strokeWidth="1.7" />
+      <path d="m9.2 12 1.9 1.9 3.7-3.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export default function RepoWorkflowClient({
+  embedded = false,
+  caseReadmeMarkdown = "",
+  caseTitle = "",
+}) {
   const params = useParams();
   const router = useRouter();
   const id = useMemo(() => String(params?.id || ""), [params?.id]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [repoTree, setRepoTree] = useState(null);
-  const [consensus, setConsensus] = useState(null);
-  const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [repoTree, setRepoTree] = useState(null);
 
   const [attachForm, setAttachForm] = useState({
     file: null,
@@ -136,15 +139,10 @@ export default function WorkspaceWorkflowClient() {
     visibility: "public",
   });
   const [attachFileInputKey, setAttachFileInputKey] = useState(0);
-  const [assignForm, setAssignForm] = useState({ panel_size: 3 });
-  const [verdictForm, setVerdictForm] = useState({
-    verdict: "valid",
-    confidence: 80,
-    notes: "",
-    attachmentFile: null,
-  });
-  const [verdictFileInputKey, setVerdictFileInputKey] = useState(0);
+
   const [downloadingDocumentID, setDownloadingDocumentID] = useState("");
+  const [assigningValidatorID, setAssigningValidatorID] = useState("");
+  const [votingValidatorID, setVotingValidatorID] = useState("");
 
   const { uploadDocument, loading: uploadingDocument, progress: uploadProgress } = useUploadDocument();
 
@@ -158,67 +156,34 @@ export default function WorkspaceWorkflowClient() {
 
   const isOwner = Boolean(repoTree?.is_owner);
   const isAssigned = Boolean(repoTree?.is_assigned_validator);
-  const canAttach = isOwner || isAssigned;
+  const files = Array.isArray(repoTree?.files) ? repoTree.files : [];
   const applicants = Array.isArray(repoTree?.applicants) ? repoTree.applicants : [];
   const assignments = Array.isArray(repoTree?.assignments) ? repoTree.assignments : [];
-  const files = Array.isArray(repoTree?.files) ? repoTree.files : [];
-  const verdicts = Array.isArray(repoTree?.verdicts) ? repoTree.verdicts : [];
-  const requiredStake = Number(repoTree?.required_stake || 0);
-  const viewerStake = Number(repoTree?.viewer_stake || 0);
-  const stakeEligible = Boolean(repoTree?.stake_eligible);
-  const completionMode = String(repoTree?.completion_mode || "panel_3").trim().toLowerCase();
-  const requiredVotesFromMode = completionMode === "panel_10" ? 10 : 3;
-  const requiredVotes = Number(consensus?.required_votes || requiredVotesFromMode);
-  const submittedVotes = Number(consensus?.submitted_votes || verdicts.length || 0);
-  const hasRequiredReadme = Boolean(repoTree?.has_required_readme);
-  const hasTaskInput = Boolean(repoTree?.has_task_input);
-  const workspaceStageRaw = String(repoTree?.workspace_stage || repoTree?.repo_stage || "draft").trim().toLowerCase();
-  const workspacePublished = workspaceStageRaw !== "draft";
-  const assignmentsReady = assignments.length >= requiredVotes;
-  const votesReady = submittedVotes >= requiredVotes;
-  const readinessSteps = useMemo(
-    () => [
-      { key: "readme", label: "README tersedia", done: hasRequiredReadme },
-      { key: "task-input", label: "Task input tersedia", done: hasTaskInput },
-      { key: "published", label: "Workspace dipublish", done: workspacePublished },
-      { key: "panel", label: `Panel terassign (${requiredVotes})`, done: assignmentsReady },
-      { key: "votes", label: `Verdict masuk (${requiredVotes})`, done: votesReady },
-    ],
-    [hasRequiredReadme, hasTaskInput, workspacePublished, requiredVotes, assignmentsReady, votesReady],
-  );
-  const readinessDone = readinessSteps.filter((item) => item.done).length;
-  const readinessPercent = Math.round((readinessDone / readinessSteps.length) * 100);
-  const nextActionHint = useMemo(() => {
-    if (isOwner) {
-      if (!hasRequiredReadme || !hasTaskInput) {
-        return "Lengkapi README dan task input agar workspace bisa dipublish.";
-      }
-      if (!workspacePublished) {
-        return "Publish workspace supaya validator bisa apply.";
-      }
-      if (!assignmentsReady) {
-        return "Jalankan auto-match untuk mengunci panel validator.";
-      }
-      if (!votesReady) {
-        return "Pantau verdict hingga kuota suara terpenuhi.";
-      }
-      return "Consensus sudah siap. Review hasil dan payout ledger.";
+  const confidenceScores = Array.isArray(repoTree?.confidence_scores) ? repoTree.confidence_scores : [];
+
+  const confidenceByValidator = useMemo(() => {
+    const out = new Map();
+    for (const score of confidenceScores) {
+      const key = Number(score?.validator?.id || 0);
+      if (!key) continue;
+      out.set(key, score);
     }
-    if (isAssigned) {
-      return "Kamu sudah terassign. Upload output + submit verdict secepatnya.";
-    }
-    if (!stakeEligible) {
-      return "Stake belum memenuhi syarat. Top up stake untuk bisa apply.";
-    }
-    return "Apply as validator jika konteks case sesuai keahlianmu.";
-  }, [isOwner, isAssigned, hasRequiredReadme, hasTaskInput, workspacePublished, assignmentsReady, votesReady, stakeEligible]);
+    return out;
+  }, [confidenceScores]);
+
+  const canAttach = isOwner || isAssigned;
   const actionLocked = busy || uploadingDocument;
+  const stakeEligible = Boolean(repoTree?.stake_eligible);
   const applyDisabled = actionLocked || isAssigned || !stakeEligible;
-  const attachKindOptions = useMemo(
-    () => (isOwner ? ["task_input", "case_readme", "sensitive_context"] : ["validator_output"]),
-    [isOwner]
-  );
-  const sensitiveKindSelected = attachForm.kind === "sensitive_context";
+  const canFinalize = Boolean(repoTree?.can_finalize);
+  const payout = repoTree?.payout || null;
+
+  const attachKindOptions = useMemo(() => {
+    if (isOwner) {
+      return ["task_input", "case_readme", "sensitive_context"];
+    }
+    return ["validator_output"];
+  }, [isOwner]);
 
   async function getWorkspaceTree() {
     try {
@@ -229,23 +194,6 @@ export default function WorkspaceWorkflowClient() {
     } catch (err) {
       if (err?.status === 404) {
         return fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/repo/tree`, {
-          method: "GET",
-          clearSessionOn401: false,
-        });
-      }
-      throw err;
-    }
-  }
-
-  async function getWorkspaceConsensus() {
-    try {
-      return await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/workspace/consensus`, {
-        method: "GET",
-        clearSessionOn401: false,
-      });
-    } catch (err) {
-      if (err?.status === 404) {
-        return fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/consensus`, {
           method: "GET",
           clearSessionOn401: false,
         });
@@ -272,37 +220,28 @@ export default function WorkspaceWorkflowClient() {
     }
   }
 
-  async function loadAll(options = {}) {
-    const showPageLoader = options.showPageLoader !== false;
-    let success = true;
-    if (!id) return false;
-    if (showPageLoader) {
-      setLoading(true);
-    }
+  async function loadAll() {
+    if (!id) return;
+    setLoading(true);
     setError("");
     try {
-      const [repoResp, consensusResp] = await Promise.all([getWorkspaceTree(), getWorkspaceConsensus()]);
+      const repoResp = await getWorkspaceTree();
       setRepoTree(repoResp?.repo_tree || null);
-      setConsensus(consensusResp?.consensus || null);
     } catch (e) {
-      success = false;
-      setError(normalizeErr(e, "Gagal memuat Evidence Validation Workspace"));
+      setError(normalizeErr(e, "Gagal memuat repo case"));
       setRepoTree(null);
-      setConsensus(null);
     } finally {
-      if (showPageLoader) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-    return success;
   }
 
   useEffect(() => {
     if (!isAuthed) {
-      router.push(`/login?redirect=/validation-cases/${encodeURIComponent(id)}/workspace`);
+      const redirectTarget = `/validation-cases/${encodeURIComponent(id)}`;
+      router.push(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
       return;
     }
-    loadAll({ showPageLoader: true });
+    loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isAuthed]);
 
@@ -323,22 +262,19 @@ export default function WorkspaceWorkflowClient() {
       return {
         ...prev,
         kind: nextKind,
-        visibility:
-          !isOwner || nextKind === "sensitive_context"
-            ? "assigned_validators"
-            : prev.visibility,
+        visibility: !isOwner || nextKind === "sensitive_context" ? "assigned_validators" : prev.visibility,
       };
     });
   }, [attachKindOptions, canAttach, isOwner]);
 
-  async function runAction(fn) {
+  async function runAction(fn, successMsg = "Repo case berhasil diperbarui.") {
     setBusy(true);
-    setMsg("");
     setError("");
+    setMsg("");
     try {
       await fn();
-      await loadAll({ showPageLoader: false });
-      setMsg("Workspace berhasil diperbarui.");
+      await loadAll();
+      setMsg(successMsg);
     } catch (e) {
       setError(normalizeErr(e, "Aksi gagal"));
     } finally {
@@ -348,6 +284,7 @@ export default function WorkspaceWorkflowClient() {
 
   async function onAttachFile(e) {
     e.preventDefault();
+
     const file = attachForm.file;
     const label = String(attachForm.label || "").trim();
     if (!file) {
@@ -364,9 +301,10 @@ export default function WorkspaceWorkflowClient() {
         !isOwner || attachForm.kind === "sensitive_context" || attachForm.visibility !== "public"
           ? "private"
           : "public";
+
       const uploaded = await uploadDocument(file, {
         title: label,
-        description: `Validation workspace file (${attachForm.kind})`,
+        description: `Validation repo file (${attachForm.kind})`,
         category: "other",
         visibility: documentVisibility,
       });
@@ -385,263 +323,167 @@ export default function WorkspaceWorkflowClient() {
             : attachForm.visibility,
       });
 
-      setAttachForm((prev) => ({
-        ...prev,
-        file: null,
-        label: "",
-      }));
+      setAttachForm((prev) => ({ ...prev, file: null, label: "" }));
       setAttachFileInputKey((prev) => prev + 1);
-    });
+    }, "File berhasil ditambahkan ke repo case.");
   }
 
-  async function onDownloadWorkspaceFile(file) {
+  async function openWorkspaceFile(file, { download = false } = {}) {
     const documentId = String(file?.document_id || "").trim();
     if (!documentId) {
-      setError("Document ID tidak ditemukan untuk file ini.");
+      setError("Document ID tidak ditemukan.");
       return;
     }
 
     const token = getToken();
     if (!token) {
-      router.push(`/login?redirect=/validation-cases/${encodeURIComponent(id)}/workspace`);
+      const redirectTarget = `/validation-cases/${encodeURIComponent(id)}`;
+      router.push(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
       return;
     }
 
     setDownloadingDocumentID(documentId);
     setError("");
     setMsg("");
+
     try {
       const endpoint = `${getFeatureApiBase()}${FEATURE_ENDPOINTS.DOCUMENTS.DOWNLOAD(encodeURIComponent(documentId))}`;
       const res = await fetch(endpoint, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) {
         let detail = "";
         try {
-          const errorPayload = await res.clone().json();
-          detail = String(errorPayload?.error || errorPayload?.message || "").trim();
+          const payload = await res.clone().json();
+          detail = String(payload?.error || payload?.message || "").trim();
         } catch {
           detail = "";
         }
         if (res.status === 403) {
-          throw new Error("Akses file ditolak. Pastikan owner sudah membagikan file ini ke panel validator.");
+          throw new Error("Akses file ditolak. Pastikan owner sudah memberi akses sesuai sensitivity.");
         }
-        throw new Error(detail || `Gagal membuka file workspace (status ${res.status}).`);
+        throw new Error(detail || `Gagal membuka file (status ${res.status}).`);
       }
 
       const blob = await res.blob();
       const contentDisposition = res.headers.get("content-disposition");
       const filename = parseFilenameFromContentDisposition(contentDisposition) || fallbackDownloadFileName(file);
       const objectURL = window.URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = objectURL;
-      anchor.download = filename;
-      anchor.style.display = "none";
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.URL.revokeObjectURL(objectURL);
-      setMsg(`File "${file?.label || documentId}" berhasil diunduh.`);
+
+      if (download) {
+        const anchor = document.createElement("a");
+        anchor.href = objectURL;
+        anchor.download = filename;
+        anchor.style.display = "none";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.URL.revokeObjectURL(objectURL);
+        setMsg(`File \"${file?.label || documentId}\" berhasil diunduh.`);
+        return;
+      }
+
+      const win = window.open("", "_blank", "noopener,noreferrer");
+      if (win) {
+        win.location.href = objectURL;
+      } else {
+        window.location.assign(objectURL);
+      }
+      window.setTimeout(() => window.URL.revokeObjectURL(objectURL), 60_000);
+      setMsg(`File \"${file?.label || documentId}\" berhasil dibuka.`);
     } catch (e) {
-      setError(normalizeErr(e, "Gagal membuka file workspace"));
+      setError(normalizeErr(e, "Gagal membuka file"));
     } finally {
       setDownloadingDocumentID("");
     }
   }
 
-  async function onPublish() {
-    await runAction(async () => {
-      await postWorkspace("publish", {});
-    });
-  }
-
   async function onApply() {
     await runAction(async () => {
       await postWorkspace("apply", {});
-    });
+    }, "Apply validator berhasil dikirim. Menunggu assign owner.");
   }
 
-  async function onAutoAssign(e) {
-    e.preventDefault();
-    const panelSize = Number(assignForm.panel_size) === 10 ? 10 : 3;
+  async function onAssignValidator(validatorUserID) {
+    setAssigningValidatorID(String(validatorUserID));
     await runAction(async () => {
-      await postWorkspace("validators/auto-assign", {
-        panel_size: panelSize,
-      }, { timeout: 60000 });
-    });
-  }
-
-  async function onRefreshWorkspace() {
-    setBusy(true);
-    setMsg("");
-    setError("");
-    try {
-      const refreshed = await loadAll({ showPageLoader: false });
-      if (refreshed) {
-        setMsg("Snapshot workspace diperbarui.");
-      } else {
-        setError("Snapshot workspace belum bisa diperbarui.");
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onSubmitVerdict(e) {
-    e.preventDefault();
-
-    await runAction(async () => {
-      let documentId = "";
-      if (verdictForm.attachmentFile) {
-        const uploaded = await uploadDocument(verdictForm.attachmentFile, {
-          title: `Verdict attachment case #${id}`,
-          description: `Validator verdict attachment (${verdictForm.verdict})`,
-          category: "other",
-          visibility: "private",
-        });
-        documentId = extractDocumentId(uploaded);
-        if (!documentId) {
-          throw new Error("Upload verdict attachment berhasil, tetapi document_id tidak ditemukan.");
-        }
-      }
-
-      await postWorkspace("verdicts", {
-        verdict: verdictForm.verdict,
-        confidence: Number(verdictForm.confidence),
-        notes: verdictForm.notes,
-        document_id: documentId,
+      await postWorkspace("validators/assign", {
+        validator_user_ids: [Number(validatorUserID)],
       });
+    }, "Validator berhasil diassign.");
+    setAssigningValidatorID("");
+  }
 
-      setVerdictForm((prev) => ({
-        ...prev,
-        notes: "",
-        attachmentFile: null,
-      }));
-      setVerdictFileInputKey((prev) => prev + 1);
-    });
+  async function onVoteConfidence(validatorUserID) {
+    setVotingValidatorID(String(validatorUserID));
+    await runAction(async () => {
+      await postWorkspace("confidence/vote", {
+        validator_user_id: Number(validatorUserID),
+      });
+    }, "Vote confidence berhasil disimpan.");
+    setVotingValidatorID("");
+  }
+
+  async function onFinalize() {
+    await runAction(async () => {
+      await postWorkspace("finalize", {});
+    }, "Case berhasil difinalisasi dan bounty didistribusikan.");
   }
 
   if (loading) {
+    if (embedded) {
+      return (
+        <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
+          Memuat repo case...
+        </section>
+      );
+    }
     return (
       <main className="container py-10">
         <div className="rounded-[var(--radius)] border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
-          Memuat Evidence Validation Workspace...
+          Memuat repo case...
         </div>
       </main>
     );
   }
 
-  return (
-    <main className="container py-10 space-y-6">
-      <nav className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/validation-cases" className="hover:underline" prefetch={false}>
-          Validation Case Index
-        </Link>
-        <span>/</span>
-        <Link href={`/validation-cases/${encodeURIComponent(id)}`} className="hover:underline" prefetch={false}>
-          Case #{id}
-        </Link>
-        <span>/</span>
-        <span className="text-foreground">Evidence Validation Workspace</span>
-      </nav>
-
+  const content = (
+    <div className="space-y-6">
       {error ? (
-        <div role="alert" aria-live="polite" className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</div>
+        <div role="alert" aria-live="polite" className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+          {error}
+        </div>
       ) : null}
       {msg ? (
-        <div role="status" aria-live="polite" className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{msg}</div>
+        <div role="status" aria-live="polite" className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {msg}
+        </div>
       ) : null}
 
       <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-3">
-        <h1 className="text-xl font-semibold text-foreground">{repoTree?.workflow_name || "Evidence Validation Workspace"}</h1>
-        <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
+        <h2 className="text-lg font-semibold text-foreground">Repo Case Overview</h2>
+        <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2 lg:grid-cols-3">
           <div>
-            Workflow: <span className="font-semibold text-foreground">{repoTree?.workflow_family || "-"}</span>
+            Workflow: <span className="font-semibold text-foreground">{repoTree?.workflow_name || "Evidence Validation Workspace"}</span>
           </div>
           <div>
-            Stage: <span className="font-semibold text-foreground">{formatWorkspaceStageLabel(repoTree?.workspace_stage || repoTree?.repo_stage || "-")}</span>
-          </div>
-          <div>
-            Completion Mode: <span className="font-semibold text-foreground">{formatCompletionModeLabel(repoTree?.completion_mode)}</span>
+            Stage: <span className="font-semibold text-foreground">{repoTree?.workspace_stage || repoTree?.repo_stage || "-"}</span>
           </div>
           <div>
             Consensus: <span className="font-semibold text-foreground">{repoTree?.consensus_status || "-"}</span>
           </div>
           <div>
-            Required Stake: <span className="font-semibold text-foreground">{formatIDR(requiredStake)}</span>
+            Required Stake: <span className="font-semibold text-foreground">{formatIDR(repoTree?.required_stake || 0)}</span>
           </div>
           <div>
-            Your Stake: <span className="font-semibold text-foreground">{formatIDR(viewerStake)}</span>
+            Your Stake: <span className="font-semibold text-foreground">{formatIDR(repoTree?.viewer_stake || 0)}</span>
+          </div>
+          <div>
+            Upload Progress: <span className="font-semibold text-foreground">{repoTree?.uploaded_validator_count || 0}/{repoTree?.minimum_validator_uploads || 3}</span>
           </div>
         </div>
-
-        <div className="rounded-[var(--radius)] border border-cyan-200/80 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-100 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-900/80">Workflow Progress</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">
-                Stage {formatWorkspaceStageLabel(workspaceStageRaw)} • {readinessDone}/{readinessSteps.length} milestone selesai
-              </div>
-            </div>
-            <div className="rounded-full border border-cyan-300 bg-white/80 px-3 py-1 text-xs font-semibold text-cyan-900">
-              {readinessPercent}% ready
-            </div>
-          </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-cyan-100">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 transition-all"
-              style={{ width: `${readinessPercent}%` }}
-            />
-          </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {readinessSteps.map((step) => (
-              <div
-                key={step.key}
-                className={`rounded-[var(--radius)] border px-3 py-2 text-xs ${
-                  step.done ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-cyan-200 bg-white/75 text-slate-700"
-                }`}
-              >
-                {step.done ? "✓" : "•"} {step.label}
-              </div>
-            ))}
-          </div>
-          <div className="mt-3 rounded-[var(--radius)] border border-cyan-200 bg-white/75 px-3 py-2 text-sm text-slate-700">
-            Next action: <span className="font-semibold text-slate-900">{nextActionHint}</span>
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={onRefreshWorkspace}
-              disabled={actionLocked}
-              className="rounded-[var(--radius)] border border-cyan-300 bg-white px-3 py-1.5 text-xs font-semibold text-cyan-900 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {busy ? "Refreshing..." : "Refresh Snapshot"}
-            </button>
-            <a
-              href="#workspace-files"
-              className="rounded-[var(--radius)] border border-cyan-200 bg-white/85 px-3 py-1.5 text-xs font-semibold text-cyan-900 hover:bg-cyan-100"
-            >
-              Files
-            </a>
-            <a
-              href="#workspace-validators"
-              className="rounded-[var(--radius)] border border-cyan-200 bg-white/85 px-3 py-1.5 text-xs font-semibold text-cyan-900 hover:bg-cyan-100"
-            >
-              Validators
-            </a>
-            <a
-              href="#workspace-verdicts"
-              className="rounded-[var(--radius)] border border-cyan-200 bg-white/85 px-3 py-1.5 text-xs font-semibold text-cyan-900 hover:bg-cyan-100"
-            >
-              Verdicts
-            </a>
-          </div>
-        </div>
-
         {!stakeEligible ? (
           <div className="rounded-[var(--radius)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             Stake kamu belum memenuhi syarat untuk apply case ini.
@@ -649,13 +491,10 @@ export default function WorkspaceWorkflowClient() {
         ) : null}
       </section>
 
-      <section id="workspace-files" className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Workspace Files</h2>
-        <div className="text-sm text-muted-foreground">
-          Publish butuh README (markdown case record atau `case_readme`) dan minimal 1 `task_input`.
-        </div>
+      <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">Repo Files</h2>
         {files.length === 0 ? (
-          <div className="text-sm text-muted-foreground">Belum ada file yang terpasang.</div>
+          <div className="text-sm text-muted-foreground">Belum ada file di repo case.</div>
         ) : (
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
@@ -663,32 +502,58 @@ export default function WorkspaceWorkflowClient() {
                 <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="py-2 pr-3">Kind</th>
                   <th className="py-2 pr-3">Label</th>
-                  <th className="py-2 pr-3">Document ID</th>
+                  <th className="py-2 pr-3">Uploader</th>
                   <th className="py-2 pr-3">Visibility</th>
                   <th className="py-2 pr-3">Uploaded</th>
-                  <th className="py-2 pr-3">File</th>
+                  <th className="py-2 pr-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {files.map((file) => (
-                  <tr key={file.id} className="border-b border-border/60">
-                    <td className="py-2 pr-3 font-mono text-xs text-foreground">{file.kind}</td>
-                    <td className="py-2 pr-3 text-foreground">{file.label}</td>
-                    <td className="py-2 pr-3 font-mono text-xs text-foreground">{file.document_id}</td>
-                    <td className="py-2 pr-3 text-muted-foreground">{file.visibility}</td>
-                    <td className="py-2 pr-3 text-muted-foreground">{formatDateTime(file.uploaded_at)}</td>
-                    <td className="py-2 pr-3">
-                      <button
-                        type="button"
-                        onClick={() => onDownloadWorkspaceFile(file)}
-                        disabled={actionLocked || downloadingDocumentID === String(file.document_id || "")}
-                        className="rounded-[var(--radius)] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {downloadingDocumentID === String(file.document_id || "") ? "Opening..." : "Open File"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {files.map((file) => {
+                  const documentId = String(file?.document_id || "");
+                  const processing = downloadingDocumentID === documentId;
+                  return (
+                    <tr key={file.id} className="border-b border-border/60">
+                      <td className="py-2 pr-3 font-mono text-xs text-foreground">{file.kind}</td>
+                      <td className="py-2 pr-3">
+                        <button
+                          type="button"
+                          onClick={() => openWorkspaceFile(file, { download: false })}
+                          disabled={actionLocked || processing}
+                          className="text-left font-semibold text-foreground underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {file.label}
+                        </button>
+                      </td>
+                      <td className="py-2 pr-3 text-foreground">
+                        {file.uploaded_by_user?.username ? `@${file.uploaded_by_user.username}` : `#${file.uploaded_by || "-"}`}
+                      </td>
+                      <td className="py-2 pr-3 text-muted-foreground">{file.visibility}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">{formatDateTime(file.uploaded_at)}</td>
+                      <td className="py-2 pr-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openWorkspaceFile(file, { download: false })}
+                            disabled={actionLocked || processing}
+                            className="rounded-[var(--radius)] border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {processing ? "Opening..." : "Open"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openWorkspaceFile(file, { download: true })}
+                            disabled={actionLocked || processing}
+                            aria-label={`Download ${file.label}`}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius)] border border-border text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <DownloadIcon />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -737,16 +602,11 @@ export default function WorkspaceWorkflowClient() {
               value={attachForm.visibility}
               onChange={(e) => setAttachForm((prev) => ({ ...prev, visibility: e.target.value }))}
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
-              disabled={actionLocked || sensitiveKindSelected || !isOwner}
+              disabled={actionLocked || attachForm.kind === "sensitive_context" || !isOwner}
             >
               <option value="public">public</option>
               <option value="assigned_validators">assigned_validators</option>
             </select>
-            {sensitiveKindSelected ? (
-              <div className="text-xs text-muted-foreground md:col-span-2">
-                `sensitive_context` selalu dibatasi ke `assigned_validators`.
-              </div>
-            ) : null}
             {uploadingDocument ? (
               <div className="text-xs text-muted-foreground md:col-span-2">Uploading file... {uploadProgress}%</div>
             ) : null}
@@ -755,36 +615,28 @@ export default function WorkspaceWorkflowClient() {
               className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 md:col-span-2"
               disabled={actionLocked}
             >
-              {actionLocked ? "Memproses..." : "Upload & Attach File"}
+              {actionLocked ? "Memproses..." : "Upload File ke Repo"}
             </button>
           </form>
         ) : null}
       </section>
 
-      <section id="workspace-validators" className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
+      <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Validators</h2>
-        {isOwner ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={onPublish}
-              className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary"
-              disabled={actionLocked}
-            >
-              Publish Workspace
-            </button>
-            <span className="text-sm text-muted-foreground">
-              Publish readiness: {repoTree?.has_required_readme ? "README OK" : "README belum ada"} /{" "}
-              {repoTree?.has_task_input ? "Task Input OK" : "Task Input belum ada"}
-            </span>
-          </div>
-        ) : (
+
+        {!isOwner ? (
           <button
+            type="button"
             onClick={onApply}
-            className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary"
+            className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
             disabled={applyDisabled}
           >
-            {isAssigned ? "Anda sudah terassign" : "Apply as Validator"}
+            {isAssigned ? "Anda sudah diassign" : "Apply as Validator"}
           </button>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            Owner melakukan assign validator manual dari daftar applicant.
+          </div>
         )}
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -793,174 +645,150 @@ export default function WorkspaceWorkflowClient() {
             {applicants.length === 0 ? (
               <div className="mt-2 text-sm text-muted-foreground">Belum ada applicant.</div>
             ) : (
-              <ul className="mt-2 space-y-1 text-sm">
+              <ul className="mt-2 space-y-1.5 text-sm">
                 {applicants.map((it) => (
-                  <li key={`app-${it.id}`} className="text-foreground">
-                    #{it.id} {it.username ? `@${it.username}` : ""}
+                  <li key={`app-${it.id}`} className="flex items-center justify-between gap-2">
+                    <span className="text-foreground">#{it.id} {it.username ? `@${it.username}` : ""}</span>
+                    {isOwner ? (
+                      <button
+                        type="button"
+                        onClick={() => onAssignValidator(it.id)}
+                        disabled={actionLocked || assigningValidatorID === String(it.id)}
+                        className="rounded-[var(--radius)] border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {assigningValidatorID === String(it.id) ? "Assigning..." : "Assign"}
+                      </button>
+                    ) : null}
                   </li>
                 ))}
               </ul>
             )}
           </div>
+
           <div>
-            <div className="text-sm font-semibold text-foreground">Assignments</div>
+            <div className="text-sm font-semibold text-foreground">Assigned Validators</div>
             {assignments.length === 0 ? (
-              <div className="mt-2 text-sm text-muted-foreground">Belum ada assignment.</div>
+              <div className="mt-2 text-sm text-muted-foreground">Belum ada validator yang diassign.</div>
             ) : (
-              <ul className="mt-2 space-y-1 text-sm">
-                {assignments.map((it) => (
-                  <li key={`as-${it.validator?.id}`} className="text-foreground">
-                    #{it.validator?.id} {it.validator?.username ? `@${it.validator.username}` : ""} ({it.status}) -{" "}
-                    <span className="text-muted-foreground">{formatDateTime(it.assigned_at)}</span>
-                  </li>
-                ))}
+              <ul className="mt-2 space-y-2 text-sm">
+                {assignments.map((item) => {
+                  const validatorId = Number(item?.validator?.id || 0);
+                  const score = confidenceByValidator.get(validatorId);
+                  const votes = Number(score?.votes || 0);
+                  const viewerVoted = Boolean(score?.viewer_voted);
+                  const hasOutput = Boolean(score?.has_uploaded_output);
+                  return (
+                    <li key={`as-${validatorId}`} className="rounded-[var(--radius)] border border-border px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-foreground">#{validatorId} {item?.validator?.username ? `@${item.validator.username}` : ""}</div>
+                        <div className="text-xs text-muted-foreground">{formatDateTime(item?.assigned_at)}</div>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span>status: {item?.status || "-"}</span>
+                        <span>uploaded: {hasOutput ? "yes" : "no"}</span>
+                        <span>confidence votes: {votes}</span>
+                      </div>
+                      {!isOwner ? (
+                        <button
+                          type="button"
+                          onClick={() => onVoteConfidence(validatorId)}
+                          disabled={actionLocked || votingValidatorID === String(validatorId)}
+                          className="mt-2 inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <ConfidenceIcon active={viewerVoted} />
+                          {votingValidatorID === String(validatorId) ? "Saving..." : viewerVoted ? "Voted" : "Confidence"}
+                        </button>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
         </div>
-
-        {isOwner ? (
-          <form onSubmit={onAutoAssign} className="grid gap-3 rounded-[var(--radius)] border border-border p-4 md:grid-cols-2">
-            <select
-              value={assignForm.panel_size}
-              onChange={(e) => setAssignForm((prev) => ({ ...prev, panel_size: Number(e.target.value) === 10 ? 10 : 3 }))}
-              className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
-              disabled={actionLocked}
-            >
-              <option value={3}>Panel 3 (default)</option>
-              <option value={10}>Panel 10 (escalated)</option>
-            </select>
-            <div className="text-xs text-muted-foreground">
-              Auto-match memilih validator dari applicant pool sesuai stake, anti-pairing, dan limit maksimal 2 task aktif.
-            </div>
-            <button
-              type="submit"
-              className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 md:col-span-2"
-              disabled={actionLocked}
-            >
-              {actionLocked ? "Memproses..." : "Auto-Match Validators"}
-            </button>
-          </form>
-        ) : null}
       </section>
 
-      <section id="workspace-verdicts" className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Verdicts & Consensus</h2>
-        {isAssigned ? (
-          <form onSubmit={onSubmitVerdict} className="grid gap-3 rounded-[var(--radius)] border border-border p-4 md:grid-cols-2">
-            <select
-              value={verdictForm.verdict}
-              onChange={(e) => setVerdictForm((prev) => ({ ...prev, verdict: e.target.value }))}
-              className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
-              disabled={actionLocked}
-            >
-              <option value="valid">valid</option>
-              <option value="needs_revision">needs_revision</option>
-              <option value="reject">reject</option>
-            </select>
-            <input
-              value={verdictForm.confidence}
-              onChange={(e) => setVerdictForm((prev) => ({ ...prev, confidence: e.target.value }))}
-              type="number"
-              min={0}
-              max={100}
-              placeholder="confidence 0-100"
-              className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
-              disabled={actionLocked}
-            />
-            <input
-              key={verdictFileInputKey}
-              type="file"
-              onChange={(e) => setVerdictForm((prev) => ({ ...prev, attachmentFile: e.target.files?.[0] || null }))}
-              className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm md:col-span-2"
-              disabled={actionLocked}
-            />
-            <textarea
-              value={verdictForm.notes}
-              onChange={(e) => setVerdictForm((prev) => ({ ...prev, notes: e.target.value }))}
-              placeholder="catatan verdict"
-              rows={3}
-              className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm md:col-span-2"
-              disabled={actionLocked}
-            />
-            {uploadingDocument ? (
-              <div className="text-xs text-muted-foreground md:col-span-2">Uploading verdict attachment... {uploadProgress}%</div>
-            ) : null}
-            <button
-              type="submit"
-              className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 md:col-span-2"
-              disabled={actionLocked}
-            >
-              {actionLocked ? "Memproses..." : "Submit Verdict"}
-            </button>
-          </form>
-        ) : (
-          <div className="text-sm text-muted-foreground">Hanya validator terassign yang bisa submit verdict.</div>
-        )}
+      {isOwner ? (
+        <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-3">
+          <h2 className="text-lg font-semibold text-foreground">Finalisasi Case</h2>
+          <div className="text-sm text-muted-foreground">
+            Finalisasi membutuhkan minimal <span className="font-semibold text-foreground">{repoTree?.minimum_validator_uploads || 3}</span> validator upload hasil.
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Progress saat ini: <span className="font-semibold text-foreground">{repoTree?.uploaded_validator_count || 0}</span> validator upload.
+          </div>
+          <button
+            type="button"
+            onClick={onFinalize}
+            disabled={actionLocked || !canFinalize}
+            className="rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {actionLocked ? "Memproses..." : "Finalize Case"}
+          </button>
+        </section>
+      ) : null}
 
-        {verdicts.length > 0 ? (
+      {payout ? (
+        <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-3">
+          <h2 className="text-lg font-semibold text-foreground">Payout Result</h2>
+          <div className="text-sm text-muted-foreground">Total bounty: {formatIDR(payout?.bounty_amount || 0)}</div>
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="py-2 pr-3">Validator</th>
-                  <th className="py-2 pr-3">Verdict</th>
-                  <th className="py-2 pr-3">Confidence</th>
-                  <th className="py-2 pr-3">Submitted</th>
+                  <th className="py-2 pr-3">Confidence Votes</th>
+                  <th className="py-2 pr-3">Amount</th>
                 </tr>
               </thead>
               <tbody>
-                {verdicts.map((it) => (
-                  <tr key={`vd-${it.validator?.id}-${it.submitted_at}`} className="border-b border-border/60">
-                    <td className="py-2 pr-3 text-foreground">
-                      #{it.validator?.id} {it.validator?.username ? `@${it.validator.username}` : ""}
-                    </td>
-                    <td className="py-2 pr-3 font-mono text-xs text-foreground">{it.verdict}</td>
-                    <td className="py-2 pr-3 text-foreground">{it.confidence}</td>
-                    <td className="py-2 pr-3 text-muted-foreground">{formatDateTime(it.submitted_at)}</td>
+                {(payout?.entries || []).map((entry) => (
+                  <tr key={`pay-${entry.validator_user_id}`} className="border-b border-border/60">
+                    <td className="py-2 pr-3 text-foreground">#{entry.validator_user_id}</td>
+                    <td className="py-2 pr-3 text-foreground">{entry.confidence_votes || 0}</td>
+                    <td className="py-2 pr-3 font-semibold text-foreground">{formatIDR(entry.amount || 0)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        ) : null}
+        </section>
+      ) : null}
 
-        {consensus ? (
-          <div className="rounded-[var(--radius)] border border-border p-4 text-sm space-y-2">
-            <div className="text-foreground">
-              Status: <span className="font-semibold">{consensus.consensus_status || "-"}</span>
+      <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5">
+        <h2 className="text-lg font-semibold text-foreground">README</h2>
+        <div className="mt-3 rounded-[var(--radius)] border border-border/70 bg-background/60 px-4 py-4">
+          {String(caseReadmeMarkdown || "").trim() ? (
+            <div className="prose prose-neutral max-w-none">
+              <MarkdownPreview content={caseReadmeMarkdown} />
             </div>
-            <div className="text-foreground">
-              Result: <span className="font-semibold">{consensus.consensus_result || "-"}</span>
-            </div>
-            <div className="text-muted-foreground">
-              Votes: {consensus.submitted_votes || 0}/{consensus.required_votes || 0}
-            </div>
-            <div className="text-muted-foreground">
-              Breakdown: valid {consensus?.breakdown?.valid || 0} | needs_revision {consensus?.breakdown?.needs_revision || 0} | reject{" "}
-              {consensus?.breakdown?.reject || 0}
-            </div>
-
-            {consensus?.payout ? (
-              <div className="rounded-[var(--radius)] border border-border/80 bg-secondary/30 p-3 space-y-2">
-                <div className="text-foreground font-semibold">Payout Ledger</div>
-                <div className="text-muted-foreground">
-                  Bounty {formatIDR(consensus.payout.bounty_amount)} | Base {formatIDR(consensus.payout.base_pool)} | Quality{" "}
-                  {formatIDR(consensus.payout.quality_pool)} | Chain {formatIDR(consensus.payout.chain_pool)}
-                </div>
-                <ul className="space-y-1 text-sm">
-                  {(consensus.payout.entries || []).map((entry) => (
-                    <li key={`pay-${entry.validator_user_id}`} className="text-foreground">
-                      Validator #{entry.validator_user_id}: base {formatIDR(entry.base_amount)}, quality {formatIDR(entry.quality_amount)},
-                      chain {formatIDR(entry.chain_locked)} ({entry.chain_status})
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
+          ) : (
+            <div className="text-sm text-muted-foreground">README belum tersedia.</div>
+          )}
+        </div>
       </section>
+    </div>
+  );
+
+  if (embedded) {
+    return <section className="space-y-6">{content}</section>;
+  }
+
+  return (
+    <main className="container py-10 space-y-6">
+      <nav className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <Link href="/validation-cases" className="hover:underline" prefetch={false}>
+          Validation Case Index
+        </Link>
+        <span>/</span>
+        <Link href={`/validation-cases/${encodeURIComponent(id)}`} className="hover:underline" prefetch={false}>
+          Case #{id}
+        </Link>
+        <span>/</span>
+        <span className="text-foreground">Repo</span>
+      </nav>
+      {caseTitle ? <h1 className="text-2xl font-semibold text-foreground">{caseTitle}</h1> : null}
+      {content}
     </main>
   );
 }

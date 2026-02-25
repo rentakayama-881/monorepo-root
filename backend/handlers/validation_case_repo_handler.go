@@ -146,6 +146,60 @@ func (h *ValidationCaseRepoWorkflowHandler) AssignValidators(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"repo_tree": tree})
 }
 
+func (h *ValidationCaseRepoWorkflowHandler) VoteConfidence(c *gin.Context) {
+	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
+	if !ok {
+		return
+	}
+	user, ok := mustGetUser(c)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		ValidatorUserID uint `json:"validator_user_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleError(c, apperrors.ErrInvalidRequestBody.WithDetails(err.Error()))
+		return
+	}
+
+	tree, err := h.repo.VoteRepoValidatorConfidence(
+		c.Request.Context(),
+		validationCaseID,
+		uint(user.ID),
+		req.ValidatorUserID,
+	)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"repo_tree": tree})
+}
+
+func (h *ValidationCaseRepoWorkflowHandler) FinalizeRepoCase(c *gin.Context) {
+	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
+	if !ok {
+		return
+	}
+	user, ok := mustGetUser(c)
+	if !ok {
+		return
+	}
+
+	tree, err := h.repo.FinalizeRepoCase(
+		c.Request.Context(),
+		validationCaseID,
+		uint(user.ID),
+		strings.TrimSpace(c.GetHeader("Authorization")),
+	)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"repo_tree": tree})
+}
+
 func (h *ValidationCaseRepoWorkflowHandler) AutoAssignValidators(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {

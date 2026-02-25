@@ -1,10 +1,11 @@
-import RepoWorkflowClient from "./RepoWorkflowClient";
+import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Evidence Validation Workspace",
+  title: "Validation Case",
   robots: { index: false, follow: false },
 };
 
-export default function ValidationCaseRepoPage() {
-  return <RepoWorkflowClient />;
+export default async function ValidationCaseRepoRedirectPage({ params }) {
+  const { id } = await params;
+  redirect(`/validation-cases/${encodeURIComponent(String(id))}`);
 }

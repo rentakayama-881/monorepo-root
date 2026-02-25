@@ -81,6 +81,11 @@ type FeatureMarketWalletResult struct {
 	AmountIDR     int64  `json:"amountIdr"`
 }
 
+type FeatureMarketDistributionRecipient struct {
+	UserID    uint  `json:"userId"`
+	AmountIDR int64 `json:"amountIdr"`
+}
+
 func NewFeatureWalletClientFromConfig() *FeatureWalletClient {
 	return &FeatureWalletClient{
 		baseURL: strings.TrimRight(config.FeatureServiceURL, "/"),
@@ -253,6 +258,23 @@ func (c *FeatureWalletClient) ReleaseMarketPurchase(ctx context.Context, authHea
 		"reason":  reason,
 	}
 	return c.postMarketWallet(ctx, authHeader, "/api/v1/wallets/market-purchases/release", payload)
+}
+
+func (c *FeatureWalletClient) DistributeMarketPurchase(
+	ctx context.Context,
+	authHeader string,
+	orderID string,
+	recipients []FeatureMarketDistributionRecipient,
+	reason string,
+	referenceType string,
+) (*FeatureMarketWalletResult, error) {
+	payload := map[string]interface{}{
+		"orderId":       orderID,
+		"recipients":    recipients,
+		"reason":        reason,
+		"referenceType": referenceType,
+	}
+	return c.postMarketWallet(ctx, authHeader, "/api/v1/wallets/market-purchases/distribute", payload)
 }
 
 func (c *FeatureWalletClient) postMarketWallet(ctx context.Context, authHeader, path string, payload interface{}) (*FeatureMarketWalletResult, error) {

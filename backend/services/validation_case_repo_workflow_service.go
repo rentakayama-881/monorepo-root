@@ -31,6 +31,8 @@ const (
 	// Legacy consultation workflow marker.
 	workflowProtocolV1 = "workflow_v1"
 
+	repoCompletionOpen = "open"
+	// Legacy constants retained for backward-compatibility of historical payload parsing.
 	repoCompletionPanel3  = "panel_3"
 	repoCompletionPanel10 = "panel_10"
 
@@ -39,6 +41,7 @@ const (
 	repoConsensusEscalated  = "escalated"
 	repoConsensusFinalized  = "finalized"
 
+	repoStageReady     = "ready"
 	repoStageDraft     = "draft"
 	repoStagePublished = "published"
 	repoStageInReview  = "in_review"
@@ -53,6 +56,12 @@ const (
 	repoFileVisibilityAssignedValidators = "assigned_validators"
 
 	repoAssignmentStatusActive = "active"
+
+	repoMinimumValidatorUploads = 3
+
+	repoBountyReserveStatusNone      = ""
+	repoBountyReserveStatusReserved  = "reserved"
+	repoBountyReserveStatusDisbursed = "disbursed"
 
 	repoVerdictValid         = "valid"
 	repoVerdictNeedsRevision = "needs_revision"
@@ -71,29 +80,33 @@ func NewEntValidationCaseRepoWorkflowService() *EntValidationCaseRepoWorkflowSer
 }
 
 type repoMetaState struct {
-	WorkflowFamily  string               `json:"workflow_family"`
-	ProtocolMode    string               `json:"protocol_mode"`
-	CompletionMode  string               `json:"completion_mode"`
-	ConsensusStatus string               `json:"consensus_status"`
-	ConsensusResult string               `json:"consensus_result,omitempty"`
-	RepoStage       string               `json:"repo_stage"`
-	RepoFiles       []RepoCaseFileItem   `json:"repo_files"`
-	RepoApplicants  []uint               `json:"repo_applicants"`
-	RepoAssignments []RepoAssignmentItem `json:"repo_assignments"`
-	RepoVerdicts    []RepoVerdictItem    `json:"repo_verdicts"`
-	RepoPayout      *RepoPayoutLedger    `json:"repo_payout,omitempty"`
+	WorkflowFamily       string                   `json:"workflow_family"`
+	ProtocolMode         string                   `json:"protocol_mode"`
+	CompletionMode       string                   `json:"completion_mode"`
+	ConsensusStatus      string                   `json:"consensus_status"`
+	ConsensusResult      string                   `json:"consensus_result,omitempty"`
+	RepoStage            string                   `json:"repo_stage"`
+	RepoFiles            []RepoCaseFileItem       `json:"repo_files"`
+	RepoApplicants       []uint                   `json:"repo_applicants"`
+	RepoAssignments      []RepoAssignmentItem     `json:"repo_assignments"`
+	RepoVerdicts         []RepoVerdictItem        `json:"repo_verdicts"`
+	RepoConfidenceVotes  []RepoConfidenceVoteItem `json:"repo_confidence_votes"`
+	RepoPayout           *RepoPayoutLedger        `json:"repo_payout,omitempty"`
+	BountyReserveOrderID string                   `json:"bounty_reserve_order_id,omitempty"`
+	BountyReserveStatus  string                   `json:"bounty_reserve_status,omitempty"`
 }
 
 func defaultRepoMetaState() repoMetaState {
 	return repoMetaState{
-		WorkflowFamily:  workspaceWorkflowFamily,
-		CompletionMode:  repoCompletionPanel3,
-		ConsensusStatus: repoConsensusPending,
-		RepoStage:       repoStageDraft,
-		RepoFiles:       []RepoCaseFileItem{},
-		RepoApplicants:  []uint{},
-		RepoAssignments: []RepoAssignmentItem{},
-		RepoVerdicts:    []RepoVerdictItem{},
+		WorkflowFamily:      workspaceWorkflowFamily,
+		CompletionMode:      repoCompletionOpen,
+		ConsensusStatus:     repoConsensusPending,
+		RepoStage:           repoStageReady,
+		RepoFiles:           []RepoCaseFileItem{},
+		RepoApplicants:      []uint{},
+		RepoAssignments:     []RepoAssignmentItem{},
+		RepoVerdicts:        []RepoVerdictItem{},
+		RepoConfidenceVotes: []RepoConfidenceVoteItem{},
 	}
 }
 
@@ -123,38 +136,41 @@ func isWorkspaceMetaState(state repoMetaState) bool {
 
 func normalizeRepoStage(s string) string {
 	switch strings.ToLower(strings.TrimSpace(s)) {
-	case repoStageDraft:
-		return repoStageDraft
-	case repoStagePublished:
-		return repoStagePublished
+	case repoStageReady:
+		return repoStageReady
+	case "published", "draft":
+		return repoStageReady
 	case repoStageInReview:
 		return repoStageInReview
 	case repoStageFinalized:
 		return repoStageFinalized
 	default:
-		return repoStageDraft
+		return repoStageReady
 	}
 }
 
 func normalizeRepoCompletionMode(s string) string {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case repoCompletionPanel10:
-		return repoCompletionPanel10
-	default:
-		return repoCompletionPanel3
-	}
+	_ = s
+	return repoCompletionOpen
 }
 
 func normalizeRepoConsensusStatus(s string) string {
 	switch strings.ToLower(strings.TrimSpace(s)) {
-	case repoConsensusConclusive:
-		return repoConsensusConclusive
-	case repoConsensusEscalated:
-		return repoConsensusEscalated
 	case repoConsensusFinalized:
 		return repoConsensusFinalized
 	default:
 		return repoConsensusPending
+	}
+}
+
+func normalizeRepoBountyReserveStatus(s string) string {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case repoBountyReserveStatusReserved:
+		return repoBountyReserveStatusReserved
+	case repoBountyReserveStatusDisbursed:
+		return repoBountyReserveStatusDisbursed
+	default:
+		return repoBountyReserveStatusNone
 	}
 }
 
@@ -215,6 +231,8 @@ func loadRepoMetaState(meta map[string]interface{}) repoMetaState {
 	state.CompletionMode = normalizeRepoCompletionMode(state.CompletionMode)
 	state.ConsensusStatus = normalizeRepoConsensusStatus(state.ConsensusStatus)
 	state.RepoStage = normalizeRepoStage(state.RepoStage)
+	state.BountyReserveStatus = normalizeRepoBountyReserveStatus(state.BountyReserveStatus)
+	state.BountyReserveOrderID = strings.TrimSpace(state.BountyReserveOrderID)
 	if state.RepoFiles == nil {
 		state.RepoFiles = []RepoCaseFileItem{}
 	}
@@ -226,6 +244,9 @@ func loadRepoMetaState(meta map[string]interface{}) repoMetaState {
 	}
 	if state.RepoVerdicts == nil {
 		state.RepoVerdicts = []RepoVerdictItem{}
+	}
+	if state.RepoConfidenceVotes == nil {
+		state.RepoConfidenceVotes = []RepoConfidenceVoteItem{}
 	}
 	return state
 }
@@ -271,6 +292,12 @@ func mergeRepoMeta(existing map[string]interface{}, state repoMetaState) map[str
 	meta["repo_assignments"] = state.RepoAssignments
 	meta["workspace_verdicts"] = state.RepoVerdicts
 	meta["repo_verdicts"] = state.RepoVerdicts
+	meta["workspace_confidence_votes"] = state.RepoConfidenceVotes
+	meta["repo_confidence_votes"] = state.RepoConfidenceVotes
+	meta["workspace_bounty_reserve_order_id"] = strings.TrimSpace(state.BountyReserveOrderID)
+	meta["repo_bounty_reserve_order_id"] = strings.TrimSpace(state.BountyReserveOrderID)
+	meta["workspace_bounty_reserve_status"] = normalizeRepoBountyReserveStatus(state.BountyReserveStatus)
+	meta["repo_bounty_reserve_status"] = normalizeRepoBountyReserveStatus(state.BountyReserveStatus)
 	if state.RepoPayout != nil {
 		meta["workspace_payout"] = state.RepoPayout
 		meta["repo_payout"] = state.RepoPayout
@@ -311,6 +338,11 @@ func (s *EntValidationCaseRepoWorkflowService) ensureRepoState(state repoMetaSta
 	state.CompletionMode = normalizeRepoCompletionMode(state.CompletionMode)
 	state.ConsensusStatus = normalizeRepoConsensusStatus(state.ConsensusStatus)
 	state.RepoStage = normalizeRepoStage(state.RepoStage)
+	state.BountyReserveStatus = normalizeRepoBountyReserveStatus(state.BountyReserveStatus)
+	state.BountyReserveOrderID = strings.TrimSpace(state.BountyReserveOrderID)
+	if state.RepoConfidenceVotes == nil {
+		state.RepoConfidenceVotes = []RepoConfidenceVoteItem{}
+	}
 	return state
 }
 
@@ -394,6 +426,86 @@ func activeAssignmentValidatorIDs(assignments []RepoAssignmentItem) []uint {
 		}
 	}
 	return dedupeUint(out)
+}
+
+func activeValidatorOutputCounts(files []RepoCaseFileItem, assignments []RepoAssignmentItem) map[uint]int {
+	activeSet := validatorIDSet(activeAssignmentValidatorIDs(assignments))
+	out := make(map[uint]int, len(activeSet))
+	for _, file := range files {
+		if normalizeRepoFileKind(file.Kind) != repoFileKindOutput {
+			continue
+		}
+		if _, ok := activeSet[file.UploadedBy]; !ok {
+			continue
+		}
+		out[file.UploadedBy]++
+	}
+	return out
+}
+
+func hasValidatorUploadedOutput(files []RepoCaseFileItem, validatorUserID uint) bool {
+	for _, file := range files {
+		if normalizeRepoFileKind(file.Kind) != repoFileKindOutput {
+			continue
+		}
+		if file.UploadedBy == validatorUserID {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeConfidenceVotes(votes []RepoConfidenceVoteItem, validValidatorIDs map[uint]struct{}) []RepoConfidenceVoteItem {
+	if len(votes) == 0 {
+		return []RepoConfidenceVoteItem{}
+	}
+
+	latestByVoter := make(map[uint]RepoConfidenceVoteItem, len(votes))
+	for _, vote := range votes {
+		if vote.VoterUserID == 0 || vote.ValidatorUserID == 0 {
+			continue
+		}
+		if len(validValidatorIDs) > 0 {
+			if _, ok := validValidatorIDs[vote.ValidatorUserID]; !ok {
+				continue
+			}
+		}
+		prev, exists := latestByVoter[vote.VoterUserID]
+		if !exists || vote.VotedAt >= prev.VotedAt {
+			latestByVoter[vote.VoterUserID] = vote
+		}
+	}
+
+	out := make([]RepoConfidenceVoteItem, 0, len(latestByVoter))
+	for _, vote := range latestByVoter {
+		out = append(out, vote)
+	}
+	return out
+}
+
+func confidenceVoteCountByValidator(votes []RepoConfidenceVoteItem) map[uint]int {
+	counts := make(map[uint]int)
+	for _, vote := range votes {
+		if vote.ValidatorUserID == 0 {
+			continue
+		}
+		counts[vote.ValidatorUserID]++
+	}
+	return counts
+}
+
+func viewerConfidenceVote(votes []RepoConfidenceVoteItem, viewerUserID uint) *uint {
+	if viewerUserID == 0 {
+		return nil
+	}
+	for _, vote := range votes {
+		if vote.VoterUserID != viewerUserID {
+			continue
+		}
+		id := vote.ValidatorUserID
+		return &id
+	}
+	return nil
 }
 
 func shouldSyncWorkspaceFileSharing(file RepoCaseFileItem) bool {
@@ -896,23 +1008,29 @@ func (s *EntValidationCaseRepoWorkflowService) buildRepoTreeResponse(
 	isAssigned := s.isAssignedValidator(viewerUserID, state.RepoAssignments)
 	hasReadmeFile, hasTaskInput := repoFileRequirements(state.RepoFiles)
 	hasReadme := hasReadmeFile || validationCaseHasReadmeContent(vc)
-	canPublish := isOwner && hasReadme && hasTaskInput && normalizeRepoStage(state.RepoStage) != repoStageFinalized
 	requiredStake := requiredStakeForRepoCase(vc)
 
-	userIDs := make([]uint, 0, len(state.RepoApplicants)+len(state.RepoAssignments)+len(state.RepoVerdicts))
+	userIDs := make([]uint, 0, len(state.RepoApplicants)+len(state.RepoAssignments)+len(state.RepoVerdicts)+len(state.RepoFiles)+len(state.RepoConfidenceVotes)*2+1)
 	userIDs = append(userIDs, state.RepoApplicants...)
+	userIDs = append(userIDs, uint(vc.UserID))
 	for _, asn := range state.RepoAssignments {
 		userIDs = append(userIDs, asn.ValidatorUserID)
 	}
 	for _, verdict := range state.RepoVerdicts {
 		userIDs = append(userIDs, verdict.ValidatorUserID)
 	}
+	for _, file := range state.RepoFiles {
+		userIDs = append(userIDs, file.UploadedBy)
+	}
+	for _, vote := range state.RepoConfidenceVotes {
+		userIDs = append(userIDs, vote.VoterUserID, vote.ValidatorUserID)
+	}
 	summaries, err := s.userSummariesByID(ctx, userIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	files := make([]RepoCaseFileItem, 0, len(state.RepoFiles))
+	files := make([]RepoCaseFileView, 0, len(state.RepoFiles))
 	for _, file := range state.RepoFiles {
 		kind := normalizeRepoFileKind(file.Kind)
 		visibility := normalizeRepoFileVisibility(file.Visibility)
@@ -926,7 +1044,20 @@ func (s *EntValidationCaseRepoWorkflowService) buildRepoTreeResponse(
 		item := file
 		item.Kind = kind
 		item.Visibility = visibility
-		files = append(files, item)
+		uploadedBy := summaries[item.UploadedBy]
+		if uploadedBy.ID == 0 {
+			uploadedBy = UserSummary{ID: item.UploadedBy}
+		}
+		files = append(files, RepoCaseFileView{
+			ID:             item.ID,
+			DocumentID:     item.DocumentID,
+			Kind:           item.Kind,
+			Label:          item.Label,
+			Visibility:     item.Visibility,
+			UploadedBy:     item.UploadedBy,
+			UploadedByUser: uploadedBy,
+			UploadedAt:     item.UploadedAt,
+		})
 	}
 
 	applicants := make([]UserSummary, 0, len(state.RepoApplicants))
@@ -967,6 +1098,36 @@ func (s *EntValidationCaseRepoWorkflowService) buildRepoTreeResponse(
 		})
 	}
 
+	activeAssignedIDs := activeAssignmentValidatorIDs(state.RepoAssignments)
+	activeAssignedSet := validatorIDSet(activeAssignedIDs)
+	normalizedVotes := normalizeConfidenceVotes(state.RepoConfidenceVotes, activeAssignedSet)
+	voteCountByValidator := confidenceVoteCountByValidator(normalizedVotes)
+	viewerVote := viewerConfidenceVote(normalizedVotes, viewerUserID)
+	outputCountByValidator := activeValidatorOutputCounts(state.RepoFiles, state.RepoAssignments)
+	uploadedValidatorCount := len(outputCountByValidator)
+
+	confidenceScores := make([]RepoConfidenceScore, 0, len(activeAssignedIDs))
+	for _, validatorID := range activeAssignedIDs {
+		summary, ok := summaries[validatorID]
+		if !ok {
+			summary = UserSummary{ID: validatorID}
+		}
+		_, hasOutput := outputCountByValidator[validatorID]
+		viewerVoted := viewerVote != nil && *viewerVote == validatorID
+		confidenceScores = append(confidenceScores, RepoConfidenceScore{
+			Validator:         summary,
+			Votes:             voteCountByValidator[validatorID],
+			ViewerVoted:       viewerVoted,
+			HasUploadedOutput: hasOutput,
+		})
+	}
+	sort.SliceStable(confidenceScores, func(i, j int) bool {
+		if confidenceScores[i].Votes == confidenceScores[j].Votes {
+			return confidenceScores[i].Validator.ID < confidenceScores[j].Validator.ID
+		}
+		return confidenceScores[i].Votes > confidenceScores[j].Votes
+	})
+
 	viewerStake := int64(0)
 	if viewerUserID > 0 {
 		if summary, ok := summaries[viewerUserID]; ok {
@@ -982,29 +1143,38 @@ func (s *EntValidationCaseRepoWorkflowService) buildRepoTreeResponse(
 		}
 	}
 	stakeEligible := requiredStake <= 0 || viewerStake >= requiredStake
+	canFinalize := isOwner &&
+		normalizeRepoStage(state.RepoStage) != repoStageFinalized &&
+		uploadedValidatorCount >= repoMinimumValidatorUploads
 
 	return &RepoTreeResponse{
-		CaseID:              uint(vc.ID),
-		WorkflowFamily:      workspaceWorkflowFamily,
-		WorkflowName:        workspaceWorkflowName,
-		ProtocolMode:        normalizeRepoMode(state.ProtocolMode),
-		WorkspaceStage:      normalizeRepoStage(state.RepoStage),
-		RepoStage:           normalizeRepoStage(state.RepoStage),
-		CompletionMode:      normalizeRepoCompletionMode(state.CompletionMode),
-		ConsensusStatus:     normalizeRepoConsensusStatus(state.ConsensusStatus),
-		ConsensusResult:     strings.TrimSpace(state.ConsensusResult),
-		RequiredStake:       requiredStake,
-		ViewerStake:         viewerStake,
-		StakeEligible:       stakeEligible,
-		CanPublish:          canPublish,
-		HasRequiredReadme:   hasReadme,
-		HasTaskInput:        hasTaskInput,
-		IsOwner:             isOwner,
-		IsAssignedValidator: isAssigned,
-		Files:               files,
-		Applicants:          applicants,
-		Assignments:         assignments,
-		Verdicts:            verdicts,
+		CaseID:                          uint(vc.ID),
+		WorkflowFamily:                  workspaceWorkflowFamily,
+		WorkflowName:                    workspaceWorkflowName,
+		ProtocolMode:                    normalizeRepoMode(state.ProtocolMode),
+		WorkspaceStage:                  normalizeRepoStage(state.RepoStage),
+		RepoStage:                       normalizeRepoStage(state.RepoStage),
+		CompletionMode:                  normalizeRepoCompletionMode(state.CompletionMode),
+		ConsensusStatus:                 normalizeRepoConsensusStatus(state.ConsensusStatus),
+		ConsensusResult:                 strings.TrimSpace(state.ConsensusResult),
+		RequiredStake:                   requiredStake,
+		ViewerStake:                     viewerStake,
+		StakeEligible:                   stakeEligible,
+		CanPublish:                      false,
+		HasRequiredReadme:               hasReadme,
+		HasTaskInput:                    hasTaskInput,
+		IsOwner:                         isOwner,
+		IsAssignedValidator:             isAssigned,
+		Files:                           files,
+		Applicants:                      applicants,
+		Assignments:                     assignments,
+		Verdicts:                        verdicts,
+		ConfidenceScores:                confidenceScores,
+		ViewerConfidenceVoteValidatorID: viewerVote,
+		MinimumValidatorUploads:         repoMinimumValidatorUploads,
+		UploadedValidatorCount:          uploadedValidatorCount,
+		CanFinalize:                     canFinalize,
+		Payout:                          state.RepoPayout,
 	}, nil
 }
 
@@ -1134,16 +1304,7 @@ func (s *EntValidationCaseRepoWorkflowService) PublishRepoCase(
 	}
 
 	state := s.ensureRepoState(loadRepoMetaState(vc.Meta))
-	hasReadmeFile, hasTaskInput := repoFileRequirements(state.RepoFiles)
-	hasReadme := hasReadmeFile || validationCaseHasReadmeContent(vc)
-	if !hasReadme {
-		return nil, apperrors.ErrInvalidInput.WithDetails("publish membutuhkan CASE_README (markdown case record) atau file kind=case_readme")
-	}
-	if !hasTaskInput {
-		return nil, apperrors.ErrInvalidInput.WithDetails("publish membutuhkan minimal 1 file kind=task_input")
-	}
-
-	state.RepoStage = repoStagePublished
+	state.RepoStage = repoStageReady
 	state.ConsensusStatus = repoConsensusPending
 
 	meta := mergeRepoMeta(vc.Meta, state)
@@ -1155,8 +1316,8 @@ func (s *EntValidationCaseRepoWorkflowService) PublishRepoCase(
 	}
 
 	actor := int(ownerUserID)
-	s.appendCaseLogBestEffort(ctx, vc.ID, &actor, "repo_case_published", map[string]interface{}{
-		"completion_mode": state.CompletionMode,
+	s.appendCaseLogBestEffort(ctx, vc.ID, &actor, "repo_case_ready", map[string]interface{}{
+		"repo_stage": state.RepoStage,
 	})
 
 	return s.buildRepoTreeResponse(ctx, vc, state, ownerUserID)
@@ -1176,8 +1337,8 @@ func (s *EntValidationCaseRepoWorkflowService) ApplyForRepoValidation(
 	}
 
 	state := s.ensureRepoState(loadRepoMetaState(vc.Meta))
-	if normalizeRepoStage(state.RepoStage) != repoStagePublished && normalizeRepoStage(state.RepoStage) != repoStageInReview {
-		return nil, apperrors.ErrInvalidInput.WithDetails("case belum dipublish")
+	if normalizeRepoStage(state.RepoStage) == repoStageFinalized {
+		return nil, apperrors.ErrInvalidInput.WithDetails("case sudah finalized")
 	}
 	if containsUint(state.RepoApplicants, validatorUserID) || s.isAssignedValidator(validatorUserID, state.RepoAssignments) {
 		return s.buildRepoTreeResponse(ctx, vc, state, validatorUserID)
@@ -1208,14 +1369,6 @@ func (s *EntValidationCaseRepoWorkflowService) ApplyForRepoValidation(
 		)
 	}
 
-	activeCount, err := s.countActiveRepoAssignmentsForValidator(ctx, validatorUserID)
-	if err != nil {
-		return nil, err
-	}
-	if activeCount >= 2 {
-		return nil, apperrors.ErrInvalidInput.WithDetails("validator sudah mencapai batas maksimal 2 task aktif")
-	}
-
 	state.RepoApplicants = append(state.RepoApplicants, validatorUserID)
 	state.RepoApplicants = dedupeUint(state.RepoApplicants)
 
@@ -1240,6 +1393,7 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 	panelSize int,
 	authHeader string,
 ) (*RepoTreeResponse, error) {
+	_ = panelSize
 	vc, err := s.getValidationCase(ctx, validationCaseID)
 	if err != nil {
 		return nil, err
@@ -1252,20 +1406,10 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 	if normalizeRepoStage(state.RepoStage) == repoStageFinalized {
 		return nil, apperrors.ErrInvalidInput.WithDetails("case sudah finalized")
 	}
-	if normalizeRepoStage(state.RepoStage) == repoStageDraft {
-		return nil, apperrors.ErrInvalidInput.WithDetails("publish case terlebih dahulu sebelum assign validator")
-	}
-
-	panelSize = normalizeRequestedPanelSize(panelSize)
-	if panelSize == 10 {
-		state.CompletionMode = repoCompletionPanel10
-	} else {
-		state.CompletionMode = repoCompletionPanel3
-	}
 
 	validatorUserIDs = dedupeUint(validatorUserIDs)
 	if len(validatorUserIDs) == 0 {
-		validatorUserIDs = append(validatorUserIDs, state.RepoApplicants...)
+		return nil, apperrors.ErrMissingField.WithDetails("validator_user_ids")
 	}
 
 	filtered := make([]uint, 0, len(validatorUserIDs))
@@ -1278,11 +1422,9 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 		}
 		filtered = append(filtered, id)
 	}
-
-	if len(filtered) < panelSize {
-		return nil, apperrors.ErrInvalidInput.WithDetails(fmt.Sprintf("validator terpilih minimal %d", panelSize))
+	if len(filtered) == 0 {
+		return nil, apperrors.ErrInvalidInput.WithDetails("validator terpilih tidak valid. Pastikan validator sudah apply.")
 	}
-	filtered = filtered[:panelSize]
 
 	requiredStake := requiredStakeForRepoCase(vc)
 	intIDs := make([]int, 0, len(filtered))
@@ -1298,11 +1440,6 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 		for _, u := range users {
 			usersByID[uint(u.ID)] = u
 		}
-	}
-
-	activeCounts, countErr := s.countActiveRepoAssignmentsForValidators(ctx, filtered)
-	if countErr != nil {
-		return nil, countErr
 	}
 	for _, id := range filtered {
 		validator := usersByID[id]
@@ -1326,32 +1463,15 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 				),
 			)
 		}
-
-		activeCount := activeCounts[id]
-		if !s.isAssignedValidator(id, state.RepoAssignments) && activeCount >= 2 {
-			return nil, apperrors.ErrInvalidInput.WithDetails(fmt.Sprintf("validator %d sudah mencapai batas 2 task aktif", id))
-		}
 	}
 
-	cutoff := time.Now().Add(-30 * 24 * time.Hour)
-	pairSet, err := s.buildRecentPanelPairSet(ctx, validationCaseID, cutoff)
-	if err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(filtered); i++ {
-		for j := i + 1; j < len(filtered); j++ {
-			_, seen := pairSet[validatorPairKey(filtered[i], filtered[j])]
-			if seen {
-				return nil, apperrors.ErrInvalidInput.WithDetails(
-					fmt.Sprintf("validator %d dan %d pernah satu panel dalam 30 hari terakhir", filtered[i], filtered[j]),
-				)
-			}
-		}
-	}
-
+	existingAssignedSet := validatorIDSet(activeAssignmentValidatorIDs(state.RepoAssignments))
 	now := time.Now().Unix()
-	nextAssignments := make([]RepoAssignmentItem, 0, len(filtered))
+	nextAssignments := append([]RepoAssignmentItem(nil), state.RepoAssignments...)
 	for _, id := range filtered {
+		if _, exists := existingAssignedSet[id]; exists {
+			continue
+		}
 		nextAssignments = append(nextAssignments, RepoAssignmentItem{
 			ValidatorUserID: id,
 			Status:          repoAssignmentStatusActive,
@@ -1359,15 +1479,22 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 		})
 	}
 	state.RepoAssignments = nextAssignments
-	state.RepoVerdicts = []RepoVerdictItem{}
-	state.RepoStage = repoStageInReview
-	state.ConsensusStatus = repoConsensusPending
-	state.ConsensusResult = ""
-	state.RepoPayout = nil
+	if len(activeAssignmentValidatorIDs(state.RepoAssignments)) > 0 {
+		state.RepoStage = repoStageInReview
+	} else {
+		state.RepoStage = repoStageReady
+	}
+	if normalizeRepoStage(state.RepoStage) != repoStageFinalized {
+		state.ConsensusStatus = repoConsensusPending
+		state.ConsensusResult = ""
+	}
+
+	activeSet := validatorIDSet(activeAssignmentValidatorIDs(state.RepoAssignments))
+	state.RepoConfidenceVotes = normalizeConfidenceVotes(state.RepoConfidenceVotes, activeSet)
 
 	remainingApplicants := make([]uint, 0, len(state.RepoApplicants))
 	for _, id := range state.RepoApplicants {
-		if containsUint(filtered, id) {
+		if _, assigned := activeSet[id]; assigned {
 			continue
 		}
 		remainingApplicants = append(remainingApplicants, id)
@@ -1391,8 +1518,7 @@ func (s *EntValidationCaseRepoWorkflowService) AssignRepoValidators(
 	actor := int(ownerUserID)
 	s.appendCaseLogBestEffort(ctx, vc.ID, &actor, "repo_validators_assigned", map[string]interface{}{
 		"validator_user_ids": filtered,
-		"panel_size":         panelSize,
-		"completion_mode":    state.CompletionMode,
+		"total_assignments":  len(activeAssignmentValidatorIDs(state.RepoAssignments)),
 	})
 
 	return s.buildRepoTreeResponse(ctx, vc, state, ownerUserID)
@@ -1403,6 +1529,157 @@ func (s *EntValidationCaseRepoWorkflowService) AutoAssignRepoValidators(
 	validationCaseID uint,
 	ownerUserID uint,
 	panelSize int,
+	authHeader string,
+) (*RepoTreeResponse, error) {
+	_ = ctx
+	_ = validationCaseID
+	_ = ownerUserID
+	_ = panelSize
+	_ = authHeader
+	return nil, apperrors.ErrInvalidInput.WithDetails("auto-match validator sudah dihapus. Owner harus assign validator secara manual.")
+}
+
+func buildConfidenceBreakdownByValidator(
+	assignments []RepoAssignmentItem,
+	votes []RepoConfidenceVoteItem,
+) map[string]int {
+	activeSet := validatorIDSet(activeAssignmentValidatorIDs(assignments))
+	normalized := normalizeConfidenceVotes(votes, activeSet)
+	countByValidator := confidenceVoteCountByValidator(normalized)
+	breakdown := make(map[string]int, len(countByValidator))
+	for validatorID, count := range countByValidator {
+		breakdown[fmt.Sprintf("validator_%d", validatorID)] = count
+	}
+	return breakdown
+}
+
+func (s *EntValidationCaseRepoWorkflowService) buildConsensusResponse(
+	validationCaseID uint,
+	state repoMetaState,
+) *RepoConsensusResponse {
+	uploadedCount := len(activeValidatorOutputCounts(state.RepoFiles, state.RepoAssignments))
+	return &RepoConsensusResponse{
+		CaseID:          validationCaseID,
+		CompletionMode:  normalizeRepoCompletionMode(state.CompletionMode),
+		ConsensusStatus: normalizeRepoConsensusStatus(state.ConsensusStatus),
+		ConsensusResult: strings.TrimSpace(state.ConsensusResult),
+		RequiredVotes:   repoMinimumValidatorUploads,
+		SubmittedVotes:  uploadedCount,
+		Breakdown:       buildConfidenceBreakdownByValidator(state.RepoAssignments, state.RepoConfidenceVotes),
+		Payout:          state.RepoPayout,
+	}
+}
+
+func (s *EntValidationCaseRepoWorkflowService) SubmitRepoVerdict(
+	ctx context.Context,
+	validationCaseID uint,
+	validatorUserID uint,
+	verdict string,
+	confidence int,
+	notes string,
+	documentID string,
+) (*RepoConsensusResponse, error) {
+	_ = ctx
+	_ = validationCaseID
+	_ = validatorUserID
+	_ = verdict
+	_ = confidence
+	_ = notes
+	_ = documentID
+	return nil, apperrors.ErrInvalidInput.WithDetails("submit verdict sudah tidak digunakan. Gunakan upload validator_output + confidence vote.")
+}
+
+func splitAmountEvenly(total int64, winnerIDs []uint) map[uint]int64 {
+	out := make(map[uint]int64, len(winnerIDs))
+	if total <= 0 || len(winnerIDs) == 0 {
+		return out
+	}
+	base := total / int64(len(winnerIDs))
+	remainder := total % int64(len(winnerIDs))
+	for i, id := range winnerIDs {
+		amount := base
+		if int64(i) < remainder {
+			amount++
+		}
+		out[id] = amount
+	}
+	return out
+}
+
+func sortedKeysUint(m map[uint]int) []uint {
+	keys := make([]uint, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+	return keys
+}
+
+func (s *EntValidationCaseRepoWorkflowService) VoteRepoValidatorConfidence(
+	ctx context.Context,
+	validationCaseID uint,
+	voterUserID uint,
+	validatorUserID uint,
+) (*RepoTreeResponse, error) {
+	vc, err := s.getValidationCase(ctx, validationCaseID)
+	if err != nil {
+		return nil, err
+	}
+
+	state := s.ensureRepoState(loadRepoMetaState(vc.Meta))
+	if normalizeRepoStage(state.RepoStage) == repoStageFinalized {
+		return nil, apperrors.ErrInvalidInput.WithDetails("case sudah finalized")
+	}
+	if !s.isAssignedValidator(validatorUserID, state.RepoAssignments) {
+		return nil, apperrors.ErrInvalidInput.WithDetails("validator belum diassign owner")
+	}
+
+	activeSet := validatorIDSet(activeAssignmentValidatorIDs(state.RepoAssignments))
+	if _, ok := activeSet[validatorUserID]; !ok {
+		return nil, apperrors.ErrInvalidInput.WithDetails("validator tidak aktif pada case ini")
+	}
+
+	now := time.Now().Unix()
+	nextVotes := make([]RepoConfidenceVoteItem, 0, len(state.RepoConfidenceVotes)+1)
+	updated := false
+	for _, vote := range normalizeConfidenceVotes(state.RepoConfidenceVotes, activeSet) {
+		if vote.VoterUserID == voterUserID {
+			nextVotes = append(nextVotes, RepoConfidenceVoteItem{
+				VoterUserID:     voterUserID,
+				ValidatorUserID: validatorUserID,
+				VotedAt:         now,
+			})
+			updated = true
+			continue
+		}
+		nextVotes = append(nextVotes, vote)
+	}
+	if !updated {
+		nextVotes = append(nextVotes, RepoConfidenceVoteItem{
+			VoterUserID:     voterUserID,
+			ValidatorUserID: validatorUserID,
+			VotedAt:         now,
+		})
+	}
+	state.RepoConfidenceVotes = nextVotes
+
+	meta := mergeRepoMeta(vc.Meta, state)
+	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).SetMeta(meta).Save(ctx); err != nil {
+		return nil, apperrors.ErrDatabase
+	}
+
+	actor := int(voterUserID)
+	s.appendCaseLogBestEffort(ctx, vc.ID, &actor, "repo_confidence_vote_submitted", map[string]interface{}{
+		"validator_user_id": validatorUserID,
+	})
+
+	return s.buildRepoTreeResponse(ctx, vc, state, voterUserID)
+}
+
+func (s *EntValidationCaseRepoWorkflowService) FinalizeRepoCase(
+	ctx context.Context,
+	validationCaseID uint,
+	ownerUserID uint,
 	authHeader string,
 ) (*RepoTreeResponse, error) {
 	vc, err := s.getValidationCase(ctx, validationCaseID)
@@ -1417,281 +1694,103 @@ func (s *EntValidationCaseRepoWorkflowService) AutoAssignRepoValidators(
 	if normalizeRepoStage(state.RepoStage) == repoStageFinalized {
 		return nil, apperrors.ErrInvalidInput.WithDetails("case sudah finalized")
 	}
-	if normalizeRepoStage(state.RepoStage) == repoStageDraft {
-		return nil, apperrors.ErrInvalidInput.WithDetails("publish case terlebih dahulu sebelum auto-match validator")
-	}
 
-	panelSize = normalizeRequestedPanelSize(panelSize)
-	candidateIDs := dedupeUint(state.RepoApplicants)
-	if len(candidateIDs) < panelSize {
+	outputCountByValidator := activeValidatorOutputCounts(state.RepoFiles, state.RepoAssignments)
+	if len(outputCountByValidator) < repoMinimumValidatorUploads {
 		return nil, apperrors.ErrInvalidInput.WithDetails(
-			fmt.Sprintf("applicant validator belum cukup untuk panel %d", panelSize),
+			fmt.Sprintf("finalisasi membutuhkan minimal %d validator yang upload hasil", repoMinimumValidatorUploads),
 		)
 	}
 
-	intIDs := make([]int, 0, len(candidateIDs))
-	for _, id := range candidateIDs {
-		if id == 0 || id == ownerUserID {
+	eligibleVoteBase := make(map[uint]int, len(outputCountByValidator))
+	for validatorID := range outputCountByValidator {
+		eligibleVoteBase[validatorID] = 0
+	}
+	eligibleSet := validatorIDSet(sortedKeysUint(eligibleVoteBase))
+	normalizedVotes := normalizeConfidenceVotes(state.RepoConfidenceVotes, eligibleSet)
+	confidenceByValidator := confidenceVoteCountByValidator(normalizedVotes)
+
+	maxVotes := -1
+	winnerIDs := make([]uint, 0, len(eligibleVoteBase))
+	for _, validatorID := range sortedKeysUint(eligibleVoteBase) {
+		votes := confidenceByValidator[validatorID]
+		if votes > maxVotes {
+			maxVotes = votes
+			winnerIDs = []uint{validatorID}
 			continue
 		}
-		intIDs = append(intIDs, int(id))
-	}
-	usersByID := make(map[uint]*ent.User, len(intIDs))
-	if len(intIDs) > 0 {
-		users, qErr := s.client.User.Query().Where(user.IDIn(intIDs...)).All(ctx)
-		if qErr != nil {
-			return nil, apperrors.ErrDatabase
-		}
-		for _, u := range users {
-			usersByID[uint(u.ID)] = u
+		if votes == maxVotes {
+			winnerIDs = append(winnerIDs, validatorID)
 		}
 	}
-
-	requiredStake := requiredStakeForRepoCase(vc)
-	activeCounts, countErr := s.countActiveRepoAssignmentsForValidators(ctx, candidateIDs)
-	if countErr != nil {
-		return nil, countErr
-	}
-	eligible := make([]uint, 0, len(candidateIDs))
-	for _, id := range candidateIDs {
-		validator := usersByID[id]
-		if validator == nil {
-			continue
-		}
-		if validator.GuaranteeAmount < requiredStake {
-			continue
-		}
-
-		activeCount := activeCounts[id]
-		if !s.isAssignedValidator(id, state.RepoAssignments) && activeCount >= 2 {
-			continue
-		}
-		eligible = append(eligible, id)
-	}
-	if len(eligible) < panelSize {
-		return nil, apperrors.ErrInvalidInput.WithDetails(
-			fmt.Sprintf("validator eligible belum cukup untuk panel %d", panelSize),
-		)
+	if len(winnerIDs) == 0 {
+		return nil, apperrors.ErrInvalidInput.WithDetails("tidak ada validator eligible untuk finalisasi")
 	}
 
-	eligible = shuffledUint(eligible)
-	cutoff := time.Now().Add(-30 * 24 * time.Hour)
-	pairSet, err := s.buildRecentPanelPairSet(ctx, validationCaseID, cutoff)
-	if err != nil {
-		return nil, err
-	}
-	selected := make([]uint, 0, panelSize)
-
-	var pick func(start int) (bool, error)
-	pick = func(start int) (bool, error) {
-		if len(selected) == panelSize {
-			return true, nil
-		}
-		remainingNeeded := panelSize - len(selected)
-		for i := start; i <= len(eligible)-remainingNeeded; i++ {
-			candidate := eligible[i]
-			conflict := false
-			for _, existing := range selected {
-				_, seen := pairSet[validatorPairKey(candidate, existing)]
-				if seen {
-					conflict = true
-					break
-				}
-			}
-			if conflict {
-				continue
-			}
-
-			selected = append(selected, candidate)
-			ok, err := pick(i + 1)
-			if err != nil {
-				return false, err
-			}
-			if ok {
-				return true, nil
-			}
-			selected = selected[:len(selected)-1]
-		}
-		return false, nil
-	}
-
-	ok, err := pick(0)
-	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		return nil, apperrors.ErrInvalidInput.WithDetails("tidak ditemukan kombinasi panel validator yang lolos aturan anti-pairing")
-	}
-
-	tree, err := s.AssignRepoValidators(ctx, validationCaseID, ownerUserID, selected, panelSize, authHeader)
-	if err != nil {
-		return nil, err
-	}
-
-	actor := int(ownerUserID)
-	s.appendCaseLogBestEffort(ctx, int(validationCaseID), &actor, "workspace_validators_auto_matched", map[string]interface{}{
-		"validator_user_ids": selected,
-		"panel_size":         panelSize,
-	})
-	return tree, nil
-}
-
-func (s *EntValidationCaseRepoWorkflowService) buildConsensusResponse(
-	validationCaseID uint,
-	state repoMetaState,
-	latest map[uint]RepoVerdictItem,
-) *RepoConsensusResponse {
-	requiredVotes := requiredVotesByMode(state.CompletionMode)
-	breakdown := consensusBreakdown(latest)
-	return &RepoConsensusResponse{
-		CaseID:          validationCaseID,
-		CompletionMode:  normalizeRepoCompletionMode(state.CompletionMode),
-		ConsensusStatus: normalizeRepoConsensusStatus(state.ConsensusStatus),
-		ConsensusResult: strings.TrimSpace(state.ConsensusResult),
-		RequiredVotes:   requiredVotes,
-		SubmittedVotes:  len(latest),
-		Breakdown:       breakdown,
-		Payout:          state.RepoPayout,
-	}
-}
-
-func (s *EntValidationCaseRepoWorkflowService) SubmitRepoVerdict(
-	ctx context.Context,
-	validationCaseID uint,
-	validatorUserID uint,
-	verdict string,
-	confidence int,
-	notes string,
-	documentID string,
-) (*RepoConsensusResponse, error) {
-	vc, err := s.getValidationCase(ctx, validationCaseID)
-	if err != nil {
-		return nil, err
-	}
-
-	state := s.ensureRepoState(loadRepoMetaState(vc.Meta))
-	if !s.isAssignedValidator(validatorUserID, state.RepoAssignments) {
-		return nil, apperrors.ErrInvalidInput.WithDetails("hanya validator terpilih yang dapat submit verdict")
-	}
-	if normalizeRepoStage(state.RepoStage) == repoStageFinalized {
-		return nil, apperrors.ErrInvalidInput.WithDetails("case sudah finalized")
-	}
-
-	verdict = normalizeRepoVerdict(verdict)
-	notes = strings.TrimSpace(notes)
-	documentID = strings.TrimSpace(documentID)
-	if verdict == "" {
-		return nil, apperrors.ErrInvalidInput.WithDetails("verdict harus valid, needs_revision, atau reject")
-	}
-	if confidence < 0 || confidence > 100 {
-		return nil, apperrors.ErrInvalidInput.WithDetails("confidence harus 0-100")
-	}
-	if len(notes) > 1000 {
-		return nil, apperrors.ErrInvalidInput.WithDetails("notes maksimal 1000 karakter")
-	}
-
-	now := time.Now().Unix()
-	nextVerdicts := make([]RepoVerdictItem, 0, len(state.RepoVerdicts)+1)
-	updated := false
-	for _, item := range state.RepoVerdicts {
-		if item.ValidatorUserID == validatorUserID {
-			item.Verdict = verdict
-			item.Confidence = confidence
-			item.Notes = notes
-			item.DocumentID = documentID
-			item.SubmittedAt = now
-			nextVerdicts = append(nextVerdicts, item)
-			updated = true
-			continue
-		}
-		nextVerdicts = append(nextVerdicts, item)
-	}
-	if !updated {
-		nextVerdicts = append(nextVerdicts, RepoVerdictItem{
-			ValidatorUserID: validatorUserID,
-			Verdict:         verdict,
-			Confidence:      confidence,
-			Notes:           notes,
-			DocumentID:      documentID,
-			SubmittedAt:     now,
+	payoutByValidator := splitAmountEvenly(vc.BountyAmount, winnerIDs)
+	payoutEntries := make([]RepoPayoutEntry, 0, len(winnerIDs))
+	for _, validatorID := range winnerIDs {
+		payoutEntries = append(payoutEntries, RepoPayoutEntry{
+			ValidatorUserID: validatorID,
+			Amount:          payoutByValidator[validatorID],
+			ConfidenceVotes: confidenceByValidator[validatorID],
 		})
 	}
-	state.RepoVerdicts = nextVerdicts
 
-	latest := latestVerdictsByValidator(state.RepoVerdicts, state.RepoAssignments)
-	requiredVotes := requiredVotesByMode(state.CompletionMode)
-	breakdown := consensusBreakdown(latest)
-	winner, winnerCount, _ := consensusWinner(breakdown)
-	finalized := false
-
-	if len(latest) >= requiredVotes {
-		if normalizeRepoCompletionMode(state.CompletionMode) == repoCompletionPanel3 {
-			if winnerCount >= 2 {
-				state.ConsensusStatus = repoConsensusFinalized
-				state.ConsensusResult = winner
-				state.RepoStage = repoStageFinalized
-				state.RepoPayout = buildRepoPayoutLedger(vc.BountyAmount, winner, latest)
-				finalized = true
-			} else {
-				state.CompletionMode = repoCompletionPanel10
-				state.ConsensusStatus = repoConsensusEscalated
-				state.RepoStage = repoStagePublished
-				state.ConsensusResult = ""
-			}
-		} else {
-			// Panel 10: supermajority threshold.
-			if winnerCount >= 7 {
-				state.ConsensusStatus = repoConsensusFinalized
-				state.ConsensusResult = winner
-				state.RepoStage = repoStageFinalized
-				state.RepoPayout = buildRepoPayoutLedger(vc.BountyAmount, winner, latest)
-				finalized = true
-			} else {
-				state.ConsensusStatus = repoConsensusEscalated
-				state.RepoStage = repoStageInReview
-				state.ConsensusResult = ""
-			}
-		}
-	} else {
-		state.ConsensusStatus = repoConsensusPending
+	if strings.TrimSpace(state.BountyReserveOrderID) == "" || normalizeRepoBountyReserveStatus(state.BountyReserveStatus) != repoBountyReserveStatusReserved {
+		return nil, apperrors.ErrInvalidInput.WithDetails("reserve bounty belum aktif. Case tidak bisa difinalisasi.")
 	}
+
+	featureWallet := NewFeatureWalletClientFromConfig()
+	recipients := make([]FeatureMarketDistributionRecipient, 0, len(payoutEntries))
+	for _, entry := range payoutEntries {
+		recipients = append(recipients, FeatureMarketDistributionRecipient{
+			UserID:    entry.ValidatorUserID,
+			AmountIDR: entry.Amount,
+		})
+	}
+	if _, err := featureWallet.DistributeMarketPurchase(
+		ctx,
+		strings.TrimSpace(authHeader),
+		state.BountyReserveOrderID,
+		recipients,
+		fmt.Sprintf("Validation Case #%d finalized payout", vc.ID),
+		"validation_case",
+	); err != nil {
+		return nil, apperrors.ErrInvalidInput.WithDetails(fmt.Sprintf("gagal mencairkan bounty: %s", err.Error()))
+	}
+
+	confidenceStringMap := make(map[string]int, len(confidenceByValidator))
+	for validatorID, votes := range confidenceByValidator {
+		confidenceStringMap[fmt.Sprintf("%d", validatorID)] = votes
+	}
+	state.RepoPayout = &RepoPayoutLedger{
+		BountyAmount:      vc.BountyAmount,
+		WinnerValidatorID: winnerIDs,
+		Confidence:        confidenceStringMap,
+		Entries:           payoutEntries,
+		CreatedAt:         time.Now().Unix(),
+	}
+	state.ConsensusStatus = repoConsensusFinalized
+	state.ConsensusResult = "confidence_vote"
+	state.RepoStage = repoStageFinalized
+	state.BountyReserveStatus = repoBountyReserveStatusDisbursed
 
 	meta := mergeRepoMeta(vc.Meta, state)
-	update := s.client.ValidationCase.UpdateOneID(vc.ID).SetMeta(meta)
-	if finalized {
-		update.SetStatus(caseStatusCompleted)
-	}
-	if _, err := update.Save(ctx); err != nil {
+	if _, err := s.client.ValidationCase.UpdateOneID(vc.ID).
+		SetMeta(meta).
+		SetStatus(caseStatusCompleted).
+		Save(ctx); err != nil {
 		return nil, apperrors.ErrDatabase
 	}
 
-	actor := int(validatorUserID)
-	s.appendCaseLogBestEffort(ctx, vc.ID, &actor, "repo_verdict_submitted", map[string]interface{}{
-		"validator_user_id": validatorUserID,
-		"verdict":           verdict,
-		"confidence":        confidence,
-		"submitted_votes":   len(latest),
-		"required_votes":    requiredVotes,
+	actor := int(ownerUserID)
+	s.appendCaseLogBestEffort(ctx, vc.ID, &actor, "repo_case_finalized", map[string]interface{}{
+		"winner_validator_ids": winnerIDs,
+		"bounty_amount":        vc.BountyAmount,
 	})
-	if normalizeRepoConsensusStatus(state.ConsensusStatus) == repoConsensusEscalated {
-		s.appendCaseLogBestEffort(ctx, vc.ID, &actor, "repo_consensus_escalated", map[string]interface{}{
-			"completion_mode": state.CompletionMode,
-			"breakdown":       breakdown,
-		})
-	}
-	if normalizeRepoConsensusStatus(state.ConsensusStatus) == repoConsensusFinalized {
-		s.appendCaseLogBestEffort(ctx, vc.ID, &actor, "repo_consensus_finalized", map[string]interface{}{
-			"result":     state.ConsensusResult,
-			"breakdown":  breakdown,
-			"payout_set": state.RepoPayout != nil,
-		})
-	}
 
-	// Unlock locked chain vesting from previous finalized cases once validator contributes to another case.
-	s.unlockChainVestingForValidator(ctx, validatorUserID, validationCaseID)
-
-	latest = latestVerdictsByValidator(state.RepoVerdicts, state.RepoAssignments)
-	return s.buildConsensusResponse(validationCaseID, state, latest), nil
+	return s.buildRepoTreeResponse(ctx, vc, state, ownerUserID)
 }
 
 func (s *EntValidationCaseRepoWorkflowService) GetRepoConsensus(
@@ -1705,6 +1804,5 @@ func (s *EntValidationCaseRepoWorkflowService) GetRepoConsensus(
 		return nil, err
 	}
 	state := s.ensureRepoState(loadRepoMetaState(vc.Meta))
-	latest := latestVerdictsByValidator(state.RepoVerdicts, state.RepoAssignments)
-	return s.buildConsensusResponse(validationCaseID, state, latest), nil
+	return s.buildConsensusResponse(validationCaseID, state), nil
 }

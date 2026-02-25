@@ -526,9 +526,9 @@ export default function NewValidationCaseClient() {
         meta: {
           workflow_family: "evidence_validation_workspace",
           workflow_name: "Evidence Validation Workspace",
-          completion_mode: "panel_3",
+          completion_mode: "open",
           consensus_status: "pending",
-          workspace_stage: "draft",
+          workspace_stage: "ready",
         },
       };
 
@@ -647,7 +647,7 @@ export default function NewValidationCaseClient() {
         <div className="border-b border-border px-5 py-4">
           <div className="text-sm font-semibold text-foreground">Case Setup</div>
           <div className="mt-1 text-xs text-muted-foreground">
-            Tulis README case, set sensitivity + bounty, upload file yang relevan, lalu publish.
+            Tulis README case, set sensitivity + bounty, upload file yang relevan, lalu create. Case langsung ready.
           </div>
         </div>
 
@@ -778,9 +778,7 @@ export default function NewValidationCaseClient() {
           </div>
 
           <div id="workspace-files" className="rounded-[var(--radius)] border border-border bg-secondary/20 p-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Workspace Files (Optional di Create)
-            </div>
+            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Workspace Files</div>
             <div className="mt-2 text-xs text-muted-foreground">
               Upload file sekarang agar validator bisa langsung kerja. File sensitif otomatis hanya untuk validator terpilih.
             </div>
@@ -885,9 +883,7 @@ export default function NewValidationCaseClient() {
                 </table>
               </div>
             ) : (
-              <div className="mt-3 text-xs text-muted-foreground">
-                Belum ada file di queue. Kamu tetap bisa create case sekarang dan upload nanti di Workspace.
-              </div>
+              <div className="mt-3 text-xs text-muted-foreground">Belum ada file di queue. Kamu tetap bisa create case sekarang dan upload nanti di repo case.</div>
             )}
           </div>
 

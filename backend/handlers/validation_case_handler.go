@@ -159,7 +159,7 @@ func (h *ValidationCaseHandler) CreateValidationCase(c *gin.Context) {
 		WorkspaceBootstrapFiles: bootstrapFiles,
 	}
 
-	vc, err := h.caseService.CreateValidationCase(c.Request.Context(), uint(user.ID), input)
+	vc, err := h.caseService.CreateValidationCase(c.Request.Context(), uint(user.ID), input, c.GetHeader("Authorization"))
 	if err != nil {
 		handleError(c, err)
 		return

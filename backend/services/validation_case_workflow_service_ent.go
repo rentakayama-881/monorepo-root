@@ -624,6 +624,7 @@ func (s *EntValidationCaseWorkflowService) ListConsultationGuaranteeLocksForVali
 	}
 
 	out := make([]ConsultationGuaranteeLockItem, 0, len(reqs))
+	seenCaseID := make(map[uint]struct{}, len(reqs))
 	for _, req := range reqs {
 		vc := req.Edges.ValidationCase
 		if vc == nil {
@@ -651,6 +652,41 @@ func (s *EntValidationCaseWorkflowService) ListConsultationGuaranteeLocksForVali
 			EscrowTransferID:   escrowTransferID,
 			DisputeID:          strings.TrimSpace(valueOrEmpty(vc.DisputeID)),
 		})
+		seenCaseID[uint(vc.ID)] = struct{}{}
+	}
+
+	workspaceCases, err := s.client.ValidationCase.Query().
+		Where(validationcase.StatusNEQ(caseStatusCompleted)).
+		All(ctx)
+	if err != nil {
+		return nil, apperrors.ErrDatabase
+	}
+
+	for _, vc := range workspaceCases {
+		vcID := uint(vc.ID)
+		if _, exists := seenCaseID[vcID]; exists {
+			continue
+		}
+
+		state := loadRepoMetaState(vc.Meta)
+		if !isWorkspaceMetaState(state) {
+			continue
+		}
+		if normalizeRepoStage(state.RepoStage) == repoStageFinalized {
+			continue
+		}
+		if !containsUint(activeAssignmentValidatorIDs(state.RepoAssignments), validatorUserID) {
+			continue
+		}
+
+		out = append(out, ConsultationGuaranteeLockItem{
+			ValidationCaseID:   vcID,
+			ValidationStatus:   normalizeStatus(vc.Status),
+			ConsultationStatus: "repo_assigned",
+			EscrowTransferID:   strings.TrimSpace(valueOrEmpty(vc.EscrowTransferID)),
+			DisputeID:          strings.TrimSpace(valueOrEmpty(vc.DisputeID)),
+		})
+		seenCaseID[vcID] = struct{}{}
 	}
 
 	return out, nil

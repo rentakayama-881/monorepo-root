@@ -12,7 +12,7 @@ import (
 // ValidationCaseServiceInterface defines the contract for Validation Case operations.
 // EntValidationCaseService (Ent) implements this interface.
 type ValidationCaseServiceInterface interface {
-	CreateValidationCase(ctx context.Context, ownerUserID uint, input validators.CreateValidationCaseInput) (*ValidationCaseDetailResponse, error)
+	CreateValidationCase(ctx context.Context, ownerUserID uint, input validators.CreateValidationCaseInput, authHeader string) (*ValidationCaseDetailResponse, error)
 	UpdateValidationCase(ctx context.Context, ownerUserID uint, input validators.UpdateValidationCaseInput) error
 	DeleteValidationCase(ctx context.Context, ownerUserID uint, validationCaseID uint) error
 	GetValidationCaseByID(ctx context.Context, validationCaseID uint, viewerUserID uint) (*ValidationCaseDetailResponse, error)

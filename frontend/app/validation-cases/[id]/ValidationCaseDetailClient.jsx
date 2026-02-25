@@ -14,6 +14,7 @@ import { fetchJson, fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
 import { getWorkspaceDisplayName, isWorkspaceValidationCase } from "@/lib/validationCaseWorkflow";
+import RepoWorkflowClient from "./repo/RepoWorkflowClient";
 
 function formatDateTime(ts) {
   if (!ts) return "";
@@ -877,6 +878,12 @@ export default function ValidationCaseRecordPage() {
       ? `${featureBase}${FEATURE_ENDPOINTS.DOCUMENTS.DOWNLOAD(String(certifiedId))}`
       : "";
   const recordContent = vc?.content_type === "text" ? contentAsText(vc?.content) : vc?.content;
+  const caseReadmeMarkdown = (() => {
+    const fromStructured = stripLeadingRecordLabel(extractCaseRecordText(recordContent));
+    if (fromStructured) return fromStructured;
+    if (typeof recordContent === "string") return stripLeadingRecordLabel(recordContent);
+    return "";
+  })();
   const showSummaryFallback = Boolean(vc?.summary) && !hasOverviewContent(recordContent);
 
   if (vc && isWorkspaceMode) {
@@ -892,10 +899,6 @@ export default function ValidationCaseRecordPage() {
           </Link>
           <span>/</span>
           <span className="font-mono text-xs text-foreground">#{String(id)}</span>
-          <span>/</span>
-          <Link href={`/validation-cases/${encodeURIComponent(String(id))}/workspace`} prefetch={false} className="hover:underline">
-            Evidence Validation Workspace
-          </Link>
         </nav>
 
         {error ? (
@@ -911,20 +914,17 @@ export default function ValidationCaseRecordPage() {
           <div className="text-sm text-muted-foreground">
             Case ini menggunakan <span className="font-semibold text-foreground">{workspaceName}</span>. Flow legacy Consultation/Final Offer tidak berlaku di case ini.
           </div>
+          {Array.isArray(vc?.tags) && vc.tags.length > 0 ? <TagList tags={vc.tags} size="sm" /> : null}
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">Sensitivity {sensitivity.level}</span>
             <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">Bounty {formatIDR(vc?.bounty_amount)}</span>
-          </div>
-          <div>
-            <Link
-              href={`/validation-cases/${encodeURIComponent(String(id))}/workspace`}
-              prefetch={false}
-              className="inline-flex rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              Open Workspace
-            </Link>
+            <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">
+              Owner {owner?.username ? `@${owner.username}` : `#${owner?.id || "-"}`}
+            </span>
           </div>
         </section>
+
+        <RepoWorkflowClient embedded caseReadmeMarkdown={caseReadmeMarkdown} caseTitle={vc?.title || ""} />
       </main>
     );
   }
