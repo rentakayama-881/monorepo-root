@@ -96,7 +96,7 @@ export default function TagSelector({
   };
 
   return (
-    <div className={clsx("relative", className)} ref={dropdownRef}>
+    <div className={clsx("relative z-[30]", className)} ref={dropdownRef}>
       {/* Selected tags display */}
       <div className="flex flex-wrap gap-2 mb-2">
         {selectedTags.map((tag) => (
@@ -180,7 +180,7 @@ export default function TagSelector({
       {/* Dropdown menu */}
       {isOpen && filteredTags.length > 0 && (
         <div className={clsx(
-          "absolute z-50 w-full mt-1 py-1 rounded-[var(--radius)] shadow-lg border",
+          "absolute left-0 z-[90] w-full mt-1 py-1 rounded-[var(--radius)] shadow-lg border",
           "bg-card border-border",
           "max-h-60 overflow-y-auto"
         )}>
@@ -234,7 +234,7 @@ export default function TagSelector({
       {/* Empty state when searching */}
       {isOpen && (enableSearch ? searchQuery : true) && filteredTags.length === 0 && (
         <div className={clsx(
-          "absolute z-50 w-full mt-1 py-3 px-3 rounded-[var(--radius)] shadow-lg border",
+          "absolute left-0 z-[90] w-full mt-1 py-3 px-3 rounded-[var(--radius)] shadow-lg border",
           "bg-card border-border",
           "text-sm text-muted-foreground text-center"
         )}>

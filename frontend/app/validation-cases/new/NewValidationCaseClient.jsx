@@ -179,6 +179,9 @@ export default function NewValidationCaseClient() {
   const locked = Boolean(caseType?.slug && LOCKED_CATEGORIES.includes(String(caseType.slug)));
   const telegramGateLocked = telegramChecking || !telegramReady;
   const formDisabled = locked || submitting || telegramGateLocked || uploadingDocument;
+  const processStatusText = uploadingDocument
+    ? `Uploading file... ${uploadProgress}%`
+    : workspaceUploadStageMsg || "";
   const recordPreview = useMemo(() => buildRecordPreview(form.case_record_text), [form.case_record_text]);
   const normalizedTagCount = useMemo(
     () =>
@@ -540,10 +543,11 @@ export default function NewValidationCaseClient() {
       });
 
       const id = created?.id;
-      setOk("Validation Case berhasil dibuat.");
       if (id != null) {
         router.push(`/validation-cases/${encodeURIComponent(String(id))}`);
+        return;
       }
+      setOk("Validation Case berhasil dibuat.");
     } catch (e) {
       setError(formatCreateCaseError(e));
     } finally {
@@ -600,17 +604,19 @@ export default function NewValidationCaseClient() {
         </div>
       ) : null}
 
-      {error ? (
-        <div role="alert" aria-live="polite" className="mb-5 rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
-          {error}
-        </div>
-      ) : null}
+      <div className="mb-5 min-h-[56px]">
+        {error ? (
+          <div role="alert" aria-live="polite" className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
+            {error}
+          </div>
+        ) : null}
 
-      {ok ? (
-        <div role="status" aria-live="polite" className="mb-5 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
-          {ok}
-        </div>
-      ) : null}
+        {!error && ok ? (
+          <div role="status" aria-live="polite" className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
+            {ok}
+          </div>
+        ) : null}
+      </div>
 
       <section className="mb-5 rounded-[var(--radius)] border border-cyan-200/80 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-100 px-5 py-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -643,7 +649,7 @@ export default function NewValidationCaseClient() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-card shadow-sm">
+      <section className="rounded-[var(--radius)] border border-border bg-card shadow-sm">
         <div className="border-b border-border px-5 py-4">
           <div className="text-sm font-semibold text-foreground">Case Setup</div>
           <div className="mt-1 text-xs text-muted-foreground">
@@ -840,12 +846,9 @@ export default function NewValidationCaseClient() {
               >
                 Add File to Queue
               </button>
-              {uploadingDocument ? (
-                <span className="text-xs text-muted-foreground">Upload progress: {uploadProgress}%</span>
-              ) : null}
-              {workspaceUploadStageMsg ? (
-                <span className="text-xs text-muted-foreground">{workspaceUploadStageMsg}</span>
-              ) : null}
+            </div>
+            <div className="mt-1 min-h-[18px] text-xs text-muted-foreground">
+              {processStatusText || "\u00A0"}
             </div>
 
             {workspaceBootstrapFiles.length > 0 ? (
@@ -905,7 +908,7 @@ export default function NewValidationCaseClient() {
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-6 relative z-[40]">
             <label className="text-xs font-semibold text-muted-foreground">Tags (Wajib)</label>
             {tagsAvailable ? (
               <TagSelector
@@ -941,6 +944,7 @@ export default function NewValidationCaseClient() {
               disabled={formDisabled}
               loading={submitting}
               size="sm"
+              className="min-w-[12.5rem]"
               type="button"
             >
               {submitting ? "Submitting..." : "Create Validation Case"}

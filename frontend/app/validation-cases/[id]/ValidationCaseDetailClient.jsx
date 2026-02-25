@@ -912,7 +912,7 @@ export default function ValidationCaseRecordPage() {
           </div>
         ) : null}
 
-        <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
+        <section className="space-y-3">
           <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Validation Case Record</div>
           <h1 className="text-2xl font-semibold text-foreground">{vc?.title || "(untitled)"}</h1>
           {vc?.summary && !looksLikeMarkdownText(vc?.summary) ? (
@@ -921,9 +921,9 @@ export default function ValidationCaseRecordPage() {
           <div className="text-sm text-muted-foreground">Case langsung ready setelah dibuat dan validator bisa apply tanpa flow konsultasi legacy.</div>
           {Array.isArray(vc?.tags) && vc.tags.length > 0 ? <TagList tags={vc.tags} size="sm" /> : null}
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">Sensitivity {sensitivity.level}</span>
-            <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">Bounty {formatIDR(vc?.bounty_amount)}</span>
-            <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">
+            <span className="rounded-full bg-secondary px-3 py-1 text-muted-foreground">Sensitivity {sensitivity.level}</span>
+            <span className="rounded-full bg-secondary px-3 py-1 text-muted-foreground">Bounty {formatIDR(vc?.bounty_amount)}</span>
+            <span className="rounded-full bg-secondary px-3 py-1 text-muted-foreground">
               Owner {owner?.username ? `@${owner.username}` : `#${owner?.id || "-"}`}
             </span>
           </div>

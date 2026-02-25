@@ -497,7 +497,7 @@ export default function RepoWorkflowClient({
   }
 
   const content = (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {error ? (
         <div role="alert" aria-live="polite" className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
           {error}
@@ -509,7 +509,7 @@ export default function RepoWorkflowClient({
         </div>
       ) : null}
 
-      <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
+      <section className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Repo Files</h2>
         {files.length === 0 ? (
           <div className="text-sm text-muted-foreground">Belum ada file di repo case.</div>
@@ -571,7 +571,7 @@ export default function RepoWorkflowClient({
         )}
 
         {canAttach ? (
-          <form onSubmit={onAttachFile} className="grid gap-3 rounded-[var(--radius)] border border-border p-4 md:grid-cols-2">
+          <form onSubmit={onAttachFile} className="grid gap-3 md:grid-cols-2">
             <input
               key={attachFileInputKey}
               type="file"
@@ -632,7 +632,7 @@ export default function RepoWorkflowClient({
         ) : null}
       </section>
 
-      <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-4">
+      <section className="space-y-4 border-t border-border/40 pt-4">
         <h2 className="text-lg font-semibold text-foreground">Validators</h2>
 
         {!isOwner ? (
@@ -696,7 +696,7 @@ export default function RepoWorkflowClient({
                   const viewerVoted = Boolean(score?.viewer_voted);
                   const hasOutput = Boolean(score?.has_uploaded_output);
                   return (
-                    <li key={`as-${validatorId}`} className="rounded-[var(--radius)] border border-border px-3 py-2">
+                    <li key={`as-${validatorId}`} className="border-b border-border/40 py-2 last:border-b-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-foreground">#{validatorId} {item?.validator?.username ? `@${item.validator.username}` : ""}</div>
                         <div className="text-xs text-muted-foreground">{formatDateTime(item?.assigned_at)}</div>
@@ -727,7 +727,7 @@ export default function RepoWorkflowClient({
       </section>
 
       {isOwner ? (
-        <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-3">
+        <section className="space-y-2 border-t border-border/40 pt-4">
           <h2 className="text-lg font-semibold text-foreground">Finalisasi Case</h2>
           <div className="text-sm text-muted-foreground">
             Finalisasi membutuhkan minimal <span className="font-semibold text-foreground">{repoTree?.minimum_validator_uploads || 3}</span> validator upload hasil.
@@ -747,7 +747,7 @@ export default function RepoWorkflowClient({
       ) : null}
 
       {payout ? (
-        <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5 space-y-3">
+        <section className="space-y-3 border-t border-border/40 pt-4">
           <h2 className="text-lg font-semibold text-foreground">Payout Result</h2>
           <div className="text-sm text-muted-foreground">Total bounty: {formatIDR(payout?.bounty_amount || 0)}</div>
           <div className="overflow-auto">
@@ -773,9 +773,9 @@ export default function RepoWorkflowClient({
         </section>
       ) : null}
 
-      <section className="rounded-[var(--radius)] border border-border bg-card px-5 py-5">
+      <section className="space-y-2 border-t border-border/40 pt-4">
         <h2 className="text-lg font-semibold text-foreground">README</h2>
-        <div className="mt-3 rounded-[var(--radius)] border border-border/70 bg-background/60 px-4 py-4">
+        <div className="mt-2">
           {String(caseReadmeMarkdown || "").trim() ? (
             <div className="prose prose-neutral max-w-none">
               <MarkdownPreview content={caseReadmeMarkdown} />
