@@ -11,7 +11,7 @@ export default function ValidationCaseRecordSkeleton() {
 
       <div className="space-y-10 lg:grid lg:grid-cols-12 lg:gap-10 lg:space-y-0">
         <div className="lg:col-span-8 space-y-10">
-          <header className="space-y-4 rounded-2xl bg-card/70 px-5 py-5 shadow-sm ring-1 ring-border/70">
+          <header className="space-y-4 rounded-2xl bg-secondary/20 px-5 py-5">
             <SkeletonText width="w-44" height="h-3" />
             <SkeletonText width="w-full max-w-2xl" height="h-10" />
             <SkeletonText width="w-full max-w-3xl" height="h-4" />
@@ -22,7 +22,7 @@ export default function ValidationCaseRecordSkeleton() {
             </div>
           </header>
 
-          <section className="space-y-4 rounded-2xl bg-card/70 px-5 py-5 shadow-sm ring-1 ring-border/70">
+          <section className="space-y-4 rounded-2xl bg-secondary/20 px-5 py-5">
             <SkeletonText width="w-28" height="h-3" />
             <SkeletonText width="w-44" height="h-7" />
             <div className="overflow-hidden rounded-[var(--radius)] bg-card">
@@ -37,7 +37,7 @@ export default function ValidationCaseRecordSkeleton() {
             </div>
           </section>
 
-          <section className="space-y-4 rounded-2xl bg-card/70 px-5 py-5 shadow-sm ring-1 ring-border/70">
+          <section className="space-y-4 rounded-2xl bg-secondary/20 px-5 py-5">
             <SkeletonText width="w-36" height="h-3" />
             <SkeletonText width="w-56" height="h-7" />
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -46,14 +46,14 @@ export default function ValidationCaseRecordSkeleton() {
             </div>
           </section>
 
-          <section className="space-y-4 rounded-2xl bg-card/70 px-5 py-5 shadow-sm ring-1 ring-border/70">
+          <section className="space-y-4 rounded-2xl bg-secondary/20 px-5 py-5">
             <SkeletonText width="w-28" height="h-3" />
             <SkeletonText width="w-52" height="h-7" />
             <Skeleton className="h-56 w-full" />
           </section>
         </div>
 
-        <aside className="lg:col-span-4 space-y-6 rounded-2xl bg-card/70 px-5 py-5 shadow-sm ring-1 ring-border/70">
+        <aside className="lg:col-span-4 space-y-6 rounded-2xl bg-secondary/20 px-5 py-5">
           <SkeletonText width="w-28" height="h-3" />
 
           <div className="space-y-4">
@@ -69,9 +69,9 @@ export default function ValidationCaseRecordSkeleton() {
               </div>
             </div>
 
-            <div className="divide-y divide-border">
+            <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between gap-4 py-2">
+                <div key={i} className="flex items-center justify-between gap-4 py-1.5">
                   <SkeletonText width="w-20" height="h-3" />
                   <SkeletonText width="w-28" height="h-4" />
                 </div>

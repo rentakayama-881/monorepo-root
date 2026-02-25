@@ -1246,6 +1246,20 @@ func (s *EntValidationCaseRepoWorkflowService) AttachRepoFile(
 		fileVisibility = repoFileVisibilityAssignedValidators
 	}
 
+	// Idempotency guard: retries after timeout should not create duplicate file rows.
+	for _, existing := range state.RepoFiles {
+		if strings.TrimSpace(existing.DocumentID) != documentID {
+			continue
+		}
+		if normalizeRepoFileKind(existing.Kind) != kind {
+			continue
+		}
+		if existing.UploadedBy != actorUserID {
+			continue
+		}
+		return s.buildRepoTreeResponse(ctx, vc, state, actorUserID)
+	}
+
 	item := RepoCaseFileItem{
 		ID:         fmt.Sprintf("rcf_%d_%d", time.Now().UnixNano(), actorUserID),
 		DocumentID: documentID,

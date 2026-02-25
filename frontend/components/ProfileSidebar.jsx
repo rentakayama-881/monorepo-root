@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getApiBase } from "../lib/api";
 import { clearToken, getToken } from "@/lib/auth";
@@ -88,10 +88,12 @@ function MenuItemLink({ href, label, iconPath, isActive }) {
 
 export default function ProfileSidebar({ onClose, triggerRef }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [user, setUser] = useState({ username: "", avatar_url: "", email: "" });
   const [wallet, setWallet] = useState({ balance: 0, pin_set: false });
   const [guarantee, setGuarantee] = useState({ amount: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [reloadTick, setReloadTick] = useState(0);
   const panelRef = useRef(null);
@@ -115,7 +117,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
       const token = getToken();
       if (!token) {
         onClose?.();
-        window.location.href = "/login";
+        router.replace("/login");
         return;
       }
       setIsLoading(true);
@@ -125,7 +127,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
         if (res.status === 401) {
           clearToken();
           onClose?.();
-          window.location.href = "/login?session=expired";
+          router.replace("/login?session=expired");
           return;
         }
         if (!res.ok) {
@@ -186,7 +188,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
           if (isAuthError) {
             clearToken();
             onClose?.();
-            window.location.href = "/login?session=expired";
+            router.replace("/login?session=expired");
             return;
           }
 
@@ -198,7 +200,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
 
     loadUser();
     return () => controller.abort();
-  }, [onClose, reloadTick]);
+  }, [onClose, reloadTick, router]);
 
   useEffect(() => {
     const panelEl = panelRef.current;
@@ -284,6 +286,9 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
   };
 
   const handleLogout = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+
     // Call logout API to invalidate server-side session
     const token = getToken();
     if (token) {
@@ -300,7 +305,9 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
       }
     }
     clearToken();
-    window.location.href = "/login";
+    onClose?.();
+    router.replace("/login");
+    router.refresh();
   };
 
   const displayName = user.username || (user.email ? user.email.split("@")[0] : "Account");
@@ -506,14 +513,19 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
         <div className="shrink-0 border-t p-3">
           <button
             onClick={handleLogout}
+            disabled={isSigningOut}
             className="w-full rounded-lg border border-destructive/25 bg-destructive/[0.03] px-3 py-2 text-left text-sm font-semibold text-destructive transition-colors hover:border-destructive/40 hover:bg-destructive/10"
             type="button"
           >
             <span className="flex items-center gap-2">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Sign Out
+              {isSigningOut ? (
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              )}
+              {isSigningOut ? "Signing out..." : "Sign Out"}
             </span>
           </button>
         </div>

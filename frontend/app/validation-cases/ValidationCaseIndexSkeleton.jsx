@@ -21,8 +21,8 @@ export function ValidationCaseIndexContentSkeleton({ fullHeight = false }) {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
-        <div className="mb-3 grid grid-cols-7 gap-4 border-b border-border/60 pb-3">
+      <div className="rounded-2xl bg-secondary/20 px-4 py-4">
+        <div className="mb-3 grid grid-cols-7 gap-4 pb-3">
           {Array.from({ length: 7 }).map((_, i) => (
             <Skeleton key={`head-${i}`} className="h-4 w-24" />
           ))}

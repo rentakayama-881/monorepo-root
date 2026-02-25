@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import Skeleton from "@/components/ui/Skeleton";
 import {
   clearAdminSession,
   getAdminInfo,
@@ -61,8 +62,14 @@ export default function AdminLayout({ children }) {
   // Show loading until mounted and auth checked
   if (!mounted || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-background p-6">
+        <div className="mx-auto max-w-6xl space-y-4">
+          <Skeleton className="h-12 w-full rounded-xl" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[14rem_1fr]">
+            <Skeleton className="h-[72vh] w-full rounded-2xl" />
+            <Skeleton className="h-[72vh] w-full rounded-2xl" />
+          </div>
+        </div>
       </div>
     );
   }

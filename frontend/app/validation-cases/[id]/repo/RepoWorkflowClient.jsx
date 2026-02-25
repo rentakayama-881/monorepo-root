@@ -158,15 +158,15 @@ function RepoWorkspaceSkeleton({ embedded = false, caseTitle = "" }) {
     <div className="space-y-7" aria-busy="true" aria-live="polite">
       <section className="space-y-4">
         <SkeletonText width="w-40" height="h-3.5" />
-        <div className="rounded-2xl bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
-          <div className="mb-3 hidden gap-3 border-b border-border/60 pb-3 md:grid md:grid-cols-6">
+        <div className="rounded-2xl bg-secondary/20 px-4 py-4">
+          <div className="mb-3 hidden gap-3 pb-3 md:grid md:grid-cols-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={`repo-head-${i}`} className="h-4 w-20" />
             ))}
           </div>
           <div className="space-y-3">
             {Array.from({ length: 7 }).map((_, row) => (
-              <div key={`repo-row-${row}`} className="rounded-xl border border-border/50 p-3 md:rounded-none md:border-0 md:p-0">
+              <div key={`repo-row-${row}`} className="rounded-xl bg-card/60 p-3 md:rounded-none md:bg-transparent md:p-0">
                 <div className="space-y-2 md:hidden">
                   <Skeleton className="h-4 w-28" />
                   <Skeleton className="h-4 w-full" />
@@ -187,12 +187,12 @@ function RepoWorkspaceSkeleton({ embedded = false, caseTitle = "" }) {
       <section className="space-y-4">
         <SkeletonText width="w-36" height="h-3.5" />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-2 rounded-2xl bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
+          <div className="space-y-2 rounded-2xl bg-secondary/20 px-4 py-4">
             <Skeleton className="h-4 w-28" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-4/5" />
           </div>
-          <div className="space-y-2 rounded-2xl bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
+          <div className="space-y-2 rounded-2xl bg-secondary/20 px-4 py-4">
             <Skeleton className="h-4 w-36" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-3/4" />
@@ -232,6 +232,7 @@ export default function RepoWorkflowClient({
   embedded = false,
   caseReadmeMarkdown = "",
   caseTitle = "",
+  ownerUserId = 0,
 }) {
   const params = useParams();
   const router = useRouter();
@@ -297,17 +298,38 @@ export default function RepoWorkflowClient({
     return ["validator_output"];
   }, [isOwner]);
 
+  function extractRepoTree(payload) {
+    if (payload && typeof payload === "object") {
+      if (payload.repo_tree && typeof payload.repo_tree === "object") {
+        return payload.repo_tree;
+      }
+      if (payload.case_id && payload.files) {
+        return payload;
+      }
+    }
+    return null;
+  }
+
+  function applyRepoTreePayload(payload) {
+    const nextTree = extractRepoTree(payload);
+    if (!nextTree) return false;
+    setRepoTree(nextTree);
+    return true;
+  }
+
   async function getWorkspaceTree() {
     try {
       return await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/workspace/tree`, {
         method: "GET",
         clearSessionOn401: false,
+        timeout: 20000,
       });
     } catch (err) {
       if (err?.status === 404) {
         return fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/repo/tree`, {
           method: "GET",
           clearSessionOn401: false,
+          timeout: 20000,
         });
       }
       throw err;
@@ -319,6 +341,7 @@ export default function RepoWorkflowClient({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload || {}),
+      timeout: 20000,
       ...requestOptions,
     };
 
@@ -332,18 +355,26 @@ export default function RepoWorkflowClient({
     }
   }
 
-  async function loadAll() {
+  async function loadAll({ withSkeleton = true } = {}) {
     if (!id) return;
-    setLoading(true);
-    setError("");
+    if (withSkeleton) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const repoResp = await getWorkspaceTree();
-      setRepoTree(repoResp?.repo_tree || null);
+      if (!applyRepoTreePayload(repoResp)) {
+        setRepoTree(null);
+      }
     } catch (e) {
-      setError(normalizeErr(e, "Gagal memuat repo case"));
-      setRepoTree(null);
+      if (withSkeleton) {
+        setError(normalizeErr(e, "Gagal memuat repo case"));
+        setRepoTree(null);
+      }
     } finally {
-      setLoading(false);
+      if (withSkeleton) {
+        setLoading(false);
+      }
     }
   }
 
@@ -353,7 +384,7 @@ export default function RepoWorkflowClient({
       router.push(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
       return;
     }
-    loadAll();
+    loadAll({ withSkeleton: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isAuthed]);
 
@@ -379,18 +410,32 @@ export default function RepoWorkflowClient({
     });
   }, [attachKindOptions, canAttach, isOwner]);
 
-  async function runAction(fn, successMsg = "Repo case berhasil diperbarui.") {
-    setBusy(true);
+  async function runAction(
+    fn,
+    successMsg = "Repo case berhasil diperbarui.",
+    options = { lockUI: true, fallbackReload: false },
+  ) {
+    const lockUI = options?.lockUI !== false;
+    const fallbackReload = options?.fallbackReload === true;
+
+    if (lockUI) {
+      setBusy(true);
+    }
     setError("");
     setMsg("");
     try {
-      await fn();
-      await loadAll();
+      const result = await fn();
+      const applied = applyRepoTreePayload(result);
+      if (!applied && fallbackReload) {
+        await loadAll({ withSkeleton: false });
+      }
       setMsg(successMsg);
     } catch (e) {
       setError(normalizeErr(e, "Aksi gagal"));
     } finally {
-      setBusy(false);
+      if (lockUI) {
+        setBusy(false);
+      }
     }
   }
 
@@ -425,7 +470,7 @@ export default function RepoWorkflowClient({
         throw new Error("Upload berhasil tetapi document_id tidak ditemukan.");
       }
 
-      await postWorkspace("files", {
+      const updated = await postWorkspace("files", {
         document_id: documentId,
         kind: attachForm.kind,
         label,
@@ -437,6 +482,7 @@ export default function RepoWorkflowClient({
 
       setAttachForm((prev) => ({ ...prev, file: null, label: "" }));
       setAttachFileInputKey((prev) => prev + 1);
+      return updated;
     }, "File berhasil ditambahkan ke repo case.");
   }
 
@@ -529,7 +575,7 @@ export default function RepoWorkflowClient({
     setApplyingValidator(true);
     try {
       await runAction(async () => {
-        await postWorkspace("apply", {});
+        return postWorkspace("apply", {});
       }, "Apply validator berhasil dikirim. Menunggu assign owner.");
     } finally {
       setApplyingValidator(false);
@@ -539,7 +585,7 @@ export default function RepoWorkflowClient({
   async function onAssignValidator(validatorUserID) {
     setAssigningValidatorID(String(validatorUserID));
     await runAction(async () => {
-      await postWorkspace("validators/assign", {
+      return postWorkspace("validators/assign", {
         validator_user_ids: [Number(validatorUserID)],
       });
     }, "Validator berhasil diassign.");
@@ -549,16 +595,16 @@ export default function RepoWorkflowClient({
   async function onVoteConfidence(validatorUserID) {
     setVotingValidatorID(String(validatorUserID));
     await runAction(async () => {
-      await postWorkspace("confidence/vote", {
+      return postWorkspace("confidence/vote", {
         validator_user_id: Number(validatorUserID),
       });
-    }, "Vote confidence berhasil disimpan.");
+    }, "Vote confidence berhasil disimpan.", { lockUI: false, fallbackReload: false });
     setVotingValidatorID("");
   }
 
   async function onFinalize() {
     await runAction(async () => {
-      await postWorkspace("finalize", {});
+      return postWorkspace("finalize", {});
     }, "Case berhasil difinalisasi dan bounty didistribusikan.");
   }
 
@@ -600,6 +646,9 @@ export default function RepoWorkflowClient({
                 {files.map((file) => {
                   const documentId = String(file?.document_id || "");
                   const processing = downloadingDocumentID === documentId;
+                  const uploadedBy = Number(file?.uploaded_by || 0);
+                  const normalizedOwnerUserId = Number(ownerUserId || 0);
+                  const isOwnerUpload = normalizedOwnerUserId > 0 && uploadedBy > 0 && uploadedBy === normalizedOwnerUserId;
                   return (
                     <tr key={file.id}>
                       <td className="py-2 pr-3 font-mono text-xs text-foreground">{file.kind}</td>
@@ -614,7 +663,7 @@ export default function RepoWorkflowClient({
                         </button>
                       </td>
                       <td className="py-2 pr-3 text-foreground">
-                        {file.uploaded_by_user?.username ? `@${file.uploaded_by_user.username}` : `#${file.uploaded_by || "-"}`}
+                        {isOwnerUpload ? "Owner case" : file.uploaded_by_user?.username ? `@${file.uploaded_by_user.username}` : `#${file.uploaded_by || "-"}`}
                       </td>
                       <td className="py-2 pr-3 text-muted-foreground">{file.visibility}</td>
                       <td className="py-2 pr-3 text-muted-foreground">{formatDateTime(file.uploaded_at)}</td>
@@ -773,7 +822,7 @@ export default function RepoWorkflowClient({
             ) : (
               <ul className="mt-2 space-y-2 text-sm">
                 {assignments.map((item) => {
-                  const validatorId = Number(item?.validator?.id || 0);
+                  const validatorId = Number(item?.validator?.id || item?.validator_user_id || 0);
                   const score = confidenceByValidator.get(validatorId);
                   const votes = Number(score?.votes || 0);
                   const viewerVoted = Boolean(score?.viewer_voted);
@@ -793,11 +842,11 @@ export default function RepoWorkflowClient({
                         <button
                           type="button"
                           onClick={() => onVoteConfidence(validatorId)}
-                          disabled={actionLocked || votingValidatorID === String(validatorId)}
+                          disabled={Boolean(votingValidatorID) || validatorId <= 0}
                           className="mt-2 inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <ConfidenceIcon active={viewerVoted} />
-                          {votingValidatorID === String(validatorId) ? "Saving..." : viewerVoted ? "Voted" : "Confidence"}
+                          {validatorId <= 0 ? "Unavailable" : votingValidatorID === String(validatorId) ? "Saving..." : viewerVoted ? "Voted" : "Confidence"}
                         </button>
                       ) : null}
                     </li>

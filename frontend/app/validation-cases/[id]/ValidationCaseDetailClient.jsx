@@ -941,7 +941,12 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
           </div>
         </section>
 
-        <RepoWorkflowClient embedded caseReadmeMarkdown={caseReadmeMarkdown} caseTitle={vc?.title || ""} />
+        <RepoWorkflowClient
+          embedded
+          caseReadmeMarkdown={caseReadmeMarkdown}
+          caseTitle={vc?.title || ""}
+          ownerUserId={owner?.id || 0}
+        />
       </main>
     );
   }

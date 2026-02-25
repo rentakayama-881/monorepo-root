@@ -9,7 +9,7 @@ export default function NewValidationCaseSkeleton() {
         <SkeletonText width="w-full max-w-3xl" height="h-4" className="mt-3" />
       </div>
 
-      <div className="mb-6 rounded-2xl bg-card/70 px-5 py-5 shadow-sm ring-1 ring-border/70">
+      <div className="mb-6 rounded-2xl bg-secondary/20 px-5 py-5">
         <div className="flex items-center justify-between gap-3">
           <div className="space-y-2">
             <SkeletonText width="w-36" height="h-3" />
@@ -25,7 +25,7 @@ export default function NewValidationCaseSkeleton() {
         </div>
       </div>
 
-      <div className="space-y-6 rounded-2xl bg-card px-5 py-6 shadow-sm ring-1 ring-border/70">
+      <div className="space-y-6 rounded-2xl bg-secondary/20 px-5 py-6">
         <div>
           <SkeletonText width="w-20" height="h-3" />
           <Skeleton className="mt-2 h-11 w-full rounded-xl" />
