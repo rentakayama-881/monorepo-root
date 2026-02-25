@@ -233,6 +233,7 @@ export default function RepoWorkflowClient({
   caseReadmeMarkdown = "",
   caseTitle = "",
   ownerUserId = 0,
+  viewerUserId = 0,
 }) {
   const params = useParams();
   const router = useRouter();
@@ -827,6 +828,7 @@ export default function RepoWorkflowClient({
                   const votes = Number(score?.votes || 0);
                   const viewerVoted = Boolean(score?.viewer_voted);
                   const hasOutput = Boolean(score?.has_uploaded_output);
+                  const isSelfTarget = viewerUserId > 0 && validatorId > 0 && Number(viewerUserId) === validatorId;
                   return (
                     <li key={`as-${validatorId}`} className="py-1">
                       <div className="flex items-center justify-between gap-2">
@@ -842,11 +844,19 @@ export default function RepoWorkflowClient({
                         <button
                           type="button"
                           onClick={() => onVoteConfidence(validatorId)}
-                          disabled={Boolean(votingValidatorID) || validatorId <= 0}
+                          disabled={Boolean(votingValidatorID) || validatorId <= 0 || isSelfTarget}
                           className="mt-2 inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <ConfidenceIcon active={viewerVoted} />
-                          {validatorId <= 0 ? "Unavailable" : votingValidatorID === String(validatorId) ? "Saving..." : viewerVoted ? "Voted" : "Confidence"}
+                          {validatorId <= 0
+                            ? "Unavailable"
+                            : isSelfTarget
+                              ? "Self"
+                              : votingValidatorID === String(validatorId)
+                                ? "Saving..."
+                                : viewerVoted
+                                  ? "Voted"
+                                  : "Confidence"}
                         </button>
                       ) : null}
                     </li>

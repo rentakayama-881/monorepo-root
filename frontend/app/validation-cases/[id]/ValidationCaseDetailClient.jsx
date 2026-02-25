@@ -946,6 +946,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
           caseReadmeMarkdown={caseReadmeMarkdown}
           caseTitle={vc?.title || ""}
           ownerUserId={owner?.id || 0}
+          viewerUserId={Number(me?.id || 0)}
         />
       </main>
     );

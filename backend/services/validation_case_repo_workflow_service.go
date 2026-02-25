@@ -1644,6 +1644,9 @@ func (s *EntValidationCaseRepoWorkflowService) VoteRepoValidatorConfidence(
 	if normalizeRepoStage(state.RepoStage) == repoStageFinalized {
 		return nil, apperrors.ErrInvalidInput.WithDetails("case sudah finalized")
 	}
+	if voterUserID == validatorUserID {
+		return nil, apperrors.ErrInvalidInput.WithDetails("tidak bisa memberi confidence ke akun sendiri")
+	}
 	if !s.isAssignedValidator(validatorUserID, state.RepoAssignments) {
 		return nil, apperrors.ErrInvalidInput.WithDetails("validator belum diassign owner")
 	}
