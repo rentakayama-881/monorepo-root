@@ -97,6 +97,20 @@ type publicOrderStep struct {
 	At      time.Time `json:"at"`
 }
 
+type supplierBalanceState string
+
+const (
+	supplierBalanceStateEnough       supplierBalanceState = "enough"
+	supplierBalanceStateInsufficient supplierBalanceState = "insufficient"
+	supplierBalanceStateUnknown      supplierBalanceState = "unknown"
+)
+
+type supplierBalanceCheckResult struct {
+	State   supplierBalanceState
+	Balance float64
+	Reason  string
+}
+
 func (h *LZTMarketHandler) GetConfig(c *gin.Context) {
 	if h == nil || h.client == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
@@ -345,12 +359,13 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo kamu tidak mencukupi."})
 		return
 	}
-	if !h.checkSupplierBalance(c.Request.Context(), sourcePrice) {
+	supplierBalance := h.checkSupplierBalance(c.Request.Context(), sourcePrice)
+	if supplierBalance.State == supplierBalanceStateInsufficient {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
 		return
 	}
 
-	// Step 2 only when supplier balance is enough: run checker validation.
+	// Step 2 after precheck: run checker validation.
 	item, checkErr := h.checkAccountItem(c.Request.Context(), resolvedItemID, i18n)
 	if checkErr != nil || item == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": normalizeCheckerErrorMessage(checkErr)})
@@ -501,70 +516,66 @@ func (h *LZTMarketHandler) buyChatGPTItem(ctx context.Context, itemID, i18n stri
 		itemID,
 	)
 
-	var lastResp *services.LZTMarketResponse
-	var lastErr error
-
-	// 1) Fast-buy with retry_request handling.
-	for attempt := 0; attempt < maxRetries; attempt++ {
-		resp, err := h.client.Do(ctx, services.LZTMarketRequest{
-			Method:      method,
-			Path:        fastBuyPath,
-			Query:       map[string]string{"i18n": i18n},
-			ContentType: contentType,
-			JSONBody: map[string]interface{}{
-				"price": price,
-			},
-		})
-		if err != nil {
-			lastErr = err
-			break
-		}
-		lastResp = resp
-		if !isRetryRequestResponse(resp) {
-			break
-		}
-	}
-
-	if lastErr != nil {
-		return nil, "Provider transport error", lastErr
-	}
-	if lastResp == nil {
-		return nil, "Provider returned empty response", errors.New("provider buy request returned no response")
-	}
-
-	if isSuccessfulPurchaseResponse(lastResp) {
-		return lastResp, "", nil
-	}
-
-	// 2) Fast-buy failed. Fallback only for non-hard-fail reasons.
-	if !shouldFallbackAfterFastBuy(lastResp) {
-		return lastResp, normalizeProviderFailureReason(lastResp, "Fast-buy failed"), nil
-	}
-
-	checkResp, checkErr := h.client.Do(ctx, services.LZTMarketRequest{
+	fastBuyResp, fastBuyErr, _ := h.doProviderRequestWithRetry(ctx, services.LZTMarketRequest{
 		Method:      method,
-		Path:        checkPath,
-		Query:       map[string]string{"i18n": i18n},
-		ContentType: contentType,
-	})
-	if checkErr != nil {
-		return lastResp, normalizeProviderFailureReason(lastResp, "Fast-buy failed and check-account unavailable"), nil
-	}
-	if isHardFailResponse(checkResp) {
-		return checkResp, normalizeProviderFailureReason(checkResp, "Check-account rejected purchase"), nil
-	}
-
-	confirmResp, confirmErr := h.client.Do(ctx, services.LZTMarketRequest{
-		Method:      method,
-		Path:        confirmPath,
+		Path:        fastBuyPath,
 		Query:       map[string]string{"i18n": i18n},
 		ContentType: contentType,
 		JSONBody: map[string]interface{}{
 			"price": price,
 		},
-	})
+	}, maxRetries)
+	if fastBuyErr != nil {
+		return nil, "Provider transport error", fastBuyErr
+	}
+	if fastBuyResp == nil {
+		return nil, "Provider returned empty response", errors.New("provider buy request returned no response")
+	}
+	if isSuccessfulPurchaseResponse(fastBuyResp) {
+		return fastBuyResp, "", nil
+	}
+
+	// 2) Fast-buy failed. Fallback only for non-hard-fail reasons.
+	if !shouldFallbackAfterFastBuy(fastBuyResp) {
+		return fastBuyResp, normalizeProviderFailureReason(fastBuyResp, "Fast-buy failed"), nil
+	}
+
+	checkResp, checkErr, _ := h.doProviderRequestWithRetry(ctx, services.LZTMarketRequest{
+		Method:      method,
+		Path:        checkPath,
+		Query:       map[string]string{"i18n": i18n},
+		ContentType: contentType,
+	}, maxRetries)
+	if checkErr != nil {
+		return fastBuyResp, normalizeProviderFailureReason(fastBuyResp, "Fast-buy failed and check-account unavailable"), nil
+	}
+	if checkResp == nil {
+		return fastBuyResp, normalizeProviderFailureReason(fastBuyResp, "Fast-buy failed and check-account returned empty response"), nil
+	}
+	if isRetryRequestResponse(checkResp) {
+		return checkResp, normalizeProviderFailureReason(checkResp, "Check-account requires another retry"), nil
+	}
+	if isHardFailResponse(checkResp) {
+		return checkResp, normalizeProviderFailureReason(checkResp, "Check-account rejected purchase"), nil
+	}
+
+	confirmResp, confirmErr, _ := h.doProviderRequestWithRetry(ctx, services.LZTMarketRequest{
+		Method:      method,
+		Path:        confirmPath,
+		Query:       map[string]string{"i18n": i18n},
+		ContentType: contentType,
+		JSONBody: map[string]interface{}{
+			"price": toProviderConfirmPrice(price),
+		},
+	}, maxRetries)
 	if confirmErr != nil {
 		return checkResp, "Confirm-buy transport error", confirmErr
+	}
+	if confirmResp == nil {
+		return checkResp, "Confirm-buy returned empty response", nil
+	}
+	if isRetryRequestResponse(confirmResp) {
+		return confirmResp, normalizeProviderFailureReason(confirmResp, "Confirm-buy requires another retry"), nil
 	}
 
 	if isSuccessfulPurchaseResponse(confirmResp) {
@@ -572,6 +583,31 @@ func (h *LZTMarketHandler) buyChatGPTItem(ctx context.Context, itemID, i18n stri
 	}
 
 	return confirmResp, normalizeProviderFailureReason(confirmResp, "Confirm-buy failed"), nil
+}
+
+func (h *LZTMarketHandler) doProviderRequestWithRetry(
+	ctx context.Context,
+	req services.LZTMarketRequest,
+	maxRetries int,
+) (*services.LZTMarketResponse, error, int) {
+	if maxRetries < 1 {
+		maxRetries = 1
+	}
+
+	var retries int
+	var lastResp *services.LZTMarketResponse
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		resp, err := h.client.Do(ctx, req)
+		if err != nil {
+			return lastResp, err, retries
+		}
+		lastResp = resp
+		if !isRetryRequestResponse(resp) {
+			return resp, nil, retries
+		}
+		retries++
+	}
+	return lastResp, nil, retries
 }
 
 func (h *LZTMarketHandler) fetchChatGPTListing(c *gin.Context, i18n string, forceRefresh bool) (*services.LZTMarketResponse, error) {
@@ -958,34 +994,84 @@ func (h *LZTMarketHandler) withDisplayPricing(payload interface{}) interface{} {
 	return root
 }
 
-func (h *LZTMarketHandler) checkSupplierBalance(ctx context.Context, needed float64) bool {
+func (h *LZTMarketHandler) checkSupplierBalance(ctx context.Context, needed float64) supplierBalanceCheckResult {
+	if needed <= 0 {
+		return supplierBalanceCheckResult{State: supplierBalanceStateUnknown, Reason: "invalid needed amount"}
+	}
+
 	resp, err := h.client.Do(ctx, services.LZTMarketRequest{
 		Method: http.MethodGet,
 		Path:   "/me",
 		Query:  map[string]string{"fields_include": "*"},
 	})
-	if err != nil || resp == nil || resp.StatusCode >= http.StatusBadRequest || resp.JSON == nil {
-		return false
+	if err != nil {
+		return supplierBalanceCheckResult{State: supplierBalanceStateUnknown, Reason: err.Error()}
+	}
+	if resp == nil || resp.StatusCode >= http.StatusBadRequest || resp.JSON == nil {
+		return supplierBalanceCheckResult{State: supplierBalanceStateUnknown, Reason: normalizeProviderFailureReason(resp, "supplier balance check failed")}
 	}
 	root, ok := resp.JSON.(map[string]interface{})
 	if !ok {
-		return false
+		return supplierBalanceCheckResult{State: supplierBalanceStateUnknown, Reason: "provider profile response invalid"}
 	}
 
 	userMap, ok := root["user"].(map[string]interface{})
 	if !ok {
-		return false
+		return supplierBalanceCheckResult{State: supplierBalanceStateUnknown, Reason: "provider profile user payload missing"}
 	}
 
-	balance := extractFloatFromMap(userMap, "balance", "Balance", "money")
-	if balance <= 0 {
-		return false
+	balance, hasBalance := extractSupplierBalanceFromProfile(userMap)
+	result := evaluateSupplierBalance(needed, balance, hasBalance)
+	if result.State == supplierBalanceStateUnknown && strings.TrimSpace(result.Reason) == "" {
+		result.Reason = "supplier balance is unavailable"
 	}
-
-	return balance >= needed
+	return result
 }
 
-func extractFloatFromMap(m map[string]interface{}, keys ...string) float64 {
+func evaluateSupplierBalance(needed, balance float64, hasBalance bool) supplierBalanceCheckResult {
+	if needed <= 0 {
+		return supplierBalanceCheckResult{State: supplierBalanceStateUnknown, Reason: "invalid needed amount"}
+	}
+	if !hasBalance {
+		return supplierBalanceCheckResult{State: supplierBalanceStateUnknown}
+	}
+	if balance < needed {
+		return supplierBalanceCheckResult{State: supplierBalanceStateInsufficient, Balance: balance}
+	}
+	return supplierBalanceCheckResult{State: supplierBalanceStateEnough, Balance: balance}
+}
+
+func extractSupplierBalanceFromProfile(userMap map[string]interface{}) (float64, bool) {
+	balance, ok := extractFloatFromMap(userMap, "balance", "Balance", "money")
+	if ok {
+		return balance, true
+	}
+
+	rows, ok := userMap["balances"].([]interface{})
+	if !ok || len(rows) == 0 {
+		return 0, false
+	}
+
+	best := 0.0
+	found := false
+	for _, row := range rows {
+		balanceMap, ok := row.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		value, valueOK := extractFloatFromMap(balanceMap, "balance")
+		if !valueOK {
+			continue
+		}
+		if !found || value > best {
+			best = value
+			found = true
+		}
+	}
+	return best, found
+}
+
+func extractFloatFromMap(m map[string]interface{}, keys ...string) (float64, bool) {
 	for _, key := range keys {
 		v, ok := m[key]
 		if !ok || v == nil {
@@ -993,23 +1079,88 @@ func extractFloatFromMap(m map[string]interface{}, keys ...string) float64 {
 		}
 		switch n := v.(type) {
 		case float64:
-			return n
+			return n, true
 		case float32:
-			return float64(n)
+			return float64(n), true
 		case int:
-			return float64(n)
+			return float64(n), true
 		case int32:
-			return float64(n)
+			return float64(n), true
 		case int64:
-			return float64(n)
+			return float64(n), true
 		case string:
-			parsed, err := strconv.ParseFloat(strings.TrimSpace(n), 64)
-			if err == nil {
-				return parsed
+			parsed, parsedOK := parseProviderNumericString(n)
+			if parsedOK {
+				return parsed, true
 			}
 		}
 	}
-	return 0
+	return 0, false
+}
+
+func parseProviderNumericString(value string) (float64, bool) {
+	clean := strings.TrimSpace(value)
+	if clean == "" {
+		return 0, false
+	}
+
+	var b strings.Builder
+	b.Grow(len(clean))
+	for _, r := range clean {
+		if (r >= '0' && r <= '9') || r == '.' || r == ',' || r == '-' {
+			b.WriteRune(r)
+		}
+	}
+	filtered := b.String()
+	if filtered == "" || filtered == "-" {
+		return 0, false
+	}
+
+	lastComma := strings.LastIndex(filtered, ",")
+	lastDot := strings.LastIndex(filtered, ".")
+
+	switch {
+	case lastComma >= 0 && lastDot >= 0:
+		if lastComma > lastDot {
+			filtered = strings.ReplaceAll(filtered, ".", "")
+			filtered = strings.ReplaceAll(filtered, ",", ".")
+		} else {
+			filtered = strings.ReplaceAll(filtered, ",", "")
+		}
+	case lastComma >= 0:
+		if strings.Count(filtered, ",") == 1 {
+			parts := strings.Split(filtered, ",")
+			if len(parts) == 2 && len(parts[1]) > 0 && len(parts[1]) <= 2 {
+				filtered = parts[0] + "." + parts[1]
+			} else {
+				filtered = strings.ReplaceAll(filtered, ",", "")
+			}
+		} else {
+			filtered = strings.ReplaceAll(filtered, ",", "")
+		}
+	case lastDot >= 0:
+		if strings.Count(filtered, ".") > 1 {
+			idx := strings.LastIndex(filtered, ".")
+			intPart := strings.ReplaceAll(filtered[:idx], ".", "")
+			fracPart := filtered[idx+1:]
+			if len(fracPart) > 0 && len(fracPart) <= 2 {
+				filtered = intPart + "." + fracPart
+			} else {
+				filtered = strings.ReplaceAll(filtered, ".", "")
+			}
+		} else {
+			parts := strings.Split(filtered, ".")
+			if len(parts) == 2 && len(parts[1]) > 2 {
+				filtered = strings.ReplaceAll(filtered, ".", "")
+			}
+		}
+	}
+
+	parsed, err := strconv.ParseFloat(filtered, 64)
+	if err != nil {
+		return 0, false
+	}
+	return parsed, true
 }
 
 func (h *LZTMarketHandler) checkAccountItem(ctx context.Context, itemID, i18n string) (map[string]interface{}, error) {
@@ -1022,20 +1173,28 @@ func (h *LZTMarketHandler) checkAccountItem(ctx context.Context, itemID, i18n st
 		contentType = "json"
 	}
 
+	maxRetries := readPositiveIntEnvLocal("LZT_MARKET_BUY_MAX_RETRIES", 100)
+	if maxRetries < 1 {
+		maxRetries = 1
+	}
+
 	checkPath := normalizeProviderPath(
 		strings.TrimSpace(os.Getenv("LZT_MARKET_CHECK_PATH_TEMPLATE")),
 		"/{item_id}/check-account",
 		itemID,
 	)
 
-	resp, err := h.client.Do(ctx, services.LZTMarketRequest{
+	resp, err, _ := h.doProviderRequestWithRetry(ctx, services.LZTMarketRequest{
 		Method:      method,
 		Path:        checkPath,
 		Query:       map[string]string{"i18n": i18n},
 		ContentType: contentType,
-	})
+	}, maxRetries)
 	if err != nil {
 		return nil, err
+	}
+	if isRetryRequestResponse(resp) {
+		return nil, errors.New("retry_request")
 	}
 	if resp == nil || resp.StatusCode >= http.StatusBadRequest {
 		return nil, errors.New(normalizeProviderFailureReason(resp, "Provider check-account failed"))
@@ -1276,8 +1435,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		Status: "processing",
 		At:     time.Now().UTC(),
 	})
-	supplierEnough := h.checkSupplierBalance(ctx, orderSnapshot.SourcePrice)
-	if !supplierEnough {
+	supplierBalance := h.checkSupplierBalance(ctx, orderSnapshot.SourcePrice)
+	if supplierBalance.State == supplierBalanceStateInsufficient {
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Saldo supplier tidak cukup")
 		h.markOrderFailed(orderID, "SUPPLIER_BALANCE_NOT_ENOUGH", "Akun belum siap untuk dijual saat ini.")
 		h.appendOrderStep(orderID, publicOrderStep{
@@ -1289,12 +1448,28 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		})
 		return
 	}
-	h.appendOrderStep(orderID, publicOrderStep{
-		Code:   "SUPPLIER_BALANCE_CHECK",
-		Label:  "Saldo supplier cukup",
-		Status: "done",
-		At:     time.Now().UTC(),
-	})
+	if supplierBalance.State == supplierBalanceStateUnknown {
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "SUPPLIER_BALANCE_UNKNOWN_CONTINUE",
+			Label:   "Saldo supplier tidak dapat diverifikasi, lanjutkan pembelian",
+			Status:  "done",
+			Message: "Precheck saldo supplier tidak pasti; verifikasi final dilakukan saat buy ke provider.",
+			At:      time.Now().UTC(),
+		})
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:   "SUPPLIER_BALANCE_CHECK",
+			Label:  "Precheck supplier dilewati (status tidak pasti)",
+			Status: "done",
+			At:     time.Now().UTC(),
+		})
+	} else {
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:   "SUPPLIER_BALANCE_CHECK",
+			Label:  "Saldo supplier cukup",
+			Status: "done",
+			At:     time.Now().UTC(),
+		})
+	}
 
 	h.appendOrderStep(orderID, publicOrderStep{
 		Code:   "PROVIDER_PURCHASE",
@@ -1315,7 +1490,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		})
 		return
 	}
-	if resp == nil || resp.StatusCode >= http.StatusBadRequest || !hasPurchasingPayload(resp) {
+	if resp == nil || resp.StatusCode >= http.StatusBadRequest || !isSuccessfulPurchaseResponse(resp) {
 		if strings.TrimSpace(failureReason) == "" {
 			failureReason = normalizeProviderFailureReason(resp, "Provider purchase failed")
 		}
@@ -1501,6 +1676,18 @@ func isRetryRequestResponse(resp *services.LZTMarketResponse) bool {
 }
 
 func isSuccessfulPurchaseResponse(resp *services.LZTMarketResponse) bool {
+	if resp == nil || resp.StatusCode >= http.StatusBadRequest || resp.JSON == nil {
+		return false
+	}
+	if isRetryRequestResponse(resp) {
+		return false
+	}
+	if len(extractProviderErrors(resp)) > 0 {
+		return false
+	}
+	if hasStatusValue(resp, "ok") || hasStatusValue(resp, "success") {
+		return true
+	}
 	return hasPurchasingPayload(resp)
 }
 
@@ -1540,7 +1727,7 @@ func shouldFallbackAfterFastBuy(resp *services.LZTMarketResponse) bool {
 	if resp.StatusCode >= http.StatusBadRequest {
 		return true
 	}
-	return !hasPurchasingPayload(resp)
+	return !isSuccessfulPurchaseResponse(resp)
 }
 
 func isHardFailResponse(resp *services.LZTMarketResponse) bool {
@@ -1595,6 +1782,9 @@ func normalizeUserFacingFailureReason(reason string) string {
 	if strings.Contains(lower, "this item is sold") || strings.Contains(lower, "sold") {
 		return "Akun belum siap untuk dijual saat ini."
 	}
+	if strings.Contains(lower, "retry_request") {
+		return "Checker sedang error. Coba lagi sebentar."
+	}
 	if strings.Contains(lower, "invalid or expired access token") {
 		return "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."
 	}
@@ -1625,20 +1815,45 @@ func extractProviderErrors(resp *services.LZTMarketResponse) []string {
 		return nil
 	}
 
-	rawErrors, ok := root["errors"]
-	if !ok || rawErrors == nil {
-		return nil
-	}
-	rows, ok := rawErrors.([]interface{})
-	if !ok {
-		return nil
-	}
-	out := make([]string, 0, len(rows))
-	for _, row := range rows {
-		msg := strings.TrimSpace(fmt.Sprintf("%v", row))
-		if msg != "" {
-			out = append(out, msg)
+	seen := make(map[string]struct{})
+	out := make([]string, 0, 4)
+	appendUnique := func(raw interface{}) {
+		msg := strings.TrimSpace(fmt.Sprintf("%v", raw))
+		if msg == "" {
+			return
 		}
+		key := strings.ToLower(msg)
+		if _, exists := seen[key]; exists {
+			return
+		}
+		seen[key] = struct{}{}
+		out = append(out, msg)
+	}
+
+	if rawErrors, ok := root["errors"]; ok && rawErrors != nil {
+		switch rows := rawErrors.(type) {
+		case []interface{}:
+			for _, row := range rows {
+				appendUnique(row)
+			}
+		default:
+			appendUnique(rows)
+		}
+	}
+
+	if rawMessage, ok := root["message"]; ok && rawMessage != nil {
+		appendUnique(rawMessage)
+	}
+
+	if rawStatus, ok := root["status"]; ok && rawStatus != nil {
+		status := strings.TrimSpace(fmt.Sprintf("%v", rawStatus))
+		if status != "" && !strings.EqualFold(status, "ok") && !strings.EqualFold(status, "success") {
+			appendUnique(status)
+		}
+	}
+
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }
@@ -1668,6 +1883,14 @@ func normalizeProviderPath(pathTemplate, fallbackTemplate, itemID string) string
 		path = "/" + path
 	}
 	return path
+}
+
+func toProviderConfirmPrice(price float64) int64 {
+	value := int64(math.Round(price))
+	if value <= 0 {
+		return 1
+	}
+	return value
 }
 
 func newPublicMarketOrderID() string {
