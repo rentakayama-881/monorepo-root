@@ -526,7 +526,7 @@ func TestManualScenario_FastBuyIntegrationErrorMapsToUserMessage(t *testing.T) {
 		t.Fatalf("unexpected provider reason: %q", reason)
 	}
 	userReason := normalizeUserFacingFailureReason(reason)
-	if userReason != "Integrasi provider sedang bermasalah. Coba lagi beberapa saat." {
+	if userReason != "Layanan pembelian sedang mengalami gangguan sementara. Silakan coba lagi." {
 		t.Fatalf("unexpected user reason: got %q", userReason)
 	}
 }

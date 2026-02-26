@@ -31,11 +31,12 @@ jest.mock("@/lib/featureApi", () => ({
 function createListingItem(overrides = {}) {
   return {
     chatgpt_item_id: "chatgpt-01",
-    title: "ChatGPT Pro Account",
+    title_en: "ChatGPT Plus Account",
     price_idr: 150000,
     seller: "seller-1",
     canBuyItem: true,
     item_state: "Available",
+    published_date: 1772130072,
     ...overrides,
   };
 }
@@ -54,7 +55,11 @@ function createListingResponse(items = [createListingItem()]) {
 }
 
 describe("MarketChatGPTClient", () => {
+  const previousConfirmSeconds = process.env.NEXT_PUBLIC_MARKET_BUY_CONFIRM_SECONDS;
+
   beforeEach(() => {
+    process.env.NEXT_PUBLIC_MARKET_BUY_CONFIRM_SECONDS = "0";
+
     pushMock.mockReset();
     mockFetchJsonAuth.mockReset();
     mockGetApiBase.mockReset();
@@ -66,65 +71,64 @@ describe("MarketChatGPTClient", () => {
     global.fetch.mockResolvedValue(createListingResponse());
   });
 
-  it("shows checkout feedback in modal when balance is insufficient", async () => {
+  afterAll(() => {
+    process.env.NEXT_PUBLIC_MARKET_BUY_CONFIRM_SECONDS = previousConfirmSeconds;
+  });
+
+  it("menampilkan modal konfirmasi sebelum checkout dijalankan", async () => {
+    render(<MarketChatGPTClient />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Beli" }));
+
+    expect(await screen.findByText("Konfirmasi Pembelian")).toBeInTheDocument();
+    expect(screen.getByText("Pastikan pesanan sudah benar")).toBeInTheDocument();
+    expect(mockFetchFeatureAuth).not.toHaveBeenCalled();
+    expect(mockFetchJsonAuth).not.toHaveBeenCalled();
+  });
+
+  it("menampilkan feedback modal jika saldo wallet tidak cukup", async () => {
     mockFetchFeatureAuth.mockResolvedValue({ data: { balance: 0 } });
     mockUnwrapFeatureData.mockReturnValue({ balance: 0 });
 
     render(<MarketChatGPTClient />);
 
-    const buyButton = await screen.findByRole("button", { name: "Buy" });
-    fireEvent.click(buyButton);
+    fireEvent.click(await screen.findByRole("button", { name: "Beli" }));
+    const confirmButton = await screen.findByRole("button", { name: /Ya, beli/i });
+    await waitFor(() => expect(confirmButton).toBeEnabled());
+    fireEvent.click(confirmButton);
 
     expect(mockFetchFeatureAuth).toHaveBeenCalledWith("/api/v1/wallets/me");
 
-    expect(await screen.findByText("Your balance is insufficient.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Refresh listings" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
-    expect(screen.queryByText("Insufficient balance")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Close modal")).not.toBeInTheDocument();
+    expect(await screen.findByText("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Muat ulang daftar" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tutup" })).toBeInTheDocument();
   });
 
-  it("refreshes listings from modal action and closes modal on success", async () => {
+  it("memuat ulang listing dari modal feedback", async () => {
     mockFetchFeatureAuth.mockResolvedValue({ data: { balance: 0 } });
     mockUnwrapFeatureData.mockReturnValue({ balance: 0 });
 
     render(<MarketChatGPTClient />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Buy" }));
-    await screen.findByText("Your balance is insufficient.");
+    fireEvent.click(await screen.findByRole("button", { name: "Beli" }));
+    const confirmButton = await screen.findByRole("button", { name: /Ya, beli/i });
+    await waitFor(() => expect(confirmButton).toBeEnabled());
+    fireEvent.click(confirmButton);
 
-    fireEvent.click(screen.getByRole("button", { name: "Refresh listings" }));
+    await screen.findByText("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.");
+
+    fireEvent.click(screen.getByRole("button", { name: "Muat ulang daftar" }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
     await waitFor(() => {
-      expect(screen.queryByText("Your balance is insufficient.")).not.toBeInTheDocument();
+      expect(screen.queryByText("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.")).not.toBeInTheDocument();
     });
   });
 
-  it("uses sidebar-style overlay and allows explicit close", async () => {
-    mockFetchFeatureAuth.mockResolvedValue({ data: { balance: 0 } });
-    mockUnwrapFeatureData.mockReturnValue({ balance: 0 });
-
-    render(<MarketChatGPTClient />);
-
-    fireEvent.click(await screen.findByRole("button", { name: "Buy" }));
-    await screen.findByText("Your balance is insufficient.");
-
-    const overlay = screen.getByTestId("checkout-feedback-overlay");
-    expect(overlay).toHaveClass("bg-black/50");
-    expect(overlay).not.toHaveClass("backdrop-blur-md");
-
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
-
-    await waitFor(() => {
-      expect(screen.queryByText("Your balance is insufficient.")).not.toBeInTheDocument();
-    });
-  });
-
-  it("redirects to order detail when checkout succeeds", async () => {
+  it("mengarah ke detail order saat checkout berhasil", async () => {
     mockFetchFeatureAuth.mockResolvedValue({ data: { balance: 150000 } });
     mockUnwrapFeatureData.mockReturnValue({ balance: 150000 });
     mockFetchJsonAuth.mockResolvedValue({
@@ -135,13 +139,14 @@ describe("MarketChatGPTClient", () => {
 
     render(<MarketChatGPTClient />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Buy" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Beli" }));
+    const confirmButton = await screen.findByRole("button", { name: /Ya, beli/i });
+    await waitFor(() => expect(confirmButton).toBeEnabled());
+    fireEvent.click(confirmButton);
 
     await waitFor(() => {
       expect(mockFetchJsonAuth).toHaveBeenCalledWith("/api/market/chatgpt/orders", expect.any(Object));
       expect(pushMock).toHaveBeenCalledWith("/market/chatgpt/orders/order%2F123");
     });
-
-    expect(screen.queryByText("Your balance is insufficient.")).not.toBeInTheDocument();
   });
 });

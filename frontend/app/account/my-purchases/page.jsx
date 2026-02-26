@@ -50,8 +50,8 @@ export default function MyPurchasesPage() {
     <main className="container py-8 space-y-4">
       <header className="space-y-1">
         <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Account</div>
-        <h1 className="text-2xl font-semibold text-foreground">My Purchases</h1>
-        <p className="text-sm text-muted-foreground">Your account purchase history is available here.</p>
+        <h1 className="text-2xl font-semibold text-foreground">Riwayat Pembelian</h1>
+        <p className="text-sm text-muted-foreground">Halaman ini menampilkan akun yang pembeliannya sudah berhasil.</p>
       </header>
 
       <section className="rounded-xl border border-border bg-card p-3">
@@ -65,9 +65,9 @@ export default function MyPurchasesPage() {
 
         {!loading && !error && !hasOrders ? (
           <div className="space-y-3 py-6 text-center">
-            <p className="text-sm text-muted-foreground">No purchases yet.</p>
+            <p className="text-sm text-muted-foreground">Belum ada pembelian yang selesai.</p>
             <Link href="/market/chatgpt" className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40">
-              Open Marketplace
+              Buka Marketplace
             </Link>
           </div>
         ) : null}
@@ -77,11 +77,11 @@ export default function MyPurchasesPage() {
             <table className="min-w-full text-xs">
               <thead className="bg-muted/35">
                 <tr>
-                  <th className="px-2.5 py-2 text-left font-medium">Product</th>
-                  <th className="px-2.5 py-2 text-left font-medium">Price</th>
+                  <th className="px-2.5 py-2 text-left font-medium">Produk</th>
+                  <th className="px-2.5 py-2 text-left font-medium">Harga</th>
                   <th className="px-2.5 py-2 text-left font-medium">Status</th>
-                  <th className="px-2.5 py-2 text-left font-medium">Created</th>
-                  <th className="px-2.5 py-2 text-left font-medium">Action</th>
+                  <th className="px-2.5 py-2 text-left font-medium">Waktu</th>
+                  <th className="px-2.5 py-2 text-left font-medium">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -89,7 +89,6 @@ export default function MyPurchasesPage() {
                   <tr key={order?.id} className="border-t border-border">
                     <td className="px-2.5 py-2">
                       <div className="max-w-[360px] truncate font-medium">{order?.title || "ChatGPT Account"}</div>
-                      <div className="mt-0.5 text-[11px] text-muted-foreground">ID: {order?.id || "-"}</div>
                     </td>
                     <td className="px-2.5 py-2 font-medium">{order?.price_display || order?.price || "-"}</td>
                     <td className="px-2.5 py-2">
@@ -101,7 +100,7 @@ export default function MyPurchasesPage() {
                         href={`/market/chatgpt/orders/${encodeURIComponent(order?.id || "")}`}
                         className="inline-flex rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted/40"
                       >
-                        View Details
+                        Lihat Detail
                       </Link>
                     </td>
                   </tr>
@@ -118,18 +117,18 @@ export default function MyPurchasesPage() {
 function StatusBadge({ status }) {
   const normalized = String(status || "").toLowerCase();
   if (normalized === "fulfilled") {
-    return <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">Completed</span>;
+    return <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">Selesai</span>;
   }
   if (normalized === "failed") {
-    return <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">Failed</span>;
+    return <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">Gagal</span>;
   }
-  return <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700">Processing</span>;
+  return <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700">Diproses</span>;
 }
 
 function formatDateTime(value) {
   if (!value) return "-";
   try {
-    return new Date(value).toLocaleString("en-US", {
+    return new Date(value).toLocaleString("id-ID", {
       day: "2-digit",
       month: "short",
       year: "numeric",

@@ -229,10 +229,8 @@ func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 		if cached, ok := h.getCachedChatGPT(i18n); ok {
 			payload := h.withDisplayPricing(cached.JSON)
 			c.JSON(http.StatusOK, gin.H{
-				"cached":          true,
-				"upstream_status": cached.StatusCode,
-				"json":            payload,
-				"raw":             cached.Raw,
+				"cached": true,
+				"json":   payload,
 			})
 			return
 		}
@@ -249,12 +247,10 @@ func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 		if cached, ok := h.getAnyCachedChatGPT(); ok {
 			payload := h.withDisplayPricing(cached.JSON)
 			c.JSON(http.StatusOK, gin.H{
-				"cached":          true,
-				"stale":           true,
-				"warning":         "Upstream unavailable, serving stale cache",
-				"upstream_status": cached.StatusCode,
-				"json":            payload,
-				"raw":             cached.Raw,
+				"cached":  true,
+				"stale":   true,
+				"warning": "Marketplace sedang memuat cache sementara.",
+				"json":    payload,
 			})
 			return
 		}
@@ -271,10 +267,8 @@ func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 	payload := h.withDisplayPricing(resp.JSON)
 
 	c.JSON(http.StatusOK, gin.H{
-		"cached":          false,
-		"upstream_status": resp.StatusCode,
-		"json":            payload,
-		"raw":             resp.Raw,
+		"cached": false,
+		"json":   payload,
 	})
 }
 
@@ -323,7 +317,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 	}
 	if strings.HasPrefix(strings.ToLower(itemID), "row-") {
 		logMarketOrderReject("invalid_provider_item_id", zap.Uint("user_id", userID), zap.String("item_id", itemID))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Item ID belum valid dari provider. Refresh listing lalu coba lagi."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Item belum siap diproses. Silakan muat ulang daftar akun."})
 		return
 	}
 
@@ -341,7 +335,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		}
 		if balErr == nil && walletInfo != nil && walletInfo.Balance <= 0 {
 			logMarketOrderReject("wallet_balance_not_enough", zap.Uint("user_id", userID), zap.String("item_id", itemID), zap.Int64("wallet_balance_idr", walletInfo.Balance))
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo kamu tidak mencukupi."})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo wallet Anda tidak mencukupi."})
 			return
 		}
 	}
@@ -398,7 +392,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 			zap.String("source_currency", sourceCurrency),
 			zap.Float64("fx_rate_to_idr", fxRate),
 		)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo kamu tidak mencukupi."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo wallet Anda tidak mencukupi."})
 		return
 	}
 	supplierBalance := h.checkSupplierBalance(c.Request.Context(), sourcePrice)
@@ -419,7 +413,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 			zap.String("item_id", resolvedItemID),
 			zap.String("reason", supplierBalance.Reason),
 		)
-		c.JSON(http.StatusBadGateway, gin.H{"error": "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."})
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Layanan pembelian sedang mengalami gangguan sementara. Silakan coba lagi."})
 		return
 	}
 
@@ -455,7 +449,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		FXRateToIDR:    fxRate,
 		PriceDisplay:   formatIDR(priceIDR),
 		SourceDisplay:  formatSourcePrice(sourcePrice, sourceSymbol, sourceCurrency),
-		PricingNote:    "Harga Lolz realtime dikonversi ke IDR lalu dibagi faktor platform",
+		PricingNote:    "Harga sumber realtime dikonversi ke IDR lalu dibagi faktor platform",
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
@@ -498,6 +492,9 @@ func (h *LZTMarketHandler) ListMyPublicChatGPTOrders(c *gin.Context) {
 	orders := make([]publicMarketOrder, 0, len(ids))
 	for _, id := range ids {
 		if order, ok := h.orders[id]; ok {
+			if !strings.EqualFold(strings.TrimSpace(order.Status), "fulfilled") {
+				continue
+			}
 			orders = append(orders, order.toClientDTO(false))
 		}
 	}
@@ -853,7 +850,7 @@ func normalizeProviderIDValue(raw interface{}) string {
 }
 
 func normalizeItemTitle(item map[string]interface{}) string {
-	for _, key := range []string{"title", "name", "account_title", "description"} {
+	for _, key := range []string{"title_en", "title", "name_en", "name", "account_title", "description_en", "description"} {
 		if v, ok := item[key]; ok {
 			s := strings.TrimSpace(fmt.Sprintf("%v", v))
 			if s != "" {
@@ -1186,7 +1183,7 @@ func (h *LZTMarketHandler) withDisplayPricing(payload interface{}) interface{} {
 		item["price_source_currency"] = sourceCurrency
 		item["price_source_symbol"] = sourceSymbol
 		item["fx_rate_to_idr"] = fxRate
-		item["pricing_note"] = "Harga Lolz realtime dikonversi ke IDR lalu dibagi faktor platform"
+		item["pricing_note"] = "Harga sumber real-time dikonversi ke IDR lalu disesuaikan faktor platform"
 	}
 	return root
 }
@@ -1562,12 +1559,12 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	if h.featureWallet != nil {
 		balanceInfo, balanceErr := h.featureWallet.GetMyWalletBalance(ctx, authHeader)
 		if balanceErr == nil && (balanceInfo == nil || balanceInfo.Balance <= 0) {
-			h.markOrderFailed(orderID, "USER_BALANCE_NOT_ENOUGH", "Saldo kamu tidak mencukupi.")
+			h.markOrderFailed(orderID, "USER_BALANCE_NOT_ENOUGH", "Saldo wallet Anda tidak mencukupi.")
 			h.appendOrderStep(orderID, publicOrderStep{
 				Code:    "USER_BALANCE_CHECK",
 				Label:   "Saldo user tidak mencukupi",
 				Status:  "failed",
-				Message: "Saldo kamu tidak mencukupi.",
+				Message: "Saldo wallet Anda tidak mencukupi.",
 				At:      time.Now().UTC(),
 			})
 			return
@@ -1581,15 +1578,15 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	})
 
 	h.appendOrderStep(orderID, publicOrderStep{
-		Code:   "PROVIDER_DIRECT_BUY_FLOW",
-		Label:  "Menggunakan alur direct buy provider",
+		Code:   "PURCHASE_WORKFLOW",
+		Label:  "Menggunakan alur pembelian otomatis",
 		Status: "done",
 		At:     time.Now().UTC(),
 	})
 
 	h.appendOrderStep(orderID, publicOrderStep{
 		Code:   "USER_BALANCE_RESERVE",
-		Label:  "Memeriksa dan reserve saldo user",
+		Label:  "Mengunci saldo pembayaran",
 		Status: "processing",
 		At:     time.Now().UTC(),
 	})
@@ -1598,7 +1595,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		h.markOrderFailed(orderID, "SYSTEM_CONFIG_ERROR", "Feature wallet client belum terkonfigurasi")
 		h.appendOrderStep(orderID, publicOrderStep{
 			Code:    "USER_BALANCE_RESERVE",
-			Label:   "Reserve saldo user gagal",
+			Label:   "Gagal mengunci saldo pembayaran",
 			Status:  "failed",
 			Message: "Sistem pembayaran internal belum siap.",
 			At:      time.Now().UTC(),
@@ -1614,7 +1611,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		h.markOrderFailed(orderID, "PRICING_UNAVAILABLE", "Harga belum tersedia untuk item ini.")
 		h.appendOrderStep(orderID, publicOrderStep{
 			Code:    "USER_BALANCE_RESERVE",
-			Label:   "Reserve saldo user gagal",
+			Label:   "Gagal mengunci saldo pembayaran",
 			Status:  "failed",
 			Message: "Harga belum tersedia untuk item ini.",
 			At:      time.Now().UTC(),
@@ -1623,12 +1620,12 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	}
 
 	if _, err := h.featureWallet.ReserveMarketPurchase(ctx, authHeader, orderID, orderSnapshot.PriceIDR); err != nil {
-		h.markOrderFailed(orderID, "USER_BALANCE_NOT_ENOUGH", "Saldo kamu tidak mencukupi.")
+		h.markOrderFailed(orderID, "USER_BALANCE_NOT_ENOUGH", "Saldo wallet Anda tidak mencukupi.")
 		h.appendOrderStep(orderID, publicOrderStep{
 			Code:    "USER_BALANCE_RESERVE",
-			Label:   "Reserve saldo user gagal",
+			Label:   "Gagal mengunci saldo pembayaran",
 			Status:  "failed",
-			Message: "Saldo kamu tidak mencukupi.",
+			Message: "Saldo wallet Anda tidak mencukupi.",
 			At:      time.Now().UTC(),
 		})
 		return
@@ -1636,24 +1633,24 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 
 	h.appendOrderStep(orderID, publicOrderStep{
 		Code:   "USER_BALANCE_RESERVE",
-		Label:  "Reserve saldo user berhasil",
+		Label:  "Saldo pembayaran berhasil dikunci",
 		Status: "done",
 		At:     time.Now().UTC(),
 	})
 
 	h.appendOrderStep(orderID, publicOrderStep{
-		Code:   "SUPPLIER_BALANCE_CHECK",
-		Label:  "Memeriksa saldo akun supplier",
+		Code:   "PLATFORM_READINESS_CHECK",
+		Label:  "Memverifikasi kesiapan sistem penjualan",
 		Status: "processing",
 		At:     time.Now().UTC(),
 	})
 	supplierBalance := h.checkSupplierBalance(ctx, orderSnapshot.SourcePrice)
 	if supplierBalance.State == supplierBalanceStateInsufficient {
-		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Saldo supplier tidak cukup")
-		h.markOrderFailed(orderID, "SUPPLIER_BALANCE_NOT_ENOUGH", "Akun belum siap untuk dijual saat ini.")
+		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Saldo sumber belum mencukupi")
+		h.markOrderFailed(orderID, "PLATFORM_READINESS_NOT_ENOUGH", "Akun belum siap untuk dijual saat ini.")
 		h.appendOrderStep(orderID, publicOrderStep{
-			Code:    "SUPPLIER_BALANCE_CHECK",
-			Label:   "Saldo supplier tidak cukup",
+			Code:    "PLATFORM_READINESS_CHECK",
+			Label:   "Kesiapan sistem belum mencukupi",
 			Status:  "failed",
 			Message: "Akun belum siap untuk dijual saat ini.",
 			At:      time.Now().UTC(),
@@ -1661,12 +1658,12 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		return
 	}
 	if supplierBalance.State == supplierBalanceStateUnknown && isProviderIntegrationFailureReason(supplierBalance.Reason) {
-		userFailureReason := "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."
+		userFailureReason := "Layanan pembelian sedang mengalami gangguan sementara. Silakan coba lagi."
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
-		h.markOrderFailed(orderID, "SUPPLIER_BALANCE_CHECK_FAILED", userFailureReason)
+		h.markOrderFailed(orderID, "PLATFORM_READINESS_CHECK_FAILED", userFailureReason)
 		h.appendOrderStep(orderID, publicOrderStep{
-			Code:    "SUPPLIER_BALANCE_CHECK",
-			Label:   "Gagal memverifikasi saldo supplier",
+			Code:    "PLATFORM_READINESS_CHECK",
+			Label:   "Gagal memverifikasi kesiapan sistem",
 			Status:  "failed",
 			Message: userFailureReason,
 			At:      time.Now().UTC(),
@@ -1675,30 +1672,30 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	}
 	if supplierBalance.State == supplierBalanceStateUnknown {
 		h.appendOrderStep(orderID, publicOrderStep{
-			Code:    "SUPPLIER_BALANCE_UNKNOWN_CONTINUE",
-			Label:   "Saldo supplier tidak dapat diverifikasi, lanjutkan pembelian",
+			Code:    "PLATFORM_READINESS_DEFERRED",
+			Label:   "Kesiapan sistem belum dapat dipastikan, proses dilanjutkan",
 			Status:  "done",
-			Message: "Precheck saldo supplier tidak pasti; verifikasi final dilakukan saat buy ke provider.",
+			Message: "Verifikasi akhir dilakukan pada tahap eksekusi pembelian.",
 			At:      time.Now().UTC(),
 		})
 		h.appendOrderStep(orderID, publicOrderStep{
-			Code:   "SUPPLIER_BALANCE_CHECK",
-			Label:  "Precheck supplier dilewati (status tidak pasti)",
+			Code:   "PLATFORM_READINESS_CHECK",
+			Label:  "Pemeriksaan awal kesiapan dilewati (status belum pasti)",
 			Status: "done",
 			At:     time.Now().UTC(),
 		})
 	} else {
 		h.appendOrderStep(orderID, publicOrderStep{
-			Code:   "SUPPLIER_BALANCE_CHECK",
-			Label:  "Saldo supplier cukup",
+			Code:   "PLATFORM_READINESS_CHECK",
+			Label:  "Kesiapan sistem terverifikasi",
 			Status: "done",
 			At:     time.Now().UTC(),
 		})
 	}
 
 	h.appendOrderStep(orderID, publicOrderStep{
-		Code:   "FETCH_PROVIDER_ITEM",
-		Label:  "Memverifikasi status item di provider",
+		Code:   "ITEM_AVAILABILITY_CHECK",
+		Label:  "Memverifikasi ketersediaan akun",
 		Status: "processing",
 		At:     time.Now().UTC(),
 	})
@@ -1706,10 +1703,10 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	if itemReadinessErr != nil {
 		userFailureReason := normalizeCheckerErrorMessage(itemReadinessErr)
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
-		h.markOrderFailed(orderID, "PROVIDER_ITEM_CHECK_FAILED", userFailureReason)
+		h.markOrderFailed(orderID, "ITEM_AVAILABILITY_CHECK_FAILED", userFailureReason)
 		h.appendOrderStep(orderID, publicOrderStep{
-			Code:    "FETCH_PROVIDER_ITEM",
-			Label:   "Verifikasi item provider gagal",
+			Code:    "ITEM_AVAILABILITY_CHECK",
+			Label:   "Verifikasi ketersediaan akun gagal",
 			Status:  "failed",
 			Message: userFailureReason,
 			At:      time.Now().UTC(),
@@ -1728,10 +1725,10 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 			userFailureReason = "Akun belum siap untuk dijual saat ini."
 		}
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
-		h.markOrderFailed(orderID, "PROVIDER_ITEM_UNAVAILABLE", userFailureReason)
+		h.markOrderFailed(orderID, "ITEM_UNAVAILABLE", userFailureReason)
 		h.appendOrderStep(orderID, publicOrderStep{
-			Code:    "FETCH_PROVIDER_ITEM",
-			Label:   "Item provider tidak siap dibeli",
+			Code:    "ITEM_AVAILABILITY_CHECK",
+			Label:   "Akun tidak tersedia untuk dibeli",
 			Status:  "failed",
 			Message: userFailureReason,
 			At:      time.Now().UTC(),
@@ -1739,14 +1736,14 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		return
 	}
 	h.appendOrderStep(orderID, publicOrderStep{
-		Code:   "FETCH_PROVIDER_ITEM",
-		Label:  "Item provider siap dibeli",
+		Code:   "ITEM_AVAILABILITY_CHECK",
+		Label:  "Akun tersedia untuk dibeli",
 		Status: "done",
 		At:     time.Now().UTC(),
 	})
 
 	h.appendOrderStep(orderID, publicOrderStep{
-		Code:   "PROVIDER_PURCHASE",
+		Code:   "PURCHASE_EXECUTION",
 		Label:  "Memproses pembelian akun",
 		Status: "processing",
 		At:     time.Now().UTC(),
@@ -1763,7 +1760,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Provider transport error")
 		h.markOrderFailed(orderID, "CHECKER_ERROR", "Checker sedang error. Coba lagi sebentar.")
 		h.appendOrderStep(orderID, publicOrderStep{
-			Code:    "PROVIDER_PURCHASE",
+			Code:    "PURCHASE_EXECUTION",
 			Label:   "Proses pembelian gagal",
 			Status:  "failed",
 			Message: "Checker sedang error. Coba lagi sebentar.",
@@ -1792,9 +1789,9 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 			zap.Strings("provider_errors", extractProviderErrors(resp)),
 		)
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
-		h.markOrderFailed(orderID, "PROVIDER_PURCHASE_FAILED", userFailureReason)
+		h.markOrderFailed(orderID, "PURCHASE_FAILED", userFailureReason)
 		h.appendOrderStep(orderID, publicOrderStep{
-			Code:    "PROVIDER_PURCHASE",
+			Code:    "PURCHASE_EXECUTION",
 			Label:   "Proses pembelian gagal",
 			Status:  "failed",
 			Message: userFailureReason,
@@ -1803,7 +1800,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		return
 	}
 	h.appendOrderStep(orderID, publicOrderStep{
-		Code:   "PROVIDER_PURCHASE",
+		Code:   "PURCHASE_EXECUTION",
 		Label:  "Pembelian akun berhasil",
 		Status: "done",
 		At:     time.Now().UTC(),
@@ -1817,12 +1814,12 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	})
 	if _, err := h.featureWallet.CaptureMarketPurchase(ctx, authHeader, orderID); err != nil {
 		// Critical mismatch: provider succeeded but capture failed.
-		h.markOrderFailed(orderID, "CAPTURE_FAILED", "Pembelian berhasil di supplier tetapi finalisasi saldo gagal.")
+		h.markOrderFailed(orderID, "CAPTURE_FAILED", "Pembelian berhasil, tetapi finalisasi saldo gagal.")
 		h.appendOrderStep(orderID, publicOrderStep{
 			Code:    "USER_BALANCE_CAPTURE",
 			Label:   "Finalisasi saldo gagal",
 			Status:  "failed",
-			Message: "Hubungi admin: pembelian provider sudah sukses namun capture gagal.",
+			Message: "Hubungi admin: pembelian sudah berhasil namun finalisasi saldo gagal.",
 			At:      time.Now().UTC(),
 		})
 		return
@@ -1883,14 +1880,12 @@ func extractCredentialsFromBuyResponse(jsonPayload interface{}) map[string]inter
 	if len(login) > 0 {
 		out["account_login"] = firstNonEmptyString(login, "login")
 		out["account_password"] = firstNonEmptyString(login, "password")
-		out["account_raw"] = firstNonEmptyString(login, "raw")
 	}
 
 	email := readMap(item, "emailLoginData")
 	if len(email) > 0 {
 		out["email_login"] = firstNonEmptyString(email, "login")
 		out["email_password"] = firstNonEmptyString(email, "password")
-		out["email_raw"] = firstNonEmptyString(email, "raw")
 	}
 
 	for key, value := range out {
@@ -1913,13 +1908,16 @@ func extractPurchasedItemSummary(jsonPayload interface{}) map[string]interface{}
 
 	itemID := normalizeProviderIDValue(item["item_id"])
 	summary := map[string]interface{}{
-		"title":        firstNonEmptyString(item, "title"),
-		"status":       firstNonEmptyString(item, "item_state"),
-		"price":        firstNonEmptyString(item, "price", "priceWithSellerFee"),
-		"email_domain": firstNonEmptyString(item, "item_domain"),
-		"openai_tier":  firstNonEmptyString(item, "openai_tier"),
-		"country":      firstNonEmptyString(item, "chatgpt_country"),
-		"subscription": firstNonEmptyString(item, "chatgpt_subscription"),
+		"title":             normalizeItemTitle(item),
+		"status":            firstNonEmptyString(item, "item_state"),
+		"price":             firstNonEmptyString(item, "price", "priceWithSellerFee"),
+		"email_domain":      firstNonEmptyString(item, "item_domain"),
+		"openai_tier":       firstNonEmptyString(item, "openai_tier"),
+		"country":           firstNonEmptyString(item, "chatgpt_country"),
+		"subscription":      firstNonEmptyString(item, "chatgpt_subscription"),
+		"seller":            normalizeSeller(item),
+		"account_login_url": firstNonEmptyString(item, "accountLink"),
+		"email_login_url":   firstNonEmptyString(item, "emailLoginUrl"),
 	}
 	if strings.TrimSpace(itemID) != "" {
 		summary["item_id"] = itemID
@@ -2115,7 +2113,7 @@ func normalizeUserFacingFailureReason(reason string) string {
 		return "Akun belum siap untuk dijual saat ini."
 	}
 	if isProviderIntegrationFailureReason(msg) {
-		return "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."
+		return "Layanan pembelian sedang mengalami gangguan sementara. Silakan coba lagi."
 	}
 	lower := strings.ToLower(msg)
 	if strings.Contains(lower, "current listing") {
@@ -2156,7 +2154,7 @@ func normalizeCheckerErrorMessage(err error) string {
 	}
 	msg := strings.TrimSpace(err.Error())
 	if isProviderIntegrationFailureReason(msg) {
-		return "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."
+		return "Layanan pembelian sedang mengalami gangguan sementara. Silakan coba lagi."
 	}
 	lower := strings.ToLower(msg)
 	if strings.Contains(lower, "currently unavailable") {
