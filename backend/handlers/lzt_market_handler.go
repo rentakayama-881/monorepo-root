@@ -16,9 +16,11 @@ import (
 	"sync"
 	"time"
 
+	applog "backend-gin/logger"
 	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type LZTMarketHandler struct {
@@ -296,6 +298,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 
 	userID := c.GetUint("user_id")
 	if userID == 0 {
+		logMarketOrderReject("unauthorized")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
@@ -308,10 +311,12 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 
 	itemID := strings.TrimSpace(req.ItemID)
 	if !itemIDPattern.MatchString(itemID) {
+		logMarketOrderReject("invalid_item_id", zap.Uint("user_id", userID), zap.String("item_id", itemID))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid item ID"})
 		return
 	}
 	if strings.HasPrefix(strings.ToLower(itemID), "row-") {
+		logMarketOrderReject("invalid_provider_item_id", zap.Uint("user_id", userID), zap.String("item_id", itemID))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Item ID belum valid dari provider. Refresh listing lalu coba lagi."})
 		return
 	}
@@ -329,6 +334,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 			walletBalance = walletInfo.Balance
 		}
 		if balErr == nil && walletInfo != nil && walletInfo.Balance <= 0 {
+			logMarketOrderReject("wallet_balance_not_enough", zap.Uint("user_id", userID), zap.String("item_id", itemID), zap.Int64("wallet_balance_idr", walletInfo.Balance))
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo kamu tidak mencukupi."})
 			return
 		}
@@ -337,6 +343,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 	// Step 1 after user balance: resolve latest listing item and check supplier balance first.
 	listingItem, listingErr := h.findChatGPTItem(c, itemID, i18n, true)
 	if listingErr != nil || listingItem == nil {
+		logMarketOrderReject("listing_item_unavailable", zap.Uint("user_id", userID), zap.String("item_id", itemID), zap.Error(listingErr))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
 		return
 	}
@@ -347,25 +354,55 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 
 	sourcePrice, sourceCurrency, sourceSymbol := h.extractSourcePriceAndCurrency(listingItem)
 	if sourcePrice <= 0 {
+		logMarketOrderReject("source_price_unavailable",
+			zap.Uint("user_id", userID),
+			zap.String("item_id", resolvedItemID),
+			zap.Float64("source_price", sourcePrice),
+			zap.String("source_currency", sourceCurrency),
+		)
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Checker sedang error. Coba lagi sebentar."})
 		return
 	}
 	priceIDR, fxRate, pricingErr := h.computeIDRPrice(sourcePrice, sourceCurrency)
 	if pricingErr != nil || priceIDR <= 0 {
+		logMarketOrderReject("pricing_unavailable",
+			zap.Uint("user_id", userID),
+			zap.String("item_id", resolvedItemID),
+			zap.Float64("source_price", sourcePrice),
+			zap.String("source_currency", sourceCurrency),
+			zap.Error(pricingErr),
+		)
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Checker sedang error. Coba lagi sebentar."})
 		return
 	}
 	if walletBalance >= 0 && walletBalance < priceIDR {
+		logMarketOrderReject("wallet_balance_less_than_item_price",
+			zap.Uint("user_id", userID),
+			zap.String("item_id", resolvedItemID),
+			zap.Int64("wallet_balance_idr", walletBalance),
+			zap.Int64("price_idr", priceIDR),
+			zap.Float64("source_price", sourcePrice),
+			zap.String("source_currency", sourceCurrency),
+			zap.Float64("fx_rate_to_idr", fxRate),
+		)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Saldo kamu tidak mencukupi."})
 		return
 	}
 	supplierBalance := h.checkSupplierBalance(c.Request.Context(), sourcePrice)
 	if supplierBalance.State == supplierBalanceStateInsufficient {
+		logMarketOrderReject("supplier_balance_not_enough",
+			zap.Uint("user_id", userID),
+			zap.String("item_id", resolvedItemID),
+			zap.Float64("supplier_balance", supplierBalance.Balance),
+			zap.Float64("source_price", sourcePrice),
+			zap.String("source_currency", sourceCurrency),
+		)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
 		return
 	}
 
 	if !extractCanBuyItem(listingItem) {
+		logMarketOrderReject("item_not_purchasable", zap.Uint("user_id", userID), zap.String("item_id", resolvedItemID))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
 		return
 	}
@@ -1856,6 +1893,13 @@ func normalizeProviderPath(pathTemplate, fallbackTemplate, itemID string) string
 		path = "/" + path
 	}
 	return path
+}
+
+func logMarketOrderReject(stage string, fields ...zap.Field) {
+	all := make([]zap.Field, 0, len(fields)+1)
+	all = append(all, zap.String("stage", stage))
+	all = append(all, fields...)
+	applog.Warn("Market order rejected", all...)
 }
 
 func toProviderConfirmPrice(price float64) int64 {
