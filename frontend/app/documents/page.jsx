@@ -13,6 +13,7 @@ import {
   DOCUMENT_CATEGORIES,
   DOCUMENT_VISIBILITY,
 } from "@/lib/useDocuments";
+import NativeSelect from "@/components/ui/NativeSelect";
 
 export default function DocumentsPage() {
   const router = useRouter();
@@ -381,27 +382,27 @@ export default function DocumentsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Kategori</label>
-                  <select
+                  <NativeSelect
                     value={uploadForm.category}
                     onChange={(e) => setUploadForm((prev) => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:border-primary"
+                    className="h-10 rounded-lg bg-background"
                   >
                     {DOCUMENT_CATEGORIES.map((cat) => (
                       <option key={cat.value} value={cat.value}>{cat.label}</option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Visibilitas</label>
-                  <select
+                  <NativeSelect
                     value={uploadForm.visibility}
                     onChange={(e) => setUploadForm((prev) => ({ ...prev, visibility: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:border-primary"
+                    className="h-10 rounded-lg bg-background"
                   >
                     {DOCUMENT_VISIBILITY.map((vis) => (
                       <option key={vis.value} value={vis.value}>{vis.label}</option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </div>
               </div>
 

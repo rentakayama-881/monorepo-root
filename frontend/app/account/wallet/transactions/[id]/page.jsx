@@ -12,6 +12,7 @@ import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
+import NativeSelect from "@/components/ui/NativeSelect";
 
 // Dispute categories matching backend
 const DISPUTE_CATEGORIES = [
@@ -583,10 +584,10 @@ export default function TransactionDetailPage() {
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Issue Category <span className="text-destructive">*</span>
                 </label>
-                <select
+                <NativeSelect
                   value={disputeCategory}
                   onChange={(e) => setDisputeCategory(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-foreground focus:outline-none focus:border-primary"
+                  className="h-12 rounded-lg px-4"
                 >
                   <option value="">-- Select Category --</option>
                   {DISPUTE_CATEGORIES.map((cat) => (
@@ -594,7 +595,7 @@ export default function TransactionDetailPage() {
                       {cat.label}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
 
               {/* Reason Textarea */}

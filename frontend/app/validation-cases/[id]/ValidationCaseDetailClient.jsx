@@ -7,6 +7,7 @@ import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
+import NativeSelect from "@/components/ui/NativeSelect";
 import Skeleton from "@/components/ui/Skeleton";
 import { TagList } from "@/components/ui/TagPill";
 import ValidationCaseRecordSkeleton from "./ValidationCaseRecordSkeleton";
@@ -1584,17 +1585,17 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                   <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground">Type</label>
-                      <select
+                      <NativeSelect
                         value={disputeForm.category}
                         onChange={(e) => setDisputeForm((f) => ({ ...f, category: e.target.value }))}
-                        className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                        className="mt-1 h-10"
                       >
                         <option value="ItemNotAsDescribed">Artifact tidak sesuai terms</option>
                         <option value="ItemNotReceived">Artifact tidak diterima</option>
                         <option value="Fraud">Fraud / misrepresentation</option>
                         <option value="SellerNotResponding">Validator tidak responsif</option>
                         <option value="Other">Other</option>
-                      </select>
+                      </NativeSelect>
                     </div>
                     <div className="md:col-span-2">
                       <label className="text-xs font-semibold text-muted-foreground">Reason</label>

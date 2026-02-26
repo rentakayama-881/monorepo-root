@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import ValidationCaseTable from "@/components/ui/ValidationCaseTable";
+import NativeSelect from "@/components/ui/NativeSelect";
 
 function norm(s) {
   return String(s || "").toLowerCase().trim();
@@ -99,10 +100,10 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
 
         <div className="md:col-span-3">
           <div className={fieldLabel}>Status</div>
-          <select
+          <NativeSelect
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+            className="mt-1 h-10"
             aria-label="Filter by status"
           >
             <option value="">All</option>
@@ -111,7 +112,7 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
                 {s}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
 
         <div className="md:col-span-3">
