@@ -1508,6 +1508,13 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	})
 	resp, failureReason, buyErr := h.buyChatGPTItem(ctx, itemID, i18n, orderSnapshot.SourcePrice)
 	if buyErr != nil {
+		logMarketOrderReject(
+			"provider_purchase_transport_error",
+			zap.String("order_id", orderID),
+			zap.Uint("user_id", userID),
+			zap.String("item_id", itemID),
+			zap.Error(buyErr),
+		)
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Provider transport error")
 		h.markOrderFailed(orderID, "CHECKER_ERROR", "Checker sedang error. Coba lagi sebentar.")
 		h.appendOrderStep(orderID, publicOrderStep{
@@ -1523,14 +1530,29 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		if strings.TrimSpace(failureReason) == "" {
 			failureReason = normalizeProviderFailureReason(resp, "Provider purchase failed")
 		}
-		failureReason = normalizeUserFacingFailureReason(failureReason)
-		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, failureReason)
-		h.markOrderFailed(orderID, "PROVIDER_PURCHASE_FAILED", failureReason)
+		providerFailureReason := failureReason
+		userFailureReason := normalizeUserFacingFailureReason(failureReason)
+		providerStatusCode := 0
+		if resp != nil {
+			providerStatusCode = resp.StatusCode
+		}
+		logMarketOrderReject(
+			"provider_purchase_failed",
+			zap.String("order_id", orderID),
+			zap.Uint("user_id", userID),
+			zap.String("item_id", itemID),
+			zap.Int("provider_status_code", providerStatusCode),
+			zap.String("provider_reason_raw", providerFailureReason),
+			zap.String("user_reason", userFailureReason),
+			zap.Strings("provider_errors", extractProviderErrors(resp)),
+		)
+		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
+		h.markOrderFailed(orderID, "PROVIDER_PURCHASE_FAILED", userFailureReason)
 		h.appendOrderStep(orderID, publicOrderStep{
 			Code:    "PROVIDER_PURCHASE",
 			Label:   "Proses pembelian gagal",
 			Status:  "failed",
-			Message: failureReason,
+			Message: userFailureReason,
 			At:      time.Now().UTC(),
 		})
 		return

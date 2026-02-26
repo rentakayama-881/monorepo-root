@@ -11,6 +11,9 @@ const FINAL_STATUSES = new Set(["fulfilled", "failed"]);
 function normalizeFailure(message) {
   const raw = String(message || "").trim();
   const lower = raw.toLowerCase();
+  if (lower.includes("timed out") || lower.includes("timeout") || lower.includes("context canceled")) {
+    return "Request timed out while checking account availability. Please try again.";
+  }
   if (lower.includes("saldo kamu tidak mencukupi") || lower.includes("insufficient")) return "Your balance is insufficient.";
   if (lower.includes("akun belum siap")) return "This account is currently unavailable.";
   if (lower.includes("item not found") || lower.includes("current listing") || lower.includes("sold")) {
@@ -51,34 +54,53 @@ export default function MarketChatGPTOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [order, setOrder] = useState(null);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const [manualRefresh, setManualRefresh] = useState(false);
 
   useEffect(() => {
     let active = true;
     let timer = null;
+    let lastKnownStatus = "";
+
+    const scheduleRetry = (delayMs = 1800) => {
+      if (!active) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => loadOrder(false), delayMs);
+    };
 
     async function loadOrder(isFirst = false) {
       if (!orderID) return;
       if (isFirst) {
         setLoading(true);
       }
-      setError("");
       try {
-        const data = await fetchJsonAuth(`/api/market/chatgpt/orders/${encodeURIComponent(orderID)}`, {
+        const data = await fetchJsonAuth(`/api/market/chatgpt/orders/${encodeURIComponent(orderID)}?ts=${Date.now()}`, {
           method: "GET",
+          timeout: 20000,
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
         });
         if (!active) return;
+        setError("");
         const nextOrder = data?.order || null;
         setOrder(nextOrder);
 
         const status = String(nextOrder?.status || "").toLowerCase();
+        lastKnownStatus = status;
         if (nextOrder && !FINAL_STATUSES.has(status)) {
-          timer = setTimeout(() => loadOrder(false), 1800);
+          scheduleRetry(1800);
         }
       } catch (err) {
         if (!active) return;
         setError(err?.message || "Unable to load order details.");
+        if (!FINAL_STATUSES.has(lastKnownStatus)) {
+          scheduleRetry(3000);
+        }
       } finally {
-        if (active) setLoading(false);
+        if (active && isFirst) {
+          setLoading(false);
+          setManualRefresh(false);
+        }
       }
     }
 
@@ -88,7 +110,7 @@ export default function MarketChatGPTOrderDetailPage() {
       active = false;
       if (timer) clearTimeout(timer);
     };
-  }, [orderID]);
+  }, [orderID, refreshNonce]);
 
   const statusText = useMemo(() => {
     const status = String(order?.status || "").toLowerCase();
@@ -194,6 +216,17 @@ export default function MarketChatGPTOrderDetailPage() {
         <Link href="/account/my-purchases" className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40">
           Open My Purchases
         </Link>
+        <button
+          type="button"
+          onClick={() => {
+            setManualRefresh(true);
+            setRefreshNonce((v) => v + 1);
+          }}
+          disabled={loading || manualRefresh}
+          className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40 disabled:opacity-60"
+        >
+          {manualRefresh ? "Refreshing..." : "Refresh status"}
+        </button>
       </div>
     </main>
   );

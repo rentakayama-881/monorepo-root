@@ -83,6 +83,9 @@ async function parseApiResponseSafe(res) {
 function normalizeCheckoutErrorMessage(message) {
   const raw = String(message || "").trim();
   const lower = raw.toLowerCase();
+  if (lower.includes("timed out") || lower.includes("timeout") || lower.includes("context canceled")) {
+    return "Request timed out while checking account availability. Please try again.";
+  }
   if (lower.includes("saldo kamu tidak mencukupi") || lower.includes("insufficient") || lower.includes("balance")) {
     return "Your balance is insufficient.";
   }
@@ -144,7 +147,11 @@ export default function MarketChatGPTClient() {
         setLoading(true);
       }
       try {
-        const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US`, { method: "GET" });
+        const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US&ts=${Date.now()}`, {
+          method: "GET",
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        });
         const data = await parseApiResponseSafe(res);
         if (!res.ok) throw new Error(data?.error || "Unable to load marketplace listings.");
         if (isMountedRef.current) {
@@ -208,6 +215,7 @@ export default function MarketChatGPTClient() {
       const data = await fetchJsonAuth("/api/market/chatgpt/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        timeout: 45000,
         body: JSON.stringify({ item_id: itemID, i18n: "en-US" }),
       });
       const orderID = data?.order?.id;
