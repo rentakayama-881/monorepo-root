@@ -365,13 +365,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		return
 	}
 
-	// Step 2 after precheck: run checker validation.
-	item, checkErr := h.checkAccountItem(c.Request.Context(), resolvedItemID, i18n)
-	if checkErr != nil || item == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": normalizeCheckerErrorMessage(checkErr)})
-		return
-	}
-	if !extractCanBuyItem(item) {
+	if !extractCanBuyItem(listingItem) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
 		return
 	}
@@ -382,10 +376,10 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		ID:             newPublicMarketOrderID(),
 		UserID:         userID,
 		ItemID:         resolvedItemID,
-		Title:          normalizeItemTitle(item),
-		Price:          normalizeItemPrice(item),
+		Title:          normalizeItemTitle(listingItem),
+		Price:          normalizeItemPrice(listingItem),
 		Status:         "processing",
-		Seller:         normalizeSeller(item),
+		Seller:         normalizeSeller(listingItem),
 		SourcePrice:    sourcePrice,
 		SourceCurrency: sourceCurrency,
 		SourceSymbol:   sourceSymbol,
@@ -1334,43 +1328,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	})
 
 	h.appendOrderStep(orderID, publicOrderStep{
-		Code:   "FETCH_PROVIDER_ITEM",
-		Label:  "Memvalidasi item ke provider",
-		Status: "processing",
-		At:     time.Now().UTC(),
-	})
-	item, err := h.checkAccountItem(ctx, itemID, i18n)
-	if err != nil || item == nil {
-		msg := "Akun belum siap untuk dijual saat ini."
-		if err != nil {
-			msg = normalizeUserFacingFailureReason(err.Error())
-		}
-		h.markOrderFailed(orderID, "ITEM_NOT_AVAILABLE", msg)
-		h.appendOrderStep(orderID, publicOrderStep{
-			Code:    "FETCH_PROVIDER_ITEM",
-			Label:   "Validasi item gagal",
-			Status:  "failed",
-			Message: msg,
-			At:      time.Now().UTC(),
-		})
-		return
-	}
-	if !extractCanBuyItem(item) {
-		msg := "Item ini belum bisa dibeli saat ini."
-		h.markOrderFailed(orderID, "ITEM_NOT_PURCHASABLE", msg)
-		h.appendOrderStep(orderID, publicOrderStep{
-			Code:    "FETCH_PROVIDER_ITEM",
-			Label:   "Item belum bisa dibeli",
-			Status:  "failed",
-			Message: msg,
-			At:      time.Now().UTC(),
-		})
-		return
-	}
-	h.applyOrderItemSnapshot(orderID, item)
-	h.appendOrderStep(orderID, publicOrderStep{
-		Code:   "FETCH_PROVIDER_ITEM",
-		Label:  "Item valid di provider",
+		Code:   "PROVIDER_DIRECT_BUY_FLOW",
+		Label:  "Menggunakan alur direct buy provider",
 		Status: "done",
 		At:     time.Now().UTC(),
 	})
@@ -1782,6 +1741,13 @@ func normalizeUserFacingFailureReason(reason string) string {
 	if strings.Contains(lower, "this item is sold") || strings.Contains(lower, "sold") {
 		return "Akun belum siap untuk dijual saat ini."
 	}
+	if strings.Contains(lower, "secret answer") ||
+		strings.Contains(lower, "secret question") ||
+		strings.Contains(lower, "security answer") ||
+		strings.Contains(lower, "security question") ||
+		strings.Contains(lower, "payment password") {
+		return "Akun belum siap untuk dijual saat ini."
+	}
 	if strings.Contains(lower, "retry_request") {
 		return "Checker sedang error. Coba lagi sebentar."
 	}
@@ -1801,6 +1767,13 @@ func normalizeCheckerErrorMessage(err error) string {
 		strings.Contains(lower, "not found") ||
 		strings.Contains(lower, "ad not found") ||
 		strings.Contains(lower, "item not found") {
+		return "Akun belum siap untuk dijual saat ini."
+	}
+	if strings.Contains(lower, "secret answer") ||
+		strings.Contains(lower, "secret question") ||
+		strings.Contains(lower, "security answer") ||
+		strings.Contains(lower, "security question") ||
+		strings.Contains(lower, "payment password") {
 		return "Akun belum siap untuk dijual saat ini."
 	}
 	return "Checker sedang error. Coba lagi sebentar."
