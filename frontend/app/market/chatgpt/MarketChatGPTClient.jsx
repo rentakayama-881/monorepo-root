@@ -474,7 +474,7 @@ function MobileAccountCard({ item, checkingOut, onDetail, onBuy }) {
   return (
     <article className="rounded-lg border border-border bg-background p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
       <div className="min-w-0">
-        <h3 className="truncate text-sm font-semibold text-foreground">{item.title}</h3>
+        <h3 className="text-sm font-semibold leading-snug break-words text-foreground">{item.title}</h3>
         <div className="mt-1.5 flex flex-wrap gap-1">
           {item?.raw?.chatgpt_subscription ? <TinyBadge label={String(item.raw.chatgpt_subscription)} /> : null}
           {item?.raw?.openai_tier ? <TinyBadge label={String(item.raw.openai_tier)} /> : null}
@@ -513,6 +513,33 @@ function AccountMetaField({ label, value, strong = false }) {
 
 function SpecDrawer({ item, onClose }) {
   if (!item) return null;
+
+  useEffect(() => {
+    const body = document.body;
+    const html = document.documentElement;
+    const scrollY = window.scrollY;
+
+    const prevBodyOverflow = body.style.overflow;
+    const prevBodyPosition = body.style.position;
+    const prevBodyTop = body.style.top;
+    const prevBodyWidth = body.style.width;
+    const prevHtmlOverflow = html.style.overflow;
+
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    html.style.overflow = "hidden";
+
+    return () => {
+      body.style.overflow = prevBodyOverflow;
+      body.style.position = prevBodyPosition;
+      body.style.top = prevBodyTop;
+      body.style.width = prevBodyWidth;
+      html.style.overflow = prevHtmlOverflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
 
   const specs = [
     ["Langganan", item?.raw?.chatgpt_subscription],
