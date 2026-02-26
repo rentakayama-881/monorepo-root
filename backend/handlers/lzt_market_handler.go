@@ -114,10 +114,9 @@ type supplierBalanceCheckResult struct {
 }
 
 type providerItemReadiness struct {
-	Item             map[string]interface{}
-	CanBuy           bool
-	CannotBuyReason  string
-	ProviderResponse *services.LZTMarketResponse
+	Item            map[string]interface{}
+	CanBuy          bool
+	CannotBuyReason string
 }
 
 func (h *LZTMarketHandler) GetConfig(c *gin.Context) {
@@ -1412,10 +1411,9 @@ func (h *LZTMarketHandler) getProviderItemReadiness(ctx context.Context, itemID 
 	}
 
 	return &providerItemReadiness{
-		Item:             item,
-		CanBuy:           canBuy,
-		CannotBuyReason:  strings.TrimSpace(cannotBuyReason),
-		ProviderResponse: resp,
+		Item:            item,
+		CanBuy:          canBuy,
+		CannotBuyReason: strings.TrimSpace(cannotBuyReason),
 	}, nil
 }
 
