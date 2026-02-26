@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"io"
 	"math"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"backend-gin/services"
+	"github.com/gin-gonic/gin"
 )
 
 func TestParseProviderNumericString(t *testing.T) {
@@ -167,5 +170,99 @@ func TestToProviderConfirmPrice(t *testing.T) {
 				t.Fatalf("unexpected confirm price: got %d want %d", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestResolveOrderItemForCheckout_FallsBackToCheckAccountWhenListingMissing(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	var listingCalls int
+	var checkCalls int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/chatgpt":
+			listingCalls++
+			_, _ = io.WriteString(w, `{"items":[{"item_id":999,"price":90,"price_currency":"RUB"}]}`)
+		case r.Method == http.MethodPost && r.URL.Path == "/123/check-account":
+			checkCalls++
+			_, _ = io.WriteString(w, `{"status":"ok","item":{"item_id":123,"price":55,"price_currency":"RUB","canBuyItem":true},"requireVideoRecording":false}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	t.Setenv("LZT_MARKET_BASE_URL", server.URL)
+	t.Setenv("LZT_MARKET_TOKEN", "test-token")
+	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
+	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
+	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
+
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/api/market/chatgpt/orders", nil)
+
+	item, source, err := handler.resolveOrderItemForCheckout(ctx, "123", "en-US")
+	if err != nil {
+		t.Fatalf("expected fallback check-account to resolve item, got error: %v", err)
+	}
+	if item == nil {
+		t.Fatalf("expected resolved item from check-account")
+	}
+	if source != "check_account" {
+		t.Fatalf("unexpected source: got %s want check_account", source)
+	}
+	if normalizeItemID(item) != "123" {
+		t.Fatalf("unexpected resolved item id: got %s want 123", normalizeItemID(item))
+	}
+	if listingCalls == 0 {
+		t.Fatalf("expected listing endpoint to be called first")
+	}
+	if checkCalls == 0 {
+		t.Fatalf("expected check-account endpoint to be used as fallback")
+	}
+}
+
+func TestResolveOrderItemForCheckout_UsesListingWhenItemExists(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	var checkCalls int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/chatgpt":
+			_, _ = io.WriteString(w, `{"items":[{"item_id":123,"price":55,"price_currency":"RUB","canBuyItem":true}]}`)
+		case r.Method == http.MethodPost && r.URL.Path == "/123/check-account":
+			checkCalls++
+			_, _ = io.WriteString(w, `{"status":"ok","item":{"item_id":123,"price":55,"price_currency":"RUB","canBuyItem":true},"requireVideoRecording":false}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	t.Setenv("LZT_MARKET_BASE_URL", server.URL)
+	t.Setenv("LZT_MARKET_TOKEN", "test-token")
+	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
+	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
+	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
+
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/api/market/chatgpt/orders", nil)
+
+	item, source, err := handler.resolveOrderItemForCheckout(ctx, "123", "en-US")
+	if err != nil {
+		t.Fatalf("expected listing resolution to succeed, got error: %v", err)
+	}
+	if item == nil {
+		t.Fatalf("expected resolved item from listing")
+	}
+	if source != "listing" {
+		t.Fatalf("unexpected source: got %s want listing", source)
+	}
+	if checkCalls != 0 {
+		t.Fatalf("expected check-account fallback not to be called when listing already has item")
 	}
 }

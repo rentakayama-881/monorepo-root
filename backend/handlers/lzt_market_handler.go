@@ -340,10 +340,17 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		}
 	}
 
-	// Step 1 after user balance: resolve latest listing item and check supplier balance first.
-	listingItem, listingErr := h.findChatGPTItem(c, itemID, i18n, true)
+	// Step 1 after user balance: resolve item snapshot from listing; fallback to check-account when
+	// listing page changes and selected item is no longer present on the first page.
+	listingItem, resolveSource, listingErr := h.resolveOrderItemForCheckout(c, itemID, i18n)
 	if listingErr != nil || listingItem == nil {
-		logMarketOrderReject("listing_item_unavailable", zap.Uint("user_id", userID), zap.String("item_id", itemID), zap.Error(listingErr))
+		logMarketOrderReject(
+			"listing_item_unavailable",
+			zap.Uint("user_id", userID),
+			zap.String("item_id", itemID),
+			zap.String("resolve_source", resolveSource),
+			zap.Error(listingErr),
+		)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
 		return
 	}
@@ -689,6 +696,32 @@ func (h *LZTMarketHandler) findChatGPTItem(c *gin.Context, itemID, i18n string, 
 		}
 	}
 	return nil, nil
+}
+
+func (h *LZTMarketHandler) resolveOrderItemForCheckout(c *gin.Context, itemID, i18n string) (map[string]interface{}, string, error) {
+	listingItem, listingErr := h.findChatGPTItem(c, itemID, i18n, true)
+	if listingErr == nil && listingItem != nil {
+		return listingItem, "listing", nil
+	}
+
+	checkItem, checkErr := h.checkAccountItem(c.Request.Context(), itemID, i18n)
+	if checkErr == nil && checkItem != nil {
+		return checkItem, "check_account", nil
+	}
+
+	if listingErr != nil && checkErr != nil {
+		return nil, "", errors.Join(
+			fmt.Errorf("listing lookup failed: %w", listingErr),
+			fmt.Errorf("check-account failed: %w", checkErr),
+		)
+	}
+	if checkErr != nil {
+		return nil, "", checkErr
+	}
+	if listingErr != nil {
+		return nil, "", listingErr
+	}
+	return nil, "", nil
 }
 
 func normalizeItemID(item map[string]interface{}) string {
