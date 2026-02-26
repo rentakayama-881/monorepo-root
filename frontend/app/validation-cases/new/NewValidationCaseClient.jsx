@@ -12,8 +12,10 @@ import TagSelector from "@/components/ui/TagSelector";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import Button from "@/components/ui/Button";
+import NativeSelect from "@/components/ui/NativeSelect";
 import NewValidationCaseSkeleton from "./NewValidationCaseSkeleton";
 import Skeleton from "@/components/ui/Skeleton";
+import { formatRepoFileKindLabel, formatRepoFileVisibilityLabel } from "@/lib/repoFileLabels";
 
 const checklistItems = [
   {
@@ -675,17 +677,18 @@ export default function NewValidationCaseClient() {
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">Tingkat kerahasiaan</label>
-                <select
+                <NativeSelect
                   value={form.sensitivity || "S1"}
                   onChange={(e) => setForm((prev) => ({ ...prev, sensitivity: e.target.value }))}
-                  className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                  options={[
+                    { value: "S0", label: "S0 - Public" },
+                    { value: "S1", label: "S1 - Restricted" },
+                    { value: "S2", label: "S2 - Confidential" },
+                    { value: "S3", label: "S3 - Critical" },
+                  ]}
+                  className="mt-1"
                   disabled={formDisabled}
-                >
-                  <option value="S0">S0 - Public</option>
-                  <option value="S1">S1 - Restricted</option>
-                  <option value="S2">S2 - Confidential</option>
-                  <option value="S3">S3 - Critical</option>
-                </select>
+                />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">Bounty (IDR)</label>
@@ -807,7 +810,7 @@ export default function NewValidationCaseClient() {
                 className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
                 disabled={formDisabled}
               />
-              <select
+              <NativeSelect
                 value={workspaceUploadDraft.kind}
                 onChange={(e) =>
                   setWorkspaceUploadDraft((prev) => {
@@ -819,22 +822,25 @@ export default function NewValidationCaseClient() {
                     };
                   })
                 }
-                className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                options={[
+                  { value: "task_input", label: formatRepoFileKindLabel("task_input") },
+                  { value: "case_readme", label: formatRepoFileKindLabel("case_readme") },
+                  { value: "sensitive_context", label: formatRepoFileKindLabel("sensitive_context") },
+                ]}
                 disabled={formDisabled}
-              >
-                <option value="task_input">task_input</option>
-                <option value="case_readme">case_readme</option>
-                <option value="sensitive_context">sensitive_context</option>
-              </select>
-              <select
+              />
+              <NativeSelect
                 value={workspaceUploadDraft.visibility}
                 onChange={(e) => setWorkspaceUploadDraft((prev) => ({ ...prev, visibility: e.target.value }))}
-                className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                options={[
+                  { value: "public", label: formatRepoFileVisibilityLabel("public") },
+                  {
+                    value: "assigned_validators",
+                    label: formatRepoFileVisibilityLabel("assigned_validators"),
+                  },
+                ]}
                 disabled={formDisabled || workspaceUploadDraft.kind === "sensitive_context"}
-              >
-                <option value="public">public</option>
-                <option value="assigned_validators">assigned_validators</option>
-              </select>
+              />
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -866,9 +872,9 @@ export default function NewValidationCaseClient() {
                   <tbody>
                     {workspaceBootstrapFiles.map((item) => (
                       <tr key={item.localId} className="border-b border-border/70">
-                        <td className="px-3 py-2 font-mono text-xs text-foreground">{item.kind}</td>
+                        <td className="px-3 py-2 text-xs font-semibold text-foreground">{formatRepoFileKindLabel(item.kind)}</td>
                         <td className="px-3 py-2 text-foreground">{item.label}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{item.visibility}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{formatRepoFileVisibilityLabel(item.visibility)}</td>
                         <td className="px-3 py-2 text-muted-foreground">{item.file?.name || "-"}</td>
                         <td className="px-3 py-2">
                           <button

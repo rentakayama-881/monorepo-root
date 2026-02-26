@@ -11,6 +11,7 @@ import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
+import NativeSelect from "@/components/ui/NativeSelect";
 
 const QRIS_IMAGE_URL =
   "https://i.ibb.co.com/TDR9Grs3/Kode-QRIS-ALEPHDRAAD-UTILITY-STACK-Elektronik-1.png";
@@ -332,17 +333,16 @@ export default function DepositPage() {
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Metode Pembayaran
                 </label>
-                <select
+                <NativeSelect
                   value={method}
                   onChange={(e) => setMethod(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-card px-3 py-3 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m.value} value={m.value} disabled={!m.enabled}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
+                  options={PAYMENT_METHODS.map((item) => ({
+                    value: item.value,
+                    label: item.label,
+                    disabled: !item.enabled,
+                  }))}
+                  className="h-12 py-3 text-sm font-medium"
+                />
                 <p className="mt-1 text-xs text-muted-foreground">
                   Saat ini hanya QRIS yang tersedia. Metode lain segera menyusul.
                 </p>

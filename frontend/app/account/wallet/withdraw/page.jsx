@@ -11,6 +11,7 @@ import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
+import NativeSelect from "@/components/ui/NativeSelect";
 
 const BANKS = [
   { code: "bca", name: "Bank Central Asia (BCA)" },
@@ -198,18 +199,15 @@ export default function WithdrawPage() {
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Bank
                   </label>
-                  <select
+                  <NativeSelect
                     value={bankCode}
                     onChange={(e) => setBankCode(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-background px-4 py-3 focus:outline-none focus:border-primary"
-                  >
-                    <option value="">Select a bank</option>
-                    {BANKS.map((bank) => (
-                      <option key={bank.code} value={bank.code}>
-                        {bank.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: "", label: "Select a bank" },
+                      ...BANKS.map((bank) => ({ value: bank.code, label: bank.name })),
+                    ]}
+                    className="h-12 bg-background px-4 py-3"
+                  />
                 </div>
 
                 <div>

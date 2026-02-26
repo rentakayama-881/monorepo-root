@@ -6,10 +6,12 @@ import { useParams, useRouter } from "next/navigation";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import Skeleton, { SkeletonText } from "@/components/ui/Skeleton";
 import Spinner from "@/components/ui/Spinner";
+import NativeSelect from "@/components/ui/NativeSelect";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { FEATURE_ENDPOINTS, getFeatureApiBase } from "@/lib/featureApi";
 import { useUploadDocument } from "@/lib/useDocuments";
+import { formatRepoFileKindLabel, formatRepoFileVisibilityLabel } from "@/lib/repoFileLabels";
 
 function formatDateTime(ts) {
   if (!ts) return "-";
@@ -652,7 +654,7 @@ export default function RepoWorkflowClient({
                   const isOwnerUpload = normalizedOwnerUserId > 0 && uploadedBy > 0 && uploadedBy === normalizedOwnerUserId;
                   return (
                     <tr key={file.id}>
-                      <td className="py-2 pr-3 font-mono text-xs text-foreground">{file.kind}</td>
+                      <td className="py-2 pr-3 text-xs font-semibold text-foreground">{formatRepoFileKindLabel(file.kind)}</td>
                       <td className="py-2 pr-3">
                         <button
                           type="button"
@@ -666,7 +668,7 @@ export default function RepoWorkflowClient({
                       <td className="py-2 pr-3 text-foreground">
                         {isOwnerUpload ? "Owner case" : file.uploaded_by_user?.username ? `@${file.uploaded_by_user.username}` : `#${file.uploaded_by || "-"}`}
                       </td>
-                      <td className="py-2 pr-3 text-muted-foreground">{file.visibility}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">{formatRepoFileVisibilityLabel(file.visibility)}</td>
                       <td className="py-2 pr-3 text-muted-foreground">{formatDateTime(file.uploaded_at)}</td>
                       <td className="py-2 pr-3">
                         <div className="flex items-center gap-2">
@@ -708,7 +710,7 @@ export default function RepoWorkflowClient({
               required
               disabled={actionLocked}
             />
-            <select
+            <NativeSelect
               value={attachForm.kind}
               onChange={(e) =>
                 setAttachForm((prev) => {
@@ -720,24 +722,24 @@ export default function RepoWorkflowClient({
                   };
                 })
               }
-              className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
+              options={attachKindOptions.map((kind) => ({
+                value: kind,
+                label: formatRepoFileKindLabel(kind),
+              }))}
               disabled={actionLocked}
-            >
-              {attachKindOptions.map((kind) => (
-                <option key={kind} value={kind}>
-                  {kind}
-                </option>
-              ))}
-            </select>
-            <select
+            />
+            <NativeSelect
               value={attachForm.visibility}
               onChange={(e) => setAttachForm((prev) => ({ ...prev, visibility: e.target.value }))}
-              className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
+              options={[
+                { value: "public", label: formatRepoFileVisibilityLabel("public") },
+                {
+                  value: "assigned_validators",
+                  label: formatRepoFileVisibilityLabel("assigned_validators"),
+                },
+              ]}
               disabled={actionLocked || attachForm.kind === "sensitive_context" || !isOwner}
-            >
-              <option value="public">public</option>
-              <option value="assigned_validators">assigned_validators</option>
-            </select>
+            />
             {uploadingDocument ? (
               <div className="text-xs text-muted-foreground md:col-span-2">Uploading file... {uploadProgress}%</div>
             ) : null}

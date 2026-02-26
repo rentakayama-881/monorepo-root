@@ -7,6 +7,7 @@ import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import { TagList } from "@/components/ui/TagPill";
 import Skeleton from "@/components/ui/Skeleton";
+import Modal from "@/components/ui/Modal";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
@@ -155,6 +156,7 @@ export default function MyValidationCasesPage() {
   const [error, setError] = useState("");
   const [items, setItems] = useState([]);
   const [deletingId, setDeletingId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   async function load() {
     setError("");
@@ -180,15 +182,24 @@ export default function MyValidationCasesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function deleteCase(id) {
+  function openDeleteDialog(validationCase) {
+    const id = validationCase?.id;
     if (!id) return;
-    const ok = window.confirm("PERINGATAN: Validation Case akan dihapus permanen. Lanjutkan?");
-    if (!ok) return;
+    setDeleteTarget({
+      id: String(id),
+      title: String(validationCase?.title || "(untitled)"),
+    });
+  }
 
-    setDeletingId(String(id));
+  async function confirmDeleteCase() {
+    const targetId = String(deleteTarget?.id || "");
+    if (!targetId) return;
+
+    setDeletingId(targetId);
     setError("");
     try {
-      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}`, { method: "DELETE" });
+      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(targetId)}`, { method: "DELETE" });
+      setDeleteTarget(null);
       await load();
     } catch (e) {
       setError(formatDeleteCaseError(e));
@@ -301,7 +312,7 @@ export default function MyValidationCasesPage() {
                       disabled={String(deletingId) === String(id) || !canDelete}
                       onClick={() => {
                         if (!canDelete) return;
-                        deleteCase(id);
+                        openDeleteDialog(vc);
                       }}
                       type="button"
                       title={canDelete ? "Delete case" : deleteHint}
@@ -385,7 +396,7 @@ export default function MyValidationCasesPage() {
                               disabled={String(deletingId) === String(id) || !canDelete}
                               onClick={() => {
                                 if (!canDelete) return;
-                                deleteCase(id);
+                                openDeleteDialog(vc);
                               }}
                               type="button"
                               title={canDelete ? "Delete case" : deleteHint}
@@ -410,6 +421,49 @@ export default function MyValidationCasesPage() {
           </div>
         </div>
       )}
+
+      <Modal
+        open={Boolean(deleteTarget)}
+        onClose={() => {
+          if (deletingId) return;
+          setDeleteTarget(null);
+        }}
+        title="Delete Validation Case"
+        size="sm"
+        closeOnBackdrop={!deletingId}
+        closeOnEscape={!deletingId}
+      >
+        <div className="space-y-4 text-sm">
+          <div className="text-foreground">
+            Case ini akan dihapus permanen dari daftar milik kamu.
+          </div>
+          <div className="rounded-[var(--radius)] border border-border bg-secondary/30 px-3 py-2">
+            <div className="font-mono text-[11px] text-muted-foreground">Case #{deleteTarget?.id || "-"}</div>
+            <div className="mt-1 font-semibold text-foreground">{deleteTarget?.title || "(untitled)"}</div>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Aksi ini tidak bisa dibatalkan.
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              disabled={Boolean(deletingId)}
+              className="rounded-[var(--radius)] border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmDeleteCase}
+              disabled={Boolean(deletingId)}
+              className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-900 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {Boolean(deletingId) ? "Deleting..." : "Delete Permanently"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </main>
   );
 }

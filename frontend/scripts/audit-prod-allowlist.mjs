@@ -2,7 +2,13 @@
 
 import { spawnSync } from "node:child_process";
 
-const allowedAdvisories = new Set(["@sentry/nextjs", "@sentry/node", "minimatch"]);
+const allowedAdvisories = new Set([
+  "@sentry/nextjs",
+  "@sentry/node",
+  "minimatch",
+  // Transitive via @sentry/nextjs build toolchain.
+  "rollup",
+]);
 
 function fail(message, details = "") {
   console.error(`[audit:prod] ${message}`);
