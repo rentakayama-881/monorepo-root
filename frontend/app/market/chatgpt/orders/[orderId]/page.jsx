@@ -78,7 +78,6 @@ export default function MarketChatGPTOrderDetailPage() {
           method: "GET",
           timeout: 20000,
           cache: "no-store",
-          headers: { "Cache-Control": "no-cache" },
         });
         if (!active) return;
         setError("");

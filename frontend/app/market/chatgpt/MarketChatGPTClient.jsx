@@ -150,7 +150,6 @@ export default function MarketChatGPTClient() {
         const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US&ts=${Date.now()}`, {
           method: "GET",
           cache: "no-store",
-          headers: { "Cache-Control": "no-cache" },
         });
         const data = await parseApiResponseSafe(res);
         if (!res.ok) throw new Error(data?.error || "Unable to load marketplace listings.");
