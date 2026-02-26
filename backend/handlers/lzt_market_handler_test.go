@@ -226,6 +226,132 @@ func TestResolveOrderItemForCheckout_FallsBackToCheckAccountWhenListingMissing(t
 	}
 }
 
+func TestFetchChatGPTListing_AggregatesProviderPages(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	var pageCalls []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != http.MethodGet || r.URL.Path != "/chatgpt" {
+			http.NotFound(w, r)
+			return
+		}
+
+		page := strings.TrimSpace(r.URL.Query().Get("page"))
+		if page == "" {
+			page = "1"
+		}
+		pageCalls = append(pageCalls, page)
+
+		switch page {
+		case "1":
+			_, _ = io.WriteString(w, `{"items":[{"item_id":101},{"item_id":102}]}`)
+		case "2":
+			_, _ = io.WriteString(w, `{"items":[{"item_id":103},{"item_id":104}]}`)
+		default:
+			_, _ = io.WriteString(w, `{"items":[]}`)
+		}
+	}))
+	defer server.Close()
+
+	t.Setenv("LZT_MARKET_BASE_URL", server.URL)
+	t.Setenv("LZT_MARKET_TOKEN", "test-token")
+	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
+	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
+	t.Setenv("MARKET_CHATGPT_MAX_PAGES", "6")
+
+	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
+
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/market/chatgpt", nil)
+
+	resp, err := handler.fetchChatGPTListing(ctx, "en-US", true)
+	if err != nil {
+		t.Fatalf("expected aggregated listing without error, got: %v", err)
+	}
+	if resp == nil || resp.JSON == nil {
+		t.Fatalf("expected listing response payload")
+	}
+
+	items := extractListMaps(resp.JSON)
+	if len(items) != 4 {
+		t.Fatalf("unexpected aggregated items count: got %d want 4", len(items))
+	}
+	if got := normalizeItemID(items[3]); got != "104" {
+		t.Fatalf("unexpected final item id: got %s want 104", got)
+	}
+
+	root, ok := resp.JSON.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected root payload map")
+	}
+	total := 0
+	switch n := root["total_items"].(type) {
+	case int:
+		total = n
+	case int64:
+		total = int(n)
+	case float64:
+		total = int(n)
+	default:
+		t.Fatalf("unexpected total_items type: %T", root["total_items"])
+	}
+	if total != 4 {
+		t.Fatalf("unexpected total_items: got %d want 4", total)
+	}
+
+	if len(pageCalls) < 3 {
+		t.Fatalf("expected multiple page fetch calls, got %v", pageCalls)
+	}
+	if pageCalls[0] != "1" || pageCalls[1] != "2" {
+		t.Fatalf("unexpected page sequence: got %v", pageCalls)
+	}
+}
+
+func TestFetchChatGPTListing_StopsWhenProviderRepeatsSamePage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	var callCount int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != http.MethodGet || r.URL.Path != "/chatgpt" {
+			http.NotFound(w, r)
+			return
+		}
+		callCount++
+		_, _ = io.WriteString(w, `{"items":[{"item_id":201},{"item_id":202}]}`)
+	}))
+	defer server.Close()
+
+	t.Setenv("LZT_MARKET_BASE_URL", server.URL)
+	t.Setenv("LZT_MARKET_TOKEN", "test-token")
+	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
+	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
+	t.Setenv("MARKET_CHATGPT_MAX_PAGES", "9")
+
+	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
+
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/market/chatgpt", nil)
+
+	resp, err := handler.fetchChatGPTListing(ctx, "en-US", true)
+	if err != nil {
+		t.Fatalf("expected aggregated listing without error, got: %v", err)
+	}
+	if resp == nil || resp.JSON == nil {
+		t.Fatalf("expected listing response payload")
+	}
+	items := extractListMaps(resp.JSON)
+	if len(items) != 2 {
+		t.Fatalf("unexpected unique item count when provider repeats pages: got %d want 2", len(items))
+	}
+	if callCount > 2 {
+		t.Fatalf("expected early stop on duplicate pages, got %d calls", callCount)
+	}
+}
+
 func TestResolveOrderItemForCheckout_UsesListingWhenItemExists(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

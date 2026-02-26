@@ -224,7 +224,6 @@ func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 		i18n = "en-US"
 	}
 	forceRefresh := strings.EqualFold(strings.TrimSpace(c.Query("refresh")), "true")
-
 	if !forceRefresh {
 		if cached, ok := h.getCachedChatGPT(i18n); ok {
 			payload := h.withDisplayPricing(cached.JSON)
@@ -236,13 +235,7 @@ func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 		}
 	}
 
-	resp, err := h.client.Do(c.Request.Context(), services.LZTMarketRequest{
-		Method: http.MethodGet,
-		Path:   "/chatgpt",
-		Query: map[string]string{
-			"i18n": i18n,
-		},
-	})
+	resp, err := h.fetchChatGPTListing(c, i18n, forceRefresh)
 	if err != nil {
 		if cached, ok := h.getAnyCachedChatGPT(); ok {
 			payload := h.withDisplayPricing(cached.JSON)
@@ -263,7 +256,6 @@ func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 		return
 	}
 
-	h.setCachedChatGPT(i18n, resp)
 	payload := h.withDisplayPricing(resp.JSON)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -653,11 +645,7 @@ func (h *LZTMarketHandler) doProviderRequestWithRetry(
 
 func (h *LZTMarketHandler) fetchChatGPTListing(c *gin.Context, i18n string, forceRefresh bool) (*services.LZTMarketResponse, error) {
 	if forceRefresh {
-		resp, err := h.client.Do(c.Request.Context(), services.LZTMarketRequest{
-			Method: http.MethodGet,
-			Path:   "/chatgpt",
-			Query:  map[string]string{"i18n": i18n},
-		})
+		resp, err := h.fetchAggregatedChatGPTListing(c.Request.Context(), i18n)
 		if err != nil {
 			if cached, ok := h.getAnyCachedChatGPT(); ok {
 				return cached, nil
@@ -671,11 +659,7 @@ func (h *LZTMarketHandler) fetchChatGPTListing(c *gin.Context, i18n string, forc
 	if cached, ok := h.getCachedChatGPT(i18n); ok {
 		return cached, nil
 	}
-	resp, err := h.client.Do(c.Request.Context(), services.LZTMarketRequest{
-		Method: http.MethodGet,
-		Path:   "/chatgpt",
-		Query:  map[string]string{"i18n": i18n},
-	})
+	resp, err := h.fetchAggregatedChatGPTListing(c.Request.Context(), i18n)
 	if err != nil {
 		if cached, ok := h.getAnyCachedChatGPT(); ok {
 			return cached, nil
@@ -684,6 +668,290 @@ func (h *LZTMarketHandler) fetchChatGPTListing(c *gin.Context, i18n string, forc
 	}
 	h.setCachedChatGPT(i18n, resp)
 	return resp, nil
+}
+
+func (h *LZTMarketHandler) fetchAggregatedChatGPTListing(ctx context.Context, i18n string) (*services.LZTMarketResponse, error) {
+	if h == nil || h.client == nil {
+		return nil, fmt.Errorf("%w: LZT client not initialized", services.ErrLZTRequestInvalid)
+	}
+
+	// Default to a wider scan window so listing is not stuck on first page.
+	maxPages := readPositiveIntEnvLocal("MARKET_CHATGPT_MAX_PAGES", 25)
+	hardCapPages := readPositiveIntEnvLocal("MARKET_CHATGPT_HARD_CAP_PAGES", 60)
+	if hardCapPages < 1 {
+		hardCapPages = 60
+	}
+	if maxPages < 1 {
+		maxPages = 1
+	}
+	if maxPages > hardCapPages {
+		maxPages = hardCapPages
+	}
+
+	firstResp, err := h.fetchChatGPTListingPage(ctx, i18n, 1)
+	if err != nil {
+		return nil, err
+	}
+	if firstResp == nil {
+		return nil, errors.New("chatgpt listing response is empty")
+	}
+
+	root, ok := firstResp.JSON.(map[string]interface{})
+	if !ok {
+		return firstResp, nil
+	}
+
+	totalItems, hasTotalItems := extractPositiveIntFromMap(root, "totalItems", "total_items")
+	perPage, hasPerPage := extractPositiveIntFromMap(root, "perPage", "per_page")
+	hasNextPage, hasHasNextPage := extractBoolFromMap(root, "hasNextPage", "has_next_page")
+	if hasTotalItems && hasPerPage && perPage > 0 {
+		expectedPages := int(math.Ceil(float64(totalItems) / float64(perPage)))
+		if expectedPages > maxPages {
+			if expectedPages > hardCapPages {
+				maxPages = hardCapPages
+			} else {
+				maxPages = expectedPages
+			}
+		}
+	}
+
+	firstItems := extractListMaps(root)
+	if len(firstItems) == 0 || maxPages == 1 {
+		merged := cloneStringAnyMap(root)
+		merged["total_items"] = len(firstItems)
+		merged["loaded_items"] = len(firstItems)
+		merged["aggregated_pages"] = 1
+		firstResp.JSON = merged
+		return firstResp, nil
+	}
+
+	aggregatedItems := make([]interface{}, 0, len(firstItems))
+	seen := make(map[string]struct{}, len(firstItems))
+	addItems := func(items []map[string]interface{}, page int) int {
+		added := 0
+		for idx, item := range items {
+			key := normalizeItemID(item)
+			if key == "" {
+				key = fmt.Sprintf("page:%d:idx:%d:%v", page, idx, item)
+			}
+			if _, exists := seen[key]; exists {
+				continue
+			}
+			seen[key] = struct{}{}
+			aggregatedItems = append(aggregatedItems, item)
+			added++
+		}
+		return added
+	}
+
+	firstPageCount := len(firstItems)
+	_ = addItems(firstItems, 1)
+	fetchedPages := 1
+	for page := 2; page <= maxPages; page++ {
+		if hasHasNextPage && !hasNextPage {
+			break
+		}
+
+		resp, pageErr := h.fetchChatGPTListingPage(ctx, i18n, page)
+		if pageErr != nil || resp == nil {
+			break
+		}
+		items := extractListMaps(resp.JSON)
+		if len(items) == 0 {
+			break
+		}
+		added := addItems(items, page)
+		if added == 0 {
+			// The provider likely ignores page params or repeated the same rows.
+			break
+		}
+		fetchedPages = page
+
+		if pageRoot, ok := resp.JSON.(map[string]interface{}); ok {
+			if nextFlag, ok := extractBoolFromMap(pageRoot, "hasNextPage", "has_next_page"); ok {
+				hasHasNextPage = true
+				hasNextPage = nextFlag
+			}
+			if !hasTotalItems {
+				if nextTotal, ok := extractPositiveIntFromMap(pageRoot, "totalItems", "total_items"); ok {
+					totalItems = nextTotal
+					hasTotalItems = true
+				}
+			}
+			if !hasPerPage {
+				if nextPerPage, ok := extractPositiveIntFromMap(pageRoot, "perPage", "per_page"); ok {
+					perPage = nextPerPage
+					hasPerPage = true
+				}
+			}
+		}
+		if hasHasNextPage {
+			if !hasNextPage {
+				break
+			}
+			continue
+		}
+
+		if len(items) < firstPageCount {
+			break
+		}
+	}
+
+	merged := cloneStringAnyMap(root)
+	merged["items"] = aggregatedItems
+	merged["total_items"] = len(aggregatedItems)
+	merged["loaded_items"] = len(aggregatedItems)
+	merged["aggregated_pages"] = fetchedPages
+	if hasTotalItems {
+		merged["totalItems"] = totalItems
+	}
+	if hasPerPage {
+		merged["perPage"] = perPage
+	}
+	if hasHasNextPage {
+		merged["hasNextPage"] = hasNextPage && fetchedPages < maxPages
+	}
+	firstResp.JSON = merged
+	return firstResp, nil
+}
+
+func (h *LZTMarketHandler) fetchChatGPTListingPage(ctx context.Context, i18n string, page int) (*services.LZTMarketResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	query := map[string]string{
+		"i18n": i18n,
+		"page": strconv.Itoa(page),
+	}
+	return h.client.Do(ctx, services.LZTMarketRequest{
+		Method: http.MethodGet,
+		Path:   "/chatgpt",
+		Query:  query,
+	})
+}
+
+func cloneStringAnyMap(in map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
+}
+
+func extractPositiveIntFromMap(m map[string]interface{}, keys ...string) (int, bool) {
+	if len(m) == 0 || len(keys) == 0 {
+		return 0, false
+	}
+	for _, key := range keys {
+		raw, ok := m[key]
+		if !ok || raw == nil {
+			continue
+		}
+		switch v := raw.(type) {
+		case int:
+			if v > 0 {
+				return v, true
+			}
+		case int8:
+			if v > 0 {
+				return int(v), true
+			}
+		case int16:
+			if v > 0 {
+				return int(v), true
+			}
+		case int32:
+			if v > 0 {
+				return int(v), true
+			}
+		case int64:
+			if v > 0 {
+				return int(v), true
+			}
+		case uint:
+			if v > 0 {
+				return int(v), true
+			}
+		case uint8:
+			if v > 0 {
+				return int(v), true
+			}
+		case uint16:
+			if v > 0 {
+				return int(v), true
+			}
+		case uint32:
+			if v > 0 {
+				return int(v), true
+			}
+		case uint64:
+			if v > 0 {
+				return int(v), true
+			}
+		case float32:
+			if v > 0 {
+				return int(v), true
+			}
+		case float64:
+			if v > 0 {
+				return int(v), true
+			}
+		case string:
+			value, err := strconv.Atoi(strings.TrimSpace(v))
+			if err == nil && value > 0 {
+				return value, true
+			}
+		}
+	}
+	return 0, false
+}
+
+func extractBoolFromMap(m map[string]interface{}, keys ...string) (bool, bool) {
+	if len(m) == 0 || len(keys) == 0 {
+		return false, false
+	}
+	for _, key := range keys {
+		raw, ok := m[key]
+		if !ok || raw == nil {
+			continue
+		}
+		switch v := raw.(type) {
+		case bool:
+			return v, true
+		case int:
+			return v != 0, true
+		case int8:
+			return v != 0, true
+		case int16:
+			return v != 0, true
+		case int32:
+			return v != 0, true
+		case int64:
+			return v != 0, true
+		case uint:
+			return v != 0, true
+		case uint8:
+			return v != 0, true
+		case uint16:
+			return v != 0, true
+		case uint32:
+			return v != 0, true
+		case uint64:
+			return v != 0, true
+		case float32:
+			return v != 0, true
+		case float64:
+			return v != 0, true
+		case string:
+			switch strings.ToLower(strings.TrimSpace(v)) {
+			case "1", "true", "yes", "y", "on":
+				return true, true
+			case "0", "false", "no", "n", "off":
+				return false, true
+			}
+		}
+	}
+	return false, false
 }
 
 func (h *LZTMarketHandler) findChatGPTItem(c *gin.Context, itemID, i18n string, forceRefresh bool) (map[string]interface{}, error) {

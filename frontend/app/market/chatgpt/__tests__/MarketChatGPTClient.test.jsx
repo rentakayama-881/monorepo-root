@@ -54,6 +54,17 @@ function createListingResponse(items = [createListingItem()]) {
   };
 }
 
+function createManyListingItems(total) {
+  return Array.from({ length: total }).map((_, index) =>
+    createListingItem({
+      chatgpt_item_id: `chatgpt-${index + 1}`,
+      title_en: `ChatGPT Plus Account ${index + 1}`,
+      seller: `seller-${index + 1}`,
+      published_date: 1772130072 + index,
+    })
+  );
+}
+
 describe("MarketChatGPTClient", () => {
   const previousConfirmSeconds = process.env.NEXT_PUBLIC_MARKET_BUY_CONFIRM_SECONDS;
 
@@ -152,5 +163,19 @@ describe("MarketChatGPTClient", () => {
       expect(mockFetchJsonAuth).toHaveBeenCalledWith("/api/market/chatgpt/orders", expect.any(Object));
       expect(pushMock).toHaveBeenCalledWith("/market/chatgpt/orders/order%2F123");
     });
+  });
+
+  it("menampilkan pagination 10 akun per halaman", async () => {
+    global.fetch.mockResolvedValueOnce(createListingResponse(createManyListingItems(12)));
+
+    render(<MarketChatGPTClient />);
+
+    expect(await screen.findByText("Menampilkan 1-10 dari 12 akun")).toBeInTheDocument();
+    expect(screen.queryByText("ChatGPT Plus Account 12")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Halaman berikutnya" }));
+
+    expect(await screen.findByText("Menampilkan 11-12 dari 12 akun")).toBeInTheDocument();
+    expect(screen.getAllByText("ChatGPT Plus Account 12").length).toBeGreaterThan(0);
   });
 });

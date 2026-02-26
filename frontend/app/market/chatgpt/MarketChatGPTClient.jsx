@@ -6,6 +6,9 @@ import { CenteredSpinner } from "@/components/ui/LoadingState";
 import { fetchJsonAuth, getApiBase } from "@/lib/api";
 import { FEATURE_ENDPOINTS, fetchFeatureAuth, unwrapFeatureData } from "@/lib/featureApi";
 
+const MARKET_PAGE_SIZE = 10;
+const JAKARTA_TIMEZONE = "Asia/Jakarta";
+
 function getCheckoutConfirmSeconds() {
   const raw = Number(process.env.NEXT_PUBLIC_MARKET_BUY_CONFIRM_SECONDS);
   if (!Number.isFinite(raw) || raw < 0) return 60;
@@ -49,16 +52,54 @@ function formatUnixDateTime(value) {
   const seconds = parseUnixSeconds(value);
   if (!seconds) return "-";
   try {
-    return new Date(seconds * 1000).toLocaleString("id-ID", {
+    const formatted = new Date(seconds * 1000).toLocaleString("id-ID", {
       day: "2-digit",
       month: "short",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: false,
+      timeZone: JAKARTA_TIMEZONE,
     });
+    return `${formatted} WIB`;
   } catch {
     return "-";
   }
+}
+
+function usePageScrollLock(locked) {
+  useEffect(() => {
+    if (!locked || typeof window === "undefined" || typeof document === "undefined") return undefined;
+
+    const body = document.body;
+    const html = document.documentElement;
+    const scrollY = window.scrollY;
+
+    const prevBodyOverflow = body.style.overflow;
+    const prevBodyPosition = body.style.position;
+    const prevBodyTop = body.style.top;
+    const prevBodyWidth = body.style.width;
+    const prevHtmlOverflow = html.style.overflow;
+
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    html.style.overflow = "hidden";
+
+    return () => {
+      body.style.overflow = prevBodyOverflow;
+      body.style.position = prevBodyPosition;
+      body.style.top = prevBodyTop;
+      body.style.width = prevBodyWidth;
+      html.style.overflow = prevHtmlOverflow;
+      const canRestoreScroll =
+        typeof window.scrollTo === "function" && !/jsdom/i.test(window.navigator?.userAgent || "");
+      if (canRestoreScroll) {
+        window.scrollTo(0, scrollY);
+      }
+    };
+  }, [locked]);
 }
 
 function toDisplayAccount(item, index) {
@@ -163,6 +204,7 @@ export default function MarketChatGPTClient() {
   const [confirmItem, setConfirmItem] = useState(null);
   const [confirmCountdown, setConfirmCountdown] = useState(60);
   const [blockingMessage, setBlockingMessage] = useState("");
+  const [page, setPage] = useState(1);
   const isMountedRef = useRef(false);
 
   const apiBase = useMemo(() => getApiBase(), []);
@@ -186,6 +228,8 @@ export default function MarketChatGPTClient() {
     }, 1000);
     return () => clearInterval(timer);
   }, [confirmItem?.id, confirmSeconds]);
+
+  usePageScrollLock(Boolean(drawerItem || confirmItem || blockingMessage || checkoutFeedback));
 
   const loadListings = useCallback(
     async ({ initial = false, silent = false } = {}) => {
@@ -240,6 +284,29 @@ export default function MarketChatGPTClient() {
       `${item.title} ${item.displayPriceIDR} ${item.status} ${item.seller} ${item.uploadedAtLabel}`.toLowerCase().includes(term)
     );
   }, [accounts, query]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
+
+  useEffect(() => {
+    setPage((current) => {
+      const totalPages = Math.max(1, Math.ceil(filtered.length / MARKET_PAGE_SIZE));
+      return Math.min(current, totalPages);
+    });
+  }, [filtered.length]);
+
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / MARKET_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStartIndex = totalItems === 0 ? 0 : (currentPage - 1) * MARKET_PAGE_SIZE;
+
+  const paginatedItems = useMemo(() => {
+    return filtered.slice(pageStartIndex, pageStartIndex + MARKET_PAGE_SIZE);
+  }, [filtered, pageStartIndex]);
+
+  const displayStart = totalItems === 0 ? 0 : pageStartIndex + 1;
+  const displayEnd = Math.min(totalItems, pageStartIndex + paginatedItems.length);
 
   async function runCheckout(item) {
     if (!item?.canBuy) {
@@ -322,7 +389,11 @@ export default function MarketChatGPTClient() {
           {loading ? (
             <CenteredSpinner className="justify-start" sizeClass="h-3.5 w-3.5" srLabel="Memuat daftar akun" />
           ) : (
-            <div className="text-xs text-muted-foreground">{`${filtered.length} akun`}</div>
+            <div className="text-xs text-muted-foreground">
+              {totalItems > 0
+                ? `Menampilkan ${displayStart}-${displayEnd} dari ${totalItems} akun`
+                : "Belum ada akun untuk ditampilkan"}
+            </div>
           )}
           <input
             value={query}
@@ -347,7 +418,7 @@ export default function MarketChatGPTClient() {
         ) : (
           <>
             <div className="space-y-2 md:hidden">
-              {filtered.map((item) => (
+              {paginatedItems.map((item) => (
                 <MobileAccountCard
                   key={item.id}
                   item={item}
@@ -368,7 +439,7 @@ export default function MarketChatGPTClient() {
                 <div className="text-right">Aksi</div>
               </div>
               <div className="divide-y divide-border">
-                {filtered.map((item) => (
+                {paginatedItems.map((item) => (
                   <DesktopAccountRow
                     key={item.id}
                     item={item}
@@ -377,6 +448,30 @@ export default function MarketChatGPTClient() {
                     onBuy={() => setConfirmItem(item)}
                   />
                 ))}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/20 px-3 py-2">
+              <div className="text-[11px] text-muted-foreground">
+                Halaman {currentPage} dari {totalPages}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  disabled={currentPage <= 1}
+                  className="rounded-md border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted/40 disabled:opacity-50"
+                >
+                  Halaman sebelumnya
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="rounded-md border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted/40 disabled:opacity-50"
+                >
+                  Halaman berikutnya
+                </button>
               </div>
             </div>
           </>
@@ -513,33 +608,6 @@ function AccountMetaField({ label, value, strong = false }) {
 
 function SpecDrawer({ item, onClose }) {
   if (!item) return null;
-
-  useEffect(() => {
-    const body = document.body;
-    const html = document.documentElement;
-    const scrollY = window.scrollY;
-
-    const prevBodyOverflow = body.style.overflow;
-    const prevBodyPosition = body.style.position;
-    const prevBodyTop = body.style.top;
-    const prevBodyWidth = body.style.width;
-    const prevHtmlOverflow = html.style.overflow;
-
-    body.style.overflow = "hidden";
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.width = "100%";
-    html.style.overflow = "hidden";
-
-    return () => {
-      body.style.overflow = prevBodyOverflow;
-      body.style.position = prevBodyPosition;
-      body.style.top = prevBodyTop;
-      body.style.width = prevBodyWidth;
-      html.style.overflow = prevHtmlOverflow;
-      window.scrollTo(0, scrollY);
-    };
-  }, []);
 
   const specs = [
     ["Langganan", item?.raw?.chatgpt_subscription],
@@ -703,6 +771,7 @@ function formatUnixDate(value) {
       day: "2-digit",
       month: "short",
       year: "numeric",
+      timeZone: JAKARTA_TIMEZONE,
     });
   } catch {
     return "";
