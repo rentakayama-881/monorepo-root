@@ -113,6 +113,13 @@ type supplierBalanceCheckResult struct {
 	Reason  string
 }
 
+type providerItemReadiness struct {
+	Item             map[string]interface{}
+	CanBuy           bool
+	CannotBuyReason  string
+	ProviderResponse *services.LZTMarketResponse
+}
+
 func (h *LZTMarketHandler) GetConfig(c *gin.Context) {
 	if h == nil || h.client == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
@@ -407,10 +414,28 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
 		return
 	}
+	if supplierBalance.State == supplierBalanceStateUnknown && isProviderIntegrationFailureReason(supplierBalance.Reason) {
+		logMarketOrderReject("supplier_balance_integration_error",
+			zap.Uint("user_id", userID),
+			zap.String("item_id", resolvedItemID),
+			zap.String("reason", supplierBalance.Reason),
+		)
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."})
+		return
+	}
 
 	if !extractCanBuyItem(listingItem) {
-		logMarketOrderReject("item_not_purchasable", zap.Uint("user_id", userID), zap.String("item_id", resolvedItemID))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
+		cannotBuyReason := normalizeUserFacingFailureReason(extractCannotBuyItemError(listingItem))
+		if strings.TrimSpace(cannotBuyReason) == "" {
+			cannotBuyReason = "Akun belum siap untuk dijual saat ini."
+		}
+		logMarketOrderReject(
+			"item_not_purchasable",
+			zap.Uint("user_id", userID),
+			zap.String("item_id", resolvedItemID),
+			zap.String("cannot_buy_reason", cannotBuyReason),
+		)
+		c.JSON(http.StatusBadRequest, gin.H{"error": cannotBuyReason})
 		return
 	}
 
@@ -543,16 +568,6 @@ func (h *LZTMarketHandler) buyChatGPTItem(ctx context.Context, itemID, i18n stri
 		"/{item_id}/fast-buy",
 		itemID,
 	)
-	checkPath := normalizeProviderPath(
-		strings.TrimSpace(os.Getenv("LZT_MARKET_CHECK_PATH_TEMPLATE")),
-		"/{item_id}/check-account",
-		itemID,
-	)
-	confirmPath := normalizeProviderPath(
-		strings.TrimSpace(os.Getenv("LZT_MARKET_CONFIRM_PATH_TEMPLATE")),
-		"/{item_id}/confirm-buy",
-		itemID,
-	)
 
 	fastBuyResp, fastBuyErr, _ := h.doProviderRequestWithRetry(ctx, services.LZTMarketRequest{
 		Method:      method,
@@ -572,55 +587,7 @@ func (h *LZTMarketHandler) buyChatGPTItem(ctx context.Context, itemID, i18n stri
 	if isSuccessfulPurchaseResponse(fastBuyResp) {
 		return fastBuyResp, "", nil
 	}
-
-	// 2) Fast-buy failed. Fallback only for non-hard-fail reasons.
-	if !shouldFallbackAfterFastBuy(fastBuyResp) {
-		return fastBuyResp, normalizeProviderFailureReason(fastBuyResp, "Fast-buy failed"), nil
-	}
-
-	checkResp, checkErr, _ := h.doProviderRequestWithRetry(ctx, services.LZTMarketRequest{
-		Method:      method,
-		Path:        checkPath,
-		Query:       map[string]string{"i18n": i18n},
-		ContentType: contentType,
-	}, maxRetries)
-	if checkErr != nil {
-		return fastBuyResp, normalizeProviderFailureReason(fastBuyResp, "Fast-buy failed and check-account unavailable"), nil
-	}
-	if checkResp == nil {
-		return fastBuyResp, normalizeProviderFailureReason(fastBuyResp, "Fast-buy failed and check-account returned empty response"), nil
-	}
-	if isRetryRequestResponse(checkResp) {
-		return checkResp, normalizeProviderFailureReason(checkResp, "Check-account requires another retry"), nil
-	}
-	if isHardFailResponse(checkResp) {
-		return checkResp, normalizeProviderFailureReason(checkResp, "Check-account rejected purchase"), nil
-	}
-
-	confirmResp, confirmErr, _ := h.doProviderRequestWithRetry(ctx, services.LZTMarketRequest{
-		Method:      method,
-		Path:        confirmPath,
-		Query:       map[string]string{"i18n": i18n},
-		ContentType: contentType,
-		JSONBody: map[string]interface{}{
-			"price": toProviderConfirmPrice(price),
-		},
-	}, maxRetries)
-	if confirmErr != nil {
-		return checkResp, "Confirm-buy transport error", confirmErr
-	}
-	if confirmResp == nil {
-		return checkResp, "Confirm-buy returned empty response", nil
-	}
-	if isRetryRequestResponse(confirmResp) {
-		return confirmResp, normalizeProviderFailureReason(confirmResp, "Confirm-buy requires another retry"), nil
-	}
-
-	if isSuccessfulPurchaseResponse(confirmResp) {
-		return confirmResp, "", nil
-	}
-
-	return confirmResp, normalizeProviderFailureReason(confirmResp, "Confirm-buy failed"), nil
+	return fastBuyResp, normalizeProviderFailureReason(fastBuyResp, "Fast-buy failed"), nil
 }
 
 func (h *LZTMarketHandler) doProviderRequestWithRetry(
@@ -704,22 +671,38 @@ func (h *LZTMarketHandler) resolveOrderItemForCheckout(c *gin.Context, itemID, i
 		return listingItem, "listing", nil
 	}
 
+	// Provider item detail endpoint includes canBuyItem/cannotBuyItemError.
+	itemReadiness, itemReadinessErr := h.getProviderItemReadiness(c.Request.Context(), itemID)
+	if itemReadinessErr == nil && itemReadiness != nil {
+		if !itemReadiness.CanBuy {
+			reason := strings.TrimSpace(itemReadiness.CannotBuyReason)
+			if reason == "" {
+				reason = "This account is currently unavailable."
+			}
+			return nil, "item_detail", errors.New(reason)
+		}
+		if len(itemReadiness.Item) > 0 {
+			return itemReadiness.Item, "item_detail", nil
+		}
+	}
+
 	checkItem, checkErr := h.checkAccountItem(c.Request.Context(), itemID, i18n)
 	if checkErr == nil && checkItem != nil {
 		return checkItem, "check_account", nil
 	}
 
-	if listingErr != nil && checkErr != nil {
-		return nil, "", errors.Join(
-			fmt.Errorf("listing lookup failed: %w", listingErr),
-			fmt.Errorf("check-account failed: %w", checkErr),
-		)
+	joinErrors := make([]error, 0, 3)
+	if listingErr != nil {
+		joinErrors = append(joinErrors, fmt.Errorf("listing lookup failed: %w", listingErr))
+	}
+	if itemReadinessErr != nil {
+		joinErrors = append(joinErrors, fmt.Errorf("item detail lookup failed: %w", itemReadinessErr))
 	}
 	if checkErr != nil {
-		return nil, "", checkErr
+		joinErrors = append(joinErrors, fmt.Errorf("check-account failed: %w", checkErr))
 	}
-	if listingErr != nil {
-		return nil, "", listingErr
+	if len(joinErrors) > 0 {
+		return nil, "", errors.Join(joinErrors...)
 	}
 	return nil, "", nil
 }
@@ -727,13 +710,107 @@ func (h *LZTMarketHandler) resolveOrderItemForCheckout(c *gin.Context, itemID, i
 func normalizeItemID(item map[string]interface{}) string {
 	for _, key := range []string{"chatgpt_item_id", "item_id", "account_id", "id"} {
 		if v, ok := item[key]; ok {
-			s := strings.TrimSpace(fmt.Sprintf("%v", v))
+			s := normalizeProviderIDValue(v)
 			if s != "" {
 				return s
 			}
 		}
 	}
 	return ""
+}
+
+func normalizeProviderIDValue(raw interface{}) string {
+	if raw == nil {
+		return ""
+	}
+
+	switch v := raw.(type) {
+	case string:
+		clean := strings.TrimSpace(v)
+		if clean == "" {
+			return ""
+		}
+		if parsed, err := strconv.ParseFloat(clean, 64); err == nil && parsed > 0 && math.Trunc(parsed) == parsed {
+			return strconv.FormatInt(int64(parsed), 10)
+		}
+		return clean
+	case float64:
+		if v <= 0 {
+			return ""
+		}
+		if math.Trunc(v) == v {
+			return strconv.FormatInt(int64(v), 10)
+		}
+		return strings.TrimSpace(strconv.FormatFloat(v, 'f', -1, 64))
+	case float32:
+		n := float64(v)
+		if n <= 0 {
+			return ""
+		}
+		if math.Trunc(n) == n {
+			return strconv.FormatInt(int64(n), 10)
+		}
+		return strings.TrimSpace(strconv.FormatFloat(n, 'f', -1, 64))
+	case int:
+		if v <= 0 {
+			return ""
+		}
+		return strconv.Itoa(v)
+	case int8:
+		if v <= 0 {
+			return ""
+		}
+		return strconv.FormatInt(int64(v), 10)
+	case int16:
+		if v <= 0 {
+			return ""
+		}
+		return strconv.FormatInt(int64(v), 10)
+	case int32:
+		if v <= 0 {
+			return ""
+		}
+		return strconv.FormatInt(int64(v), 10)
+	case int64:
+		if v <= 0 {
+			return ""
+		}
+		return strconv.FormatInt(v, 10)
+	case uint:
+		if v == 0 {
+			return ""
+		}
+		return strconv.FormatUint(uint64(v), 10)
+	case uint8:
+		if v == 0 {
+			return ""
+		}
+		return strconv.FormatUint(uint64(v), 10)
+	case uint16:
+		if v == 0 {
+			return ""
+		}
+		return strconv.FormatUint(uint64(v), 10)
+	case uint32:
+		if v == 0 {
+			return ""
+		}
+		return strconv.FormatUint(uint64(v), 10)
+	case uint64:
+		if v == 0 {
+			return ""
+		}
+		return strconv.FormatUint(v, 10)
+	default:
+		clean := strings.TrimSpace(fmt.Sprintf("%v", raw))
+		if clean == "" {
+			return ""
+		}
+		if parsed, err := strconv.ParseFloat(clean, 64); err == nil && parsed > 0 && math.Trunc(parsed) == parsed {
+			return strconv.FormatInt(int64(parsed), 10)
+		}
+		return clean
+	}
 }
 
 func normalizeItemTitle(item map[string]interface{}) string {
@@ -987,6 +1064,23 @@ func extractCanBuyItem(item map[string]interface{}) bool {
 	}
 }
 
+func extractCannotBuyItemError(payload map[string]interface{}) string {
+	if len(payload) == 0 {
+		return ""
+	}
+	for _, key := range []string{"cannotBuyItemError", "cannot_buy_item_error", "message"} {
+		v, ok := payload[key]
+		if !ok || v == nil {
+			continue
+		}
+		msg := strings.TrimSpace(fmt.Sprintf("%v", v))
+		if msg != "" {
+			return msg
+		}
+	}
+	return ""
+}
+
 func extractListMaps(payload interface{}) []map[string]interface{} {
 	candidates := []interface{}{payload}
 	if root, ok := payload.(map[string]interface{}); ok {
@@ -1237,7 +1331,7 @@ func (h *LZTMarketHandler) checkAccountItem(ctx context.Context, itemID, i18n st
 		contentType = "json"
 	}
 
-	maxRetries := readPositiveIntEnvLocal("LZT_MARKET_BUY_MAX_RETRIES", 100)
+	maxRetries := readPositiveIntEnvLocal("LZT_MARKET_CHECK_MAX_RETRIES", 8)
 	if maxRetries < 1 {
 		maxRetries = 1
 	}
@@ -1272,6 +1366,57 @@ func (h *LZTMarketHandler) checkAccountItem(ctx context.Context, itemID, i18n st
 		return nil, fmt.Errorf("Item not found in provider response")
 	}
 	return item, nil
+}
+
+func (h *LZTMarketHandler) getProviderItemReadiness(ctx context.Context, itemID string) (*providerItemReadiness, error) {
+	maxRetries := readPositiveIntEnvLocal("LZT_MARKET_ITEM_DETAIL_MAX_RETRIES", 2)
+	if maxRetries < 1 {
+		maxRetries = 1
+	}
+
+	itemPath := normalizeProviderPath(
+		strings.TrimSpace(os.Getenv("LZT_MARKET_ITEM_PATH_TEMPLATE")),
+		"/{item_id}",
+		itemID,
+	)
+
+	resp, err, _ := h.doProviderRequestWithRetry(ctx, services.LZTMarketRequest{
+		Method: http.MethodGet,
+		Path:   itemPath,
+		Query:  map[string]string{"parse_same_item_ids": "0"},
+	}, maxRetries)
+	if err != nil {
+		return nil, err
+	}
+	if isRetryRequestResponse(resp) {
+		return nil, errors.New("retry_request")
+	}
+	if resp == nil || resp.StatusCode >= http.StatusBadRequest {
+		return nil, errors.New(normalizeProviderFailureReason(resp, "Provider item detail failed"))
+	}
+
+	root, ok := resp.JSON.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Provider item detail response invalid")
+	}
+
+	item := readMap(root, "item")
+	if len(item) == 0 {
+		return nil, errors.New("Item not found in provider response")
+	}
+
+	canBuy := extractCanBuyItem(root) && extractCanBuyItem(item)
+	cannotBuyReason := extractCannotBuyItemError(root)
+	if cannotBuyReason == "" {
+		cannotBuyReason = extractCannotBuyItemError(item)
+	}
+
+	return &providerItemReadiness{
+		Item:             item,
+		CanBuy:           canBuy,
+		CannotBuyReason:  strings.TrimSpace(cannotBuyReason),
+		ProviderResponse: resp,
+	}, nil
 }
 
 func (h *LZTMarketHandler) applyOrderItemSnapshot(orderID string, item map[string]interface{}) {
@@ -1477,6 +1622,19 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		})
 		return
 	}
+	if supplierBalance.State == supplierBalanceStateUnknown && isProviderIntegrationFailureReason(supplierBalance.Reason) {
+		userFailureReason := "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."
+		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
+		h.markOrderFailed(orderID, "SUPPLIER_BALANCE_CHECK_FAILED", userFailureReason)
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "SUPPLIER_BALANCE_CHECK",
+			Label:   "Gagal memverifikasi saldo supplier",
+			Status:  "failed",
+			Message: userFailureReason,
+			At:      time.Now().UTC(),
+		})
+		return
+	}
 	if supplierBalance.State == supplierBalanceStateUnknown {
 		h.appendOrderStep(orderID, publicOrderStep{
 			Code:    "SUPPLIER_BALANCE_UNKNOWN_CONTINUE",
@@ -1499,6 +1657,55 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 			At:     time.Now().UTC(),
 		})
 	}
+
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "FETCH_PROVIDER_ITEM",
+		Label:  "Memverifikasi status item di provider",
+		Status: "processing",
+		At:     time.Now().UTC(),
+	})
+	itemReadiness, itemReadinessErr := h.getProviderItemReadiness(ctx, itemID)
+	if itemReadinessErr != nil {
+		userFailureReason := normalizeCheckerErrorMessage(itemReadinessErr)
+		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
+		h.markOrderFailed(orderID, "PROVIDER_ITEM_CHECK_FAILED", userFailureReason)
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "FETCH_PROVIDER_ITEM",
+			Label:   "Verifikasi item provider gagal",
+			Status:  "failed",
+			Message: userFailureReason,
+			At:      time.Now().UTC(),
+		})
+		return
+	}
+	if itemReadiness != nil && len(itemReadiness.Item) > 0 {
+		h.applyOrderItemSnapshot(orderID, itemReadiness.Item)
+		if refreshedOrder, found := h.getOrderForUser(orderID, userID); found {
+			orderSnapshot = refreshedOrder
+		}
+	}
+	if itemReadiness != nil && !itemReadiness.CanBuy {
+		userFailureReason := normalizeUserFacingFailureReason(itemReadiness.CannotBuyReason)
+		if strings.TrimSpace(userFailureReason) == "" {
+			userFailureReason = "Akun belum siap untuk dijual saat ini."
+		}
+		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
+		h.markOrderFailed(orderID, "PROVIDER_ITEM_UNAVAILABLE", userFailureReason)
+		h.appendOrderStep(orderID, publicOrderStep{
+			Code:    "FETCH_PROVIDER_ITEM",
+			Label:   "Item provider tidak siap dibeli",
+			Status:  "failed",
+			Message: userFailureReason,
+			At:      time.Now().UTC(),
+		})
+		return
+	}
+	h.appendOrderStep(orderID, publicOrderStep{
+		Code:   "FETCH_PROVIDER_ITEM",
+		Label:  "Item provider siap dibeli",
+		Status: "done",
+		At:     time.Now().UTC(),
+	})
 
 	h.appendOrderStep(orderID, publicOrderStep{
 		Code:   "PROVIDER_PURCHASE",
@@ -1666,8 +1873,8 @@ func extractPurchasedItemSummary(jsonPayload interface{}) map[string]interface{}
 		return nil
 	}
 
+	itemID := normalizeProviderIDValue(item["item_id"])
 	summary := map[string]interface{}{
-		"item_id":      firstNonEmptyString(item, "item_id"),
 		"title":        firstNonEmptyString(item, "title"),
 		"status":       firstNonEmptyString(item, "item_state"),
 		"price":        firstNonEmptyString(item, "price", "priceWithSellerFee"),
@@ -1675,6 +1882,9 @@ func extractPurchasedItemSummary(jsonPayload interface{}) map[string]interface{}
 		"openai_tier":  firstNonEmptyString(item, "openai_tier"),
 		"country":      firstNonEmptyString(item, "chatgpt_country"),
 		"subscription": firstNonEmptyString(item, "chatgpt_subscription"),
+	}
+	if strings.TrimSpace(itemID) != "" {
+		summary["item_id"] = itemID
 	}
 	for key, value := range summary {
 		if strings.TrimSpace(fmt.Sprintf("%v", value)) == "" {
@@ -1823,11 +2033,23 @@ func normalizeProviderFailureReason(resp *services.LZTMarketResponse, fallback s
 
 func normalizeUserFacingFailureReason(reason string) string {
 	msg := strings.TrimSpace(reason)
+	if msg == "" {
+		return "Akun belum siap untuk dijual saat ini."
+	}
+	if isProviderIntegrationFailureReason(msg) {
+		return "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."
+	}
 	lower := strings.ToLower(msg)
 	if strings.Contains(lower, "current listing") {
 		return "Akun belum siap untuk dijual saat ini."
 	}
+	if strings.Contains(lower, "currently unavailable") {
+		return "Akun belum siap untuk dijual saat ini."
+	}
 	if strings.Contains(lower, "ad not found") || strings.Contains(lower, "item not found") || strings.Contains(lower, "not found") {
+		return "Akun belum siap untuk dijual saat ini."
+	}
+	if strings.Contains(lower, "removed by the site administration") {
 		return "Akun belum siap untuk dijual saat ini."
 	}
 	if strings.Contains(lower, "this item is sold") || strings.Contains(lower, "sold") {
@@ -1843,9 +2065,6 @@ func normalizeUserFacingFailureReason(reason string) string {
 	if strings.Contains(lower, "retry_request") {
 		return "Checker sedang error. Coba lagi sebentar."
 	}
-	if strings.Contains(lower, "invalid or expired access token") {
-		return "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."
-	}
 	return msg
 }
 
@@ -1854,11 +2073,18 @@ func normalizeCheckerErrorMessage(err error) string {
 		return "Akun belum siap untuk dijual saat ini."
 	}
 	msg := strings.TrimSpace(err.Error())
+	if isProviderIntegrationFailureReason(msg) {
+		return "Integrasi provider sedang bermasalah. Coba lagi beberapa saat."
+	}
 	lower := strings.ToLower(msg)
+	if strings.Contains(lower, "currently unavailable") {
+		return "Akun belum siap untuk dijual saat ini."
+	}
 	if strings.Contains(lower, "sold") ||
 		strings.Contains(lower, "not found") ||
 		strings.Contains(lower, "ad not found") ||
-		strings.Contains(lower, "item not found") {
+		strings.Contains(lower, "item not found") ||
+		strings.Contains(lower, "removed by the site administration") {
 		return "Akun belum siap untuk dijual saat ini."
 	}
 	if strings.Contains(lower, "secret answer") ||
@@ -1869,6 +2095,31 @@ func normalizeCheckerErrorMessage(err error) string {
 		return "Akun belum siap untuk dijual saat ini."
 	}
 	return "Checker sedang error. Coba lagi sebentar."
+}
+
+func isProviderIntegrationFailureReason(reason string) bool {
+	lower := strings.ToLower(strings.TrimSpace(reason))
+	if lower == "" {
+		return false
+	}
+	integrationSignals := []string{
+		"invalid or expired access token",
+		"invalid access token",
+		"access token",
+		"do not have permission",
+		"no permission",
+		"forbidden",
+		"unauthorized",
+		"permission denied",
+		"market scope",
+		"insufficient scope",
+	}
+	for _, signal := range integrationSignals {
+		if strings.Contains(lower, signal) {
+			return true
+		}
+	}
+	return false
 }
 
 func extractProviderErrors(resp *services.LZTMarketResponse) []string {

@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"io"
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"backend-gin/services"
@@ -264,5 +266,185 @@ func TestResolveOrderItemForCheckout_UsesListingWhenItemExists(t *testing.T) {
 	}
 	if checkCalls != 0 {
 		t.Fatalf("expected check-account fallback not to be called when listing already has item")
+	}
+}
+
+func TestResolveOrderItemForCheckout_UsesItemDetailWhenListingMissing(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	var checkCalls int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/chatgpt":
+			_, _ = io.WriteString(w, `{"items":[{"item_id":999,"price":90,"price_currency":"RUB"}]}`)
+		case r.Method == http.MethodGet && r.URL.Path == "/123":
+			_, _ = io.WriteString(w, `{"item":{"item_id":123,"price":55,"price_currency":"RUB","title":"Plus"},"canBuyItem":true,"cannotBuyItemError":""}`)
+		case r.Method == http.MethodPost && r.URL.Path == "/123/check-account":
+			checkCalls++
+			_, _ = io.WriteString(w, `{"status":"ok","item":{"item_id":123,"price":55,"price_currency":"RUB","canBuyItem":true},"requireVideoRecording":false}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	t.Setenv("LZT_MARKET_BASE_URL", server.URL)
+	t.Setenv("LZT_MARKET_TOKEN", "test-token")
+	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
+	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
+	t.Setenv("LZT_MARKET_ITEM_DETAIL_MAX_RETRIES", "1")
+	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
+
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/api/market/chatgpt/orders", nil)
+
+	item, source, err := handler.resolveOrderItemForCheckout(ctx, "123", "en-US")
+	if err != nil {
+		t.Fatalf("expected item detail fallback to resolve item, got error: %v", err)
+	}
+	if item == nil {
+		t.Fatalf("expected resolved item from item detail")
+	}
+	if source != "item_detail" {
+		t.Fatalf("unexpected source: got %s want item_detail", source)
+	}
+	if normalizeItemID(item) != "123" {
+		t.Fatalf("unexpected resolved item id: got %s want 123", normalizeItemID(item))
+	}
+	if checkCalls != 0 {
+		t.Fatalf("expected check-account not to be called when item detail already resolves")
+	}
+}
+
+func TestNormalizeItemID_AvoidsScientificNotation(t *testing.T) {
+	item := map[string]interface{}{
+		"item_id": float64(219033717),
+	}
+	got := normalizeItemID(item)
+	if got != "219033717" {
+		t.Fatalf("unexpected normalized item id: got %s want 219033717", got)
+	}
+}
+
+func TestBuyChatGPTItem_FastBuySuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	var fastBuyCalls int
+	var checkCalls int
+	var confirmCalls int
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/123/fast-buy":
+			fastBuyCalls++
+			_, _ = io.WriteString(w, `{"status":"ok","item":{"item_id":123,"loginData":{"login":"user","password":"pass","raw":"user:pass"}}}`)
+		case r.URL.Path == "/123/check-account":
+			checkCalls++
+			_, _ = io.WriteString(w, `{"status":"ok"}`)
+		case r.URL.Path == "/123/confirm-buy":
+			confirmCalls++
+			_, _ = io.WriteString(w, `{"status":"ok"}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	t.Setenv("LZT_MARKET_BASE_URL", server.URL)
+	t.Setenv("LZT_MARKET_TOKEN", "test-token")
+	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
+	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
+	t.Setenv("LZT_MARKET_BUY_MAX_RETRIES", "3")
+	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
+
+	resp, reason, err := handler.buyChatGPTItem(context.Background(), "123", "en-US", 55)
+	if err != nil {
+		t.Fatalf("unexpected buy error: %v", err)
+	}
+	if strings.TrimSpace(reason) != "" {
+		t.Fatalf("expected empty failure reason, got %q", reason)
+	}
+	if !isSuccessfulPurchaseResponse(resp) {
+		t.Fatalf("expected successful buy response")
+	}
+	if fastBuyCalls == 0 {
+		t.Fatalf("expected fast-buy to be called")
+	}
+	if checkCalls != 0 {
+		t.Fatalf("expected check-account not to be called in strict fast-buy flow")
+	}
+	if confirmCalls != 0 {
+		t.Fatalf("expected confirm-buy not to be called in strict fast-buy flow")
+	}
+}
+
+func TestManualScenario_FastBuyUnavailableMapsToUserMessage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost && r.URL.Path == "/123/fast-buy" {
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = io.WriteString(w, `{"errors":["This account is currently unavailable."]}`)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	t.Setenv("LZT_MARKET_BASE_URL", server.URL)
+	t.Setenv("LZT_MARKET_TOKEN", "test-token")
+	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
+	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
+	t.Setenv("LZT_MARKET_BUY_MAX_RETRIES", "3")
+	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
+
+	_, reason, err := handler.buyChatGPTItem(context.Background(), "123", "en-US", 55)
+	if err != nil {
+		t.Fatalf("unexpected buy error: %v", err)
+	}
+	if !strings.Contains(strings.ToLower(reason), "currently unavailable") {
+		t.Fatalf("unexpected provider reason: %q", reason)
+	}
+	userReason := normalizeUserFacingFailureReason(reason)
+	if userReason != "Akun belum siap untuk dijual saat ini." {
+		t.Fatalf("unexpected user reason: got %q", userReason)
+	}
+}
+
+func TestManualScenario_FastBuyIntegrationErrorMapsToUserMessage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost && r.URL.Path == "/123/fast-buy" {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = io.WriteString(w, `{"errors":["Invalid or expired access token."]}`)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	t.Setenv("LZT_MARKET_BASE_URL", server.URL)
+	t.Setenv("LZT_MARKET_TOKEN", "test-token")
+	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
+	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
+	t.Setenv("LZT_MARKET_BUY_MAX_RETRIES", "3")
+	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
+
+	_, reason, err := handler.buyChatGPTItem(context.Background(), "123", "en-US", 55)
+	if err != nil {
+		t.Fatalf("unexpected buy error: %v", err)
+	}
+	if !strings.Contains(strings.ToLower(reason), "access token") {
+		t.Fatalf("unexpected provider reason: %q", reason)
+	}
+	userReason := normalizeUserFacingFailureReason(reason)
+	if userReason != "Integrasi provider sedang bermasalah. Coba lagi beberapa saat." {
+		t.Fatalf("unexpected user reason: got %q", userReason)
 	}
 }
