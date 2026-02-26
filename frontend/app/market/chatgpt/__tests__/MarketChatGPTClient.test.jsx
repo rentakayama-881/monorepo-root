@@ -78,7 +78,8 @@ describe("MarketChatGPTClient", () => {
   it("menampilkan modal konfirmasi sebelum checkout dijalankan", async () => {
     render(<MarketChatGPTClient />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Beli" }));
+    const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
+    fireEvent.click(buyButtons[0]);
 
     expect(await screen.findByText("Konfirmasi Pembelian")).toBeInTheDocument();
     expect(screen.getByText("Pastikan pesanan sudah benar")).toBeInTheDocument();
@@ -92,7 +93,8 @@ describe("MarketChatGPTClient", () => {
 
     render(<MarketChatGPTClient />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Beli" }));
+    const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
+    fireEvent.click(buyButtons[0]);
     const confirmButton = await screen.findByRole("button", { name: /Ya, beli/i });
     await waitFor(() => expect(confirmButton).toBeEnabled());
     fireEvent.click(confirmButton);
@@ -110,7 +112,8 @@ describe("MarketChatGPTClient", () => {
 
     render(<MarketChatGPTClient />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Beli" }));
+    const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
+    fireEvent.click(buyButtons[0]);
     const confirmButton = await screen.findByRole("button", { name: /Ya, beli/i });
     await waitFor(() => expect(confirmButton).toBeEnabled());
     fireEvent.click(confirmButton);
@@ -139,7 +142,8 @@ describe("MarketChatGPTClient", () => {
 
     render(<MarketChatGPTClient />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Beli" }));
+    const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
+    fireEvent.click(buyButtons[0]);
     const confirmButton = await screen.findByRole("button", { name: /Ya, beli/i });
     await waitFor(() => expect(confirmButton).toBeEnabled());
     fireEvent.click(confirmButton);

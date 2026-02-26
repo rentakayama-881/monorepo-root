@@ -339,68 +339,47 @@ export default function MarketChatGPTClient() {
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded-md bg-muted/50" />
+              <div key={i} className="h-16 animate-pulse rounded-md bg-muted/50" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <p className="text-xs text-muted-foreground">Belum ada akun yang cocok dengan pencarian Anda.</p>
         ) : (
-          <div className="overflow-auto rounded-lg border border-border">
-            <table className="min-w-full text-xs">
-              <thead className="bg-muted/35">
-                <tr>
-                  <th className="px-2.5 py-1.5 text-left font-medium">Akun</th>
-                  <th className="px-2.5 py-1.5 text-left font-medium">Harga</th>
-                  <th className="px-2.5 py-1.5 text-left font-medium">Status</th>
-                  <th className="px-2.5 py-1.5 text-left font-medium">Penjual</th>
-                  <th className="px-2.5 py-1.5 text-left font-medium">Diunggah</th>
-                  <th className="px-2.5 py-1.5 text-left font-medium">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
+          <>
+            <div className="space-y-2 md:hidden">
+              {filtered.map((item) => (
+                <MobileAccountCard
+                  key={item.id}
+                  item={item}
+                  checkingOut={checkingOut}
+                  onDetail={() => setDrawerItem(item)}
+                  onBuy={() => setConfirmItem(item)}
+                />
+              ))}
+            </div>
+
+            <div className="hidden overflow-hidden rounded-lg border border-border bg-background md:block">
+              <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] gap-3 border-b border-border bg-muted/30 px-3 py-2 text-[11px] font-semibold text-muted-foreground">
+                <div>Akun</div>
+                <div>Harga</div>
+                <div>Status</div>
+                <div>Penjual</div>
+                <div>Diunggah</div>
+                <div className="text-right">Aksi</div>
+              </div>
+              <div className="divide-y divide-border">
                 {filtered.map((item) => (
-                  <tr key={item.id} className="border-t border-border">
-                    <td className="px-2.5 py-1.5">
-                      <div className="max-w-[420px] truncate font-medium">{item.title}</div>
-                      <div className="mt-0.5 flex flex-wrap gap-1">
-                        {item?.raw?.chatgpt_subscription ? <TinyBadge label={String(item.raw.chatgpt_subscription)} /> : null}
-                        {item?.raw?.openai_tier ? <TinyBadge label={String(item.raw.openai_tier)} /> : null}
-                        {item?.raw?.chatgpt_country ? <TinyBadge label={String(item.raw.chatgpt_country)} /> : null}
-                      </div>
-                    </td>
-                    <td className="px-2.5 py-1.5">
-                      <div className="font-medium">{item.displayPriceIDR}</div>
-                    </td>
-                    <td className="px-2.5 py-1.5">
-                      <TinyBadge label={String(item.status)} tone={item.canBuy ? "neutral" : "warning"} />
-                      {!item.idValid ? <div className="mt-1 text-[10px] text-amber-600">ID akun belum valid, mohon refresh.</div> : null}
-                    </td>
-                    <td className="px-2.5 py-1.5">{String(item.seller)}</td>
-                    <td className="px-2.5 py-1.5 text-muted-foreground">{item.uploadedAtLabel}</td>
-                    <td className="px-2.5 py-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setDrawerItem(item)}
-                          className="rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted/40"
-                        >
-                          Detail
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmItem(item)}
-                          disabled={Boolean(checkingOut) || !item.canBuy}
-                          className="rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
-                        >
-                          {checkingOut === item.id ? "Memproses..." : item.canBuy ? "Beli" : "Belum siap"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <DesktopAccountRow
+                    key={item.id}
+                    item={item}
+                    checkingOut={checkingOut}
+                    onDetail={() => setDrawerItem(item)}
+                    onBuy={() => setConfirmItem(item)}
+                  />
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            </div>
+          </>
         )}
       </section>
 
@@ -440,6 +419,96 @@ function TinyBadge({ label, tone = "neutral" }) {
       ? "border-warning/30 bg-warning/10 text-warning"
       : "border-border bg-background text-muted-foreground";
   return <span className={`inline-flex rounded-full border px-1.5 py-0.5 text-[10px] ${toneClass}`}>{label}</span>;
+}
+
+function AccountActionButtons({ item, checkingOut, onDetail, onBuy, align = "left" }) {
+  return (
+    <div className={`flex items-center gap-1.5 ${align === "right" ? "justify-end" : ""}`}>
+      <button
+        type="button"
+        onClick={onDetail}
+        className="rounded-md border border-border px-2.5 py-1 text-[11px] font-medium hover:bg-muted/40"
+      >
+        Detail
+      </button>
+      <button
+        type="button"
+        onClick={onBuy}
+        disabled={Boolean(checkingOut) || !item.canBuy}
+        className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+      >
+        {checkingOut === item.id ? "Memproses..." : item.canBuy ? "Beli" : "Belum siap"}
+      </button>
+    </div>
+  );
+}
+
+function DesktopAccountRow({ item, checkingOut, onDetail, onBuy }) {
+  return (
+    <article className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] items-center gap-3 px-3 py-2.5 text-xs">
+      <div className="min-w-0">
+        <div className="truncate font-medium text-foreground">{item.title}</div>
+        <div className="mt-1 flex flex-wrap gap-1">
+          {item?.raw?.chatgpt_subscription ? <TinyBadge label={String(item.raw.chatgpt_subscription)} /> : null}
+          {item?.raw?.openai_tier ? <TinyBadge label={String(item.raw.openai_tier)} /> : null}
+          {item?.raw?.chatgpt_country ? <TinyBadge label={String(item.raw.chatgpt_country)} /> : null}
+        </div>
+      </div>
+
+      <div className="font-semibold text-foreground">{item.displayPriceIDR}</div>
+
+      <div className="space-y-1">
+        <TinyBadge label={String(item.status)} tone={item.canBuy ? "neutral" : "warning"} />
+        {!item.idValid ? <div className="text-[10px] text-amber-600">ID belum valid</div> : null}
+      </div>
+
+      <div className="truncate text-foreground">{String(item.seller)}</div>
+      <div className="text-muted-foreground">{item.uploadedAtLabel}</div>
+
+      <AccountActionButtons item={item} checkingOut={checkingOut} onDetail={onDetail} onBuy={onBuy} align="right" />
+    </article>
+  );
+}
+
+function MobileAccountCard({ item, checkingOut, onDetail, onBuy }) {
+  return (
+    <article className="rounded-lg border border-border bg-background p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <div className="min-w-0">
+        <h3 className="truncate text-sm font-semibold text-foreground">{item.title}</h3>
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {item?.raw?.chatgpt_subscription ? <TinyBadge label={String(item.raw.chatgpt_subscription)} /> : null}
+          {item?.raw?.openai_tier ? <TinyBadge label={String(item.raw.openai_tier)} /> : null}
+          {item?.raw?.chatgpt_country ? <TinyBadge label={String(item.raw.chatgpt_country)} /> : null}
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <AccountMetaField label="Harga" value={item.displayPriceIDR} strong />
+        <AccountMetaField label="Status" value={<TinyBadge label={String(item.status)} tone={item.canBuy ? "neutral" : "warning"} />} />
+        <AccountMetaField label="Penjual" value={String(item.seller)} />
+        <AccountMetaField label="Diunggah" value={item.uploadedAtLabel} />
+      </div>
+
+      {!item.idValid ? (
+        <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700">
+          ID akun belum valid. Silakan muat ulang daftar.
+        </div>
+      ) : null}
+
+      <div className="mt-3">
+        <AccountActionButtons item={item} checkingOut={checkingOut} onDetail={onDetail} onBuy={onBuy} />
+      </div>
+    </article>
+  );
+}
+
+function AccountMetaField({ label, value, strong = false }) {
+  return (
+    <div className="rounded-md border border-border bg-card px-2.5 py-2">
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className={`mt-0.5 text-xs break-words ${strong ? "font-semibold text-foreground" : "text-foreground"}`}>{value}</div>
+    </div>
+  );
 }
 
 function SpecDrawer({ item, onClose }) {
