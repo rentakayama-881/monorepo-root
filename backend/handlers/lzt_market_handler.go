@@ -586,7 +586,47 @@ func (h *LZTMarketHandler) buyChatGPTItem(ctx context.Context, itemID, i18n stri
 	if isSuccessfulPurchaseResponse(fastBuyResp) {
 		return fastBuyResp, "", nil
 	}
-	return fastBuyResp, normalizeProviderFailureReason(fastBuyResp, "Fast-buy failed"), nil
+
+	fastBuyFailureReason := normalizeProviderFailureReason(fastBuyResp, "Fast-buy failed")
+	if !readBoolEnvLocal("LZT_MARKET_BUY_ALLOW_CONFIRM_FALLBACK", false) {
+		return fastBuyResp, fastBuyFailureReason, nil
+	}
+	if !shouldTryConfirmBuyFallback(fastBuyResp, fastBuyFailureReason) {
+		return fastBuyResp, fastBuyFailureReason, nil
+	}
+
+	confirmPathTemplate := strings.TrimSpace(os.Getenv("LZT_MARKET_CONFIRM_PATH_TEMPLATE"))
+	if confirmPathTemplate == "" {
+		confirmPathTemplate = strings.TrimSpace(os.Getenv("LZT_MARKET_CONFIRM_BUY_PATH_TEMPLATE"))
+	}
+	confirmBuyPath := normalizeProviderPath(confirmPathTemplate, "/{item_id}/confirm-buy", itemID)
+	confirmBuyResp, confirmBuyErr, _ := h.doProviderRequestWithRetry(ctx, services.LZTMarketRequest{
+		Method:      method,
+		Path:        confirmBuyPath,
+		Query:       map[string]string{"i18n": i18n},
+		ContentType: contentType,
+		JSONBody: map[string]interface{}{
+			"price": toProviderConfirmPrice(price),
+		},
+	}, maxRetries)
+	if confirmBuyErr != nil {
+		return nil, "Provider transport error", confirmBuyErr
+	}
+	if confirmBuyResp == nil {
+		return nil, "Provider returned empty response", errors.New("provider confirm-buy request returned no response")
+	}
+	if isSuccessfulPurchaseResponse(confirmBuyResp) {
+		return confirmBuyResp, "", nil
+	}
+
+	confirmBuyFailureReason := normalizeProviderFailureReason(confirmBuyResp, "Confirm-buy failed")
+	if strings.TrimSpace(confirmBuyFailureReason) == "" {
+		return confirmBuyResp, fastBuyFailureReason, nil
+	}
+	if strings.EqualFold(strings.TrimSpace(confirmBuyFailureReason), strings.TrimSpace(fastBuyFailureReason)) {
+		return confirmBuyResp, confirmBuyFailureReason, nil
+	}
+	return confirmBuyResp, strings.TrimSpace(fastBuyFailureReason + " | " + confirmBuyFailureReason), nil
 }
 
 func (h *LZTMarketHandler) doProviderRequestWithRetry(
@@ -1989,6 +2029,46 @@ func shouldFallbackAfterFastBuy(resp *services.LZTMarketResponse) bool {
 	return !isSuccessfulPurchaseResponse(resp)
 }
 
+func shouldTryConfirmBuyFallback(resp *services.LZTMarketResponse, failureReason string) bool {
+	if resp == nil {
+		return false
+	}
+
+	lowerReason := strings.ToLower(strings.TrimSpace(failureReason))
+	providerErrors := strings.ToLower(strings.Join(extractProviderErrors(resp), " | "))
+	combined := strings.TrimSpace(lowerReason + " | " + providerErrors)
+
+	disallowSignals := []string{
+		"invalid or expired access token",
+		"invalid access token",
+		"access token",
+		"permission",
+		"forbidden",
+		"unauthorized",
+		"ad not found",
+		"item not found",
+		"this item is sold",
+		"removed by the site administration",
+		"currently unavailable",
+	}
+	for _, signal := range disallowSignals {
+		if strings.Contains(combined, signal) {
+			return false
+		}
+	}
+
+	if strings.Contains(lowerReason, "retry_request") ||
+		strings.Contains(lowerReason, "checker") ||
+		strings.Contains(lowerReason, "validation") ||
+		strings.Contains(lowerReason, "more than 20 errors occurred during account validation") {
+		return true
+	}
+
+	return strings.Contains(providerErrors, "retry_request") ||
+		strings.Contains(providerErrors, "checker") ||
+		strings.Contains(providerErrors, "validation")
+}
+
 func isHardFailResponse(resp *services.LZTMarketResponse) bool {
 	if resp == nil {
 		return false
@@ -2060,6 +2140,10 @@ func normalizeUserFacingFailureReason(reason string) string {
 		strings.Contains(lower, "payment password") {
 		return "Akun belum siap untuk dijual saat ini."
 	}
+	if strings.Contains(lower, "more than 20 errors occurred during account validation") ||
+		strings.Contains(lower, "account validation") {
+		return "Akun belum siap untuk dijual saat ini."
+	}
 	if strings.Contains(lower, "retry_request") {
 		return "Checker sedang error. Coba lagi sebentar."
 	}
@@ -2090,6 +2174,10 @@ func normalizeCheckerErrorMessage(err error) string {
 		strings.Contains(lower, "security answer") ||
 		strings.Contains(lower, "security question") ||
 		strings.Contains(lower, "payment password") {
+		return "Akun belum siap untuk dijual saat ini."
+	}
+	if strings.Contains(lower, "more than 20 errors occurred during account validation") ||
+		strings.Contains(lower, "account validation") {
 		return "Akun belum siap untuk dijual saat ini."
 	}
 	return "Checker sedang error. Coba lagi sebentar."
@@ -2232,6 +2320,21 @@ func readPositiveIntEnvLocal(key string, fallback int) int {
 		return fallback
 	}
 	return value
+}
+
+func readBoolEnvLocal(key string, fallback bool) bool {
+	raw := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	if raw == "" {
+		return fallback
+	}
+	switch raw {
+	case "1", "true", "yes", "y", "on":
+		return true
+	case "0", "false", "no", "n", "off":
+		return false
+	default:
+		return fallback
+	}
 }
 
 func (h *LZTMarketHandler) getCachedChatGPT(i18n string) (*services.LZTMarketResponse, bool) {

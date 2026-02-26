@@ -381,6 +381,54 @@ func TestBuyChatGPTItem_FastBuySuccess(t *testing.T) {
 	}
 }
 
+func TestBuyChatGPTItem_FastBuyValidationFallbackToConfirmBuy(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	var fastBuyCalls int
+	var confirmCalls int
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/123/fast-buy":
+			fastBuyCalls++
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = io.WriteString(w, `{"errors":["More than 20 errors occurred during account validation"]}`)
+		case r.Method == http.MethodPost && r.URL.Path == "/123/confirm-buy":
+			confirmCalls++
+			_, _ = io.WriteString(w, `{"status":"ok","item":{"item_id":123,"loginData":{"login":"user","password":"pass","raw":"user:pass"}}}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	t.Setenv("LZT_MARKET_BASE_URL", server.URL)
+	t.Setenv("LZT_MARKET_TOKEN", "test-token")
+	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
+	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
+	t.Setenv("LZT_MARKET_BUY_MAX_RETRIES", "3")
+	t.Setenv("LZT_MARKET_BUY_ALLOW_CONFIRM_FALLBACK", "true")
+	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
+
+	resp, reason, err := handler.buyChatGPTItem(context.Background(), "123", "en-US", 55)
+	if err != nil {
+		t.Fatalf("unexpected buy error: %v", err)
+	}
+	if strings.TrimSpace(reason) != "" {
+		t.Fatalf("expected empty failure reason after confirm-buy fallback, got %q", reason)
+	}
+	if !isSuccessfulPurchaseResponse(resp) {
+		t.Fatalf("expected successful buy response from confirm-buy fallback")
+	}
+	if fastBuyCalls == 0 {
+		t.Fatalf("expected fast-buy to be called")
+	}
+	if confirmCalls == 0 {
+		t.Fatalf("expected confirm-buy fallback to be called")
+	}
+}
+
 func TestManualScenario_FastBuyUnavailableMapsToUserMessage(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -407,6 +455,40 @@ func TestManualScenario_FastBuyUnavailableMapsToUserMessage(t *testing.T) {
 		t.Fatalf("unexpected buy error: %v", err)
 	}
 	if !strings.Contains(strings.ToLower(reason), "currently unavailable") {
+		t.Fatalf("unexpected provider reason: %q", reason)
+	}
+	userReason := normalizeUserFacingFailureReason(reason)
+	if userReason != "Akun belum siap untuk dijual saat ini." {
+		t.Fatalf("unexpected user reason: got %q", userReason)
+	}
+}
+
+func TestManualScenario_FastBuyValidationErrorMapsToUserMessage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost && r.URL.Path == "/123/fast-buy" {
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = io.WriteString(w, `{"errors":["More than 20 errors occurred during account validation"]}`)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	t.Setenv("LZT_MARKET_BASE_URL", server.URL)
+	t.Setenv("LZT_MARKET_TOKEN", "test-token")
+	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
+	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
+	t.Setenv("LZT_MARKET_BUY_MAX_RETRIES", "3")
+	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
+
+	_, reason, err := handler.buyChatGPTItem(context.Background(), "123", "en-US", 55)
+	if err != nil {
+		t.Fatalf("unexpected buy error: %v", err)
+	}
+	if !strings.Contains(strings.ToLower(reason), "account validation") {
 		t.Fatalf("unexpected provider reason: %q", reason)
 	}
 	userReason := normalizeUserFacingFailureReason(reason)

@@ -19,6 +19,9 @@ function normalizeFailure(message) {
   if (lower.includes("item not found") || lower.includes("current listing") || lower.includes("sold")) {
     return "This account is currently unavailable.";
   }
+  if (lower.includes("more than 20 errors occurred during account validation") || lower.includes("account validation")) {
+    return "This account is currently unavailable.";
+  }
   if (lower.includes("checker")) return "Verification is currently in progress. Please try again shortly.";
   if (
     lower.includes("provider") ||
