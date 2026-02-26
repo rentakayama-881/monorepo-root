@@ -41,7 +41,7 @@ score_security() {
   local math_random_hits
   math_random_hits=$(grep -rn --exclude-dir=node_modules 'Math\.random()' "$OPS_ROOT/frontend/" --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx' 2>/dev/null || true)
   local math_random_count
-  math_random_count=$(printf '%s' "$math_random_hits" | grep -c '.' || true)
+  math_random_count=$(printf '%s' "$math_random_hits" | wc -l)
   if (( math_random_count > 0 )); then
     deductions=$(( math_random_count * 5 ))
     printf '  [Security] -%d : %d uses of Math.random() (use crypto.getRandomValues)\n' "$deductions" "$math_random_count"
@@ -53,7 +53,7 @@ score_security() {
   local insecure_skip_hits
   insecure_skip_hits=$(grep -rn 'InsecureSkipVerify' "$OPS_ROOT/backend/" --include='*.go' 2>/dev/null || true)
   local insecure_skip_count
-  insecure_skip_count=$(printf '%s' "$insecure_skip_hits" | grep -c '.' || true)
+  insecure_skip_count=$(printf '%s' "$insecure_skip_hits" | wc -l)
   if (( insecure_skip_count > 0 )); then
     deductions=$(( insecure_skip_count * 15 ))
     printf '  [Security] -%d : %d uses of InsecureSkipVerify\n' "$deductions" "$insecure_skip_count"
@@ -65,7 +65,7 @@ score_security() {
   local console_lib_hits
   console_lib_hits=$(grep -rn --exclude-dir=node_modules 'console\.\(log\|warn\|error\|debug\|info\)' "$OPS_ROOT/frontend/lib/" --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx' 2>/dev/null || true)
   local console_lib_count
-  console_lib_count=$(printf '%s' "$console_lib_hits" | grep -c '.' || true)
+  console_lib_count=$(printf '%s' "$console_lib_hits" | wc -l)
   if (( console_lib_count > 0 )); then
     deductions=$(( console_lib_count * 2 ))
     printf '  [Security] -%d : %d console.* calls in frontend/lib/ (info leakage risk)\n' "$deductions" "$console_lib_count"
