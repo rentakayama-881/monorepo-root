@@ -370,6 +370,7 @@ export default function RepoWorkflowClient({
       return;
     }
     loadAll({ withSkeleton: true });
+    // Omit loadAll — stable by intent, re-runs on id/auth change only
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isAuthed]);
 

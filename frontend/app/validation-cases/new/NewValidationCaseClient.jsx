@@ -251,6 +251,7 @@ export default function NewValidationCaseClient() {
     if (!isAuthed) {
       router.push("/login");
     }
+    // Mount-only: redirect unauthenticated users
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

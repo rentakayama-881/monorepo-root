@@ -208,6 +208,7 @@ function AccountPageContent() {
 
   useEffect(() => {
     loadWalletAndGuarantee();
+    // Omit loadWalletAndGuarantee — stable by intent, re-runs on auth/base change only
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authed, featureBase]);
 

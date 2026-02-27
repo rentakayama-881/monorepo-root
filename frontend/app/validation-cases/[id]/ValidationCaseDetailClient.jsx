@@ -301,6 +301,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
       return;
     }
     reloadCase({ showSkeleton: true });
+    // Omit reloadCase — stable by intent, re-runs only when case id changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -433,6 +434,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
     } else {
       loadNonOwnerWorkflow();
     }
+    // Omit load functions — stable by intent, re-runs on identity/ownership change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vc?.id, vc?.meta, me?.id, isAuthed, isOwner]);
 
@@ -801,14 +803,8 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
       if (!disputeId && success === false) {
         throw new Error(createdData.error || createdData.Error || "Gagal membuat dispute");
       }
-      if (!disputeId) {
-        // Some deployments return { id: ... } instead.
-        if (createdData.id) {
-          // eslint-disable-next-line no-unused-vars
-          const _ = createdData.id;
-        } else {
-          throw new Error("DisputeId tidak ditemukan pada response.");
-        }
+      if (!disputeId && !createdData.id) {
+        throw new Error("DisputeId tidak ditemukan pada response.");
       }
 
       await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(String(id))}/dispute/attach`, {

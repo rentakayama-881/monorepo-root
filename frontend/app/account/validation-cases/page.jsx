@@ -174,6 +174,7 @@ export default function MyValidationCasesPage() {
       return;
     }
     load();
+    // Mount-only: auth check + initial data load
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
