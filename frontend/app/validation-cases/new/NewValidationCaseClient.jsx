@@ -15,6 +15,7 @@ import Button from "@/components/ui/Button";
 import NativeSelect from "@/components/ui/NativeSelect";
 import NewValidationCaseSkeleton from "./NewValidationCaseSkeleton";
 import Skeleton from "@/components/ui/Skeleton";
+import { formatIDR } from "@/lib/format";
 import { formatRepoFileKindLabel, formatRepoFileVisibilityLabel } from "@/lib/repoFileLabels";
 
 const checklistItems = [
@@ -46,12 +47,6 @@ const createNavigationSections = [
 const sensitivityOptions = ["S0", "S1", "S2", "S3"];
 const titleMinLength = 3;
 const titleMaxLength = 200;
-
-function formatIDR(amount) {
-  const n = Number(amount || 0);
-  if (!Number.isFinite(n)) return "";
-  return Math.max(0, Math.trunc(n)).toLocaleString("id-ID");
-}
 
 function sanitizeNumericInput(raw) {
   return String(raw || "")

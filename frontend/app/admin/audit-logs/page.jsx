@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
 import { getAdminToken } from "@/lib/adminAuth";
 import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
+import { formatDateTime } from "@/lib/format";
 
 const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
 
@@ -123,13 +124,6 @@ export default function AuditLogsPage() {
         {labels[normalizedAction] || normalizedAction.replace(/_/g, " ")}
       </span>
     );
-  };
-
-  const formatDateTime = (dateStr) => {
-    if (!dateStr) return "-";
-    const date = new Date(dateStr);
-    if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleString("id-ID");
   };
 
   const actionTypes = [

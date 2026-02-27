@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
 import { getAdminToken } from "@/lib/adminAuth";
 import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
+import { formatDateTime } from "@/lib/format";
 
 const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
 
@@ -129,13 +130,6 @@ export default function WarningsPage() {
         {normalized.charAt(0).toUpperCase() + normalized.slice(1)}
       </span>
     );
-  };
-
-  const formatDateTime = (value) => {
-    if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleString("id-ID");
   };
 
   return (

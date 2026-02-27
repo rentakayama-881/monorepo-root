@@ -4,17 +4,12 @@ import Link from "next/link";
 import Avatar from "./Avatar";
 import Badge from "./Badge";
 import { TagList } from "./TagPill";
+import { formatIDR } from "@/lib/format";
 
 function formatDate(ts) {
   if (!ts) return "";
   const date = typeof ts === "number" ? new Date(ts * 1000) : new Date(ts);
   return date.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
-}
-
-function formatIDR(amount) {
-  const n = Number(amount || 0);
-  if (!Number.isFinite(n)) return "-";
-  return `Rp ${Math.max(0, Math.trunc(n)).toLocaleString("id-ID")}`;
 }
 
 function statusLabel(statusRaw) {

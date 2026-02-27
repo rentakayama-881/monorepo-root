@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import { getAdminToken } from "@/lib/adminAuth";
 import { getApiBase } from "@/lib/api";
 import { getFeatureApiBase } from "@/lib/featureApi";
+import { formatDateTime } from "@/lib/format";
 
 export default function ObservedDevicesPage() {
   const [devices, setDevices] = useState([]);
@@ -135,13 +136,6 @@ export default function ObservedDevicesPage() {
     } finally {
       setBanLoading(false);
     }
-  };
-
-  const formatDateTime = (value) => {
-    if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleString("id-ID");
   };
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));

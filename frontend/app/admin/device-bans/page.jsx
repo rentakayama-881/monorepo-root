@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
 import { getAdminToken } from "@/lib/adminAuth";
 import { getFeatureApiBase, unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
+import { formatDateTime } from "@/lib/format";
 
 function normalizeDeviceBan(item) {
   return {
@@ -152,13 +153,6 @@ export default function DeviceBansPage() {
     } catch (e) {
       alert(e.message);
     }
-  };
-
-  const formatDateTime = (value) => {
-    if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleString("id-ID");
   };
 
   const getBanStatus = (ban) => {

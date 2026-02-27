@@ -18,6 +18,13 @@ export function formatCurrency(value, showSymbol = true) {
 }
 
 /**
+ * Alias for formatCurrency – used across validation-case pages.
+ * @param {number} amount
+ * @returns {string}
+ */
+export const formatIDR = formatCurrency;
+
+/**
  * Parse currency input (remove non-digit characters)
  * @param {string} value - The input value
  * @returns {number}

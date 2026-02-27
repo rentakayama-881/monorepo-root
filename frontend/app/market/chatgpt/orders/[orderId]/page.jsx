@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { SectionLoadingBlock } from "@/components/ui/LoadingState";
 import { fetchJsonAuth } from "@/lib/api";
+import { formatDateTime } from "@/lib/format";
 
 const FINAL_STATUSES = new Set(["fulfilled", "failed"]);
 
@@ -428,20 +429,4 @@ function LinkBlock({ title, rows }) {
       </div>
     </div>
   );
-}
-
-function formatDateTime(value) {
-  if (!value) return "-";
-  try {
-    return new Date(value).toLocaleString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  } catch {
-    return "-";
-  }
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { fetchJsonAuth } from "@/lib/api";
+import { formatDateTime } from "@/lib/format";
 import { SectionLoadingBlock } from "@/components/ui/LoadingState";
 
 const FINAL_STATUSES = new Set(["fulfilled", "failed"]);
@@ -123,19 +124,4 @@ function StatusBadge({ status }) {
     return <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">Gagal</span>;
   }
   return <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700">Diproses</span>;
-}
-
-function formatDateTime(value) {
-  if (!value) return "-";
-  try {
-    return new Date(value).toLocaleString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "-";
-  }
 }

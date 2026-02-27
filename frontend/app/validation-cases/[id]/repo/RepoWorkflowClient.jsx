@@ -11,26 +11,8 @@ import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { FEATURE_ENDPOINTS, getFeatureApiBase } from "@/lib/featureApi";
 import { useUploadDocument } from "@/lib/useDocuments";
+import { formatIDR, formatDateTime } from "@/lib/format";
 import { formatRepoFileKindLabel, formatRepoFileVisibilityLabel } from "@/lib/repoFileLabels";
-
-function formatDateTime(ts) {
-  if (!ts) return "-";
-  const date = new Date(Number(ts) * 1000);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatIDR(amount) {
-  const n = Number(amount || 0);
-  if (!Number.isFinite(n)) return "Rp 0";
-  return `Rp ${Math.max(0, Math.trunc(n)).toLocaleString("id-ID")}`;
-}
 
 function normalizeErr(err, fallback) {
   const message = String(err?.message || fallback || "Terjadi kesalahan").trim();

@@ -14,26 +14,9 @@ import ValidationCaseRecordSkeleton from "./ValidationCaseRecordSkeleton";
 import { fetchJson, fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
+import { formatIDR, formatDateTime } from "@/lib/format";
 import { isWorkspaceValidationCase } from "@/lib/validationCaseWorkflow";
 import RepoWorkflowClient from "./repo/RepoWorkflowClient";
-
-function formatDateTime(ts) {
-  if (!ts) return "";
-  const date = typeof ts === "number" ? new Date(ts * 1000) : new Date(ts);
-  return date.toLocaleString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatIDR(amount) {
-  const n = Number(amount || 0);
-  if (!Number.isFinite(n)) return "-";
-  return `Rp ${Math.max(0, Math.trunc(n)).toLocaleString("id-ID")}`;
-}
 
 function formatHoldWindow(hours) {
   const h = Number(hours || 0);
