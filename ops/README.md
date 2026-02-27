@@ -8,6 +8,11 @@ Folder ini menyatukan command operasional wajib agar AI/human operator selalu ko
 
 1. `preflight-full.sh`
 - Menjalankan full gate lintas monorepo.
+- Bisa dibatasi scope:
+  - `--scope all` (default)
+  - `--scope backend`
+  - `--scope backend-feature`
+  - `--scope frontend`
 
 2. `commit-push.sh`
 - Menjalankan preflight, lalu commit + push.
@@ -15,6 +20,8 @@ Folder ini menyatukan command operasional wajib agar AI/human operator selalu ko
 - Flags:
   - `--skip-deploy`
   - `--deploy-vps`
+  - `--scope all|backend|backend-feature|frontend`
+    - Scope `frontend` tidak memicu auto deploy VPS.
 
 3. `vps-sync-deploy.sh`
 - Sinkronkan backend Go + .NET ke SHA target, build fresh, restart service, verify live SHA.

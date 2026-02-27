@@ -9,6 +9,7 @@ source "$SCRIPT_DIR/lib/common.sh"
 ensure_command git
 
 deploy_mode="auto" # auto|yes|no
+preflight_scope="all" # all|backend|backend-feature|frontend
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -19,6 +20,10 @@ while [[ $# -gt 0 ]]; do
     --skip-deploy)
       deploy_mode="no"
       shift
+      ;;
+    --scope)
+      preflight_scope="$2"
+      shift 2
       ;;
     --)
       shift
@@ -31,7 +36,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ $# -lt 1 ]]; then
-  die "Usage: ./ops/commit-push.sh [--deploy-vps|--skip-deploy] \"type(scope): message\""
+  die "Usage: ./ops/commit-push.sh [--deploy-vps|--skip-deploy] [--scope all|backend|backend-feature|frontend] \"type(scope): message\""
+fi
+
+if [[ "$preflight_scope" != "all" && "$preflight_scope" != "backend" && "$preflight_scope" != "backend-feature" && "$preflight_scope" != "frontend" ]]; then
+  die "Invalid --scope value: $preflight_scope (allowed: all|backend|backend-feature|frontend)"
 fi
 
 commit_message="$*"
@@ -47,7 +56,7 @@ if [[ -z "$(git status --porcelain)" ]]; then
   die "Working tree is clean. Nothing to commit."
 fi
 
-run_step "preflight full gates" "$OPS_ROOT/ops/preflight-full.sh"
+run_step "preflight gates ($preflight_scope)" "$OPS_ROOT/ops/preflight-full.sh" --scope "$preflight_scope"
 
 run_step "git add" git add -A
 
@@ -67,7 +76,7 @@ fi
 should_deploy="false"
 if [[ "$deploy_mode" == "yes" ]]; then
   should_deploy="true"
-elif [[ "$deploy_mode" == "auto" && "$current_branch" == "main" ]]; then
+elif [[ "$deploy_mode" == "auto" && "$current_branch" == "main" && "$preflight_scope" != "frontend" ]]; then
   should_deploy="true"
 fi
 
@@ -75,6 +84,8 @@ if [[ "$should_deploy" == "true" ]]; then
   target_sha="$(git rev-parse HEAD)"
   run_step "sync VPS to latest sha $target_sha" \
     "$OPS_ROOT/ops/vps-sync-deploy.sh" --env prod --ref "$target_sha"
+elif [[ "$deploy_mode" == "auto" && "$current_branch" == "main" && "$preflight_scope" == "frontend" ]]; then
+  log "INFO" "Skipping VPS deploy for frontend-only scope on main."
 fi
 
 log "OK" "Commit+push workflow completed on branch $current_branch"

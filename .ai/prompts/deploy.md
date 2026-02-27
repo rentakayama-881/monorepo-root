@@ -7,9 +7,14 @@ bash .ai/context.sh
 
 ## Step 2: Pre-deploy
 ```bash
-./ops/preflight-full.sh
+./ops/preflight-full.sh --scope all
 ```
 All checks must pass before deploying.
+
+Untuk hotfix backend/feature yang tidak menyentuh frontend, gunakan scope:
+```bash
+./ops/preflight-full.sh --scope backend-feature
+```
 
 ## Step 3: Deploy
 
@@ -19,10 +24,15 @@ All checks must pass before deploying.
 
 ### Backend Services (VPS)
 ```bash
-./ops/commit-push.sh "type(scope): message"
+./ops/commit-push.sh --scope all "type(scope): message"
 # If CI deploys automatically, wait for CI completion.
 # Otherwise:
 ./ops/vps-sync-deploy.sh --env prod --ref <sha>
+```
+
+Untuk backend hotfix:
+```bash
+./ops/commit-push.sh --scope backend-feature "fix(backend): message"
 ```
 
 ## Step 4: Verify

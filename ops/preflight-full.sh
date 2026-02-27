@@ -11,6 +11,24 @@ ensure_command go
 ensure_command dotnet
 ensure_command npm
 
+SCOPE="all"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --scope)
+      SCOPE="$2"
+      shift 2
+      ;;
+    *)
+      die "Unknown argument: $1"
+      ;;
+  esac
+done
+
+if [[ "$SCOPE" != "all" && "$SCOPE" != "backend" && "$SCOPE" != "backend-feature" && "$SCOPE" != "frontend" ]]; then
+  die "Invalid --scope value: $SCOPE (allowed: all|backend|backend-feature|frontend)"
+fi
+
 run_in_dir() {
   local dir="$1"
   shift
@@ -36,30 +54,36 @@ if [ -d "$OPS_ROOT/.cache" ]; then
   log "WARN" ".cache/ directory exists (${cache_size}). Run 'rm -rf .cache/' to reclaim disk space."
 fi
 
-log "INFO" "Running full monorepo preflight gates"
+log "INFO" "Running preflight gates (scope=$SCOPE)"
 log "INFO" "Report file: $REPORT_FILE"
 
-run_step "backend: go vet" run_in_dir "$OPS_ROOT/backend" go vet ./...
-run_step "backend: go test -v ./..." run_in_dir "$OPS_ROOT/backend" go test -v ./...
+if [[ "$SCOPE" == "all" || "$SCOPE" == "backend" || "$SCOPE" == "backend-feature" ]]; then
+  run_step "backend: go vet" run_in_dir "$OPS_ROOT/backend" go vet ./...
+  run_step "backend: go test -v ./..." run_in_dir "$OPS_ROOT/backend" go test -v ./...
+fi
 
-run_step "feature-service: dotnet build -c Release" \
-  run_in_dir "$OPS_ROOT/feature-service" dotnet build -c Release src/FeatureService.Api/FeatureService.Api.csproj --nologo
-run_step "feature-service: dotnet test -c Release" \
-  run_in_dir "$OPS_ROOT/feature-service" dotnet test -c Release --nologo
+if [[ "$SCOPE" == "all" || "$SCOPE" == "backend-feature" ]]; then
+  run_step "feature-service: dotnet build -c Release" \
+    run_in_dir "$OPS_ROOT/feature-service" dotnet build -c Release src/FeatureService.Api/FeatureService.Api.csproj --nologo
+  run_step "feature-service: dotnet test -c Release" \
+    run_in_dir "$OPS_ROOT/feature-service" dotnet test -c Release --nologo
+fi
 
-run_step "frontend: npm ci --no-audit" run_in_dir "$OPS_ROOT/frontend" npm ci --no-audit
-run_step "frontend: npm run lint" run_in_dir "$OPS_ROOT/frontend" npm run lint
-run_step "frontend: npm run typecheck" run_in_dir "$OPS_ROOT/frontend" npm run typecheck
-run_step "frontend: npm test -- --ci --runInBand --forceExit" \
-  run_in_dir "$OPS_ROOT/frontend" npm test -- --ci --runInBand --forceExit
-run_step "frontend: npm run build (prebuild check relaxed for CI portability)" \
-  env PREBUILD_HEALTHCHECK_STRICT=false \
-      SKIP_PREBUILD_CHECK=1 \
-      API_BASE_URL="$api_base_url" \
-      NEXT_PUBLIC_API_BASE_URL="$next_public_api_base_url" \
-      NEXT_PUBLIC_BACKEND_URL="$next_public_backend_url" \
-      bash -c "cd \"$OPS_ROOT/frontend\" && npm run build"
-run_step "frontend: npm run audit:prod" \
-  run_in_dir "$OPS_ROOT/frontend" npm run audit:prod
+if [[ "$SCOPE" == "all" || "$SCOPE" == "frontend" ]]; then
+  run_step "frontend: npm ci --no-audit" run_in_dir "$OPS_ROOT/frontend" npm ci --no-audit
+  run_step "frontend: npm run lint" run_in_dir "$OPS_ROOT/frontend" npm run lint
+  run_step "frontend: npm run typecheck" run_in_dir "$OPS_ROOT/frontend" npm run typecheck
+  run_step "frontend: npm test -- --ci --runInBand --forceExit" \
+    run_in_dir "$OPS_ROOT/frontend" npm test -- --ci --runInBand --forceExit
+  run_step "frontend: npm run build (prebuild check relaxed for CI portability)" \
+    env PREBUILD_HEALTHCHECK_STRICT=false \
+        SKIP_PREBUILD_CHECK=1 \
+        API_BASE_URL="$api_base_url" \
+        NEXT_PUBLIC_API_BASE_URL="$next_public_api_base_url" \
+        NEXT_PUBLIC_BACKEND_URL="$next_public_backend_url" \
+        bash -c "cd \"$OPS_ROOT/frontend\" && npm run build"
+  run_step "frontend: npm run audit:prod" \
+    run_in_dir "$OPS_ROOT/frontend" npm run audit:prod
+fi
 
-log "OK" "All full preflight gates passed"
+log "OK" "Preflight gates passed (scope=$SCOPE)"
