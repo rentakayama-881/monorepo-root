@@ -590,7 +590,12 @@ function SpecDrawer({ item, onClose }) {
 
   return (
     <>
-      <button type="button" aria-label="Tutup detail" onClick={onClose} className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
+      <button
+        type="button"
+        aria-label="Tutup detail"
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-black/50 transition-opacity duration-300"
+      />
       <aside className="fixed z-50 w-full border-l border-border bg-card shadow-2xl md:top-0 md:right-0 md:h-full md:w-[380px] bottom-0 left-0 max-h-[82vh] md:max-h-none rounded-t-2xl md:rounded-none">
         <div className="flex items-start justify-between border-b border-border px-3 py-2.5">
           <div className="min-w-0">

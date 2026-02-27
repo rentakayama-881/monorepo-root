@@ -188,7 +188,8 @@ describe("MarketChatGPTClient", () => {
     expect(await screen.findByText("Detail Akun")).toBeInTheDocument();
     const closeOverlay = screen.getByRole("button", { name: "Tutup detail" });
     expect(closeOverlay).toHaveClass("bg-black/50");
-    expect(closeOverlay).toHaveClass("backdrop-blur-sm");
+    expect(closeOverlay).toHaveClass("transition-opacity");
+    expect(closeOverlay).toHaveClass("duration-300");
 
     fireEvent.click(closeOverlay);
 
