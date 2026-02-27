@@ -72,6 +72,7 @@ yarn-error.log*
 logs/
 .ops/reports/
 .quality/
+.quality/*.log
 
 # ----- Testing -----
 coverage/
