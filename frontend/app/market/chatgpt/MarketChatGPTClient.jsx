@@ -199,7 +199,7 @@ export default function MarketChatGPTClient() {
     return () => clearInterval(timer);
   }, [confirmItem?.id, confirmSeconds]);
 
-  usePageScrollLock(Boolean(drawerItem || confirmItem || blockingMessage || checkoutFeedback));
+  usePageScrollLock(Boolean(confirmItem || blockingMessage || checkoutFeedback));
 
   const loadListings = useCallback(
     async ({ initial = false, silent = false } = {}) => {
@@ -344,7 +344,7 @@ export default function MarketChatGPTClient() {
       <header className="space-y-2">
         <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Marketplace</div>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-xl font-semibold text-foreground">Daftar Akun ChatGPT</h1>
+          <h1 className="text-xl font-semibold text-foreground">ChatGPT Account</h1>
           <TinyBadge label={cachedBadge} />
           {staleBadge ? <TinyBadge label={staleBadge} tone="warning" /> : null}
         </div>
@@ -599,9 +599,9 @@ function SpecDrawer({ item, onClose }) {
         type="button"
         aria-label="Tutup detail"
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/50 transition-opacity duration-300"
+        className="fixed inset-0 z-[100] bg-black/50 transition-opacity duration-300"
       />
-      <aside className="fixed z-50 w-full border-l border-border bg-card shadow-2xl md:top-0 md:right-0 md:h-full md:w-[380px] bottom-0 left-0 max-h-[82vh] md:max-h-none rounded-t-2xl md:rounded-none">
+      <aside className="fixed z-[110] w-full border-l border-border bg-card shadow-2xl md:top-0 md:right-0 md:h-full md:w-[380px] bottom-0 left-0 max-h-[82vh] md:max-h-none rounded-t-2xl md:rounded-none">
         <div className="flex items-start justify-between border-b border-border px-3 py-2.5">
           <div className="min-w-0">
             <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Detail Akun</div>
