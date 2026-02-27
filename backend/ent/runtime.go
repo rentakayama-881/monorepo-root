@@ -17,6 +17,8 @@ import (
 	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/ipgeocache"
+	"backend-gin/ent/marketpurchaseorder"
+	"backend-gin/ent/marketpurchaseorderstep"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/schema"
@@ -556,6 +558,230 @@ func init() {
 	ipgeocacheDescCachedAt := ipgeocacheFields[6].Descriptor()
 	// ipgeocache.DefaultCachedAt holds the default value on creation for the cached_at field.
 	ipgeocache.DefaultCachedAt = ipgeocacheDescCachedAt.Default.(func() time.Time)
+	marketpurchaseorderMixin := schema.MarketPurchaseOrder{}.Mixin()
+	marketpurchaseorderMixinFields0 := marketpurchaseorderMixin[0].Fields()
+	_ = marketpurchaseorderMixinFields0
+	marketpurchaseorderFields := schema.MarketPurchaseOrder{}.Fields()
+	_ = marketpurchaseorderFields
+	// marketpurchaseorderDescCreatedAt is the schema descriptor for created_at field.
+	marketpurchaseorderDescCreatedAt := marketpurchaseorderMixinFields0[0].Descriptor()
+	// marketpurchaseorder.DefaultCreatedAt holds the default value on creation for the created_at field.
+	marketpurchaseorder.DefaultCreatedAt = marketpurchaseorderDescCreatedAt.Default.(func() time.Time)
+	// marketpurchaseorderDescUpdatedAt is the schema descriptor for updated_at field.
+	marketpurchaseorderDescUpdatedAt := marketpurchaseorderMixinFields0[1].Descriptor()
+	// marketpurchaseorder.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	marketpurchaseorder.DefaultUpdatedAt = marketpurchaseorderDescUpdatedAt.Default.(func() time.Time)
+	// marketpurchaseorder.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	marketpurchaseorder.UpdateDefaultUpdatedAt = marketpurchaseorderDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// marketpurchaseorderDescOrderID is the schema descriptor for order_id field.
+	marketpurchaseorderDescOrderID := marketpurchaseorderFields[0].Descriptor()
+	// marketpurchaseorder.OrderIDValidator is a validator for the "order_id" field. It is called by the builders before save.
+	marketpurchaseorder.OrderIDValidator = marketpurchaseorderDescOrderID.Validators[0].(func(string) error)
+	// marketpurchaseorderDescUserID is the schema descriptor for user_id field.
+	marketpurchaseorderDescUserID := marketpurchaseorderFields[1].Descriptor()
+	// marketpurchaseorder.UserIDValidator is a validator for the "user_id" field. It is called by the builders before save.
+	marketpurchaseorder.UserIDValidator = marketpurchaseorderDescUserID.Validators[0].(func(int) error)
+	// marketpurchaseorderDescItemID is the schema descriptor for item_id field.
+	marketpurchaseorderDescItemID := marketpurchaseorderFields[2].Descriptor()
+	// marketpurchaseorder.ItemIDValidator is a validator for the "item_id" field. It is called by the builders before save.
+	marketpurchaseorder.ItemIDValidator = func() func(string) error {
+		validators := marketpurchaseorderDescItemID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(item_id string) error {
+			for _, fn := range fns {
+				if err := fn(item_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// marketpurchaseorderDescTitle is the schema descriptor for title field.
+	marketpurchaseorderDescTitle := marketpurchaseorderFields[3].Descriptor()
+	// marketpurchaseorder.DefaultTitle holds the default value on creation for the title field.
+	marketpurchaseorder.DefaultTitle = marketpurchaseorderDescTitle.Default.(string)
+	// marketpurchaseorder.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	marketpurchaseorder.TitleValidator = marketpurchaseorderDescTitle.Validators[0].(func(string) error)
+	// marketpurchaseorderDescPrice is the schema descriptor for price field.
+	marketpurchaseorderDescPrice := marketpurchaseorderFields[4].Descriptor()
+	// marketpurchaseorder.DefaultPrice holds the default value on creation for the price field.
+	marketpurchaseorder.DefaultPrice = marketpurchaseorderDescPrice.Default.(string)
+	// marketpurchaseorder.PriceValidator is a validator for the "price" field. It is called by the builders before save.
+	marketpurchaseorder.PriceValidator = marketpurchaseorderDescPrice.Validators[0].(func(string) error)
+	// marketpurchaseorderDescStatus is the schema descriptor for status field.
+	marketpurchaseorderDescStatus := marketpurchaseorderFields[5].Descriptor()
+	// marketpurchaseorder.DefaultStatus holds the default value on creation for the status field.
+	marketpurchaseorder.DefaultStatus = marketpurchaseorderDescStatus.Default.(string)
+	// marketpurchaseorder.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	marketpurchaseorder.StatusValidator = marketpurchaseorderDescStatus.Validators[0].(func(string) error)
+	// marketpurchaseorderDescSeller is the schema descriptor for seller field.
+	marketpurchaseorderDescSeller := marketpurchaseorderFields[6].Descriptor()
+	// marketpurchaseorder.DefaultSeller holds the default value on creation for the seller field.
+	marketpurchaseorder.DefaultSeller = marketpurchaseorderDescSeller.Default.(string)
+	// marketpurchaseorder.SellerValidator is a validator for the "seller" field. It is called by the builders before save.
+	marketpurchaseorder.SellerValidator = marketpurchaseorderDescSeller.Validators[0].(func(string) error)
+	// marketpurchaseorderDescFailureReason is the schema descriptor for failure_reason field.
+	marketpurchaseorderDescFailureReason := marketpurchaseorderFields[7].Descriptor()
+	// marketpurchaseorder.DefaultFailureReason holds the default value on creation for the failure_reason field.
+	marketpurchaseorder.DefaultFailureReason = marketpurchaseorderDescFailureReason.Default.(string)
+	// marketpurchaseorder.FailureReasonValidator is a validator for the "failure_reason" field. It is called by the builders before save.
+	marketpurchaseorder.FailureReasonValidator = marketpurchaseorderDescFailureReason.Validators[0].(func(string) error)
+	// marketpurchaseorderDescFailureCode is the schema descriptor for failure_code field.
+	marketpurchaseorderDescFailureCode := marketpurchaseorderFields[8].Descriptor()
+	// marketpurchaseorder.DefaultFailureCode holds the default value on creation for the failure_code field.
+	marketpurchaseorder.DefaultFailureCode = marketpurchaseorderDescFailureCode.Default.(string)
+	// marketpurchaseorder.FailureCodeValidator is a validator for the "failure_code" field. It is called by the builders before save.
+	marketpurchaseorder.FailureCodeValidator = marketpurchaseorderDescFailureCode.Validators[0].(func(string) error)
+	// marketpurchaseorderDescSourcePrice is the schema descriptor for source_price field.
+	marketpurchaseorderDescSourcePrice := marketpurchaseorderFields[10].Descriptor()
+	// marketpurchaseorder.DefaultSourcePrice holds the default value on creation for the source_price field.
+	marketpurchaseorder.DefaultSourcePrice = marketpurchaseorderDescSourcePrice.Default.(float64)
+	// marketpurchaseorderDescSourceCurrency is the schema descriptor for source_currency field.
+	marketpurchaseorderDescSourceCurrency := marketpurchaseorderFields[11].Descriptor()
+	// marketpurchaseorder.DefaultSourceCurrency holds the default value on creation for the source_currency field.
+	marketpurchaseorder.DefaultSourceCurrency = marketpurchaseorderDescSourceCurrency.Default.(string)
+	// marketpurchaseorder.SourceCurrencyValidator is a validator for the "source_currency" field. It is called by the builders before save.
+	marketpurchaseorder.SourceCurrencyValidator = marketpurchaseorderDescSourceCurrency.Validators[0].(func(string) error)
+	// marketpurchaseorderDescSourceSymbol is the schema descriptor for source_symbol field.
+	marketpurchaseorderDescSourceSymbol := marketpurchaseorderFields[12].Descriptor()
+	// marketpurchaseorder.DefaultSourceSymbol holds the default value on creation for the source_symbol field.
+	marketpurchaseorder.DefaultSourceSymbol = marketpurchaseorderDescSourceSymbol.Default.(string)
+	// marketpurchaseorder.SourceSymbolValidator is a validator for the "source_symbol" field. It is called by the builders before save.
+	marketpurchaseorder.SourceSymbolValidator = marketpurchaseorderDescSourceSymbol.Validators[0].(func(string) error)
+	// marketpurchaseorderDescPriceIdr is the schema descriptor for price_idr field.
+	marketpurchaseorderDescPriceIdr := marketpurchaseorderFields[13].Descriptor()
+	// marketpurchaseorder.DefaultPriceIdr holds the default value on creation for the price_idr field.
+	marketpurchaseorder.DefaultPriceIdr = marketpurchaseorderDescPriceIdr.Default.(int64)
+	// marketpurchaseorderDescFxRateToIdr is the schema descriptor for fx_rate_to_idr field.
+	marketpurchaseorderDescFxRateToIdr := marketpurchaseorderFields[14].Descriptor()
+	// marketpurchaseorder.DefaultFxRateToIdr holds the default value on creation for the fx_rate_to_idr field.
+	marketpurchaseorder.DefaultFxRateToIdr = marketpurchaseorderDescFxRateToIdr.Default.(float64)
+	// marketpurchaseorderDescPriceDisplay is the schema descriptor for price_display field.
+	marketpurchaseorderDescPriceDisplay := marketpurchaseorderFields[15].Descriptor()
+	// marketpurchaseorder.DefaultPriceDisplay holds the default value on creation for the price_display field.
+	marketpurchaseorder.DefaultPriceDisplay = marketpurchaseorderDescPriceDisplay.Default.(string)
+	// marketpurchaseorder.PriceDisplayValidator is a validator for the "price_display" field. It is called by the builders before save.
+	marketpurchaseorder.PriceDisplayValidator = marketpurchaseorderDescPriceDisplay.Validators[0].(func(string) error)
+	// marketpurchaseorderDescSourceDisplay is the schema descriptor for source_display field.
+	marketpurchaseorderDescSourceDisplay := marketpurchaseorderFields[16].Descriptor()
+	// marketpurchaseorder.DefaultSourceDisplay holds the default value on creation for the source_display field.
+	marketpurchaseorder.DefaultSourceDisplay = marketpurchaseorderDescSourceDisplay.Default.(string)
+	// marketpurchaseorder.SourceDisplayValidator is a validator for the "source_display" field. It is called by the builders before save.
+	marketpurchaseorder.SourceDisplayValidator = marketpurchaseorderDescSourceDisplay.Validators[0].(func(string) error)
+	// marketpurchaseorderDescPricingNote is the schema descriptor for pricing_note field.
+	marketpurchaseorderDescPricingNote := marketpurchaseorderFields[17].Descriptor()
+	// marketpurchaseorder.DefaultPricingNote holds the default value on creation for the pricing_note field.
+	marketpurchaseorder.DefaultPricingNote = marketpurchaseorderDescPricingNote.Default.(string)
+	// marketpurchaseorder.PricingNoteValidator is a validator for the "pricing_note" field. It is called by the builders before save.
+	marketpurchaseorder.PricingNoteValidator = marketpurchaseorderDescPricingNote.Validators[0].(func(string) error)
+	// marketpurchaseorderDescLastStepCode is the schema descriptor for last_step_code field.
+	marketpurchaseorderDescLastStepCode := marketpurchaseorderFields[18].Descriptor()
+	// marketpurchaseorder.DefaultLastStepCode holds the default value on creation for the last_step_code field.
+	marketpurchaseorder.DefaultLastStepCode = marketpurchaseorderDescLastStepCode.Default.(string)
+	// marketpurchaseorder.LastStepCodeValidator is a validator for the "last_step_code" field. It is called by the builders before save.
+	marketpurchaseorder.LastStepCodeValidator = marketpurchaseorderDescLastStepCode.Validators[0].(func(string) error)
+	// marketpurchaseorderDescSupplierCurrency is the schema descriptor for supplier_currency field.
+	marketpurchaseorderDescSupplierCurrency := marketpurchaseorderFields[19].Descriptor()
+	// marketpurchaseorder.DefaultSupplierCurrency holds the default value on creation for the supplier_currency field.
+	marketpurchaseorder.DefaultSupplierCurrency = marketpurchaseorderDescSupplierCurrency.Default.(string)
+	// marketpurchaseorder.SupplierCurrencyValidator is a validator for the "supplier_currency" field. It is called by the builders before save.
+	marketpurchaseorder.SupplierCurrencyValidator = marketpurchaseorderDescSupplierCurrency.Validators[0].(func(string) error)
+	marketpurchaseorderstepMixin := schema.MarketPurchaseOrderStep{}.Mixin()
+	marketpurchaseorderstepMixinFields0 := marketpurchaseorderstepMixin[0].Fields()
+	_ = marketpurchaseorderstepMixinFields0
+	marketpurchaseorderstepFields := schema.MarketPurchaseOrderStep{}.Fields()
+	_ = marketpurchaseorderstepFields
+	// marketpurchaseorderstepDescCreatedAt is the schema descriptor for created_at field.
+	marketpurchaseorderstepDescCreatedAt := marketpurchaseorderstepMixinFields0[0].Descriptor()
+	// marketpurchaseorderstep.DefaultCreatedAt holds the default value on creation for the created_at field.
+	marketpurchaseorderstep.DefaultCreatedAt = marketpurchaseorderstepDescCreatedAt.Default.(func() time.Time)
+	// marketpurchaseorderstepDescUpdatedAt is the schema descriptor for updated_at field.
+	marketpurchaseorderstepDescUpdatedAt := marketpurchaseorderstepMixinFields0[1].Descriptor()
+	// marketpurchaseorderstep.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	marketpurchaseorderstep.DefaultUpdatedAt = marketpurchaseorderstepDescUpdatedAt.Default.(func() time.Time)
+	// marketpurchaseorderstep.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	marketpurchaseorderstep.UpdateDefaultUpdatedAt = marketpurchaseorderstepDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// marketpurchaseorderstepDescOrderID is the schema descriptor for order_id field.
+	marketpurchaseorderstepDescOrderID := marketpurchaseorderstepFields[0].Descriptor()
+	// marketpurchaseorderstep.OrderIDValidator is a validator for the "order_id" field. It is called by the builders before save.
+	marketpurchaseorderstep.OrderIDValidator = func() func(string) error {
+		validators := marketpurchaseorderstepDescOrderID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(order_id string) error {
+			for _, fn := range fns {
+				if err := fn(order_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// marketpurchaseorderstepDescCode is the schema descriptor for code field.
+	marketpurchaseorderstepDescCode := marketpurchaseorderstepFields[1].Descriptor()
+	// marketpurchaseorderstep.CodeValidator is a validator for the "code" field. It is called by the builders before save.
+	marketpurchaseorderstep.CodeValidator = func() func(string) error {
+		validators := marketpurchaseorderstepDescCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(code string) error {
+			for _, fn := range fns {
+				if err := fn(code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// marketpurchaseorderstepDescLabel is the schema descriptor for label field.
+	marketpurchaseorderstepDescLabel := marketpurchaseorderstepFields[2].Descriptor()
+	// marketpurchaseorderstep.LabelValidator is a validator for the "label" field. It is called by the builders before save.
+	marketpurchaseorderstep.LabelValidator = func() func(string) error {
+		validators := marketpurchaseorderstepDescLabel.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(label string) error {
+			for _, fn := range fns {
+				if err := fn(label); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// marketpurchaseorderstepDescStatus is the schema descriptor for status field.
+	marketpurchaseorderstepDescStatus := marketpurchaseorderstepFields[3].Descriptor()
+	// marketpurchaseorderstep.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	marketpurchaseorderstep.StatusValidator = func() func(string) error {
+		validators := marketpurchaseorderstepDescStatus.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(status string) error {
+			for _, fn := range fns {
+				if err := fn(status); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// marketpurchaseorderstepDescMessage is the schema descriptor for message field.
+	marketpurchaseorderstepDescMessage := marketpurchaseorderstepFields[4].Descriptor()
+	// marketpurchaseorderstep.DefaultMessage holds the default value on creation for the message field.
+	marketpurchaseorderstep.DefaultMessage = marketpurchaseorderstepDescMessage.Default.(string)
+	// marketpurchaseorderstep.MessageValidator is a validator for the "message" field. It is called by the builders before save.
+	marketpurchaseorderstep.MessageValidator = marketpurchaseorderstepDescMessage.Validators[0].(func(string) error)
 	passkeyMixin := schema.Passkey{}.Mixin()
 	passkeyMixinFields0 := passkeyMixin[0].Fields()
 	_ = passkeyMixinFields0

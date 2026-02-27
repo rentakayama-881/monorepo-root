@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -79,6 +80,24 @@ type FeatureMarketWalletResult struct {
 	OrderID       string `json:"orderId"`
 	Status        string `json:"status"`
 	AmountIDR     int64  `json:"amountIdr"`
+}
+
+type FeatureMarketPurchaseHistoryItem struct {
+	OrderID    string    `json:"orderId"`
+	UserID     uint      `json:"userId"`
+	AmountIDR  int64     `json:"amountIdr"`
+	Status     string    `json:"status"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
+	CapturedAt time.Time `json:"capturedAt"`
+	ReleasedAt time.Time `json:"releasedAt"`
+}
+
+type FeatureMarketPurchaseHistoryResult struct {
+	Items    []FeatureMarketPurchaseHistoryItem `json:"items"`
+	Total    int                                `json:"total"`
+	Page     int                                `json:"page"`
+	PageSize int                                `json:"pageSize"`
 }
 
 type FeatureMarketDistributionRecipient struct {
@@ -275,6 +294,54 @@ func (c *FeatureWalletClient) DistributeMarketPurchase(
 		"referenceType": referenceType,
 	}
 	return c.postMarketWallet(ctx, authHeader, "/api/v1/wallets/market-purchases/distribute", payload)
+}
+
+func (c *FeatureWalletClient) GetMarketPurchaseHistory(
+	ctx context.Context,
+	authHeader string,
+	page int,
+	pageSize int,
+	status string,
+) (*FeatureMarketPurchaseHistoryResult, error) {
+	if c == nil || c.baseURL == "" {
+		return nil, fmt.Errorf("feature wallet client is not configured")
+	}
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 50
+	}
+	path := fmt.Sprintf("/api/v1/wallets/market-purchases/history?page=%d&pageSize=%d", page, pageSize)
+	if strings.TrimSpace(status) != "" {
+		path = path + "&status=" + url.QueryEscape(strings.TrimSpace(status))
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+	if strings.TrimSpace(authHeader) != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var parsed featureApiEnvelope[FeatureMarketPurchaseHistoryResult]
+	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
+		return nil, err
+	}
+	if resp.StatusCode >= http.StatusBadRequest || !parsed.Success {
+		if parsed.Error != nil && strings.TrimSpace(parsed.Error.Message) != "" {
+			return nil, fmt.Errorf("%s", parsed.Error.Message)
+		}
+		return nil, fmt.Errorf("feature wallet request failed with status %d", resp.StatusCode)
+	}
+	return &parsed.Data, nil
 }
 
 func (c *FeatureWalletClient) postMarketWallet(ctx context.Context, authHeader, path string, payload interface{}) (*FeatureMarketWalletResult, error) {

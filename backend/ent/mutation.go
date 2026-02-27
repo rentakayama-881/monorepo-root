@@ -17,6 +17,8 @@ import (
 	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/ipgeocache"
+	"backend-gin/ent/marketpurchaseorder"
+	"backend-gin/ent/marketpurchaseorderstep"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/predicate"
@@ -49,32 +51,34 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAdmin                  = "Admin"
-	TypeArtifactSubmission     = "ArtifactSubmission"
-	TypeBackupCode             = "BackupCode"
-	TypeBadge                  = "Badge"
-	TypeCategory               = "Category"
-	TypeChainCursor            = "ChainCursor"
-	TypeConsultationRequest    = "ConsultationRequest"
-	TypeCredential             = "Credential"
-	TypeDeviceFingerprint      = "DeviceFingerprint"
-	TypeDeviceUserMapping      = "DeviceUserMapping"
-	TypeEmailVerificationToken = "EmailVerificationToken"
-	TypeEndorsement            = "Endorsement"
-	TypeFinalOffer             = "FinalOffer"
-	TypeIPGeoCache             = "IPGeoCache"
-	TypePasskey                = "Passkey"
-	TypePasswordResetToken     = "PasswordResetToken"
-	TypeSecurityEvent          = "SecurityEvent"
-	TypeSession                = "Session"
-	TypeSessionLock            = "SessionLock"
-	TypeSudoSession            = "SudoSession"
-	TypeTOTPPendingToken       = "TOTPPendingToken"
-	TypeTag                    = "Tag"
-	TypeUser                   = "User"
-	TypeUserBadge              = "UserBadge"
-	TypeValidationCase         = "ValidationCase"
-	TypeValidationCaseLog      = "ValidationCaseLog"
+	TypeAdmin                   = "Admin"
+	TypeArtifactSubmission      = "ArtifactSubmission"
+	TypeBackupCode              = "BackupCode"
+	TypeBadge                   = "Badge"
+	TypeCategory                = "Category"
+	TypeChainCursor             = "ChainCursor"
+	TypeConsultationRequest     = "ConsultationRequest"
+	TypeCredential              = "Credential"
+	TypeDeviceFingerprint       = "DeviceFingerprint"
+	TypeDeviceUserMapping       = "DeviceUserMapping"
+	TypeEmailVerificationToken  = "EmailVerificationToken"
+	TypeEndorsement             = "Endorsement"
+	TypeFinalOffer              = "FinalOffer"
+	TypeIPGeoCache              = "IPGeoCache"
+	TypeMarketPurchaseOrder     = "MarketPurchaseOrder"
+	TypeMarketPurchaseOrderStep = "MarketPurchaseOrderStep"
+	TypePasskey                 = "Passkey"
+	TypePasswordResetToken      = "PasswordResetToken"
+	TypeSecurityEvent           = "SecurityEvent"
+	TypeSession                 = "Session"
+	TypeSessionLock             = "SessionLock"
+	TypeSudoSession             = "SudoSession"
+	TypeTOTPPendingToken        = "TOTPPendingToken"
+	TypeTag                     = "Tag"
+	TypeUser                    = "User"
+	TypeUserBadge               = "UserBadge"
+	TypeValidationCase          = "ValidationCase"
+	TypeValidationCaseLog       = "ValidationCaseLog"
 )
 
 // AdminMutation represents an operation that mutates the Admin nodes in the graph.
@@ -12127,6 +12131,2783 @@ func (m *IPGeoCacheMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *IPGeoCacheMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown IPGeoCache edge %s", name)
+}
+
+// MarketPurchaseOrderMutation represents an operation that mutates the MarketPurchaseOrder nodes in the graph.
+type MarketPurchaseOrderMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *int
+	created_at        *time.Time
+	updated_at        *time.Time
+	deleted_at        *time.Time
+	order_id          *string
+	user_id           *int
+	adduser_id        *int
+	item_id           *string
+	title             *string
+	price             *string
+	status            *string
+	seller            *string
+	failure_reason    *string
+	failure_code      *string
+	delivery_json     *map[string]interface{}
+	source_price      *float64
+	addsource_price   *float64
+	source_currency   *string
+	source_symbol     *string
+	price_idr         *int64
+	addprice_idr      *int64
+	fx_rate_to_idr    *float64
+	addfx_rate_to_idr *float64
+	price_display     *string
+	source_display    *string
+	pricing_note      *string
+	last_step_code    *string
+	supplier_currency *string
+	clearedFields     map[string]struct{}
+	done              bool
+	oldValue          func(context.Context) (*MarketPurchaseOrder, error)
+	predicates        []predicate.MarketPurchaseOrder
+}
+
+var _ ent.Mutation = (*MarketPurchaseOrderMutation)(nil)
+
+// marketpurchaseorderOption allows management of the mutation configuration using functional options.
+type marketpurchaseorderOption func(*MarketPurchaseOrderMutation)
+
+// newMarketPurchaseOrderMutation creates new mutation for the MarketPurchaseOrder entity.
+func newMarketPurchaseOrderMutation(c config, op Op, opts ...marketpurchaseorderOption) *MarketPurchaseOrderMutation {
+	m := &MarketPurchaseOrderMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMarketPurchaseOrder,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMarketPurchaseOrderID sets the ID field of the mutation.
+func withMarketPurchaseOrderID(id int) marketpurchaseorderOption {
+	return func(m *MarketPurchaseOrderMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *MarketPurchaseOrder
+		)
+		m.oldValue = func(ctx context.Context) (*MarketPurchaseOrder, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().MarketPurchaseOrder.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMarketPurchaseOrder sets the old MarketPurchaseOrder of the mutation.
+func withMarketPurchaseOrder(node *MarketPurchaseOrder) marketpurchaseorderOption {
+	return func(m *MarketPurchaseOrderMutation) {
+		m.oldValue = func(context.Context) (*MarketPurchaseOrder, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m MarketPurchaseOrderMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m MarketPurchaseOrderMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *MarketPurchaseOrderMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *MarketPurchaseOrderMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().MarketPurchaseOrder.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MarketPurchaseOrderMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MarketPurchaseOrderMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *MarketPurchaseOrderMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *MarketPurchaseOrderMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *MarketPurchaseOrderMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *MarketPurchaseOrderMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *MarketPurchaseOrderMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *MarketPurchaseOrderMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *MarketPurchaseOrderMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[marketpurchaseorder.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *MarketPurchaseOrderMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldDeletedAt)
+}
+
+// SetOrderID sets the "order_id" field.
+func (m *MarketPurchaseOrderMutation) SetOrderID(s string) {
+	m.order_id = &s
+}
+
+// OrderID returns the value of the "order_id" field in the mutation.
+func (m *MarketPurchaseOrderMutation) OrderID() (r string, exists bool) {
+	v := m.order_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrderID returns the old "order_id" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldOrderID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrderID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrderID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrderID: %w", err)
+	}
+	return oldValue.OrderID, nil
+}
+
+// ResetOrderID resets all changes to the "order_id" field.
+func (m *MarketPurchaseOrderMutation) ResetOrderID() {
+	m.order_id = nil
+}
+
+// SetUserID sets the "user_id" field.
+func (m *MarketPurchaseOrderMutation) SetUserID(i int) {
+	m.user_id = &i
+	m.adduser_id = nil
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *MarketPurchaseOrderMutation) UserID() (r int, exists bool) {
+	v := m.user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// AddUserID adds i to the "user_id" field.
+func (m *MarketPurchaseOrderMutation) AddUserID(i int) {
+	if m.adduser_id != nil {
+		*m.adduser_id += i
+	} else {
+		m.adduser_id = &i
+	}
+}
+
+// AddedUserID returns the value that was added to the "user_id" field in this mutation.
+func (m *MarketPurchaseOrderMutation) AddedUserID() (r int, exists bool) {
+	v := m.adduser_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *MarketPurchaseOrderMutation) ResetUserID() {
+	m.user_id = nil
+	m.adduser_id = nil
+}
+
+// SetItemID sets the "item_id" field.
+func (m *MarketPurchaseOrderMutation) SetItemID(s string) {
+	m.item_id = &s
+}
+
+// ItemID returns the value of the "item_id" field in the mutation.
+func (m *MarketPurchaseOrderMutation) ItemID() (r string, exists bool) {
+	v := m.item_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldItemID returns the old "item_id" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldItemID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldItemID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldItemID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldItemID: %w", err)
+	}
+	return oldValue.ItemID, nil
+}
+
+// ResetItemID resets all changes to the "item_id" field.
+func (m *MarketPurchaseOrderMutation) ResetItemID() {
+	m.item_id = nil
+}
+
+// SetTitle sets the "title" field.
+func (m *MarketPurchaseOrderMutation) SetTitle(s string) {
+	m.title = &s
+}
+
+// Title returns the value of the "title" field in the mutation.
+func (m *MarketPurchaseOrderMutation) Title() (r string, exists bool) {
+	v := m.title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTitle returns the old "title" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
+	}
+	return oldValue.Title, nil
+}
+
+// ClearTitle clears the value of the "title" field.
+func (m *MarketPurchaseOrderMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[marketpurchaseorder.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldTitle]
+	return ok
+}
+
+// ResetTitle resets all changes to the "title" field.
+func (m *MarketPurchaseOrderMutation) ResetTitle() {
+	m.title = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldTitle)
+}
+
+// SetPrice sets the "price" field.
+func (m *MarketPurchaseOrderMutation) SetPrice(s string) {
+	m.price = &s
+}
+
+// Price returns the value of the "price" field in the mutation.
+func (m *MarketPurchaseOrderMutation) Price() (r string, exists bool) {
+	v := m.price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPrice returns the old "price" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldPrice(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPrice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPrice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrice: %w", err)
+	}
+	return oldValue.Price, nil
+}
+
+// ClearPrice clears the value of the "price" field.
+func (m *MarketPurchaseOrderMutation) ClearPrice() {
+	m.price = nil
+	m.clearedFields[marketpurchaseorder.FieldPrice] = struct{}{}
+}
+
+// PriceCleared returns if the "price" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) PriceCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldPrice]
+	return ok
+}
+
+// ResetPrice resets all changes to the "price" field.
+func (m *MarketPurchaseOrderMutation) ResetPrice() {
+	m.price = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldPrice)
+}
+
+// SetStatus sets the "status" field.
+func (m *MarketPurchaseOrderMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *MarketPurchaseOrderMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *MarketPurchaseOrderMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetSeller sets the "seller" field.
+func (m *MarketPurchaseOrderMutation) SetSeller(s string) {
+	m.seller = &s
+}
+
+// Seller returns the value of the "seller" field in the mutation.
+func (m *MarketPurchaseOrderMutation) Seller() (r string, exists bool) {
+	v := m.seller
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSeller returns the old "seller" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldSeller(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSeller is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSeller requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSeller: %w", err)
+	}
+	return oldValue.Seller, nil
+}
+
+// ClearSeller clears the value of the "seller" field.
+func (m *MarketPurchaseOrderMutation) ClearSeller() {
+	m.seller = nil
+	m.clearedFields[marketpurchaseorder.FieldSeller] = struct{}{}
+}
+
+// SellerCleared returns if the "seller" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) SellerCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldSeller]
+	return ok
+}
+
+// ResetSeller resets all changes to the "seller" field.
+func (m *MarketPurchaseOrderMutation) ResetSeller() {
+	m.seller = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldSeller)
+}
+
+// SetFailureReason sets the "failure_reason" field.
+func (m *MarketPurchaseOrderMutation) SetFailureReason(s string) {
+	m.failure_reason = &s
+}
+
+// FailureReason returns the value of the "failure_reason" field in the mutation.
+func (m *MarketPurchaseOrderMutation) FailureReason() (r string, exists bool) {
+	v := m.failure_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFailureReason returns the old "failure_reason" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldFailureReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFailureReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFailureReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFailureReason: %w", err)
+	}
+	return oldValue.FailureReason, nil
+}
+
+// ClearFailureReason clears the value of the "failure_reason" field.
+func (m *MarketPurchaseOrderMutation) ClearFailureReason() {
+	m.failure_reason = nil
+	m.clearedFields[marketpurchaseorder.FieldFailureReason] = struct{}{}
+}
+
+// FailureReasonCleared returns if the "failure_reason" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) FailureReasonCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldFailureReason]
+	return ok
+}
+
+// ResetFailureReason resets all changes to the "failure_reason" field.
+func (m *MarketPurchaseOrderMutation) ResetFailureReason() {
+	m.failure_reason = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldFailureReason)
+}
+
+// SetFailureCode sets the "failure_code" field.
+func (m *MarketPurchaseOrderMutation) SetFailureCode(s string) {
+	m.failure_code = &s
+}
+
+// FailureCode returns the value of the "failure_code" field in the mutation.
+func (m *MarketPurchaseOrderMutation) FailureCode() (r string, exists bool) {
+	v := m.failure_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFailureCode returns the old "failure_code" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldFailureCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFailureCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFailureCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFailureCode: %w", err)
+	}
+	return oldValue.FailureCode, nil
+}
+
+// ClearFailureCode clears the value of the "failure_code" field.
+func (m *MarketPurchaseOrderMutation) ClearFailureCode() {
+	m.failure_code = nil
+	m.clearedFields[marketpurchaseorder.FieldFailureCode] = struct{}{}
+}
+
+// FailureCodeCleared returns if the "failure_code" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) FailureCodeCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldFailureCode]
+	return ok
+}
+
+// ResetFailureCode resets all changes to the "failure_code" field.
+func (m *MarketPurchaseOrderMutation) ResetFailureCode() {
+	m.failure_code = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldFailureCode)
+}
+
+// SetDeliveryJSON sets the "delivery_json" field.
+func (m *MarketPurchaseOrderMutation) SetDeliveryJSON(value map[string]interface{}) {
+	m.delivery_json = &value
+}
+
+// DeliveryJSON returns the value of the "delivery_json" field in the mutation.
+func (m *MarketPurchaseOrderMutation) DeliveryJSON() (r map[string]interface{}, exists bool) {
+	v := m.delivery_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeliveryJSON returns the old "delivery_json" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldDeliveryJSON(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeliveryJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeliveryJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeliveryJSON: %w", err)
+	}
+	return oldValue.DeliveryJSON, nil
+}
+
+// ClearDeliveryJSON clears the value of the "delivery_json" field.
+func (m *MarketPurchaseOrderMutation) ClearDeliveryJSON() {
+	m.delivery_json = nil
+	m.clearedFields[marketpurchaseorder.FieldDeliveryJSON] = struct{}{}
+}
+
+// DeliveryJSONCleared returns if the "delivery_json" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) DeliveryJSONCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldDeliveryJSON]
+	return ok
+}
+
+// ResetDeliveryJSON resets all changes to the "delivery_json" field.
+func (m *MarketPurchaseOrderMutation) ResetDeliveryJSON() {
+	m.delivery_json = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldDeliveryJSON)
+}
+
+// SetSourcePrice sets the "source_price" field.
+func (m *MarketPurchaseOrderMutation) SetSourcePrice(f float64) {
+	m.source_price = &f
+	m.addsource_price = nil
+}
+
+// SourcePrice returns the value of the "source_price" field in the mutation.
+func (m *MarketPurchaseOrderMutation) SourcePrice() (r float64, exists bool) {
+	v := m.source_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourcePrice returns the old "source_price" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldSourcePrice(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourcePrice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourcePrice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourcePrice: %w", err)
+	}
+	return oldValue.SourcePrice, nil
+}
+
+// AddSourcePrice adds f to the "source_price" field.
+func (m *MarketPurchaseOrderMutation) AddSourcePrice(f float64) {
+	if m.addsource_price != nil {
+		*m.addsource_price += f
+	} else {
+		m.addsource_price = &f
+	}
+}
+
+// AddedSourcePrice returns the value that was added to the "source_price" field in this mutation.
+func (m *MarketPurchaseOrderMutation) AddedSourcePrice() (r float64, exists bool) {
+	v := m.addsource_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearSourcePrice clears the value of the "source_price" field.
+func (m *MarketPurchaseOrderMutation) ClearSourcePrice() {
+	m.source_price = nil
+	m.addsource_price = nil
+	m.clearedFields[marketpurchaseorder.FieldSourcePrice] = struct{}{}
+}
+
+// SourcePriceCleared returns if the "source_price" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) SourcePriceCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldSourcePrice]
+	return ok
+}
+
+// ResetSourcePrice resets all changes to the "source_price" field.
+func (m *MarketPurchaseOrderMutation) ResetSourcePrice() {
+	m.source_price = nil
+	m.addsource_price = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldSourcePrice)
+}
+
+// SetSourceCurrency sets the "source_currency" field.
+func (m *MarketPurchaseOrderMutation) SetSourceCurrency(s string) {
+	m.source_currency = &s
+}
+
+// SourceCurrency returns the value of the "source_currency" field in the mutation.
+func (m *MarketPurchaseOrderMutation) SourceCurrency() (r string, exists bool) {
+	v := m.source_currency
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceCurrency returns the old "source_currency" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldSourceCurrency(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceCurrency is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceCurrency requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceCurrency: %w", err)
+	}
+	return oldValue.SourceCurrency, nil
+}
+
+// ClearSourceCurrency clears the value of the "source_currency" field.
+func (m *MarketPurchaseOrderMutation) ClearSourceCurrency() {
+	m.source_currency = nil
+	m.clearedFields[marketpurchaseorder.FieldSourceCurrency] = struct{}{}
+}
+
+// SourceCurrencyCleared returns if the "source_currency" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) SourceCurrencyCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldSourceCurrency]
+	return ok
+}
+
+// ResetSourceCurrency resets all changes to the "source_currency" field.
+func (m *MarketPurchaseOrderMutation) ResetSourceCurrency() {
+	m.source_currency = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldSourceCurrency)
+}
+
+// SetSourceSymbol sets the "source_symbol" field.
+func (m *MarketPurchaseOrderMutation) SetSourceSymbol(s string) {
+	m.source_symbol = &s
+}
+
+// SourceSymbol returns the value of the "source_symbol" field in the mutation.
+func (m *MarketPurchaseOrderMutation) SourceSymbol() (r string, exists bool) {
+	v := m.source_symbol
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceSymbol returns the old "source_symbol" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldSourceSymbol(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceSymbol is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceSymbol requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceSymbol: %w", err)
+	}
+	return oldValue.SourceSymbol, nil
+}
+
+// ClearSourceSymbol clears the value of the "source_symbol" field.
+func (m *MarketPurchaseOrderMutation) ClearSourceSymbol() {
+	m.source_symbol = nil
+	m.clearedFields[marketpurchaseorder.FieldSourceSymbol] = struct{}{}
+}
+
+// SourceSymbolCleared returns if the "source_symbol" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) SourceSymbolCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldSourceSymbol]
+	return ok
+}
+
+// ResetSourceSymbol resets all changes to the "source_symbol" field.
+func (m *MarketPurchaseOrderMutation) ResetSourceSymbol() {
+	m.source_symbol = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldSourceSymbol)
+}
+
+// SetPriceIdr sets the "price_idr" field.
+func (m *MarketPurchaseOrderMutation) SetPriceIdr(i int64) {
+	m.price_idr = &i
+	m.addprice_idr = nil
+}
+
+// PriceIdr returns the value of the "price_idr" field in the mutation.
+func (m *MarketPurchaseOrderMutation) PriceIdr() (r int64, exists bool) {
+	v := m.price_idr
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPriceIdr returns the old "price_idr" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldPriceIdr(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPriceIdr is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPriceIdr requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPriceIdr: %w", err)
+	}
+	return oldValue.PriceIdr, nil
+}
+
+// AddPriceIdr adds i to the "price_idr" field.
+func (m *MarketPurchaseOrderMutation) AddPriceIdr(i int64) {
+	if m.addprice_idr != nil {
+		*m.addprice_idr += i
+	} else {
+		m.addprice_idr = &i
+	}
+}
+
+// AddedPriceIdr returns the value that was added to the "price_idr" field in this mutation.
+func (m *MarketPurchaseOrderMutation) AddedPriceIdr() (r int64, exists bool) {
+	v := m.addprice_idr
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPriceIdr clears the value of the "price_idr" field.
+func (m *MarketPurchaseOrderMutation) ClearPriceIdr() {
+	m.price_idr = nil
+	m.addprice_idr = nil
+	m.clearedFields[marketpurchaseorder.FieldPriceIdr] = struct{}{}
+}
+
+// PriceIdrCleared returns if the "price_idr" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) PriceIdrCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldPriceIdr]
+	return ok
+}
+
+// ResetPriceIdr resets all changes to the "price_idr" field.
+func (m *MarketPurchaseOrderMutation) ResetPriceIdr() {
+	m.price_idr = nil
+	m.addprice_idr = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldPriceIdr)
+}
+
+// SetFxRateToIdr sets the "fx_rate_to_idr" field.
+func (m *MarketPurchaseOrderMutation) SetFxRateToIdr(f float64) {
+	m.fx_rate_to_idr = &f
+	m.addfx_rate_to_idr = nil
+}
+
+// FxRateToIdr returns the value of the "fx_rate_to_idr" field in the mutation.
+func (m *MarketPurchaseOrderMutation) FxRateToIdr() (r float64, exists bool) {
+	v := m.fx_rate_to_idr
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFxRateToIdr returns the old "fx_rate_to_idr" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldFxRateToIdr(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFxRateToIdr is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFxRateToIdr requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFxRateToIdr: %w", err)
+	}
+	return oldValue.FxRateToIdr, nil
+}
+
+// AddFxRateToIdr adds f to the "fx_rate_to_idr" field.
+func (m *MarketPurchaseOrderMutation) AddFxRateToIdr(f float64) {
+	if m.addfx_rate_to_idr != nil {
+		*m.addfx_rate_to_idr += f
+	} else {
+		m.addfx_rate_to_idr = &f
+	}
+}
+
+// AddedFxRateToIdr returns the value that was added to the "fx_rate_to_idr" field in this mutation.
+func (m *MarketPurchaseOrderMutation) AddedFxRateToIdr() (r float64, exists bool) {
+	v := m.addfx_rate_to_idr
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearFxRateToIdr clears the value of the "fx_rate_to_idr" field.
+func (m *MarketPurchaseOrderMutation) ClearFxRateToIdr() {
+	m.fx_rate_to_idr = nil
+	m.addfx_rate_to_idr = nil
+	m.clearedFields[marketpurchaseorder.FieldFxRateToIdr] = struct{}{}
+}
+
+// FxRateToIdrCleared returns if the "fx_rate_to_idr" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) FxRateToIdrCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldFxRateToIdr]
+	return ok
+}
+
+// ResetFxRateToIdr resets all changes to the "fx_rate_to_idr" field.
+func (m *MarketPurchaseOrderMutation) ResetFxRateToIdr() {
+	m.fx_rate_to_idr = nil
+	m.addfx_rate_to_idr = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldFxRateToIdr)
+}
+
+// SetPriceDisplay sets the "price_display" field.
+func (m *MarketPurchaseOrderMutation) SetPriceDisplay(s string) {
+	m.price_display = &s
+}
+
+// PriceDisplay returns the value of the "price_display" field in the mutation.
+func (m *MarketPurchaseOrderMutation) PriceDisplay() (r string, exists bool) {
+	v := m.price_display
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPriceDisplay returns the old "price_display" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldPriceDisplay(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPriceDisplay is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPriceDisplay requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPriceDisplay: %w", err)
+	}
+	return oldValue.PriceDisplay, nil
+}
+
+// ClearPriceDisplay clears the value of the "price_display" field.
+func (m *MarketPurchaseOrderMutation) ClearPriceDisplay() {
+	m.price_display = nil
+	m.clearedFields[marketpurchaseorder.FieldPriceDisplay] = struct{}{}
+}
+
+// PriceDisplayCleared returns if the "price_display" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) PriceDisplayCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldPriceDisplay]
+	return ok
+}
+
+// ResetPriceDisplay resets all changes to the "price_display" field.
+func (m *MarketPurchaseOrderMutation) ResetPriceDisplay() {
+	m.price_display = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldPriceDisplay)
+}
+
+// SetSourceDisplay sets the "source_display" field.
+func (m *MarketPurchaseOrderMutation) SetSourceDisplay(s string) {
+	m.source_display = &s
+}
+
+// SourceDisplay returns the value of the "source_display" field in the mutation.
+func (m *MarketPurchaseOrderMutation) SourceDisplay() (r string, exists bool) {
+	v := m.source_display
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceDisplay returns the old "source_display" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldSourceDisplay(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceDisplay is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceDisplay requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceDisplay: %w", err)
+	}
+	return oldValue.SourceDisplay, nil
+}
+
+// ClearSourceDisplay clears the value of the "source_display" field.
+func (m *MarketPurchaseOrderMutation) ClearSourceDisplay() {
+	m.source_display = nil
+	m.clearedFields[marketpurchaseorder.FieldSourceDisplay] = struct{}{}
+}
+
+// SourceDisplayCleared returns if the "source_display" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) SourceDisplayCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldSourceDisplay]
+	return ok
+}
+
+// ResetSourceDisplay resets all changes to the "source_display" field.
+func (m *MarketPurchaseOrderMutation) ResetSourceDisplay() {
+	m.source_display = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldSourceDisplay)
+}
+
+// SetPricingNote sets the "pricing_note" field.
+func (m *MarketPurchaseOrderMutation) SetPricingNote(s string) {
+	m.pricing_note = &s
+}
+
+// PricingNote returns the value of the "pricing_note" field in the mutation.
+func (m *MarketPurchaseOrderMutation) PricingNote() (r string, exists bool) {
+	v := m.pricing_note
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPricingNote returns the old "pricing_note" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldPricingNote(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPricingNote is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPricingNote requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPricingNote: %w", err)
+	}
+	return oldValue.PricingNote, nil
+}
+
+// ClearPricingNote clears the value of the "pricing_note" field.
+func (m *MarketPurchaseOrderMutation) ClearPricingNote() {
+	m.pricing_note = nil
+	m.clearedFields[marketpurchaseorder.FieldPricingNote] = struct{}{}
+}
+
+// PricingNoteCleared returns if the "pricing_note" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) PricingNoteCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldPricingNote]
+	return ok
+}
+
+// ResetPricingNote resets all changes to the "pricing_note" field.
+func (m *MarketPurchaseOrderMutation) ResetPricingNote() {
+	m.pricing_note = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldPricingNote)
+}
+
+// SetLastStepCode sets the "last_step_code" field.
+func (m *MarketPurchaseOrderMutation) SetLastStepCode(s string) {
+	m.last_step_code = &s
+}
+
+// LastStepCode returns the value of the "last_step_code" field in the mutation.
+func (m *MarketPurchaseOrderMutation) LastStepCode() (r string, exists bool) {
+	v := m.last_step_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastStepCode returns the old "last_step_code" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldLastStepCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastStepCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastStepCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastStepCode: %w", err)
+	}
+	return oldValue.LastStepCode, nil
+}
+
+// ClearLastStepCode clears the value of the "last_step_code" field.
+func (m *MarketPurchaseOrderMutation) ClearLastStepCode() {
+	m.last_step_code = nil
+	m.clearedFields[marketpurchaseorder.FieldLastStepCode] = struct{}{}
+}
+
+// LastStepCodeCleared returns if the "last_step_code" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) LastStepCodeCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldLastStepCode]
+	return ok
+}
+
+// ResetLastStepCode resets all changes to the "last_step_code" field.
+func (m *MarketPurchaseOrderMutation) ResetLastStepCode() {
+	m.last_step_code = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldLastStepCode)
+}
+
+// SetSupplierCurrency sets the "supplier_currency" field.
+func (m *MarketPurchaseOrderMutation) SetSupplierCurrency(s string) {
+	m.supplier_currency = &s
+}
+
+// SupplierCurrency returns the value of the "supplier_currency" field in the mutation.
+func (m *MarketPurchaseOrderMutation) SupplierCurrency() (r string, exists bool) {
+	v := m.supplier_currency
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSupplierCurrency returns the old "supplier_currency" field's value of the MarketPurchaseOrder entity.
+// If the MarketPurchaseOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderMutation) OldSupplierCurrency(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSupplierCurrency is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSupplierCurrency requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSupplierCurrency: %w", err)
+	}
+	return oldValue.SupplierCurrency, nil
+}
+
+// ClearSupplierCurrency clears the value of the "supplier_currency" field.
+func (m *MarketPurchaseOrderMutation) ClearSupplierCurrency() {
+	m.supplier_currency = nil
+	m.clearedFields[marketpurchaseorder.FieldSupplierCurrency] = struct{}{}
+}
+
+// SupplierCurrencyCleared returns if the "supplier_currency" field was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) SupplierCurrencyCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorder.FieldSupplierCurrency]
+	return ok
+}
+
+// ResetSupplierCurrency resets all changes to the "supplier_currency" field.
+func (m *MarketPurchaseOrderMutation) ResetSupplierCurrency() {
+	m.supplier_currency = nil
+	delete(m.clearedFields, marketpurchaseorder.FieldSupplierCurrency)
+}
+
+// Where appends a list predicates to the MarketPurchaseOrderMutation builder.
+func (m *MarketPurchaseOrderMutation) Where(ps ...predicate.MarketPurchaseOrder) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the MarketPurchaseOrderMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *MarketPurchaseOrderMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.MarketPurchaseOrder, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *MarketPurchaseOrderMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *MarketPurchaseOrderMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (MarketPurchaseOrder).
+func (m *MarketPurchaseOrderMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *MarketPurchaseOrderMutation) Fields() []string {
+	fields := make([]string, 0, 23)
+	if m.created_at != nil {
+		fields = append(fields, marketpurchaseorder.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, marketpurchaseorder.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, marketpurchaseorder.FieldDeletedAt)
+	}
+	if m.order_id != nil {
+		fields = append(fields, marketpurchaseorder.FieldOrderID)
+	}
+	if m.user_id != nil {
+		fields = append(fields, marketpurchaseorder.FieldUserID)
+	}
+	if m.item_id != nil {
+		fields = append(fields, marketpurchaseorder.FieldItemID)
+	}
+	if m.title != nil {
+		fields = append(fields, marketpurchaseorder.FieldTitle)
+	}
+	if m.price != nil {
+		fields = append(fields, marketpurchaseorder.FieldPrice)
+	}
+	if m.status != nil {
+		fields = append(fields, marketpurchaseorder.FieldStatus)
+	}
+	if m.seller != nil {
+		fields = append(fields, marketpurchaseorder.FieldSeller)
+	}
+	if m.failure_reason != nil {
+		fields = append(fields, marketpurchaseorder.FieldFailureReason)
+	}
+	if m.failure_code != nil {
+		fields = append(fields, marketpurchaseorder.FieldFailureCode)
+	}
+	if m.delivery_json != nil {
+		fields = append(fields, marketpurchaseorder.FieldDeliveryJSON)
+	}
+	if m.source_price != nil {
+		fields = append(fields, marketpurchaseorder.FieldSourcePrice)
+	}
+	if m.source_currency != nil {
+		fields = append(fields, marketpurchaseorder.FieldSourceCurrency)
+	}
+	if m.source_symbol != nil {
+		fields = append(fields, marketpurchaseorder.FieldSourceSymbol)
+	}
+	if m.price_idr != nil {
+		fields = append(fields, marketpurchaseorder.FieldPriceIdr)
+	}
+	if m.fx_rate_to_idr != nil {
+		fields = append(fields, marketpurchaseorder.FieldFxRateToIdr)
+	}
+	if m.price_display != nil {
+		fields = append(fields, marketpurchaseorder.FieldPriceDisplay)
+	}
+	if m.source_display != nil {
+		fields = append(fields, marketpurchaseorder.FieldSourceDisplay)
+	}
+	if m.pricing_note != nil {
+		fields = append(fields, marketpurchaseorder.FieldPricingNote)
+	}
+	if m.last_step_code != nil {
+		fields = append(fields, marketpurchaseorder.FieldLastStepCode)
+	}
+	if m.supplier_currency != nil {
+		fields = append(fields, marketpurchaseorder.FieldSupplierCurrency)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *MarketPurchaseOrderMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case marketpurchaseorder.FieldCreatedAt:
+		return m.CreatedAt()
+	case marketpurchaseorder.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case marketpurchaseorder.FieldDeletedAt:
+		return m.DeletedAt()
+	case marketpurchaseorder.FieldOrderID:
+		return m.OrderID()
+	case marketpurchaseorder.FieldUserID:
+		return m.UserID()
+	case marketpurchaseorder.FieldItemID:
+		return m.ItemID()
+	case marketpurchaseorder.FieldTitle:
+		return m.Title()
+	case marketpurchaseorder.FieldPrice:
+		return m.Price()
+	case marketpurchaseorder.FieldStatus:
+		return m.Status()
+	case marketpurchaseorder.FieldSeller:
+		return m.Seller()
+	case marketpurchaseorder.FieldFailureReason:
+		return m.FailureReason()
+	case marketpurchaseorder.FieldFailureCode:
+		return m.FailureCode()
+	case marketpurchaseorder.FieldDeliveryJSON:
+		return m.DeliveryJSON()
+	case marketpurchaseorder.FieldSourcePrice:
+		return m.SourcePrice()
+	case marketpurchaseorder.FieldSourceCurrency:
+		return m.SourceCurrency()
+	case marketpurchaseorder.FieldSourceSymbol:
+		return m.SourceSymbol()
+	case marketpurchaseorder.FieldPriceIdr:
+		return m.PriceIdr()
+	case marketpurchaseorder.FieldFxRateToIdr:
+		return m.FxRateToIdr()
+	case marketpurchaseorder.FieldPriceDisplay:
+		return m.PriceDisplay()
+	case marketpurchaseorder.FieldSourceDisplay:
+		return m.SourceDisplay()
+	case marketpurchaseorder.FieldPricingNote:
+		return m.PricingNote()
+	case marketpurchaseorder.FieldLastStepCode:
+		return m.LastStepCode()
+	case marketpurchaseorder.FieldSupplierCurrency:
+		return m.SupplierCurrency()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *MarketPurchaseOrderMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case marketpurchaseorder.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case marketpurchaseorder.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case marketpurchaseorder.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case marketpurchaseorder.FieldOrderID:
+		return m.OldOrderID(ctx)
+	case marketpurchaseorder.FieldUserID:
+		return m.OldUserID(ctx)
+	case marketpurchaseorder.FieldItemID:
+		return m.OldItemID(ctx)
+	case marketpurchaseorder.FieldTitle:
+		return m.OldTitle(ctx)
+	case marketpurchaseorder.FieldPrice:
+		return m.OldPrice(ctx)
+	case marketpurchaseorder.FieldStatus:
+		return m.OldStatus(ctx)
+	case marketpurchaseorder.FieldSeller:
+		return m.OldSeller(ctx)
+	case marketpurchaseorder.FieldFailureReason:
+		return m.OldFailureReason(ctx)
+	case marketpurchaseorder.FieldFailureCode:
+		return m.OldFailureCode(ctx)
+	case marketpurchaseorder.FieldDeliveryJSON:
+		return m.OldDeliveryJSON(ctx)
+	case marketpurchaseorder.FieldSourcePrice:
+		return m.OldSourcePrice(ctx)
+	case marketpurchaseorder.FieldSourceCurrency:
+		return m.OldSourceCurrency(ctx)
+	case marketpurchaseorder.FieldSourceSymbol:
+		return m.OldSourceSymbol(ctx)
+	case marketpurchaseorder.FieldPriceIdr:
+		return m.OldPriceIdr(ctx)
+	case marketpurchaseorder.FieldFxRateToIdr:
+		return m.OldFxRateToIdr(ctx)
+	case marketpurchaseorder.FieldPriceDisplay:
+		return m.OldPriceDisplay(ctx)
+	case marketpurchaseorder.FieldSourceDisplay:
+		return m.OldSourceDisplay(ctx)
+	case marketpurchaseorder.FieldPricingNote:
+		return m.OldPricingNote(ctx)
+	case marketpurchaseorder.FieldLastStepCode:
+		return m.OldLastStepCode(ctx)
+	case marketpurchaseorder.FieldSupplierCurrency:
+		return m.OldSupplierCurrency(ctx)
+	}
+	return nil, fmt.Errorf("unknown MarketPurchaseOrder field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MarketPurchaseOrderMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case marketpurchaseorder.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case marketpurchaseorder.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case marketpurchaseorder.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case marketpurchaseorder.FieldOrderID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrderID(v)
+		return nil
+	case marketpurchaseorder.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case marketpurchaseorder.FieldItemID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetItemID(v)
+		return nil
+	case marketpurchaseorder.FieldTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTitle(v)
+		return nil
+	case marketpurchaseorder.FieldPrice:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrice(v)
+		return nil
+	case marketpurchaseorder.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case marketpurchaseorder.FieldSeller:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSeller(v)
+		return nil
+	case marketpurchaseorder.FieldFailureReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFailureReason(v)
+		return nil
+	case marketpurchaseorder.FieldFailureCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFailureCode(v)
+		return nil
+	case marketpurchaseorder.FieldDeliveryJSON:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeliveryJSON(v)
+		return nil
+	case marketpurchaseorder.FieldSourcePrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourcePrice(v)
+		return nil
+	case marketpurchaseorder.FieldSourceCurrency:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceCurrency(v)
+		return nil
+	case marketpurchaseorder.FieldSourceSymbol:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceSymbol(v)
+		return nil
+	case marketpurchaseorder.FieldPriceIdr:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPriceIdr(v)
+		return nil
+	case marketpurchaseorder.FieldFxRateToIdr:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFxRateToIdr(v)
+		return nil
+	case marketpurchaseorder.FieldPriceDisplay:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPriceDisplay(v)
+		return nil
+	case marketpurchaseorder.FieldSourceDisplay:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceDisplay(v)
+		return nil
+	case marketpurchaseorder.FieldPricingNote:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPricingNote(v)
+		return nil
+	case marketpurchaseorder.FieldLastStepCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastStepCode(v)
+		return nil
+	case marketpurchaseorder.FieldSupplierCurrency:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSupplierCurrency(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MarketPurchaseOrder field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *MarketPurchaseOrderMutation) AddedFields() []string {
+	var fields []string
+	if m.adduser_id != nil {
+		fields = append(fields, marketpurchaseorder.FieldUserID)
+	}
+	if m.addsource_price != nil {
+		fields = append(fields, marketpurchaseorder.FieldSourcePrice)
+	}
+	if m.addprice_idr != nil {
+		fields = append(fields, marketpurchaseorder.FieldPriceIdr)
+	}
+	if m.addfx_rate_to_idr != nil {
+		fields = append(fields, marketpurchaseorder.FieldFxRateToIdr)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *MarketPurchaseOrderMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case marketpurchaseorder.FieldUserID:
+		return m.AddedUserID()
+	case marketpurchaseorder.FieldSourcePrice:
+		return m.AddedSourcePrice()
+	case marketpurchaseorder.FieldPriceIdr:
+		return m.AddedPriceIdr()
+	case marketpurchaseorder.FieldFxRateToIdr:
+		return m.AddedFxRateToIdr()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MarketPurchaseOrderMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case marketpurchaseorder.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUserID(v)
+		return nil
+	case marketpurchaseorder.FieldSourcePrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSourcePrice(v)
+		return nil
+	case marketpurchaseorder.FieldPriceIdr:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPriceIdr(v)
+		return nil
+	case marketpurchaseorder.FieldFxRateToIdr:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFxRateToIdr(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MarketPurchaseOrder numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *MarketPurchaseOrderMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(marketpurchaseorder.FieldDeletedAt) {
+		fields = append(fields, marketpurchaseorder.FieldDeletedAt)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldTitle) {
+		fields = append(fields, marketpurchaseorder.FieldTitle)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldPrice) {
+		fields = append(fields, marketpurchaseorder.FieldPrice)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldSeller) {
+		fields = append(fields, marketpurchaseorder.FieldSeller)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldFailureReason) {
+		fields = append(fields, marketpurchaseorder.FieldFailureReason)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldFailureCode) {
+		fields = append(fields, marketpurchaseorder.FieldFailureCode)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldDeliveryJSON) {
+		fields = append(fields, marketpurchaseorder.FieldDeliveryJSON)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldSourcePrice) {
+		fields = append(fields, marketpurchaseorder.FieldSourcePrice)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldSourceCurrency) {
+		fields = append(fields, marketpurchaseorder.FieldSourceCurrency)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldSourceSymbol) {
+		fields = append(fields, marketpurchaseorder.FieldSourceSymbol)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldPriceIdr) {
+		fields = append(fields, marketpurchaseorder.FieldPriceIdr)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldFxRateToIdr) {
+		fields = append(fields, marketpurchaseorder.FieldFxRateToIdr)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldPriceDisplay) {
+		fields = append(fields, marketpurchaseorder.FieldPriceDisplay)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldSourceDisplay) {
+		fields = append(fields, marketpurchaseorder.FieldSourceDisplay)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldPricingNote) {
+		fields = append(fields, marketpurchaseorder.FieldPricingNote)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldLastStepCode) {
+		fields = append(fields, marketpurchaseorder.FieldLastStepCode)
+	}
+	if m.FieldCleared(marketpurchaseorder.FieldSupplierCurrency) {
+		fields = append(fields, marketpurchaseorder.FieldSupplierCurrency)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *MarketPurchaseOrderMutation) ClearField(name string) error {
+	switch name {
+	case marketpurchaseorder.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	case marketpurchaseorder.FieldTitle:
+		m.ClearTitle()
+		return nil
+	case marketpurchaseorder.FieldPrice:
+		m.ClearPrice()
+		return nil
+	case marketpurchaseorder.FieldSeller:
+		m.ClearSeller()
+		return nil
+	case marketpurchaseorder.FieldFailureReason:
+		m.ClearFailureReason()
+		return nil
+	case marketpurchaseorder.FieldFailureCode:
+		m.ClearFailureCode()
+		return nil
+	case marketpurchaseorder.FieldDeliveryJSON:
+		m.ClearDeliveryJSON()
+		return nil
+	case marketpurchaseorder.FieldSourcePrice:
+		m.ClearSourcePrice()
+		return nil
+	case marketpurchaseorder.FieldSourceCurrency:
+		m.ClearSourceCurrency()
+		return nil
+	case marketpurchaseorder.FieldSourceSymbol:
+		m.ClearSourceSymbol()
+		return nil
+	case marketpurchaseorder.FieldPriceIdr:
+		m.ClearPriceIdr()
+		return nil
+	case marketpurchaseorder.FieldFxRateToIdr:
+		m.ClearFxRateToIdr()
+		return nil
+	case marketpurchaseorder.FieldPriceDisplay:
+		m.ClearPriceDisplay()
+		return nil
+	case marketpurchaseorder.FieldSourceDisplay:
+		m.ClearSourceDisplay()
+		return nil
+	case marketpurchaseorder.FieldPricingNote:
+		m.ClearPricingNote()
+		return nil
+	case marketpurchaseorder.FieldLastStepCode:
+		m.ClearLastStepCode()
+		return nil
+	case marketpurchaseorder.FieldSupplierCurrency:
+		m.ClearSupplierCurrency()
+		return nil
+	}
+	return fmt.Errorf("unknown MarketPurchaseOrder nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *MarketPurchaseOrderMutation) ResetField(name string) error {
+	switch name {
+	case marketpurchaseorder.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case marketpurchaseorder.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case marketpurchaseorder.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case marketpurchaseorder.FieldOrderID:
+		m.ResetOrderID()
+		return nil
+	case marketpurchaseorder.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case marketpurchaseorder.FieldItemID:
+		m.ResetItemID()
+		return nil
+	case marketpurchaseorder.FieldTitle:
+		m.ResetTitle()
+		return nil
+	case marketpurchaseorder.FieldPrice:
+		m.ResetPrice()
+		return nil
+	case marketpurchaseorder.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case marketpurchaseorder.FieldSeller:
+		m.ResetSeller()
+		return nil
+	case marketpurchaseorder.FieldFailureReason:
+		m.ResetFailureReason()
+		return nil
+	case marketpurchaseorder.FieldFailureCode:
+		m.ResetFailureCode()
+		return nil
+	case marketpurchaseorder.FieldDeliveryJSON:
+		m.ResetDeliveryJSON()
+		return nil
+	case marketpurchaseorder.FieldSourcePrice:
+		m.ResetSourcePrice()
+		return nil
+	case marketpurchaseorder.FieldSourceCurrency:
+		m.ResetSourceCurrency()
+		return nil
+	case marketpurchaseorder.FieldSourceSymbol:
+		m.ResetSourceSymbol()
+		return nil
+	case marketpurchaseorder.FieldPriceIdr:
+		m.ResetPriceIdr()
+		return nil
+	case marketpurchaseorder.FieldFxRateToIdr:
+		m.ResetFxRateToIdr()
+		return nil
+	case marketpurchaseorder.FieldPriceDisplay:
+		m.ResetPriceDisplay()
+		return nil
+	case marketpurchaseorder.FieldSourceDisplay:
+		m.ResetSourceDisplay()
+		return nil
+	case marketpurchaseorder.FieldPricingNote:
+		m.ResetPricingNote()
+		return nil
+	case marketpurchaseorder.FieldLastStepCode:
+		m.ResetLastStepCode()
+		return nil
+	case marketpurchaseorder.FieldSupplierCurrency:
+		m.ResetSupplierCurrency()
+		return nil
+	}
+	return fmt.Errorf("unknown MarketPurchaseOrder field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *MarketPurchaseOrderMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *MarketPurchaseOrderMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *MarketPurchaseOrderMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *MarketPurchaseOrderMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *MarketPurchaseOrderMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *MarketPurchaseOrderMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown MarketPurchaseOrder unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *MarketPurchaseOrderMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown MarketPurchaseOrder edge %s", name)
+}
+
+// MarketPurchaseOrderStepMutation represents an operation that mutates the MarketPurchaseOrderStep nodes in the graph.
+type MarketPurchaseOrderStepMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	created_at    *time.Time
+	updated_at    *time.Time
+	deleted_at    *time.Time
+	order_id      *string
+	code          *string
+	label         *string
+	status        *string
+	message       *string
+	at            *time.Time
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*MarketPurchaseOrderStep, error)
+	predicates    []predicate.MarketPurchaseOrderStep
+}
+
+var _ ent.Mutation = (*MarketPurchaseOrderStepMutation)(nil)
+
+// marketpurchaseorderstepOption allows management of the mutation configuration using functional options.
+type marketpurchaseorderstepOption func(*MarketPurchaseOrderStepMutation)
+
+// newMarketPurchaseOrderStepMutation creates new mutation for the MarketPurchaseOrderStep entity.
+func newMarketPurchaseOrderStepMutation(c config, op Op, opts ...marketpurchaseorderstepOption) *MarketPurchaseOrderStepMutation {
+	m := &MarketPurchaseOrderStepMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMarketPurchaseOrderStep,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMarketPurchaseOrderStepID sets the ID field of the mutation.
+func withMarketPurchaseOrderStepID(id int) marketpurchaseorderstepOption {
+	return func(m *MarketPurchaseOrderStepMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *MarketPurchaseOrderStep
+		)
+		m.oldValue = func(ctx context.Context) (*MarketPurchaseOrderStep, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().MarketPurchaseOrderStep.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMarketPurchaseOrderStep sets the old MarketPurchaseOrderStep of the mutation.
+func withMarketPurchaseOrderStep(node *MarketPurchaseOrderStep) marketpurchaseorderstepOption {
+	return func(m *MarketPurchaseOrderStepMutation) {
+		m.oldValue = func(context.Context) (*MarketPurchaseOrderStep, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m MarketPurchaseOrderStepMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m MarketPurchaseOrderStepMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *MarketPurchaseOrderStepMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *MarketPurchaseOrderStepMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().MarketPurchaseOrderStep.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MarketPurchaseOrderStepMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MarketPurchaseOrderStepMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the MarketPurchaseOrderStep entity.
+// If the MarketPurchaseOrderStep object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderStepMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *MarketPurchaseOrderStepMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *MarketPurchaseOrderStepMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *MarketPurchaseOrderStepMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the MarketPurchaseOrderStep entity.
+// If the MarketPurchaseOrderStep object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderStepMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *MarketPurchaseOrderStepMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *MarketPurchaseOrderStepMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *MarketPurchaseOrderStepMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the MarketPurchaseOrderStep entity.
+// If the MarketPurchaseOrderStep object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderStepMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *MarketPurchaseOrderStepMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[marketpurchaseorderstep.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *MarketPurchaseOrderStepMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorderstep.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *MarketPurchaseOrderStepMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, marketpurchaseorderstep.FieldDeletedAt)
+}
+
+// SetOrderID sets the "order_id" field.
+func (m *MarketPurchaseOrderStepMutation) SetOrderID(s string) {
+	m.order_id = &s
+}
+
+// OrderID returns the value of the "order_id" field in the mutation.
+func (m *MarketPurchaseOrderStepMutation) OrderID() (r string, exists bool) {
+	v := m.order_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrderID returns the old "order_id" field's value of the MarketPurchaseOrderStep entity.
+// If the MarketPurchaseOrderStep object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderStepMutation) OldOrderID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrderID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrderID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrderID: %w", err)
+	}
+	return oldValue.OrderID, nil
+}
+
+// ResetOrderID resets all changes to the "order_id" field.
+func (m *MarketPurchaseOrderStepMutation) ResetOrderID() {
+	m.order_id = nil
+}
+
+// SetCode sets the "code" field.
+func (m *MarketPurchaseOrderStepMutation) SetCode(s string) {
+	m.code = &s
+}
+
+// Code returns the value of the "code" field in the mutation.
+func (m *MarketPurchaseOrderStepMutation) Code() (r string, exists bool) {
+	v := m.code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCode returns the old "code" field's value of the MarketPurchaseOrderStep entity.
+// If the MarketPurchaseOrderStep object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderStepMutation) OldCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCode: %w", err)
+	}
+	return oldValue.Code, nil
+}
+
+// ResetCode resets all changes to the "code" field.
+func (m *MarketPurchaseOrderStepMutation) ResetCode() {
+	m.code = nil
+}
+
+// SetLabel sets the "label" field.
+func (m *MarketPurchaseOrderStepMutation) SetLabel(s string) {
+	m.label = &s
+}
+
+// Label returns the value of the "label" field in the mutation.
+func (m *MarketPurchaseOrderStepMutation) Label() (r string, exists bool) {
+	v := m.label
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLabel returns the old "label" field's value of the MarketPurchaseOrderStep entity.
+// If the MarketPurchaseOrderStep object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderStepMutation) OldLabel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLabel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLabel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabel: %w", err)
+	}
+	return oldValue.Label, nil
+}
+
+// ResetLabel resets all changes to the "label" field.
+func (m *MarketPurchaseOrderStepMutation) ResetLabel() {
+	m.label = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *MarketPurchaseOrderStepMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *MarketPurchaseOrderStepMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the MarketPurchaseOrderStep entity.
+// If the MarketPurchaseOrderStep object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderStepMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *MarketPurchaseOrderStepMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetMessage sets the "message" field.
+func (m *MarketPurchaseOrderStepMutation) SetMessage(s string) {
+	m.message = &s
+}
+
+// Message returns the value of the "message" field in the mutation.
+func (m *MarketPurchaseOrderStepMutation) Message() (r string, exists bool) {
+	v := m.message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMessage returns the old "message" field's value of the MarketPurchaseOrderStep entity.
+// If the MarketPurchaseOrderStep object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderStepMutation) OldMessage(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMessage: %w", err)
+	}
+	return oldValue.Message, nil
+}
+
+// ClearMessage clears the value of the "message" field.
+func (m *MarketPurchaseOrderStepMutation) ClearMessage() {
+	m.message = nil
+	m.clearedFields[marketpurchaseorderstep.FieldMessage] = struct{}{}
+}
+
+// MessageCleared returns if the "message" field was cleared in this mutation.
+func (m *MarketPurchaseOrderStepMutation) MessageCleared() bool {
+	_, ok := m.clearedFields[marketpurchaseorderstep.FieldMessage]
+	return ok
+}
+
+// ResetMessage resets all changes to the "message" field.
+func (m *MarketPurchaseOrderStepMutation) ResetMessage() {
+	m.message = nil
+	delete(m.clearedFields, marketpurchaseorderstep.FieldMessage)
+}
+
+// SetAt sets the "at" field.
+func (m *MarketPurchaseOrderStepMutation) SetAt(t time.Time) {
+	m.at = &t
+}
+
+// At returns the value of the "at" field in the mutation.
+func (m *MarketPurchaseOrderStepMutation) At() (r time.Time, exists bool) {
+	v := m.at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAt returns the old "at" field's value of the MarketPurchaseOrderStep entity.
+// If the MarketPurchaseOrderStep object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MarketPurchaseOrderStepMutation) OldAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAt: %w", err)
+	}
+	return oldValue.At, nil
+}
+
+// ResetAt resets all changes to the "at" field.
+func (m *MarketPurchaseOrderStepMutation) ResetAt() {
+	m.at = nil
+}
+
+// Where appends a list predicates to the MarketPurchaseOrderStepMutation builder.
+func (m *MarketPurchaseOrderStepMutation) Where(ps ...predicate.MarketPurchaseOrderStep) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the MarketPurchaseOrderStepMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *MarketPurchaseOrderStepMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.MarketPurchaseOrderStep, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *MarketPurchaseOrderStepMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *MarketPurchaseOrderStepMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (MarketPurchaseOrderStep).
+func (m *MarketPurchaseOrderStepMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *MarketPurchaseOrderStepMutation) Fields() []string {
+	fields := make([]string, 0, 9)
+	if m.created_at != nil {
+		fields = append(fields, marketpurchaseorderstep.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, marketpurchaseorderstep.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, marketpurchaseorderstep.FieldDeletedAt)
+	}
+	if m.order_id != nil {
+		fields = append(fields, marketpurchaseorderstep.FieldOrderID)
+	}
+	if m.code != nil {
+		fields = append(fields, marketpurchaseorderstep.FieldCode)
+	}
+	if m.label != nil {
+		fields = append(fields, marketpurchaseorderstep.FieldLabel)
+	}
+	if m.status != nil {
+		fields = append(fields, marketpurchaseorderstep.FieldStatus)
+	}
+	if m.message != nil {
+		fields = append(fields, marketpurchaseorderstep.FieldMessage)
+	}
+	if m.at != nil {
+		fields = append(fields, marketpurchaseorderstep.FieldAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *MarketPurchaseOrderStepMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case marketpurchaseorderstep.FieldCreatedAt:
+		return m.CreatedAt()
+	case marketpurchaseorderstep.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case marketpurchaseorderstep.FieldDeletedAt:
+		return m.DeletedAt()
+	case marketpurchaseorderstep.FieldOrderID:
+		return m.OrderID()
+	case marketpurchaseorderstep.FieldCode:
+		return m.Code()
+	case marketpurchaseorderstep.FieldLabel:
+		return m.Label()
+	case marketpurchaseorderstep.FieldStatus:
+		return m.Status()
+	case marketpurchaseorderstep.FieldMessage:
+		return m.Message()
+	case marketpurchaseorderstep.FieldAt:
+		return m.At()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *MarketPurchaseOrderStepMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case marketpurchaseorderstep.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case marketpurchaseorderstep.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case marketpurchaseorderstep.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case marketpurchaseorderstep.FieldOrderID:
+		return m.OldOrderID(ctx)
+	case marketpurchaseorderstep.FieldCode:
+		return m.OldCode(ctx)
+	case marketpurchaseorderstep.FieldLabel:
+		return m.OldLabel(ctx)
+	case marketpurchaseorderstep.FieldStatus:
+		return m.OldStatus(ctx)
+	case marketpurchaseorderstep.FieldMessage:
+		return m.OldMessage(ctx)
+	case marketpurchaseorderstep.FieldAt:
+		return m.OldAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown MarketPurchaseOrderStep field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MarketPurchaseOrderStepMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case marketpurchaseorderstep.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case marketpurchaseorderstep.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case marketpurchaseorderstep.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case marketpurchaseorderstep.FieldOrderID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrderID(v)
+		return nil
+	case marketpurchaseorderstep.FieldCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCode(v)
+		return nil
+	case marketpurchaseorderstep.FieldLabel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabel(v)
+		return nil
+	case marketpurchaseorderstep.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case marketpurchaseorderstep.FieldMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMessage(v)
+		return nil
+	case marketpurchaseorderstep.FieldAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MarketPurchaseOrderStep field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *MarketPurchaseOrderStepMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *MarketPurchaseOrderStepMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MarketPurchaseOrderStepMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown MarketPurchaseOrderStep numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *MarketPurchaseOrderStepMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(marketpurchaseorderstep.FieldDeletedAt) {
+		fields = append(fields, marketpurchaseorderstep.FieldDeletedAt)
+	}
+	if m.FieldCleared(marketpurchaseorderstep.FieldMessage) {
+		fields = append(fields, marketpurchaseorderstep.FieldMessage)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *MarketPurchaseOrderStepMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *MarketPurchaseOrderStepMutation) ClearField(name string) error {
+	switch name {
+	case marketpurchaseorderstep.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	case marketpurchaseorderstep.FieldMessage:
+		m.ClearMessage()
+		return nil
+	}
+	return fmt.Errorf("unknown MarketPurchaseOrderStep nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *MarketPurchaseOrderStepMutation) ResetField(name string) error {
+	switch name {
+	case marketpurchaseorderstep.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case marketpurchaseorderstep.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case marketpurchaseorderstep.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case marketpurchaseorderstep.FieldOrderID:
+		m.ResetOrderID()
+		return nil
+	case marketpurchaseorderstep.FieldCode:
+		m.ResetCode()
+		return nil
+	case marketpurchaseorderstep.FieldLabel:
+		m.ResetLabel()
+		return nil
+	case marketpurchaseorderstep.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case marketpurchaseorderstep.FieldMessage:
+		m.ResetMessage()
+		return nil
+	case marketpurchaseorderstep.FieldAt:
+		m.ResetAt()
+		return nil
+	}
+	return fmt.Errorf("unknown MarketPurchaseOrderStep field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *MarketPurchaseOrderStepMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *MarketPurchaseOrderStepMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *MarketPurchaseOrderStepMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *MarketPurchaseOrderStepMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *MarketPurchaseOrderStepMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *MarketPurchaseOrderStepMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *MarketPurchaseOrderStepMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown MarketPurchaseOrderStep unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *MarketPurchaseOrderStepMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown MarketPurchaseOrderStep edge %s", name)
 }
 
 // PasskeyMutation represents an operation that mutates the Passkey nodes in the graph.

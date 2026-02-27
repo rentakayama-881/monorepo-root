@@ -27,6 +27,40 @@ public class MarketPurchasesController : ApiControllerBase
         _userContextAccessor = userContextAccessor;
     }
 
+    [HttpGet("history")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ApiErrorResponse), 401)]
+    public async Task<IActionResult> History([FromQuery] int page = 1, [FromQuery] int pageSize = 50, [FromQuery] string? status = null)
+    {
+        var user = _userContextAccessor.GetCurrentUser();
+        if (user == null)
+        {
+            return ApiUnauthorized("User tidak terautentikasi");
+        }
+
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var (items, total) = await _marketPurchaseWalletService.GetHistoryAsync(user.UserId, page, pageSize, status);
+        var response = new GetMarketPurchaseHistoryResponse(
+            items.Select(item => new MarketPurchaseHistoryItem(
+                item.OrderId,
+                item.UserId,
+                item.AmountIdr,
+                item.Status,
+                item.CreatedAt,
+                item.UpdatedAt,
+                item.CapturedAt,
+                item.ReleasedAt
+            )).ToList(),
+            (int)total,
+            page,
+            pageSize
+        );
+
+        return ApiOk(response);
+    }
+
     [HttpPost("reserve")]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]

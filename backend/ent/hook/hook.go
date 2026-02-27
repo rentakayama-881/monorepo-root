@@ -176,6 +176,30 @@ func (f IPGeoCacheFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IPGeoCacheMutation", m)
 }
 
+// The MarketPurchaseOrderFunc type is an adapter to allow the use of ordinary
+// function as MarketPurchaseOrder mutator.
+type MarketPurchaseOrderFunc func(context.Context, *ent.MarketPurchaseOrderMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MarketPurchaseOrderFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MarketPurchaseOrderMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MarketPurchaseOrderMutation", m)
+}
+
+// The MarketPurchaseOrderStepFunc type is an adapter to allow the use of ordinary
+// function as MarketPurchaseOrderStep mutator.
+type MarketPurchaseOrderStepFunc func(context.Context, *ent.MarketPurchaseOrderStepMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MarketPurchaseOrderStepFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MarketPurchaseOrderStepMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MarketPurchaseOrderStepMutation", m)
+}
+
 // The PasskeyFunc type is an adapter to allow the use of ordinary
 // function as Passkey mutator.
 type PasskeyFunc func(context.Context, *ent.PasskeyMutation) (ent.Value, error)

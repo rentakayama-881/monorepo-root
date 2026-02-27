@@ -58,3 +58,21 @@ public record DistributeMarketPurchaseRequest(
     [StringLength(64)]
     string? ReferenceType
 );
+
+public record MarketPurchaseHistoryItem(
+    string OrderId,
+    uint UserId,
+    long AmountIdr,
+    string Status,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    DateTime? CapturedAt,
+    DateTime? ReleasedAt
+);
+
+public record GetMarketPurchaseHistoryResponse(
+    List<MarketPurchaseHistoryItem> Items,
+    int Total,
+    int Page,
+    int PageSize
+);

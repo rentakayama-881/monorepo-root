@@ -16,6 +16,10 @@ import (
 	"sync"
 	"time"
 
+	"backend-gin/database"
+	"backend-gin/ent"
+	"backend-gin/ent/marketpurchaseorder"
+	"backend-gin/ent/marketpurchaseorderstep"
 	applog "backend-gin/logger"
 	"backend-gin/services"
 
@@ -33,10 +37,6 @@ type LZTMarketHandler struct {
 	cachedChatGPTAt   time.Time
 	cachedChatGPTI18n string
 	cacheTTL          time.Duration
-
-	ordersMu   sync.RWMutex
-	orders     map[string]*publicMarketOrder
-	userOrders map[uint][]string
 }
 
 func NewLZTMarketHandler(client *services.LZTMarketClient) *LZTMarketHandler {
@@ -46,8 +46,6 @@ func NewLZTMarketHandler(client *services.LZTMarketClient) *LZTMarketHandler {
 		featureWallet: services.NewFeatureWalletClientFromConfig(),
 		fxRates:       services.NewFXRateServiceFromEnv(),
 		cacheTTL:      time.Duration(cacheSeconds) * time.Second,
-		orders:        make(map[string]*publicMarketOrder),
-		userOrders:    make(map[uint][]string),
 	}
 }
 
@@ -477,17 +475,64 @@ func (h *LZTMarketHandler) ListMyPublicChatGPTOrders(c *gin.Context) {
 		return
 	}
 
-	h.ordersMu.RLock()
-	defer h.ordersMu.RUnlock()
+	client := database.GetEntClient()
+	if client == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Service unavailable"})
+		return
+	}
 
-	ids := append([]string(nil), h.userOrders[userID]...)
-	orders := make([]publicMarketOrder, 0, len(ids))
-	for _, id := range ids {
-		if order, ok := h.orders[id]; ok {
-			if !strings.EqualFold(strings.TrimSpace(order.Status), "fulfilled") {
-				continue
+	rows, err := client.MarketPurchaseOrder.
+		Query().
+		Where(
+			marketpurchaseorder.UserIDEQ(int(userID)),
+			marketpurchaseorder.StatusEQ("fulfilled"),
+		).
+		All(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memuat riwayat pembelian"})
+		return
+	}
+
+	orders := make([]publicMarketOrder, 0, len(rows))
+	seenOrderIDs := make(map[string]struct{}, len(rows))
+	for _, row := range rows {
+		order := mapEntityToPublicMarketOrder(row)
+		order.Steps = h.loadOrderSteps(c.Request.Context(), row.OrderID)
+		orders = append(orders, order.toClientDTO(false))
+		seenOrderIDs[row.OrderID] = struct{}{}
+	}
+
+	if h.featureWallet != nil {
+		authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+		if authHeader != "" {
+			history, err := h.featureWallet.GetMarketPurchaseHistory(c.Request.Context(), authHeader, 1, 200, "captured")
+			if err == nil && history != nil {
+				for _, item := range history.Items {
+					orderID := strings.TrimSpace(item.OrderID)
+					if orderID == "" {
+						continue
+					}
+					if _, exists := seenOrderIDs[orderID]; exists {
+						continue
+					}
+
+					fallback := publicMarketOrder{
+						ID:           orderID,
+						UserID:       userID,
+						ItemID:       "",
+						Title:        "ChatGPT Account",
+						Price:        formatIDR(item.AmountIDR),
+						Status:       "fulfilled",
+						PriceIDR:     item.AmountIDR,
+						PriceDisplay: formatIDR(item.AmountIDR),
+						PricingNote:  "Riwayat dipulihkan dari catatan wallet",
+						CreatedAt:    item.CreatedAt.UTC(),
+						UpdatedAt:    item.UpdatedAt.UTC(),
+					}
+					orders = append(orders, fallback.toClientDTO(false))
+					seenOrderIDs[orderID] = struct{}{}
+				}
 			}
-			orders = append(orders, order.toClientDTO(false))
 		}
 	}
 	sort.SliceStable(orders, func(i, j int) bool {
@@ -515,6 +560,31 @@ func (h *LZTMarketHandler) GetMyPublicChatGPTOrderDetail(c *gin.Context) {
 
 	order, ok := h.getOrderForUser(orderID, userID)
 	if !ok {
+		authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+		if h.featureWallet != nil && authHeader != "" {
+			history, err := h.featureWallet.GetMarketPurchaseHistory(c.Request.Context(), authHeader, 1, 200, "")
+			if err == nil && history != nil {
+				for _, item := range history.Items {
+					if strings.TrimSpace(item.OrderID) != orderID {
+						continue
+					}
+					order = publicMarketOrder{
+						ID:           orderID,
+						UserID:       userID,
+						Title:        "ChatGPT Account",
+						Price:        formatIDR(item.AmountIDR),
+						Status:       "fulfilled",
+						PriceIDR:     item.AmountIDR,
+						PriceDisplay: formatIDR(item.AmountIDR),
+						PricingNote:  "Riwayat dipulihkan dari catatan wallet",
+						CreatedAt:    item.CreatedAt.UTC(),
+						UpdatedAt:    item.UpdatedAt.UTC(),
+					}
+					c.JSON(http.StatusOK, gin.H{"order": order})
+					return
+				}
+			}
+		}
 		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 		return
 	}
@@ -1736,82 +1806,234 @@ func (h *LZTMarketHandler) applyOrderItemSnapshot(orderID string, item map[strin
 		fxRate = 0
 	}
 
-	h.ordersMu.Lock()
-	defer h.ordersMu.Unlock()
-	order, ok := h.orders[orderID]
-	if !ok {
+	client := database.GetEntClient()
+	if client == nil {
 		return
 	}
-	order.Title = normalizeItemTitle(item)
-	order.Price = normalizeItemPrice(item)
-	order.Seller = normalizeSeller(item)
-	order.SourcePrice = sourcePrice
-	order.SourceCurrency = sourceCurrency
-	order.SourceSymbol = sourceSymbol
-	order.PriceIDR = priceIDR
-	order.FXRateToIDR = fxRate
+	upd := client.MarketPurchaseOrder.
+		Update().
+		Where(marketpurchaseorder.OrderIDEQ(orderID)).
+		SetTitle(normalizeItemTitle(item)).
+		SetPrice(normalizeItemPrice(item)).
+		SetSeller(normalizeSeller(item)).
+		SetSourcePrice(sourcePrice).
+		SetSourceCurrency(sourceCurrency).
+		SetSourceSymbol(sourceSymbol).
+		SetPriceIdr(priceIDR).
+		SetFxRateToIdr(fxRate).
+		SetSourceDisplay(formatSourcePrice(sourcePrice, sourceSymbol, sourceCurrency)).
+		SetUpdatedAt(time.Now().UTC())
 	if priceIDR > 0 {
-		order.PriceDisplay = formatIDR(priceIDR)
+		upd = upd.SetPriceDisplay(formatIDR(priceIDR))
 	}
-	order.SourceDisplay = formatSourcePrice(sourcePrice, sourceSymbol, sourceCurrency)
-	order.UpdatedAt = time.Now().UTC()
+	_, _ = upd.Save(context.Background())
 }
 
 func (h *LZTMarketHandler) saveOrder(order *publicMarketOrder) {
-	h.ordersMu.Lock()
-	defer h.ordersMu.Unlock()
-	h.orders[order.ID] = order
-	h.userOrders[order.UserID] = append(h.userOrders[order.UserID], order.ID)
+	if order == nil {
+		return
+	}
+	client := database.GetEntClient()
+	if client == nil {
+		return
+	}
+
+	create := client.MarketPurchaseOrder.
+		Create().
+		SetOrderID(order.ID).
+		SetUserID(int(order.UserID)).
+		SetItemID(order.ItemID).
+		SetTitle(order.Title).
+		SetPrice(order.Price).
+		SetStatus(order.Status).
+		SetSeller(order.Seller).
+		SetFailureReason(strings.TrimSpace(order.FailureReason)).
+		SetFailureCode(strings.TrimSpace(order.FailureCode)).
+		SetSourcePrice(order.SourcePrice).
+		SetSourceCurrency(order.SourceCurrency).
+		SetSourceSymbol(order.SourceSymbol).
+		SetPriceIdr(order.PriceIDR).
+		SetFxRateToIdr(order.FXRateToIDR).
+		SetPriceDisplay(order.PriceDisplay).
+		SetSourceDisplay(order.SourceDisplay).
+		SetPricingNote(order.PricingNote).
+		SetLastStepCode(order.LastStepCode).
+		SetSupplierCurrency(order.SupplierCurrency).
+		SetCreatedAt(order.CreatedAt.UTC()).
+		SetUpdatedAt(order.UpdatedAt.UTC())
+
+	if len(order.Delivery) > 0 {
+		create = create.SetDeliveryJSON(order.Delivery)
+	}
+	if _, err := create.Save(context.Background()); err == nil {
+		return
+	}
+
+	upd := client.MarketPurchaseOrder.
+		Update().
+		Where(marketpurchaseorder.OrderIDEQ(order.ID)).
+		SetItemID(order.ItemID).
+		SetTitle(order.Title).
+		SetPrice(order.Price).
+		SetStatus(order.Status).
+		SetSeller(order.Seller).
+		SetFailureReason(strings.TrimSpace(order.FailureReason)).
+		SetFailureCode(strings.TrimSpace(order.FailureCode)).
+		SetSourcePrice(order.SourcePrice).
+		SetSourceCurrency(order.SourceCurrency).
+		SetSourceSymbol(order.SourceSymbol).
+		SetPriceIdr(order.PriceIDR).
+		SetFxRateToIdr(order.FXRateToIDR).
+		SetPriceDisplay(order.PriceDisplay).
+		SetSourceDisplay(order.SourceDisplay).
+		SetPricingNote(order.PricingNote).
+		SetLastStepCode(order.LastStepCode).
+		SetSupplierCurrency(order.SupplierCurrency).
+		SetUpdatedAt(order.UpdatedAt.UTC())
+	if len(order.Delivery) > 0 {
+		upd = upd.SetDeliveryJSON(order.Delivery)
+	}
+	_, _ = upd.Save(context.Background())
 }
 
 func (h *LZTMarketHandler) appendOrderStep(orderID string, step publicOrderStep) {
-	h.ordersMu.Lock()
-	defer h.ordersMu.Unlock()
-	order, ok := h.orders[orderID]
-	if !ok {
+	client := database.GetEntClient()
+	if client == nil {
 		return
 	}
 	step.At = step.At.UTC()
-	order.Steps = append(order.Steps, step)
-	order.LastStepCode = step.Code
-	order.UpdatedAt = step.At
+	_, _ = client.MarketPurchaseOrderStep.
+		Create().
+		SetOrderID(orderID).
+		SetCode(strings.TrimSpace(step.Code)).
+		SetLabel(strings.TrimSpace(step.Label)).
+		SetStatus(strings.TrimSpace(step.Status)).
+		SetMessage(strings.TrimSpace(step.Message)).
+		SetAt(step.At).
+		SetCreatedAt(step.At).
+		SetUpdatedAt(step.At).
+		Save(context.Background())
+
+	_, _ = client.MarketPurchaseOrder.
+		Update().
+		Where(marketpurchaseorder.OrderIDEQ(orderID)).
+		SetLastStepCode(strings.TrimSpace(step.Code)).
+		SetUpdatedAt(step.At).
+		Save(context.Background())
 }
 
 func (h *LZTMarketHandler) markOrderFailed(orderID, code, reason string) {
-	h.ordersMu.Lock()
-	defer h.ordersMu.Unlock()
-	order, ok := h.orders[orderID]
-	if !ok {
+	client := database.GetEntClient()
+	if client == nil {
 		return
 	}
-	order.Status = "failed"
-	order.FailureCode = strings.TrimSpace(code)
-	order.FailureReason = strings.TrimSpace(reason)
-	order.UpdatedAt = time.Now().UTC()
+	_, _ = client.MarketPurchaseOrder.
+		Update().
+		Where(marketpurchaseorder.OrderIDEQ(orderID)).
+		SetStatus("failed").
+		SetFailureCode(strings.TrimSpace(code)).
+		SetFailureReason(strings.TrimSpace(reason)).
+		SetUpdatedAt(time.Now().UTC()).
+		Save(context.Background())
 }
 
 func (h *LZTMarketHandler) markOrderFulfilled(orderID string, delivery map[string]interface{}) {
-	h.ordersMu.Lock()
-	defer h.ordersMu.Unlock()
-	order, ok := h.orders[orderID]
-	if !ok {
+	client := database.GetEntClient()
+	if client == nil {
 		return
 	}
-	order.Status = "fulfilled"
-	order.FailureCode = ""
-	order.FailureReason = ""
-	order.Delivery = delivery
-	order.UpdatedAt = time.Now().UTC()
+	upd := client.MarketPurchaseOrder.
+		Update().
+		Where(marketpurchaseorder.OrderIDEQ(orderID)).
+		SetStatus("fulfilled").
+		SetFailureCode("").
+		SetFailureReason("").
+		SetUpdatedAt(time.Now().UTC())
+	if len(delivery) > 0 {
+		upd = upd.SetDeliveryJSON(delivery)
+	}
+	_, _ = upd.Save(context.Background())
 }
 
 func (h *LZTMarketHandler) getOrderForUser(orderID string, userID uint) (publicMarketOrder, bool) {
-	h.ordersMu.RLock()
-	defer h.ordersMu.RUnlock()
-	order, ok := h.orders[orderID]
-	if !ok || order.UserID != userID {
+	client := database.GetEntClient()
+	if client == nil {
 		return publicMarketOrder{}, false
 	}
+
+	row, err := client.MarketPurchaseOrder.
+		Query().
+		Where(
+			marketpurchaseorder.OrderIDEQ(orderID),
+			marketpurchaseorder.UserIDEQ(int(userID)),
+		).
+		Only(context.Background())
+	if err != nil {
+		return publicMarketOrder{}, false
+	}
+	order := mapEntityToPublicMarketOrder(row)
+	order.Steps = h.loadOrderSteps(context.Background(), row.OrderID)
 	return order.toClientDTO(true), true
+}
+
+func (h *LZTMarketHandler) loadOrderSteps(ctx context.Context, orderID string) []publicOrderStep {
+	client := database.GetEntClient()
+	if client == nil {
+		return nil
+	}
+	rows, err := client.MarketPurchaseOrderStep.
+		Query().
+		Where(marketpurchaseorderstep.OrderIDEQ(orderID)).
+		Order(marketpurchaseorderstep.ByAt()).
+		All(ctx)
+	if err != nil {
+		return nil
+	}
+
+	out := make([]publicOrderStep, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, publicOrderStep{
+			Code:    strings.TrimSpace(row.Code),
+			Label:   strings.TrimSpace(row.Label),
+			Status:  strings.TrimSpace(row.Status),
+			Message: strings.TrimSpace(row.Message),
+			At:      row.At.UTC(),
+		})
+	}
+	return out
+}
+
+func mapEntityToPublicMarketOrder(row *ent.MarketPurchaseOrder) publicMarketOrder {
+	if row == nil {
+		return publicMarketOrder{}
+	}
+	order := publicMarketOrder{
+		ID:               strings.TrimSpace(row.OrderID),
+		UserID:           uint(row.UserID),
+		ItemID:           strings.TrimSpace(row.ItemID),
+		Title:            strings.TrimSpace(row.Title),
+		Price:            strings.TrimSpace(row.Price),
+		Status:           strings.TrimSpace(row.Status),
+		Seller:           strings.TrimSpace(row.Seller),
+		FailureReason:    strings.TrimSpace(row.FailureReason),
+		FailureCode:      strings.TrimSpace(row.FailureCode),
+		SourcePrice:      row.SourcePrice,
+		SourceCurrency:   strings.TrimSpace(row.SourceCurrency),
+		SourceSymbol:     strings.TrimSpace(row.SourceSymbol),
+		PriceIDR:         row.PriceIdr,
+		FXRateToIDR:      row.FxRateToIdr,
+		PriceDisplay:     strings.TrimSpace(row.PriceDisplay),
+		SourceDisplay:    strings.TrimSpace(row.SourceDisplay),
+		PricingNote:      strings.TrimSpace(row.PricingNote),
+		LastStepCode:     strings.TrimSpace(row.LastStepCode),
+		SupplierCurrency: strings.TrimSpace(row.SupplierCurrency),
+		CreatedAt:        row.CreatedAt.UTC(),
+		UpdatedAt:        row.UpdatedAt.UTC(),
+	}
+	if len(row.DeliveryJSON) > 0 {
+		order.Delivery = row.DeliveryJSON
+	}
+	return order
 }
 
 func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID, i18n, authHeader string) {

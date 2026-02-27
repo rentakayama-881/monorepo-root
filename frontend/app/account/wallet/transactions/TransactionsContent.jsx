@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   fetchFeatureAuth,
@@ -13,49 +14,87 @@ import logger from "@/lib/logger";
 
 function normalizeWallet(payload) {
   const data = unwrapFeatureData(payload) || {};
-  const balanceRaw =
-    data.balance ?? data.Balance ?? data.availableBalance ?? data.AvailableBalance ?? 0;
-  const userIdRaw = data.userId ?? data.UserId ?? data.user_id ?? data.userID ?? null;
-
   return {
-    balance: Number(balanceRaw) || 0,
-    userId: userIdRaw == null ? null : Number(userIdRaw) || null,
+    balance: Number(data?.balance ?? data?.Balance ?? 0) || 0,
+    userId: Number(data?.userId ?? data?.UserId ?? 0) || 0,
   };
 }
 
-function normalizeTransfer(item) {
+function normalizeWalletTransaction(item) {
+  const type = String(item?.type ?? item?.Type ?? "").trim();
+  const amount = Number(item?.amount ?? item?.Amount ?? 0) || 0;
   return {
-    id: item?.id ?? item?.Id ?? "",
-    senderId: Number(item?.senderId ?? item?.SenderId ?? 0) || 0,
-    receiverId: Number(item?.receiverId ?? item?.ReceiverId ?? 0) || 0,
-    senderUsername: item?.senderUsername ?? item?.SenderUsername ?? "Unknown",
-    receiverUsername: item?.receiverUsername ?? item?.ReceiverUsername ?? "Unknown",
-    status: item?.status ?? item?.Status ?? "",
+    kind: "wallet",
+    id: String(item?.id ?? item?.Id ?? ""),
+    type,
+    amount,
+    description: String(item?.description ?? item?.Description ?? "").trim(),
+    referenceId: String(item?.referenceId ?? item?.ReferenceId ?? "").trim(),
+    referenceType: String(item?.referenceType ?? item?.ReferenceType ?? "").trim(),
     createdAt: item?.createdAt ?? item?.CreatedAt ?? null,
-    holdUntil: item?.holdUntil ?? item?.HoldUntil ?? null,
-    message: item?.message ?? item?.Message ?? "",
-    amount: Number(item?.amount ?? item?.Amount ?? 0) || 0,
   };
+}
+
+function normalizeTransfer(item, currentUserId) {
+  const senderId = Number(item?.senderId ?? item?.SenderId ?? 0) || 0;
+  const receiverId = Number(item?.receiverId ?? item?.ReceiverId ?? 0) || 0;
+  const amount = Number(item?.amount ?? item?.Amount ?? 0) || 0;
+  const isSender = currentUserId > 0 && senderId === currentUserId;
+
+  return {
+    kind: "transfer",
+    id: String(item?.id ?? item?.Id ?? ""),
+    type: String(item?.status ?? item?.Status ?? "Transfer"),
+    amount: isSender ? -Math.abs(amount) : Math.abs(amount),
+    description: isSender
+      ? `Transfer ke @${item?.receiverUsername ?? item?.ReceiverUsername ?? "Unknown"}`
+      : `Transfer dari @${item?.senderUsername ?? item?.SenderUsername ?? "Unknown"}`,
+    referenceId: "",
+    referenceType: "transfer",
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? null,
+  };
+}
+
+function mapWalletTypeLabel(type, description) {
+  const normalized = String(type || "").toLowerCase();
+  if (normalized === "marketpurchasereserve") return "Pembelian market";
+  if (normalized === "marketpurchaserelease") return "Refund pembelian market";
+  if (normalized === "deposit") return "Deposit";
+  if (normalized === "withdrawal") return "Withdraw";
+  if (normalized === "transferin") return "Transfer masuk";
+  if (normalized === "transferout") return "Transfer keluar";
+  if (normalized === "fee") return "Biaya";
+  return description || type || "Transaksi wallet";
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatCurrency(amount) {
+  const abs = Math.abs(Number(amount) || 0);
+  return `Rp ${abs.toLocaleString("id-ID")}`;
 }
 
 export default function TransactionsContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState("all");
-  const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [wallet, setWallet] = useState({ balance: 0, userId: null });
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
+  const [wallet, setWallet] = useState({ balance: 0, userId: 0 });
+  const [walletTransactions, setWalletTransactions] = useState([]);
+  const [transfers, setTransfers] = useState([]);
 
   useEffect(() => {
-    if (searchParams.get("success") === "transfer") {
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 5000);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    async function loadData() {
+    async function load() {
       const token = getToken();
       if (!token) {
         router.push("/login");
@@ -64,121 +103,64 @@ export default function TransactionsContent() {
 
       setLoading(true);
       try {
-        // Load wallet from Feature Service
-        const walletData = normalizeWallet(
-          await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME)
-        );
+        const walletData = normalizeWallet(await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME));
         setWallet(walletData);
 
-        // Load transfers from Feature Service
-        let url = FEATURE_ENDPOINTS.TRANSFERS.LIST + "?limit=50";
-        if (activeTab === "sent") url += "&role=sender";
-        if (activeTab === "received") url += "&role=receiver";
+        const walletTxPayload = unwrapFeatureData(
+          await fetchFeatureAuth(`${FEATURE_ENDPOINTS.WALLETS.TRANSACTIONS}?page=1&pageSize=100`)
+        );
+        const walletTxItems = extractFeatureItems(walletTxPayload).map(normalizeWalletTransaction);
+        setWalletTransactions(walletTxItems.filter((item) => item.id));
 
-        const transferPayload = unwrapFeatureData(await fetchFeatureAuth(url));
-        const transferItems = extractFeatureItems(transferPayload)
-          .map(normalizeTransfer)
-          .filter((transfer) => transfer.id);
-        setTransfers(transferItems);
-      } catch (e) {
-        logger.error("Failed to load data:", e);
+        const transferPayload = unwrapFeatureData(await fetchFeatureAuth(`${FEATURE_ENDPOINTS.TRANSFERS.LIST}?limit=50`));
+        const transferItems = extractFeatureItems(transferPayload).map((item) => normalizeTransfer(item, walletData.userId));
+        setTransfers(transferItems.filter((item) => item.id));
+      } catch (error) {
+        logger.error("Failed to load wallet transactions", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
 
-    loadData();
-  }, [router, activeTab]);
+    load();
+  }, [router]);
 
-  // Normalize backend status to frontend expected status
-  const normalizeStatus = (status) => {
-    const statusMap = {
-      "Pending": "held",
-      "Released": "released",
-      "Cancelled": "cancelled",
-      "Disputed": "disputed",
-      "Expired": "released",
-    };
-    return statusMap[status] || status?.toLowerCase() || "held";
-  };
-
-  const getStatusBadge = (status) => {
-    const normalized = normalizeStatus(status);
-    const styles = {
-      held: "bg-warning/10 text-warning border-warning/30",
-      released: "bg-success/10 text-success border-success/30",
-      refunded: "bg-primary/10 text-primary border-primary/30",
-      disputed: "bg-destructive/10 text-destructive border-destructive/30",
-      cancelled: "bg-muted/60 text-muted-foreground border-border",
-    };
-    const labels = {
-      held: "Ditahan",
-      released: "Terkirim",
-      refunded: "Refunded",
-      disputed: "Disputed",
-      cancelled: "Cancelled",
-    };
-    return (
-      <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${styles[normalized] || styles.held}`}>
-        {labels[normalized] || status}
-      </span>
-    );
-  };
-
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  const rows = useMemo(() => {
+    if (activeTab === "wallet") {
+      return [...walletTransactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    if (activeTab === "transfer") {
+      return [...transfers].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    return [...walletTransactions, ...transfers].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [activeTab, walletTransactions, transfers]);
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-2xl px-4 py-8">
-        {/* Success Message */}
-        {showSuccess && (
-          <div className="mb-4 rounded-lg border border-success/30 bg-success/10 p-4 text-success">
-            <div className="flex items-center gap-2">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="font-medium">Transfer created successfully!</span>
-            </div>
-          </div>
-        )}
-
-        <div className="mb-6 flex items-center justify-between">
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <div className="mb-6 flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">My Transactions</h1>
-            <p className="text-sm text-muted-foreground">
-              Transfer and escrow history
-            </p>
+            <h1 className="text-2xl font-bold text-foreground">Riwayat Transaksi</h1>
+            <p className="text-sm text-muted-foreground">Mutasi wallet, transfer, dan pembelian market.</p>
           </div>
           <Link
             href="/account/wallet/send"
             className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
-            + Send Funds
+            + Kirim Dana
           </Link>
         </div>
 
-        {/* Balance Card */}
         <div className="mb-6 rounded-lg border border-border bg-card p-4">
-          <div className="text-sm text-muted-foreground">Available Balance</div>
-          <div className="text-2xl font-bold text-foreground">
-            Rp {wallet.balance.toLocaleString("id-ID")}
-          </div>
+          <div className="text-sm text-muted-foreground">Saldo Wallet</div>
+          <div className="text-2xl font-bold text-foreground">Rp {wallet.balance.toLocaleString("id-ID")}</div>
         </div>
 
-        {/* Tabs */}
         <div className="mb-4 flex gap-2 border-b border-border">
           {[
             { key: "all", label: "Semua" },
-            { key: "sent", label: "Terkirim" },
-            { key: "received", label: "Diterima" },
+            { key: "wallet", label: "Wallet" },
+            { key: "transfer", label: "Transfer" },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -194,94 +176,51 @@ export default function TransactionsContent() {
           ))}
         </div>
 
-        {/* Transfers List */}
         {loading ? (
           <div className="animate-pulse space-y-3">
-            <div className="h-24 bg-border rounded-lg" />
-            <div className="h-24 bg-border rounded-lg" />
-            <div className="h-24 bg-border rounded-lg" />
+            <div className="h-20 rounded-lg bg-border" />
+            <div className="h-20 rounded-lg bg-border" />
+            <div className="h-20 rounded-lg bg-border" />
           </div>
-        ) : transfers.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground mb-4">Belum ada transaksi</div>
-            <Link
-              href="/account/wallet/send"
-              className="text-primary hover:underline"
-            >
-              Mulai kirim uang
-            </Link>
+        ) : rows.length === 0 ? (
+          <div className="rounded-lg border border-border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
+            Belum ada transaksi.
           </div>
         ) : (
           <div className="space-y-3">
-            {transfers.map((transfer) => {
-              // Determine if current user is sender or receiver
-              const isSender =
-                wallet.userId != null &&
-                Number(transfer.senderId) === Number(wallet.userId);
-              const isReceiver =
-                wallet.userId != null &&
-                Number(transfer.receiverId) === Number(wallet.userId);
-              const otherUsername = isSender ? transfer.receiverUsername : transfer.senderUsername;
-              const status = normalizeStatus(transfer.status);
-              
-              return (
-                <Link
-                  key={transfer.id}
-                  href={`/account/wallet/transactions/${transfer.id}`}
-                  className="block rounded-lg border border-border bg-card p-4 transition hover:border-muted-foreground"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold ${
-                          status === "held"
-                            ? "bg-warning/10 text-warning"
-                            : status === "released"
-                            ? "bg-success/10 text-success"
-                            : "bg-muted/60 text-muted-foreground"
-                        }`}
-                      >
-                        {(otherUsername || "?")?.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="font-medium text-foreground">
-                          {isSender
-                            ? `To @${transfer.receiverUsername || "Unknown"}`
-                            : isReceiver
-                            ? `From @${transfer.senderUsername || "Unknown"}`
-                            : "Transfer"}
+            {rows.map((row) => {
+              const isDebit = Number(row.amount) < 0;
+              const amountClass = isDebit ? "text-destructive" : "text-emerald-600";
+              const title = row.kind === "wallet" ? mapWalletTypeLabel(row.type, row.description) : row.description;
+              const content = (
+                <div className="rounded-lg border border-border bg-card p-4 transition hover:border-muted-foreground/70">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium text-foreground">{title}</div>
+                      <div className="text-xs text-muted-foreground">{formatDate(row.createdAt)}</div>
+                      {row.referenceId ? (
+                        <div className="text-[11px] text-muted-foreground">
+                          Ref: <span className="font-mono">{row.referenceId}</span>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatDate(transfer.createdAt)}
-                        </div>
-                        {transfer.message && (
-                          <div className="text-xs text-muted-foreground truncate max-w-48">
-                            {transfer.message}
-                          </div>
-                        )}
-                      </div>
+                      ) : null}
                     </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-foreground">
-                        Rp {(Number(transfer.amount) || 0).toLocaleString("id-ID")}
-                      </div>
-                      <div className="mt-1">{getStatusBadge(transfer.status)}</div>
+                    <div className={`text-sm font-semibold ${amountClass}`}>
+                      {isDebit ? "-" : "+"}
+                      {formatCurrency(row.amount)}
                     </div>
                   </div>
-
-                  {/* Action hint for held/pending transfers */}
-                  {status === "held" && transfer.holdUntil && (
-                    <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-                      <div className="text-xs text-muted-foreground">
-                        Auto-release: {formatDate(transfer.holdUntil)}
-                      </div>
-                      <span className="text-xs text-primary">
-                        Lihat detail →
-                      </span>
-                    </div>
-                  )}
-                </Link>
+                </div>
               );
+
+              if (row.kind === "transfer") {
+                return (
+                  <Link key={`${row.kind}-${row.id}`} href={`/account/wallet/transactions/${row.id}`} className="block">
+                    {content}
+                  </Link>
+                );
+              }
+
+              return <div key={`${row.kind}-${row.id}`}>{content}</div>;
             })}
           </div>
         )}

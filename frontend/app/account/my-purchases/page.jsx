@@ -90,6 +90,9 @@ export default function MyPurchasesPage() {
                   <tr key={order?.id} className="border-t border-border">
                     <td className="px-2.5 py-2">
                       <div className="max-w-[360px] truncate font-medium">{order?.title || "ChatGPT Account"}</div>
+                      {String(order?.pricing_note || "").toLowerCase().includes("dipulihkan") ? (
+                        <div className="mt-1 text-[11px] text-muted-foreground">Riwayat lama (detail terbatas)</div>
+                      ) : null}
                     </td>
                     <td className="px-2.5 py-2 font-medium">{order?.price_display || order?.price || "-"}</td>
                     <td className="px-2.5 py-2">

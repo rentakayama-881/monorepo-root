@@ -25,6 +25,8 @@ import (
 	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/ipgeocache"
+	"backend-gin/ent/marketpurchaseorder"
+	"backend-gin/ent/marketpurchaseorderstep"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/securityevent"
@@ -77,6 +79,10 @@ type Client struct {
 	FinalOffer *FinalOfferClient
 	// IPGeoCache is the client for interacting with the IPGeoCache builders.
 	IPGeoCache *IPGeoCacheClient
+	// MarketPurchaseOrder is the client for interacting with the MarketPurchaseOrder builders.
+	MarketPurchaseOrder *MarketPurchaseOrderClient
+	// MarketPurchaseOrderStep is the client for interacting with the MarketPurchaseOrderStep builders.
+	MarketPurchaseOrderStep *MarketPurchaseOrderStepClient
 	// Passkey is the client for interacting with the Passkey builders.
 	Passkey *PasskeyClient
 	// PasswordResetToken is the client for interacting with the PasswordResetToken builders.
@@ -126,6 +132,8 @@ func (c *Client) init() {
 	c.Endorsement = NewEndorsementClient(c.config)
 	c.FinalOffer = NewFinalOfferClient(c.config)
 	c.IPGeoCache = NewIPGeoCacheClient(c.config)
+	c.MarketPurchaseOrder = NewMarketPurchaseOrderClient(c.config)
+	c.MarketPurchaseOrderStep = NewMarketPurchaseOrderStepClient(c.config)
 	c.Passkey = NewPasskeyClient(c.config)
 	c.PasswordResetToken = NewPasswordResetTokenClient(c.config)
 	c.SecurityEvent = NewSecurityEventClient(c.config)
@@ -228,34 +236,36 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:                    ctx,
-		config:                 cfg,
-		Admin:                  NewAdminClient(cfg),
-		ArtifactSubmission:     NewArtifactSubmissionClient(cfg),
-		BackupCode:             NewBackupCodeClient(cfg),
-		Badge:                  NewBadgeClient(cfg),
-		Category:               NewCategoryClient(cfg),
-		ChainCursor:            NewChainCursorClient(cfg),
-		ConsultationRequest:    NewConsultationRequestClient(cfg),
-		Credential:             NewCredentialClient(cfg),
-		DeviceFingerprint:      NewDeviceFingerprintClient(cfg),
-		DeviceUserMapping:      NewDeviceUserMappingClient(cfg),
-		EmailVerificationToken: NewEmailVerificationTokenClient(cfg),
-		Endorsement:            NewEndorsementClient(cfg),
-		FinalOffer:             NewFinalOfferClient(cfg),
-		IPGeoCache:             NewIPGeoCacheClient(cfg),
-		Passkey:                NewPasskeyClient(cfg),
-		PasswordResetToken:     NewPasswordResetTokenClient(cfg),
-		SecurityEvent:          NewSecurityEventClient(cfg),
-		Session:                NewSessionClient(cfg),
-		SessionLock:            NewSessionLockClient(cfg),
-		SudoSession:            NewSudoSessionClient(cfg),
-		TOTPPendingToken:       NewTOTPPendingTokenClient(cfg),
-		Tag:                    NewTagClient(cfg),
-		User:                   NewUserClient(cfg),
-		UserBadge:              NewUserBadgeClient(cfg),
-		ValidationCase:         NewValidationCaseClient(cfg),
-		ValidationCaseLog:      NewValidationCaseLogClient(cfg),
+		ctx:                     ctx,
+		config:                  cfg,
+		Admin:                   NewAdminClient(cfg),
+		ArtifactSubmission:      NewArtifactSubmissionClient(cfg),
+		BackupCode:              NewBackupCodeClient(cfg),
+		Badge:                   NewBadgeClient(cfg),
+		Category:                NewCategoryClient(cfg),
+		ChainCursor:             NewChainCursorClient(cfg),
+		ConsultationRequest:     NewConsultationRequestClient(cfg),
+		Credential:              NewCredentialClient(cfg),
+		DeviceFingerprint:       NewDeviceFingerprintClient(cfg),
+		DeviceUserMapping:       NewDeviceUserMappingClient(cfg),
+		EmailVerificationToken:  NewEmailVerificationTokenClient(cfg),
+		Endorsement:             NewEndorsementClient(cfg),
+		FinalOffer:              NewFinalOfferClient(cfg),
+		IPGeoCache:              NewIPGeoCacheClient(cfg),
+		MarketPurchaseOrder:     NewMarketPurchaseOrderClient(cfg),
+		MarketPurchaseOrderStep: NewMarketPurchaseOrderStepClient(cfg),
+		Passkey:                 NewPasskeyClient(cfg),
+		PasswordResetToken:      NewPasswordResetTokenClient(cfg),
+		SecurityEvent:           NewSecurityEventClient(cfg),
+		Session:                 NewSessionClient(cfg),
+		SessionLock:             NewSessionLockClient(cfg),
+		SudoSession:             NewSudoSessionClient(cfg),
+		TOTPPendingToken:        NewTOTPPendingTokenClient(cfg),
+		Tag:                     NewTagClient(cfg),
+		User:                    NewUserClient(cfg),
+		UserBadge:               NewUserBadgeClient(cfg),
+		ValidationCase:          NewValidationCaseClient(cfg),
+		ValidationCaseLog:       NewValidationCaseLogClient(cfg),
 	}, nil
 }
 
@@ -273,34 +283,36 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:                    ctx,
-		config:                 cfg,
-		Admin:                  NewAdminClient(cfg),
-		ArtifactSubmission:     NewArtifactSubmissionClient(cfg),
-		BackupCode:             NewBackupCodeClient(cfg),
-		Badge:                  NewBadgeClient(cfg),
-		Category:               NewCategoryClient(cfg),
-		ChainCursor:            NewChainCursorClient(cfg),
-		ConsultationRequest:    NewConsultationRequestClient(cfg),
-		Credential:             NewCredentialClient(cfg),
-		DeviceFingerprint:      NewDeviceFingerprintClient(cfg),
-		DeviceUserMapping:      NewDeviceUserMappingClient(cfg),
-		EmailVerificationToken: NewEmailVerificationTokenClient(cfg),
-		Endorsement:            NewEndorsementClient(cfg),
-		FinalOffer:             NewFinalOfferClient(cfg),
-		IPGeoCache:             NewIPGeoCacheClient(cfg),
-		Passkey:                NewPasskeyClient(cfg),
-		PasswordResetToken:     NewPasswordResetTokenClient(cfg),
-		SecurityEvent:          NewSecurityEventClient(cfg),
-		Session:                NewSessionClient(cfg),
-		SessionLock:            NewSessionLockClient(cfg),
-		SudoSession:            NewSudoSessionClient(cfg),
-		TOTPPendingToken:       NewTOTPPendingTokenClient(cfg),
-		Tag:                    NewTagClient(cfg),
-		User:                   NewUserClient(cfg),
-		UserBadge:              NewUserBadgeClient(cfg),
-		ValidationCase:         NewValidationCaseClient(cfg),
-		ValidationCaseLog:      NewValidationCaseLogClient(cfg),
+		ctx:                     ctx,
+		config:                  cfg,
+		Admin:                   NewAdminClient(cfg),
+		ArtifactSubmission:      NewArtifactSubmissionClient(cfg),
+		BackupCode:              NewBackupCodeClient(cfg),
+		Badge:                   NewBadgeClient(cfg),
+		Category:                NewCategoryClient(cfg),
+		ChainCursor:             NewChainCursorClient(cfg),
+		ConsultationRequest:     NewConsultationRequestClient(cfg),
+		Credential:              NewCredentialClient(cfg),
+		DeviceFingerprint:       NewDeviceFingerprintClient(cfg),
+		DeviceUserMapping:       NewDeviceUserMappingClient(cfg),
+		EmailVerificationToken:  NewEmailVerificationTokenClient(cfg),
+		Endorsement:             NewEndorsementClient(cfg),
+		FinalOffer:              NewFinalOfferClient(cfg),
+		IPGeoCache:              NewIPGeoCacheClient(cfg),
+		MarketPurchaseOrder:     NewMarketPurchaseOrderClient(cfg),
+		MarketPurchaseOrderStep: NewMarketPurchaseOrderStepClient(cfg),
+		Passkey:                 NewPasskeyClient(cfg),
+		PasswordResetToken:      NewPasswordResetTokenClient(cfg),
+		SecurityEvent:           NewSecurityEventClient(cfg),
+		Session:                 NewSessionClient(cfg),
+		SessionLock:             NewSessionLockClient(cfg),
+		SudoSession:             NewSudoSessionClient(cfg),
+		TOTPPendingToken:        NewTOTPPendingTokenClient(cfg),
+		Tag:                     NewTagClient(cfg),
+		User:                    NewUserClient(cfg),
+		UserBadge:               NewUserBadgeClient(cfg),
+		ValidationCase:          NewValidationCaseClient(cfg),
+		ValidationCaseLog:       NewValidationCaseLogClient(cfg),
 	}, nil
 }
 
@@ -332,7 +344,8 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Admin, c.ArtifactSubmission, c.BackupCode, c.Badge, c.Category, c.ChainCursor,
 		c.ConsultationRequest, c.Credential, c.DeviceFingerprint, c.DeviceUserMapping,
-		c.EmailVerificationToken, c.Endorsement, c.FinalOffer, c.IPGeoCache, c.Passkey,
+		c.EmailVerificationToken, c.Endorsement, c.FinalOffer, c.IPGeoCache,
+		c.MarketPurchaseOrder, c.MarketPurchaseOrderStep, c.Passkey,
 		c.PasswordResetToken, c.SecurityEvent, c.Session, c.SessionLock, c.SudoSession,
 		c.TOTPPendingToken, c.Tag, c.User, c.UserBadge, c.ValidationCase,
 		c.ValidationCaseLog,
@@ -347,7 +360,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Admin, c.ArtifactSubmission, c.BackupCode, c.Badge, c.Category, c.ChainCursor,
 		c.ConsultationRequest, c.Credential, c.DeviceFingerprint, c.DeviceUserMapping,
-		c.EmailVerificationToken, c.Endorsement, c.FinalOffer, c.IPGeoCache, c.Passkey,
+		c.EmailVerificationToken, c.Endorsement, c.FinalOffer, c.IPGeoCache,
+		c.MarketPurchaseOrder, c.MarketPurchaseOrderStep, c.Passkey,
 		c.PasswordResetToken, c.SecurityEvent, c.Session, c.SessionLock, c.SudoSession,
 		c.TOTPPendingToken, c.Tag, c.User, c.UserBadge, c.ValidationCase,
 		c.ValidationCaseLog,
@@ -387,6 +401,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.FinalOffer.mutate(ctx, m)
 	case *IPGeoCacheMutation:
 		return c.IPGeoCache.mutate(ctx, m)
+	case *MarketPurchaseOrderMutation:
+		return c.MarketPurchaseOrder.mutate(ctx, m)
+	case *MarketPurchaseOrderStepMutation:
+		return c.MarketPurchaseOrderStep.mutate(ctx, m)
 	case *PasskeyMutation:
 		return c.Passkey.mutate(ctx, m)
 	case *PasswordResetTokenMutation:
@@ -2547,6 +2565,272 @@ func (c *IPGeoCacheClient) mutate(ctx context.Context, m *IPGeoCacheMutation) (V
 		return (&IPGeoCacheDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown IPGeoCache mutation op: %q", m.Op())
+	}
+}
+
+// MarketPurchaseOrderClient is a client for the MarketPurchaseOrder schema.
+type MarketPurchaseOrderClient struct {
+	config
+}
+
+// NewMarketPurchaseOrderClient returns a client for the MarketPurchaseOrder from the given config.
+func NewMarketPurchaseOrderClient(c config) *MarketPurchaseOrderClient {
+	return &MarketPurchaseOrderClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `marketpurchaseorder.Hooks(f(g(h())))`.
+func (c *MarketPurchaseOrderClient) Use(hooks ...Hook) {
+	c.hooks.MarketPurchaseOrder = append(c.hooks.MarketPurchaseOrder, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `marketpurchaseorder.Intercept(f(g(h())))`.
+func (c *MarketPurchaseOrderClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MarketPurchaseOrder = append(c.inters.MarketPurchaseOrder, interceptors...)
+}
+
+// Create returns a builder for creating a MarketPurchaseOrder entity.
+func (c *MarketPurchaseOrderClient) Create() *MarketPurchaseOrderCreate {
+	mutation := newMarketPurchaseOrderMutation(c.config, OpCreate)
+	return &MarketPurchaseOrderCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MarketPurchaseOrder entities.
+func (c *MarketPurchaseOrderClient) CreateBulk(builders ...*MarketPurchaseOrderCreate) *MarketPurchaseOrderCreateBulk {
+	return &MarketPurchaseOrderCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MarketPurchaseOrderClient) MapCreateBulk(slice any, setFunc func(*MarketPurchaseOrderCreate, int)) *MarketPurchaseOrderCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MarketPurchaseOrderCreateBulk{err: fmt.Errorf("calling to MarketPurchaseOrderClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MarketPurchaseOrderCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MarketPurchaseOrderCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MarketPurchaseOrder.
+func (c *MarketPurchaseOrderClient) Update() *MarketPurchaseOrderUpdate {
+	mutation := newMarketPurchaseOrderMutation(c.config, OpUpdate)
+	return &MarketPurchaseOrderUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MarketPurchaseOrderClient) UpdateOne(_m *MarketPurchaseOrder) *MarketPurchaseOrderUpdateOne {
+	mutation := newMarketPurchaseOrderMutation(c.config, OpUpdateOne, withMarketPurchaseOrder(_m))
+	return &MarketPurchaseOrderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MarketPurchaseOrderClient) UpdateOneID(id int) *MarketPurchaseOrderUpdateOne {
+	mutation := newMarketPurchaseOrderMutation(c.config, OpUpdateOne, withMarketPurchaseOrderID(id))
+	return &MarketPurchaseOrderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MarketPurchaseOrder.
+func (c *MarketPurchaseOrderClient) Delete() *MarketPurchaseOrderDelete {
+	mutation := newMarketPurchaseOrderMutation(c.config, OpDelete)
+	return &MarketPurchaseOrderDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MarketPurchaseOrderClient) DeleteOne(_m *MarketPurchaseOrder) *MarketPurchaseOrderDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MarketPurchaseOrderClient) DeleteOneID(id int) *MarketPurchaseOrderDeleteOne {
+	builder := c.Delete().Where(marketpurchaseorder.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MarketPurchaseOrderDeleteOne{builder}
+}
+
+// Query returns a query builder for MarketPurchaseOrder.
+func (c *MarketPurchaseOrderClient) Query() *MarketPurchaseOrderQuery {
+	return &MarketPurchaseOrderQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMarketPurchaseOrder},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MarketPurchaseOrder entity by its id.
+func (c *MarketPurchaseOrderClient) Get(ctx context.Context, id int) (*MarketPurchaseOrder, error) {
+	return c.Query().Where(marketpurchaseorder.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MarketPurchaseOrderClient) GetX(ctx context.Context, id int) *MarketPurchaseOrder {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *MarketPurchaseOrderClient) Hooks() []Hook {
+	return c.hooks.MarketPurchaseOrder
+}
+
+// Interceptors returns the client interceptors.
+func (c *MarketPurchaseOrderClient) Interceptors() []Interceptor {
+	return c.inters.MarketPurchaseOrder
+}
+
+func (c *MarketPurchaseOrderClient) mutate(ctx context.Context, m *MarketPurchaseOrderMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MarketPurchaseOrderCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MarketPurchaseOrderUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MarketPurchaseOrderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MarketPurchaseOrderDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MarketPurchaseOrder mutation op: %q", m.Op())
+	}
+}
+
+// MarketPurchaseOrderStepClient is a client for the MarketPurchaseOrderStep schema.
+type MarketPurchaseOrderStepClient struct {
+	config
+}
+
+// NewMarketPurchaseOrderStepClient returns a client for the MarketPurchaseOrderStep from the given config.
+func NewMarketPurchaseOrderStepClient(c config) *MarketPurchaseOrderStepClient {
+	return &MarketPurchaseOrderStepClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `marketpurchaseorderstep.Hooks(f(g(h())))`.
+func (c *MarketPurchaseOrderStepClient) Use(hooks ...Hook) {
+	c.hooks.MarketPurchaseOrderStep = append(c.hooks.MarketPurchaseOrderStep, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `marketpurchaseorderstep.Intercept(f(g(h())))`.
+func (c *MarketPurchaseOrderStepClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MarketPurchaseOrderStep = append(c.inters.MarketPurchaseOrderStep, interceptors...)
+}
+
+// Create returns a builder for creating a MarketPurchaseOrderStep entity.
+func (c *MarketPurchaseOrderStepClient) Create() *MarketPurchaseOrderStepCreate {
+	mutation := newMarketPurchaseOrderStepMutation(c.config, OpCreate)
+	return &MarketPurchaseOrderStepCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MarketPurchaseOrderStep entities.
+func (c *MarketPurchaseOrderStepClient) CreateBulk(builders ...*MarketPurchaseOrderStepCreate) *MarketPurchaseOrderStepCreateBulk {
+	return &MarketPurchaseOrderStepCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MarketPurchaseOrderStepClient) MapCreateBulk(slice any, setFunc func(*MarketPurchaseOrderStepCreate, int)) *MarketPurchaseOrderStepCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MarketPurchaseOrderStepCreateBulk{err: fmt.Errorf("calling to MarketPurchaseOrderStepClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MarketPurchaseOrderStepCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MarketPurchaseOrderStepCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MarketPurchaseOrderStep.
+func (c *MarketPurchaseOrderStepClient) Update() *MarketPurchaseOrderStepUpdate {
+	mutation := newMarketPurchaseOrderStepMutation(c.config, OpUpdate)
+	return &MarketPurchaseOrderStepUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MarketPurchaseOrderStepClient) UpdateOne(_m *MarketPurchaseOrderStep) *MarketPurchaseOrderStepUpdateOne {
+	mutation := newMarketPurchaseOrderStepMutation(c.config, OpUpdateOne, withMarketPurchaseOrderStep(_m))
+	return &MarketPurchaseOrderStepUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MarketPurchaseOrderStepClient) UpdateOneID(id int) *MarketPurchaseOrderStepUpdateOne {
+	mutation := newMarketPurchaseOrderStepMutation(c.config, OpUpdateOne, withMarketPurchaseOrderStepID(id))
+	return &MarketPurchaseOrderStepUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MarketPurchaseOrderStep.
+func (c *MarketPurchaseOrderStepClient) Delete() *MarketPurchaseOrderStepDelete {
+	mutation := newMarketPurchaseOrderStepMutation(c.config, OpDelete)
+	return &MarketPurchaseOrderStepDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MarketPurchaseOrderStepClient) DeleteOne(_m *MarketPurchaseOrderStep) *MarketPurchaseOrderStepDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MarketPurchaseOrderStepClient) DeleteOneID(id int) *MarketPurchaseOrderStepDeleteOne {
+	builder := c.Delete().Where(marketpurchaseorderstep.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MarketPurchaseOrderStepDeleteOne{builder}
+}
+
+// Query returns a query builder for MarketPurchaseOrderStep.
+func (c *MarketPurchaseOrderStepClient) Query() *MarketPurchaseOrderStepQuery {
+	return &MarketPurchaseOrderStepQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMarketPurchaseOrderStep},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MarketPurchaseOrderStep entity by its id.
+func (c *MarketPurchaseOrderStepClient) Get(ctx context.Context, id int) (*MarketPurchaseOrderStep, error) {
+	return c.Query().Where(marketpurchaseorderstep.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MarketPurchaseOrderStepClient) GetX(ctx context.Context, id int) *MarketPurchaseOrderStep {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *MarketPurchaseOrderStepClient) Hooks() []Hook {
+	return c.hooks.MarketPurchaseOrderStep
+}
+
+// Interceptors returns the client interceptors.
+func (c *MarketPurchaseOrderStepClient) Interceptors() []Interceptor {
+	return c.inters.MarketPurchaseOrderStep
+}
+
+func (c *MarketPurchaseOrderStepClient) mutate(ctx context.Context, m *MarketPurchaseOrderStepMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MarketPurchaseOrderStepCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MarketPurchaseOrderStepUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MarketPurchaseOrderStepUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MarketPurchaseOrderStepDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MarketPurchaseOrderStep mutation op: %q", m.Op())
 	}
 }
 
@@ -4807,17 +5091,17 @@ type (
 	hooks struct {
 		Admin, ArtifactSubmission, BackupCode, Badge, Category, ChainCursor,
 		ConsultationRequest, Credential, DeviceFingerprint, DeviceUserMapping,
-		EmailVerificationToken, Endorsement, FinalOffer, IPGeoCache, Passkey,
-		PasswordResetToken, SecurityEvent, Session, SessionLock, SudoSession,
-		TOTPPendingToken, Tag, User, UserBadge, ValidationCase,
-		ValidationCaseLog []ent.Hook
+		EmailVerificationToken, Endorsement, FinalOffer, IPGeoCache,
+		MarketPurchaseOrder, MarketPurchaseOrderStep, Passkey, PasswordResetToken,
+		SecurityEvent, Session, SessionLock, SudoSession, TOTPPendingToken, Tag, User,
+		UserBadge, ValidationCase, ValidationCaseLog []ent.Hook
 	}
 	inters struct {
 		Admin, ArtifactSubmission, BackupCode, Badge, Category, ChainCursor,
 		ConsultationRequest, Credential, DeviceFingerprint, DeviceUserMapping,
-		EmailVerificationToken, Endorsement, FinalOffer, IPGeoCache, Passkey,
-		PasswordResetToken, SecurityEvent, Session, SessionLock, SudoSession,
-		TOTPPendingToken, Tag, User, UserBadge, ValidationCase,
-		ValidationCaseLog []ent.Interceptor
+		EmailVerificationToken, Endorsement, FinalOffer, IPGeoCache,
+		MarketPurchaseOrder, MarketPurchaseOrderStep, Passkey, PasswordResetToken,
+		SecurityEvent, Session, SessionLock, SudoSession, TOTPPendingToken, Tag, User,
+		UserBadge, ValidationCase, ValidationCaseLog []ent.Interceptor
 	}
 )

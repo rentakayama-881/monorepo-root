@@ -17,6 +17,8 @@ import (
 	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/ipgeocache"
+	"backend-gin/ent/marketpurchaseorder"
+	"backend-gin/ent/marketpurchaseorderstep"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
 	"backend-gin/ent/securityevent"
@@ -98,32 +100,34 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			admin.Table:                  admin.ValidColumn,
-			artifactsubmission.Table:     artifactsubmission.ValidColumn,
-			backupcode.Table:             backupcode.ValidColumn,
-			badge.Table:                  badge.ValidColumn,
-			category.Table:               category.ValidColumn,
-			chaincursor.Table:            chaincursor.ValidColumn,
-			consultationrequest.Table:    consultationrequest.ValidColumn,
-			credential.Table:             credential.ValidColumn,
-			devicefingerprint.Table:      devicefingerprint.ValidColumn,
-			deviceusermapping.Table:      deviceusermapping.ValidColumn,
-			emailverificationtoken.Table: emailverificationtoken.ValidColumn,
-			endorsement.Table:            endorsement.ValidColumn,
-			finaloffer.Table:             finaloffer.ValidColumn,
-			ipgeocache.Table:             ipgeocache.ValidColumn,
-			passkey.Table:                passkey.ValidColumn,
-			passwordresettoken.Table:     passwordresettoken.ValidColumn,
-			securityevent.Table:          securityevent.ValidColumn,
-			session.Table:                session.ValidColumn,
-			sessionlock.Table:            sessionlock.ValidColumn,
-			sudosession.Table:            sudosession.ValidColumn,
-			totppendingtoken.Table:       totppendingtoken.ValidColumn,
-			tag.Table:                    tag.ValidColumn,
-			user.Table:                   user.ValidColumn,
-			userbadge.Table:              userbadge.ValidColumn,
-			validationcase.Table:         validationcase.ValidColumn,
-			validationcaselog.Table:      validationcaselog.ValidColumn,
+			admin.Table:                   admin.ValidColumn,
+			artifactsubmission.Table:      artifactsubmission.ValidColumn,
+			backupcode.Table:              backupcode.ValidColumn,
+			badge.Table:                   badge.ValidColumn,
+			category.Table:                category.ValidColumn,
+			chaincursor.Table:             chaincursor.ValidColumn,
+			consultationrequest.Table:     consultationrequest.ValidColumn,
+			credential.Table:              credential.ValidColumn,
+			devicefingerprint.Table:       devicefingerprint.ValidColumn,
+			deviceusermapping.Table:       deviceusermapping.ValidColumn,
+			emailverificationtoken.Table:  emailverificationtoken.ValidColumn,
+			endorsement.Table:             endorsement.ValidColumn,
+			finaloffer.Table:              finaloffer.ValidColumn,
+			ipgeocache.Table:              ipgeocache.ValidColumn,
+			marketpurchaseorder.Table:     marketpurchaseorder.ValidColumn,
+			marketpurchaseorderstep.Table: marketpurchaseorderstep.ValidColumn,
+			passkey.Table:                 passkey.ValidColumn,
+			passwordresettoken.Table:      passwordresettoken.ValidColumn,
+			securityevent.Table:           securityevent.ValidColumn,
+			session.Table:                 session.ValidColumn,
+			sessionlock.Table:             sessionlock.ValidColumn,
+			sudosession.Table:             sudosession.ValidColumn,
+			totppendingtoken.Table:        totppendingtoken.ValidColumn,
+			tag.Table:                     tag.ValidColumn,
+			user.Table:                    user.ValidColumn,
+			userbadge.Table:               userbadge.ValidColumn,
+			validationcase.Table:          validationcase.ValidColumn,
+			validationcaselog.Table:       validationcaselog.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

@@ -48,6 +48,12 @@ type FinalOffer func(*sql.Selector)
 // IPGeoCache is the predicate function for ipgeocache builders.
 type IPGeoCache func(*sql.Selector)
 
+// MarketPurchaseOrder is the predicate function for marketpurchaseorder builders.
+type MarketPurchaseOrder func(*sql.Selector)
+
+// MarketPurchaseOrderStep is the predicate function for marketpurchaseorderstep builders.
+type MarketPurchaseOrderStep func(*sql.Selector)
+
 // Passkey is the predicate function for passkey builders.
 type Passkey func(*sql.Selector)
 

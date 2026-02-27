@@ -40,6 +40,10 @@ type Tx struct {
 	FinalOffer *FinalOfferClient
 	// IPGeoCache is the client for interacting with the IPGeoCache builders.
 	IPGeoCache *IPGeoCacheClient
+	// MarketPurchaseOrder is the client for interacting with the MarketPurchaseOrder builders.
+	MarketPurchaseOrder *MarketPurchaseOrderClient
+	// MarketPurchaseOrderStep is the client for interacting with the MarketPurchaseOrderStep builders.
+	MarketPurchaseOrderStep *MarketPurchaseOrderStepClient
 	// Passkey is the client for interacting with the Passkey builders.
 	Passkey *PasskeyClient
 	// PasswordResetToken is the client for interacting with the PasswordResetToken builders.
@@ -209,6 +213,8 @@ func (tx *Tx) init() {
 	tx.Endorsement = NewEndorsementClient(tx.config)
 	tx.FinalOffer = NewFinalOfferClient(tx.config)
 	tx.IPGeoCache = NewIPGeoCacheClient(tx.config)
+	tx.MarketPurchaseOrder = NewMarketPurchaseOrderClient(tx.config)
+	tx.MarketPurchaseOrderStep = NewMarketPurchaseOrderStepClient(tx.config)
 	tx.Passkey = NewPasskeyClient(tx.config)
 	tx.PasswordResetToken = NewPasswordResetTokenClient(tx.config)
 	tx.SecurityEvent = NewSecurityEventClient(tx.config)

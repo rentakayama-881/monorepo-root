@@ -9,6 +9,7 @@ public interface IMarketPurchaseWalletService
     Task<(bool success, string? error, MarketPurchaseReservation? reservation)> ReserveAsync(uint userId, string orderId, long amountIdr, string? description, string? referenceType);
     Task<(bool success, string? error, MarketPurchaseReservation? reservation)> CaptureAsync(uint userId, string orderId, string? reason);
     Task<(bool success, string? error, MarketPurchaseReservation? reservation)> ReleaseAsync(uint userId, string orderId, string? reason);
+    Task<(IReadOnlyList<MarketPurchaseReservation> items, long total)> GetHistoryAsync(uint userId, int page, int pageSize, string? status);
     Task<(bool success, string? error, MarketPurchaseReservation? reservation)> DistributeAsync(
         uint userId,
         string orderId,
@@ -306,6 +307,36 @@ public class MarketPurchaseWalletService : IMarketPurchaseWalletService
 
         var updated = await _reservations.Find(filter).FirstOrDefaultAsync();
         return (true, null, updated);
+    }
+
+    public async Task<(IReadOnlyList<MarketPurchaseReservation> items, long total)> GetHistoryAsync(
+        uint userId,
+        int page,
+        int pageSize,
+        string? status)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var skip = (page - 1) * pageSize;
+
+        var filter = Builders<MarketPurchaseReservation>.Filter.Eq(r => r.UserId, userId);
+        var normalizedStatus = (status ?? string.Empty).Trim().ToLowerInvariant();
+        if (!string.IsNullOrWhiteSpace(normalizedStatus))
+        {
+            filter = Builders<MarketPurchaseReservation>.Filter.And(
+                filter,
+                Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, normalizedStatus));
+        }
+
+        var total = await _reservations.CountDocumentsAsync(filter);
+        var items = await _reservations
+            .Find(filter)
+            .SortByDescending(r => r.UpdatedAt)
+            .Skip(skip)
+            .Limit(pageSize)
+            .ToListAsync();
+
+        return (items, total);
     }
 
     public async Task<(bool success, string? error, MarketPurchaseReservation? reservation)> DistributeAsync(

@@ -535,6 +535,87 @@ var (
 			},
 		},
 	}
+	// MarketPurchaseOrdersColumns holds the columns for the "market_purchase_orders" table.
+	MarketPurchaseOrdersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "order_id", Type: field.TypeString, Unique: true},
+		{Name: "user_id", Type: field.TypeInt},
+		{Name: "item_id", Type: field.TypeString, Size: 128},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 512, Default: ""},
+		{Name: "price", Type: field.TypeString, Nullable: true, Size: 64, Default: ""},
+		{Name: "status", Type: field.TypeString, Size: 32, Default: "processing"},
+		{Name: "seller", Type: field.TypeString, Nullable: true, Size: 255, Default: ""},
+		{Name: "failure_reason", Type: field.TypeString, Nullable: true, Size: 1024, Default: ""},
+		{Name: "failure_code", Type: field.TypeString, Nullable: true, Size: 128, Default: ""},
+		{Name: "delivery_json", Type: field.TypeJSON, Nullable: true},
+		{Name: "source_price", Type: field.TypeFloat64, Nullable: true, Default: 0},
+		{Name: "source_currency", Type: field.TypeString, Nullable: true, Size: 16, Default: ""},
+		{Name: "source_symbol", Type: field.TypeString, Nullable: true, Size: 8, Default: ""},
+		{Name: "price_idr", Type: field.TypeInt64, Nullable: true, Default: 0},
+		{Name: "fx_rate_to_idr", Type: field.TypeFloat64, Nullable: true, Default: 0},
+		{Name: "price_display", Type: field.TypeString, Nullable: true, Size: 64, Default: ""},
+		{Name: "source_display", Type: field.TypeString, Nullable: true, Size: 128, Default: ""},
+		{Name: "pricing_note", Type: field.TypeString, Nullable: true, Size: 255, Default: ""},
+		{Name: "last_step_code", Type: field.TypeString, Nullable: true, Size: 64, Default: ""},
+		{Name: "supplier_currency", Type: field.TypeString, Nullable: true, Size: 16, Default: ""},
+	}
+	// MarketPurchaseOrdersTable holds the schema information for the "market_purchase_orders" table.
+	MarketPurchaseOrdersTable = &schema.Table{
+		Name:       "market_purchase_orders",
+		Columns:    MarketPurchaseOrdersColumns,
+		PrimaryKey: []*schema.Column{MarketPurchaseOrdersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "marketpurchaseorder_order_id",
+				Unique:  true,
+				Columns: []*schema.Column{MarketPurchaseOrdersColumns[4]},
+			},
+			{
+				Name:    "marketpurchaseorder_user_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{MarketPurchaseOrdersColumns[5], MarketPurchaseOrdersColumns[1]},
+			},
+			{
+				Name:    "marketpurchaseorder_user_id_status_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{MarketPurchaseOrdersColumns[5], MarketPurchaseOrdersColumns[9], MarketPurchaseOrdersColumns[1]},
+			},
+		},
+	}
+	// MarketPurchaseOrderStepsColumns holds the columns for the "market_purchase_order_steps" table.
+	MarketPurchaseOrderStepsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "order_id", Type: field.TypeString, Size: 128},
+		{Name: "code", Type: field.TypeString, Size: 64},
+		{Name: "label", Type: field.TypeString, Size: 255},
+		{Name: "status", Type: field.TypeString, Size: 32},
+		{Name: "message", Type: field.TypeString, Nullable: true, Size: 1024, Default: ""},
+		{Name: "at", Type: field.TypeTime},
+	}
+	// MarketPurchaseOrderStepsTable holds the schema information for the "market_purchase_order_steps" table.
+	MarketPurchaseOrderStepsTable = &schema.Table{
+		Name:       "market_purchase_order_steps",
+		Columns:    MarketPurchaseOrderStepsColumns,
+		PrimaryKey: []*schema.Column{MarketPurchaseOrderStepsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "marketpurchaseorderstep_order_id_at",
+				Unique:  false,
+				Columns: []*schema.Column{MarketPurchaseOrderStepsColumns[4], MarketPurchaseOrderStepsColumns[9]},
+			},
+			{
+				Name:    "marketpurchaseorderstep_order_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{MarketPurchaseOrderStepsColumns[4], MarketPurchaseOrderStepsColumns[1]},
+			},
+		},
+	}
 	// PasskeysColumns holds the columns for the "passkeys" table.
 	PasskeysColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -1145,6 +1226,8 @@ var (
 		EndorsementsTable,
 		FinalOffersTable,
 		IPGeoCacheTable,
+		MarketPurchaseOrdersTable,
+		MarketPurchaseOrderStepsTable,
 		PasskeysTable,
 		PasswordResetTokensTable,
 		SecurityEventsTable,
@@ -1216,6 +1299,12 @@ func init() {
 	}
 	IPGeoCacheTable.Annotation = &entsql.Annotation{
 		Table: "ip_geo_cache",
+	}
+	MarketPurchaseOrdersTable.Annotation = &entsql.Annotation{
+		Table: "market_purchase_orders",
+	}
+	MarketPurchaseOrderStepsTable.Annotation = &entsql.Annotation{
+		Table: "market_purchase_order_steps",
 	}
 	PasskeysTable.ForeignKeys[0].RefTable = UsersTable
 	PasskeysTable.Annotation = &entsql.Annotation{
