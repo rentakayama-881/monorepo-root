@@ -1,0 +1,31 @@
+# AIValid — GitHub Copilot Instructions
+
+## First Action (Mandatory)
+
+Before making ANY code change, run:
+
+```bash
+bash .ai/context.sh
+```
+
+This outputs the CURRENT state of the codebase. Never trust hardcoded numbers.
+
+## Read These Files
+
+1. `.ai/RULES.md` — Coding conventions
+2. `.ai/ARCHITECTURE.md` — Service design
+3. `.ai/QUALITY.md` — Quality gates
+4. `.ai/SECURITY.md` — Security checklist
+
+## Workflows
+
+Read `.ai/prompts/feature.md`, `fix.md`, `refactor.md`, `migrate.md`,
+`review.md`, or `deploy.md` depending on the task.
+
+## Commit
+
+```bash
+./ops/commit-push.sh "type(scope): message"
+```
+
+If docs conflict with `context.sh` output, the **script is correct**.
