@@ -178,4 +178,22 @@ describe("MarketChatGPTClient", () => {
     expect(await screen.findByText("Menampilkan 11-12 dari 12 akun")).toBeInTheDocument();
     expect(screen.getAllByText("ChatGPT Plus Account 12").length).toBeGreaterThan(0);
   });
+
+  it("menggunakan backdrop detail standar dan bisa ditutup lewat klik backdrop", async () => {
+    render(<MarketChatGPTClient />);
+
+    const detailButtons = await screen.findAllByRole("button", { name: "Detail" });
+    fireEvent.click(detailButtons[0]);
+
+    expect(await screen.findByText("Detail Akun")).toBeInTheDocument();
+    const closeOverlay = screen.getByRole("button", { name: "Tutup detail" });
+    expect(closeOverlay).toHaveClass("bg-black/50");
+    expect(closeOverlay).toHaveClass("backdrop-blur-sm");
+
+    fireEvent.click(closeOverlay);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Detail Akun")).not.toBeInTheDocument();
+    });
+  });
 });

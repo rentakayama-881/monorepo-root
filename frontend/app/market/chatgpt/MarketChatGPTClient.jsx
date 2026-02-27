@@ -54,31 +54,15 @@ function usePageScrollLock(locked) {
 
     const body = document.body;
     const html = document.documentElement;
-    const scrollY = window.scrollY;
-
     const prevBodyOverflow = body.style.overflow;
-    const prevBodyPosition = body.style.position;
-    const prevBodyTop = body.style.top;
-    const prevBodyWidth = body.style.width;
     const prevHtmlOverflow = html.style.overflow;
 
     body.style.overflow = "hidden";
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.width = "100%";
     html.style.overflow = "hidden";
 
     return () => {
       body.style.overflow = prevBodyOverflow;
-      body.style.position = prevBodyPosition;
-      body.style.top = prevBodyTop;
-      body.style.width = prevBodyWidth;
       html.style.overflow = prevHtmlOverflow;
-      const canRestoreScroll =
-        typeof window.scrollTo === "function" && !/jsdom/i.test(window.navigator?.userAgent || "");
-      if (canRestoreScroll) {
-        window.scrollTo(0, scrollY);
-      }
     };
   }, [locked]);
 }
@@ -606,7 +590,7 @@ function SpecDrawer({ item, onClose }) {
 
   return (
     <>
-      <button type="button" aria-label="Tutup detail" onClick={onClose} className="fixed inset-0 z-40 bg-black/25" />
+      <button type="button" aria-label="Tutup detail" onClick={onClose} className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
       <aside className="fixed z-50 w-full border-l border-border bg-card shadow-2xl md:top-0 md:right-0 md:h-full md:w-[380px] bottom-0 left-0 max-h-[82vh] md:max-h-none rounded-t-2xl md:rounded-none">
         <div className="flex items-start justify-between border-b border-border px-3 py-2.5">
           <div className="min-w-0">
