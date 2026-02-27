@@ -1,4 +1,5 @@
 import { getApiBase } from "./api";
+import logger from "./logger";
 import {
   getToken,
   getRefreshToken,
@@ -81,7 +82,7 @@ export async function refreshAccessToken() {
     } catch (error) {
       // Network error - don't clear tokens, just return null
       // User can retry when connection is restored
-      console.warn("Token refresh failed (network):", error.message);
+      logger.warn("Token refresh failed (network):", error.message);
       return null;
     } finally {
       refreshPromise = null;

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { fetchJson } from "@/lib/api";
+import logger from "@/lib/logger";
 import ValidationCaseIndexClient from "./ValidationCaseIndexClient";
 import { ValidationCaseIndexContentSkeleton } from "./ValidationCaseIndexSkeleton";
 
@@ -31,7 +32,7 @@ async function CaseList() {
   } catch (err) {
     fetchError = "Data sementara belum tersedia. Silakan muat ulang beberapa saat lagi.";
     const reason = err instanceof Error ? err.message : String(err);
-    console.error("[validation-cases] Failed to fetch latest cases during render:", reason);
+    logger.error("[validation-cases] Failed to fetch latest cases during render:", reason);
   }
 
   return <ValidationCaseIndexClient cases={cases} fetchError={fetchError} />;

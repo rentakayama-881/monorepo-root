@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Button from "@/components/ui/Button";
+import logger from "@/lib/logger";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -9,7 +10,7 @@ export default function AdminError({ error, reset }) {
   useEffect(() => {
     // Only log error details in development to prevent information leakage
     if (isDev) {
-      console.error("Admin Error:", error);
+      logger.error("Admin Error:", error);
     }
     // In production, errors should be sent to error tracking service (e.g., Sentry)
   }, [error]);

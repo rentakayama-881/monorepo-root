@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { STORAGE_KEYS } from "./constants";
+import logger from "./logger";
 
 const ThemeContext = createContext({
   theme: "system",
@@ -113,7 +114,7 @@ export function ThemeProvider({ children }) {
       writeThemeCookie(newTheme);
     } catch (error) {
       // localStorage unavailable (e.g., private browsing, quota exceeded)
-      console.warn("Failed to save theme to localStorage:", error);
+      logger.warn("Failed to save theme to localStorage:", error);
     }
   };
 

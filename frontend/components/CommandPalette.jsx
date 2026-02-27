@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/lib/ThemeContext";
 import { STORAGE_KEYS } from "@/lib/constants";
+import logger from "@/lib/logger";
 
 /**
  * Command Palette Component
@@ -157,7 +158,7 @@ export default function CommandPalette({ isOpen, onClose }) {
         const recent = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECENT_SEARCHES) || "[]");
         setRecentSearches(recent);
       } catch (error) {
-        console.warn("Failed to load recent searches:", error);
+        logger.warn("Failed to load recent searches:", error);
         setRecentSearches([]);
       }
       // Focus input
@@ -209,7 +210,7 @@ export default function CommandPalette({ isOpen, onClose }) {
       localStorage.setItem(STORAGE_KEYS.RECENT_SEARCHES, JSON.stringify(recent));
     } catch (error) {
       // Ignore localStorage errors (e.g., quota exceeded, private browsing)
-      console.warn("Failed to save recent searches:", error);
+      logger.warn("Failed to save recent searches:", error);
     }
 
     // Execute command

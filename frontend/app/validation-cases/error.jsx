@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import logger from "@/lib/logger";
 
 export default function Error({ error, reset }) {
   const [countdown, setCountdown] = useState(10);
@@ -28,7 +29,7 @@ export default function Error({ error, reset }) {
   }, [reset]);
 
   useEffect(() => {
-    console.error('[validation-cases] Error boundary caught:', error);
+    logger.error('[validation-cases] Error boundary caught:', error);
   }, [error]);
 
   useEffect(() => {

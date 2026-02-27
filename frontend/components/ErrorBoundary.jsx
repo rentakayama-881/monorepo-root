@@ -1,6 +1,7 @@
 "use client";
 
 import { Component } from "react";
+import logger from "@/lib/logger";
 
 /**
  * Enhanced Error Boundary
@@ -19,7 +20,7 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, errorInfo) {
     // Log error to console in development
     if (process.env.NODE_ENV === "development") {
-      console.error("Error Boundary caught an error:", error, errorInfo);
+      logger.error("Error Boundary caught an error:", error, errorInfo);
     }
     
     this.setState({

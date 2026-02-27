@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
+import logger from "@/lib/logger";
 import Avatar from "@/components/ui/Avatar";
 import { Badge, BadgeChip } from "@/components/ui/Badge";
 import ValidationCaseTable from "@/components/ui/ValidationCaseTable";
@@ -107,7 +108,7 @@ export default function UserProfilePage() {
           }
         }
       } catch (err) {
-        console.error("Failed to load content:", err);
+        logger.error("Failed to load content:", err);
       } finally {
         setLoadingContent(false);
       }

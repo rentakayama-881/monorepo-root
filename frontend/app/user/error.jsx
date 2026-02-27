@@ -1,8 +1,9 @@
 'use client';
 import { useEffect } from 'react';
+import logger from "@/lib/logger";
 export default function Error({ error, reset }) {
   const isDev = process.env.NODE_ENV === 'development';
-  useEffect(() => { console.error('Error:', error); }, [error]);
+  useEffect(() => { logger.error('Error:', error); }, [error]);
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 p-8 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
