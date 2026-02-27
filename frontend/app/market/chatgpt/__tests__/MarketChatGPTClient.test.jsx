@@ -179,6 +179,19 @@ describe("MarketChatGPTClient", () => {
     expect(screen.getAllByText("ChatGPT Plus Account 12").length).toBeGreaterThan(0);
   });
 
+  it("merender placeholder slot agar tinggi list stabil di halaman terakhir", async () => {
+    global.fetch.mockResolvedValueOnce(createListingResponse(createManyListingItems(12)));
+
+    render(<MarketChatGPTClient />);
+
+    await screen.findByText("Menampilkan 1-10 dari 12 akun");
+    fireEvent.click(screen.getByRole("button", { name: "Halaman berikutnya" }));
+    await screen.findByText("Menampilkan 11-12 dari 12 akun");
+
+    expect(screen.getAllByTestId("market-desktop-pagination-placeholder")).toHaveLength(8);
+    expect(screen.getAllByTestId("market-mobile-pagination-placeholder")).toHaveLength(8);
+  });
+
   it("menggunakan backdrop detail standar dan bisa ditutup lewat klik backdrop", async () => {
     render(<MarketChatGPTClient />);
 

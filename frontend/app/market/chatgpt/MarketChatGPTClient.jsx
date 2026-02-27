@@ -274,6 +274,7 @@ export default function MarketChatGPTClient() {
   const paginatedItems = useMemo(() => {
     return filtered.slice(pageStartIndex, pageStartIndex + MARKET_PAGE_SIZE);
   }, [filtered, pageStartIndex]);
+  const placeholderCount = Math.max(0, MARKET_PAGE_SIZE - paginatedItems.length);
 
   const displayStart = totalItems === 0 ? 0 : pageStartIndex + 1;
   const displayEnd = Math.min(totalItems, pageStartIndex + paginatedItems.length);
@@ -387,7 +388,7 @@ export default function MarketChatGPTClient() {
           <p className="text-xs text-muted-foreground">Belum ada akun yang cocok dengan pencarian Anda.</p>
         ) : (
           <>
-            <div className="space-y-2 min-h-[32rem] sm:min-h-[36rem] md:hidden">
+            <div className="space-y-2 md:hidden">
               {paginatedItems.map((item) => (
                 <MobileAccountCard
                   key={item.id}
@@ -397,9 +398,12 @@ export default function MarketChatGPTClient() {
                   onBuy={() => setConfirmItem(item)}
                 />
               ))}
+              {Array.from({ length: placeholderCount }).map((_, index) => (
+                <MobileAccountCardPlaceholder key={`mobile-placeholder-${currentPage}-${index}`} />
+              ))}
             </div>
 
-            <div className="hidden min-h-[30.5rem] overflow-hidden rounded-lg border border-border bg-background md:block">
+            <div className="hidden overflow-hidden rounded-lg border border-border bg-background md:block">
               <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] gap-3 border-b border-border bg-muted/30 px-3 py-2 text-[11px] font-semibold text-muted-foreground">
                 <div>Akun</div>
                 <div>Harga</div>
@@ -417,6 +421,9 @@ export default function MarketChatGPTClient() {
                     onDetail={() => setDrawerItem(item)}
                     onBuy={() => setConfirmItem(item)}
                   />
+                ))}
+                {Array.from({ length: placeholderCount }).map((_, index) => (
+                  <DesktopAccountRowPlaceholder key={`desktop-placeholder-${currentPage}-${index}`} />
                 ))}
               </div>
             </div>
@@ -535,6 +542,23 @@ function DesktopAccountRow({ item, checkingOut, onDetail, onBuy }) {
   );
 }
 
+function DesktopAccountRowPlaceholder() {
+  return (
+    <article
+      aria-hidden="true"
+      data-testid="market-desktop-pagination-placeholder"
+      className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] items-center gap-3 px-3 py-2.5 text-xs opacity-0 pointer-events-none"
+    >
+      <div>&nbsp;</div>
+      <div>&nbsp;</div>
+      <div>&nbsp;</div>
+      <div>&nbsp;</div>
+      <div>&nbsp;</div>
+      <div>&nbsp;</div>
+    </article>
+  );
+}
+
 function MobileAccountCard({ item, checkingOut, onDetail, onBuy }) {
   return (
     <article className="rounded-lg border border-border bg-background p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
@@ -563,6 +587,18 @@ function MobileAccountCard({ item, checkingOut, onDetail, onBuy }) {
       <div className="mt-3">
         <AccountActionButtons item={item} checkingOut={checkingOut} onDetail={onDetail} onBuy={onBuy} />
       </div>
+    </article>
+  );
+}
+
+function MobileAccountCardPlaceholder() {
+  return (
+    <article
+      aria-hidden="true"
+      data-testid="market-mobile-pagination-placeholder"
+      className="pointer-events-none rounded-lg border border-border bg-background p-3 opacity-0 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+    >
+      <div className="h-28" />
     </article>
   );
 }
