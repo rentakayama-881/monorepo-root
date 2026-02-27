@@ -340,7 +340,7 @@ export default function MarketChatGPTClient() {
   const staleBadge = response?.stale ? "stale" : "";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 [scrollbar-gutter:stable]">
       <header className="space-y-2">
         <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Marketplace</div>
         <div className="flex flex-wrap items-center gap-2">
@@ -387,7 +387,7 @@ export default function MarketChatGPTClient() {
           <p className="text-xs text-muted-foreground">Belum ada akun yang cocok dengan pencarian Anda.</p>
         ) : (
           <>
-            <div className="space-y-2 md:hidden">
+            <div className="space-y-2 min-h-[32rem] sm:min-h-[36rem] md:hidden">
               {paginatedItems.map((item) => (
                 <MobileAccountCard
                   key={item.id}
@@ -399,7 +399,7 @@ export default function MarketChatGPTClient() {
               ))}
             </div>
 
-            <div className="hidden overflow-hidden rounded-lg border border-border bg-background md:block">
+            <div className="hidden min-h-[30.5rem] overflow-hidden rounded-lg border border-border bg-background md:block">
               <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] gap-3 border-b border-border bg-muted/30 px-3 py-2 text-[11px] font-semibold text-muted-foreground">
                 <div>Akun</div>
                 <div>Harga</div>
