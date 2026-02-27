@@ -54,6 +54,7 @@ function usePageScrollLock(locked) {
 
     const body = document.body;
     const html = document.documentElement;
+    const scrollY = window.scrollY;
     const prevBodyOverflow = body.style.overflow;
     const prevHtmlOverflow = html.style.overflow;
 
@@ -63,6 +64,10 @@ function usePageScrollLock(locked) {
     return () => {
       body.style.overflow = prevBodyOverflow;
       html.style.overflow = prevHtmlOverflow;
+      const canRestoreScroll = typeof window.scrollTo === "function" && !/jsdom/i.test(window.navigator?.userAgent || "");
+      if (canRestoreScroll) {
+        window.scrollTo(0, scrollY);
+      }
     };
   }, [locked]);
 }
