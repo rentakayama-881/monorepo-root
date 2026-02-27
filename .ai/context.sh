@@ -101,5 +101,27 @@ find "$ROOT/frontend/app" "$ROOT/frontend/components" "$ROOT/frontend/lib" \
 done
 printf '\n'
 
+# ── Dependency Health ──
+echo ""
+echo "=== Dependency Health ==="
+if [ -d "frontend" ]; then
+  AUDIT_RESULT=$(cd frontend && npm audit --audit-level=high 2>&1 | tail -1)
+  echo "Frontend npm audit: $AUDIT_RESULT"
+fi
+if [ -d "backend" ]; then
+  GOVET_RESULT=$(cd backend && go vet ./... 2>&1 | wc -l)
+  echo "Backend go vet issues: $GOVET_RESULT"
+fi
+echo ""
+
+# ── Large Files (>500 lines) ──
+echo "=== Large Files (>500 LOC) ==="
+find frontend/app frontend/components frontend/lib -name "*.jsx" -o -name "*.js" 2>/dev/null | xargs wc -l 2>/dev/null | sort -rn | awk '$1 > 500 && !/total$/ {print}' | head -10
+echo ""
+
+# ── TODO/FIXME Count ──
+TODO_COUNT=$(grep -rn 'TODO\|FIXME' backend/ feature-service/src/ frontend/lib/ frontend/components/ frontend/app/ --include="*.go" --include="*.cs" --include="*.js" --include="*.jsx" 2>/dev/null | grep -v node_modules | grep -v .next | wc -l)
+echo "TODO/FIXME markers: $TODO_COUNT"
+
 printf '=== CONTEXT COMPLETE ===\n'
 printf 'Timestamp: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
