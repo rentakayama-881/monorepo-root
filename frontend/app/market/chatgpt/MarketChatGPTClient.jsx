@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CenteredSpinner } from "@/components/ui/LoadingState";
 import { fetchJsonAuth, getApiBase } from "@/lib/api";
 import { FEATURE_ENDPOINTS, fetchFeatureAuth, unwrapFeatureData } from "@/lib/featureApi";
+import { extractList } from "@/lib/apiHelpers";
 
 const MARKET_PAGE_SIZE = 10;
 const JAKARTA_TIMEZONE = "Asia/Jakarta";
@@ -13,26 +14,6 @@ function getCheckoutConfirmSeconds() {
   const raw = Number(process.env.NEXT_PUBLIC_MARKET_BUY_CONFIRM_SECONDS);
   if (!Number.isFinite(raw) || raw < 0) return 60;
   return Math.floor(raw);
-}
-
-function extractList(payload) {
-  if (!payload) return [];
-  if (Array.isArray(payload)) return payload;
-
-  const candidates = [
-    payload.items,
-    payload.accounts,
-    payload.data,
-    payload.result,
-    payload.chatgpt,
-    payload.rows,
-    payload.list,
-  ];
-  for (const item of candidates) {
-    if (Array.isArray(item)) return item;
-    if (item && typeof item === "object" && Array.isArray(item.items)) return item.items;
-  }
-  return [];
 }
 
 function normalizeBool(value) {

@@ -61,13 +61,11 @@ func NewLZTMarketClientFromEnv() *LZTMarketClient {
 
 	timeoutSeconds := readPositiveIntEnv("LZT_MARKET_TIMEOUT_SECONDS", 300)
 	minIntervalMs := readPositiveIntEnv("LZT_MARKET_MIN_INTERVAL_MS", 200)
-	insecureSkipVerify := readBoolEnv("LZT_MARKET_INSECURE_SKIP_VERIFY", false)
 	token := strings.TrimSpace(os.Getenv("LZT_MARKET_TOKEN"))
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.TLSClientConfig = &tls.Config{
-		MinVersion:         tls.VersionTLS12,
-		InsecureSkipVerify: insecureSkipVerify,
+		MinVersion: tls.VersionTLS12,
 	}
 
 	return &LZTMarketClient{
@@ -252,14 +250,3 @@ func readPositiveIntEnv(key string, fallback int) int {
 	return n
 }
 
-func readBoolEnv(key string, fallback bool) bool {
-	raw := strings.TrimSpace(os.Getenv(key))
-	if raw == "" {
-		return fallback
-	}
-	v, err := strconv.ParseBool(raw)
-	if err != nil {
-		return fallback
-	}
-	return v
-}

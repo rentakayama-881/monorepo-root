@@ -380,7 +380,7 @@ export default function NewValidationCaseClient() {
     setWorkspaceBootstrapFiles((prev) => [
       ...prev,
       {
-        localId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        localId: crypto.randomUUID(),
         file,
         kind,
         label,

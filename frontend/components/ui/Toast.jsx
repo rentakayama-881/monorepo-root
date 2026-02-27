@@ -17,7 +17,7 @@ export function ToastProvider({ children, position = "bottom-right" }) {
 
   const addToast = useCallback(
     ({ title, description, variant = "info", duration = 4000, action }) => {
-      const id = Date.now() + Math.random();
+      const id = crypto.randomUUID();
       const newToast = { id, title, description, variant, duration, action };
 
       setToasts((prev) => [...prev, newToast]);

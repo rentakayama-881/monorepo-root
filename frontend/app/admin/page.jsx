@@ -7,20 +7,10 @@ import { CenteredSpinner } from "@/components/ui/LoadingState";
 import logger from "@/lib/logger";
 import { getApiBase } from "@/lib/api";
 import { getAdminToken } from "@/lib/adminAuth";
+import { unwrapApiData } from "@/lib/apiHelpers";
 
 const FEATURE_SERVICE_URL =
   process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
-
-function unwrapApiData(payload) {
-  if (!payload || typeof payload !== "object") return payload;
-  return (
-    payload.data ??
-    payload.Data ??
-    payload.result ??
-    payload.Result ??
-    payload
-  );
-}
 
 function normalizePendingDepositItem(item) {
   const amountRaw = item?.amount ?? item?.Amount ?? 0;
