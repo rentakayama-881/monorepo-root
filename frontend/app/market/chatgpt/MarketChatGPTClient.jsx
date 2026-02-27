@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CenteredSpinner } from "@/components/ui/LoadingState";
+import Portal from "@/components/ui/Portal";
 import { fetchJsonAuth, getApiBase } from "@/lib/api";
 import { FEATURE_ENDPOINTS, fetchFeatureAuth, unwrapFeatureData } from "@/lib/featureApi";
 import { extractList } from "@/lib/apiHelpers";
@@ -630,14 +631,19 @@ function SpecDrawer({ item, onClose }) {
   ].filter((row) => row?.[1] !== null && row?.[1] !== undefined && String(row?.[1]).trim() !== "");
 
   return (
-    <>
+    <Portal>
       <button
         type="button"
         aria-label="Tutup detail"
         onClick={onClose}
         className="fixed inset-0 z-[100] bg-black/50 transition-opacity duration-300"
       />
-      <aside className="fixed z-[110] w-full border-l border-border bg-card shadow-2xl md:top-0 md:right-0 md:h-full md:w-[380px] bottom-0 left-0 max-h-[82vh] md:max-h-none rounded-t-2xl md:rounded-none">
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Detail akun"
+        className="fixed z-[110] w-full border-l border-border bg-card shadow-2xl animate-slide-up md:top-0 md:right-0 md:h-full md:w-[380px] md:animate-slide-in-from-right bottom-0 left-0 max-h-[82vh] md:max-h-none rounded-t-2xl md:rounded-none"
+      >
         <div className="flex items-start justify-between border-b border-border px-3 py-2.5">
           <div className="min-w-0">
             <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Detail Akun</div>
@@ -663,7 +669,7 @@ function SpecDrawer({ item, onClose }) {
           </div>
         </div>
       </aside>
-    </>
+    </Portal>
   );
 }
 
