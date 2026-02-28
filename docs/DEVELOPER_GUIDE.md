@@ -1,19 +1,22 @@
-# 📖 PANDUAN DEVELOPER AIVALID
+# PANDUAN DEVELOPER AIVALID
 
 > **Versi:** 1.0  
 > **Tanggal:** 15 Januari 2026  
 > **Klasifikasi:** Developer Guide  
 > **Audience:** Developer, AI Assistant
 
+> **AI Assistants:** Start with `CLAUDE.md` at the project root instead of this file.
+> It bootstraps the `.ai/` system which has machine-optimized rules and prompts.
+
 ---
 
-## ⚠️ PENTING: BACA SEBELUM MENGERJAKAN
+## PENTING: BACA SEBELUM MENGERJAKAN
 
 Dokumen ini adalah **panduan wajib** untuk siapapun yang akan melanjutkan pengembangan AIValid, baik developer manusia maupun AI assistant. Ikuti aturan-aturan ini dengan ketat.
 
 ---
 
-## 📋 DAFTAR ISI
+## DAFTAR ISI
 
 1. [Prinsip Dasar](#1-prinsip-dasar)
 2. [Struktur Proyek](#2-struktur-proyek)
@@ -34,14 +37,14 @@ Dokumen ini adalah **panduan wajib** untuk siapapun yang akan melanjutkan pengem
 
 ```
 JANGAN:
-❌ Mencampur logic antar service
-❌ Mengakses database service lain secara langsung
-❌ Menduplikasi kode antar service
+- Mencampur logic antar service
+- Mengakses database service lain secara langsung
+- Menduplikasi kode antar service
 
 LAKUKAN:
-✅ Komunikasi via HTTP/REST antar service
-✅ Setiap service punya database sendiri
-✅ Gunakan shared JWT untuk autentikasi
+- Komunikasi via HTTP/REST antar service
+- Setiap service punya database sendiri
+- Gunakan shared JWT untuk autentikasi
 ```
 
 ### 1.2 Separation of Concerns
@@ -74,9 +77,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 // SALAH: Handler mengandung business logic
 func (h *AuthHandler) Login(c *gin.Context) {
-    // ❌ Jangan lakukan query database di handler
+    // Jangan lakukan query database di handler
     user, _ := h.db.User.Query().Where(...).First(ctx)
-    // ❌ Jangan lakukan hashing di handler
+    // Jangan lakukan hashing di handler
     hash, _ := bcrypt.GenerateFromPassword(...)
 }
 ```
@@ -123,7 +126,7 @@ aivalid/
 │   ├── database/            # DB connections
 │   ├── dto/                 # Request/Response structs
 │   ├── ent/                 # Ent ORM
-│   │   ├── schema/          # ⭐ Entity definitions
+│   │   ├── schema/          # Entity definitions
 │   │   └── ...              # Generated code
 │   ├── errors/              # Custom errors
 │   ├── handlers/            # HTTP handlers
@@ -600,7 +603,7 @@ _collection.Indexes.CreateOne(indexModel);
 ### 7.1 WAJIB DIIKUTI
 
 ```
-❌ JANGAN PERNAH:
+JANGAN PERNAH:
 - Menyimpan password dalam plain text
 - Log data sensitif (password, token, PIN)
 - Hardcode secret/credentials
@@ -610,7 +613,7 @@ _collection.Indexes.CreateOne(indexModel);
 - Menampilkan stack trace ke user
 - Menyimpan JWT secret di frontend
 
-✅ SELALU:
+SELALU:
 - Gunakan bcrypt untuk password (cost ≥ 10)
 - Gunakan PBKDF2 untuk PIN (iterations ≥ 310,000)
 - Validasi semua input di server side
@@ -888,7 +891,7 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run
 
 ---
 
-## 📞 KONTAK
+## KONTAK
 
 | Role | Kontak |
 |------|--------|
@@ -898,4 +901,4 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run
 
 ---
 
-*Dokumen ini adalah panduan wajib untuk pengembangan AIValid. Terakhir diperbarui: 10 Februari 2026.*
+*Dokumen ini adalah panduan wajib untuk pengembangan AIValid.*
