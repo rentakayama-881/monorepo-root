@@ -2,15 +2,13 @@
 
 An institutional-grade Validation Protocol platform (academic/legal/financial tone) with enterprise-grade security and escrow-backed workflows.
 
-**Last Updated:** January 12, 2026
-
 ---
 
 ## Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                     FRONTEND (Next.js 15)                           │
+│                     FRONTEND (Next.js)                              │
 │                 React 19 · Tailwind CSS 4                           │
 │                    Deployed on Vercel                               │
 └─────────────────────────┬───────────────────────────────────────────┘
@@ -107,7 +105,7 @@ aivalid/
 │   └── tests/
 │       └── FeatureService.Api.Tests/
 │
-├── frontend/                # Next.js 15 application
+├── frontend/                # Next.js application
 │   ├── app/                 # App router pages
 │   ├── components/          # Reusable UI components
 │   ├── lib/                 # Utilities & hooks
@@ -122,7 +120,7 @@ aivalid/
 ## Getting Started
 
 ### Prerequisites
-- Go 1.22+
+- Go 1.24+
 - Node.js 24.12+ (24.x)
 - .NET 8.0 SDK
 - PostgreSQL 16+
@@ -260,6 +258,12 @@ JWT_AUDIENCE=aivalid-users
 
 ---
 
+## For AI Assistants
+
+Read `CLAUDE.md` at the project root — it bootstraps the full `.ai/` instruction system.
+
+---
+
 ## Contributing
 
 1. Fork the repository
@@ -267,6 +271,8 @@ JWT_AUDIENCE=aivalid-users
 3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+For detailed setup and contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Commit Convention
 - `feat:` — New feature
@@ -288,19 +294,3 @@ If you discover a security vulnerability, please use the contact listed in `SECU
 
 This project is proprietary software. All rights reserved.
 
----
-
-## Changelog
-
-### January 12, 2026
-- ✅ Added 2FA requirement for all financial operations
-- ✅ Implemented secure PIN system with no reset option
-- ✅ Fixed registration email verification flow
-- ✅ Updated email templates (year 2025 → 2026)
-- ✅ Added 15 new financial security tests
-- ✅ Fixed frontend ValidationCaseTable import error
-- ✅ Cleaned up legacy documentation files
-
-### January 5, 2026
-- Initial Feature Service deployment
-- Wallet/escrow/dispute service available (wallets, transfers, withdrawals, disputes)
