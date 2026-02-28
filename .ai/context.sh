@@ -101,27 +101,21 @@ find "$ROOT/frontend/app" "$ROOT/frontend/components" "$ROOT/frontend/lib" \
 done
 printf '\n'
 
-# ── Dependency Health ──
-echo ""
-echo "=== Dependency Health ==="
-if [ -d "frontend" ]; then
-  AUDIT_RESULT=$(cd frontend && npm audit --audit-level=high 2>&1 | tail -1)
-  echo "Frontend npm audit: $AUDIT_RESULT"
+# ── Dependency Health ──────────────────────────────────────────────
+printf '=== Dependency Health ===\n'
+if [ -d "$ROOT/frontend" ]; then
+  AUDIT_RESULT=$(cd "$ROOT/frontend" && npm audit --audit-level=high 2>&1 | tail -1) || true
+  printf 'Frontend npm audit: %s\n' "$AUDIT_RESULT"
 fi
-if [ -d "backend" ]; then
-  GOVET_RESULT=$(cd backend && go vet ./... 2>&1 | wc -l)
-  echo "Backend go vet issues: $GOVET_RESULT"
+if [ -d "$ROOT/backend" ]; then
+  GOVET_RESULT=$(cd "$ROOT/backend" && go vet ./... 2>&1 | wc -l) || true
+  printf 'Backend go vet issues: %s\n' "$GOVET_RESULT"
 fi
-echo ""
+printf '\n'
 
-# ── Large Files (>500 lines) ──
-echo "=== Large Files (>500 LOC) ==="
-find frontend/app frontend/components frontend/lib -name "*.jsx" -o -name "*.js" 2>/dev/null | xargs wc -l 2>/dev/null | sort -rn | awk '$1 > 500 && !/total$/ {print}' | head -10
-echo ""
-
-# ── TODO/FIXME Count ──
-TODO_COUNT=$(grep -rn 'TODO\|FIXME' backend/ feature-service/src/ frontend/lib/ frontend/components/ frontend/app/ --include="*.go" --include="*.cs" --include="*.js" --include="*.jsx" 2>/dev/null | grep -v node_modules | grep -v .next | wc -l)
-echo "TODO/FIXME markers: $TODO_COUNT"
+# ── TODO/FIXME Count ─────────────────────────────────────────────
+TODO_COUNT=$(grep -rn 'TODO\|FIXME' "$ROOT/backend/" "$ROOT/feature-service/src/" "$ROOT/frontend/lib/" "$ROOT/frontend/components/" "$ROOT/frontend/app/" --include="*.go" --include="*.cs" --include="*.js" --include="*.jsx" 2>/dev/null | grep -v node_modules | grep -v .next | wc -l)
+printf 'TODO/FIXME markers: %s\n' "$TODO_COUNT"
 
 printf '=== CONTEXT COMPLETE ===\n'
 printf 'Timestamp: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
