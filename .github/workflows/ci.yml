@@ -148,6 +148,17 @@ jobs:
       - name: Run Prettier check
         run: npm run format:check
 
+      - name: Check file modularity (max 500 LOC)
+        run: |
+          VIOLATIONS=$(find app components lib -name "*.jsx" -o -name "*.js" -o -name "*.tsx" -o -name "*.ts" | \
+            xargs wc -l 2>/dev/null | sort -rn | awk '$1 > 500 && !/total$/ {print}')
+          if [ -n "$VIOLATIONS" ]; then
+            echo "::error::Files exceeding 500-line limit:"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+          echo "All files within 500-line modularity limit"
+
   frontend-typecheck:
     name: 📝 Frontend TypeScript
     runs-on: ubuntu-latest
