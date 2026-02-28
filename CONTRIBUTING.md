@@ -2,6 +2,15 @@
 
 Thank you for your interest in contributing to AIValid! This document provides guidelines for contributing.
 
+## Prerequisites
+
+- Node.js 24+ (24.x LTS)
+- Go 1.24+
+- .NET 8.0 SDK
+- PostgreSQL 16+
+- MongoDB 7.0+
+- Redis 7+
+
 ## Code of Conduct
 
 By participating in this project, you agree to maintain a respectful and inclusive environment.
@@ -85,6 +94,11 @@ test(security): add 2FA requirement tests
    - Input validation on all endpoints
    - Authorization checks in place
 
+4. **Run preflight checks:**
+   ```bash
+   ./ops/preflight-full.sh
+   ```
+
 ### PR Requirements
 
 - [ ] Clear description of changes
@@ -141,10 +155,16 @@ test(security): add 2FA requirement tests
 - Test input validation
 - Verify rate limiting
 
+## AI-Assisted Development
+
+This repo has a built-in AI instruction system. If you use an AI assistant:
+
+1. Point it to `CLAUDE.md` at the project root
+2. The `.ai/` directory contains rules, architecture, quality scoring, and workflow prompts
+3. Run `bash .ai/context.sh` to discover current repo state
+
 ## Questions?
 
 Open a [Discussion](https://github.com/aivalid/discussions) for questions or suggestions.
 
 ---
-
-*Last updated: January 12, 2026*
