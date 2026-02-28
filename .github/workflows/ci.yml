@@ -611,6 +611,50 @@ jobs:
           path: feature-service/dotnet-audit.json
           retention-days: 7
 
+  # --------------------------------------------------------------------------
+  # Dependency Audit (Quick lane — runs on every PR and push)
+  # --------------------------------------------------------------------------
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend audit
+        working-directory: frontend
+        run: npm audit --audit-level=high || true
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: backend/go.sum
+
+      - name: Backend vulnerability check
+        working-directory: backend
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+        continue-on-error: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Feature Service audit
+        working-directory: feature-service
+        run: dotnet list src/FeatureService.Api/FeatureService.Api.csproj package --vulnerable --include-transitive || true
+
   # ==========================================================================
   # Stage 5: Post-Quantum Cryptography Validation
   # ==========================================================================
@@ -696,11 +740,13 @@ jobs:
       - frontend-security
       - backend-test
       - feature-service-test
+      - dependency-audit
     env:
       FRONTEND_BUILD_RESULT: ${{ needs.frontend-build.result }}
       FRONTEND_SECURITY_RESULT: ${{ needs.frontend-security.result }}
       BACKEND_TEST_RESULT: ${{ needs.backend-test.result }}
       FEATURE_SERVICE_TEST_RESULT: ${{ needs.feature-service-test.result }}
+      DEPENDENCY_AUDIT_RESULT: ${{ needs.dependency-audit.result }}
     steps:
       - name: Validate quick lane dependencies
         run: |
@@ -710,7 +756,8 @@ jobs:
             "frontend-build:${FRONTEND_BUILD_RESULT}" \
             "frontend-security:${FRONTEND_SECURITY_RESULT}" \
             "backend-test:${BACKEND_TEST_RESULT}" \
-            "feature-service-test:${FEATURE_SERVICE_TEST_RESULT}"; do
+            "feature-service-test:${FEATURE_SERVICE_TEST_RESULT}" \
+            "dependency-audit:${DEPENDENCY_AUDIT_RESULT}"; do
             name="${item%%:*}"
             status="${item##*:}"
             if [ "${status}" != "success" ]; then
