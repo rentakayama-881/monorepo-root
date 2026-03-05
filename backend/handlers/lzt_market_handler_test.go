@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"math"
 	"net/http"
@@ -12,6 +13,36 @@ import (
 	"backend-gin/services"
 	"github.com/gin-gonic/gin"
 )
+
+func TestGetPublicChatGPTCheckout_SetsDeprecationHeaders(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	handler := &LZTMarketHandler{}
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Params = gin.Params{{Key: "itemId", Value: "item_123"}}
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/market/chatgpt/item_123/checkout", nil)
+
+	handler.GetPublicChatGPTCheckout(ctx)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: got %d want %d", recorder.Code, http.StatusOK)
+	}
+	if got := recorder.Header().Get("Deprecation"); got != "true" {
+		t.Fatalf("unexpected deprecation header: got %q want %q", got, "true")
+	}
+	if got := recorder.Header().Get("Sunset"); got != publicChatGPTCheckoutSunsetHeader {
+		t.Fatalf("unexpected sunset header: got %q want %q", got, publicChatGPTCheckoutSunsetHeader)
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("failed to parse response payload: %v", err)
+	}
+	if payload["item_id"] != "item_123" {
+		t.Fatalf("unexpected item_id payload: got %v want %v", payload["item_id"], "item_123")
+	}
+}
 
 func TestParseProviderNumericString(t *testing.T) {
 	cases := []struct {
