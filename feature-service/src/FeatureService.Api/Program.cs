@@ -183,7 +183,7 @@ try
                     return jwtToken;
                 },
                 // ClockSkew to handle time differences
-                ClockSkew = TimeSpan.FromMinutes(5)
+                ClockSkew = TimeSpan.FromMinutes(1)
             };
 
             // Custom token validation to also support admin tokens from Go backend
@@ -269,7 +269,7 @@ try
                                     ValidAudience = jwtSettings.Audience,
                                     ValidateLifetime = true,
                                     ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
-                                    ClockSkew = TimeSpan.FromMinutes(5)
+                                    ClockSkew = TimeSpan.FromMinutes(1)
                                 };
 
                                 var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
@@ -537,8 +537,22 @@ try
     // before the first request hits financial/admin endpoints.
     using (var scope = app.Services.CreateScope())
     {
-        _ = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
+        var mongoContext = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
         Log.Information("MongoDB context initialized and indexes ensured");
+
+        if (app.Environment.IsProduction() || app.Environment.IsStaging())
+        {
+            try
+            {
+                using var session = await mongoContext.Client.StartSessionAsync();
+                Log.Information("MongoDB replica set verified - transactions supported");
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "FATAL: MongoDB does not support transactions. Production requires a replica set.");
+                throw;
+            }
+        }
     }
 
     // Configure middleware pipeline

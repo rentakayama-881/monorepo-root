@@ -52,6 +52,8 @@ backend/bin/
 *.swo
 *.sublime-*
 *.code-workspace
+.cursorrules
+.windsurfrules
 
 # ----- OS generated -----
 .DS_Store

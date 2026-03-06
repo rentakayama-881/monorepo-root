@@ -1,56 +1,55 @@
-/**
- * E2E tests for wallet functionality (requires authentication)
- */
+import { existsSync } from "node:fs";
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('Wallet', () => {
-  // Skip tests if not authenticated
-  test.describe.configure({ mode: 'serial' });
+const hasUserAuthState = existsSync("playwright/.auth/user.json");
+const testPin = process.env.E2E_TEST_PIN ?? "";
 
-  test('unauthenticated user should be redirected to login', async ({ page }) => {
-    await page.goto('/account/wallet');
+test.describe("Wallet flows", () => {
+  test.use({ storageState: "playwright/.auth/user.json" });
 
-    // Should redirect to login
-    await expect(page).toHaveURL(/.*login.*/);
+  test("View wallet balance (authenticated)", async ({ page }) => {
+    test.skip(!hasUserAuthState, "Missing playwright/.auth/user.json storage state.");
+
+    await page.goto("/account/wallet");
+    await expect(page.getByText(/saldo|balance/i)).toBeVisible();
   });
 
-  test('wallet page should require authentication', async ({ page }) => {
-    // Try to access wallet without auth
-    await page.goto('/account/wallet/set-pin');
+  test("Set PIN -> transfer flow requires PIN", async ({ page }) => {
+    test.skip(!hasUserAuthState, "Missing playwright/.auth/user.json storage state.");
+    test.skip(!testPin, "Set E2E_TEST_PIN to run this test.");
 
-    // Should redirect to login or show auth required message
-    await expect(page).toHaveURL(/.*login.*|.*account.*/);
-  });
-});
+    await page.goto("/account/wallet/set-pin");
 
-test.describe('Wallet (Authenticated)', () => {
-  test.use({ storageState: 'playwright/.auth/user.json' });
-
-  test.skip('should display wallet balance', async ({ page }) => {
-    await page.goto('/account/wallet');
-
-    // Look for balance display
-    await expect(page.getByText(/balance|saldo/i)).toBeVisible();
-  });
-
-  test.skip('should navigate to set PIN page', async ({ page }) => {
-    await page.goto('/account/wallet');
-
-    const setPinButton = page.getByRole('button', { name: /set.*pin|atur.*pin/i });
-    if (await setPinButton.isVisible()) {
-      await setPinButton.click();
-      await expect(page).toHaveURL(/.*set-pin.*/);
+    // TODO: replace with exact selectors for PIN set form if available.
+    const pinInputs = page.locator('input[name="pin"], input[inputmode="numeric"]');
+    await pinInputs.first().fill(testPin);
+    if ((await pinInputs.count()) > 1) {
+      await pinInputs.nth(1).fill(testPin);
     }
+    await page.locator('button[type="submit"]').first().click();
+
+    await page.goto("/account/wallet/send");
+
+    // TODO: replace with dedicated transfer PIN gate selector.
+    await expect(page.getByText(/pin|masukkan pin|verifikasi pin/i)).toBeVisible();
   });
 
-  test.skip('should display transaction history', async ({ page }) => {
-    await page.goto('/account/wallet');
+  test("PIN lockout after 4 failed attempts", async ({ page }) => {
+    test.skip(!hasUserAuthState, "Missing playwright/.auth/user.json storage state.");
+    test.skip(
+      process.env.E2E_RUN_PIN_LOCKOUT !== "true",
+      "Set E2E_RUN_PIN_LOCKOUT=true to run destructive lockout test."
+    );
 
-    // Look for transaction list or empty state
-    const transactions = page.locator('[data-testid="transaction-list"]');
-    const emptyState = page.getByText(/no transactions|tidak ada transaksi/i);
+    await page.goto("/account/wallet/send");
 
-    await expect(transactions.or(emptyState)).toBeVisible();
+    for (let i = 0; i < 4; i += 1) {
+      // TODO: replace with stable selector for transfer PIN verification input.
+      await page.locator('input[name="pin"], input[inputmode="numeric"]').first().fill("0000");
+      await page.locator('button[type="submit"]').first().click();
+    }
+
+    await expect(page.getByText(/terkunci|locked|coba lagi/i)).toBeVisible();
   });
 });

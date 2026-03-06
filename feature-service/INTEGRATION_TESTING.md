@@ -18,6 +18,7 @@ Tidak ada fitur forum/sosial (tidak ada replies/reactions/likes/stars).
 ## Prerequisites
 
 - Feature Service berjalan + MongoDB + Redis.
+- Production/Staging harus menggunakan MongoDB replica set (transactions enabled). Fallback non-transactional hanya untuk development/testing.
 - JWT access token dari Go backend (`api.aivalid.id`).
 - Untuk operasi finansial: akun harus punya 2FA (TOTP) enabled + PIN.
 - Beberapa endpoint finansial memakai PQC signature middleware (lihat bagian “PQC Signature”).
@@ -231,4 +232,3 @@ Feature Service menggunakan format error terstandardisasi:
   }
 }
 ```
-

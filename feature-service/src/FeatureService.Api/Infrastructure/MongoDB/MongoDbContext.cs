@@ -6,18 +6,20 @@ namespace FeatureService.Api.Infrastructure.MongoDB;
 
 public class MongoDbContext
 {
+    private readonly IMongoClient _client;
     private readonly IMongoDatabase _database;
     private readonly ILogger<MongoDbContext> _logger;
 
     public MongoDbContext(MongoDbSettings settings, ILogger<MongoDbContext> logger)
     {
-        var client = new MongoClient(settings.ConnectionString);
-        _database = client.GetDatabase(settings.DatabaseName);
+        _client = new MongoClient(settings.ConnectionString);
+        _database = _client.GetDatabase(settings.DatabaseName);
         _logger = logger;
 
         CreateIndexes();
     }
 
+    public IMongoClient Client => _client;
     public IMongoDatabase Database => _database;
 
     // Generic collection accessor

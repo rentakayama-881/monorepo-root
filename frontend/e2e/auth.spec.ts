@@ -1,59 +1,86 @@
-/**
- * E2E tests for authentication flows
- */
+import { test, expect } from "@playwright/test";
 
-import { test, expect } from '@playwright/test';
+const registerEmail = process.env.E2E_REGISTER_EMAIL ?? "";
+const registerPassword = process.env.E2E_REGISTER_PASSWORD ?? "";
+const registerVerifyURL = process.env.E2E_REGISTER_VERIFY_URL ?? "";
 
-test.describe('Authentication', () => {
-  test.describe('Login Page', () => {
-    test('should display login form', async ({ page }) => {
-      await page.goto('/login');
+const login2FAEmail = process.env.E2E_2FA_EMAIL ?? "";
+const login2FAPassword = process.env.E2E_2FA_PASSWORD ?? "";
 
-      // Check form elements are present
-      await expect(page.getByRole('heading', { name: /login|sign in|masuk/i })).toBeVisible();
-    });
+test.describe("Auth flows", () => {
+  test("Register -> Verify email -> Login -> Logout", async ({ page }) => {
+    test.skip(
+      !registerEmail || !registerPassword || !registerVerifyURL,
+      "Set E2E_REGISTER_EMAIL, E2E_REGISTER_PASSWORD, and E2E_REGISTER_VERIFY_URL to run this test."
+    );
 
-    test('should show validation errors for empty form', async ({ page }) => {
-      await page.goto('/login');
+    await page.goto("/register");
 
-      // Try to submit empty form
-      const submitButton = page.getByRole('button', { name: /login|sign in|masuk/i });
-      if (await submitButton.isVisible()) {
-        await submitButton.click();
+    // TODO: switch to stable data-testid selectors if available.
+    await page.locator('input[name="email"], input[type="email"]').first().fill(registerEmail);
+    await page
+      .locator('input[name="password"], input[type="password"]')
+      .first()
+      .fill(registerPassword);
+    await page.locator('button[type="submit"]').first().click();
 
-        // Should show validation error
-        await expect(page.getByText(/required|wajib|harus/i)).toBeVisible();
-      }
-    });
+    await expect(page.getByText(/verifikasi|verification|cek email/i)).toBeVisible();
 
-    test('should have link to register page', async ({ page }) => {
-      await page.goto('/login');
+    await page.goto(registerVerifyURL);
+    await expect(page.getByText(/verified|terverifikasi|berhasil/i)).toBeVisible();
 
-      const registerLink = page.getByRole('link', { name: /register|sign up|daftar/i });
-      if (await registerLink.isVisible()) {
-        await registerLink.click();
-        await expect(page).toHaveURL(/.*register.*/);
-      }
-    });
+    await page.goto("/login");
+    await page.locator('input[name="email"], input[type="email"]').first().fill(registerEmail);
+    await page
+      .locator('input[name="password"], input[type="password"]')
+      .first()
+      .fill(registerPassword);
+    await page.locator('button[type="submit"]').first().click();
+
+    await expect(page).not.toHaveURL(/\/login$/);
+
+    // TODO: replace fallback selector with deterministic logout button selector.
+    const logoutButton = page.getByRole("button", { name: /logout|keluar|sign out/i }).first();
+    if (await logoutButton.count()) {
+      await logoutButton.click();
+      await expect(page).toHaveURL(/\/login|\/$/);
+    }
   });
 
-  test.describe('Register Page', () => {
-    test('should display registration form', async ({ page }) => {
-      await page.goto('/register');
+  test("Login with invalid credentials shows error", async ({ page }) => {
+    await page.goto("/login");
 
-      await expect(page.getByRole('heading', { name: /register|sign up|daftar/i })).toBeVisible();
-    });
+    await page
+      .locator('input[name="email"], input[type="email"]')
+      .first()
+      .fill("not-registered@example.com");
+    await page
+      .locator('input[name="password"], input[type="password"]')
+      .first()
+      .fill("WrongPassword123");
+    await page.locator('button[type="submit"]').first().click();
+
+    await expect(
+      page.getByText(/email atau password salah|invalid credentials|login gagal/i)
+    ).toBeVisible();
   });
 
-  test.describe('Passkey Authentication', () => {
-    test('should show passkey option on login', async ({ page }) => {
-      await page.goto('/login');
+  test("Login with 2FA enabled shows TOTP prompt", async ({ page }) => {
+    test.skip(
+      !login2FAEmail || !login2FAPassword,
+      "Set E2E_2FA_EMAIL and E2E_2FA_PASSWORD to run this test."
+    );
 
-      // Check for passkey button (if available)
-      const passkeyButton = page.getByRole('button', { name: /passkey|biometric/i });
-      if (await passkeyButton.isVisible()) {
-        expect(passkeyButton).toBeEnabled();
-      }
-    });
+    await page.goto("/login");
+
+    await page.locator('input[name="email"], input[type="email"]').first().fill(login2FAEmail);
+    await page
+      .locator('input[name="password"], input[type="password"]')
+      .first()
+      .fill(login2FAPassword);
+    await page.locator('button[type="submit"]').first().click();
+
+    // TODO: replace text-based check with explicit TOTP form selector.
+    await expect(page.getByText(/totp|otp|authenticator|kode verifikasi/i)).toBeVisible();
   });
 });

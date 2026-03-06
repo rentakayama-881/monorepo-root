@@ -88,7 +88,7 @@ jobs:
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
           extra_args: --only-verified
-        continue-on-error: true
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
 
   # --------------------------------------------------------------------------
   # Dependency License Check (Compliance like Stripe)
@@ -113,7 +113,7 @@ jobs:
         run: |
           cd backend
           go-licenses check ./... --disallowed_types=forbidden,restricted || true
-        continue-on-error: true
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
 
   # ==========================================================================
   # Stage 2: Frontend Pipeline (Next.js 16 / React 19)
@@ -249,6 +249,35 @@ jobs:
           name: frontend-build
           path: frontend/.next
           retention-days: 7
+
+  # TODO: Enable when E2E infrastructure is ready
+  # frontend-e2e:
+  #   name: 🎭 Frontend E2E (Playwright)
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 30
+  #   needs: [frontend-build]
+  #   defaults:
+  #     run:
+  #       working-directory: frontend
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: ${{ env.NODE_VERSION }}
+  #         cache: "npm"
+  #         cache-dependency-path: frontend/package-lock.json
+  #
+  #     - name: Install dependencies
+  #       run: npm ci
+  #
+  #     - name: Install Playwright browsers
+  #       run: npx playwright install --with-deps
+  #
+  #     - name: Run E2E tests
+  #       run: npm run e2e
 
   frontend-security:
     name: 🔒 Frontend Security Audit
@@ -484,7 +513,7 @@ jobs:
         uses: securego/gosec@master
         with:
           args: -exclude-dir=ent -exclude-dir=tests ./backend/...
-        continue-on-error: true
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
 
   # ==========================================================================
   # Stage 4: Feature Service Pipeline (.NET 8 / ASP.NET Core / MongoDB)

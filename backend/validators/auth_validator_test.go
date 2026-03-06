@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"strings"
 	"testing"
 
 	apperrors "backend-gin/errors"
@@ -51,10 +52,9 @@ func TestValidateEmail_Invalid(t *testing.T) {
 
 func TestValidatePassword_Valid(t *testing.T) {
 	tests := []string{
-		"password123",
-		"12345678",
-		"MyP@ssw0rd!",
-		"verylongpasswordthatshouldwork",
+		"MyP@ssw0rd",
+		"SecurePass1",
+		"Testing123",
 	}
 
 	for _, password := range tests {
@@ -67,21 +67,84 @@ func TestValidatePassword_Valid(t *testing.T) {
 
 func TestValidatePassword_Invalid(t *testing.T) {
 	tests := []struct {
+		name        string
 		password    string
-		expectedErr error
+		expectedErr *apperrors.AppError
 	}{
-		{"", apperrors.ErrMissingField.WithDetails("password")},
-		{"   ", apperrors.ErrMissingField.WithDetails("password")},
-		{"short", apperrors.ErrWeakPassword.WithDetails("Password minimal 8 karakter")},
-		{"1234567", apperrors.ErrWeakPassword.WithDetails("Password minimal 8 karakter")},
+		{
+			name:        "Empty password",
+			password:    "",
+			expectedErr: apperrors.ErrMissingField.WithDetails("password"),
+		},
+		{
+			name:        "Whitespace password",
+			password:    "   ",
+			expectedErr: apperrors.ErrMissingField.WithDetails("password"),
+		},
+		{
+			name:        "Too short",
+			password:    "short",
+			expectedErr: apperrors.ErrWeakPassword.WithDetails("Password minimal 8 karakter"),
+		},
+		{
+			name:        "Digits only",
+			password:    "12345678",
+			expectedErr: apperrors.ErrWeakPassword.WithDetails("Password harus mengandung minimal 1 huruf kecil"),
+		},
+		{
+			name:        "Lowercase only",
+			password:    "aaaaaaaa",
+			expectedErr: apperrors.ErrWeakPassword.WithDetails("Password harus mengandung minimal 1 huruf besar"),
+		},
+		{
+			name:        "Common lowercase password without complexity",
+			password:    "password",
+			expectedErr: apperrors.ErrWeakPassword.WithDetails("Password harus mengandung minimal 1 huruf besar"),
+		},
+		{
+			name:        "Common mixed case password without digit",
+			password:    "Password",
+			expectedErr: apperrors.ErrWeakPassword.WithDetails("Password harus mengandung minimal 1 angka"),
+		},
+		{
+			name:        "Alphabet only",
+			password:    "abcdefgh",
+			expectedErr: apperrors.ErrWeakPassword.WithDetails("Password harus mengandung minimal 1 huruf besar"),
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.password, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			err := ValidatePassword(tt.password)
 			assert.Error(t, err)
+			appErr, ok := err.(*apperrors.AppError)
+			assert.True(t, ok)
+			assert.Equal(t, tt.expectedErr.Code, appErr.Code)
+			assert.Equal(t, tt.expectedErr.Details, appErr.Details)
 		})
 	}
+}
+
+func TestValidatePassword_TooLong(t *testing.T) {
+	password := strings.Repeat("Ab1", 43) // 129 characters
+
+	err := ValidatePassword(password)
+	assert.Error(t, err)
+
+	appErr, ok := err.(*apperrors.AppError)
+	assert.True(t, ok)
+	assert.Equal(t, apperrors.ErrWeakPassword.Code, appErr.Code)
+	assert.Equal(t, "Password maksimal 128 karakter", appErr.Details)
+}
+
+func TestValidatePassword_CommonPasswordRejected(t *testing.T) {
+	err := ValidatePassword("Password1")
+	assert.Error(t, err)
+
+	appErr, ok := err.(*apperrors.AppError)
+	assert.True(t, ok)
+	assert.Equal(t, apperrors.ErrWeakPassword.Code, appErr.Code)
+	assert.Equal(t, "Password terlalu umum dan mudah ditebak", appErr.Details)
 }
 
 func TestValidateUsername_Valid(t *testing.T) {
@@ -114,7 +177,7 @@ func TestRegisterInput_Validate(t *testing.T) {
 	t.Run("Valid input", func(t *testing.T) {
 		input := RegisterInput{
 			Email:    "test@example.com",
-			Password: "password123",
+			Password: "ValidPass123",
 		}
 		err := input.Validate()
 		assert.NoError(t, err)

@@ -5,13 +5,16 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
-	JWTKey       []byte
-	JWTIssuer    string
-	JWTAudience  string
-	ServiceToken string
+	JWTKey           []byte
+	JWTIssuer        string
+	JWTAudience      string
+	JWTAccessExpiry  time.Duration
+	JWTRefreshExpiry time.Duration
+	ServiceToken     string
 
 	FeatureServiceURL         string
 	TelegramBotToken          string
@@ -34,6 +37,29 @@ func InitConfig() {
 	if JWTAudience == "" {
 		log.Fatal("ERROR: JWT_AUDIENCE is not set in environment variables")
 	}
+
+	// JWT token expiry
+	accessExpiryStr := strings.TrimSpace(os.Getenv("JWT_ACCESS_EXPIRY"))
+	if accessExpiryStr == "" {
+		accessExpiryStr = "5m"
+	}
+	accessExpiry, err := time.ParseDuration(accessExpiryStr)
+	if err != nil || accessExpiry <= 0 {
+		log.Printf("WARN: invalid JWT_ACCESS_EXPIRY=%q, using default 5m", accessExpiryStr)
+		accessExpiry = 5 * time.Minute
+	}
+	JWTAccessExpiry = accessExpiry
+
+	refreshExpiryStr := strings.TrimSpace(os.Getenv("JWT_REFRESH_EXPIRY"))
+	if refreshExpiryStr == "" {
+		refreshExpiryStr = "168h"
+	}
+	refreshExpiry, err := time.ParseDuration(refreshExpiryStr)
+	if err != nil || refreshExpiry <= 0 {
+		log.Printf("WARN: invalid JWT_REFRESH_EXPIRY=%q, using default 168h", refreshExpiryStr)
+		refreshExpiry = 7 * 24 * time.Hour
+	}
+	JWTRefreshExpiry = refreshExpiry
 
 	// Feature-Service URL for internal calls
 	FeatureServiceURL = strings.TrimSpace(os.Getenv("FEATURE_SERVICE_URL"))

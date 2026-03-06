@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
@@ -27,6 +28,7 @@ public class WalletService : IWalletService
     private readonly IMongoCollection<Transaction> _transactions;
     private readonly IMongoCollection<TransactionLedger> _ledger;
     private readonly ILogger<WalletService> _logger;
+    private readonly IHostEnvironment _environment;
     // 0 = unknown, 1 = supported, -1 = unsupported (standalone/non-replica MongoDB)
     private int _transactionSupportState = 0;
 
@@ -37,12 +39,13 @@ public class WalletService : IWalletService
     private const int SaltSize = 32;
     private const int HashSize = 32;
 
-    public WalletService(MongoDbContext dbContext, ILogger<WalletService> logger)
+    public WalletService(MongoDbContext dbContext, ILogger<WalletService> logger, IHostEnvironment environment)
     {
         _wallets = dbContext.GetCollection<UserWallet>("wallets");
         _transactions = dbContext.GetCollection<Transaction>("transactions");
         _ledger = dbContext.GetCollection<TransactionLedger>("transaction_ledger");
         _logger = logger;
+        _environment = environment;
     }
 
     public async Task<UserWallet> GetOrCreateWalletAsync(uint userId)
@@ -297,6 +300,15 @@ public class WalletService : IWalletService
     {
         if (Volatile.Read(ref _transactionSupportState) == -1)
         {
+            if (_environment.IsProduction() || _environment.IsStaging())
+            {
+                _logger.LogCritical(
+                    "FATAL: MongoDB transactions not supported in {Environment}. Financial operations require a replica set.",
+                    _environment.EnvironmentName);
+                throw new InvalidOperationException(
+                    "MongoDB transactions are required for financial operations in production. Please configure a replica set.");
+            }
+
             return await fallback();
         }
 
@@ -320,17 +332,41 @@ public class WalletService : IWalletService
         }
         catch (NotSupportedException ex) when (IsTransactionsNotSupported(ex))
         {
-            if (Interlocked.Exchange(ref _transactionSupportState, -1) != -1)
+            var previousState = Interlocked.Exchange(ref _transactionSupportState, -1);
+            if (_environment.IsProduction() || _environment.IsStaging())
             {
-                _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates");
+                _logger.LogCritical(
+                    ex,
+                    "FATAL: MongoDB transactions not supported in {Environment}. Financial operations require a replica set.",
+                    _environment.EnvironmentName);
+                throw new InvalidOperationException(
+                    "MongoDB transactions are required for financial operations in production. Please configure a replica set.",
+                    ex);
+            }
+
+            if (previousState != -1)
+            {
+                _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates (development only)");
             }
             return await fallback();
         }
         catch (MongoCommandException ex) when (IsTransactionsNotSupported(ex))
         {
-            if (Interlocked.Exchange(ref _transactionSupportState, -1) != -1)
+            var previousState = Interlocked.Exchange(ref _transactionSupportState, -1);
+            if (_environment.IsProduction() || _environment.IsStaging())
             {
-                _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates");
+                _logger.LogCritical(
+                    ex,
+                    "FATAL: MongoDB transactions not supported in {Environment}. Financial operations require a replica set.",
+                    _environment.EnvironmentName);
+                throw new InvalidOperationException(
+                    "MongoDB transactions are required for financial operations in production. Please configure a replica set.",
+                    ex);
+            }
+
+            if (previousState != -1)
+            {
+                _logger.LogWarning(ex, "MongoDB transactions not supported; falling back to non-transactional wallet updates (development only)");
             }
             return await fallback();
         }

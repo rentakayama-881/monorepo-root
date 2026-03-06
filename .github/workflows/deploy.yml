@@ -11,8 +11,8 @@
 # - Multi-service coordination
 #
 # VPS Configuration:
-# - VPS 1 (Go Backend): 72.62.124.23
-# - VPS 2 (Feature Service): 203.175.11.84
+# - VPS 1 (Go Backend): Configured via secrets.VPS_BACKEND_HOST
+# - VPS 2 (Feature Service): Configured via secrets.VPS_FEATURE_HOST
 # =============================================================================
 
 name: Deploy to Production
@@ -137,6 +137,16 @@ jobs:
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X backend-gin/buildinfo.Version=${{ github.sha }}" -o backend-linux-amd64 .
           sha256sum backend-linux-amd64 > backend-linux-amd64.sha256
 
+      - name: Copy binary to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_BACKEND_HOST }}
+          username: ${{ secrets.VPS_BACKEND_USER }}
+          key: ${{ secrets.VPS_BACKEND_SSH_KEY }}
+          source: "backend/backend-linux-amd64"
+          target: "/home/deploy/deploy-staging/"
+          strip_components: 1
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -152,22 +162,25 @@ jobs:
             echo "🚀 Starting Backend Deployment"
             echo "=========================================="
 
-            # Create backup
+            APP_DIR="/home/deploy/monorepo-root/backend"
+            STAGING_DIR="/home/deploy/deploy-staging"
             BACKUP_DIR="/home/deploy/backups/$(date +%Y%m%d_%H%M%S)"
+
+            # Create backup
             mkdir -p $BACKUP_DIR
-            if [ -f /home/deploy/monorepo-root/backend/app ]; then
-              cp /home/deploy/monorepo-root/backend/app $BACKUP_DIR/app.backup
+            if [ -f "$APP_DIR/app" ]; then
+              cp "$APP_DIR/app" "$BACKUP_DIR/app.backup"
               echo "✅ Backup created: $BACKUP_DIR"
             fi
 
-            # Pull latest code
-            cd /home/deploy/monorepo-root
-            git fetch origin main
-            git reset --hard origin/main
+            # Move new binary into place
+            if [ ! -f "$STAGING_DIR/backend-linux-amd64" ]; then
+              echo "❌ Binary not found in staging directory"
+              exit 1
+            fi
 
-            # Build
-            cd backend
-            /usr/local/go/bin/go build -ldflags="-s -w -X backend-gin/buildinfo.Version=${{ github.sha }}" -o app .
+            mv "$STAGING_DIR/backend-linux-amd64" "$APP_DIR/app"
+            chmod +x "$APP_DIR/app"
 
             restart_backend_service() {
               for svc in alephdraad-backend.service backend.service aivalid-backend; do
@@ -196,7 +209,7 @@ jobs:
               if [ $i -eq 30 ]; then
                 echo "❌ Health check failed after 30 seconds"
                 echo "🔄 Rolling back..."
-                cp $BACKUP_DIR/app.backup /home/deploy/monorepo-root/backend/app
+                cp "$BACKUP_DIR/app.backup" "$APP_DIR/app"
                 restart_backend_service
                 exit 1
               fi
@@ -244,6 +257,16 @@ jobs:
           cd feature-service/src/FeatureService.Api
           dotnet publish -c Release -o ./publish --self-contained false -p:InformationalVersion=${{ github.sha }}
 
+      - name: Copy publish artifacts to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_FEATURE_HOST }}
+          username: ${{ secrets.VPS_FEATURE_USER }}
+          key: ${{ secrets.VPS_FEATURE_SSH_KEY }}
+          source: "feature-service/src/FeatureService.Api/publish"
+          target: "/home/asp/deploy-staging/"
+          strip_components: 3
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -259,22 +282,25 @@ jobs:
             echo "🚀 Starting Feature Service Deployment"
             echo "=========================================="
 
-            # Create backup
+            APP_DIR="/home/asp/monorepo-root/feature-service/publish"
+            STAGING_DIR="/home/asp/deploy-staging"
             BACKUP_DIR="/home/asp/backups/$(date +%Y%m%d_%H%M%S)"
+
+            # Create backup
             mkdir -p $BACKUP_DIR
-            if [ -d /home/asp/monorepo-root/feature-service/publish ]; then
-              cp -r /home/asp/monorepo-root/feature-service/publish $BACKUP_DIR/
+            if [ -d "$APP_DIR" ]; then
+              cp -r "$APP_DIR" "$BACKUP_DIR/publish"
               echo "✅ Backup created: $BACKUP_DIR"
             fi
 
-            # Pull latest code
-            cd /home/asp/monorepo-root
-            git fetch origin main
-            git reset --hard origin/main
+            # Move staged publish artifacts into place
+            if [ ! -d "$STAGING_DIR/publish" ]; then
+              echo "❌ Publish artifacts not found in staging directory"
+              exit 1
+            fi
 
-            # Build
-            cd feature-service/src/FeatureService.Api
-            dotnet publish -c Release -o /home/asp/monorepo-root/feature-service/publish --self-contained false -p:InformationalVersion=${{ github.sha }}
+            rm -rf "$APP_DIR"
+            cp -r "$STAGING_DIR/publish" "$APP_DIR"
 
             restart_feature_service() {
               for svc in feature-service.service featureservice.service feature-service; do
@@ -303,8 +329,8 @@ jobs:
               if [ $i -eq 60 ]; then
                 echo "❌ Health check failed after 60 seconds"
                 echo "🔄 Rolling back..."
-                rm -rf /home/asp/monorepo-root/feature-service/publish
-                cp -r $BACKUP_DIR/publish /home/asp/monorepo-root/feature-service/
+                rm -rf "$APP_DIR"
+                cp -r "$BACKUP_DIR/publish" "$APP_DIR"
                 restart_feature_service
                 exit 1
               fi
@@ -339,16 +365,34 @@ jobs:
       - name: Verify Backend
         if: needs.deploy-backend.result == 'success'
         run: |
-          echo "Verifying backend health..."
-          # In production, this would ping the actual endpoint
-          echo "✅ Backend is healthy"
+          echo "Verifying backend health from external..."
+          for i in {1..10}; do
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://api.aivalid.id/health || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Backend is healthy (HTTP $STATUS)"
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $STATUS — retrying in 5s..."
+            sleep 5
+          done
+          echo "❌ Backend external health check failed after 10 attempts"
+          exit 1
 
       - name: Verify Feature Service
         if: needs.deploy-feature-service.result == 'success'
         run: |
-          echo "Verifying feature service health..."
-          # In production, this would ping the actual endpoint
-          echo "✅ Feature Service is healthy"
+          echo "Verifying feature service health from external..."
+          for i in {1..10}; do
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://feature.aivalid.id/api/v1/health || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Feature Service is healthy (HTTP $STATUS)"
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $STATUS — retrying in 5s..."
+            sleep 5
+          done
+          echo "❌ Feature Service external health check failed after 10 attempts"
+          exit 1
 
       - name: Generate deployment report
         run: |

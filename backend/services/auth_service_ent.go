@@ -29,6 +29,11 @@ type EntAuthService struct {
 	client *ent.Client
 }
 
+// Dummy hash to compare against when user is not found.
+// This normalizes response timing to prevent user enumeration.
+// Generated from: bcrypt.GenerateFromPassword([]byte("timing-normalization-dummy"), bcrypt.DefaultCost)
+var dummyHash = []byte("$2a$10$r78az4KdysLrrksJR97TWOKm4mi.bgybysZwFrDFGBLfhYRvvZxGa")
+
 func NewEntAuthService() *EntAuthService {
 	return &EntAuthService{client: database.GetEntClient()}
 }
@@ -310,6 +315,7 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 			if securityAudit != nil {
 				securityAudit.LogLoginFailed(email, ipAddress, userAgent, "User not found")
 			}
+			_ = bcrypt.CompareHashAndPassword(dummyHash, []byte(input.Password))
 			return nil, apperrors.ErrInvalidCredentials
 		}
 		logger.Error("Failed to query user", zap.Error(err))

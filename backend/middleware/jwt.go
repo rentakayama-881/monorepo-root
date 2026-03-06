@@ -37,7 +37,7 @@ func generateJTI() string {
 	return hex.EncodeToString(b)
 }
 
-// GenerateAccessToken creates a short-lived access token (5 minutes)
+// GenerateAccessToken creates a short-lived access token.
 func GenerateAccessToken(userID uint, email string, username string, totpEnabled bool) (string, string, error) {
 	jti := generateJTI()
 	claims := &Claims{
@@ -51,7 +51,7 @@ func GenerateAccessToken(userID uint, email string, username string, totpEnabled
 			Issuer:    config.JWTIssuer,
 			Subject:   fmt.Sprintf("%d", userID),
 			Audience:  jwt.ClaimStrings{config.JWTAudience},
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(config.JWTAccessExpiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
@@ -60,7 +60,7 @@ func GenerateAccessToken(userID uint, email string, username string, totpEnabled
 	return signed, jti, err
 }
 
-// GenerateRefreshToken creates a long-lived refresh token (7 days)
+// GenerateRefreshToken creates a long-lived refresh token.
 func GenerateRefreshToken(userID uint, email string, username string, totpEnabled bool) (string, string, error) {
 	jti := generateJTI()
 	claims := &Claims{
@@ -74,30 +74,13 @@ func GenerateRefreshToken(userID uint, email string, username string, totpEnable
 			Issuer:    config.JWTIssuer,
 			Subject:   fmt.Sprintf("%d", userID),
 			Audience:  jwt.ClaimStrings{config.JWTAudience},
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(config.JWTRefreshExpiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString(config.JWTKey)
 	return signed, jti, err
-}
-
-// GenerateJWT creates a JWT token (legacy - for backward compatibility during migration)
-func GenerateJWT(email string, duration time.Duration) (string, error) {
-	claims := &Claims{
-		Email:     email,
-		TokenType: TokenTypeAccess,
-		JTI:       generateJTI(),
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    config.JWTIssuer,
-			Audience:  jwt.ClaimStrings{config.JWTAudience},
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(config.JWTKey)
 }
 
 // ParseJWT parses and validates a JWT token string, returning the Claims if valid.

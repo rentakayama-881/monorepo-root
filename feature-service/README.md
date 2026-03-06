@@ -26,6 +26,7 @@ Frontend (Next.js / Vercel)
 - .NET 8 SDK
 - MongoDB 7+
 - Redis (recommended)
+- Production/Staging wajib MongoDB replica set (transactions enabled). Standalone MongoDB hanya untuk fallback development/testing.
 
 ### Run
 
@@ -100,4 +101,3 @@ Nama env mengikuti ASP.NET configuration binding (gunakan `__` untuk nesting):
 cd feature-service/src/FeatureService.Api
 dotnet build -c Release
 ```
-

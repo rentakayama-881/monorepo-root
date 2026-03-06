@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -295,9 +298,18 @@ func main() {
 	database.InitEntDB()
 	defer database.CloseEntDB()
 
-	// Initialize Redis (optional - graceful degradation if unavailable)
+	// Initialize Redis
 	if err := services.InitRedis(); err != nil {
-		logger.Info("Redis not available - using in-memory rate limiting", zap.String("note", "This is acceptable for development"))
+		env := strings.ToLower(strings.TrimSpace(os.Getenv("APP_ENV")))
+		if env == "production" || env == "staging" {
+			logger.Fatal("Redis is required in production/staging for distributed rate limiting",
+				zap.Error(err),
+				zap.String("env", env),
+			)
+		}
+		logger.Info("Redis not available - using in-memory rate limiting",
+			zap.String("note", "This is acceptable for development only"),
+		)
 	} else {
 		defer services.CloseRedis()
 	}
@@ -686,7 +698,6 @@ func main() {
 	}
 
 	listenAddr := bindAddr + ":" + port
-	logger.Info("Server backend berjalan", zap.String("addr", listenAddr))
 
 	server := &http.Server{
 		Addr:              listenAddr,
@@ -698,7 +709,28 @@ func main() {
 		MaxHeaderBytes:    1 << 20, // 1 MiB
 	}
 
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatal("Failed to start server: ", err)
+	// Start server in goroutine
+	go func() {
+		logger.Info("Server backend berjalan", zap.String("addr", listenAddr))
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Fatal("Failed to start server", zap.Error(err))
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+	logger.Info("Received shutdown signal", zap.String("signal", sig.String()))
+
+	// Graceful shutdown with 30 second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	logger.Info("Shutting down server gracefully...")
+	if err := server.Shutdown(ctx); err != nil {
+		logger.Error("Server forced to shutdown", zap.Error(err))
+	} else {
+		logger.Info("Server stopped gracefully")
 	}
 }

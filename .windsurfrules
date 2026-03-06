@@ -1,4 +1,0 @@
-# See CLAUDE.md at repo root for full instructions.
-# First action: run `bash .ai/context.sh`
-# Then read: .ai/RULES.md → .ai/ARCHITECTURE.md → .ai/QUALITY.md → .ai/SECURITY.md
-# Workflow prompts: .ai/prompts/{feature,fix,refactor,migrate,review,deploy,style-guide,audit}.md
