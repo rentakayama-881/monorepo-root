@@ -1,10 +1,7 @@
 import ValidationCaseDetailClient from "./ValidationCaseDetailClient";
 import { generateValidationCaseStructuredData } from "@/lib/seo";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  "https://api.aivalid.id";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.aivalid.id";
 
 async function fetchCasePublic(id) {
   try {

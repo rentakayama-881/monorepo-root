@@ -3,10 +3,7 @@ import UserProfileClient from "./UserProfileClient";
 import UserProfileSkeleton from "./UserProfileSkeleton";
 import { generateProfilePageStructuredData } from "@/lib/seo";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  "https://api.aivalid.id";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.aivalid.id";
 
 async function fetchUserPublic(username) {
   try {
@@ -34,8 +31,7 @@ export async function generateMetadata({ params }) {
 
   const displayName = user.display_name || user.username;
   const description =
-    user.bio ||
-    `Profil ${displayName} di AIValid — lihat riwayat validasi dan reputasi.`;
+    user.bio || `Profil ${displayName} di AIValid — lihat riwayat validasi dan reputasi.`;
 
   return {
     title: `${displayName} (@${user.username})`,
@@ -57,9 +53,7 @@ export default async function UserProfilePage({ params }) {
   const data = await fetchUserPublic(username);
   const user = data?.user || data;
 
-  const jsonLd = user?.username
-    ? generateProfilePageStructuredData(user)
-    : null;
+  const jsonLd = user?.username ? generateProfilePageStructuredData(user) : null;
 
   return (
     <>

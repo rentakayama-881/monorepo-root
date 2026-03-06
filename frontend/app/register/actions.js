@@ -2,7 +2,6 @@
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.BACKEND_INTERNAL_URL ||
   "http://localhost:8080";
 
@@ -42,7 +41,8 @@ export async function registerAction(formData) {
 
     return {
       success: true,
-      message: data?.message || "Registration completed. Please verify your email before signing in.",
+      message:
+        data?.message || "Registration completed. Please verify your email before signing in.",
     };
   } catch (err) {
     return {

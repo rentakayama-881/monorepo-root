@@ -11,7 +11,9 @@ function createTimeoutSignal(timeout, externalSignal) {
     if (externalSignal.aborted) {
       controller.abort(externalSignal.reason);
     } else {
-      externalSignal.addEventListener("abort", () => controller.abort(externalSignal.reason), { once: true });
+      externalSignal.addEventListener("abort", () => controller.abort(externalSignal.reason), {
+        once: true,
+      });
     }
   }
 
@@ -54,20 +56,15 @@ export function getApiBase() {
     }
   }
 
-  // Support multiple env var names used across deployments/docs.
-  // Prefer explicit API base; fall back to documented backend URL; then a safe default.
-  const envBase =
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_API_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_BASE_URL ||
-    "";
-
-  let base = String(envBase || "").trim();
+  let base = String(process.env.NEXT_PUBLIC_API_BASE_URL || "").trim();
 
   // If the env points to HTTP while the app is served over HTTPS, upgrade to HTTPS.
   // This avoids mixed-content blocks and auth header stripping on redirects.
-  if (typeof window !== "undefined" && window.location?.protocol === "https:" && base.startsWith("http://")) {
+  if (
+    typeof window !== "undefined" &&
+    window.location?.protocol === "https:" &&
+    base.startsWith("http://")
+  ) {
     base = `https://${base.slice("http://".length)}`;
   }
 
@@ -75,7 +72,11 @@ export function getApiBase() {
   // Keeps local dev behavior unchanged.
   if (!base && typeof window !== "undefined") {
     const host = window.location?.hostname || "";
-    if (host === "aivalid.id" || host === "www.aivalid.id" || (host.endsWith(".aivalid.id") && host !== "api.aivalid.id")) {
+    if (
+      host === "aivalid.id" ||
+      host === "www.aivalid.id" ||
+      (host.endsWith(".aivalid.id") && host !== "api.aivalid.id")
+    ) {
       base = "https://api.aivalid.id";
     }
   }
@@ -102,7 +103,11 @@ export async function fetchJson(path, options = {}) {
     const data = await parseJsonSafe(res);
 
     if (!res.ok) {
-      const message = data?.message || data?.error || res.statusText || `Request failed with status ${res.status}`;
+      const message =
+        data?.message ||
+        data?.error ||
+        res.statusText ||
+        `Request failed with status ${res.status}`;
       const error = new Error(message);
       error.status = res.status;
       error.code = data?.code;
@@ -121,7 +126,14 @@ export async function fetchJson(path, options = {}) {
 }
 
 export async function fetchJsonAuth(path, options = {}) {
-  const { timeout = 10000, signal, headers = {}, clearSessionOn401 = true, credentials = "include", ...rest } = options;
+  const {
+    timeout = 10000,
+    signal,
+    headers = {},
+    clearSessionOn401 = true,
+    credentials = "include",
+    ...rest
+  } = options;
   const { controller, timeoutId } = createTimeoutSignal(timeout, signal);
 
   try {
@@ -157,7 +169,9 @@ export async function fetchJsonAuth(path, options = {}) {
     if (!res.ok) {
       if (res.status === 401) {
         if (clearSessionOn401) clearToken();
-        const error = new Error(data?.message || data?.error || "Your session has expired. Please sign in again.");
+        const error = new Error(
+          data?.message || data?.error || "Your session has expired. Please sign in again."
+        );
         error.status = 401;
         error.code = data?.code || "session_expired";
         error.details = data?.details;
@@ -166,7 +180,11 @@ export async function fetchJsonAuth(path, options = {}) {
       }
 
       if (res.status === 403) {
-        if (data?.code === "AUTH009" || data?.code === "AUTH012" || data?.message?.includes("terkunci")) {
+        if (
+          data?.code === "AUTH009" ||
+          data?.code === "AUTH012" ||
+          data?.message?.includes("terkunci")
+        ) {
           const fallbackLocked = "Your account is currently restricted. Please contact support.";
           const error = new Error(data?.message || data?.error || fallbackLocked);
           error.status = 403;
@@ -186,7 +204,11 @@ export async function fetchJsonAuth(path, options = {}) {
         throw error;
       }
 
-      const message = data?.message || data?.error || res.statusText || `Request failed with status ${res.status}`;
+      const message =
+        data?.message ||
+        data?.error ||
+        res.statusText ||
+        `Request failed with status ${res.status}`;
       const error = new Error(message);
       error.status = res.status;
       error.code = data?.code;

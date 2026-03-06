@@ -19,6 +19,7 @@ Next.js 16 application with React 19 and Tailwind CSS 4.
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js 24.12+ (24.x)
 - npm 10+
 
@@ -129,26 +130,30 @@ npm run format        # Format with Prettier
 ## Key Features
 
 ### Command Palette (Cmd+K)
+
 - Quick navigation across the app
 - Search validation cases, users, settings
 - Theme switching
 
 ### Keyboard Shortcuts
-| Shortcut | Action |
-|----------|--------|
-| `Cmd+K` | Open command palette |
-| `Cmd+/` | Focus search |
-| `?` | Show shortcuts help |
-| `G` then `H` | Go to Home |
+
+| Shortcut     | Action                      |
+| ------------ | --------------------------- |
+| `Cmd+K`      | Open command palette        |
+| `Cmd+/`      | Focus search                |
+| `?`          | Show shortcuts help         |
+| `G` then `H` | Go to Home                  |
 | `G` then `T` | Go to Validation Case Index |
-| `N` | New Validation Case |
+| `N`          | New Validation Case         |
 
 ### Theme System
+
 - Light / Dark / System modes
 - Smooth transitions
 - Persisted preference
 
 ### Accessibility
+
 - Skip to main content link
 - Keyboard navigation
 - ARIA labels
@@ -172,7 +177,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.aivalid.id
 # PREBUILD_HEALTHCHECK_TIMEOUT_MS=10000
 
 # API URLs
-NEXT_PUBLIC_BACKEND_URL=https://api.aivalid.id
+NEXT_PUBLIC_API_BASE_URL=https://api.aivalid.id
 NEXT_PUBLIC_FEATURE_SERVICE_URL=https://feature.aivalid.id
 NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=your_bot_username
 
@@ -213,7 +218,7 @@ export default function MyPage() {
 
   useEffect(() => {
     fetch(`${API}/api/endpoint`)
-      .then(res => res.json())
+      .then((res) => res.json())
       .then(setData)
       .finally(() => setLoading(false));
   }, [API]);
@@ -267,9 +272,10 @@ npm run start
 ## Changelog
 
 ### January 12, 2026
+
 - Fixed ValidationCaseTable import error (default export)
 - Removed outdated PHASE6 documentation files
 
 ---
 
-*See main [README.md](../README.md) for full project documentation.*
+_See main [README.md](../README.md) for full project documentation._
