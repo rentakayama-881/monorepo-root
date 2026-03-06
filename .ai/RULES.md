@@ -47,7 +47,7 @@
 - Reference: HuggingFace patterns (clean, functional, minimal)
 - Colors: oklch() tokens in `globals.css` (Brand V4 palette)
 - Primary action: Harvard Crimson (#a51c30)
-- Typography: Source Sans (body), Source Serif (headings), Geist Mono (code)
+- Typography: IBM Plex Sans (body/headings), IBM Plex Mono (code)
 - Cards: subtle borders, rounded-lg, no heavy shadows
 - Spacing: p-4/p-6, gap-4/gap-6
 - Accessibility: skip-link, focus-visible rings, aria attributes, WCAG AA contrast
