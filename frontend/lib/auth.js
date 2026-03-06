@@ -47,6 +47,7 @@ export function setToken(token) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(TOKEN_KEY, token);
+    document.cookie = "has_session=1; path=/; max-age=86400; SameSite=Lax";
   } catch {}
   broadcastAuthChange();
 }
@@ -83,6 +84,7 @@ export function clearToken() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(TOKEN_EXPIRES_KEY);
+    document.cookie = "has_session=; path=/; max-age=0; SameSite=Lax";
   } catch {}
   broadcastAuthChange();
 }

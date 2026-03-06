@@ -95,6 +95,8 @@ export function setAdminSession(token, adminInfo) {
 
     legacy?.removeItem(ADMIN_TOKEN_KEY);
     legacy?.removeItem(ADMIN_INFO_KEY);
+
+    document.cookie = "has_admin=1; path=/; max-age=86400; SameSite=Lax";
   } catch {
     // ignore storage access errors
   }
@@ -157,6 +159,7 @@ export function clearAdminSession() {
     session?.removeItem(ADMIN_INFO_KEY);
     legacy?.removeItem(ADMIN_TOKEN_KEY);
     legacy?.removeItem(ADMIN_INFO_KEY);
+    document.cookie = "has_admin=; path=/; max-age=0; SameSite=Lax";
   } catch {
     // ignore storage access errors
   }
