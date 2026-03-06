@@ -1,57 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CenteredSpinner } from "@/components/ui/LoadingState";
 import Portal from "@/components/ui/Portal";
-import { fetchJsonAuth, getApiBase } from "@/lib/api";
-import { FEATURE_ENDPOINTS, fetchFeatureAuth, unwrapFeatureData } from "@/lib/featureApi";
-import { extractList } from "@/lib/apiHelpers";
-
-const MARKET_PAGE_SIZE = 10;
-const JAKARTA_TIMEZONE = "Asia/Jakarta";
-
-function getCheckoutConfirmSeconds() {
-  const raw = Number(process.env.NEXT_PUBLIC_MARKET_BUY_CONFIRM_SECONDS);
-  if (!Number.isFinite(raw) || raw < 0) return 60;
-  return Math.floor(raw);
-}
-
-function normalizeBool(value) {
-  if (value === null || value === undefined || value === "") return true;
-  if (value === true || value === 1 || value === "1" || value === "true") return true;
-  if (value === false || value === 0 || value === "0" || value === "false") return false;
-  return true;
-}
-
-function parseUnixSeconds(value) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return 0;
-  return Math.floor(parsed);
-}
-
-function formatUnixDateTime(value) {
-  const seconds = parseUnixSeconds(value);
-  if (!seconds) return "-";
-  try {
-    const formatted = new Date(seconds * 1000).toLocaleString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: JAKARTA_TIMEZONE,
-    });
-    return `${formatted} WIB`;
-  } catch {
-    return "-";
-  }
-}
+import { fetchJsonAuth } from "@/lib/api";
+import {
+  boolText,
+  formatUnixDate,
+  getCheckoutConfirmSeconds,
+  toCheckoutFeedback,
+} from "./marketChatGPTUtils";
+import useMarketChatGPTListing from "./useMarketChatGPTListing";
 
 function usePageScrollLock(locked) {
   useEffect(() => {
-    if (!locked || typeof window === "undefined" || typeof document === "undefined") return undefined;
+    if (!locked || typeof window === "undefined" || typeof document === "undefined")
+      return undefined;
 
     const body = document.body;
     const html = document.documentElement;
@@ -65,7 +30,8 @@ function usePageScrollLock(locked) {
     return () => {
       body.style.overflow = prevBodyOverflow;
       html.style.overflow = prevHtmlOverflow;
-      const canRestoreScroll = typeof window.scrollTo === "function" && !/jsdom/i.test(window.navigator?.userAgent || "");
+      const canRestoreScroll =
+        typeof window.scrollTo === "function" && !/jsdom/i.test(window.navigator?.userAgent || "");
       if (canRestoreScroll) {
         window.scrollTo(0, scrollY);
       }
@@ -73,120 +39,33 @@ function usePageScrollLock(locked) {
   }, [locked]);
 }
 
-function toDisplayAccount(item, index) {
-  const id = item?.chatgpt_item_id ?? item?.item_id ?? item?.account_id ?? item?.id ?? `row-${index}`;
-  const isFallbackID = String(id).startsWith("row-");
-  const seller =
-    typeof item?.seller === "object" && item?.seller !== null
-      ? item?.seller?.username ?? item?.seller?.title ?? item?.seller?.name ?? item?.seller?.id ?? "-"
-      : item?.seller ?? item?.seller_name ?? item?.owner ?? "-";
-
-  const numericPriceIDR = Number(item?.price_idr ?? 0);
-  const hasIDRPrice = Number.isFinite(numericPriceIDR) && numericPriceIDR > 0;
-  const normalizedIDR =
-    typeof item?.display_price_idr === "string" && item.display_price_idr.trim() !== ""
-      ? item.display_price_idr.trim()
-      : hasIDRPrice
-      ? `Rp ${numericPriceIDR.toLocaleString("id-ID")}`
-      : "Harga belum tersedia";
-
-  const uploadedAtSeconds =
-    parseUnixSeconds(item?.published_date) ||
-    parseUnixSeconds(item?.refreshed_date) ||
-    parseUnixSeconds(item?.update_stat_date) ||
-    parseUnixSeconds(item?.edit_date);
-
-  return {
-    id: String(id),
-    title:
-      item?.title_en ?? item?.title ?? item?.name_en ?? item?.name ?? item?.account_title ?? item?.description_en ?? item?.description ?? `Akun ${index + 1}`,
-    displayPriceIDR: normalizedIDR,
-    priceSourceSymbol: item?.price_source_symbol ?? "",
-    priceSourceCurrency: item?.price_source_currency ?? "",
-    priceIDR: item?.price_idr ?? 0,
-    status: item?.item_state ?? item?.status ?? item?.state ?? item?.availability ?? "Tersedia",
-    seller,
-    canBuy: normalizeBool(item?.canBuyItem) && hasIDRPrice && !isFallbackID,
-    idValid: !isFallbackID,
-    uploadedAtSeconds,
-    uploadedAtLabel: uploadedAtSeconds ? formatUnixDateTime(uploadedAtSeconds) : "-",
-    raw: item,
-  };
-}
-
-async function parseApiResponseSafe(res) {
-  const contentType = (res.headers.get("content-type") || "").toLowerCase();
-  if (contentType.includes("application/json")) {
-    try {
-      return await res.json();
-    } catch {
-      return null;
-    }
-  }
-  const text = await res.text().catch(() => "");
-  return { error: text || `HTTP ${res.status}` };
-}
-
-function normalizeCheckoutErrorMessage(message) {
-  const raw = String(message || "").trim();
-  const lower = raw.toLowerCase();
-  if (lower.includes("timed out") || lower.includes("timeout") || lower.includes("context canceled")) {
-    return "Permintaan melebihi batas waktu. Silakan coba lagi.";
-  }
-  if (lower.includes("saldo kamu tidak mencukupi") || lower.includes("saldo wallet anda tidak mencukupi") || lower.includes("insufficient") || lower.includes("balance")) {
-    return "Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.";
-  }
-  if (
-    lower.includes("item not found in current listing") ||
-    lower.includes("item not found") ||
-    lower.includes("ad not found") ||
-    lower.includes("sold") ||
-    lower.includes("currently unavailable") ||
-    lower.includes("akun belum siap") ||
-    lower.includes("account validation")
-  ) {
-    return "Akun saat ini belum tersedia untuk dibeli.";
-  }
-  return raw || "Pembelian belum dapat diproses saat ini.";
-}
-
-function toCheckoutFeedback(message) {
-  const normalized = normalizeCheckoutErrorMessage(message);
-  const lower = normalized.toLowerCase();
-  const isUnavailable = lower.includes("belum tersedia") || lower.includes("tidak tersedia");
-  const variant = isUnavailable ? "warning" : "error";
-
-  return {
-    message: normalized,
-    variant,
-  };
-}
-
 export default function MarketChatGPTClient() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState("");
-  const [listingError, setListingError] = useState("");
   const [checkoutFeedback, setCheckoutFeedback] = useState(null);
-  const [refreshingListings, setRefreshingListings] = useState(false);
-  const [query, setQuery] = useState("");
-  const [response, setResponse] = useState(null);
   const [drawerItem, setDrawerItem] = useState(null);
   const [confirmItem, setConfirmItem] = useState(null);
-  const [confirmCountdown, setConfirmCountdown] = useState(60);
+  const [confirmCountdown, setConfirmCountdown] = useState(getCheckoutConfirmSeconds());
   const [blockingMessage, setBlockingMessage] = useState("");
-  const [page, setPage] = useState(1);
-  const isMountedRef = useRef(false);
+  const {
+    loading,
+    listingError,
+    refreshingListings,
+    query,
+    setQuery,
+    response,
+    currentPage,
+    totalPages,
+    totalItems,
+    paginatedItems,
+    placeholderCount,
+    displayStart,
+    displayEnd,
+    setPage,
+    refreshListings,
+  } = useMarketChatGPTListing();
 
-  const apiBase = useMemo(() => getApiBase(), []);
-  const confirmSeconds = useMemo(() => getCheckoutConfirmSeconds(), []);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+  const confirmSeconds = getCheckoutConfirmSeconds();
 
   useEffect(() => {
     if (!confirmItem) return;
@@ -198,91 +77,17 @@ export default function MarketChatGPTClient() {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [confirmItem?.id, confirmSeconds]);
+  }, [confirmItem, confirmSeconds]);
 
   usePageScrollLock(Boolean(confirmItem || blockingMessage || checkoutFeedback));
 
-  const loadListings = useCallback(
-    async ({ initial = false, silent = false } = {}) => {
-      if (initial && isMountedRef.current) {
-        setLoading(true);
-      }
-      try {
-        const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US&ts=${Date.now()}`, {
-          method: "GET",
-          cache: "no-store",
-        });
-        const data = await parseApiResponseSafe(res);
-        if (!res.ok) throw new Error(data?.error || "Gagal memuat daftar akun.");
-        if (isMountedRef.current) {
-          setResponse(data);
-          setListingError("");
-        }
-        return { ok: true };
-      } catch (err) {
-        const nextError = err?.message || "Gagal memuat daftar akun.";
-        if (isMountedRef.current && (initial || !silent)) {
-          setListingError(nextError);
-        }
-        return { ok: false, error: nextError };
-      } finally {
-        if (initial && isMountedRef.current) setLoading(false);
-      }
-    },
-    [apiBase]
-  );
-
-  useEffect(() => {
-    void loadListings({ initial: true });
-    const timer = setInterval(() => {
-      void loadListings({ initial: false, silent: true });
-    }, 8000);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, [loadListings]);
-
-  const accounts = useMemo(() => {
-    const list = extractList(response?.json);
-    return list.map(toDisplayAccount);
-  }, [response]);
-
-  const filtered = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    if (!term) return accounts;
-    return accounts.filter((item) =>
-      `${item.title} ${item.displayPriceIDR} ${item.status} ${item.seller} ${item.uploadedAtLabel}`.toLowerCase().includes(term)
-    );
-  }, [accounts, query]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [query]);
-
-  useEffect(() => {
-    setPage((current) => {
-      const totalPages = Math.max(1, Math.ceil(filtered.length / MARKET_PAGE_SIZE));
-      return Math.min(current, totalPages);
-    });
-  }, [filtered.length]);
-
-  const totalItems = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / MARKET_PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const pageStartIndex = totalItems === 0 ? 0 : (currentPage - 1) * MARKET_PAGE_SIZE;
-
-  const paginatedItems = useMemo(() => {
-    return filtered.slice(pageStartIndex, pageStartIndex + MARKET_PAGE_SIZE);
-  }, [filtered, pageStartIndex]);
-  const placeholderCount = Math.max(0, MARKET_PAGE_SIZE - paginatedItems.length);
-
-  const displayStart = totalItems === 0 ? 0 : pageStartIndex + 1;
-  const displayEnd = Math.min(totalItems, pageStartIndex + paginatedItems.length);
-
   async function runCheckout(item) {
     if (!item?.canBuy) {
-      setCheckoutFeedback(toCheckoutFeedback("Akun saat ini belum tersedia untuk dibeli. Silakan muat ulang daftar akun."));
+      setCheckoutFeedback(
+        toCheckoutFeedback(
+          "Akun saat ini belum tersedia untuk dibeli. Silakan muat ulang daftar akun."
+        )
+      );
       return;
     }
 
@@ -291,14 +96,9 @@ export default function MarketChatGPTClient() {
     setBlockingMessage("Sedang memverifikasi saldo dan menyiapkan pesanan. Mohon tunggu.");
 
     try {
-      const walletPayload = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
-      const wallet = unwrapFeatureData(walletPayload) || {};
-      const balance = Number(wallet?.balance ?? wallet?.Balance ?? 0) || 0;
-      if (balance <= 0) {
-        throw new Error("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.");
-      }
-
-      setBlockingMessage("Pesanan sedang dibuat. Mohon jangan menutup atau me-refresh halaman ini.");
+      setBlockingMessage(
+        "Pesanan sedang dibuat. Mohon jangan menutup atau me-refresh halaman ini."
+      );
       const data = await fetchJsonAuth("/api/market/chatgpt/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -317,16 +117,8 @@ export default function MarketChatGPTClient() {
     }
   }
 
-  const handleRefreshListings = useCallback(async () => {
-    if (isMountedRef.current) {
-      setRefreshingListings(true);
-    }
-
-    const result = await loadListings({ initial: true });
-    if (!isMountedRef.current) {
-      return;
-    }
-
+  async function handleRefreshListings() {
+    const result = await refreshListings();
     if (result.ok) {
       setCheckoutFeedback(null);
     } else {
@@ -335,31 +127,37 @@ export default function MarketChatGPTClient() {
         variant: "error",
       });
     }
-    setRefreshingListings(false);
-  }, [loadListings]);
+  }
 
-  const cachedBadge = response?.cached ? "cache" : "live";
-  const staleBadge = response?.stale ? "stale" : "";
+  const cachedBadge = response?.cached ? "cache" : "langsung";
+  const staleBadge = response?.stale ? "sementara" : "";
 
   return (
     <div className="space-y-4 [scrollbar-gutter:stable]">
       <header className="space-y-2">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Marketplace</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          Marketplace
+        </div>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-xl font-semibold text-foreground">ChatGPT Account</h1>
+          <h1 className="text-xl font-semibold text-foreground">Akun ChatGPT</h1>
           <TinyBadge label={cachedBadge} />
           {staleBadge ? <TinyBadge label={staleBadge} tone="warning" /> : null}
         </div>
         <p className="text-xs text-muted-foreground">
-          Catatan penting: apabila Anda melihat harga yang tampak tidak wajar, kemungkinan besar itu adalah harga sementara (placeholder)
-          sebelum penjual menyelesaikan kesiapan akun untuk transaksi final.
+          Catatan penting: apabila Anda melihat harga yang tampak tidak wajar, kemungkinan besar itu
+          adalah harga sementara (placeholder) sebelum penjual menyelesaikan kesiapan akun untuk
+          transaksi final.
         </p>
       </header>
 
       <section className="rounded-xl border border-border bg-card p-3 space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           {loading ? (
-            <CenteredSpinner className="justify-start" sizeClass="h-3.5 w-3.5" srLabel="Memuat daftar akun" />
+            <CenteredSpinner
+              className="justify-start"
+              sizeClass="h-3.5 w-3.5"
+              srLabel="Memuat daftar akun"
+            />
           ) : (
             <div className="text-xs text-muted-foreground">
               {totalItems > 0
@@ -367,16 +165,30 @@ export default function MarketChatGPTClient() {
                 : "Belum ada akun untuk ditampilkan"}
             </div>
           )}
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari judul, penjual, status, atau waktu upload..."
-            className="w-full sm:w-80 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs"
-          />
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari judul, penjual, status, atau waktu upload..."
+              className="w-full sm:w-80 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                void handleRefreshListings();
+              }}
+              disabled={refreshingListings}
+              className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40 disabled:opacity-60"
+            >
+              {refreshingListings ? "Memuat ulang..." : "Muat ulang daftar"}
+            </button>
+          </div>
         </div>
 
         {listingError ? (
-          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">{listingError}</div>
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
+            {listingError}
+          </div>
         ) : null}
 
         {loading ? (
@@ -385,8 +197,10 @@ export default function MarketChatGPTClient() {
               <div key={i} className="h-16 animate-pulse rounded-md bg-muted/50" />
             ))}
           </div>
-        ) : filtered.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Belum ada akun yang cocok dengan pencarian Anda.</p>
+        ) : totalItems === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Belum ada akun yang cocok dengan pencarian Anda.
+          </p>
         ) : (
           <>
             <div className="space-y-2 md:hidden">
@@ -424,7 +238,9 @@ export default function MarketChatGPTClient() {
                   />
                 ))}
                 {Array.from({ length: placeholderCount }).map((_, index) => (
-                  <DesktopAccountRowPlaceholder key={`desktop-placeholder-${currentPage}-${index}`} />
+                  <DesktopAccountRowPlaceholder
+                    key={`desktop-placeholder-${currentPage}-${index}`}
+                  />
                 ))}
               </div>
             </div>
@@ -491,7 +307,11 @@ function TinyBadge({ label, tone = "neutral" }) {
     tone === "warning"
       ? "border-warning/30 bg-warning/10 text-warning"
       : "border-border bg-background text-muted-foreground";
-  return <span className={`inline-flex rounded-full border px-1.5 py-0.5 text-[10px] ${toneClass}`}>{label}</span>;
+  return (
+    <span className={`inline-flex rounded-full border px-1.5 py-0.5 text-[10px] ${toneClass}`}>
+      {label}
+    </span>
+  );
 }
 
 function AccountActionButtons({ item, checkingOut, onDetail, onBuy, align = "left" }) {
@@ -522,9 +342,13 @@ function DesktopAccountRow({ item, checkingOut, onDetail, onBuy }) {
       <div className="min-w-0">
         <div className="truncate font-medium text-foreground">{item.title}</div>
         <div className="mt-1 flex flex-wrap gap-1">
-          {item?.raw?.chatgpt_subscription ? <TinyBadge label={String(item.raw.chatgpt_subscription)} /> : null}
+          {item?.raw?.chatgpt_subscription ? (
+            <TinyBadge label={String(item.raw.chatgpt_subscription)} />
+          ) : null}
           {item?.raw?.openai_tier ? <TinyBadge label={String(item.raw.openai_tier)} /> : null}
-          {item?.raw?.chatgpt_country ? <TinyBadge label={String(item.raw.chatgpt_country)} /> : null}
+          {item?.raw?.chatgpt_country ? (
+            <TinyBadge label={String(item.raw.chatgpt_country)} />
+          ) : null}
         </div>
       </div>
 
@@ -538,7 +362,13 @@ function DesktopAccountRow({ item, checkingOut, onDetail, onBuy }) {
       <div className="truncate text-foreground">{String(item.seller)}</div>
       <div className="text-muted-foreground">{item.uploadedAtLabel}</div>
 
-      <AccountActionButtons item={item} checkingOut={checkingOut} onDetail={onDetail} onBuy={onBuy} align="right" />
+      <AccountActionButtons
+        item={item}
+        checkingOut={checkingOut}
+        onDetail={onDetail}
+        onBuy={onBuy}
+        align="right"
+      />
     </article>
   );
 }
@@ -564,17 +394,28 @@ function MobileAccountCard({ item, checkingOut, onDetail, onBuy }) {
   return (
     <article className="rounded-lg border border-border bg-background p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
       <div className="min-w-0">
-        <h3 className="text-sm font-semibold leading-snug break-words text-foreground">{item.title}</h3>
+        <h3 className="text-sm font-semibold leading-snug break-words text-foreground">
+          {item.title}
+        </h3>
         <div className="mt-1.5 flex flex-wrap gap-1">
-          {item?.raw?.chatgpt_subscription ? <TinyBadge label={String(item.raw.chatgpt_subscription)} /> : null}
+          {item?.raw?.chatgpt_subscription ? (
+            <TinyBadge label={String(item.raw.chatgpt_subscription)} />
+          ) : null}
           {item?.raw?.openai_tier ? <TinyBadge label={String(item.raw.openai_tier)} /> : null}
-          {item?.raw?.chatgpt_country ? <TinyBadge label={String(item.raw.chatgpt_country)} /> : null}
+          {item?.raw?.chatgpt_country ? (
+            <TinyBadge label={String(item.raw.chatgpt_country)} />
+          ) : null}
         </div>
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
         <AccountMetaField label="Harga" value={item.displayPriceIDR} strong />
-        <AccountMetaField label="Status" value={<TinyBadge label={String(item.status)} tone={item.canBuy ? "neutral" : "warning"} />} />
+        <AccountMetaField
+          label="Status"
+          value={
+            <TinyBadge label={String(item.status)} tone={item.canBuy ? "neutral" : "warning"} />
+          }
+        />
         <AccountMetaField label="Penjual" value={String(item.seller)} />
         <AccountMetaField label="Diunggah" value={item.uploadedAtLabel} />
       </div>
@@ -586,7 +427,12 @@ function MobileAccountCard({ item, checkingOut, onDetail, onBuy }) {
       ) : null}
 
       <div className="mt-3">
-        <AccountActionButtons item={item} checkingOut={checkingOut} onDetail={onDetail} onBuy={onBuy} />
+        <AccountActionButtons
+          item={item}
+          checkingOut={checkingOut}
+          onDetail={onDetail}
+          onBuy={onBuy}
+        />
       </div>
     </article>
   );
@@ -608,7 +454,11 @@ function AccountMetaField({ label, value, strong = false }) {
   return (
     <div className="rounded-md border border-border bg-card px-2.5 py-2">
       <div className="text-[10px] text-muted-foreground">{label}</div>
-      <div className={`mt-0.5 text-xs break-words ${strong ? "font-semibold text-foreground" : "text-foreground"}`}>{value}</div>
+      <div
+        className={`mt-0.5 text-xs break-words ${strong ? "font-semibold text-foreground" : "text-foreground"}`}
+      >
+        {value}
+      </div>
     </div>
   );
 }
@@ -646,14 +496,20 @@ function SpecDrawer({ item, onClose }) {
       >
         <div className="flex items-start justify-between border-b border-border px-3 py-2.5">
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Detail Akun</div>
+            <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              Detail Akun
+            </div>
             <h2 className="truncate text-sm font-semibold">{item.title}</h2>
             <div className="mt-1 flex flex-wrap gap-1">
               <TinyBadge label={`Harga ${item.displayPriceIDR}`} />
               <TinyBadge label={`Penjual ${item.seller}`} />
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-md border border-border px-2 py-1 text-[11px] hover:bg-muted/40">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-border px-2 py-1 text-[11px] hover:bg-muted/40"
+          >
             Tutup
           </button>
         </div>
@@ -661,7 +517,10 @@ function SpecDrawer({ item, onClose }) {
         <div className="h-[calc(82vh-64px)] md:h-[calc(100vh-64px)] overflow-auto p-3">
           <div className="grid grid-cols-1 gap-2">
             {specs.map(([label, value]) => (
-              <div key={label} className="rounded-md border border-border bg-background px-2.5 py-2">
+              <div
+                key={label}
+                className="rounded-md border border-border bg-background px-2.5 py-2"
+              >
                 <div className="text-[10px] text-muted-foreground">{label}</div>
                 <div className="mt-0.5 text-xs text-foreground break-all">{String(value)}</div>
               </div>
@@ -681,14 +540,20 @@ function CheckoutConfirmModal({ item, countdown, onCancel, onConfirm, disabled }
       <div className="fixed inset-0 z-[120] bg-black/55" />
       <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
         <div className="w-full max-w-md rounded-xl border border-border bg-card p-4 shadow-[0_16px_32px_rgba(0,0,0,0.22)]">
-          <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Konfirmasi Pembelian</div>
-          <h2 className="mt-1 text-base font-semibold text-foreground">Pastikan pesanan sudah benar</h2>
+          <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            Konfirmasi Pembelian
+          </div>
+          <h2 className="mt-1 text-base font-semibold text-foreground">
+            Pastikan pesanan sudah benar
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Anda akan membeli akun <span className="font-medium text-foreground">{item.title}</span> dengan harga
+            Anda akan membeli akun <span className="font-medium text-foreground">{item.title}</span>{" "}
+            dengan harga
             <span className="font-medium text-foreground"> {item.displayPriceIDR}</span>.
           </p>
           <p className="mt-2 text-xs text-amber-700">
-            Untuk mencegah pembelian tidak sengaja, tombol konfirmasi akan aktif setelah hitung mundur selesai.
+            Untuk mencegah pembelian tidak sengaja, tombol konfirmasi akan aktif setelah hitung
+            mundur selesai.
           </p>
           <p className="mt-1 text-xs text-muted-foreground">Penjual: {item.seller}</p>
 
@@ -727,7 +592,9 @@ function CheckoutBlockingModal({ message }) {
             Proses pembelian sedang berjalan
           </div>
           <p className="mt-2 text-sm text-muted-foreground">{message}</p>
-          <p className="mt-2 text-xs text-amber-700">Mohon jangan menutup atau me-refresh halaman hingga proses selesai.</p>
+          <p className="mt-2 text-xs text-amber-700">
+            Mohon jangan menutup atau me-refresh halaman hingga proses selesai.
+          </p>
         </div>
       </div>
     </>
@@ -772,25 +639,4 @@ function CheckoutFeedbackModal({ feedback, onClose, onRefresh, refreshing }) {
       </div>
     </>
   );
-}
-
-function boolText(value) {
-  if (value === true || value === 1 || value === "1" || value === "true") return "Ya";
-  if (value === false || value === 0 || value === "0" || value === "false") return "Tidak";
-  return "";
-}
-
-function formatUnixDate(value) {
-  const seconds = Number(value);
-  if (!Number.isFinite(seconds) || seconds <= 0) return "";
-  try {
-    return new Date(seconds * 1000).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      timeZone: JAKARTA_TIMEZONE,
-    });
-  } catch {
-    return "";
-  }
 }

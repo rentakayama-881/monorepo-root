@@ -1,11 +1,9 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import MarketChatGPTClient from "../MarketChatGPTClient";
 
 const pushMock = jest.fn();
 const mockFetchJsonAuth = jest.fn();
 const mockGetApiBase = jest.fn();
-const mockFetchFeatureAuth = jest.fn();
-const mockUnwrapFeatureData = jest.fn();
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -16,16 +14,6 @@ jest.mock("next/navigation", () => ({
 jest.mock("@/lib/api", () => ({
   fetchJsonAuth: (...args) => mockFetchJsonAuth(...args),
   getApiBase: (...args) => mockGetApiBase(...args),
-}));
-
-jest.mock("@/lib/featureApi", () => ({
-  FEATURE_ENDPOINTS: {
-    WALLETS: {
-      ME: "/api/v1/wallets/me",
-    },
-  },
-  fetchFeatureAuth: (...args) => mockFetchFeatureAuth(...args),
-  unwrapFeatureData: (...args) => mockUnwrapFeatureData(...args),
 }));
 
 function createListingItem(overrides = {}) {
@@ -74,10 +62,9 @@ describe("MarketChatGPTClient", () => {
     pushMock.mockReset();
     mockFetchJsonAuth.mockReset();
     mockGetApiBase.mockReset();
-    mockFetchFeatureAuth.mockReset();
-    mockUnwrapFeatureData.mockReset();
 
     mockGetApiBase.mockReturnValue("http://localhost:8080");
+    jest.useRealTimers();
     global.fetch.mockReset();
     global.fetch.mockResolvedValue(createListingResponse());
   });
@@ -89,62 +76,65 @@ describe("MarketChatGPTClient", () => {
   it("menampilkan modal konfirmasi sebelum checkout dijalankan", async () => {
     render(<MarketChatGPTClient />);
 
+    await screen.findByText("Menampilkan 1-1 dari 1 akun");
     const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
     fireEvent.click(buyButtons[0]);
 
     expect(await screen.findByText("Konfirmasi Pembelian")).toBeInTheDocument();
     expect(screen.getByText("Pastikan pesanan sudah benar")).toBeInTheDocument();
-    expect(mockFetchFeatureAuth).not.toHaveBeenCalled();
     expect(mockFetchJsonAuth).not.toHaveBeenCalled();
   });
 
-  it("menampilkan feedback modal jika saldo wallet tidak cukup", async () => {
-    mockFetchFeatureAuth.mockResolvedValue({ data: { balance: 0 } });
-    mockUnwrapFeatureData.mockReturnValue({ balance: 0 });
+  it("menampilkan feedback modal jika checkout backend menolak pembelian", async () => {
+    mockFetchJsonAuth.mockRejectedValue(
+      new Error("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.")
+    );
 
     render(<MarketChatGPTClient />);
 
+    await screen.findByText("Menampilkan 1-1 dari 1 akun");
     const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
     fireEvent.click(buyButtons[0]);
     const confirmButton = await screen.findByRole("button", { name: /Ya, beli/i });
     await waitFor(() => expect(confirmButton).toBeEnabled());
     fireEvent.click(confirmButton);
 
-    expect(mockFetchFeatureAuth).toHaveBeenCalledWith("/api/v1/wallets/me");
-
-    expect(await screen.findByText("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Muat ulang daftar" })).toBeInTheDocument();
+    expect(
+      await screen.findByText("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.")
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Muat ulang daftar" })).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Tutup" })).toBeInTheDocument();
   });
 
-  it("memuat ulang listing dari modal feedback", async () => {
-    mockFetchFeatureAuth.mockResolvedValue({ data: { balance: 0 } });
-    mockUnwrapFeatureData.mockReturnValue({ balance: 0 });
-
+  it("memuat ulang listing dari tombol refresh yang selalu terlihat", async () => {
     render(<MarketChatGPTClient />);
 
-    const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
-    fireEvent.click(buyButtons[0]);
-    const confirmButton = await screen.findByRole("button", { name: /Ya, beli/i });
-    await waitFor(() => expect(confirmButton).toBeEnabled());
-    fireEvent.click(confirmButton);
-
-    await screen.findByText("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.");
+    await screen.findByText("Menampilkan 1-1 dari 1 akun");
 
     fireEvent.click(screen.getByRole("button", { name: "Muat ulang daftar" }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it("memuat ulang listing otomatis setiap 60 detik", async () => {
+    jest.useFakeTimers();
+
+    render(<MarketChatGPTClient />);
+
+    await screen.findByText("Menampilkan 1-1 dari 1 akun");
+
+    await act(async () => {
+      jest.advanceTimersByTime(60000);
+    });
 
     await waitFor(() => {
-      expect(screen.queryByText("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.")).not.toBeInTheDocument();
+      expect(global.fetch).toHaveBeenCalledTimes(2);
     });
   });
 
   it("mengarah ke detail order saat checkout berhasil", async () => {
-    mockFetchFeatureAuth.mockResolvedValue({ data: { balance: 150000 } });
-    mockUnwrapFeatureData.mockReturnValue({ balance: 150000 });
     mockFetchJsonAuth.mockResolvedValue({
       order: {
         id: "order/123",
@@ -160,7 +150,10 @@ describe("MarketChatGPTClient", () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockFetchJsonAuth).toHaveBeenCalledWith("/api/market/chatgpt/orders", expect.any(Object));
+      expect(mockFetchJsonAuth).toHaveBeenCalledWith(
+        "/api/market/chatgpt/orders",
+        expect.any(Object)
+      );
       expect(pushMock).toHaveBeenCalledWith("/market/chatgpt/orders/order%2F123");
     });
   });
