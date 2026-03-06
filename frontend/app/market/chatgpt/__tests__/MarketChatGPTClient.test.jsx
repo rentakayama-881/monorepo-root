@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { SWRConfig } from "swr";
 import MarketChatGPTClient from "../MarketChatGPTClient";
 
 const pushMock = jest.fn();
@@ -65,6 +66,36 @@ function createManyListingItems(total) {
   );
 }
 
+function createDeferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
+}
+
+function renderMarket(cache = new Map()) {
+  return render(<MarketChatGPTClient />, {
+    wrapper: function Wrapper({ children }) {
+      return (
+        <SWRConfig
+          value={{
+            provider: () => cache,
+            dedupingInterval: 0,
+            focusThrottleInterval: 0,
+            errorRetryCount: 0,
+            errorRetryInterval: 0,
+          }}
+        >
+          {children}
+        </SWRConfig>
+      );
+    },
+  });
+}
+
 describe("MarketChatGPTClient", () => {
   const previousConfirmSeconds = process.env.NEXT_PUBLIC_MARKET_BUY_CONFIRM_SECONDS;
 
@@ -87,7 +118,7 @@ describe("MarketChatGPTClient", () => {
   });
 
   it("menampilkan modal konfirmasi sebelum checkout dijalankan", async () => {
-    render(<MarketChatGPTClient />);
+    renderMarket();
 
     const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
     fireEvent.click(buyButtons[0]);
@@ -102,7 +133,7 @@ describe("MarketChatGPTClient", () => {
     mockFetchFeatureAuth.mockResolvedValue({ data: { balance: 0 } });
     mockUnwrapFeatureData.mockReturnValue({ balance: 0 });
 
-    render(<MarketChatGPTClient />);
+    renderMarket();
 
     const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
     fireEvent.click(buyButtons[0]);
@@ -112,7 +143,9 @@ describe("MarketChatGPTClient", () => {
 
     expect(mockFetchFeatureAuth).toHaveBeenCalledWith("/api/v1/wallets/me");
 
-    expect(await screen.findByText("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.")
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Muat ulang daftar" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tutup" })).toBeInTheDocument();
   });
@@ -121,7 +154,7 @@ describe("MarketChatGPTClient", () => {
     mockFetchFeatureAuth.mockResolvedValue({ data: { balance: 0 } });
     mockUnwrapFeatureData.mockReturnValue({ balance: 0 });
 
-    render(<MarketChatGPTClient />);
+    renderMarket();
 
     const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
     fireEvent.click(buyButtons[0]);
@@ -138,7 +171,9 @@ describe("MarketChatGPTClient", () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.")
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -151,7 +186,7 @@ describe("MarketChatGPTClient", () => {
       },
     });
 
-    render(<MarketChatGPTClient />);
+    renderMarket();
 
     const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
     fireEvent.click(buyButtons[0]);
@@ -160,7 +195,10 @@ describe("MarketChatGPTClient", () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockFetchJsonAuth).toHaveBeenCalledWith("/api/market/chatgpt/orders", expect.any(Object));
+      expect(mockFetchJsonAuth).toHaveBeenCalledWith(
+        "/api/market/chatgpt/orders",
+        expect.any(Object)
+      );
       expect(pushMock).toHaveBeenCalledWith("/market/chatgpt/orders/order%2F123");
     });
   });
@@ -168,7 +206,7 @@ describe("MarketChatGPTClient", () => {
   it("menampilkan pagination 10 akun per halaman", async () => {
     global.fetch.mockResolvedValueOnce(createListingResponse(createManyListingItems(12)));
 
-    render(<MarketChatGPTClient />);
+    renderMarket();
 
     expect(await screen.findByText("Menampilkan 1-10 dari 12 akun")).toBeInTheDocument();
     expect(screen.queryByText("ChatGPT Plus Account 12")).not.toBeInTheDocument();
@@ -182,7 +220,7 @@ describe("MarketChatGPTClient", () => {
   it("merender placeholder slot agar tinggi list stabil di halaman terakhir", async () => {
     global.fetch.mockResolvedValueOnce(createListingResponse(createManyListingItems(12)));
 
-    render(<MarketChatGPTClient />);
+    renderMarket();
 
     await screen.findByText("Menampilkan 1-10 dari 12 akun");
     fireEvent.click(screen.getByRole("button", { name: "Halaman berikutnya" }));
@@ -193,7 +231,7 @@ describe("MarketChatGPTClient", () => {
   });
 
   it("menggunakan backdrop detail standar dan bisa ditutup lewat klik backdrop", async () => {
-    render(<MarketChatGPTClient />);
+    renderMarket();
 
     const detailButtons = await screen.findAllByRole("button", { name: "Detail" });
     fireEvent.click(detailButtons[0]);
@@ -209,5 +247,95 @@ describe("MarketChatGPTClient", () => {
     await waitFor(() => {
       expect(screen.queryByText("Detail Akun")).not.toBeInTheDocument();
     });
+  });
+
+  it("tidak merender empty state saat initial request masih pending", () => {
+    const deferred = createDeferred();
+    global.fetch.mockImplementationOnce(() => deferred.promise);
+
+    renderMarket();
+
+    expect(screen.queryByText("Belum ada akun untuk ditampilkan")).not.toBeInTheDocument();
+    expect(screen.queryByText("Belum ada akun untuk ditampilkan.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Belum ada akun yang cocok dengan pencarian Anda.")
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
+  });
+
+  it("mempertahankan data sebelumnya saat remount memicu revalidate background", async () => {
+    const sharedCache = new Map();
+    const deferred = createDeferred();
+    global.fetch
+      .mockResolvedValueOnce(createListingResponse())
+      .mockImplementationOnce(() => deferred.promise);
+
+    const firstRender = renderMarket(sharedCache);
+    await screen.findByText("Menampilkan 1-1 dari 1 akun");
+    firstRender.unmount();
+
+    renderMarket(sharedCache);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    expect(screen.getAllByText("ChatGPT Plus Account").length).toBeGreaterThan(0);
+    expect(screen.getByText("Daftar sedang diperbarui...")).toBeInTheDocument();
+    expect(screen.queryByText("Belum ada akun untuk ditampilkan")).not.toBeInTheDocument();
+    expect(screen.queryByText("Belum ada akun untuk ditampilkan.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Belum ada akun yang cocok dengan pencarian Anda.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("menampilkan empty state base hanya setelah response sukses kosong", async () => {
+    global.fetch.mockResolvedValueOnce(createListingResponse([]));
+
+    renderMarket();
+
+    expect(await screen.findByText("Belum ada akun untuk ditampilkan.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Belum ada akun yang cocok dengan pencarian Anda.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("menampilkan empty state pencarian jika data dasar ada tetapi filter tidak cocok", async () => {
+    renderMarket();
+
+    await screen.findByText("Menampilkan 1-1 dari 1 akun");
+    fireEvent.change(
+      screen.getByPlaceholderText("Cari judul, penjual, status, atau waktu upload..."),
+      {
+        target: { value: "tidak-cocok" },
+      }
+    );
+
+    expect(
+      await screen.findByText("Belum ada akun yang cocok dengan pencarian Anda.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("0 hasil dari 1 akun")).toBeInTheDocument();
+    expect(screen.queryByText("Belum ada akun untuk ditampilkan.")).not.toBeInTheDocument();
+  });
+
+  it("menampilkan error state jika payload sukses tidak sesuai kontrak", async () => {
+    const malformedPayload = { items: [createListingItem()] };
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: {
+        get: () => "application/json",
+      },
+      json: jest.fn().mockResolvedValue(malformedPayload),
+      text: jest.fn().mockResolvedValue(JSON.stringify(malformedPayload)),
+    });
+
+    renderMarket();
+
+    expect(await screen.findByText("Respons daftar akun tidak valid.")).toBeInTheDocument();
+    expect(screen.queryByText("Belum ada akun untuk ditampilkan")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Belum ada akun yang cocok dengan pencarian Anda.")
+    ).not.toBeInTheDocument();
   });
 });
