@@ -22,14 +22,22 @@ var (
 	ErrLZTRequestInvalid = errors.New("lzt request invalid")
 )
 
+type LZTRateLimitClass string
+
+const (
+	LZTRateLimitClassGeneral LZTRateLimitClass = "general"
+	LZTRateLimitClassSearch  LZTRateLimitClass = "search"
+)
+
 // LZTMarketRequest represents a proxied request to LZT Market API.
 type LZTMarketRequest struct {
-	Method      string            `json:"method"`
-	Path        string            `json:"path"`
-	Query       map[string]string `json:"query"`
-	ContentType string            `json:"content_type"` // "json" (default) or "form"
-	JSONBody    interface{}       `json:"json_body"`
-	FormBody    map[string]string `json:"form_body"`
+	Method         string            `json:"method"`
+	Path           string            `json:"path"`
+	Query          map[string]string `json:"query"`
+	ContentType    string            `json:"content_type"` // "json" (default) or "form"
+	JSONBody       interface{}       `json:"json_body"`
+	FormBody       map[string]string `json:"form_body"`
+	RateLimitClass LZTRateLimitClass `json:"rate_limit_class"`
 }
 
 // LZTMarketResponse wraps an upstream response.
@@ -42,13 +50,20 @@ type LZTMarketResponse struct {
 
 // LZTMarketClient performs authenticated calls to LZT Market API.
 type LZTMarketClient struct {
-	baseURL       string
-	token         string
-	timeout       time.Duration
-	minInterval   time.Duration
-	httpClient    *http.Client
-	enabled       bool
+	baseURL           string
+	token             string
+	timeout           time.Duration
+	minInterval       time.Duration
+	searchMinInterval time.Duration
+	httpClient        *http.Client
+	enabled           bool
+	generalLimiter    lztRateLimiter
+	searchLimiter     lztRateLimiter
+}
+
+type lztRateLimiter struct {
 	mu            sync.Mutex
+	interval      time.Duration
 	lastRequestAt time.Time
 }
 
@@ -61,6 +76,7 @@ func NewLZTMarketClientFromEnv() *LZTMarketClient {
 
 	timeoutSeconds := readPositiveIntEnv("LZT_MARKET_TIMEOUT_SECONDS", 300)
 	minIntervalMs := readPositiveIntEnv("LZT_MARKET_MIN_INTERVAL_MS", 200)
+	searchMinIntervalMs := readPositiveIntEnv("LZT_MARKET_SEARCH_MIN_INTERVAL_MS", 3000)
 	token := strings.TrimSpace(os.Getenv("LZT_MARKET_TOKEN"))
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
@@ -69,15 +85,22 @@ func NewLZTMarketClientFromEnv() *LZTMarketClient {
 	}
 
 	return &LZTMarketClient{
-		baseURL:     strings.TrimRight(baseURL, "/"),
-		token:       token,
-		timeout:     time.Duration(timeoutSeconds) * time.Second,
-		minInterval: time.Duration(minIntervalMs) * time.Millisecond,
+		baseURL:           strings.TrimRight(baseURL, "/"),
+		token:             token,
+		timeout:           time.Duration(timeoutSeconds) * time.Second,
+		minInterval:       time.Duration(minIntervalMs) * time.Millisecond,
+		searchMinInterval: time.Duration(searchMinIntervalMs) * time.Millisecond,
 		httpClient: &http.Client{
 			Timeout:   time.Duration(timeoutSeconds) * time.Second,
 			Transport: transport,
 		},
 		enabled: token != "",
+		generalLimiter: lztRateLimiter{
+			interval: time.Duration(minIntervalMs) * time.Millisecond,
+		},
+		searchLimiter: lztRateLimiter{
+			interval: time.Duration(searchMinIntervalMs) * time.Millisecond,
+		},
 	}
 }
 
@@ -108,6 +131,14 @@ func (c *LZTMarketClient) MinInterval() time.Duration {
 		return 0
 	}
 	return c.minInterval
+}
+
+// SearchMinInterval returns minimal delay between search requests.
+func (c *LZTMarketClient) SearchMinInterval() time.Duration {
+	if c == nil {
+		return 0
+	}
+	return c.searchMinInterval
 }
 
 // Do executes one request to LZT API.
@@ -172,7 +203,7 @@ func (c *LZTMarketClient) Do(ctx context.Context, reqInput LZTMarketRequest) (*L
 		return nil, fmt.Errorf("%w: content_type must be json or form", ErrLZTRequestInvalid)
 	}
 
-	if err := c.waitForRateLimit(); err != nil {
+	if err := c.waitForRateLimit(ctx, resolveRateLimitClass(reqInput.RateLimitClass, method, path)); err != nil {
 		return nil, err
 	}
 
@@ -219,23 +250,70 @@ func (c *LZTMarketClient) Do(ctx context.Context, reqInput LZTMarketRequest) (*L
 	return out, nil
 }
 
-func (c *LZTMarketClient) waitForRateLimit() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (c *LZTMarketClient) waitForRateLimit(ctx context.Context, class LZTRateLimitClass) error {
+	limiter := c.rateLimiterForClass(class)
+	if limiter == nil {
+		return nil
+	}
+	return limiter.wait(ctx)
+}
 
-	if c.lastRequestAt.IsZero() {
-		c.lastRequestAt = time.Now()
+func (c *LZTMarketClient) rateLimiterForClass(class LZTRateLimitClass) *lztRateLimiter {
+	switch class {
+	case LZTRateLimitClassSearch:
+		return &c.searchLimiter
+	default:
+		return &c.generalLimiter
+	}
+}
+
+func (l *lztRateLimiter) wait(ctx context.Context) error {
+	if l == nil {
+		return nil
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.interval <= 0 {
+		l.lastRequestAt = time.Now()
+		return nil
+	}
+	if l.lastRequestAt.IsZero() {
+		l.lastRequestAt = time.Now()
 		return nil
 	}
 
-	wait := c.minInterval - time.Since(c.lastRequestAt)
+	wait := l.interval - time.Since(l.lastRequestAt)
 	if wait > 0 {
 		timer := time.NewTimer(wait)
 		defer timer.Stop()
-		<-timer.C
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timer.C:
+		}
 	}
-	c.lastRequestAt = time.Now()
+
+	l.lastRequestAt = time.Now()
 	return nil
+}
+
+func resolveRateLimitClass(requested LZTRateLimitClass, method, path string) LZTRateLimitClass {
+	switch requested {
+	case LZTRateLimitClassSearch:
+		return LZTRateLimitClassSearch
+	case LZTRateLimitClassGeneral:
+		return LZTRateLimitClassGeneral
+	}
+
+	if method == http.MethodGet && strings.EqualFold(strings.TrimSpace(path), "/chatgpt") {
+		return LZTRateLimitClassSearch
+	}
+	return LZTRateLimitClassGeneral
 }
 
 func readPositiveIntEnv(key string, fallback int) int {
@@ -249,4 +327,3 @@ func readPositiveIntEnv(key string, fallback int) int {
 	}
 	return n
 }
-

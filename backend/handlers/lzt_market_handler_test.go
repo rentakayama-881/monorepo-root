@@ -3,12 +3,15 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"backend-gin/services"
 	"github.com/gin-gonic/gin"
@@ -380,6 +383,118 @@ func TestFetchChatGPTListing_StopsWhenProviderRepeatsSamePage(t *testing.T) {
 	}
 	if callCount > 2 {
 		t.Fatalf("expected early stop on duplicate pages, got %d calls", callCount)
+	}
+}
+
+func TestCacheChatGPTListing_ReturnsClonedPayload(t *testing.T) {
+	handler := &LZTMarketHandler{
+		cacheTTL: time.Minute,
+	}
+
+	handler.setCachedChatGPT("en-US", &services.LZTMarketResponse{
+		StatusCode: http.StatusOK,
+		Headers: map[string]string{
+			"content-type": "application/json",
+		},
+		JSON: map[string]interface{}{
+			"items": []interface{}{
+				map[string]interface{}{
+					"item_id": 123,
+					"title":   "Original",
+				},
+			},
+		},
+	})
+
+	cached, ok := handler.getCachedChatGPT("en-US")
+	if !ok || cached == nil {
+		t.Fatalf("expected cached listing")
+	}
+	root, ok := cached.JSON.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected cached root map")
+	}
+	root["mutated"] = true
+	items := root["items"].([]interface{})
+	items[0].(map[string]interface{})["title"] = "Mutated"
+
+	cachedAgain, ok := handler.getCachedChatGPT("en-US")
+	if !ok || cachedAgain == nil {
+		t.Fatalf("expected cached listing on second read")
+	}
+	rootAgain, ok := cachedAgain.JSON.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected cached root map on second read")
+	}
+	if _, exists := rootAgain["mutated"]; exists {
+		t.Fatalf("expected cached payload to remain immutable across reads")
+	}
+	itemsAgain := rootAgain["items"].([]interface{})
+	if got := itemsAgain[0].(map[string]interface{})["title"]; got != "Original" {
+		t.Fatalf("unexpected nested cached title after mutation: got %v want Original", got)
+	}
+}
+
+func TestLoadChatGPTListing_UsesSingleFlightForConcurrentRefresh(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	var mu sync.Mutex
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != http.MethodGet || r.URL.Path != "/chatgpt" {
+			http.NotFound(w, r)
+			return
+		}
+
+		time.Sleep(25 * time.Millisecond)
+		mu.Lock()
+		callCount++
+		mu.Unlock()
+		_, _ = io.WriteString(w, `{"items":[]}`)
+	}))
+	defer server.Close()
+
+	t.Setenv("LZT_MARKET_BASE_URL", server.URL)
+	t.Setenv("LZT_MARKET_TOKEN", "test-token")
+	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
+	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
+	t.Setenv("LZT_MARKET_SEARCH_MIN_INTERVAL_MS", "1")
+	t.Setenv("MARKET_CHATGPT_MAX_PAGES", "3")
+
+	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
+
+	var wg sync.WaitGroup
+	results := make(chan error, 6)
+	for i := 0; i < 6; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			resp, _, _, err := handler.loadChatGPTListing(context.Background(), "en-US", true)
+			if err != nil {
+				results <- err
+				return
+			}
+			if resp == nil {
+				results <- errors.New("nil response from loadChatGPTListing")
+				return
+			}
+			results <- nil
+		}()
+	}
+	wg.Wait()
+	close(results)
+
+	for err := range results {
+		if err != nil {
+			t.Fatalf("unexpected concurrent refresh error: %v", err)
+		}
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if callCount != 1 {
+		t.Fatalf("expected single provider fetch for concurrent refresh, got %d", callCount)
 	}
 }
 
