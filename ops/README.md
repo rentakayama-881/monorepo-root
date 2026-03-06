@@ -31,3 +31,11 @@ Folder ini menyatukan command operasional wajib agar AI/human operator selalu ko
 
 5. `vps-rollback.sh`
 - Restore artifacts dari backup lalu restart + verify.
+
+6. `test-market-backend.sh`
+- Menjalankan verifikasi backend market yang terfokus.
+- Memakai `GOCACHE` dan `GOTMPDIR` di `/tmp` agar aman di environment terbatas.
+- Scope:
+  - `--scope all` (default)
+  - `--scope services`
+  - `--scope handlers`
