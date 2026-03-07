@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { useEffect } from "react";
-import { Logo } from "./ui/Logo";
 
 export default function Sidebar({ open, onClose }) {
   const handleClose = () => onClose?.();
@@ -22,15 +21,15 @@ export default function Sidebar({ open, onClose }) {
   // Keyboard navigation
   useEffect(() => {
     if (!open) return;
-    
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         handleClose();
       }
     };
-    
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open, handleClose]);
 
   const sectionHeading =
@@ -50,12 +49,17 @@ export default function Sidebar({ open, onClose }) {
         {/* Sticky header */}
         <div className="sticky top-0 z-10 bg-card px-6 pb-4 pt-5">
           <div className="flex items-center justify-between">
-            <Logo
-              variant="icon"
-              size={40}
+            <span
+              className="text-lg font-bold text-foreground cursor-pointer"
               onClick={handleClose}
-              className="shrink-0"
-            />
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") handleClose();
+              }}
+            >
+              AIValid
+            </span>
             <button
               className="rounded-[var(--radius)] p-1 text-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               onClick={handleClose}
