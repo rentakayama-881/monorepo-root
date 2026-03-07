@@ -145,7 +145,10 @@ export function useUploadDocument() {
   const [progress, setProgress] = useState(0);
 
   const uploadDocument = useCallback(
-    async (file, { title, description = "", category = "other", visibility = "private", tags = [] }) => {
+    async (
+      file,
+      { title, description = "", category = "other", visibility = "private", tags = [] }
+    ) => {
       const token = getToken();
       if (!token) {
         throw new Error("Authentication required to upload document");
@@ -166,13 +169,15 @@ export function useUploadDocument() {
       const lowerName = String(file.name || "").toLowerCase();
       const hasAllowedExtension = allowedExtensions.some((ext) => lowerName.endsWith(ext));
       if (!allowedTypes.includes(file.type) && !hasAllowedExtension) {
-        throw new Error("Tipe file tidak diizinkan. Gunakan PDF, DOCX, TXT, MD, CSV, XLSX, XLS, atau ZIP.");
+        throw new Error(
+          "Tipe file tidak diizinkan. Gunakan PDF, DOCX, TXT, MD, CSV, XLSX, XLS, atau ZIP."
+        );
       }
 
-      // Validate file size (10MB max)
-      const maxSize = 10 * 1024 * 1024;
+      // Validate file size (500MB max)
+      const maxSize = 500 * 1024 * 1024;
       if (file.size > maxSize) {
-        throw new Error("Ukuran file maks 10MB");
+        throw new Error("Ukuran file maks 500MB");
       }
 
       setLoading(true);
@@ -244,11 +249,11 @@ export function useUploadDocument() {
 
           const hasDirectDocumentId = Boolean(
             result.document_id ||
-              result.documentId ||
-              result.DocumentId ||
-              result.DocumentID ||
-              result.id ||
-              result.ID
+            result.documentId ||
+            result.DocumentId ||
+            result.DocumentID ||
+            result.id ||
+            result.ID
           );
           if (hasDirectDocumentId) {
             return result;
@@ -261,11 +266,11 @@ export function useUploadDocument() {
           if (data && typeof data === "object") {
             const hasNestedDocumentId = Boolean(
               data.document_id ||
-                data.documentId ||
-                data.DocumentId ||
-                data.DocumentID ||
-                data.id ||
-                data.ID
+              data.documentId ||
+              data.DocumentId ||
+              data.DocumentID ||
+              data.id ||
+              data.ID
             );
             if (hasNestedDocumentId) {
               return data;

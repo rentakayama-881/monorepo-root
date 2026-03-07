@@ -168,8 +168,8 @@ public static class DocumentFileType
         "application/zip"
     };
 
-    public const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
-    public const long MaxUserStorageBytes = 100 * 1024 * 1024; // 100 MB per user
+    public const long MaxFileSizeBytes = 500L * 1024 * 1024; // 500 MB
+    public const long MaxUserStorageBytes = 5L * 1024 * 1024 * 1024; // 5 GB per user
 
     public static string ResolveMimeType(string extension)
     {

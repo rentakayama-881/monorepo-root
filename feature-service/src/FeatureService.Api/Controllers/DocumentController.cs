@@ -28,7 +28,7 @@ public class DocumentController : ControllerBase
     /// Upload a document to user's profile storage
     /// </summary>
     [HttpPost]
-    [RequestSizeLimit(11 * 1024 * 1024)] // 11MB to account for overhead
+    [RequestSizeLimit(524_288_000)] // ~500MB to match MaxFileSizeBytes
     [ProducesResponseType(typeof(DocumentUploadResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]
