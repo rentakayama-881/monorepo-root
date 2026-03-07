@@ -3,39 +3,53 @@ import Skeleton, { SkeletonText } from "@/components/ui/Skeleton";
 export function ValidationCaseIndexContentSkeleton({ fullHeight = false }) {
   return (
     <section className={fullHeight ? "min-h-[68vh] space-y-6" : "space-y-6"}>
+      {/* Filter skeleton */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
         <div className="md:col-span-6">
-          <Skeleton className="h-11 w-full rounded-xl" />
+          <Skeleton className="h-4 w-10 mb-1" />
+          <Skeleton className="h-10 w-full rounded-[var(--radius)]" />
         </div>
         <div className="md:col-span-3">
-          <Skeleton className="h-11 w-full rounded-xl" />
+          <Skeleton className="h-4 w-12 mb-1" />
+          <Skeleton className="h-10 w-full rounded-[var(--radius)]" />
         </div>
         <div className="md:col-span-3">
-          <Skeleton className="h-11 w-full rounded-xl" />
+          <Skeleton className="h-4 w-16 mb-1" />
+          <Skeleton className="h-10 w-full rounded-[var(--radius)]" />
         </div>
-        <div className="md:col-span-8">
-          <Skeleton className="h-11 w-full rounded-xl" />
+        <div className="md:col-span-9">
+          <Skeleton className="h-4 w-8 mb-1" />
+          <Skeleton className="h-10 w-full rounded-[var(--radius)]" />
         </div>
-        <div className="md:col-span-4">
-          <Skeleton className="h-11 w-full rounded-xl" />
+        <div className="md:col-span-3 flex items-end">
+          <Skeleton className="h-10 w-full rounded-[var(--radius)]" />
         </div>
       </div>
 
-      <div className="rounded-2xl bg-secondary/20 px-4 py-4">
-        <div className="mb-3 grid grid-cols-7 gap-4 pb-3">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton key={`head-${i}`} className="h-4 w-24" />
-          ))}
-        </div>
-        <div className="space-y-3">
-          {Array.from({ length: 9 }).map((_, row) => (
-            <div key={`row-${row}`} className="grid grid-cols-7 gap-4 py-2">
-              {Array.from({ length: 7 }).map((__, col) => (
-                <Skeleton key={`cell-${row}-${col}`} className="h-4 w-full" />
-              ))}
+      <Skeleton className="h-4 w-40" />
+
+      {/* Card grid skeleton — matches final card layout */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded-[var(--radius)] border bg-card p-4 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <SkeletonText width="w-3/4" height="h-4" />
+              <Skeleton className="h-5 w-14 rounded-full shrink-0" />
             </div>
-          ))}
-        </div>
+            <div className="flex items-center justify-between">
+              <SkeletonText width="w-24" height="h-4" />
+              <SkeletonText width="w-16" height="h-3" />
+            </div>
+            <div className="flex gap-1">
+              <Skeleton className="h-4 w-16 rounded-full" />
+              <Skeleton className="h-4 w-12 rounded-full" />
+            </div>
+            <div className="flex items-center gap-2 border-t pt-2">
+              <Skeleton className="h-5 w-5 rounded-full" />
+              <SkeletonText width="w-20" height="h-3" />
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -44,10 +58,9 @@ export function ValidationCaseIndexContentSkeleton({ fullHeight = false }) {
 export default function ValidationCaseIndexSkeleton() {
   return (
     <main className="container min-h-screen py-10" aria-busy="true" aria-live="polite">
-      <header className="mb-8">
-        <SkeletonText width="w-28" height="h-3" />
-        <SkeletonText width="w-80" height="h-9" className="mt-3" />
-        <SkeletonText width="w-full max-w-3xl" height="h-4" className="mt-3" />
+      <header className="mb-6">
+        <SkeletonText width="w-64" height="h-7" />
+        <SkeletonText width="w-full max-w-xl" height="h-4" className="mt-2" />
       </header>
 
       <ValidationCaseIndexContentSkeleton fullHeight />
