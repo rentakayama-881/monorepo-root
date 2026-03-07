@@ -175,12 +175,7 @@ export default function Header() {
         </button>
 
         {/* Logo - AIvalid */}
-        <Logo
-          variant="horizontal"
-          size={40}
-          priority
-          className="shrink-0 -ml-1 md:ml-0 drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_6px_20px_rgba(0,0,0,0.22)]"
-        />
+        <Logo variant="icon" size={36} priority className="shrink-0 -ml-1 md:ml-0" />
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-0.5 text-sm">
@@ -285,10 +280,7 @@ export default function Header() {
           <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         ) : null}
         {profileOpen ? (
-          <ProfileSidebar
-            triggerRef={profileTriggerRef}
-            onClose={() => setProfileOpen(false)}
-          />
+          <ProfileSidebar triggerRef={profileTriggerRef} onClose={() => setProfileOpen(false)} />
         ) : null}
       </Portal>
     </header>
