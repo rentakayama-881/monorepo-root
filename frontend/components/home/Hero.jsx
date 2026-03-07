@@ -47,10 +47,10 @@ export default function Hero() {
             className="mt-8 text-center text-balance animate-slide-up text-4xl font-bold tracking-tighter text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
             style={{ animationDelay: "0.08s" }}
           >
-            Validation Case untuk
-            <br className="hidden sm:block" /> hasil kerja berbasis AI,
+            Validasi hasil kerja AI
+            <br className="hidden sm:block" /> lebih efektif,
             <br />
-            <span className="rainbow-text">dapat dipertanggungjawabkan</span>.
+            <span className="rainbow-text">hasilkan uang dengan sesama pengguna AI </span>.
           </h1>
 
           {/* Rainbow divider */}
