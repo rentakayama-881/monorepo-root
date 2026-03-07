@@ -46,7 +46,6 @@ export CI=1
 
 api_base_url="${API_BASE_URL:-https://api.aivalid.id}"
 next_public_api_base_url="${NEXT_PUBLIC_API_BASE_URL:-$api_base_url}"
-next_public_backend_url="${NEXT_PUBLIC_BACKEND_URL:-$api_base_url}"
 
 # Warn about stale CI caches in workspace
 if [ -d "$OPS_ROOT/.cache" ]; then
@@ -80,7 +79,6 @@ if [[ "$SCOPE" == "all" || "$SCOPE" == "frontend" ]]; then
         SKIP_PREBUILD_CHECK=1 \
         API_BASE_URL="$api_base_url" \
         NEXT_PUBLIC_API_BASE_URL="$next_public_api_base_url" \
-        NEXT_PUBLIC_BACKEND_URL="$next_public_backend_url" \
         bash -c "cd \"$OPS_ROOT/frontend\" && npm run build"
   run_step "frontend: npm run audit:prod" \
     run_in_dir "$OPS_ROOT/frontend" npm run audit:prod

@@ -15,15 +15,17 @@
 ### General
 - Follow `.editorconfig`: 2 spaces default, tabs for Go, LF, UTF-8
 - Conventional Commits: `type(scope): description`
-- Scopes: `frontend`, `backend`, `feature-service`, `deploy`, `docs`, `ops`
+- Scopes: `frontend`, `backend`, `feature-svc`, `ops`, `ai`, `docs`, `ci`, `deps`
 - Branch naming: `feature/*`, `fix/*`, `refactor/*`, `docs/*`, `test/*`
 
 ### Go Backend
-- Handler -> Service pattern (no business logic in handlers)
+- Handler → Service pattern (no business logic in handlers)
 - Ent ORM only (no raw SQL, edit `ent/schema/` only — never `ent/` generated code)
+- Database driver: `github.com/lib/pq` — Ent `Open()` requires "postgres" dialect name
 - `errors.AppError` with Indonesian messages, codes like `AUTH001`, `CASE001`
 - Zap structured logging (no `fmt.Printf`)
 - `gofmt`-clean code
+- Large handlers: decompose into same-package files (types, helpers, domain logic)
 
 ### Feature Service (.NET)
 - Controller -> Service pattern
@@ -39,9 +41,11 @@
 - `cn()` from `lib/utils.js` for Tailwind class merging (never string concat)
 - `@/` alias for imports
 - Mobile-first responsive design
-- Dark mode via CSS custom properties (`.dark` on `<html>`)
+- Dark mode via CSS custom properties (`[data-theme="dark"]` on `<html>`)
 - Structured logging via `lib/logger.js` (no raw `console.*` in app/lib code)
 - `crypto.randomUUID()` for any ID/token generation (never `Math.random()`)
+- API env var: `NEXT_PUBLIC_API_BASE_URL` only (no other fallback names)
+- Auth: JWT in localStorage + presence cookies (`has_session`, `has_admin`) for middleware
 
 ### Design Language
 - Reference: HuggingFace patterns (clean, functional, minimal)

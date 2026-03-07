@@ -32,13 +32,12 @@ Dark mode: All tokens swap automatically via `[data-theme="dark"]`.
 
 ## Step 3: Typography
 
-- **Body:** Source Sans 3 (`font-sans`)
-- **Headings:** Source Serif 4 (`font-serif`)
-- **Code:** Geist Mono (`font-mono`)
+- **Body/Headings:** IBM Plex Sans (`font-sans`). Note: `font-serif` is also mapped to IBM Plex Sans in `globals.css`.
+- **Code:** IBM Plex Mono (`font-mono`)
 
 Scale:
-- Page title: `text-2xl font-bold font-serif` (mobile) / `text-3xl` (desktop)
-- Section heading: `text-xl font-semibold font-serif`
+- Page title: `text-2xl font-bold` (mobile) / `text-3xl` (desktop)
+- Section heading: `text-xl font-semibold`
 - Card title: `text-lg font-semibold`
 - Body: `text-sm` or `text-base`
 - Caption/meta: `text-xs text-muted-foreground`

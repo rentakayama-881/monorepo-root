@@ -91,12 +91,22 @@ printf '\n'
 
 # ── Large Files (>500 lines) ───────────────────────────────────────
 printf '=== LARGE FILES (>500 lines) ===\n'
+printf 'Frontend:\n'
 find "$ROOT/frontend/app" "$ROOT/frontend/components" "$ROOT/frontend/lib" \
   -type f \( -name '*.js' -o -name '*.jsx' \) ! -path '*/node_modules/*' ! -path '*/.next/*' \
   2>/dev/null | while read -r f; do
   lines=$(wc -l < "$f")
   if [ "$lines" -gt 500 ]; then
-    printf '%s : %s lines\n' "${f#"$ROOT/"}" "$lines"
+    printf '  %s : %s lines\n' "${f#"$ROOT/"}" "$lines"
+  fi
+done
+printf 'Backend:\n'
+find "$ROOT/backend/handlers" "$ROOT/backend/services" "$ROOT/backend/middleware" \
+  -type f -name '*.go' ! -name '*_test.go' \
+  2>/dev/null | while read -r f; do
+  lines=$(wc -l < "$f")
+  if [ "$lines" -gt 500 ]; then
+    printf '  %s : %s lines\n' "${f#"$ROOT/"}" "$lines"
   fi
 done
 printf '\n'

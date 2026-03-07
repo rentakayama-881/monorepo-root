@@ -56,20 +56,20 @@ if [[ "$SCOPE" == "all" || "$SCOPE" == "services" ]]; then
   run_step "backend/services: market client tests" \
     run_in_dir "$OPS_ROOT/backend/services" \
     env GOCACHE="$MARKET_GOCACHE" GOTMPDIR="$MARKET_GOTMPDIR" CGO_ENABLED="$MARKET_CGO_ENABLED" \
-      go test lzt_market_client.go lzt_market_client_test.go \
-      -count=1 \
+      go test -count=1 \
       -run '^TestLZTMarketClient_' \
-      -timeout 60s
+      -timeout 60s \
+      .
 fi
 
 if [[ "$SCOPE" == "all" || "$SCOPE" == "handlers" ]]; then
   run_step "backend/handlers: market handler tests" \
     run_in_dir "$OPS_ROOT/backend/handlers" \
     env GOCACHE="$MARKET_GOCACHE" GOTMPDIR="$MARKET_GOTMPDIR" CGO_ENABLED="$MARKET_CGO_ENABLED" \
-      go test lzt_market_handler.go lzt_market_handler_test.go \
-      -count=1 \
+      go test -count=1 \
       -run 'Test(GetPublicChatGPTCheckout|FetchChatGPTListing|ResolveOrderItemForCheckout|CacheChatGPTListing_ReturnsClonedPayload|LoadChatGPTListing_UsesSingleFlightForConcurrentRefresh)' \
-      -timeout 120s
+      -timeout 120s \
+      .
 fi
 
 log "OK" "Targeted market backend verification passed (scope=$SCOPE)"
