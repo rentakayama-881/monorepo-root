@@ -14,6 +14,8 @@ Major UI upgrade across multiple pages, executed in 2-3 phases.
 
 ## Phase 1: Home Page + Header/Footer/Sidebar + Market
 
+**Status:** Complete
+
 ### 1.1 Home Page — Hero
 
 **Current problems:**
@@ -80,6 +82,8 @@ Major UI upgrade across multiple pages, executed in 2-3 phases.
 - Polish spacing and card styling (consistent with existing style, NOT vibrant like home)
 
 ## Phase 2: Case List & Case Detail Redesign
+
+**Status:** Complete
 
 ### 2.1 Case List (`/validation-cases`)
 
