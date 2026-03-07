@@ -58,7 +58,7 @@ Feature Service ── callback ──→ Go Backend (/api/internal/* with SERVI
 | `lib/logger.js` | Structured logging with Sentry |
 | `lib/UserContext.js` | Global user state |
 | `lib/ThemeContext.js` | Dark/light mode |
-| `middleware.js` | Edge middleware for auth route protection |
+| `proxy.js` | Edge proxy for auth route protection + pathname header |
 | `app/globals.css` | oklch design tokens, font declarations |
 
 ## Frontend Auth Architecture
@@ -74,7 +74,7 @@ Logout flow:
   clearToken()  → localStorage.removeItem("token")
                 → document.cookie = "has_session=; path=/; max-age=0"
 
-Middleware (middleware.js):
+Proxy (proxy.js — Next.js 16 uses proxy.js, not middleware.js):
   /account/*, /market/chatgpt/orders/* → check has_session cookie → redirect to /login
   /admin/* (except /admin/login)       → check has_admin cookie  → redirect to /admin/login
 ```

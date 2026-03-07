@@ -128,7 +128,7 @@ Feature Service ── callback ──→ Go Backend (/api/internal/* with SERVI
 | `lib/tokenRefresh.js` | JWT auto-refresh with race protection |
 | `lib/format.js` | Currency/date formatters (centralized) |
 | `lib/logger.js` | Structured logging with Sentry |
-| `middleware.js` | Edge middleware for auth route protection |
+| `proxy.js` | Edge proxy for auth route protection + pathname header |
 | `app/globals.css` | Design tokens (oklch), font declarations |
 
 ---

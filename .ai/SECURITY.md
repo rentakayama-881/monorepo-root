@@ -68,7 +68,7 @@
 - Check: market order logs do not leak supplier credentials or account details
 
 ## 13. Frontend Middleware Security
-- Edge middleware (`frontend/middleware.js`) protects routes via presence cookies
+- Edge middleware (`frontend/proxy.js`) protects routes via presence cookies
 - Middleware does NOT validate JWTs — only checks cookie existence as a hint
 - Client-side guards (`useAuthRedirectGuard`, `auth.js`) perform actual token validation
 - Check: no sensitive operations rely solely on middleware cookie check
@@ -100,7 +100,7 @@ grep -rn 'db\.Exec\|db\.Query\|sql\.Open' backend/ --include='*.go'
 grep -rn 'password\|secret\|api_key\|apikey' backend/ frontend/lib/ --include='*.go' --include='*.js' | grep -v test | grep -v '.env'
 
 # Check for open redirects in middleware:
-grep -rn 'redirect\|location' frontend/middleware.js
+grep -rn 'redirect\|location' frontend/proxy.js
 
 # Run full security CI:
 # (triggered automatically on push to main)
