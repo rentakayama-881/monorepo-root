@@ -45,7 +45,7 @@ export default function Hero() {
           {/* Heading */}
           <h1
             className="mt-8 text-center text-balance animate-slide-up text-4xl font-bold tracking-tighter text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
-            style={{ animationDelay: "0.05s" }}
+            style={{ animationDelay: "0.08s" }}
           >
             Validation Case untuk
             <br className="hidden sm:block" /> hasil kerja berbasis AI,
@@ -56,13 +56,13 @@ export default function Hero() {
           {/* Rainbow divider */}
           <div
             className="mx-auto mt-6 rainbow-line-h w-24 rounded-full animate-slide-up"
-            style={{ animationDelay: "0.1s" }}
+            style={{ animationDelay: "0.14s" }}
           />
 
           {/* Description */}
           <p
             className="mx-auto mt-6 max-w-2xl text-center text-base text-muted-foreground sm:text-lg animate-slide-up"
-            style={{ animationDelay: "0.15s" }}
+            style={{ animationDelay: "0.18s" }}
           >
             Owner buat case dan tetapkan bounty — otomatis potong saldo. Validator ajukan request,
             disetujui, lalu kerjakan. Tiga validator mengerjakan, confidence tertinggi dapat bounty.
@@ -71,7 +71,7 @@ export default function Hero() {
           {/* CTA */}
           <div
             className="mt-10 flex justify-center animate-slide-up"
-            style={{ animationDelay: "0.2s" }}
+            style={{ animationDelay: "0.22s" }}
           >
             <Button
               href="/validation-cases"
@@ -99,7 +99,10 @@ export default function Hero() {
           </div>
 
           {/* Flow Steps — numbered circles connected by rainbow line */}
-          <div className="mt-16 animate-slide-up" style={{ animationDelay: "0.3s" }}>
+          <div
+            className="mt-16 animate-slide-up"
+            style={{ animationDelay: "0.3s", animationDuration: "0.8s" }}
+          >
             <div className="relative">
               {/* Connecting line (desktop only) */}
               <div className="absolute top-6 left-[16.67%] right-[16.67%] rainbow-line-h hidden md:block" />
