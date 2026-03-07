@@ -7,9 +7,8 @@ import { ValidationCaseIndexContentSkeleton } from "./ValidationCaseIndexSkeleto
 export const revalidate = 30;
 
 export const metadata = {
-  title: "Daftar Kasus Validasi AI Terbaru",
-  description:
-    "Lihat daftar kasus validasi AI terbaru di AIValid. Pantau status, hasil review, dan temuan validator untuk berbagai jenis output AI.",
+  title: "Daftar Case Validasi",
+  description: "Lihat semua case validasi di AIValid. Filter berdasarkan status, bounty, dan tag.",
   alternates: {
     canonical: "https://aivalid.id/validation-cases",
   },
@@ -69,12 +68,9 @@ export default function ValidationCaseIndexPage() {
       <header className="mb-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Registry
-            </div>
-            <h1 className="mt-2 text-2xl font-semibold text-foreground">Validation Case Index</h1>
+            <h1 className="text-2xl font-semibold text-foreground">Daftar Case Validasi</h1>
             <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-              Dossier-style listing. Tidak ada komentar, reaksi, atau voting. Setiap perubahan tercatat sebagai audit trail.
+              Lihat semua case validasi yang tersedia. Filter berdasarkan status, bounty, atau tag.
             </p>
           </div>
         </div>
