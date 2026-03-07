@@ -124,7 +124,7 @@ public class UserCleanupService : IUserCleanupService
         // 6. Check pending withdrawals (critical - money is being processed)
         var pendingWithdrawals = await _withdrawals.CountDocumentsAsync(w =>
             w.UserId == userId &&
-            (w.Status == WithdrawalStatus.Pending || w.Status == WithdrawalStatus.Processing));
+            w.Status == WithdrawalStatus.Processing);
 
         if (pendingWithdrawals > 0)
         {

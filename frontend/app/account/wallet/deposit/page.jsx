@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   fetchFeatureAuth,
@@ -13,20 +13,13 @@ import logger from "@/lib/logger";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
 import NativeSelect from "@/components/ui/NativeSelect";
 
-const QRIS_IMAGE_URL =
-  "https://i.ibb.co.com/TDR9Grs3/Kode-QRIS-ALEPHDRAAD-UTILITY-STACK-Elektronik-1.png";
-
-const PAYMENT_METHODS = [
-  { value: "QRIS", label: "QRIS (aktif)", enabled: true },
-  { value: "BCA", label: "BCA (unavailable)", enabled: false },
-  { value: "BNI", label: "BNI (unavailable)", enabled: false },
-  { value: "BRI", label: "BRI (unavailable)", enabled: false },
-  { value: "MANDIRI", label: "Mandiri (unavailable)", enabled: false },
-  { value: "OVO", label: "OVO (unavailable)", enabled: false },
-  { value: "DANA", label: "DANA (unavailable)", enabled: false },
-  { value: "GOPAY", label: "GoPay (unavailable)", enabled: false },
-  { value: "SHOPEEPAY", label: "ShopeePay (unavailable)", enabled: false },
+const CRYPTO_OPTIONS = [
+  { value: "USDT", label: "USDT (Tether)" },
+  { value: "TON", label: "TON (Toncoin)" },
 ];
+
+const quickAmounts = [50000, 100000, 200000, 500000, 1000000];
+const minDeposit = 10000;
 
 function normalizeWallet(payload) {
   const data = unwrapFeatureData(payload) || {};
@@ -45,537 +38,556 @@ function normalizeDeposit(item) {
   return {
     id: item?.id ?? item?.Id ?? "",
     amount: Number(item?.amount ?? item?.Amount ?? 0) || 0,
-    method: item?.method ?? item?.Method ?? "QRIS",
-    externalTransactionId:
-      item?.externalTransactionId ??
-      item?.ExternalTransactionId ??
-      item?.external_transaction_id ??
-      "",
-    status: item?.status ?? item?.Status ?? "Pending",
-    createdAt: item?.createdAt ?? item?.CreatedAt ?? item?.created_at ?? null,
+    payCurrency: item?.payCurrency ?? item?.PayCurrency ?? "",
+    payAmount: item?.payAmount ?? item?.PayAmount ?? "",
+    network: item?.network ?? item?.Network ?? "",
+    status: item?.status ?? item?.Status ?? "WaitingPayment",
+    createdAt: item?.createdAt ?? item?.CreatedAt ?? null,
+    platformFee: Number(item?.platformFee ?? item?.PlatformFee ?? 0) || 0,
   };
 }
 
-function extractDeposits(payload) {
-  const data = unwrapFeatureData(payload);
-  return extractFeatureItems(data).map(normalizeDeposit).filter((d) => d.id);
+function getStatusLabel(status) {
+  const s = String(status).toLowerCase();
+  if (s === "waitingpayment" || s === "waiting_payment" || s === "0")
+    return {
+      label: "Menunggu Pembayaran",
+      color: "text-yellow-600 bg-yellow-50 border-yellow-200",
+    };
+  if (s === "confirming" || s === "1")
+    return { label: "Mengonfirmasi", color: "text-blue-600 bg-blue-50 border-blue-200" };
+  if (s === "paid" || s === "2")
+    return { label: "Terbayar", color: "text-green-600 bg-green-50 border-green-200" };
+  if (s === "approved" || s === "3")
+    return { label: "Berhasil", color: "text-green-700 bg-green-100 border-green-300" };
+  if (s === "expired" || s === "4")
+    return { label: "Kedaluwarsa", color: "text-gray-500 bg-gray-50 border-gray-200" };
+  if (s === "failed" || s === "5")
+    return { label: "Gagal", color: "text-red-600 bg-red-50 border-red-200" };
+  return { label: status, color: "text-gray-600 bg-gray-50 border-gray-200" };
+}
+
+function formatCountdown(seconds) {
+  if (seconds <= 0) return "00:00";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 export default function DepositPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [amount, setAmount] = useState("");
-  const [transactionId, setTransactionId] = useState("");
-  const [method, setMethod] = useState("QRIS");
-  const [submitting, setSubmitting] = useState(false);
+  const [wallet, setWallet] = useState({ balance: 0 });
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
-  const [wallet, setWallet] = useState({ balance: 0, has_pin: false });
-  const [createdDeposit, setCreatedDeposit] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyError, setHistoryError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  // Step 1: amount & crypto selection
+  const [amount, setAmount] = useState("");
+  const [payCurrency, setPayCurrency] = useState("USDT");
+
+  // Step 2: payment details from OxaPay
+  const [depositData, setDepositData] = useState(null);
+  const [countdown, setCountdown] = useState(0);
+  const pollRef = useRef(null);
+  const countdownRef = useRef(null);
+
+  // History
   const [depositHistory, setDepositHistory] = useState([]);
 
+  const parsedAmount = parseInt(String(amount).replace(/\D/g, ""), 10) || 0;
+  const platformFee = Math.ceil(parsedAmount / 0.95) - parsedAmount;
+  const totalCharge = parsedAmount + platformFee;
+
   useEffect(() => {
-    async function loadWalletAndGate() {
-      const token = getToken();
-      if (!token) {
-        router.push("/login");
+    const token = getToken();
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+    loadData();
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, []);
+
+  async function loadData() {
+    try {
+      const [walletRes, historyRes] = await Promise.all([
+        fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME),
+        fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.DEPOSITS + "?limit=10"),
+      ]);
+      const w = normalizeWallet(walletRes);
+      setWallet(w);
+
+      if (!w.has_pin) {
+        router.push("/account/wallet/set-pin?redirect=deposit");
         return;
       }
 
-      try {
-        const walletData = normalizeWallet(
-          await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME)
+      const items = extractFeatureItems(historyRes) || [];
+      setDepositHistory(items.map(normalizeDeposit));
+    } catch (e) {
+      logger.error("Failed to load deposit data", e);
+      if (e.code === "TWO_FACTOR_REQUIRED") {
+        router.push(
+          `/account/security?setup2fa=true&redirect=${encodeURIComponent("/account/wallet/deposit")}`
         );
-        setWallet(walletData);
-        const pinSet = walletData.has_pin;
-
-        if (!pinSet) {
-          router.push("/account/wallet/set-pin?redirect=deposit");
-          return;
-        }
-
-        // Load deposit request history (manual deposits)
-        setHistoryLoading(true);
-        setHistoryError("");
-        try {
-          const historyRes = await fetchFeatureAuth(
-            FEATURE_ENDPOINTS.WALLETS.DEPOSITS + "?limit=10"
-          );
-          setDepositHistory(extractDeposits(historyRes));
-        } catch (e) {
-          logger.error("Failed to load deposit history:", e);
-          setHistoryError(getErrorMessage(e, "Unable to load deposit history."));
-        }
-      } catch (e) {
-        logger.error("Failed to load wallet:", e);
-        if (e.code === "TWO_FACTOR_REQUIRED") {
-          router.push(
-            "/account/security?setup2fa=true&redirect=" +
-              encodeURIComponent("/account/wallet/deposit")
-          );
-          return;
-        }
-        setError(getErrorMessage(e, "Unable to load wallet data."));
-      } finally {
-        setHistoryLoading(false);
-        setLoading(false);
+        return;
       }
+      setError(getErrorMessage(e, "Gagal memuat data"));
+    } finally {
+      setLoading(false);
     }
-    loadWalletAndGate();
-  }, [router]);
+  }
 
-  const quickAmounts = [50000, 100000, 200000, 500000, 1000000];
-  const defaultBackRoute = "/account/wallet/transactions";
-
-  const amountNum = parseInt(amount.replace(/\D/g, ""), 10) || 0;
-
-  const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
+  async function handleCreateDeposit() {
+    if (parsedAmount < minDeposit) {
+      setError(`Minimal deposit Rp${minDeposit.toLocaleString("id-ID")}`);
       return;
     }
-    router.push(defaultBackRoute);
-  };
-
-  const handleNextToPayment = () => {
+    setProcessing(true);
     setError("");
-    if (!amountNum || amountNum < 10000) {
-      setError("Minimum deposit adalah Rp 10.000");
-      return;
-    }
-    setStep(2);
-  };
-
-  const handleCheckPayment = async () => {
-    setError("");
-    setSubmitting(true);
-
-    if (method !== "QRIS") {
-      setError("Saat ini hanya deposit via QRIS yang tersedia.");
-      setSubmitting(false);
-      return;
-    }
-
-    if (!transactionId || transactionId.trim().length < 6) {
-      setError("Invalid transaction ID");
-      setSubmitting(false);
-      return;
-    }
 
     try {
-      const res = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.DEPOSITS, {
+      const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.DEPOSITS, {
         method: "POST",
         body: JSON.stringify({
-          amount: amountNum,
-          method,
-          externalTransactionId: transactionId.trim(),
+          amount: parsedAmount,
+          payCurrency,
         }),
       });
 
-      const deposit = normalizeDeposit(unwrapFeatureData(res));
-      setCreatedDeposit(deposit);
-      setStep(3);
+      const data = unwrapFeatureData(response) || response;
+      const deposit = {
+        id: data.id ?? data.Id ?? data.depositId ?? data.DepositId ?? "",
+        trackId: data.trackId ?? data.TrackId ?? "",
+        address: data.address ?? data.Address ?? "",
+        qrCode: data.qrCode ?? data.QrCode ?? "",
+        payAmount: data.payAmount ?? data.PayAmount ?? "",
+        payCurrency: data.payCurrency ?? data.PayCurrency ?? payCurrency,
+        network: data.network ?? data.Network ?? "",
+        rate: data.rate ?? data.Rate ?? "",
+        expiredAt: Number(data.expiredAt ?? data.ExpiredAt ?? 0),
+        platformFee: Number(data.platformFee ?? data.PlatformFee ?? 0),
+        amount: Number(data.amount ?? data.Amount ?? parsedAmount),
+      };
 
-      // Refresh history best-effort
-      try {
-        const historyRes = await fetchFeatureAuth(
-          FEATURE_ENDPOINTS.WALLETS.DEPOSITS + "?limit=10"
-        );
-        setDepositHistory(extractDeposits(historyRes));
-      } catch (e) {
-        logger.error("Failed to refresh deposit history:", e);
-      }
+      setDepositData(deposit);
+      setStep(2);
+      startCountdown(deposit.expiredAt);
+      startPolling(deposit.id);
     } catch (e) {
-      logger.error("Create deposit request failed:", e);
+      logger.error("Failed to create deposit", e);
       if (e.code === "TWO_FACTOR_REQUIRED") {
         router.push(
-          "/account/security?setup2fa=true&redirect=" +
-            encodeURIComponent("/account/wallet/deposit")
+          `/account/security?setup2fa=true&redirect=${encodeURIComponent("/account/wallet/deposit")}`
         );
         return;
       }
-      setError(getErrorMessage(e, "Unable to create deposit request."));
+      setError(getErrorMessage(e, "Gagal membuat deposit"));
     } finally {
-      setSubmitting(false);
+      setProcessing(false);
     }
-  };
+  }
 
-  const formatCurrency = (value) => {
-    const num = parseInt(value.replace(/\D/g, ""), 10);
-    if (isNaN(num)) return "";
-    return num.toLocaleString("id-ID");
-  };
-
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const statusBadge = (status) => {
-    const normalized = (status || "").toLowerCase();
-    const styles = {
-      pending: "bg-warning/10 text-warning border-warning/30",
-      approved: "bg-success/10 text-success border-success/30",
-      rejected: "bg-destructive/10 text-destructive border-destructive/30",
+  function startCountdown(expiredAtUnix) {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    const updateCountdown = () => {
+      const now = Math.floor(Date.now() / 1000);
+      const remaining = expiredAtUnix - now;
+      setCountdown(remaining > 0 ? remaining : 0);
+      if (remaining <= 0 && countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
     };
-    const labels = {
-      pending: "Pending Verification",
-      approved: "Disetujui",
-      rejected: "Rejected",
-    };
-    return (
-      <span
-        className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
-          styles[normalized] || styles.pending
-        }`}
-      >
-        {labels[normalized] || status || "Pending"}
-      </span>
-    );
-  };
+    updateCountdown();
+    countdownRef.current = setInterval(updateCountdown, 1000);
+  }
+
+  function startPolling(depositId) {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.DEPOSIT_STATUS(depositId));
+        const data = unwrapFeatureData(res) || res;
+        const status = String(data.status ?? data.Status ?? "").toLowerCase();
+
+        if (status === "approved" || status === "3") {
+          clearInterval(pollRef.current);
+          clearInterval(countdownRef.current);
+          setStep(3);
+          loadData();
+        } else if (
+          status === "expired" ||
+          status === "4" ||
+          status === "failed" ||
+          status === "5"
+        ) {
+          clearInterval(pollRef.current);
+          clearInterval(countdownRef.current);
+          setError("Deposit kedaluwarsa atau gagal. Silakan buat deposit baru.");
+          setStep(1);
+          setDepositData(null);
+        }
+      } catch (e) {
+        logger.warn("Deposit status poll error", e);
+      }
+    }, 5000);
+  }
+
+  const handleCopyAddress = useCallback(() => {
+    if (depositData?.address) {
+      navigator.clipboard.writeText(depositData.address).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  }, [depositData]);
+
+  function handleAmountChange(e) {
+    const raw = e.target.value.replace(/\D/g, "");
+    if (raw === "") {
+      setAmount("");
+      return;
+    }
+    setAmount(Number(raw).toLocaleString("id-ID"));
+  }
+
+  function handleQuickAmount(val) {
+    setAmount(val.toLocaleString("id-ID"));
+  }
 
   if (loading) {
-    return <PageLoadingBlock className="min-h-screen bg-background" maxWidthClass="max-w-lg" lines={4} />;
+    return (
+      <PageLoadingBlock className="min-h-screen bg-background" maxWidthClass="max-w-md" lines={4} />
+    );
   }
 
   return (
-      <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-md px-4 py-6">
+        {/* Header */}
+        <div className="mb-6">
           <button
-            type="button"
-            onClick={handleBack}
-            className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              if (step === 2) {
+                if (pollRef.current) clearInterval(pollRef.current);
+                if (countdownRef.current) clearInterval(countdownRef.current);
+                setStep(1);
+                setDepositData(null);
+                setError("");
+              } else {
+                router.push("/account/wallet/transactions");
+              }
+            }}
+            className="mb-3 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
-            Back
+            {step === 2 ? "Kembali" : "Wallet"}
           </button>
+          <h1 className="text-xl font-bold text-foreground">Deposit Crypto</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Saldo: Rp{wallet.balance.toLocaleString("id-ID")}
+          </p>
+        </div>
 
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground">Deposit</h1>
-            <p className="text-sm text-muted-foreground">
-              Add funds to your wallet
-            </p>
+        {/* Step Indicator */}
+        <div className="mb-6 flex items-center gap-2">
+          {[1, 2, 3].map((s) => (
+            <div
+              key={s}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${
+                s <= step ? "bg-primary" : "bg-muted"
+              }`}
+            />
+          ))}
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+            {error}
           </div>
+        )}
 
-          {/* Current Balance */}
-          <div className="mb-6 rounded-lg border border-border bg-card p-4">
-            <div className="text-sm text-muted-foreground">Current Balance</div>
-            <div className="text-2xl font-bold text-foreground">
-              Rp {wallet.balance.toLocaleString("id-ID")}
-            </div>
-          </div>
-
-          {/* Progress Steps */}
-          <div className="mb-6 flex items-center justify-between gap-2">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className="flex items-center">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
-                    step >= s
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted/50 text-muted-foreground"
-                  }`}
-                >
-                  {s}
-                </div>
-                {s < 3 && (
-                  <div
-                    className={`h-1 w-8 sm:w-16 md:w-24 ${
-                      step > s ? "bg-primary" : "bg-muted/50"
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-
-          {error && (
-            <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          {/* Step 1: Amount + Method */}
-          {step === 1 && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Jumlah Deposit
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    Rp
-                  </span>
-                  <input
-                    type="text"
-                    value={amount}
-                    onChange={(e) => setAmount(formatCurrency(e.target.value))}
-                    placeholder="0"
-                    className="w-full rounded-lg border border-border bg-card px-10 py-3 text-lg font-semibold text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
-                  />
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Minimum deposit Rp 10.000
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Metode Pembayaran
-                </label>
-                <NativeSelect
-                  value={method}
-                  onChange={(e) => setMethod(e.target.value)}
-                  options={PAYMENT_METHODS.map((item) => ({
-                    value: item.value,
-                    label: item.label,
-                    disabled: !item.enabled,
-                  }))}
-                  className="h-12 py-3 text-sm font-medium"
+        {/* STEP 1: Amount & Crypto Selection */}
+        {step === 1 && (
+          <div className="space-y-5">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Jumlah Deposit (IDR)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                  Rp
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={amount}
+                  onChange={handleAmountChange}
+                  placeholder="0"
+                  className="h-12 w-full rounded-lg border border-input bg-background pl-10 pr-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-ring"
                 />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Saat ini hanya QRIS yang tersedia. Metode lain segera menyusul.
-                </p>
               </div>
-
-              {/* Quick Amount Buttons */}
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                {quickAmounts.map((amt) => (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {quickAmounts.map((val) => (
                   <button
-                    key={amt}
+                    key={val}
                     type="button"
-                    onClick={() => setAmount(amt.toLocaleString("id-ID"))}
-                    className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:bg-primary/10"
+                    onClick={() => handleQuickAmount(val)}
+                    className="rounded-full border border-input px-3 py-1 text-xs hover:bg-accent transition-colors"
                   >
-                    {(amt / 1000).toLocaleString("id-ID")}rb
+                    {(val / 1000).toLocaleString("id-ID")}rb
                   </button>
                 ))}
               </div>
-
-              <button
-                type="button"
-                onClick={handleNextToPayment}
-                disabled={!amount}
-                className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Lanjutkan ke Pembayaran
-              </button>
             </div>
-          )}
 
-          {/* Step 2: QR + External Transaction Id */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <div className="rounded-lg border border-border bg-card p-4">
-                <div className="text-sm text-muted-foreground">Nominal</div>
-                <div className="text-xl font-bold text-foreground">
-                  Rp {amountNum.toLocaleString("id-ID")}
-                </div>
-              </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Mata Uang Crypto
+              </label>
+              <NativeSelect
+                value={payCurrency}
+                onChange={(e) => setPayCurrency(e.target.value)}
+                options={CRYPTO_OPTIONS.map((c) => ({ value: c.value, label: c.label }))}
+                className="h-12"
+              />
+            </div>
 
-              <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
-                <div className="mb-3 text-sm font-medium text-foreground">
-                  QRIS
+            {parsedAmount >= minDeposit && (
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Jumlah deposit</span>
+                  <span>Rp{parsedAmount.toLocaleString("id-ID")}</span>
                 </div>
-                <div className="flex justify-center">
-                  <img
-                    src={QRIS_IMAGE_URL}
-                    alt="QRIS Deposit"
-                    className="h-auto w-full max-w-72 rounded-lg border border-border bg-white p-2"
-                    loading="lazy"
-                  />
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Platform fee (~5%)</span>
+                  <span>Rp{platformFee.toLocaleString("id-ID")}</span>
                 </div>
-                <p className="mt-4 text-sm text-muted-foreground">
-                  Scan the QRIS code, pay the exact amount, then enter your transaction ID.
+                <hr className="border-border" />
+                <div className="flex justify-between text-sm font-semibold">
+                  <span>Total bayar (dalam {payCurrency})</span>
+                  <span>Rp{totalCharge.toLocaleString("id-ID")}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  * Total akan dikonversi ke {payCurrency} dengan rate saat itu. Fee jaringan
+                  ditambahkan oleh OxaPay.
                 </p>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Transaction ID
-                </label>
+            <button
+              disabled={parsedAmount < minDeposit || processing}
+              onClick={handleCreateDeposit}
+              className="h-12 w-full rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {processing ? "Memproses..." : "Lanjutkan Deposit"}
+            </button>
+          </div>
+        )}
+
+        {/* STEP 2: Payment Details (Address, QR, Countdown) */}
+        {step === 2 && depositData && (
+          <div className="space-y-5">
+            <div className="rounded-lg border border-border bg-card p-4 text-center space-y-3">
+              <div className="text-sm text-muted-foreground">Kirim tepat</div>
+              <div className="text-2xl font-bold text-foreground">
+                {depositData.payAmount} {depositData.payCurrency}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                ≈ Rp{depositData.amount.toLocaleString("id-ID")} + fee
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Jaringan: <span className="font-medium text-foreground">{depositData.network}</span>
+              </div>
+            </div>
+
+            {/* QR Code */}
+            {depositData.qrCode && (
+              <div className="flex justify-center">
+                <div className="rounded-lg border border-border bg-white p-3">
+                  <img
+                    src={depositData.qrCode}
+                    alt="QR Code pembayaran crypto"
+                    className="h-48 w-48"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Address */}
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-muted-foreground">
+                Alamat Pembayaran
+              </label>
+              <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  placeholder="Enter payment transaction ID"
-                  className="w-full rounded-lg border border-border bg-card px-3 py-3 text-sm font-medium text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
+                  readOnly
+                  value={depositData.address}
+                  className="h-10 flex-1 rounded-lg border border-input bg-muted/30 px-3 text-xs font-mono"
                 />
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
                 <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="flex-1 rounded-lg border border-border py-3 font-medium text-foreground transition hover:bg-muted/50"
+                  onClick={handleCopyAddress}
+                  className="h-10 rounded-lg border border-input px-3 text-sm hover:bg-accent transition-colors"
                 >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCheckPayment}
-                  disabled={submitting || !transactionId}
-                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {submitting ? "Memproses..." : "Check Pembayaran"}
+                  {copied ? "✓" : "Salin"}
                 </button>
               </div>
             </div>
-          )}
 
-          {/* Step 3: Processing */}
-          {step === 3 && (
-            <div className="rounded-lg border border-border bg-card p-6 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <svg
-                  className="h-7 w-7 text-primary"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3"
-                  />
-                </svg>
-              </div>
-              <h2 className="text-lg font-semibold text-foreground">
-                Menunggu verifikasi admin
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Your deposit is being processed. Our team will verify your QRIS payment.
-              </p>
-
-              {createdDeposit?.id && (
-                <div className="mt-4 rounded-lg border border-border bg-background p-4 text-left">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="text-xs text-muted-foreground">ID Request</div>
-                      <div className="font-mono text-sm text-foreground break-all">
-                        {createdDeposit.id}
-                      </div>
-                    </div>
-                    {statusBadge(createdDeposit.status)}
-                  </div>
-                  <div className="mt-3 text-sm">
-                    <div className="text-muted-foreground">Nominal</div>
-                    <div className="font-semibold text-foreground">
-                      Rp {createdDeposit.amount?.toLocaleString("id-ID") || amountNum.toLocaleString("id-ID")}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setAmount("");
-                  setTransactionId("");
-                  setMethod("QRIS");
-                  setCreatedDeposit(null);
-                  setStep(1);
-                  setError("");
-                }}
-                className="mt-6 w-full rounded-lg border border-border py-3 font-medium text-foreground transition hover:bg-muted/50"
+            {/* Countdown */}
+            <div className="rounded-lg border border-border bg-muted/30 p-4 text-center">
+              <div className="text-sm text-muted-foreground mb-1">Sisa waktu pembayaran</div>
+              <div
+                className={`text-3xl font-mono font-bold ${countdown <= 300 ? "text-destructive" : "text-foreground"}`}
               >
-                Buat request deposit baru
-              </button>
+                {formatCountdown(countdown)}
+              </div>
+              {countdown <= 0 && (
+                <p className="mt-2 text-xs text-destructive">
+                  Waktu pembayaran habis. Silakan buat deposit baru.
+                </p>
+              )}
             </div>
-          )}
 
-          {/* Payment Methods Info */}
-          <div className="mt-8">
-            <h3 className="text-sm font-semibold text-foreground mb-3">
-              Metode Pembayaran yang Didukung
-            </h3>
-            <div className="grid grid-cols-2 gap-3 text-center text-xs text-muted-foreground sm:grid-cols-4">
-              <div className="rounded-lg border border-border bg-card p-2">
-                QRIS
-              </div>
-              <div className="rounded-lg border border-border bg-card p-2">
-                OVO
-              </div>
-              <div className="rounded-lg border border-border bg-card p-2">
-                DANA
-              </div>
-              <div className="rounded-lg border border-border bg-card p-2">
-                GoPay
-              </div>
-              <div className="rounded-lg border border-border bg-card p-2">
-                BCA
-              </div>
-              <div className="rounded-lg border border-border bg-card p-2">
-                BNI
-              </div>
-              <div className="rounded-lg border border-border bg-card p-2">
-                BRI
-              </div>
-              <div className="rounded-lg border border-border bg-card p-2">
-                Mandiri
-              </div>
+            {/* Info */}
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 space-y-1">
+              <p className="text-xs text-yellow-800 font-medium">⚠️ Perhatian</p>
+              <ul className="text-xs text-yellow-700 space-y-0.5 list-disc pl-4">
+                <li>Kirim tepat sesuai jumlah yang tertera</li>
+                <li>Pastikan jaringan yang digunakan benar ({depositData.network})</li>
+                <li>Dana dikirim ke alamat lain setelah kedaluwarsa akan hilang</li>
+                <li>Saldo akan otomatis masuk setelah konfirmasi blockchain</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              Menunggu pembayaran...
             </div>
           </div>
+        )}
 
-          {/* Deposit History */}
-          <div className="mt-10">
-            <h3 className="text-sm font-semibold text-foreground mb-3">
-              Manual Deposit History
-            </h3>
+        {/* STEP 3: Success */}
+        {step === 3 && (
+          <div className="space-y-5 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <svg
+                className="h-8 w-8 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-foreground">Deposit Berhasil!</h2>
+            <p className="text-sm text-muted-foreground">
+              Saldo Anda telah ditambahkan sebesar Rp
+              {depositData?.amount?.toLocaleString("id-ID") ?? "0"}
+            </p>
+            <div className="rounded-lg border border-border bg-muted/30 p-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Saldo saat ini</span>
+                <span className="font-semibold">Rp{wallet.balance.toLocaleString("id-ID")}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setStep(1);
+                setDepositData(null);
+                setAmount("");
+                setError("");
+              }}
+              className="h-10 w-full rounded-lg border border-input text-sm hover:bg-accent transition-colors"
+            >
+              Deposit Lagi
+            </button>
+            <button
+              onClick={() => router.push("/account/wallet/transactions")}
+              className="h-10 w-full rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"
+            >
+              Kembali ke Wallet
+            </button>
+          </div>
+        )}
 
-            {historyError && (
-              <div className="mb-3 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-                {historyError}
-              </div>
-            )}
-
-            {historyLoading ? (
-              <div className="animate-pulse space-y-3">
-                <div className="h-16 bg-border rounded-lg" />
-                <div className="h-16 bg-border rounded-lg" />
-              </div>
-            ) : depositHistory.length === 0 ? (
-              <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
-                Belum ada request deposit.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {depositHistory.map((d) => (
-                  <div
-                    key={d.id}
-                    className="rounded-lg border border-border bg-card p-4"
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {/* Deposit History */}
+        {depositHistory.length > 0 && step !== 2 && (
+          <div className="mt-8">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Riwayat Deposit</h3>
+            <div className="space-y-2">
+              {depositHistory.map((d) => {
+                const statusInfo = getStatusLabel(d.status);
+                return (
+                  <div key={d.id} className="rounded-lg border border-border bg-card p-3">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium text-foreground">
-                          Rp {d.amount?.toLocaleString("id-ID") || 0}
+                        <div className="text-sm font-medium">
+                          Rp{d.amount.toLocaleString("id-ID")}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {d.method} • {formatDate(d.createdAt)}
-                        </div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          Transaction ID: <span className="font-mono break-all">{d.externalTransactionId}</span>
+                          {d.payCurrency}
+                          {d.payAmount ? ` • ${d.payAmount}` : ""}
+                          {d.network ? ` • ${d.network}` : ""}
                         </div>
                       </div>
-                      <div className="self-start sm:self-auto">{statusBadge(d.status)}</div>
+                      <div className="text-right">
+                        <span
+                          className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${statusInfo.color}`}
+                        >
+                          {statusInfo.label}
+                        </span>
+                        {d.createdAt && (
+                          <div className="mt-0.5 text-xs text-muted-foreground">
+                            {new Date(
+                              typeof d.createdAt === "number" && d.createdAt < 1e12
+                                ? d.createdAt * 1000
+                                : d.createdAt
+                            ).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
+    </div>
   );
 }

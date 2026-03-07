@@ -11,10 +11,7 @@ import { clearToken } from "./auth";
  * Get Feature Service base URL
  */
 export function getFeatureApiBase() {
-  return (
-    process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL ||
-    "https://feature.aivalid.id"
-  );
+  return process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
 }
 
 function hasHeader(headers, key) {
@@ -128,6 +125,7 @@ export const FEATURE_ENDPOINTS = {
     PIN_VERIFY: "/api/v1/wallets/pin/verify",
     TRANSACTIONS: "/api/v1/wallets/transactions",
     DEPOSITS: "/api/v1/wallets/deposits",
+    DEPOSIT_STATUS: (id) => `/api/v1/wallets/deposits/${id}/status`,
   },
 
   // Transfers (Escrow)
@@ -148,6 +146,7 @@ export const FEATURE_ENDPOINTS = {
     CREATE: "/api/v1/wallets/withdrawals",
     DETAIL: (id) => `/api/v1/wallets/withdrawals/${id}`,
     CANCEL: (id) => `/api/v1/wallets/withdrawals/${id}/cancel`,
+    CURRENCIES: "/api/v1/wallets/withdrawals/currencies",
   },
 
   // Disputes
@@ -231,7 +230,9 @@ export async function fetchFeature(path, options = {}) {
     }
 
     if (err?.name === "TypeError" || err?.message?.includes("fetch")) {
-      throw new Error("Unable to connect to Feature Service. Please check your internet connection.");
+      throw new Error(
+        "Unable to connect to Feature Service. Please check your internet connection."
+      );
     }
 
     throw err;
@@ -276,7 +277,10 @@ export async function fetchFeatureAuth(path, options = {}) {
         rest.body
       );
 
-      if (shouldAttachIdempotencyKey(path, method) && !hasHeader(requestHeaders, "X-Idempotency-Key")) {
+      if (
+        shouldAttachIdempotencyKey(path, method) &&
+        !hasHeader(requestHeaders, "X-Idempotency-Key")
+      ) {
         requestHeaders["X-Idempotency-Key"] = generateIdempotencyKey();
       }
 
@@ -355,7 +359,9 @@ export async function fetchFeatureAuth(path, options = {}) {
     }
 
     if (err?.name === "TypeError" || err?.message?.includes("fetch")) {
-      throw new Error("Unable to connect to Feature Service. Please check your internet connection.");
+      throw new Error(
+        "Unable to connect to Feature Service. Please check your internet connection."
+      );
     }
 
     throw err;

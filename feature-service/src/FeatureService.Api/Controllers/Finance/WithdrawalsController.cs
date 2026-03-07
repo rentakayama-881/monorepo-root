@@ -8,7 +8,7 @@ using FeatureService.Api.Attributes;
 namespace FeatureService.Api.Controllers.Finance;
 
 /// <summary>
-/// Withdrawal endpoints for cashing out wallet balance to bank.
+/// Withdrawal endpoints for cashing out wallet balance to crypto.
 /// All financial operations require PQC digital signature verification.
 /// </summary>
 [ApiController]
@@ -32,32 +32,17 @@ public class WithdrawalsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Request a new withdrawal to bank account - REQUIRES 2FA + PIN + PQC Signature
+    /// Request a new crypto withdrawal - REQUIRES 2FA + PIN + PQC Signature
     /// </summary>
     /// <remarks>
-    /// SECURITY: Keamanan tingkat militer dengan:
-    /// - Two-Factor Authentication (2FA) MUST be enabled
-    /// - PIN verification required
-    /// - Post-Quantum Cryptography (PQC) digital signature required
-    /// - Idempotency via Redis Sentinel to prevent duplicate transactions
-    /// - Immutable audit trail for compliance
-    ///
-    /// Penarikan akan diproses oleh tim dalam 1-3 hari kerja.
-    /// Fee penarikan: Rp2,500 per transaksi.
+    /// Fee penarikan: 2% dari jumlah penarikan.
     /// Minimal: Rp10,000, Maksimal: Rp100,000,000
-    ///
-    /// Required Headers:
-    /// - X-PQC-Signature: Base64-encoded Dilithium3 signature
-    /// - X-PQC-Key-Id: User's registered PQC key ID
-    /// - X-PQC-Timestamp: ISO 8601 timestamp (max 5 minutes old)
-    /// - X-Idempotency-Key: Optional unique key for request deduplication
     /// </remarks>
     [HttpPost]
     [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(ApiResponse<CreateWithdrawalResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateWithdrawal([FromBody] CreateWithdrawalRequest request)
     {
         if (!ModelState.IsValid)
@@ -67,7 +52,6 @@ public class WithdrawalsController : ApiControllerBase
         if (userId == 0)
             return ApiUnauthorized("UNAUTHORIZED", "User tidak terautentikasi");
 
-        // CRITICAL: Require 2FA for all withdrawals
         var twoFactorCheck = RequiresTwoFactorAuth();
         if (twoFactorCheck != null) return twoFactorCheck;
 
@@ -86,23 +70,21 @@ public class WithdrawalsController : ApiControllerBase
                 if (IsInvalidCachedIdempotencyResult(result.Error))
                     return ApiIdempotencyStateInvalid(result.Error);
 
-                return ApiBadRequest("WITHDRAWAL_FAILED", result.Error ?? "Failed to create withdrawal");
+                return ApiBadRequest("WITHDRAWAL_FAILED", result.Error ?? "Gagal membuat penarikan");
             }
 
-            return ApiCreated(result, "Withdrawal request created successfully");
+            return ApiCreated(result, "Penarikan crypto berhasil dibuat");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating withdrawal for user {UserId}", userId);
-            return ApiError(500, "INTERNAL_ERROR", "An error occurred while creating withdrawal");
+            return ApiError(500, "INTERNAL_ERROR", "Terjadi kesalahan saat membuat penarikan");
         }
     }
 
     /// <summary>
     /// Get withdrawal history
     /// </summary>
-    /// <param name="status">Filter by status: Pending, Processing, Completed, Rejected, Cancelled</param>
-    /// <param name="limit">Maximum results (default 50)</param>
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<List<WithdrawalSummaryDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetWithdrawals(
@@ -157,17 +139,12 @@ public class WithdrawalsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Cancel a pending withdrawal - REQUIRES PQC Signature
+    /// Cancel a processing withdrawal - REQUIRES PQC Signature
     /// </summary>
-    /// <remarks>
-    /// PQC digital signature diperlukan untuk verifikasi pembatalan.
-    /// Dana akan dikembalikan ke wallet (termasuk fee).
-    /// </remarks>
     [HttpPost("{id}/cancel")]
     [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CancelWithdrawal(string id, [FromBody] CancelWithdrawalRequest request)
     {
         var userId = GetUserId();
@@ -200,14 +177,14 @@ public class WithdrawalsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Get list of supported banks
+    /// Get list of supported cryptocurrencies for withdrawal
     /// </summary>
-    [HttpGet("banks")]
+    [HttpGet("currencies")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<List<BankInfoDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSupportedBanks()
+    [ProducesResponseType(typeof(ApiResponse<List<CryptoCurrencyInfoDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSupportedCurrencies()
     {
-        var banks = await _withdrawalService.GetSupportedBanksAsync();
-        return ApiOk(banks, "Daftar bank tersedia");
+        var currencies = await _withdrawalService.GetSupportedCurrenciesAsync();
+        return ApiOk(currencies, "Mata uang crypto yang didukung");
     }
 }

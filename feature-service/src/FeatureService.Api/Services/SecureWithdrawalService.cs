@@ -30,15 +30,6 @@ public interface ISecureWithdrawalService
         string? idempotencyKey = null,
         string? ipAddress = null,
         string? userAgent = null);
-
-    Task<(bool success, string? error)> ProcessWithdrawalAsync(
-        string withdrawalId,
-        uint adminId,
-        string adminUsername,
-        ProcessWithdrawalRequest request,
-        string? idempotencyKey = null,
-        string? ipAddress = null,
-        string? userAgent = null);
 }
 
 public class SecureWithdrawalService : ISecureWithdrawalService
@@ -144,10 +135,10 @@ public class SecureWithdrawalService : ISecureWithdrawalService
 
         try
         {
-            // Mask account number for audit
-            var maskedAccount = request.AccountNumber.Length > 4
-                ? new string('*', request.AccountNumber.Length - 4) + request.AccountNumber[^4..]
-                : request.AccountNumber;
+            // Mask crypto address for audit
+            var maskedAddress = request.CryptoAddress.Length > 8
+                ? request.CryptoAddress[..4] + "***" + request.CryptoAddress[^4..]
+                : request.CryptoAddress;
 
             await _auditService.RecordEventAsync(new AuditEventRequest
             {
@@ -159,9 +150,9 @@ public class SecureWithdrawalService : ISecureWithdrawalService
                 Details = new Dictionary<string, string>
                 {
                     ["amount"] = request.Amount.ToString(),
-                    ["bankCode"] = request.BankCode,
-                    ["accountNumber"] = maskedAccount,
-                    ["accountName"] = request.AccountName,
+                    ["cryptoCurrency"] = request.CryptoCurrency,
+                    ["cryptoAddress"] = maskedAddress,
+                    ["network"] = request.Network ?? "",
                     ["idempotencyKey"] = key
                 },
                 IpAddress = ipAddress,
@@ -185,8 +176,8 @@ public class SecureWithdrawalService : ISecureWithdrawalService
                     {
                         ["reference"] = result.Reference ?? "",
                         ["amount"] = request.Amount.ToString(),
-                        ["bankCode"] = request.BankCode,
-                        ["accountNumber"] = maskedAccount,
+                        ["cryptoCurrency"] = request.CryptoCurrency,
+                        ["cryptoAddress"] = maskedAddress,
                         ["idempotencyKey"] = key
                     },
                     IpAddress = ipAddress,
@@ -206,7 +197,7 @@ public class SecureWithdrawalService : ISecureWithdrawalService
                     {
                         ["error"] = result.Error ?? "Unknown error",
                         ["amount"] = request.Amount.ToString(),
-                        ["bankCode"] = request.BankCode,
+                        ["cryptoCurrency"] = request.CryptoCurrency,
                         ["idempotencyKey"] = key
                     },
                     IpAddress = ipAddress,
@@ -289,96 +280,6 @@ public class SecureWithdrawalService : ISecureWithdrawalService
                     ["error"] = error ?? "",
                     ["amount"] = withdrawal?.Amount.ToString() ?? "0",
                     ["reference"] = withdrawal?.Reference ?? "",
-                    ["idempotencyKey"] = key
-                },
-                IpAddress = ipAddress,
-                UserAgent = userAgent
-            });
-
-            return (success, error);
-        }
-        catch
-        {
-            await _idempotencyService.ReleaseAsync(key);
-            throw;
-        }
-    }
-
-    public async Task<(bool success, string? error)> ProcessWithdrawalAsync(
-        string withdrawalId,
-        uint adminId,
-        string adminUsername,
-        ProcessWithdrawalRequest request,
-        string? idempotencyKey = null,
-        string? ipAddress = null,
-        string? userAgent = null)
-    {
-        var key = BuildUserScopedIdempotencyKey("wd_process", adminId, idempotencyKey);
-
-        var withdrawal = await FindWithdrawalByIdAsync(withdrawalId);
-
-        var lockResult = await _idempotencyService.TryAcquireAsync(key, LockDuration);
-
-        if (lockResult.AlreadyProcessed)
-        {
-            if (TryParseCachedOperationResult(lockResult.StoredResultJson, key, "wd_process", out var cached))
-            {
-                return (cached.Success, cached.Error);
-            }
-
-            return (false, InvalidCachedIdempotencyResultMessage);
-        }
-
-        if (!lockResult.Acquired)
-        {
-            return (false, "Request sudah sedang diproses");
-        }
-
-        try
-        {
-            await _auditService.RecordEventAsync(new AuditEventRequest
-            {
-                TransactionId = withdrawalId,
-                TransactionType = "WITHDRAWAL",
-                EventType = AuditEventType.StatusChange,
-                ActorUserId = adminId,
-                ActorUsername = adminUsername,
-                Details = new Dictionary<string, string>
-                {
-                    ["action"] = request.Approve ? "APPROVE_INITIATED" : "REJECT_INITIATED",
-                    ["userId"] = withdrawal?.UserId.ToString() ?? "0",
-                    ["reference"] = withdrawal?.Reference ?? "",
-                    ["rejectionReason"] = request.RejectionReason ?? "",
-                    ["idempotencyKey"] = key
-                },
-                IpAddress = ipAddress,
-                UserAgent = userAgent
-            });
-
-            var (success, error) = await _innerService.ProcessWithdrawalAsync(
-                withdrawalId, adminId, adminUsername, request);
-
-            await _idempotencyService.StoreResultAsync(key, new OperationResult(success, error), ResultTtl);
-
-            await _auditService.RecordEventAsync(new AuditEventRequest
-            {
-                TransactionId = withdrawalId,
-                TransactionType = "WITHDRAWAL",
-                EventType = success
-                    ? (request.Approve ? AuditEventType.TransactionCompleted : AuditEventType.TransactionCancelled)
-                    : AuditEventType.TransactionFailed,
-                ActorUserId = adminId,
-                ActorUsername = adminUsername,
-                Details = new Dictionary<string, string>
-                {
-                    ["action"] = success
-                        ? (request.Approve ? "APPROVED" : "REJECTED")
-                        : "PROCESS_FAILED",
-                    ["error"] = error ?? "",
-                    ["userId"] = withdrawal?.UserId.ToString() ?? "0",
-                    ["amount"] = withdrawal?.Amount.ToString() ?? "0",
-                    ["reference"] = withdrawal?.Reference ?? "",
-                    ["rejectionReason"] = request.RejectionReason ?? "",
                     ["idempotencyKey"] = key
                 },
                 IpAddress = ipAddress,

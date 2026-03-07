@@ -1,28 +1,25 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import {
-  fetchFeatureAuth,
-  FEATURE_ENDPOINTS,
-  unwrapFeatureData,
-} from "@/lib/featureApi";
+import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
 import NativeSelect from "@/components/ui/NativeSelect";
 
-const BANKS = [
-  { code: "bca", name: "Bank Central Asia (BCA)" },
-  { code: "bni", name: "Bank Negara Indonesia (BNI)" },
-  { code: "bri", name: "Bank Rakyat Indonesia (BRI)" },
-  { code: "mandiri", name: "Bank Mandiri" },
-  { code: "cimb", name: "CIMB Niaga" },
-  { code: "permata", name: "Bank Permata" },
-  { code: "danamon", name: "Bank Danamon" },
-  { code: "bsi", name: "Bank Syariah Indonesia (BSI)" },
+const CRYPTO_CURRENCIES = [
+  {
+    value: "USDT",
+    label: "USDT (Tether)",
+    networks: ["TRC20", "ERC20", "BEP20", "Polygon", "SOL", "TON"],
+  },
+  { value: "TON", label: "TON (Toncoin)", networks: ["TON"] },
 ];
+
+const quickAmounts = [50000, 100000, 200000, 500000, 1000000];
+const minWithdraw = 50000;
+const feePercent = 0.02;
 
 function normalizeWallet(payload) {
   const data = unwrapFeatureData(payload) || {};
@@ -46,368 +43,418 @@ export default function WithdrawPage() {
   const [error, setError] = useState("");
 
   // Form data
-  const [bankCode, setBankCode] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [accountName, setAccountName] = useState("");
+  const [cryptoCurrency, setCryptoCurrency] = useState("USDT");
+  const [network, setNetwork] = useState("");
+  const [cryptoAddress, setCryptoAddress] = useState("");
+  const [memo, setMemo] = useState("");
   const [amount, setAmount] = useState("");
   const [pin, setPin] = useState("");
 
-  useEffect(() => {
-    async function loadWallet() {
-      const token = getToken();
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      try {
-        const walletData = normalizeWallet(
-          await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME)
-        );
-        setWallet(walletData);
-        if (!walletData.has_pin) {
-          router.push("/account/wallet/set-pin?redirect=withdraw");
-        }
-      } catch (e) {
-        logger.error("Failed to load wallet:", e);
-        if (e.code === "TWO_FACTOR_REQUIRED") {
-          router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/withdraw"));
-        }
-      }
-      setLoading(false);
-    }
-
-    loadWallet();
-  }, [router]);
-
-  const parsedAmount = parseInt(amount.replace(/\D/g, "")) || 0;
-  const fee = 6500; // Bank transfer fee
+  const parsedAmount = parseInt(String(amount).replace(/\D/g, ""), 10) || 0;
+  const fee = Math.ceil(parsedAmount * feePercent);
   const totalDeduction = parsedAmount + fee;
+  const netAmount = parsedAmount;
 
-  const handleAmountChange = (e) => {
-    const value = e.target.value.replace(/\D/g, "");
-    if (value) {
-      setAmount(parseInt(value).toLocaleString("id-ID"));
-    } else {
-      setAmount("");
-    }
-  };
+  const selectedCrypto = CRYPTO_CURRENCIES.find((c) => c.value === cryptoCurrency);
+  const availableNetworks = selectedCrypto?.networks || [];
 
-  const isStep1Valid = bankCode && accountNumber.length >= 10 && accountName;
-  const isStep2Valid = parsedAmount >= 50000 && totalDeduction <= wallet.balance;
-
-  const handleSubmit = async () => {
-    if (pin.length !== 6) {
-      setError("PIN must be 6 digits.");
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      router.push("/login");
       return;
     }
+    loadData();
+  }, []);
 
+  // Reset network when currency changes
+  useEffect(() => {
+    setNetwork(availableNetworks.length === 1 ? availableNetworks[0] : "");
+  }, [cryptoCurrency]);
+
+  async function loadData() {
+    try {
+      const walletRes = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
+      const w = normalizeWallet(walletRes);
+      setWallet(w);
+
+      if (!w.has_pin) {
+        router.push("/account/wallet/set-pin?redirect=withdraw");
+        return;
+      }
+    } catch (e) {
+      logger.error("Failed to load wallet data", e);
+      if (e.code === "TWO_FACTOR_REQUIRED") {
+        router.push(
+          `/account/security?setup2fa=true&redirect=${encodeURIComponent("/account/wallet/withdraw")}`
+        );
+        return;
+      }
+      setError(getErrorMessage(e, "Gagal memuat data"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleWithdraw() {
     setProcessing(true);
     setError("");
 
     try {
-      await fetchFeatureAuth(FEATURE_ENDPOINTS.WITHDRAWALS.CREATE, {
+      const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.WITHDRAWALS.CREATE, {
         method: "POST",
         body: JSON.stringify({
           amount: parsedAmount,
-          bankCode: bankCode,
-          accountNumber: accountNumber,
-          accountName: accountName,
+          cryptoAddress,
+          cryptoCurrency,
+          network: network || null,
+          memo: memo || null,
           pin,
         }),
       });
 
-      router.push("/account/wallet/withdraw/success");
-    } catch (e) {
-      logger.error("Withdrawal failed:", e);
-      if (e.code === "TWO_FACTOR_REQUIRED") {
-        router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/withdraw"));
+      const data = unwrapFeatureData(response) || response;
+      if (data.success === false || data.Success === false) {
+        setError(data.error ?? data.Error ?? "Gagal membuat penarikan");
+        setProcessing(false);
         return;
       }
-      setError(getErrorMessage(e, "Unable to process withdrawal."));
+
+      router.push("/account/wallet/withdraw/success");
+    } catch (e) {
+      logger.error("Failed to create withdrawal", e);
+      if (e.code === "TWO_FACTOR_REQUIRED") {
+        router.push(
+          `/account/security?setup2fa=true&redirect=${encodeURIComponent("/account/wallet/withdraw")}`
+        );
+        return;
+      }
+      setError(getErrorMessage(e, "Gagal memproses penarikan"));
+    } finally {
+      setProcessing(false);
     }
-    setProcessing(false);
-  };
+  }
+
+  function handleAmountChange(e) {
+    const raw = e.target.value.replace(/\D/g, "");
+    if (raw === "") {
+      setAmount("");
+      return;
+    }
+    setAmount(Number(raw).toLocaleString("id-ID"));
+  }
+
+  function handleQuickAmount(val) {
+    setAmount(val.toLocaleString("id-ID"));
+  }
+
+  const isStep1Valid =
+    cryptoCurrency && cryptoAddress.length >= 10 && (availableNetworks.length <= 1 || network);
+  const isStep2Valid = parsedAmount >= minWithdraw && totalDeduction <= wallet.balance;
 
   if (loading) {
-    return <PageLoadingBlock className="min-h-screen bg-background" maxWidthClass="max-w-md" lines={4} />;
+    return (
+      <PageLoadingBlock className="min-h-screen bg-background" maxWidthClass="max-w-md" lines={4} />
+    );
   }
 
   return (
     <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-md px-4 py-8">
-          <Link
-            href="/account/wallet/transactions"
-            className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+      <div className="mx-auto max-w-md px-4 py-6">
+        {/* Header */}
+        <div className="mb-6">
+          <button
+            onClick={() => {
+              if (step > 1) {
+                setStep(step - 1);
+                setError("");
+                if (step === 3) setPin("");
+              } else {
+                router.push("/account/wallet/transactions");
+              }
+            }}
+            className="mb-3 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
-            Back
-          </Link>
-
-          <h1 className="text-2xl font-bold text-foreground mb-2">Withdraw Funds</h1>
-          <p className="text-sm text-muted-foreground mb-6">
-            Transfer your balance to your bank account
+            {step > 1 ? "Kembali" : "Wallet"}
+          </button>
+          <h1 className="text-xl font-bold text-foreground">Penarikan Crypto</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Saldo: Rp{wallet.balance.toLocaleString("id-ID")}
           </p>
+        </div>
 
-          {/* Balance Card */}
-          <div className="mb-6 rounded-lg border border-border bg-card p-4">
-            <div className="text-sm text-muted-foreground">Available Balance</div>
-            <div className="text-2xl font-bold text-foreground">
-              Rp {wallet.balance.toLocaleString("id-ID")}
-            </div>
+        {/* Step Indicator */}
+        <div className="mb-6 flex items-center gap-2">
+          {[1, 2, 3].map((s) => (
+            <div
+              key={s}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${
+                s <= step ? "bg-primary" : "bg-muted"
+              }`}
+            />
+          ))}
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+            {error}
           </div>
+        )}
 
-          {/* Progress Steps */}
-          <div className="mb-6 flex items-center justify-center gap-2">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className="flex items-center">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition ${
-                    step >= s
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card text-muted-foreground border border-border"
-                  }`}
-                >
-                  {s}
-                </div>
-                {s < 3 && (
-                  <div
-                    className={`h-0.5 w-8 transition ${
-                      step > s ? "bg-primary" : "bg-border"
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-
-          {error && (
-            <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-              {error}
+        {/* STEP 1: Crypto Address & Network */}
+        {step === 1 && (
+          <div className="space-y-5">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Mata Uang Crypto
+              </label>
+              <NativeSelect
+                value={cryptoCurrency}
+                onChange={(e) => setCryptoCurrency(e.target.value)}
+                options={CRYPTO_CURRENCIES.map((c) => ({ value: c.value, label: c.label }))}
+                className="h-12"
+              />
             </div>
-          )}
 
-          {/* Step 1: Bank Details */}
-          {step === 1 && (
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="font-semibold text-foreground mb-4">Informasi Rekening</h2>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Bank
-                  </label>
-                  <NativeSelect
-                    value={bankCode}
-                    onChange={(e) => setBankCode(e.target.value)}
-                    options={[
-                      { value: "", label: "Select a bank" },
-                      ...BANKS.map((bank) => ({ value: bank.code, label: bank.name })),
-                    ]}
-                    className="h-12 bg-background px-4 py-3"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Nomor Rekening
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={accountNumber}
-                    onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Enter account number"
-                    className="w-full rounded-lg border border-border bg-transparent px-4 py-3 focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Nama Pemilik Rekening
-                  </label>
-                  <input
-                    type="text"
-                    value={accountName}
-                    onChange={(e) => setAccountName(e.target.value.toUpperCase())}
-                    placeholder="Enter account holder name"
-                    className="w-full rounded-lg border border-border bg-transparent px-4 py-3 uppercase focus:outline-none focus:border-primary"
-                  />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Ensure the name matches your bank account
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setStep(2)}
-                disabled={!isStep1Valid}
-                className="mt-6 w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
-              >
-                Lanjutkan
-              </button>
-            </div>
-          )}
-
-          {/* Step 2: Amount */}
-          {step === 2 && (
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="font-semibold text-foreground mb-4">Jumlah Penarikan</h2>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Nominal
+            {availableNetworks.length > 1 && (
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">
+                  Jaringan (Network)
                 </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    Rp
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={amount}
-                    onChange={handleAmountChange}
-                    placeholder="0"
-                    className="w-full rounded-lg border border-border bg-transparent py-3 pl-12 pr-4 text-xl font-semibold focus:outline-none focus:border-primary"
-                  />
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Minimum penarikan Rp 50.000
-                </p>
+                <NativeSelect
+                  value={network}
+                  onChange={(e) => setNetwork(e.target.value)}
+                  options={[
+                    { value: "", label: "Pilih jaringan..." },
+                    ...availableNetworks.map((n) => ({ value: n, label: n })),
+                  ]}
+                  className="h-12"
+                />
               </div>
+            )}
 
-              {/* Quick amounts */}
-              <div className="mb-6 grid grid-cols-3 gap-2">
-                {[100000, 250000, 500000].map((val) => (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Alamat Wallet Tujuan
+              </label>
+              <input
+                type="text"
+                value={cryptoAddress}
+                onChange={(e) => setCryptoAddress(e.target.value.trim())}
+                placeholder="Masukkan alamat wallet"
+                className="h-12 w-full rounded-lg border border-input bg-background px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              {cryptoAddress && cryptoAddress.length < 10 && (
+                <p className="mt-1 text-xs text-destructive">Alamat wallet terlalu pendek</p>
+              )}
+            </div>
+
+            {(cryptoCurrency === "TON" || network === "TON") && (
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">
+                  Memo / Tag <span className="text-muted-foreground">(opsional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                  placeholder="Memo untuk TON (jika diperlukan)"
+                  className="h-12 w-full rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            )}
+
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
+              <p className="text-xs text-yellow-800">
+                ⚠️ Pastikan alamat dan jaringan benar. Pengiriman ke alamat atau jaringan yang salah
+                tidak dapat dikembalikan.
+              </p>
+            </div>
+
+            <button
+              disabled={!isStep1Valid}
+              onClick={() => {
+                setStep(2);
+                setError("");
+              }}
+              className="h-12 w-full rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Lanjutkan
+            </button>
+          </div>
+        )}
+
+        {/* STEP 2: Amount */}
+        {step === 2 && (
+          <div className="space-y-5">
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <div className="text-xs text-muted-foreground">Tujuan</div>
+              <div className="text-sm font-mono font-medium truncate">{cryptoAddress}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {cryptoCurrency}
+                {network ? ` • ${network}` : ""}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Jumlah Penarikan (IDR)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                  Rp
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={amount}
+                  onChange={handleAmountChange}
+                  placeholder="0"
+                  className="h-12 w-full rounded-lg border border-input bg-background pl-10 pr-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {quickAmounts.map((val) => (
                   <button
                     key={val}
-                    onClick={() => setAmount(val.toLocaleString("id-ID"))}
-                    disabled={val + fee > wallet.balance}
-                    className="rounded-lg border border-border py-2 text-sm font-medium transition hover:border-primary hover:text-primary disabled:opacity-50"
+                    type="button"
+                    onClick={() => handleQuickAmount(val)}
+                    className="rounded-full border border-input px-3 py-1 text-xs hover:bg-accent transition-colors"
                   >
                     {(val / 1000).toLocaleString("id-ID")}rb
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const maxAmount = Math.floor(wallet.balance / (1 + feePercent));
+                    if (maxAmount > 0) handleQuickAmount(maxAmount);
+                  }}
+                  className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs text-primary hover:bg-primary/10 transition-colors"
+                >
+                  Maks
+                </button>
               </div>
+            </div>
 
-              {/* Summary */}
-              <div className="rounded-lg bg-background p-4 space-y-2">
+            {parsedAmount >= minWithdraw && (
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Jumlah penarikan</span>
-                  <span className="text-foreground">
-                    Rp {parsedAmount.toLocaleString("id-ID")}
-                  </span>
+                  <span>Rp{parsedAmount.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Transfer fee</span>
-                  <span className="text-foreground">Rp {fee.toLocaleString("id-ID")}</span>
+                  <span className="text-muted-foreground">Platform fee (2%)</span>
+                  <span>Rp{fee.toLocaleString("id-ID")}</span>
                 </div>
-                <div className="border-t border-border pt-2 flex justify-between font-semibold">
-                  <span className="text-foreground">Total dipotong</span>
-                  <span className="text-foreground">
-                    Rp {totalDeduction.toLocaleString("id-ID")}
+                <hr className="border-border" />
+                <div className="flex justify-between text-sm font-semibold">
+                  <span>Total dipotong dari saldo</span>
+                  <span>Rp{totalDeduction.toLocaleString("id-ID")}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  * Rp{netAmount.toLocaleString("id-ID")} akan dikonversi ke {cryptoCurrency} dan
+                  dikirim ke alamat tujuan. Fee jaringan ditanggung oleh platform.
+                </p>
+              </div>
+            )}
+
+            {totalDeduction > wallet.balance && parsedAmount > 0 && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+                Saldo tidak cukup. Diperlukan Rp{totalDeduction.toLocaleString("id-ID")} (saldo: Rp
+                {wallet.balance.toLocaleString("id-ID")})
+              </div>
+            )}
+
+            <button
+              disabled={!isStep2Valid}
+              onClick={() => {
+                setStep(3);
+                setError("");
+              }}
+              className="h-12 w-full rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Lanjutkan
+            </button>
+          </div>
+        )}
+
+        {/* STEP 3: Confirmation & PIN */}
+        {step === 3 && (
+          <div className="space-y-5">
+            <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">Konfirmasi Penarikan</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Mata uang</span>
+                  <span className="font-medium">
+                    {cryptoCurrency}
+                    {network ? ` (${network})` : ""}
                   </span>
                 </div>
-              </div>
-
-              {totalDeduction > wallet.balance && parsedAmount > 0 && (
-                <p className="mt-2 text-sm text-destructive">Insufficient balance</p>
-              )}
-
-              <div className="mt-6 flex gap-3">
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex-1 rounded-lg border border-border py-3 font-medium transition hover:bg-background"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={() => setStep(3)}
-                  disabled={!isStep2Valid}
-                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
-                >
-                  Lanjutkan
-                </button>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Alamat tujuan</span>
+                  <span className="font-mono text-xs max-w-[200px] truncate">{cryptoAddress}</span>
+                </div>
+                {memo && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Memo</span>
+                    <span className="font-mono text-xs">{memo}</span>
+                  </div>
+                )}
+                <hr className="border-border" />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Jumlah penarikan</span>
+                  <span>Rp{parsedAmount.toLocaleString("id-ID")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Platform fee (2%)</span>
+                  <span>Rp{fee.toLocaleString("id-ID")}</span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>Total dipotong</span>
+                  <span>Rp{totalDeduction.toLocaleString("id-ID")}</span>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Step 3: Confirmation */}
-          {step === 3 && (
-            <div className="rounded-lg border border-border bg-card p-6">
-              <h2 className="font-semibold text-foreground mb-4">Konfirmasi Penarikan</h2>
-
-              {/* Summary */}
-              <div className="rounded-lg bg-background p-4 mb-4 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Bank</span>
-                  <span className="text-foreground font-medium">
-                    {BANKS.find((b) => b.code === bankCode)?.name}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Nomor Rekening</span>
-                  <span className="text-foreground font-medium">{accountNumber}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Nama</span>
-                  <span className="text-foreground font-medium">{accountName}</span>
-                </div>
-                <div className="border-t border-border pt-3 flex justify-between">
-                  <span className="text-muted-foreground">You will receive</span>
-                  <span className="text-lg font-bold text-primary">
-                    Rp {parsedAmount.toLocaleString("id-ID")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Enter PIN
-                </label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                  placeholder="••••••"
-                  className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="mb-4 rounded-lg bg-warning/10 border border-warning/20 p-3">
-                <div className="flex gap-2 text-sm text-warning">
-                  <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <span>
-                    Funds will be transferred within 1-3 business days
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setStep(2)}
-                  disabled={processing}
-                  className="flex-1 rounded-lg border border-border py-3 font-medium transition hover:bg-background"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={processing || pin.length !== 6}
-                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
-                >
-                  {processing ? "Processing..." : "Withdraw Funds"}
-                </button>
-              </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Masukkan PIN Wallet
+              </label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                placeholder="••••••"
+                className="h-14 w-full rounded-lg border border-input bg-background px-3 text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <p className="mt-1 text-xs text-muted-foreground text-center">
+                Masukkan 6 digit PIN wallet Anda
+              </p>
             </div>
-          )}
-        </div>
+
+            <button
+              disabled={pin.length !== 6 || processing}
+              onClick={handleWithdraw}
+              className="h-12 w-full rounded-lg bg-destructive text-destructive-foreground font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {processing ? "Memproses..." : "Konfirmasi Penarikan"}
+            </button>
+          </div>
+        )}
       </div>
+    </div>
   );
 }

@@ -12,17 +12,17 @@ public record CreateWithdrawalRequest(
     [Range(10000, 100000000, ErrorMessage = "Minimal penarikan Rp10.000, maksimal Rp100.000.000")]
     long Amount,
     
-    [Required]
-    [StringLength(20, MinimumLength = 3)]
-    string BankCode,
+    [Required(ErrorMessage = "Alamat crypto wajib diisi")]
+    [StringLength(256, MinimumLength = 10, ErrorMessage = "Alamat crypto tidak valid")]
+    string CryptoAddress,
     
-    [Required]
-    [StringLength(30, MinimumLength = 5)]
-    string AccountNumber,
+    [Required(ErrorMessage = "Mata uang crypto wajib diisi")]
+    [StringLength(20, MinimumLength = 2)]
+    string CryptoCurrency,
     
-    [Required]
-    [StringLength(100, MinimumLength = 3)]
-    string AccountName,
+    string? Network,
+    
+    string? Memo,
     
     [Required]
     [StringLength(6, MinimumLength = 6)]
@@ -32,12 +32,6 @@ public record CreateWithdrawalRequest(
 public record CancelWithdrawalRequest(
     [Required]
     string Pin
-);
-
-// For admin
-public record ProcessWithdrawalRequest(
-    bool Approve,
-    string? RejectionReason
 );
 
 // =====================
@@ -58,38 +52,32 @@ public record WithdrawalDto(
     long Amount,
     long Fee,
     long NetAmount,
-    string BankCode,
-    string BankName,
-    string MaskedAccountNumber,  // Only show last 4 digits
-    string AccountName,
+    string CryptoAddress,
+    string CryptoCurrency,
+    string? CryptoNetwork,
+    string? CryptoAmount,
+    string? TrackId,
+    string? TxHash,
     string Status,
     string Reference,
-    string? RejectionReason,
+    string? FailureReason,
     DateTime CreatedAt,
-    DateTime? ProcessedAt
+    DateTime? CompletedAt
 );
 
 public record WithdrawalSummaryDto(
     string Id,
     long Amount,
     long NetAmount,
-    string BankName,
+    string CryptoCurrency,
     string Status,
     string Reference,
     DateTime CreatedAt
 );
 
-public record WithdrawalStatsDto(
-    int TotalWithdrawals,
-    long TotalAmount,
-    int PendingCount,
-    int CompletedCount,
-    int RejectedCount
-);
-
-// Bank info
-public record BankInfoDto(
-    string Code,
+// Supported crypto currencies info
+public record CryptoCurrencyInfoDto(
+    string Symbol,
     string Name,
-    string ShortName
+    string[] SupportedNetworks
 );

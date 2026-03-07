@@ -2,149 +2,129 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.OxaPay;
 using FeatureService.Api.Models.Entities;
-using System.Globalization;
 
 namespace FeatureService.Api.Services;
 
 public interface IDepositService
 {
-    Task<DepositRequestResponse> CreateRequestAsync(uint userId, string username, CreateDepositRequest request);
+    Task<CreateDepositResponse> CreateRequestAsync(uint userId, string username, CreateDepositRequest request);
     Task<DepositHistoryResponse> GetUserDepositsAsync(uint userId, int limit = 50);
-    Task<List<AdminDepositResponse>> GetPendingDepositsAsync(int limit = 50);
-    Task<(bool success, string? error)> ApproveAsync(string depositId, uint adminId, string adminUsername, long? amountOverride);
-    Task<(bool success, string? error)> RejectAsync(string depositId, uint adminId, string adminUsername, string reason);
+    Task<DepositStatusResponse?> GetDepositStatusAsync(string depositId, uint userId);
+    Task<(bool success, string? error)> HandleCallbackAsync(OxaPayCallbackPayload payload);
 }
 
 public class DepositService : IDepositService
 {
-    private static readonly string[] StatusFieldAliases = ["status", "Status"];
-    private static readonly string[] CreatedAtFieldAliases = ["createdAt", "CreatedAt", "created_at"];
-
     private readonly IMongoCollection<DepositRequest> _deposits;
-    private readonly IMongoCollection<BsonDocument> _depositsRaw;
     private readonly IWalletService _walletService;
+    private readonly IOxaPayService _oxaPayService;
+    private readonly OxaPaySettings _oxaPaySettings;
     private readonly ILogger<DepositService> _logger;
 
     private const long MinDeposit = 10000;
-    private const string AllowedMethod = "QRIS";
-
-    public DepositService(MongoDbContext dbContext, IWalletService walletService, ILogger<DepositService> logger)
-        : this(
-            dbContext.GetCollection<DepositRequest>("deposit_requests"),
-            dbContext.GetCollection<BsonDocument>("deposit_requests"),
-            walletService,
-            logger)
-    {
-    }
 
     public DepositService(
-        IMongoCollection<DepositRequest> deposits,
-        IMongoCollection<BsonDocument> depositsRaw,
+        MongoDbContext dbContext,
         IWalletService walletService,
+        IOxaPayService oxaPayService,
+        OxaPaySettings oxaPaySettings,
         ILogger<DepositService> logger)
     {
-        _deposits = deposits;
-        _depositsRaw = depositsRaw;
+        _deposits = dbContext.GetCollection<DepositRequest>("deposit_requests");
         _walletService = walletService;
+        _oxaPayService = oxaPayService;
+        _oxaPaySettings = oxaPaySettings;
         _logger = logger;
     }
 
-    public async Task<DepositRequestResponse> CreateRequestAsync(uint userId, string username, CreateDepositRequest request)
+    public async Task<CreateDepositResponse> CreateRequestAsync(uint userId, string username, CreateDepositRequest request)
     {
         if (request.Amount < MinDeposit)
-        {
             throw new ArgumentException($"Minimum deposit Rp{MinDeposit:N0}");
-        }
 
-        var method = request.Method?.Trim().ToUpperInvariant() ?? AllowedMethod;
-        if (!string.Equals(method, AllowedMethod, StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException("Saat ini hanya deposit via QRIS yang tersedia");
-        }
-
-        var externalId = request.ExternalTransactionId.Trim();
-        if (externalId.Length < 6)
-        {
-            throw new ArgumentException("ID transaksi tidak valid");
-        }
-
-        var existingByExternalId = await _deposits
-            .Find(d => d.ExternalTransactionId == externalId)
+        // Check for existing unexpired deposit for this user
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var existingPending = await _deposits
+            .Find(d => d.UserId == userId
+                && d.Status == DepositStatus.WaitingPayment
+                && d.ExpiredAt > now)
             .SortByDescending(d => d.CreatedAt)
             .FirstOrDefaultAsync();
 
-        if (existingByExternalId != null)
+        if (existingPending != null)
         {
-            if (existingByExternalId.UserId != userId)
-            {
-                throw new InvalidOperationException("ID transaksi sudah digunakan");
-            }
-
-            return new DepositRequestResponse(
-                existingByExternalId.Id,
-                existingByExternalId.Amount,
-                existingByExternalId.Method,
-                existingByExternalId.ExternalTransactionId,
-                existingByExternalId.Status.ToString(),
-                existingByExternalId.CreatedAt
-            );
+            _logger.LogInformation("Reusing existing pending deposit {DepositId} for user {UserId}", existingPending.Id, userId);
+            return MapToCreateResponse(existingPending);
         }
+
+        // Calculate fee: amount ÷ 0.95 = total charge, fee = total - amount
+        var chargeAmountDecimal = Math.Ceiling((decimal)request.Amount / 0.95m);
+        var chargeAmount = (long)chargeAmountDecimal;
+        var platformFee = chargeAmount - request.Amount;
+
+        var payCurrency = request.PayCurrency ?? _oxaPaySettings.DefaultPayCurrency;
+        var network = request.Network ?? _oxaPaySettings.DefaultNetwork;
+        var depositId = ObjectId.GenerateNewId().ToString();
+
+        // Call OxaPay White Label API
+        var oxaPayRequest = new OxaPayWhiteLabelRequest
+        {
+            Amount = chargeAmount,
+            Currency = "USD",
+            PayCurrency = payCurrency,
+            Network = string.IsNullOrEmpty(network) ? null : network,
+            Lifetime = _oxaPaySettings.PaymentLifetimeMinutes,
+            FeePaidByPayer = 1,
+            UnderPaidCoverage = _oxaPaySettings.UnderPaidCoverage,
+            CallbackUrl = $"{_oxaPaySettings.CallbackBaseUrl.TrimEnd('/')}/api/v1/callbacks/oxapay/payment",
+            OrderId = depositId,
+            Description = $"AIValid deposit {depositId} user {userId}"
+        };
+
+        OxaPayWhiteLabelResponse oxaPayResponse;
+        try
+        {
+            oxaPayResponse = await _oxaPayService.CreateWhiteLabelPaymentAsync(oxaPayRequest);
+        }
+        catch (OxaPayException ex)
+        {
+            _logger.LogError(ex, "OxaPay white-label failed for user {UserId}: {Message}", userId, ex.Message);
+            throw new InvalidOperationException($"Gagal membuat pembayaran crypto: {ex.Message}");
+        }
+
+        var data = oxaPayResponse.Data
+            ?? throw new InvalidOperationException("Respons OxaPay tidak memiliki data pembayaran");
 
         var deposit = new DepositRequest
         {
-            Id = ObjectId.GenerateNewId().ToString(),
+            Id = depositId,
             UserId = userId,
             Username = username,
             Amount = request.Amount,
-            Method = method,
-            ExternalTransactionId = externalId,
-            Status = DepositStatus.Pending,
+            PlatformFee = platformFee,
+            TrackId = data.TrackId,
+            PayCurrency = data.PayCurrency,
+            PayAmount = data.PayAmount.ToString("G"),
+            Network = data.Network ?? payCurrency,
+            Address = data.Address,
+            QrCode = data.QrCode,
+            Rate = data.Rate?.ToString("G"),
+            ExpiredAt = data.ExpiredAt,
+            Status = DepositStatus.WaitingPayment,
+            OxaPayStatus = "Waiting",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
-        try
-        {
-            await _deposits.InsertOneAsync(deposit);
-        }
-        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
-        {
-            // Idempotency / race: another request inserted same externalTransactionId.
-            var existing = await _deposits
-                .Find(d => d.ExternalTransactionId == externalId)
-                .SortByDescending(d => d.CreatedAt)
-                .FirstOrDefaultAsync();
+        await _deposits.InsertOneAsync(deposit);
 
-            if (existing != null)
-            {
-                if (existing.UserId != userId)
-                    throw new InvalidOperationException("ID transaksi sudah digunakan");
+        _logger.LogInformation(
+            "Deposit created: {DepositId} user {UserId} amount {Amount} IDR → {PayAmount} {PayCurrency} trackId {TrackId}",
+            deposit.Id, userId, request.Amount, data.PayAmount, data.PayCurrency, data.TrackId);
 
-                return new DepositRequestResponse(
-                    existing.Id,
-                    existing.Amount,
-                    existing.Method,
-                    existing.ExternalTransactionId,
-                    existing.Status.ToString(),
-                    existing.CreatedAt
-                );
-            }
-
-            throw;
-        }
-
-        _logger.LogInformation("Deposit request created: {DepositId} user {UserId} amount {Amount}",
-            deposit.Id, userId, deposit.Amount);
-
-        return new DepositRequestResponse(
-            deposit.Id,
-            deposit.Amount,
-            deposit.Method,
-            deposit.ExternalTransactionId,
-            deposit.Status.ToString(),
-            deposit.CreatedAt
-        );
+        return MapToCreateResponse(deposit);
     }
 
     public async Task<DepositHistoryResponse> GetUserDepositsAsync(uint userId, int limit = 50)
@@ -158,246 +138,132 @@ public class DepositService : IDepositService
         var items = deposits.Select(d => new DepositRequestResponse(
             d.Id,
             d.Amount,
-            d.Method,
-            d.ExternalTransactionId,
+            d.PlatformFee,
+            d.PayCurrency,
+            d.PayAmount,
             d.Status.ToString(),
-            d.CreatedAt
+            d.CreatedAt,
+            d.ExpiredAt
         )).ToList();
 
         return new DepositHistoryResponse(items, deposits.Count);
     }
 
-    public async Task<List<AdminDepositResponse>> GetPendingDepositsAsync(int limit = 50)
+    public async Task<DepositStatusResponse?> GetDepositStatusAsync(string depositId, uint userId)
     {
-        var safeLimit = Math.Clamp(limit, 1, 200);
+        var deposit = await _deposits
+            .Find(d => d.Id == depositId && d.UserId == userId)
+            .FirstOrDefaultAsync();
 
-        // Backward compatibility: older data may store status as string ("Pending"/"pending")
-        // while newer data uses enum-backed numeric representation (0 = Pending).
-        var filterBuilder = Builders<BsonDocument>.Filter;
-        var pendingValueFilters = new List<FilterDefinition<BsonDocument>>();
-        foreach (var field in StatusFieldAliases)
-        {
-            pendingValueFilters.Add(filterBuilder.Eq(field, (int)DepositStatus.Pending));
-            pendingValueFilters.Add(filterBuilder.Eq(field, (long)DepositStatus.Pending));
-            pendingValueFilters.Add(filterBuilder.Eq(field, "0"));
-            pendingValueFilters.Add(filterBuilder.Eq(field, DepositStatus.Pending.ToString()));
-            pendingValueFilters.Add(filterBuilder.Eq(field, DepositStatus.Pending.ToString().ToLowerInvariant()));
-            pendingValueFilters.Add(filterBuilder.Eq(field, DepositStatus.Pending.ToString().ToUpperInvariant()));
-        }
-
-        // Treat documents as pending by default when all known status aliases are unset.
-        // This keeps admin visibility for legacy records with missing/null/empty status fields.
-        var missingStatusFilter = filterBuilder.And(
-            StatusFieldAliases.Select(field =>
-                filterBuilder.Or(
-                    filterBuilder.Exists(field, false),
-                    filterBuilder.Eq(field, BsonNull.Value),
-                    filterBuilder.Eq(field, "")))
-        );
-
-        var pendingFilter = filterBuilder.Or(
-            pendingValueFilters.Append(missingStatusFilter)
-        );
-        var sortDefinition = Builders<BsonDocument>.Sort
-            .Descending("createdAt")
-            .Descending("CreatedAt")
-            .Descending("created_at")
-            .Descending("_id");
-
-        var deposits = await _depositsRaw
-            .Find(pendingFilter)
-            .Sort(sortDefinition)
-            .Limit(safeLimit)
-            .ToListAsync();
-
-        return deposits
-            .Select(MapAdminDeposit)
-            .Where(d => !string.IsNullOrWhiteSpace(d.Id))
-            .ToList();
-    }
-
-    private static AdminDepositResponse MapAdminDeposit(BsonDocument doc)
-    {
-        var id = GetString(doc, "", "_id", "id", "Id");
-
-        return new AdminDepositResponse(
-            id,
-            GetUInt(doc, "userId", "UserId", "user_id"),
-            GetString(doc, "", "username", "Username", "user_name"),
-            GetLong(doc, "amount", "Amount"),
-            GetString(doc, "QRIS", "method", "Method"),
-            GetString(doc, "", "externalTransactionId", "ExternalTransactionId", "external_transaction_id"),
-            GetStatus(doc),
-            GetDateTime(doc, CreatedAtFieldAliases)
-        );
-    }
-
-    private static bool TryGetValue(BsonDocument doc, out BsonValue value, params string[] fields)
-    {
-        foreach (var field in fields)
-        {
-            if (doc.TryGetValue(field, out var candidate) && !candidate.IsBsonNull)
-            {
-                value = candidate;
-                return true;
-            }
-        }
-
-        value = BsonNull.Value;
-        return false;
-    }
-
-    private static string GetString(BsonDocument doc, string fallback = "", params string[] fields)
-    {
-        if (!TryGetValue(doc, out var value, fields))
-            return fallback;
-
-        return value.BsonType switch
-        {
-            BsonType.ObjectId => value.AsObjectId.ToString(),
-            BsonType.String => value.AsString,
-            _ => value.ToString() ?? fallback
-        };
-    }
-
-    private static uint GetUInt(BsonDocument doc, params string[] fields)
-    {
-        if (!TryGetValue(doc, out var value, fields))
-            return 0;
-
-        return value.BsonType switch
-        {
-            BsonType.Int32 => value.AsInt32 < 0 ? 0 : (uint)value.AsInt32,
-            BsonType.Int64 => value.AsInt64 < 0 ? 0 : (uint)Math.Min(value.AsInt64, uint.MaxValue),
-            BsonType.String when uint.TryParse(value.AsString, out var parsed) => parsed,
-            _ => 0
-        };
-    }
-
-    private static long GetLong(BsonDocument doc, params string[] fields)
-    {
-        if (!TryGetValue(doc, out var value, fields))
-            return 0;
-
-        return value.BsonType switch
-        {
-            BsonType.Int32 => value.AsInt32,
-            BsonType.Int64 => value.AsInt64,
-            BsonType.Double => (long)value.AsDouble,
-            BsonType.Decimal128 => (long)Decimal128.ToDecimal(value.AsDecimal128),
-            BsonType.String when long.TryParse(value.AsString, out var parsed) => parsed,
-            _ => 0
-        };
-    }
-
-    private static string GetStatus(BsonDocument doc)
-    {
-        if (!TryGetValue(doc, out var value, StatusFieldAliases))
-            return DepositStatus.Pending.ToString();
-
-        if (value.BsonType == BsonType.String)
-        {
-            var raw = value.AsString?.Trim();
-            if (Enum.TryParse<DepositStatus>(raw, true, out var parsed))
-                return parsed.ToString();
-            return string.IsNullOrEmpty(raw) ? DepositStatus.Pending.ToString() : raw;
-        }
-
-        if (value.BsonType is BsonType.Int32 or BsonType.Int64)
-        {
-            var numeric = value.BsonType == BsonType.Int32 ? value.AsInt32 : (int)value.AsInt64;
-            if (Enum.IsDefined(typeof(DepositStatus), numeric))
-                return ((DepositStatus)numeric).ToString();
-        }
-
-        return DepositStatus.Pending.ToString();
-    }
-
-    private static DateTime GetDateTime(BsonDocument doc, string field)
-    {
-        return GetDateTime(doc, new[] { field });
-    }
-
-    private static DateTime GetDateTime(BsonDocument doc, params string[] fields)
-    {
-        if (!TryGetValue(doc, out var value, fields))
-            return DateTime.UtcNow;
-
-        return value.BsonType switch
-        {
-            BsonType.DateTime => value.AsBsonDateTime.ToUniversalTime(),
-            BsonType.String when DateTime.TryParse(
-                value.AsString,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
-                out var parsed) => parsed,
-            _ => DateTime.UtcNow
-        };
-    }
-
-    public async Task<(bool success, string? error)> ApproveAsync(
-        string depositId, uint adminId, string adminUsername, long? amountOverride)
-    {
-        var normalizedDepositId = depositId?.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedDepositId))
-            return (false, "ID deposit tidak valid");
-
-        var actorName = string.IsNullOrWhiteSpace(adminUsername)
-            ? $"admin:{adminId}"
-            : adminUsername.Trim();
-
-        var deposit = await _deposits.Find(d => d.Id == normalizedDepositId).FirstOrDefaultAsync();
         if (deposit == null)
-            return (false, "Deposit tidak ditemukan");
+            return null;
 
-        if (deposit.Status == DepositStatus.Rejected)
-            return (false, "Deposit sudah ditolak");
+        return new DepositStatusResponse(
+            deposit.Status.ToString(),
+            deposit.PayAmount,
+            deposit.PayCurrency,
+            deposit.Address,
+            deposit.QrCode,
+            deposit.ExpiredAt,
+            deposit.WalletTransactionId != null
+        );
+    }
 
+    public async Task<(bool success, string? error)> HandleCallbackAsync(OxaPayCallbackPayload payload)
+    {
+        if (string.IsNullOrEmpty(payload.TrackId) && string.IsNullOrEmpty(payload.OrderId))
+            return (false, "Missing trackId and orderId");
+
+        // Find deposit by trackId or orderId
+        DepositRequest? deposit = null;
+        if (!string.IsNullOrEmpty(payload.TrackId))
+        {
+            deposit = await _deposits.Find(d => d.TrackId == payload.TrackId).FirstOrDefaultAsync();
+        }
+        if (deposit == null && !string.IsNullOrEmpty(payload.OrderId))
+        {
+            deposit = await _deposits.Find(d => d.Id == payload.OrderId).FirstOrDefaultAsync();
+        }
+
+        if (deposit == null)
+        {
+            _logger.LogWarning("OxaPay callback: deposit not found for trackId={TrackId} orderId={OrderId}",
+                payload.TrackId, payload.OrderId);
+            return (false, "Deposit not found");
+        }
+
+        // Idempotent: skip if already credited
         if (deposit.Status == DepositStatus.Approved)
         {
-            if (string.IsNullOrWhiteSpace(deposit.WalletTransactionId))
-            {
-                _logger.LogWarning(
-                    "Deposit {DepositId} already approved but walletTransactionId is missing. Manual verification may be required.",
-                    normalizedDepositId);
-            }
+            _logger.LogInformation("OxaPay callback: deposit {DepositId} already approved, skipping", deposit.Id);
             return (true, null);
         }
 
-        var amount = amountOverride ?? deposit.Amount;
-        if (amount < MinDeposit)
-            return (false, $"Jumlah deposit minimum Rp{MinDeposit:N0}");
+        var callbackStatus = payload.Status?.ToLowerInvariant() ?? "";
+        _logger.LogInformation("OxaPay callback: deposit {DepositId} status={Status}", deposit.Id, payload.Status);
 
-        // Mark as approved first to prevent double-credit (exactly-once semantics)
-        var now = DateTime.UtcNow;
-        var approveFilter = Builders<DepositRequest>.Filter.And(
-            Builders<DepositRequest>.Filter.Eq(d => d.Id, deposit.Id),
-            Builders<DepositRequest>.Filter.Eq(d => d.Status, DepositStatus.Pending));
-
-        var approveUpdate = Builders<DepositRequest>.Update
-            .Set(d => d.Status, DepositStatus.Approved)
-            .Set(d => d.ApprovedById, adminId)
-            .Set(d => d.ApprovedByUsername, actorName)
-            .Set(d => d.ApprovedAt, now)
-            .Set(d => d.UpdatedAt, now);
-
-        var approveResult = await _deposits.UpdateOneAsync(approveFilter, approveUpdate);
-        if (approveResult.ModifiedCount == 0)
+        switch (callbackStatus)
         {
-            var latest = await _deposits.Find(d => d.Id == normalizedDepositId).FirstOrDefaultAsync();
-            if (latest?.Status == DepositStatus.Approved)
-                return (true, null);
+            case "waiting":
+                // No change needed
+                break;
 
-            return (false, "Deposit sudah diproses oleh request lain");
+            case "confirming":
+                await UpdateDepositStatusAsync(deposit.Id, DepositStatus.Confirming, payload.Status);
+                break;
+
+            case "paid":
+            case "complete":
+            case "sending":
+                await CreditWalletForDeposit(deposit, payload);
+                break;
+
+            case "expired":
+                await UpdateDepositStatusAsync(deposit.Id, DepositStatus.Expired, payload.Status);
+                break;
+
+            case "failed":
+                await UpdateDepositStatusAsync(deposit.Id, DepositStatus.Failed, payload.Status);
+                break;
+
+            default:
+                _logger.LogWarning("OxaPay callback: unknown status '{Status}' for deposit {DepositId}", payload.Status, deposit.Id);
+                await UpdateDepositStatusAsync(deposit.Id, deposit.Status, payload.Status);
+                break;
         }
 
+        return (true, null);
+    }
+
+    private async Task CreditWalletForDeposit(DepositRequest deposit, OxaPayCallbackPayload payload)
+    {
+        // Atomically update status to Approved to prevent double-credit
+        var filter = Builders<DepositRequest>.Filter.And(
+            Builders<DepositRequest>.Filter.Eq(d => d.Id, deposit.Id),
+            Builders<DepositRequest>.Filter.Ne(d => d.Status, DepositStatus.Approved));
+
+        var now = DateTime.UtcNow;
+        var update = Builders<DepositRequest>.Update
+            .Set(d => d.Status, DepositStatus.Approved)
+            .Set(d => d.OxaPayStatus, payload.Status)
+            .Set(d => d.UpdatedAt, now)
+            .Set(d => d.CreditedAt, now);
+
+        var result = await _deposits.UpdateOneAsync(filter, update);
+        if (result.ModifiedCount == 0)
+        {
+            _logger.LogInformation("Deposit {DepositId} already processed (race condition prevented)", deposit.Id);
+            return;
+        }
+
+        // Credit wallet with the original requested amount (not the charge amount)
         string walletTransactionId;
         try
         {
             walletTransactionId = await _walletService.AddBalanceAsync(
                 deposit.UserId,
-                amount,
-                $"Deposit {deposit.Method} ({deposit.ExternalTransactionId})",
+                deposit.Amount,
+                $"Deposit {deposit.PayCurrency} ({deposit.TrackId})",
                 TransactionType.Deposit,
                 deposit.Id,
                 "deposit"
@@ -405,97 +271,72 @@ public class DepositService : IDepositService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to credit wallet for approved deposit {DepositId}. Attempting status rollback.", normalizedDepositId);
+            _logger.LogCritical(ex,
+                "CRITICAL: Failed to credit wallet after deposit approval. DepositId: {DepositId}, UserId: {UserId}, Amount: {Amount}",
+                deposit.Id, deposit.UserId, deposit.Amount);
 
+            // Rollback status
             try
             {
                 var rollback = Builders<DepositRequest>.Update
-                    .Set(d => d.Status, DepositStatus.Pending)
+                    .Set(d => d.Status, DepositStatus.Paid)
+                    .Set(d => d.OxaPayStatus, "paid_wallet_error")
                     .Set(d => d.UpdatedAt, DateTime.UtcNow)
-                    .Unset(d => d.ApprovedById)
-                    .Unset(d => d.ApprovedByUsername)
-                    .Unset(d => d.ApprovedAt);
+                    .Unset(d => d.CreditedAt);
 
                 await _deposits.UpdateOneAsync(
-                    Builders<DepositRequest>.Filter.And(
-                        Builders<DepositRequest>.Filter.Eq(d => d.Id, deposit.Id),
-                        Builders<DepositRequest>.Filter.Eq(d => d.Status, DepositStatus.Approved),
-                        Builders<DepositRequest>.Filter.Eq(d => d.WalletTransactionId, null)),
+                    Builders<DepositRequest>.Filter.Eq(d => d.Id, deposit.Id),
                     rollback);
             }
             catch (Exception rollbackEx)
             {
-                _logger.LogCritical(
-                    rollbackEx,
-                    "CRITICAL: Failed to rollback deposit approval after wallet credit failure. DepositId: {DepositId}",
-                    normalizedDepositId);
+                _logger.LogCritical(rollbackEx,
+                    "CRITICAL: Failed to rollback deposit status after wallet credit failure. DepositId: {DepositId}",
+                    deposit.Id);
             }
-
-            return (false, "Gagal memproses deposit. Silakan coba lagi atau hubungi support.");
+            return;
         }
 
+        // Store wallet transaction ID
         try
         {
-            var update = Builders<DepositRequest>.Update
+            var txUpdate = Builders<DepositRequest>.Update
                 .Set(d => d.WalletTransactionId, walletTransactionId)
                 .Set(d => d.UpdatedAt, DateTime.UtcNow);
 
-            await _deposits.UpdateOneAsync(d => d.Id == deposit.Id, update);
+            await _deposits.UpdateOneAsync(d => d.Id == deposit.Id, txUpdate);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to finalize deposit approval {DepositId}. WalletTransactionId: {WalletTransactionId}", normalizedDepositId, walletTransactionId);
+            _logger.LogError(ex, "Failed to store walletTransactionId for deposit {DepositId}", deposit.Id);
         }
 
-        _logger.LogInformation("Deposit approved: {DepositId} by admin {AdminId}", normalizedDepositId, adminId);
-        return (true, null);
+        _logger.LogInformation(
+            "Deposit credited: {DepositId} user {UserId} amount {Amount} IDR, walletTxId {WalletTxId}",
+            deposit.Id, deposit.UserId, deposit.Amount, walletTransactionId);
     }
 
-    public async Task<(bool success, string? error)> RejectAsync(
-        string depositId, uint adminId, string adminUsername, string reason)
+    private async Task UpdateDepositStatusAsync(string depositId, DepositStatus status, string? oxaPayStatus)
     {
-        var normalizedDepositId = depositId?.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedDepositId))
-            return (false, "ID deposit tidak valid");
-
-        var normalizedReason = reason?.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedReason) || normalizedReason.Length < 3)
-            return (false, "Alasan penolakan harus 3-200 karakter");
-
-        if (normalizedReason.Length > 200)
-            return (false, "Alasan penolakan harus 3-200 karakter");
-
-        var actorName = string.IsNullOrWhiteSpace(adminUsername)
-            ? $"admin:{adminId}"
-            : adminUsername.Trim();
-
-        var deposit = await _deposits.Find(d => d.Id == normalizedDepositId).FirstOrDefaultAsync();
-        if (deposit == null)
-            return (false, "Deposit tidak ditemukan");
-
-        if (deposit.Status != DepositStatus.Pending)
-            return (false, "Deposit sudah diproses");
-
-        var now = DateTime.UtcNow;
-        var rejectFilter = Builders<DepositRequest>.Filter.And(
-            Builders<DepositRequest>.Filter.Eq(d => d.Id, deposit.Id),
-            Builders<DepositRequest>.Filter.Eq(d => d.Status, DepositStatus.Pending));
-
         var update = Builders<DepositRequest>.Update
-            .Set(d => d.Status, DepositStatus.Rejected)
-            .Set(d => d.RejectionReason, normalizedReason)
-            .Set(d => d.ApprovedById, adminId)
-            .Set(d => d.ApprovedByUsername, actorName)
-            .Set(d => d.ApprovedAt, now)
-            .Set(d => d.UpdatedAt, now);
+            .Set(d => d.Status, status)
+            .Set(d => d.OxaPayStatus, oxaPayStatus)
+            .Set(d => d.UpdatedAt, DateTime.UtcNow);
 
-        var rejectResult = await _deposits.UpdateOneAsync(rejectFilter, update);
-        if (rejectResult.ModifiedCount == 0)
-        {
-            return (false, "Deposit sudah diproses oleh request lain");
-        }
-
-        _logger.LogInformation("Deposit rejected: {DepositId} by admin {AdminId}", normalizedDepositId, adminId);
-        return (true, null);
+        await _deposits.UpdateOneAsync(d => d.Id == depositId, update);
     }
+
+    private static CreateDepositResponse MapToCreateResponse(DepositRequest d) => new(
+        d.Id,
+        d.TrackId,
+        d.Address,
+        d.QrCode,
+        d.PayAmount,
+        d.PayCurrency,
+        d.Network,
+        d.Rate,
+        d.ExpiredAt,
+        d.PlatformFee,
+        d.Amount
+    );
 }

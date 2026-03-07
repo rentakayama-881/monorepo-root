@@ -1,6 +1,7 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.OxaPay;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 
@@ -12,56 +13,42 @@ public interface IWithdrawalService
     Task<List<WithdrawalSummaryDto>> GetUserWithdrawalsAsync(uint userId, WithdrawalStatus? status = null, int limit = 50);
     Task<WithdrawalDto?> GetWithdrawalAsync(string withdrawalId, uint userId);
     Task<(bool success, string? error)> CancelWithdrawalAsync(string withdrawalId, uint userId, string pin);
-    Task<List<BankInfoDto>> GetSupportedBanksAsync();
-    
-    // Admin functions
-    Task<List<WithdrawalDto>> GetPendingWithdrawalsAsync(int limit = 50);
-    Task<(bool success, string? error)> ProcessWithdrawalAsync(string withdrawalId, uint adminId, string adminUsername, ProcessWithdrawalRequest request);
-    Task<WithdrawalStatsDto> GetWithdrawalStatsAsync();
+    Task<List<CryptoCurrencyInfoDto>> GetSupportedCurrenciesAsync();
+    Task<(bool success, string? error)> HandlePayoutCallbackAsync(OxaPayCallbackPayload payload);
 }
 
 public class WithdrawalService : IWithdrawalService
 {
     private readonly IMongoCollection<Withdrawal> _withdrawals;
     private readonly IWalletService _walletService;
+    private readonly IOxaPayService _oxaPayService;
+    private readonly OxaPaySettings _oxaPaySettings;
     private readonly ILogger<WithdrawalService> _logger;
 
-    // Fee configuration - flat fee for withdrawals
-    private const long WithdrawalFee = 2500; // Rp2,500 per withdrawal
+    // Fee configuration - percentage-based for crypto withdrawals
+    private const decimal WithdrawalFeePercent = 0.02m; // 2% platform fee
     private const long MinWithdrawal = 10000; // Minimum Rp10,000
     private const long MaxWithdrawal = 100000000; // Maximum Rp100,000,000
     private const long DailyWithdrawalLimit = 50000000; // Rp50,000,000 per day
 
-    // Supported Indonesian banks
-    private static readonly Dictionary<string, (string Name, string ShortName)> SupportedBanks = new()
+    // Supported cryptocurrencies
+    private static readonly List<CryptoCurrencyInfoDto> SupportedCurrencies = new()
     {
-        { "BCA", ("Bank Central Asia", "BCA") },
-        { "BNI", ("Bank Negara Indonesia", "BNI") },
-        { "BRI", ("Bank Rakyat Indonesia", "BRI") },
-        { "MANDIRI", ("Bank Mandiri", "Mandiri") },
-        { "CIMB", ("CIMB Niaga", "CIMB") },
-        { "BTN", ("Bank Tabungan Negara", "BTN") },
-        { "DANAMON", ("Bank Danamon", "Danamon") },
-        { "PERMATA", ("Bank Permata", "Permata") },
-        { "OCBC", ("OCBC NISP", "OCBC") },
-        { "MEGA", ("Bank Mega", "Mega") },
-        { "BTPN", ("Bank BTPN", "BTPN") },
-        { "JAGO", ("Bank Jago", "Jago") },
-        { "SEABANK", ("SeaBank Indonesia", "SeaBank") },
-        { "BNC", ("Bank Neo Commerce", "BNC") },
-        { "GOPAY", ("GoPay", "GoPay") },
-        { "OVO", ("OVO", "OVO") },
-        { "DANA", ("DANA", "DANA") },
-        { "SHOPEEPAY", ("ShopeePay", "ShopeePay") }
+        new CryptoCurrencyInfoDto("USDT", "Tether (USDT)", new[] { "TRC20", "ERC20", "BEP20", "Polygon", "SOL", "TON" }),
+        new CryptoCurrencyInfoDto("TON", "Toncoin", new[] { "TON" })
     };
 
     public WithdrawalService(
         MongoDbContext dbContext,
         IWalletService walletService,
+        IOxaPayService oxaPayService,
+        OxaPaySettings oxaPaySettings,
         ILogger<WithdrawalService> logger)
     {
         _withdrawals = dbContext.GetCollection<Withdrawal>("withdrawals");
         _walletService = walletService;
+        _oxaPayService = oxaPayService;
+        _oxaPaySettings = oxaPaySettings;
         _logger = logger;
     }
 
@@ -75,27 +62,35 @@ public class WithdrawalService : IWithdrawalService
         if (request.Amount > MaxWithdrawal)
             return new CreateWithdrawalResponse(false, null, null, $"Maksimal penarikan Rp{MaxWithdrawal:N0}");
 
-        // Validate bank
-        if (!SupportedBanks.TryGetValue(request.BankCode.ToUpperInvariant(), out var bankInfo))
-            return new CreateWithdrawalResponse(false, null, null, "Bank tidak didukung");
+        // Validate crypto currency
+        var currency = request.CryptoCurrency.ToUpperInvariant();
+        var supported = SupportedCurrencies.Find(c => c.Symbol == currency);
+        if (supported == null)
+            return new CreateWithdrawalResponse(false, null, null, $"Mata uang {currency} tidak didukung. Gunakan USDT atau TON.");
+
+        // Validate address
+        if (string.IsNullOrWhiteSpace(request.CryptoAddress) || request.CryptoAddress.Length < 10)
+            return new CreateWithdrawalResponse(false, null, null, "Alamat crypto tidak valid");
 
         // Verify PIN
         var pinResult = await _walletService.VerifyPinAsync(userId, request.Pin);
         if (!pinResult.Valid)
             return new CreateWithdrawalResponse(false, null, null, pinResult.Message);
 
-        // Check balance (amount + fee)
-        var wallet = await _walletService.GetOrCreateWalletAsync(userId);
+        // Calculate fee
+        var fee = (long)Math.Ceiling(request.Amount * WithdrawalFeePercent);
+        var totalDeduction = request.Amount + fee;
+        var netAmount = request.Amount;
 
-        var totalDeduction = request.Amount + WithdrawalFee;
+        // Check balance
+        var wallet = await _walletService.GetOrCreateWalletAsync(userId);
         if (wallet.Balance < totalDeduction)
-            return new CreateWithdrawalResponse(false, null, null, 
-                $"Saldo tidak cukup. Diperlukan Rp{totalDeduction:N0} (termasuk fee Rp{WithdrawalFee:N0})");
+            return new CreateWithdrawalResponse(false, null, null,
+                $"Saldo tidak cukup. Diperlukan Rp{totalDeduction:N0} (termasuk fee Rp{fee:N0})");
 
         // Check for pending withdrawal
         var pendingCount = await _withdrawals.CountDocumentsAsync(
-            w => w.UserId == userId && (w.Status == WithdrawalStatus.Pending || w.Status == WithdrawalStatus.Processing)
-        );
+            w => w.UserId == userId && w.Status == WithdrawalStatus.Processing);
         if (pendingCount > 0)
             return new CreateWithdrawalResponse(false, null, null,
                 "Anda memiliki penarikan yang sedang diproses. Harap tunggu hingga selesai.");
@@ -104,9 +99,8 @@ public class WithdrawalService : IWithdrawalService
         var todayStart = DateTime.UtcNow.Date;
         var todayFilter = Builders<Withdrawal>.Filter.And(
             Builders<Withdrawal>.Filter.Eq(w => w.UserId, userId),
-            Builders<Withdrawal>.Filter.In(w => w.Status, new[] { WithdrawalStatus.Pending, WithdrawalStatus.Processing, WithdrawalStatus.Completed }),
-            Builders<Withdrawal>.Filter.Gte(w => w.CreatedAt, todayStart)
-        );
+            Builders<Withdrawal>.Filter.In(w => w.Status, new[] { WithdrawalStatus.Processing, WithdrawalStatus.Completed }),
+            Builders<Withdrawal>.Filter.Gte(w => w.CreatedAt, todayStart));
         var todayWithdrawals = await _withdrawals.Find(todayFilter).ToListAsync();
         var todayTotal = todayWithdrawals.Sum(w => w.Amount);
         if (todayTotal + request.Amount > DailyWithdrawalLimit)
@@ -117,24 +111,65 @@ public class WithdrawalService : IWithdrawalService
                 $"Sisa kuota hari ini: Rp{(remaining > 0 ? remaining : 0):N0}");
         }
 
-        // Generate IDs before deduction so we can link transactions
         var withdrawalId = ObjectId.GenerateNewId().ToString();
         var reference = GenerateReference();
 
-        // Deduct from wallet
+        // Deduct from wallet first
         var (success, error, _) = await _walletService.DeductBalanceAsync(
             userId,
             totalDeduction,
-            $"Penarikan ke {bankInfo.ShortName} ***{request.AccountNumber[^4..]}",
+            $"Penarikan {currency} ke {MaskAddress(request.CryptoAddress)}",
             TransactionType.Withdrawal,
             withdrawalId,
-            "withdrawal"
-        );
+            "withdrawal");
 
         if (!success)
-        {
             return new CreateWithdrawalResponse(false, null, null, error ?? "Gagal memproses penarikan");
+
+        // Call OxaPay Payout API
+        OxaPayPayoutResponse oxaPayResponse;
+        try
+        {
+            var payoutRequest = new OxaPayPayoutRequest
+            {
+                Address = request.CryptoAddress,
+                Currency = currency,
+                Amount = netAmount,
+                Network = string.IsNullOrEmpty(request.Network) ? null : request.Network,
+                CallbackUrl = $"{_oxaPaySettings.CallbackBaseUrl.TrimEnd('/')}/api/v1/callbacks/oxapay/payout",
+                Memo = request.Memo,
+                Description = $"AIValid withdrawal {withdrawalId} user {userId}"
+            };
+
+            oxaPayResponse = await _oxaPayService.CreatePayoutAsync(payoutRequest);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "OxaPay payout failed for withdrawal {WithdrawalId}. Refunding wallet.", withdrawalId);
+
+            // Refund wallet on OxaPay failure
+            try
+            {
+                _ = await _walletService.AddBalanceAsync(
+                    userId,
+                    totalDeduction,
+                    $"Refund: gagal payout {reference}",
+                    TransactionType.Refund,
+                    withdrawalId,
+                    "withdrawal");
+            }
+            catch (Exception refundEx)
+            {
+                _logger.LogCritical(refundEx,
+                    "CRITICAL: Failed to refund after OxaPay payout failure. WithdrawalId: {WithdrawalId}, UserId: {UserId}, Amount: {Amount}",
+                    withdrawalId, userId, totalDeduction);
+            }
+
+            return new CreateWithdrawalResponse(false, null, null,
+                $"Gagal membuat payout crypto: {(ex is OxaPayException oxaEx ? oxaEx.Message : "Silakan coba lagi")}");
+        }
+
+        var trackId = oxaPayResponse.Data?.TrackId;
 
         var withdrawal = new Withdrawal
         {
@@ -142,13 +177,15 @@ public class WithdrawalService : IWithdrawalService
             UserId = userId,
             Username = username,
             Amount = request.Amount,
-            Fee = WithdrawalFee,
-            NetAmount = request.Amount, // Net amount to be sent to bank
-            BankCode = request.BankCode.ToUpperInvariant(),
-            BankName = bankInfo.Name,
-            AccountNumber = request.AccountNumber,
-            AccountName = request.AccountName,
-            Status = WithdrawalStatus.Pending,
+            Fee = fee,
+            NetAmount = netAmount,
+            CryptoAddress = request.CryptoAddress,
+            CryptoCurrency = currency,
+            CryptoNetwork = request.Network,
+            Memo = request.Memo,
+            TrackId = trackId,
+            OxaPayStatus = oxaPayResponse.Data?.Status,
+            Status = WithdrawalStatus.Processing,
             Reference = reference,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -158,71 +195,34 @@ public class WithdrawalService : IWithdrawalService
         {
             await _withdrawals.InsertOneAsync(withdrawal);
         }
-        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
-        {
-            // Likely violated "one active withdrawal per user" rule (partial unique index).
-            _logger.LogWarning(
-                ex,
-                "Duplicate active withdrawal detected for user {UserId}. Refunding deduction for withdrawal {WithdrawalId}",
-                userId,
-                withdrawalId);
-
-            try
-            {
-                _ = await _walletService.AddBalanceAsync(
-                    userId,
-                    totalDeduction,
-                    $"Refund: duplicate withdrawal request {reference}",
-                    TransactionType.Refund,
-                    withdrawalId,
-                    "withdrawal"
-                );
-            }
-            catch (Exception refundEx)
-            {
-                _logger.LogCritical(
-                    refundEx,
-                    "CRITICAL: Failed to refund after duplicate withdrawal insert failure. WithdrawalId: {WithdrawalId}, UserId: {UserId}, Amount: {Amount}",
-                    withdrawalId,
-                    userId,
-                    totalDeduction);
-            }
-
-            return new CreateWithdrawalResponse(false, null, null,
-                "Anda memiliki penarikan yang sedang diproses. Harap tunggu hingga selesai.");
-        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to insert withdrawal {WithdrawalId} after wallet deduction; attempting refund", withdrawalId);
+            _logger.LogError(ex, "Failed to insert withdrawal {WithdrawalId} after wallet deduction and OxaPay call", withdrawalId);
 
+            // Refund wallet
             try
             {
                 _ = await _walletService.AddBalanceAsync(
                     userId,
                     totalDeduction,
-                    $"Refund: gagal membuat penarikan {reference}",
+                    $"Refund: gagal menyimpan penarikan {reference}",
                     TransactionType.Refund,
                     withdrawalId,
-                    "withdrawal"
-                );
+                    "withdrawal");
             }
             catch (Exception refundEx)
             {
-                _logger.LogCritical(
-                    refundEx,
-                    "CRITICAL: Failed to refund after withdrawal insert failure. WithdrawalId: {WithdrawalId}, UserId: {UserId}, Amount: {Amount}",
-                    withdrawalId,
-                    userId,
-                    totalDeduction);
+                _logger.LogCritical(refundEx,
+                    "CRITICAL: Failed to refund after withdrawal insert failure. WithdrawalId: {WithdrawalId}",
+                    withdrawalId);
             }
 
             throw;
         }
 
         _logger.LogInformation(
-            "Withdrawal created: {WithdrawalId}, user: {UserId}, amount: {Amount}, bank: {Bank}",
-            withdrawal.Id, userId, request.Amount, bankInfo.ShortName
-        );
+            "Withdrawal created: {WithdrawalId} user {UserId} amount {Amount} IDR → {Currency} trackId {TrackId}",
+            withdrawal.Id, userId, request.Amount, currency, trackId);
 
         return new CreateWithdrawalResponse(true, withdrawal.Id, reference, null);
     }
@@ -236,8 +236,7 @@ public class WithdrawalService : IWithdrawalService
         {
             filter = Builders<Withdrawal>.Filter.And(
                 filter,
-                Builders<Withdrawal>.Filter.Eq(w => w.Status, status.Value)
-            );
+                Builders<Withdrawal>.Filter.Eq(w => w.Status, status.Value));
         }
 
         var withdrawals = await _withdrawals
@@ -250,7 +249,7 @@ public class WithdrawalService : IWithdrawalService
             w.Id,
             w.Amount,
             w.NetAmount,
-            SupportedBanks.GetValueOrDefault(w.BankCode).ShortName ?? w.BankCode,
+            w.CryptoCurrency,
             w.Status.ToString(),
             w.Reference,
             w.CreatedAt
@@ -275,8 +274,9 @@ public class WithdrawalService : IWithdrawalService
         if (withdrawal == null || withdrawal.UserId != userId)
             return (false, "Penarikan tidak ditemukan");
 
-        if (withdrawal.Status != WithdrawalStatus.Pending)
-            return (false, "Hanya penarikan dengan status pending yang bisa dibatalkan");
+        // Can only cancel if not yet processed by OxaPay
+        if (withdrawal.Status != WithdrawalStatus.Processing)
+            return (false, "Penarikan sudah selesai atau gagal dan tidak bisa dibatalkan");
 
         // Verify PIN
         var pinResult = await _walletService.VerifyPinAsync(userId, pin);
@@ -289,7 +289,7 @@ public class WithdrawalService : IWithdrawalService
         var updateFilter = Builders<Withdrawal>.Filter.And(
             Builders<Withdrawal>.Filter.Eq(w => w.Id, withdrawalId),
             Builders<Withdrawal>.Filter.Eq(w => w.UserId, userId),
-            Builders<Withdrawal>.Filter.Eq(w => w.Status, WithdrawalStatus.Pending));
+            Builders<Withdrawal>.Filter.Eq(w => w.Status, WithdrawalStatus.Processing));
 
         var statusUpdate = Builders<Withdrawal>.Update
             .Set(w => w.Status, WithdrawalStatus.Cancelled)
@@ -309,8 +309,7 @@ public class WithdrawalService : IWithdrawalService
                 $"Pembatalan penarikan {withdrawal.Reference}",
                 TransactionType.Refund,
                 withdrawalId,
-                "withdrawal"
-            );
+                "withdrawal");
         }
         catch (Exception ex)
         {
@@ -319,7 +318,7 @@ public class WithdrawalService : IWithdrawalService
             try
             {
                 var rollback = Builders<Withdrawal>.Update
-                    .Set(w => w.Status, WithdrawalStatus.Pending)
+                    .Set(w => w.Status, WithdrawalStatus.Processing)
                     .Set(w => w.UpdatedAt, DateTime.UtcNow);
 
                 await _withdrawals.UpdateOneAsync(
@@ -330,8 +329,7 @@ public class WithdrawalService : IWithdrawalService
             }
             catch (Exception rollbackEx)
             {
-                _logger.LogCritical(
-                    rollbackEx,
+                _logger.LogCritical(rollbackEx,
                     "CRITICAL: Failed to rollback withdrawal status after refund failure. WithdrawalId: {WithdrawalId}",
                     withdrawalId);
             }
@@ -340,110 +338,96 @@ public class WithdrawalService : IWithdrawalService
         }
 
         _logger.LogInformation("Withdrawal cancelled: {WithdrawalId} by user {UserId}", withdrawalId, userId);
-
         return (true, null);
     }
 
-    public Task<List<BankInfoDto>> GetSupportedBanksAsync()
+    public Task<List<CryptoCurrencyInfoDto>> GetSupportedCurrenciesAsync()
     {
-        var banks = SupportedBanks.Select(b => new BankInfoDto(
-            b.Key,
-            b.Value.Name,
-            b.Value.ShortName
-        )).ToList();
-
-        return Task.FromResult(banks);
+        return Task.FromResult(SupportedCurrencies);
     }
 
-    // ==================
-    // ADMIN FUNCTIONS
-    // ==================
-
-    public async Task<List<WithdrawalDto>> GetPendingWithdrawalsAsync(int limit = 50)
+    public async Task<(bool success, string? error)> HandlePayoutCallbackAsync(OxaPayCallbackPayload payload)
     {
-        var withdrawals = await _withdrawals
-            .Find(w => w.Status == WithdrawalStatus.Pending)
-            .SortBy(w => w.CreatedAt) // FIFO processing
-            .Limit(limit)
-            .ToListAsync();
+        if (string.IsNullOrEmpty(payload.TrackId))
+            return (false, "Missing trackId");
 
-        return withdrawals.Select(MapToDto).ToList();
-    }
-
-    public async Task<(bool success, string? error)> ProcessWithdrawalAsync(
-        string withdrawalId, uint adminId, string adminUsername, ProcessWithdrawalRequest request)
-    {
-        var withdrawal = await _withdrawals.Find(w => w.Id == withdrawalId).FirstOrDefaultAsync();
-        
+        var withdrawal = await _withdrawals.Find(w => w.TrackId == payload.TrackId).FirstOrDefaultAsync();
         if (withdrawal == null)
-            return (false, "Penarikan tidak ditemukan");
-
-        if (withdrawal.Status != WithdrawalStatus.Pending && withdrawal.Status != WithdrawalStatus.Processing)
-            return (false, "Penarikan tidak dalam status yang bisa diproses");
-
-        if (request.Approve)
         {
-            // Mark as completed
-            var update = Builders<Withdrawal>.Update
-                .Set(w => w.Status, WithdrawalStatus.Completed)
-                .Set(w => w.ProcessedById, adminId)
-                .Set(w => w.ProcessedByUsername, adminUsername)
-                .Set(w => w.ProcessedAt, DateTime.UtcNow)
-                .Set(w => w.UpdatedAt, DateTime.UtcNow);
-
-            await _withdrawals.UpdateOneAsync(w => w.Id == withdrawalId, update);
-
-            _logger.LogInformation(
-                "Withdrawal approved: {WithdrawalId} by admin {AdminId}",
-                withdrawalId, adminId
-            );
+            _logger.LogWarning("OxaPay payout callback: withdrawal not found for trackId={TrackId}", payload.TrackId);
+            return (false, "Withdrawal not found");
         }
-        else
+
+        // Idempotent: skip if already completed or failed
+        if (withdrawal.Status is WithdrawalStatus.Completed or WithdrawalStatus.Failed)
         {
-            if (string.IsNullOrWhiteSpace(request.RejectionReason))
-                return (false, "Alasan penolakan wajib diisi");
+            _logger.LogInformation("OxaPay payout callback: withdrawal {WithdrawalId} already {Status}, skipping",
+                withdrawal.Id, withdrawal.Status);
+            return (true, null);
+        }
 
-            // Refund full amount
-            var totalRefund = withdrawal.Amount + withdrawal.Fee;
-            _ = await _walletService.AddBalanceAsync(
-                withdrawal.UserId,
-                totalRefund,
-                $"Penolakan penarikan: {request.RejectionReason}",
-                TransactionType.Refund,
-                withdrawalId,
-                "withdrawal"
-            );
+        var callbackStatus = payload.Status?.ToLowerInvariant() ?? "";
+        _logger.LogInformation("OxaPay payout callback: withdrawal {WithdrawalId} status={Status} txId={TxId}",
+            withdrawal.Id, payload.Status, payload.TxId);
 
-            var update = Builders<Withdrawal>.Update
-                .Set(w => w.Status, WithdrawalStatus.Rejected)
-                .Set(w => w.RejectionReason, request.RejectionReason)
-                .Set(w => w.ProcessedById, adminId)
-                .Set(w => w.ProcessedByUsername, adminUsername)
-                .Set(w => w.ProcessedAt, DateTime.UtcNow)
-                .Set(w => w.UpdatedAt, DateTime.UtcNow);
+        switch (callbackStatus)
+        {
+            case "complete":
+            case "completed":
+                var completeUpdate = Builders<Withdrawal>.Update
+                    .Set(w => w.Status, WithdrawalStatus.Completed)
+                    .Set(w => w.OxaPayStatus, payload.Status)
+                    .Set(w => w.TxHash, payload.TxId)
+                    .Set(w => w.CryptoAmount, payload.Amount?.ToString("G"))
+                    .Set(w => w.CompletedAt, DateTime.UtcNow)
+                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
 
-            await _withdrawals.UpdateOneAsync(w => w.Id == withdrawalId, update);
+                await _withdrawals.UpdateOneAsync(w => w.Id == withdrawal.Id, completeUpdate);
+                _logger.LogInformation("Withdrawal completed: {WithdrawalId} txHash={TxHash}", withdrawal.Id, payload.TxId);
+                break;
 
-            _logger.LogInformation(
-                "Withdrawal rejected: {WithdrawalId} by admin {AdminId}, reason: {Reason}",
-                withdrawalId, adminId, request.RejectionReason
-            );
+            case "failed":
+            case "rejected":
+                // Refund wallet
+                var totalRefund = withdrawal.Amount + withdrawal.Fee;
+                try
+                {
+                    _ = await _walletService.AddBalanceAsync(
+                        withdrawal.UserId,
+                        totalRefund,
+                        $"Refund payout gagal: {withdrawal.Reference}",
+                        TransactionType.Refund,
+                        withdrawal.Id,
+                        "withdrawal");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogCritical(ex,
+                        "CRITICAL: Failed to refund after payout failure. WithdrawalId: {WithdrawalId}, UserId: {UserId}, Amount: {Amount}",
+                        withdrawal.Id, withdrawal.UserId, totalRefund);
+                }
+
+                var failUpdate = Builders<Withdrawal>.Update
+                    .Set(w => w.Status, WithdrawalStatus.Failed)
+                    .Set(w => w.OxaPayStatus, payload.Status)
+                    .Set(w => w.FailureReason, $"OxaPay payout {callbackStatus}")
+                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
+
+                await _withdrawals.UpdateOneAsync(w => w.Id == withdrawal.Id, failUpdate);
+                _logger.LogWarning("Withdrawal failed: {WithdrawalId}, refunded user {UserId}", withdrawal.Id, withdrawal.UserId);
+                break;
+
+            default:
+                // Update OxaPay status for tracking
+                var statusUpdate = Builders<Withdrawal>.Update
+                    .Set(w => w.OxaPayStatus, payload.Status)
+                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
+
+                await _withdrawals.UpdateOneAsync(w => w.Id == withdrawal.Id, statusUpdate);
+                break;
         }
 
         return (true, null);
-    }
-
-    public async Task<WithdrawalStatsDto> GetWithdrawalStatsAsync()
-    {
-        var all = await _withdrawals.Find(_ => true).ToListAsync();
-
-        return new WithdrawalStatsDto(
-            all.Count,
-            all.Sum(w => w.Amount),
-            all.Count(w => w.Status == WithdrawalStatus.Pending),
-            all.Count(w => w.Status == WithdrawalStatus.Completed),
-            all.Count(w => w.Status == WithdrawalStatus.Rejected)
-        );
     }
 
     // ==================
@@ -452,19 +436,20 @@ public class WithdrawalService : IWithdrawalService
 
     private static string GenerateReference()
     {
-        // Format: WD + YYMMDD + 6 random chars
         var date = DateTime.UtcNow.ToString("yyMMdd");
         var random = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
         return $"WD{date}{random}";
     }
 
+    private static string MaskAddress(string address)
+    {
+        if (string.IsNullOrEmpty(address) || address.Length <= 10)
+            return "***";
+        return address[..6] + "..." + address[^4..];
+    }
+
     private static WithdrawalDto MapToDto(Withdrawal w)
     {
-        // Mask account number (show only last 4 digits)
-        var maskedAccount = w.AccountNumber.Length > 4
-            ? new string('*', w.AccountNumber.Length - 4) + w.AccountNumber[^4..]
-            : w.AccountNumber;
-
         return new WithdrawalDto(
             w.Id,
             w.UserId,
@@ -472,15 +457,17 @@ public class WithdrawalService : IWithdrawalService
             w.Amount,
             w.Fee,
             w.NetAmount,
-            w.BankCode,
-            SupportedBanks.GetValueOrDefault(w.BankCode).Name ?? w.BankName,
-            maskedAccount,
-            w.AccountName,
+            w.CryptoAddress,
+            w.CryptoCurrency,
+            w.CryptoNetwork,
+            w.CryptoAmount,
+            w.TrackId,
+            w.TxHash,
             w.Status.ToString(),
             w.Reference,
-            w.RejectionReason,
+            w.FailureReason,
             w.CreatedAt,
-            w.ProcessedAt
+            w.CompletedAt
         );
     }
 }

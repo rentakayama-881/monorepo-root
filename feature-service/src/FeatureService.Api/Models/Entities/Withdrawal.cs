@@ -4,7 +4,8 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace FeatureService.Api.Models.Entities;
 
 /// <summary>
-/// Withdrawal request for cashing out wallet balance to bank account
+/// Crypto withdrawal request via OxaPay payout.
+/// Flow: user requests → wallet deducted → OxaPay payout → callback confirms.
 /// </summary>
 public class Withdrawal
 {
@@ -18,26 +19,71 @@ public class Withdrawal
     [BsonElement("username")]
     public string Username { get; set; } = null!;
 
+    /// <summary>
+    /// Withdrawal amount in IDR (what user withdraws from wallet, before fee).
+    /// </summary>
     [BsonElement("amount")]
     public long Amount { get; set; }
 
+    /// <summary>
+    /// Platform fee in IDR (2% of amount).
+    /// </summary>
     [BsonElement("fee")]
     public long Fee { get; set; }
 
+    /// <summary>
+    /// Net amount in IDR after fee deduction (amount - fee). This is converted to crypto.
+    /// </summary>
     [BsonElement("netAmount")]
     public long NetAmount { get; set; }
 
-    [BsonElement("bankCode")]
-    public string BankCode { get; set; } = null!;
+    /// <summary>
+    /// Recipient's crypto wallet address.
+    /// </summary>
+    [BsonElement("cryptoAddress")]
+    public string CryptoAddress { get; set; } = null!;
 
-    [BsonElement("bankName")]
-    public string BankName { get; set; } = null!;
+    /// <summary>
+    /// Cryptocurrency symbol (e.g., "USDT", "TON").
+    /// </summary>
+    [BsonElement("cryptoCurrency")]
+    public string CryptoCurrency { get; set; } = null!;
 
-    [BsonElement("accountNumber")]
-    public string AccountNumber { get; set; } = null!;
+    /// <summary>
+    /// Blockchain network (e.g., "TRC20", "TON Network").
+    /// </summary>
+    [BsonElement("cryptoNetwork")]
+    public string? CryptoNetwork { get; set; }
 
-    [BsonElement("accountName")]
-    public string AccountName { get; set; } = null!;
+    /// <summary>
+    /// Amount in crypto sent via payout (as string for decimal precision).
+    /// </summary>
+    [BsonElement("cryptoAmount")]
+    public string? CryptoAmount { get; set; }
+
+    /// <summary>
+    /// Optional memo/tag for networks that require it (e.g., TON).
+    /// </summary>
+    [BsonElement("memo")]
+    public string? Memo { get; set; }
+
+    /// <summary>
+    /// OxaPay track_id for this payout.
+    /// </summary>
+    [BsonElement("trackId")]
+    public string? TrackId { get; set; }
+
+    /// <summary>
+    /// OxaPay payout status from callbacks.
+    /// </summary>
+    [BsonElement("oxaPayStatus")]
+    public string? OxaPayStatus { get; set; }
+
+    /// <summary>
+    /// Blockchain transaction hash (set on completion).
+    /// </summary>
+    [BsonElement("txHash")]
+    public string? TxHash { get; set; }
 
     [BsonElement("status")]
     public WithdrawalStatus Status { get; set; }
@@ -45,14 +91,8 @@ public class Withdrawal
     [BsonElement("reference")]
     public string Reference { get; set; } = null!;
 
-    [BsonElement("rejectionReason")]
-    public string? RejectionReason { get; set; }
-
-    [BsonElement("processedById")]
-    public uint? ProcessedById { get; set; }
-
-    [BsonElement("processedByUsername")]
-    public string? ProcessedByUsername { get; set; }
+    [BsonElement("failureReason")]
+    public string? FailureReason { get; set; }
 
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; }
@@ -60,15 +100,14 @@ public class Withdrawal
     [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; }
 
-    [BsonElement("processedAt")]
-    public DateTime? ProcessedAt { get; set; }
+    [BsonElement("completedAt")]
+    public DateTime? CompletedAt { get; set; }
 }
 
 public enum WithdrawalStatus
 {
-    Pending,    // Waiting for admin review
-    Processing, // Admin is processing
-    Completed,  // Successfully transferred to bank
-    Rejected,   // Rejected by admin
-    Cancelled   // Cancelled by user
+    Processing,  // Payout submitted to OxaPay
+    Completed,   // Successfully sent to crypto address
+    Failed,      // Payout failed, wallet refunded
+    Cancelled    // Cancelled by user (before payout)
 }

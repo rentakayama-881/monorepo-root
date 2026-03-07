@@ -28,11 +28,11 @@ public class DepositsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Create a manual deposit request (QRIS only)
+    /// Create a crypto deposit request via OxaPay white-label payment
     /// </summary>
     [HttpPost]
     [RequiresPqcSignature(RequireIdempotencyKey = true)]
-    [ProducesResponseType(typeof(ApiResponse<DepositRequestResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<CreateDepositResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateDepositRequest([FromBody] CreateDepositRequest request)
     {
@@ -43,14 +43,13 @@ public class DepositsController : ApiControllerBase
         if (user == null)
             return ApiUnauthorized("UNAUTHORIZED", "User tidak terautentikasi");
 
-        // CRITICAL: Require 2FA for all financial operations (match transfers/withdrawals behavior)
         var twoFactorCheck = RequiresTwoFactorAuth();
         if (twoFactorCheck != null) return twoFactorCheck;
 
         try
         {
             var result = await _depositService.CreateRequestAsync(user.UserId, user.Username ?? "", request);
-            return ApiCreated(result, "Deposit request created");
+            return ApiCreated(result, "Deposit crypto berhasil dibuat");
         }
         catch (ArgumentException ex)
         {
@@ -58,12 +57,39 @@ public class DepositsController : ApiControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return ApiBadRequest("DEPOSIT_UNAVAILABLE", ex.Message);
+            return ApiBadRequest("DEPOSIT_FAILED", ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating deposit request for user {UserId}", user.UserId);
-            return ApiError(500, "INTERNAL_ERROR", "Gagal membuat request deposit");
+            return ApiError(500, "INTERNAL_ERROR", "Gagal membuat deposit");
+        }
+    }
+
+    /// <summary>
+    /// Get deposit status for polling (used by frontend to track payment progress)
+    /// </summary>
+    [HttpGet("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<DepositStatusResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDepositStatus(string id)
+    {
+        var user = _userContext.GetCurrentUser();
+        if (user == null)
+            return ApiUnauthorized("UNAUTHORIZED", "User tidak terautentikasi");
+
+        try
+        {
+            var result = await _depositService.GetDepositStatusAsync(id, user.UserId);
+            if (result == null)
+                return ApiNotFound("DEPOSIT_NOT_FOUND", "Deposit tidak ditemukan");
+
+            return ApiOk(result, "Status deposit");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting deposit status {DepositId} for user {UserId}", id, user.UserId);
+            return ApiError(500, "INTERNAL_ERROR", "Gagal memuat status deposit");
         }
     }
 
@@ -81,7 +107,7 @@ public class DepositsController : ApiControllerBase
         try
         {
             var result = await _depositService.GetUserDepositsAsync(user.UserId, limit);
-            return ApiOk(result, "Deposit history");
+            return ApiOk(result, "Riwayat deposit");
         }
         catch (Exception ex)
         {

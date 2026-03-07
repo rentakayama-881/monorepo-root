@@ -152,17 +152,27 @@ public class MongoDbContext
         try
         {
             DepositRequests.Indexes.CreateOne(new CreateIndexModel<DepositRequest>(
-                Builders<DepositRequest>.IndexKeys.Ascending(d => d.ExternalTransactionId),
+                Builders<DepositRequest>.IndexKeys.Ascending(d => d.TrackId),
                 new CreateIndexOptions
                 {
-                    Unique = true,
-                    Name = "externalTransactionId_1"
+                    Name = "trackId_1",
+                    Sparse = true
                 }
             ));
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to create unique index for deposit externalTransactionId");
+            _logger.LogWarning(ex, "Failed to create index for deposit trackId");
+        }
+
+        // Drop legacy externalTransactionId index if it exists
+        try
+        {
+            DepositRequests.Indexes.DropOne("externalTransactionId_1");
+        }
+        catch
+        {
+            // Index may not exist — safe to ignore
         }
 
         // Transfer indexes
@@ -261,6 +271,22 @@ public class MongoDbContext
                 .Ascending(w => w.Status)
                 .Ascending(w => w.CreatedAt))
         });
+
+        try
+        {
+            Withdrawals.Indexes.CreateOne(new CreateIndexModel<Withdrawal>(
+                Builders<Withdrawal>.IndexKeys.Ascending(w => w.TrackId),
+                new CreateIndexOptions
+                {
+                    Name = "trackId_1",
+                    Sparse = true
+                }
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create index for withdrawal trackId");
+        }
 
         // Market purchase reservation indexes
         MarketPurchaseReservations.Indexes.CreateMany(new[]
