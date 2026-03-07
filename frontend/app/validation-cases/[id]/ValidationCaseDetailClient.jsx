@@ -945,8 +945,15 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
 
   if (!id || id === "undefined") return null;
 
+  const loadingCaseMatchesRoute = String(vc?.id || "") === String(id || "");
+  const loadingVariant = loadingCaseMatchesRoute
+    ? isWorkspaceValidationCase(vc?.meta)
+      ? "workspace"
+      : "standard"
+    : "generic";
+
   if (loading) {
-    return <ValidationCaseRecordSkeleton />;
+    return <ValidationCaseRecordSkeleton variant={loadingVariant} />;
   }
 
   const status = normalizeStatus(vc?.status);

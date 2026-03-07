@@ -1,0 +1,42 @@
+import { isWorkspaceValidationCase } from "@/lib/validationCaseWorkflow";
+
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.aivalid.id").replace(
+  /\/+$/,
+  ""
+);
+
+export function unwrapValidationCase(data) {
+  return data?.validation_case || data || null;
+}
+
+export function resolveValidationCaseSkeletonVariant(data) {
+  const validationCase = unwrapValidationCase(data);
+  if (!validationCase) return "generic";
+  return isWorkspaceValidationCase(validationCase?.meta) ? "workspace" : "standard";
+}
+
+export function resolveValidationCaseIdFromPathname(pathname) {
+  const match = String(pathname || "").match(/^\/validation-cases\/([^/?#]+)/);
+  if (!match?.[1]) return "";
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+export async function fetchCasePublic(id) {
+  if (!id) return null;
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/validation-cases/${encodeURIComponent(String(id))}/public`,
+      {
+        next: { revalidate: 60 },
+      }
+    );
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}

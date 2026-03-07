@@ -9,6 +9,7 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   testEnvironment: "jest-environment-jsdom",
+  testMatch: ["<rootDir>/**/?(*.)+(test|spec).[jt]s?(x)"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },
@@ -16,7 +17,6 @@ const customJestConfig = {
     "<rootDir>/node_modules/",
     "<rootDir>/.next/",
     "<rootDir>/e2e/", // E2E tests are run with Playwright
-    "<rootDir>/lib/__tests__/test-utils.js",
   ],
   collectCoverageFrom: [
     "lib/**/*.{js,jsx,ts,tsx}",

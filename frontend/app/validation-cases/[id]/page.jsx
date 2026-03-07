@@ -1,24 +1,11 @@
 import ValidationCaseDetailClient from "./ValidationCaseDetailClient";
+import { fetchCasePublic, unwrapValidationCase } from "./casePublicData";
 import { generateValidationCaseStructuredData } from "@/lib/seo";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.aivalid.id";
-
-async function fetchCasePublic(id) {
-  try {
-    const res = await fetch(`${API_BASE}/api/validation-cases/${id}/public`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
   const data = await fetchCasePublic(id);
-  const vc = data?.validation_case || data;
+  const vc = unwrapValidationCase(data);
 
   if (!vc?.title) {
     return {
@@ -49,7 +36,7 @@ export async function generateMetadata({ params }) {
 export default async function ValidationCaseDetailPage({ params }) {
   const { id } = await params;
   const data = await fetchCasePublic(id);
-  const vc = data?.validation_case || data;
+  const vc = unwrapValidationCase(data);
 
   const jsonLd = vc?.title ? generateValidationCaseStructuredData(vc) : null;
 

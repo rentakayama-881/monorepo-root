@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import MarkdownPreview from "@/components/ui/MarkdownPreview";
-import Skeleton, { SkeletonText } from "@/components/ui/Skeleton";
+import Skeleton from "@/components/ui/Skeleton";
 import Spinner from "@/components/ui/Spinner";
 import NativeSelect from "@/components/ui/NativeSelect";
 import { fetchJsonAuth } from "@/lib/api";
@@ -13,6 +13,7 @@ import { FEATURE_ENDPOINTS, getFeatureApiBase } from "@/lib/featureApi";
 import { useUploadDocument } from "@/lib/useDocuments";
 import { formatIDR, formatDateTime } from "@/lib/format";
 import { formatRepoFileKindLabel, formatRepoFileVisibilityLabel } from "@/lib/repoFileLabels";
+import WorkspaceWorkflowSkeleton from "../WorkspaceWorkflowSkeleton";
 
 function normalizeErr(err, fallback) {
   const message = String(err?.message || fallback || "Terjadi kesalahan").trim();
@@ -40,14 +41,19 @@ function parseFilenameFromContentDisposition(contentDisposition) {
 function fallbackDownloadFileName(file) {
   const label = String(file?.label || "").trim();
   const documentId = String(file?.document_id || "").trim();
-  const safeLabel = label.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim();
+  const safeLabel = label
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
   if (safeLabel) return safeLabel;
   if (documentId) return `workspace-file-${documentId}`;
   return "workspace-file";
 }
 
 function fileExtensionFromName(name) {
-  const value = String(name || "").trim().toLowerCase();
+  const value = String(name || "")
+    .trim()
+    .toLowerCase();
   if (!value) return "";
   const idx = value.lastIndexOf(".");
   if (idx <= 0 || idx >= value.length - 1) return "";
@@ -122,7 +128,13 @@ function DownloadIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
       <path d="M12 3v11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="m8 11 4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="m8 11 4 4 4-4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       <path d="M4 19h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
@@ -130,68 +142,30 @@ function DownloadIcon() {
 
 function ConfidenceIcon({ active = false }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={`h-4 w-4 ${active ? "text-emerald-600" : "text-muted-foreground"}`} aria-hidden="true">
-      <path d="m12 3 7 3v5c0 4.3-2.6 8.4-7 10-4.4-1.6-7-5.7-7-10V6l7-3Z" stroke="currentColor" strokeWidth="1.7" />
-      <path d="m9.2 12 1.9 1.9 3.7-3.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={`h-4 w-4 ${active ? "text-emerald-600" : "text-muted-foreground"}`}
+      aria-hidden="true"
+    >
+      <path
+        d="m12 3 7 3v5c0 4.3-2.6 8.4-7 10-4.4-1.6-7-5.7-7-10V6l7-3Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="m9.2 12 1.9 1.9 3.7-3.7"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
 function RepoWorkspaceSkeleton({ embedded = false, caseTitle = "" }) {
-  const skeletonContent = (
-    <div className="space-y-7" aria-busy="true" aria-live="polite">
-      <section className="space-y-4">
-        <SkeletonText width="w-40" height="h-3.5" />
-        <div className="rounded-2xl bg-secondary/20 px-4 py-4">
-          <div className="mb-3 hidden gap-3 pb-3 md:grid md:grid-cols-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={`repo-head-${i}`} className="h-4 w-20" />
-            ))}
-          </div>
-          <div className="space-y-3">
-            {Array.from({ length: 7 }).map((_, row) => (
-              <div key={`repo-row-${row}`} className="rounded-xl bg-card/60 p-3 md:rounded-none md:bg-transparent md:p-0">
-                <div className="space-y-2 md:hidden">
-                  <Skeleton className="h-4 w-28" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-4/5" />
-                  <Skeleton className="h-4 w-3/5" />
-                </div>
-                <div className="hidden gap-3 md:grid md:grid-cols-6">
-                  {Array.from({ length: 6 }).map((__, col) => (
-                    <Skeleton key={`repo-cell-${row}-${col}`} className="h-4 w-full" />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <SkeletonText width="w-36" height="h-3.5" />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-2 rounded-2xl bg-secondary/20 px-4 py-4">
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-4/5" />
-          </div>
-          <div className="space-y-2 rounded-2xl bg-secondary/20 px-4 py-4">
-            <Skeleton className="h-4 w-36" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <SkeletonText width="w-24" height="h-3.5" />
-        <Skeleton className="h-5 w-full rounded-lg" />
-        <Skeleton className="h-5 w-4/5 rounded-lg" />
-        <Skeleton className="h-5 w-3/5 rounded-lg" />
-      </section>
-    </div>
-  );
+  const skeletonContent = <WorkspaceWorkflowSkeleton />;
 
   if (embedded) {
     return <section className="min-h-[62vh] py-1">{skeletonContent}</section>;
@@ -206,7 +180,11 @@ function RepoWorkspaceSkeleton({ embedded = false, caseTitle = "" }) {
         <span>/</span>
         <Skeleton className="h-4 w-12" />
       </nav>
-      {caseTitle ? <h1 className="text-2xl font-semibold text-foreground">{caseTitle}</h1> : <Skeleton className="h-8 w-72" />}
+      {caseTitle ? (
+        <h1 className="text-2xl font-semibold text-foreground">{caseTitle}</h1>
+      ) : (
+        <Skeleton className="h-8 w-72" />
+      )}
       {skeletonContent}
     </main>
   );
@@ -242,7 +220,11 @@ export default function RepoWorkflowClient({
   const [assigningValidatorID, setAssigningValidatorID] = useState("");
   const [votingValidatorID, setVotingValidatorID] = useState("");
 
-  const { uploadDocument, loading: uploadingDocument, progress: uploadProgress } = useUploadDocument();
+  const {
+    uploadDocument,
+    loading: uploadingDocument,
+    progress: uploadProgress,
+  } = useUploadDocument();
 
   const isAuthed = useMemo(() => {
     try {
@@ -257,7 +239,9 @@ export default function RepoWorkflowClient({
   const files = Array.isArray(repoTree?.files) ? repoTree.files : [];
   const applicants = Array.isArray(repoTree?.applicants) ? repoTree.applicants : [];
   const assignments = Array.isArray(repoTree?.assignments) ? repoTree.assignments : [];
-  const confidenceScores = Array.isArray(repoTree?.confidence_scores) ? repoTree.confidence_scores : [];
+  const confidenceScores = Array.isArray(repoTree?.confidence_scores)
+    ? repoTree.confidence_scores
+    : [];
 
   const confidenceByValidator = useMemo(() => {
     const out = new Map();
@@ -331,10 +315,16 @@ export default function RepoWorkflowClient({
     };
 
     try {
-      return await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/workspace/${path}`, options);
+      return await fetchJsonAuth(
+        `/api/validation-cases/${encodeURIComponent(id)}/workspace/${path}`,
+        options
+      );
     } catch (err) {
       if (err?.status === 404) {
-        return fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/${legacyWorkspacePath(path)}`, options);
+        return fetchJsonAuth(
+          `/api/validation-cases/${encodeURIComponent(id)}/${legacyWorkspacePath(path)}`,
+          options
+        );
       }
       throw err;
     }
@@ -391,7 +381,8 @@ export default function RepoWorkflowClient({
       return {
         ...prev,
         kind: nextKind,
-        visibility: !isOwner || nextKind === "sensitive_context" ? "assigned_validators" : prev.visibility,
+        visibility:
+          !isOwner || nextKind === "sensitive_context" ? "assigned_validators" : prev.visibility,
       };
     });
   }, [attachKindOptions, canAttach, isOwner]);
@@ -399,7 +390,7 @@ export default function RepoWorkflowClient({
   async function runAction(
     fn,
     successMsg = "Repo case berhasil diperbarui.",
-    options = { lockUI: true, fallbackReload: false },
+    options = { lockUI: true, fallbackReload: false }
   ) {
     const lockUI = options?.lockUI !== false;
     const fallbackReload = options?.fallbackReload === true;
@@ -509,14 +500,17 @@ export default function RepoWorkflowClient({
           detail = "";
         }
         if (res.status === 403) {
-          throw new Error("Akses file ditolak. Pastikan owner sudah memberi akses sesuai sensitivity.");
+          throw new Error(
+            "Akses file ditolak. Pastikan owner sudah memberi akses sesuai sensitivity."
+          );
         }
         throw new Error(detail || `Gagal membuka file (status ${res.status}).`);
       }
 
       const blob = await res.blob();
       const contentDisposition = res.headers.get("content-disposition");
-      const filename = parseFilenameFromContentDisposition(contentDisposition) || fallbackDownloadFileName(file);
+      const filename =
+        parseFilenameFromContentDisposition(contentDisposition) || fallbackDownloadFileName(file);
 
       if (download) {
         const objectURL = window.URL.createObjectURL(blob);
@@ -536,12 +530,11 @@ export default function RepoWorkflowClient({
         .split(";")[0]
         .trim()
         .toLowerCase();
-      const inferredType = !contentType || contentType === "application/octet-stream"
-        ? inferMimeTypeFromFilename(filename)
-        : "";
-      const previewBlob = inferredType
-        ? blob.slice(0, blob.size, inferredType)
-        : blob;
+      const inferredType =
+        !contentType || contentType === "application/octet-stream"
+          ? inferMimeTypeFromFilename(filename)
+          : "";
+      const previewBlob = inferredType ? blob.slice(0, blob.size, inferredType) : blob;
       const objectURL = window.URL.createObjectURL(previewBlob);
 
       const win = window.open(objectURL, "_blank", "noopener,noreferrer");
@@ -580,11 +573,15 @@ export default function RepoWorkflowClient({
 
   async function onVoteConfidence(validatorUserID) {
     setVotingValidatorID(String(validatorUserID));
-    await runAction(async () => {
-      return postWorkspace("confidence/vote", {
-        validator_user_id: Number(validatorUserID),
-      });
-    }, "Vote confidence berhasil disimpan.", { lockUI: false, fallbackReload: false });
+    await runAction(
+      async () => {
+        return postWorkspace("confidence/vote", {
+          validator_user_id: Number(validatorUserID),
+        });
+      },
+      "Vote confidence berhasil disimpan.",
+      { lockUI: false, fallbackReload: false }
+    );
     setVotingValidatorID("");
   }
 
@@ -601,12 +598,20 @@ export default function RepoWorkflowClient({
   const content = (
     <div className="space-y-7">
       {error ? (
-        <div role="alert" aria-live="polite" className="rounded-[var(--radius)] bg-red-50 px-4 py-3 text-sm text-red-900">
+        <div
+          role="alert"
+          aria-live="polite"
+          className="rounded-[var(--radius)] bg-red-50 px-4 py-3 text-sm text-red-900"
+        >
           {error}
         </div>
       ) : null}
       {msg ? (
-        <div role="status" aria-live="polite" className="rounded-[var(--radius)] bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <div
+          role="status"
+          aria-live="polite"
+          className="rounded-[var(--radius)] bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+        >
           {msg}
         </div>
       ) : null}
@@ -634,10 +639,15 @@ export default function RepoWorkflowClient({
                   const processing = downloadingDocumentID === documentId;
                   const uploadedBy = Number(file?.uploaded_by || 0);
                   const normalizedOwnerUserId = Number(ownerUserId || 0);
-                  const isOwnerUpload = normalizedOwnerUserId > 0 && uploadedBy > 0 && uploadedBy === normalizedOwnerUserId;
+                  const isOwnerUpload =
+                    normalizedOwnerUserId > 0 &&
+                    uploadedBy > 0 &&
+                    uploadedBy === normalizedOwnerUserId;
                   return (
                     <tr key={file.id}>
-                      <td className="py-2 pr-3 text-xs font-semibold text-foreground">{formatRepoFileKindLabel(file.kind)}</td>
+                      <td className="py-2 pr-3 text-xs font-semibold text-foreground">
+                        {formatRepoFileKindLabel(file.kind)}
+                      </td>
                       <td className="py-2 pr-3">
                         <button
                           type="button"
@@ -649,13 +659,23 @@ export default function RepoWorkflowClient({
                         </button>
                       </td>
                       <td className="py-2 pr-3 text-foreground">
-                        {isOwnerUpload ? "Owner case" : file.uploaded_by_user?.username ? `@${file.uploaded_by_user.username}` : `#${file.uploaded_by || "-"}`}
+                        {isOwnerUpload
+                          ? "Owner case"
+                          : file.uploaded_by_user?.username
+                            ? `@${file.uploaded_by_user.username}`
+                            : `#${file.uploaded_by || "-"}`}
                       </td>
-                      <td className="py-2 pr-3 text-muted-foreground">{formatRepoFileVisibilityLabel(file.visibility)}</td>
-                      <td className="py-2 pr-3 text-muted-foreground">{formatDateTime(file.uploaded_at)}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">
+                        {formatRepoFileVisibilityLabel(file.visibility)}
+                      </td>
+                      <td className="py-2 pr-3 text-muted-foreground">
+                        {formatDateTime(file.uploaded_at)}
+                      </td>
                       <td className="py-2 pr-3">
                         <div className="flex items-center gap-2">
-                          {processing ? <span className="text-xs text-muted-foreground">Opening...</span> : null}
+                          {processing ? (
+                            <span className="text-xs text-muted-foreground">Opening...</span>
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => openWorkspaceFile(file, { download: true })}
@@ -680,7 +700,9 @@ export default function RepoWorkflowClient({
             <input
               key={attachFileInputKey}
               type="file"
-              onChange={(e) => setAttachForm((prev) => ({ ...prev, file: e.target.files?.[0] || null }))}
+              onChange={(e) =>
+                setAttachForm((prev) => ({ ...prev, file: e.target.files?.[0] || null }))
+              }
               className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm"
               required
               disabled={actionLocked}
@@ -701,7 +723,8 @@ export default function RepoWorkflowClient({
                   return {
                     ...prev,
                     kind: nextKind,
-                    visibility: nextKind === "sensitive_context" ? "assigned_validators" : prev.visibility,
+                    visibility:
+                      nextKind === "sensitive_context" ? "assigned_validators" : prev.visibility,
                   };
                 })
               }
@@ -724,7 +747,9 @@ export default function RepoWorkflowClient({
               disabled={actionLocked || attachForm.kind === "sensitive_context" || !isOwner}
             />
             {uploadingDocument ? (
-              <div className="text-xs text-muted-foreground md:col-span-2">Uploading file... {uploadProgress}%</div>
+              <div className="text-xs text-muted-foreground md:col-span-2">
+                Uploading file... {uploadProgress}%
+              </div>
             ) : null}
             <button
               type="submit"
@@ -784,7 +809,9 @@ export default function RepoWorkflowClient({
               <ul className="mt-2 space-y-1.5 text-sm">
                 {applicants.map((it) => (
                   <li key={`app-${it.id}`} className="flex items-center justify-between gap-2">
-                    <span className="text-foreground">#{it.id} {it.username ? `@${it.username}` : ""}</span>
+                    <span className="text-foreground">
+                      #{it.id} {it.username ? `@${it.username}` : ""}
+                    </span>
                     {isOwner ? (
                       <button
                         type="button"
@@ -804,7 +831,9 @@ export default function RepoWorkflowClient({
           <div>
             <div className="text-sm font-semibold text-foreground">Assigned Validators</div>
             {assignments.length === 0 ? (
-              <div className="mt-2 text-sm text-muted-foreground">Belum ada validator yang diassign.</div>
+              <div className="mt-2 text-sm text-muted-foreground">
+                Belum ada validator yang diassign.
+              </div>
             ) : (
               <ul className="mt-2 space-y-2 text-sm">
                 {assignments.map((item) => {
@@ -813,12 +842,18 @@ export default function RepoWorkflowClient({
                   const votes = Number(score?.votes || 0);
                   const viewerVoted = Boolean(score?.viewer_voted);
                   const hasOutput = Boolean(score?.has_uploaded_output);
-                  const isSelfTarget = viewerUserId > 0 && validatorId > 0 && Number(viewerUserId) === validatorId;
+                  const isSelfTarget =
+                    viewerUserId > 0 && validatorId > 0 && Number(viewerUserId) === validatorId;
                   return (
                     <li key={`as-${validatorId}`} className="py-1">
                       <div className="flex items-center justify-between gap-2">
-                        <div className="text-foreground">#{validatorId} {item?.validator?.username ? `@${item.validator.username}` : ""}</div>
-                        <div className="text-xs text-muted-foreground">{formatDateTime(item?.assigned_at)}</div>
+                        <div className="text-foreground">
+                          #{validatorId}{" "}
+                          {item?.validator?.username ? `@${item.validator.username}` : ""}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatDateTime(item?.assigned_at)}
+                        </div>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <span>status: {item?.status || "-"}</span>
@@ -857,10 +892,18 @@ export default function RepoWorkflowClient({
         <section className="space-y-2">
           <h2 className="text-lg font-semibold text-foreground">Finalisasi Case</h2>
           <div className="text-sm text-muted-foreground">
-            Finalisasi membutuhkan minimal <span className="font-semibold text-foreground">{repoTree?.minimum_validator_uploads || 3}</span> validator upload hasil.
+            Finalisasi membutuhkan minimal{" "}
+            <span className="font-semibold text-foreground">
+              {repoTree?.minimum_validator_uploads || 3}
+            </span>{" "}
+            validator upload hasil.
           </div>
           <div className="text-sm text-muted-foreground">
-            Progress saat ini: <span className="font-semibold text-foreground">{repoTree?.uploaded_validator_count || 0}</span> validator upload.
+            Progress saat ini:{" "}
+            <span className="font-semibold text-foreground">
+              {repoTree?.uploaded_validator_count || 0}
+            </span>{" "}
+            validator upload.
           </div>
           <button
             type="button"
@@ -876,7 +919,9 @@ export default function RepoWorkflowClient({
       {payout ? (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Payout Result</h2>
-          <div className="text-sm text-muted-foreground">Total bounty: {formatIDR(payout?.bounty_amount || 0)}</div>
+          <div className="text-sm text-muted-foreground">
+            Total bounty: {formatIDR(payout?.bounty_amount || 0)}
+          </div>
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
               <thead>
@@ -891,7 +936,9 @@ export default function RepoWorkflowClient({
                   <tr key={`pay-${entry.validator_user_id}`}>
                     <td className="py-2 pr-3 text-foreground">#{entry.validator_user_id}</td>
                     <td className="py-2 pr-3 text-foreground">{entry.confidence_votes || 0}</td>
-                    <td className="py-2 pr-3 font-semibold text-foreground">{formatIDR(entry.amount || 0)}</td>
+                    <td className="py-2 pr-3 font-semibold text-foreground">
+                      {formatIDR(entry.amount || 0)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -926,7 +973,11 @@ export default function RepoWorkflowClient({
           Validation Case Index
         </Link>
         <span>/</span>
-        <Link href={`/validation-cases/${encodeURIComponent(id)}`} className="hover:underline" prefetch={false}>
+        <Link
+          href={`/validation-cases/${encodeURIComponent(id)}`}
+          className="hover:underline"
+          prefetch={false}
+        >
           Case #{id}
         </Link>
         <span>/</span>
