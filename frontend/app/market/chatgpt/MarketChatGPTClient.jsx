@@ -129,7 +129,7 @@ export default function MarketChatGPTClient() {
     }
   }
 
-  const cachedBadge = response?.cached ? "cache" : "langsung";
+  const cachedBadge = response?.cached ? "cache" : "Live";
   const staleBadge = response?.stale ? "sementara" : "";
 
   return (
@@ -140,7 +140,17 @@ export default function MarketChatGPTClient() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-xl font-semibold text-foreground">Akun ChatGPT</h1>
-          <TinyBadge label={cachedBadge} />
+          {cachedBadge === "Live" ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
+              <span
+                className="inline-block h-1.5 w-1.5 rounded-full bg-success animate-pulse"
+                aria-hidden="true"
+              />
+              Live
+            </span>
+          ) : (
+            <TinyBadge label={cachedBadge} />
+          )}
           {staleBadge ? <TinyBadge label={staleBadge} tone="warning" /> : null}
         </div>
         <p className="text-xs text-muted-foreground">
