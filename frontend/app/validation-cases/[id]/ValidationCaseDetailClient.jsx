@@ -1029,18 +1029,18 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
       <main className="container py-10 space-y-6">
         <nav className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Link href="/" className="hover:underline">
-            Home
+            Beranda
           </Link>
           <span>/</span>
           <Link href="/validation-cases" prefetch={false} className="hover:underline">
-            Validation Case Index
+            Daftar Case
           </Link>
           <span>/</span>
           <span className="font-mono text-xs text-foreground">#{String(id)}</span>
         </nav>
 
         {error ? (
-          <div className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
+          <div className="rounded-[var(--radius)] border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-destructive">
             {error}
           </div>
         ) : null}
@@ -1061,7 +1061,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
 
               <div className="space-y-2">
                 <h1 className="text-xl font-semibold text-foreground">
-                  {vc?.title || "(untitled)"}
+                  {vc?.title || "(tanpa judul)"}
                 </h1>
                 {vc?.summary && !looksLikeMarkdownText(vc?.summary) ? (
                   <p className="text-sm text-muted-foreground">{vc.summary}</p>
@@ -1112,18 +1112,18 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
     <main className="container py-10">
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="hover:underline">
-          Home
+          Beranda
         </Link>
         <span>/</span>
         <Link href="/validation-cases" prefetch={false} className="hover:underline">
-          Validation Case Index
+          Daftar Case
         </Link>
         <span>/</span>
         <span className="font-mono text-xs text-foreground">#{String(id)}</span>
       </nav>
 
       {error ? (
-        <div className="mb-6 rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
+        <div className="mb-6 rounded-[var(--radius)] border border-destructive/30 bg-destructive/10 px-5 py-4 text-sm text-destructive">
           {error}
         </div>
       ) : null}
@@ -1145,7 +1145,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
 
               <div className="space-y-2">
                 <h1 className="text-xl font-semibold text-foreground">
-                  {vc?.title || "(untitled)"}
+                  {vc?.title || "(tanpa judul)"}
                 </h1>
                 {showSummaryFallback ? (
                   <p className="text-sm text-muted-foreground">{vc.summary}</p>
@@ -1572,10 +1572,10 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                         type="button"
                       >
                         {hasSubmittedFinalOffer
-                          ? "Already Submitted"
+                          ? "Sudah Dikirim"
                           : finalOfferSubmitting
-                            ? "Submitting..."
-                            : "Submit"}
+                            ? "Mengirim..."
+                            : "Kirim"}
                       </button>
                     </div>
                     {offersMsg ? (
@@ -1738,7 +1738,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                             </tr>
                             <tr>
                               <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                Amount
+                                Jumlah
                               </th>
                               <td className="px-4 py-3 font-semibold text-foreground">
                                 {formatIDR(escrowDraft.amount)}
@@ -1749,12 +1749,12 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                                 Hold
                               </th>
                               <td className="px-4 py-3 text-muted-foreground">
-                                {Math.round((Number(escrowDraft.hold_hours) || 0) / 24)} days
+                                {Math.round((Number(escrowDraft.hold_hours) || 0) / 24)} hari
                               </td>
                             </tr>
                             <tr>
                               <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                Message
+                                Pesan
                               </th>
                               <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                                 {escrowDraft.message}
@@ -1786,7 +1786,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                           disabled={lockFundsLoading}
                           type="button"
                         >
-                          {lockFundsLoading ? "Locking..." : "Lock Funds"}
+                          {lockFundsLoading ? "Mengunci..." : "Kunci Dana"}
                         </button>
                       </div>
                     </div>
@@ -1856,7 +1856,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                         <Badge badge={assignedValidator.primary_badge} size="xs" />
                       ) : null}
                     </div>
-                    <div className="text-xs text-muted-foreground">Deliverable submitted</div>
+                    <div className="text-xs text-muted-foreground">Hasil kerja dikirim</div>
                   </div>
                 </div>
               </CaseSection>
@@ -1875,7 +1875,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                         href={certifiedDownloadHref}
                         className="text-sm font-semibold text-primary hover:underline"
                       >
-                        Download Certified Artifact
+                        Unduh Artifact Tersertifikasi
                       </a>
                     ) : null}
                   </div>
@@ -1889,7 +1889,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                       href="/account/wallet/disputes"
                       className="text-sm font-semibold text-primary hover:underline"
                     >
-                      Open Dispute Center
+                      Buka Pusat Sengketa
                     </Link>
                   </div>
                 ) : (
@@ -1921,7 +1921,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                             disabled={releaseLoading}
                             type="button"
                           >
-                            {releaseLoading ? "Releasing..." : "Release Escrow"}
+                            {releaseLoading ? "Melepas..." : "Lepas Escrow"}
                           </button>
                         </div>
                       </div>
@@ -1977,7 +1977,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                           disabled={disputeLoading}
                           type="button"
                         >
-                          {disputeLoading ? "Submitting..." : "Attach Dispute"}
+                          {disputeLoading ? "Mengirim..." : "Ajukan Dispute"}
                         </button>
                       </div>
                       {disputeMsg ? (

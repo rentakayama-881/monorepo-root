@@ -145,7 +145,7 @@ function ConfidenceIcon({ active = false }) {
     <svg
       viewBox="0 0 24 24"
       fill="none"
-      className={`h-4 w-4 ${active ? "text-emerald-600" : "text-muted-foreground"}`}
+      className={`h-4 w-4 ${active ? "text-success" : "text-muted-foreground"}`}
       aria-hidden="true"
     >
       <path
@@ -601,7 +601,7 @@ export default function RepoWorkflowClient({
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-[var(--radius)] bg-red-50 px-4 py-3 text-sm text-red-900"
+          className="rounded-[var(--radius)] bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           {error}
         </div>
@@ -610,14 +610,14 @@ export default function RepoWorkflowClient({
         <div
           role="status"
           aria-live="polite"
-          className="rounded-[var(--radius)] bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+          className="rounded-[var(--radius)] bg-success/10 px-4 py-3 text-sm text-success"
         >
           {msg}
         </div>
       ) : null}
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Repo Files</h2>
+        <h2 className="text-lg font-semibold text-foreground">File Repo</h2>
         {files.length === 0 ? (
           <div className="text-sm text-muted-foreground">Belum ada file di repo case.</div>
         ) : (
@@ -625,12 +625,12 @@ export default function RepoWorkflowClient({
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-muted-foreground">
-                  <th className="py-2 pr-3">Kind</th>
+                  <th className="py-2 pr-3">Jenis</th>
                   <th className="py-2 pr-3">Label</th>
-                  <th className="py-2 pr-3">Uploader</th>
-                  <th className="py-2 pr-3">Visibility</th>
-                  <th className="py-2 pr-3">Uploaded</th>
-                  <th className="py-2 pr-3">Actions</th>
+                  <th className="py-2 pr-3">Pengunggah</th>
+                  <th className="py-2 pr-3">Visibilitas</th>
+                  <th className="py-2 pr-3">Diunggah</th>
+                  <th className="py-2 pr-3">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">

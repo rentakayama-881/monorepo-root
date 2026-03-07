@@ -1,4 +1,5 @@
 import { isWorkspaceValidationCase } from "@/lib/validationCaseWorkflow";
+import logger from "@/lib/logger";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.aivalid.id").replace(
   /\/+$/,
@@ -36,7 +37,8 @@ export async function fetchCasePublic(id) {
     );
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch (err) {
+    logger.warn("[casePublicData] fetchCasePublic failed for id=%s: %s", id, err?.message || err);
     return null;
   }
 }
