@@ -1,9 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import NativeSelect from "@/components/ui/NativeSelect";
 import Avatar from "@/components/ui/Avatar";
+import Badge from "@/components/ui/Badge";
+import { TagList } from "@/components/ui/TagPill";
 import { formatIDR } from "@/lib/format";
+import { formatDate } from "@/lib/format";
+import { DATE_FORMATS } from "@/lib/constants";
 
 function norm(s) {
   return String(s || "")
@@ -16,24 +21,72 @@ function parseMinIDR(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function statusColor(statusRaw) {
-  const s = String(statusRaw || "").toLowerCase();
+function statusLabel(statusRaw) {
+  const s = String(statusRaw || "")
+    .toLowerCase()
+    .trim();
+  if (!s) return "Unknown";
+  const map = {
+    open: "Open",
+    waiting_owner_response: "Waiting Owner Response",
+    on_hold_owner_inactive: "On Hold (Owner Inactive)",
+    offer_accepted: "Offer Accepted",
+    funds_locked: "Funds Locked",
+    artifact_submitted: "Artifact Submitted",
+    completed: "Completed",
+    disputed: "Disputed",
+  };
+  return map[s] || s.replace(/_/g, " ");
+}
+
+function statusStyle(statusRaw) {
+  const s = String(statusRaw || "")
+    .toLowerCase()
+    .trim();
   switch (s) {
-    case "open":
-      return "bg-success/15 text-success border-success/30";
     case "completed":
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800";
+      return "border-emerald-200 bg-emerald-50 text-emerald-900";
     case "disputed":
-      return "bg-destructive/10 text-destructive border-destructive/30";
+      return "border-red-200 bg-red-50 text-red-900";
+    case "on_hold_owner_inactive":
+      return "border-orange-200 bg-orange-50 text-orange-900";
+    case "waiting_owner_response":
+      return "border-blue-200 bg-blue-50 text-blue-900";
+    case "funds_locked":
+      return "border-amber-200 bg-amber-50 text-amber-900";
+    case "artifact_submitted":
+      return "border-sky-200 bg-sky-50 text-sky-900";
+    case "offer_accepted":
+      return "border-violet-200 bg-violet-50 text-violet-950";
+    case "open":
     default:
-      return "bg-secondary text-muted-foreground border-border";
+      return "border-border bg-card text-foreground";
   }
 }
 
-function formatDate(ts) {
-  if (!ts) return "";
-  const date = typeof ts === "number" ? new Date(ts * 1000) : new Date(ts);
-  return date.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+function sensitivityText(levelRaw) {
+  const level =
+    String(levelRaw || "S1")
+      .toUpperCase()
+      .trim() || "S1";
+  const labels = {
+    S0: "Public",
+    S1: "Restricted",
+    S2: "Confidential",
+    S3: "Critical",
+  };
+  if (labels[level]) return `${level} ${labels[level]}`;
+  return level;
+}
+
+function StatusPill({ status }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${statusStyle(status)}`}
+    >
+      {statusLabel(status)}
+    </span>
+  );
 }
 
 export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
@@ -182,61 +235,85 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((vc) => {
             const owner = vc?.owner || vc?.user || {};
+            const ownerBadge = owner?.primary_badge || owner?.primaryBadge || null;
+            const ownerProfileHref = owner?.username
+              ? `/user/${encodeURIComponent(owner.username)}`
+              : "";
             return (
-              <a
+              <Link
                 key={String(vc.id)}
                 href={`/validation-cases/${encodeURIComponent(String(vc.id))}`}
+                prefetch={false}
                 className="group block rounded-[var(--radius)] border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                    {vc.title}
-                  </span>
-                  <span
-                    className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusColor(vc.status)}`}
-                  >
-                    {String(vc.status || "unknown")}
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-sm font-bold text-foreground">
-                    {formatIDR(vc.bounty_amount)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{formatDate(vc.created_at)}</span>
-                </div>
-
-                {Array.isArray(vc.tags) && vc.tags.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {vc.tags.slice(0, 3).map((tag) => (
-                      <span
-                        key={tag.slug || tag.name}
-                        className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
-                      >
-                        {tag.name || tag.slug}
-                      </span>
-                    ))}
-                    {vc.tags.length > 3 && (
-                      <span className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        +{vc.tags.length - 3}
-                      </span>
-                    )}
+                  <div className="min-w-0">
+                    <div className="font-mono text-[11px] text-muted-foreground">
+                      Case #{String(vc.id)}
+                    </div>
+                    <span className="mt-1 block text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                      {vc.title || "(untitled)"}
+                    </span>
                   </div>
-                )}
+                  <StatusPill status={vc.status} />
+                </div>
 
-                {owner.username && (
+                {vc.summary ? (
+                  <div className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                    {vc.summary}
+                  </div>
+                ) : null}
+
+                {Array.isArray(vc.tags) && vc.tags.length > 0 ? (
+                  <div className="mt-2">
+                    <TagList tags={vc.tags} size="xs" />
+                  </div>
+                ) : null}
+
+                <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <dt className="text-muted-foreground">Bounty</dt>
+                    <dd className="mt-0.5 font-semibold text-foreground">
+                      {formatIDR(vc.bounty_amount)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Filed</dt>
+                    <dd className="mt-0.5 font-mono text-muted-foreground">
+                      {formatDate(vc.created_at, DATE_FORMATS.SHORT)}
+                    </dd>
+                  </div>
+                  <div className="col-span-2">
+                    <dt className="text-muted-foreground">Sensitivity</dt>
+                    <dd className="mt-0.5 font-mono text-foreground">
+                      {sensitivityText(vc.sensitivity_level)}
+                    </dd>
+                  </div>
+                </dl>
+
+                {owner.username ? (
                   <div className="mt-3 flex items-center gap-2 border-t pt-2">
                     <Avatar
-                      src={owner.avatar_url}
+                      src={owner.avatar_url || owner.avatarUrl}
                       name={owner.username || owner.full_name}
                       size="xs"
                     />
-                    <span className="text-xs text-muted-foreground truncate">
-                      @{owner.username}
-                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-xs font-semibold text-foreground">
+                          @{owner.username}
+                        </span>
+                        {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
+                      </div>
+                      {Number(owner.guarantee_amount || owner.guaranteeAmount || 0) > 0 ? (
+                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                          Stake: {formatIDR(owner.guarantee_amount || owner.guaranteeAmount)}
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                )}
-              </a>
+                ) : null}
+              </Link>
             );
           })}
         </div>

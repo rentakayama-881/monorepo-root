@@ -6,6 +6,20 @@
 import { DATE_FORMATS } from "./constants";
 
 /**
+ * Normalize any date-like value to a Date object.
+ * Handles Unix seconds (Go backend), milliseconds, ISO strings, and Date objects.
+ * @param {number|string|Date} value
+ * @returns {Date}
+ */
+function toDate(value) {
+  if (value instanceof Date) return value;
+  if (typeof value === "number") {
+    return new Date(value < 1e12 ? value * 1000 : value);
+  }
+  return new Date(value);
+}
+
+/**
  * Format number as Indonesian Rupiah currency
  * @param {number} value - The value to format
  * @param {boolean} showSymbol - Whether to show "Rp" prefix
@@ -52,9 +66,9 @@ export function formatCurrencyInput(value) {
  * @returns {string}
  */
 export function formatDate(date, options = DATE_FORMATS.DISPLAY) {
-  if (!date) return "-";
+  if (!date && date !== 0) return "-";
   try {
-    return new Date(date).toLocaleDateString("id-ID", options);
+    return toDate(date).toLocaleDateString("id-ID", options);
   } catch {
     return "-";
   }
@@ -75,10 +89,10 @@ export function formatDateTime(date) {
  * @returns {string}
  */
 export function formatRelativeTime(date) {
-  if (!date) return "-";
-  
+  if (!date && date !== 0) return "-";
+
   const now = new Date();
-  const then = new Date(date);
+  const then = toDate(date);
   const diffMs = now - then;
   const diffSec = Math.floor(diffMs / 1000);
   const diffMin = Math.floor(diffSec / 60);
@@ -89,7 +103,7 @@ export function formatRelativeTime(date) {
   if (diffMin < 60) return `${diffMin} menit yang lalu`;
   if (diffHour < 24) return `${diffHour} jam yang lalu`;
   if (diffDay < 7) return `${diffDay} hari yang lalu`;
-  
+
   return formatDate(date, DATE_FORMATS.SHORT);
 }
 
@@ -100,19 +114,19 @@ export function formatRelativeTime(date) {
  */
 export function formatDeadline(deadline) {
   if (!deadline) return { text: "-", isExpired: false, isUrgent: false };
-  
+
   const now = new Date();
-  const deadlineDate = new Date(deadline);
+  const deadlineDate = toDate(deadline);
   const diffMs = deadlineDate - now;
-  
+
   if (diffMs < 0) {
     return { text: "Kedaluwarsa", isExpired: true, isUrgent: false };
   }
-  
+
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
   const remainingHours = diffHours % 24;
-  
+
   let text;
   if (diffDays > 0) {
     text = `${diffDays} hari ${remainingHours} jam`;
@@ -122,7 +136,7 @@ export function formatDeadline(deadline) {
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     text = `${diffMinutes} menit`;
   }
-  
+
   return {
     text,
     isExpired: false,
