@@ -50,7 +50,9 @@ export default function Hero() {
             Hasilkan uang dengan sesama pengguna AI
             <br className="hidden sm:block" /> validasi hasil kerja AI,
             <br />
-            <span className="rainbow-text">untuk hasil yang efektif dan tidak liar </span>.
+            <span className="rainbow-text">
+              untuk hasil yang efektif dan efisiensi langganan AI{" "}
+            </span>
           </h1>
 
           {/* Rainbow divider */}
