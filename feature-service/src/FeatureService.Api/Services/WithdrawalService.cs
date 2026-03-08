@@ -192,7 +192,7 @@ public class WithdrawalService : IWithdrawalService
             }
 
             return new CreateWithdrawalResponse(false, null, null,
-                $"Gagal membuat payout crypto: {(ex is OxaPayException oxaEx ? oxaEx.Message : "Silakan coba lagi")}");
+                "Gagal memproses penarikan crypto. Silakan coba lagi.");
         }
 
         var trackId = oxaPayResponse.Data?.TrackId;
@@ -437,7 +437,7 @@ public class WithdrawalService : IWithdrawalService
                 var failUpdate = Builders<Withdrawal>.Update
                     .Set(w => w.Status, WithdrawalStatus.Failed)
                     .Set(w => w.OxaPayStatus, payload.Status)
-                    .Set(w => w.FailureReason, $"OxaPay payout {callbackStatus}")
+                    .Set(w => w.FailureReason, $"Payout crypto {callbackStatus}")
                     .Set(w => w.UpdatedAt, DateTime.UtcNow);
 
                 await _withdrawals.UpdateOneAsync(w => w.Id == withdrawal.Id, failUpdate);

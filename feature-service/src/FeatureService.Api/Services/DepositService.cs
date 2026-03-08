@@ -91,11 +91,11 @@ public class DepositService : IDepositService
         catch (OxaPayException ex)
         {
             _logger.LogError(ex, "OxaPay white-label failed for user {UserId}: {Message}", userId, ex.Message);
-            throw new InvalidOperationException($"Gagal membuat pembayaran crypto: {ex.Message}");
+            throw new InvalidOperationException("Gagal membuat pembayaran crypto. Silakan coba lagi.");
         }
 
         var data = oxaPayResponse.Data
-            ?? throw new InvalidOperationException("Respons OxaPay tidak memiliki data pembayaran");
+            ?? throw new InvalidOperationException("Respons pembayaran tidak lengkap. Silakan coba lagi.");
 
         var deposit = new DepositRequest
         {

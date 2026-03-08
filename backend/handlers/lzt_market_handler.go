@@ -143,7 +143,7 @@ func (h *LZTMarketHandler) GetChatGPTAccounts(c *gin.Context) {
 // GetPublicChatGPTAccounts exposes public listing with cache + graceful stale fallback.
 func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 	if h == nil || h.client == nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "LZT client not initialized"})
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Layanan marketplace tidak tersedia"})
 		return
 	}
 
@@ -158,7 +158,7 @@ func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 		if errors.Is(err, services.ErrLZTRequestInvalid) {
 			status = http.StatusBadRequest
 		}
-		c.JSON(status, gin.H{"error": err.Error()})
+		c.JSON(status, gin.H{"error": "Gagal memuat data marketplace"})
 		return
 	}
 
@@ -199,7 +199,7 @@ func (h *LZTMarketHandler) GetPublicChatGPTCheckout(c *gin.Context) {
 // CreatePublicChatGPTOrder creates and executes a direct buy using backend LZT token.
 func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 	if h == nil || h.client == nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "LZT client not initialized"})
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Layanan marketplace tidak tersedia"})
 		return
 	}
 
