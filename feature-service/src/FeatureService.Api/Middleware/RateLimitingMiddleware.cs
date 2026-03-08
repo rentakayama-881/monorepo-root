@@ -43,8 +43,15 @@ public class RateLimitingMiddleware
             return;
         }
 
+        // Skip rate limiting for CORS preflight
+        if (HttpMethods.IsOptions(context.Request.Method))
+        {
+            await _next(context);
+            return;
+        }
+
         var path = context.Request.Path.Value ?? "";
-        var policy = ClassifyRequest(path);
+        var policy = ClassifyRequest(path, context.Request.Method);
         var (maxRequests, windowSeconds) = GetPolicyLimits(policy);
 
         var clientId = GetClientIdentifier(context, policy);
@@ -89,7 +96,7 @@ public class RateLimitingMiddleware
         }
     }
 
-    private static RateLimitPolicy ClassifyRequest(string path)
+    private static RateLimitPolicy ClassifyRequest(string path, string method)
     {
         foreach (var prefix in CallbackPrefixes)
         {
@@ -100,7 +107,13 @@ public class RateLimitingMiddleware
         foreach (var prefix in FinancialPrefixes)
         {
             if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                // Only apply strict Financial limit to write operations
+                // GET/HEAD are safe reads — use Global limit
+                if (HttpMethods.IsGet(method) || HttpMethods.IsHead(method))
+                    return RateLimitPolicy.Global;
                 return RateLimitPolicy.Financial;
+            }
         }
 
         return RateLimitPolicy.Global;

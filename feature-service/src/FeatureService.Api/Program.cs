@@ -585,11 +585,6 @@ try
     // Configure middleware pipeline
     app.UseMiddleware<CorrelationIdMiddleware>();
     app.UseMiddleware<SecurityHeadersMiddleware>();
-    app.UseRateLimiting(options =>
-    {
-        options.MaxRequests = 100;  // 100 requests
-        options.WindowSeconds = 60; // per minute
-    });
     app.UseMiddleware<RequestLoggingMiddleware>();
     app.UseMiddleware<ErrorHandlingMiddleware>();
 
@@ -603,10 +598,20 @@ try
         });
     }
 
+    // CORS must be before rate limiting so 429 responses include CORS headers
     app.UseCors();
 
     app.UseAuthentication();
     app.UseAuthorization();
+
+    // Rate limiting after auth so Financial policy can identify users by JWT claim
+    app.UseRateLimiting(options =>
+    {
+        options.MaxRequests = 100;  // 100 requests per minute (global)
+        options.WindowSeconds = 60;
+        options.FinancialMaxRequests = 30; // financial endpoints per user
+        options.FinancialWindowSeconds = 60;
+    });
 
     // PQC Signature validation for financial endpoints
     // Must be after Authentication so user context is available
