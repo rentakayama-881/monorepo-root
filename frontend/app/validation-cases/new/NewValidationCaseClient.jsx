@@ -72,7 +72,11 @@ function formatCreateCaseError(err, fallback = "Gagal membuat Validation Case") 
   const message = String(err?.message || fallback).trim();
   const details = String(err?.details || "").trim();
   if (!details) return message || fallback;
-  const generic = new Set(["input tidak valid", "field wajib tidak ada", "request body tidak valid"]);
+  const generic = new Set([
+    "input tidak valid",
+    "field wajib tidak ada",
+    "request body tidak valid",
+  ]);
   if (generic.has(message.toLowerCase())) {
     return details;
   }
@@ -111,16 +115,6 @@ function pickDefaultCategory(list) {
     items.find((c) => String(c?.slug || "").toLowerCase() === "others") ||
     items[0]
   );
-}
-
-function buildRecordPreview(markdownRaw) {
-  const text = String(markdownRaw || "")
-    .replace(/[#*_`>|-]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!text) return "";
-  if (text.length <= 180) return text;
-  return `${text.slice(0, 177)}...`;
 }
 
 export default function NewValidationCaseClient() {
@@ -171,7 +165,11 @@ export default function NewValidationCaseClient() {
   const [insertSnippetSignal, setInsertSnippetSignal] = useState(null);
   const [telegramChecking, setTelegramChecking] = useState(true);
   const [telegramReady, setTelegramReady] = useState(false);
-  const { uploadDocument, loading: uploadingDocument, progress: uploadProgress } = useUploadDocument();
+  const {
+    uploadDocument,
+    loading: uploadingDocument,
+    progress: uploadProgress,
+  } = useUploadDocument();
 
   const locked = Boolean(caseType?.slug && LOCKED_CATEGORIES.includes(String(caseType.slug)));
   const telegramGateLocked = telegramChecking || !telegramReady;
@@ -179,21 +177,24 @@ export default function NewValidationCaseClient() {
   const processStatusText = uploadingDocument
     ? `Uploading file... ${uploadProgress}%`
     : workspaceUploadStageMsg || "";
-  const recordPreview = useMemo(() => buildRecordPreview(form.case_record_text), [form.case_record_text]);
   const normalizedTagCount = useMemo(
     () =>
       Array.from(
         new Set(
           selectedTags
-            .map((tag) => String(tag?.slug || "").toLowerCase().trim())
-            .filter(Boolean),
-        ),
+            .map((tag) =>
+              String(tag?.slug || "")
+                .toLowerCase()
+                .trim()
+            )
+            .filter(Boolean)
+        )
       ).length,
-    [selectedTags],
+    [selectedTags]
   );
   const checklistCompleted = useMemo(
     () => checklistItems.filter((item) => Boolean(form.checklist?.[item.key])).length,
-    [form.checklist],
+    [form.checklist]
   );
   const caseSetupReady = useMemo(() => {
     const title = String(form.title || "").trim();
@@ -241,7 +242,7 @@ export default function NewValidationCaseClient() {
       workspaceBootstrapFiles.length,
       checklistCompleted,
       normalizedTagCount,
-    ],
+    ]
   );
   const requiredReadinessItems = readinessItems.filter((item) => !item.optional);
   const readinessDoneCount = requiredReadinessItems.filter((item) => item.done).length;
@@ -302,7 +303,10 @@ export default function NewValidationCaseClient() {
 
       setTelegramChecking(true);
       try {
-        const account = await fetchJsonAuth("/api/account/me", { method: "GET", clearSessionOn401: false });
+        const account = await fetchJsonAuth("/api/account/me", {
+          method: "GET",
+          clearSessionOn401: false,
+        });
         if (!cancelled) {
           setTelegramReady(hasConnectedTelegramAuth(account?.telegram_auth));
         }
@@ -369,9 +373,10 @@ export default function NewValidationCaseClient() {
 
     const kind = String(workspaceUploadDraft.kind || "task_input").trim();
     const label = String(workspaceUploadDraft.label || "").trim();
-    const visibility = kind === "sensitive_context"
-      ? "assigned_validators"
-      : String(workspaceUploadDraft.visibility || "public").trim();
+    const visibility =
+      kind === "sensitive_context"
+        ? "assigned_validators"
+        : String(workspaceUploadDraft.visibility || "public").trim();
 
     if (!label) {
       setError("Label file wajib diisi.");
@@ -417,14 +422,18 @@ export default function NewValidationCaseClient() {
       return;
     }
     if (telegramGateLocked) {
-      setError("Sebelum membuat Validation Case, sambungkan akun Telegram terverifikasi di Account Settings.");
+      setError(
+        "Sebelum membuat Validation Case, sambungkan akun Telegram terverifikasi di Account Settings."
+      );
       return;
     }
 
     const title = String(form.title || "").trim();
     const bounty = Number(form.bounty_amount || 0);
     const caseRecord = String(form.case_record_text || "").trim();
-    const sensitivity = String(form.sensitivity || "S1").trim().toUpperCase();
+    const sensitivity = String(form.sensitivity || "S1")
+      .trim()
+      .toUpperCase();
 
     if (title.length < titleMinLength) {
       setError(`Title minimal ${titleMinLength} karakter.`);
@@ -457,9 +466,13 @@ export default function NewValidationCaseClient() {
     const normalizedTagSlugs = Array.from(
       new Set(
         selectedTags
-          .map((t) => String(t?.slug || "").toLowerCase().trim())
-          .filter(Boolean),
-      ),
+          .map((t) =>
+            String(t?.slug || "")
+              .toLowerCase()
+              .trim()
+          )
+          .filter(Boolean)
+      )
     );
     if (normalizedTagSlugs.length < 2 || normalizedTagSlugs.length > 4) {
       setError("Tags wajib minimal 2 dan maksimal 4 sesuai taxonomy.");
@@ -499,7 +512,9 @@ export default function NewValidationCaseClient() {
         });
         const documentId = extractDocumentId(uploaded);
         if (!documentId) {
-          throw new Error(`Upload berhasil tetapi document_id tidak ditemukan untuk "${item.label}".`);
+          throw new Error(
+            `Upload berhasil tetapi document_id tidak ditemukan untuk "${item.label}".`
+          );
         }
         workspaceBootstrapPayload.push({
           document_id: documentId,
@@ -574,8 +589,8 @@ export default function NewValidationCaseClient() {
         </div>
         <h1 className="mt-2 text-2xl font-semibold text-foreground">Create Validation Case</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Jelaskan kebutuhan validasi langsung di README case, lalu lampirkan file pendukung.
-          Tidak perlu alur chat panjang sebelum case diproses validator.
+          Jelaskan kebutuhan validasi langsung di README case, lalu lampirkan file pendukung. Tidak
+          perlu alur chat panjang sebelum case diproses validator.
         </p>
       </header>
 
@@ -590,12 +605,10 @@ export default function NewValidationCaseClient() {
             "Memverifikasi Telegram Auth akun Anda..."
           ) : (
             <>
-              Anda wajib menyambungkan akun Telegram terverifikasi di
-              {" "}
+              Anda wajib menyambungkan akun Telegram terverifikasi di{" "}
               <Link href="/account" className="font-semibold underline">
                 Account Settings
-              </Link>
-              {" "}
+              </Link>{" "}
               sebelum mengisi Create Validation Case.
             </>
           )}
@@ -604,13 +617,21 @@ export default function NewValidationCaseClient() {
 
       <div className="mb-5 min-h-[64px]">
         {error ? (
-          <div role="alert" aria-live="polite" className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
+          <div
+            role="alert"
+            aria-live="polite"
+            className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900"
+          >
             {error}
           </div>
         ) : null}
 
         {!error && ok ? (
-          <div role="status" aria-live="polite" className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
+          <div
+            role="status"
+            aria-live="polite"
+            className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900"
+          >
             {ok}
           </div>
         ) : null}
@@ -619,7 +640,9 @@ export default function NewValidationCaseClient() {
       <section className="mb-5 rounded-[var(--radius)] border border-cyan-200/80 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-100 px-5 py-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-900/80">Workspace Readiness</div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-900/80">
+              Workspace Readiness
+            </div>
             <div className="mt-1 text-sm font-semibold text-slate-900">
               {readinessDoneCount}/{requiredReadinessItems.length} syarat wajib selesai
             </div>
@@ -651,12 +674,16 @@ export default function NewValidationCaseClient() {
         <div className="border-b border-border px-5 py-4">
           <div className="text-sm font-semibold text-foreground">Case Setup</div>
           <div className="mt-1 text-xs text-muted-foreground">
-            Tulis README case, set sensitivity + bounty, upload file yang relevan, lalu create. Case langsung ready.
+            Tulis README case, set sensitivity + bounty, upload file yang relevan, lalu create. Case
+            langsung ready.
           </div>
         </div>
 
         <div className="space-y-6 px-5 py-5">
-          <div id="case-setup" className="rounded-[var(--radius)] border border-border bg-secondary/30 p-4">
+          <div
+            id="case-setup"
+            className="rounded-[var(--radius)] border border-border bg-secondary/30 p-4"
+          >
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Case Setup (Wajib)
             </div>
@@ -672,7 +699,9 @@ export default function NewValidationCaseClient() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted-foreground">Tingkat kerahasiaan</label>
+                <label className="text-xs font-semibold text-muted-foreground">
+                  Tingkat kerahasiaan
+                </label>
                 <NativeSelect
                   value={form.sensitivity || "S1"}
                   onChange={(e) => setForm((prev) => ({ ...prev, sensitivity: e.target.value }))}
@@ -701,18 +730,24 @@ export default function NewValidationCaseClient() {
                   disabled={formDisabled}
                 />
                 <div className="mt-1 text-[11px] text-muted-foreground">
-                  Minimal Rp 10.000. Estimasi saat ini: {form.bounty_amount ? `Rp ${formatIDR(form.bounty_amount)}` : "-"}.
+                  Minimal Rp 10.000. Estimasi saat ini:{" "}
+                  {form.bounty_amount ? `Rp ${formatIDR(form.bounty_amount)}` : "-"}.
                 </div>
               </div>
             </div>
           </div>
 
           <div id="readme-design">
-            <label className="text-xs font-semibold text-muted-foreground">README Design Templates</label>
+            <label className="text-xs font-semibold text-muted-foreground">
+              README Design Templates
+            </label>
             <div className="mt-2 rounded-[var(--radius)] border border-border bg-gradient-to-br from-slate-50 via-cyan-50 to-indigo-100 p-4">
-              <div className="text-sm font-semibold text-foreground">GitHub-style template siap edit</div>
+              <div className="text-sm font-semibold text-foreground">
+                GitHub-style template siap edit
+              </div>
               <div className="mt-1 text-xs text-muted-foreground">
-                Pilih template visual, lalu klik insert. Isi tetap custom dari kamu sendiri. Tag protocol tetap wajib.
+                Pilih template visual, lalu klik insert. Isi tetap custom dari kamu sendiri. Tag
+                protocol tetap wajib.
               </div>
               <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {VALIDATION_CASE_README_TEMPLATES.map((template) => {
@@ -730,7 +765,8 @@ export default function NewValidationCaseClient() {
                               <span
                                 key={`${template.id}-${badgeLabel}`}
                                 className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${
-                                  template.palette?.badgeClass || "border-border bg-secondary/40 text-foreground"
+                                  template.palette?.badgeClass ||
+                                  "border-border bg-secondary/40 text-foreground"
                                 }`}
                               >
                                 {badgeLabel}
@@ -738,8 +774,12 @@ export default function NewValidationCaseClient() {
                             ))
                           : null}
                       </div>
-                      <div className="mt-2 text-sm font-semibold text-foreground">{template.name}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">{template.description}</div>
+                      <div className="mt-2 text-sm font-semibold text-foreground">
+                        {template.name}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {template.description}
+                      </div>
                       <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         {template.category}
                       </div>
@@ -748,7 +788,8 @@ export default function NewValidationCaseClient() {
                         onClick={() => insertReadmeTemplate(template)}
                         disabled={formDisabled}
                         className={`mt-3 inline-flex w-full items-center justify-center rounded-[var(--radius)] border px-3 py-1.5 text-xs font-semibold transition ${
-                          template.palette?.buttonClass || "border-border text-foreground hover:bg-secondary"
+                          template.palette?.buttonClass ||
+                          "border-border text-foreground hover:bg-secondary"
                         } disabled:cursor-not-allowed disabled:opacity-60`}
                       >
                         Insert Template
@@ -761,7 +802,9 @@ export default function NewValidationCaseClient() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-muted-foreground">Case Record (Free Text)</label>
+            <label className="text-xs font-semibold text-muted-foreground">
+              Case Record (Free Text)
+            </label>
             <div className="mt-1">
               <MarkdownEditor
                 value={form.case_record_text}
@@ -775,17 +818,21 @@ export default function NewValidationCaseClient() {
               />
             </div>
             <div className="mt-2 text-[11px] text-muted-foreground">
-              Gunakan markdown secukupnya. Jangan masukkan kontak langsung (Telegram/WhatsApp) di Case Record.
-            </div>
-            <div className="mt-2 rounded-[var(--radius)] border border-border/80 bg-secondary/20 px-3 py-2 text-xs text-muted-foreground">
-              Preview ringkas: {recordPreview || "-"}
+              Gunakan markdown secukupnya. Jangan masukkan kontak langsung (Telegram/WhatsApp) di
+              Case Record.
             </div>
           </div>
 
-          <div id="workspace-files" className="rounded-[var(--radius)] border border-border bg-secondary/20 p-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Workspace Files</div>
+          <div
+            id="workspace-files"
+            className="rounded-[var(--radius)] border border-border bg-secondary/20 p-4"
+          >
+            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Workspace Files
+            </div>
             <div className="mt-2 text-xs text-muted-foreground">
-              Upload file sekarang agar validator bisa langsung kerja. File sensitif otomatis hanya untuk validator terpilih.
+              Upload file sekarang agar validator bisa langsung kerja. File sensitif otomatis hanya
+              untuk validator terpilih.
             </div>
             <div className="mt-2 text-[11px] text-muted-foreground">
               Queue saat ini: {workspaceBootstrapFiles.length} file.
@@ -801,7 +848,9 @@ export default function NewValidationCaseClient() {
               />
               <input
                 value={workspaceUploadDraft.label}
-                onChange={(e) => setWorkspaceUploadDraft((prev) => ({ ...prev, label: e.target.value }))}
+                onChange={(e) =>
+                  setWorkspaceUploadDraft((prev) => ({ ...prev, label: e.target.value }))
+                }
                 placeholder="Label file (contoh: Draft Skripsi Bab 3)"
                 className="rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
                 disabled={formDisabled}
@@ -814,20 +863,26 @@ export default function NewValidationCaseClient() {
                     return {
                       ...prev,
                       kind: nextKind,
-                      visibility: nextKind === "sensitive_context" ? "assigned_validators" : prev.visibility,
+                      visibility:
+                        nextKind === "sensitive_context" ? "assigned_validators" : prev.visibility,
                     };
                   })
                 }
                 options={[
                   { value: "task_input", label: formatRepoFileKindLabel("task_input") },
                   { value: "case_readme", label: formatRepoFileKindLabel("case_readme") },
-                  { value: "sensitive_context", label: formatRepoFileKindLabel("sensitive_context") },
+                  {
+                    value: "sensitive_context",
+                    label: formatRepoFileKindLabel("sensitive_context"),
+                  },
                 ]}
                 disabled={formDisabled}
               />
               <NativeSelect
                 value={workspaceUploadDraft.visibility}
-                onChange={(e) => setWorkspaceUploadDraft((prev) => ({ ...prev, visibility: e.target.value }))}
+                onChange={(e) =>
+                  setWorkspaceUploadDraft((prev) => ({ ...prev, visibility: e.target.value }))
+                }
                 options={[
                   { value: "public", label: formatRepoFileVisibilityLabel("public") },
                   {
@@ -849,7 +904,10 @@ export default function NewValidationCaseClient() {
                 Add File to Queue
               </button>
             </div>
-            <div className="mt-1 min-h-[18px] truncate text-xs text-muted-foreground" title={processStatusText || ""}>
+            <div
+              className="mt-1 min-h-[18px] truncate text-xs text-muted-foreground"
+              title={processStatusText || ""}
+            >
               {processStatusText || "\u00A0"}
             </div>
 
@@ -868,10 +926,16 @@ export default function NewValidationCaseClient() {
                   <tbody>
                     {workspaceBootstrapFiles.map((item) => (
                       <tr key={item.localId} className="border-b border-border/70">
-                        <td className="px-3 py-2 text-xs font-semibold text-foreground">{formatRepoFileKindLabel(item.kind)}</td>
+                        <td className="px-3 py-2 text-xs font-semibold text-foreground">
+                          {formatRepoFileKindLabel(item.kind)}
+                        </td>
                         <td className="px-3 py-2 text-foreground">{item.label}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{formatRepoFileVisibilityLabel(item.visibility)}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{item.file?.name || "-"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {formatRepoFileVisibilityLabel(item.visibility)}
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {item.file?.name || "-"}
+                        </td>
                         <td className="px-3 py-2">
                           <button
                             type="button"
@@ -888,12 +952,17 @@ export default function NewValidationCaseClient() {
                 </table>
               </div>
             ) : (
-              <div className="mt-3 text-xs text-muted-foreground">Belum ada file di queue. Kamu tetap bisa create case sekarang dan upload nanti di repo case.</div>
+              <div className="mt-3 text-xs text-muted-foreground">
+                Belum ada file di queue. Kamu tetap bisa create case sekarang dan upload nanti di
+                repo case.
+              </div>
             )}
           </div>
 
           <div id="quality-gate">
-            <label className="text-xs font-semibold text-muted-foreground">Checklist Protokol (Wajib)</label>
+            <label className="text-xs font-semibold text-muted-foreground">
+              Checklist Protokol (Wajib)
+            </label>
             <div className="mt-2 space-y-2 rounded-[var(--radius)] border border-border bg-secondary/20 p-3">
               {checklistItems.map((item) => (
                 <label key={item.key} className="flex items-start gap-2 text-sm text-foreground">
@@ -933,12 +1002,7 @@ export default function NewValidationCaseClient() {
           </div>
 
           <div className="flex items-center justify-end gap-2">
-            <Button
-              href="/validation-cases"
-              prefetch={false}
-              variant="secondary"
-              size="sm"
-            >
+            <Button href="/validation-cases" prefetch={false} variant="secondary" size="sm">
               Back to Case Index
             </Button>
             <Button
