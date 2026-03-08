@@ -128,13 +128,39 @@ public class WithdrawalService : IWithdrawalService
 
         // Call OxaPay Payout API
         OxaPayPayoutResponse oxaPayResponse;
+        decimal cryptoAmount;
         try
         {
+            // Convert IDR to crypto amount
+            var priceInIdr = await _oxaPayService.GetCryptoPriceInIdrAsync(currency);
+            if (priceInIdr == null || priceInIdr <= 0)
+            {
+                _logger.LogError("Failed to get crypto price for {Currency}", currency);
+                // Refund wallet
+                _ = await _walletService.AddBalanceAsync(userId, totalDeduction,
+                    $"Refund: gagal konversi rate {reference}", TransactionType.Refund, withdrawalId, "withdrawal");
+                return new CreateWithdrawalResponse(false, null, null,
+                    "Gagal mendapatkan harga crypto saat ini. Silakan coba lagi.");
+            }
+
+            cryptoAmount = Math.Round((decimal)netAmount / priceInIdr.Value, 8);
+            if (cryptoAmount <= 0)
+            {
+                _ = await _walletService.AddBalanceAsync(userId, totalDeduction,
+                    $"Refund: jumlah terlalu kecil {reference}", TransactionType.Refund, withdrawalId, "withdrawal");
+                return new CreateWithdrawalResponse(false, null, null,
+                    "Jumlah terlalu kecil untuk dikonversi ke crypto.");
+            }
+
+            _logger.LogInformation(
+                "Withdrawal rate conversion: {Amount} IDR → {CryptoAmount} {Currency} (rate: 1 unit = {Rate} IDR)",
+                netAmount, cryptoAmount, currency, priceInIdr.Value);
+
             var payoutRequest = new OxaPayPayoutRequest
             {
                 Address = request.CryptoAddress,
                 Currency = currency,
-                Amount = netAmount,
+                Amount = cryptoAmount,
                 Network = string.IsNullOrEmpty(request.Network) ? null : request.Network,
                 CallbackUrl = $"{_oxaPaySettings.CallbackBaseUrl.TrimEnd('/')}/api/v1/callbacks/oxapay/payout",
                 Memo = request.Memo,
@@ -182,6 +208,7 @@ public class WithdrawalService : IWithdrawalService
             CryptoAddress = request.CryptoAddress,
             CryptoCurrency = currency,
             CryptoNetwork = request.Network,
+            CryptoAmount = cryptoAmount.ToString("G"),
             Memo = request.Memo,
             TrackId = trackId,
             OxaPayStatus = oxaPayResponse.Data?.Status,

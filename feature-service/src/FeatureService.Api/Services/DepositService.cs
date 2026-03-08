@@ -72,7 +72,7 @@ public class DepositService : IDepositService
         var oxaPayRequest = new OxaPayWhiteLabelRequest
         {
             Amount = chargeAmount,
-            Currency = "USD",
+            Currency = "IDR",
             PayCurrency = payCurrency,
             Network = string.IsNullOrEmpty(network) ? null : network,
             Lifetime = _oxaPaySettings.PaymentLifetimeMinutes,

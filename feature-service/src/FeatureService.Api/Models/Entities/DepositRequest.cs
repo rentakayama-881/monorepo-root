@@ -7,6 +7,7 @@ namespace FeatureService.Api.Models.Entities;
 /// Crypto deposit request via OxaPay white-label payment.
 /// Fully automated: user requests → OxaPay generates address → callback credits wallet.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class DepositRequest
 {
     [BsonId]

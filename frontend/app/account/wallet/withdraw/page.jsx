@@ -6,15 +6,38 @@ import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
-import NativeSelect from "@/components/ui/NativeSelect";
 
 const CRYPTO_CURRENCIES = [
   {
     value: "USDT",
-    label: "USDT (Tether)",
+    label: "Tether",
+    symbol: "USDT",
     networks: ["TRC20", "ERC20", "BEP20", "Polygon", "SOL", "TON"],
+    icon: (
+      <svg viewBox="0 0 32 32" className="h-8 w-8">
+        <circle cx="16" cy="16" r="16" fill="#26A17B" />
+        <path
+          d="M17.922 17.383v-.002c-.11.008-.677.042-1.942.042-1.01 0-1.721-.03-1.971-.042v.003c-3.888-.171-6.79-.848-6.79-1.658 0-.809 2.902-1.486 6.79-1.66v2.644c.254.018.982.061 1.988.061 1.207 0 1.812-.05 1.925-.06v-2.643c3.88.173 6.775.85 6.775 1.658 0 .81-2.895 1.485-6.775 1.657m0-3.59v-2.366h5.414V7.819H8.595v3.608h5.414v2.365c-4.4.202-7.709 1.074-7.709 2.118 0 1.044 3.309 1.915 7.709 2.118v7.582h3.913v-7.584c4.393-.202 7.694-1.073 7.694-2.116 0-1.043-3.301-1.914-7.694-2.117"
+          fill="#fff"
+        />
+      </svg>
+    ),
   },
-  { value: "TON", label: "TON (Toncoin)", networks: ["TON"] },
+  {
+    value: "TON",
+    label: "Toncoin",
+    symbol: "TON",
+    networks: ["TON"],
+    icon: (
+      <svg viewBox="0 0 32 32" className="h-8 w-8">
+        <circle cx="16" cy="16" r="16" fill="#0098EA" />
+        <path
+          d="M21.767 10H10.233c-1.834 0-2.874 2.02-1.756 3.41l7.003 8.713a.93.93 0 001.04 0l7.003-8.713c1.118-1.39.078-3.41-1.756-3.41zm-7.25 2.12h-3.284l3.284 4.09V12.12zm2.966 4.09l3.284-4.09h-3.284v4.09z"
+          fill="#fff"
+        />
+      </svg>
+    ),
+  },
 ];
 
 const quickAmounts = [50000, 100000, 200000, 500000, 1000000];
@@ -27,7 +50,6 @@ function normalizeWallet(payload) {
     data.balance ?? data.Balance ?? data.availableBalance ?? data.AvailableBalance ?? 0;
   const pinSetRaw =
     data.pinSet ?? data.PinSet ?? data.pin_set ?? data.hasPin ?? data.has_pin ?? false;
-
   return {
     balance: Number(balanceRaw) || 0,
     has_pin: Boolean(pinSetRaw),
@@ -42,7 +64,6 @@ export default function WithdrawPage() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
 
-  // Form data
   const [cryptoCurrency, setCryptoCurrency] = useState("USDT");
   const [network, setNetwork] = useState("");
   const [cryptoAddress, setCryptoAddress] = useState("");
@@ -53,7 +74,6 @@ export default function WithdrawPage() {
   const parsedAmount = parseInt(String(amount).replace(/\D/g, ""), 10) || 0;
   const fee = Math.ceil(parsedAmount * feePercent);
   const totalDeduction = parsedAmount + fee;
-  const netAmount = parsedAmount;
 
   const selectedCrypto = CRYPTO_CURRENCIES.find((c) => c.value === cryptoCurrency);
   const availableNetworks = selectedCrypto?.networks || [];
@@ -67,7 +87,6 @@ export default function WithdrawPage() {
     loadData();
   }, []);
 
-  // Reset network when currency changes
   useEffect(() => {
     setNetwork(availableNetworks.length === 1 ? availableNetworks[0] : "");
   }, [cryptoCurrency]);
@@ -77,7 +96,6 @@ export default function WithdrawPage() {
       const walletRes = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
       const w = normalizeWallet(walletRes);
       setWallet(w);
-
       if (!w.has_pin) {
         router.push("/account/wallet/set-pin?redirect=withdraw");
         return;
@@ -99,7 +117,6 @@ export default function WithdrawPage() {
   async function handleWithdraw() {
     setProcessing(true);
     setError("");
-
     try {
       const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.WITHDRAWALS.CREATE, {
         method: "POST",
@@ -112,14 +129,12 @@ export default function WithdrawPage() {
           pin,
         }),
       });
-
       const data = unwrapFeatureData(response) || response;
       if (data.success === false || data.Success === false) {
         setError(data.error ?? data.Error ?? "Gagal membuat penarikan");
         setProcessing(false);
         return;
       }
-
       router.push("/account/wallet/withdraw/success");
     } catch (e) {
       logger.error("Failed to create withdrawal", e);
@@ -186,7 +201,7 @@ export default function WithdrawPage() {
             </svg>
             {step > 1 ? "Kembali" : "Wallet"}
           </button>
-          <h1 className="text-xl font-bold text-foreground">Penarikan Crypto</h1>
+          <h1 className="text-xl font-bold text-foreground">Penarikan</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Saldo: Rp{wallet.balance.toLocaleString("id-ID")}
           </p>
@@ -197,9 +212,7 @@ export default function WithdrawPage() {
           {[1, 2, 3].map((s) => (
             <div
               key={s}
-              className={`h-1.5 flex-1 rounded-full transition-colors ${
-                s <= step ? "bg-primary" : "bg-muted"
-              }`}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${s <= step ? "bg-primary" : "bg-muted"}`}
             />
           ))}
         </div>
@@ -210,38 +223,62 @@ export default function WithdrawPage() {
           </div>
         )}
 
-        {/* STEP 1: Crypto Address & Network */}
+        {/* STEP 1: Crypto & Address */}
         {step === 1 && (
           <div className="space-y-5">
+            {/* Crypto Selector */}
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">
-                Mata Uang Crypto
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Pilih Mata Uang
               </label>
-              <NativeSelect
-                value={cryptoCurrency}
-                onChange={(e) => setCryptoCurrency(e.target.value)}
-                options={CRYPTO_CURRENCIES.map((c) => ({ value: c.value, label: c.label }))}
-                className="h-12"
-              />
+              <div className="grid grid-cols-2 gap-3">
+                {CRYPTO_CURRENCIES.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setCryptoCurrency(c.value)}
+                    className={`flex items-center gap-3 rounded-xl border-2 p-3.5 transition-all ${
+                      cryptoCurrency === c.value
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border bg-card hover:border-muted-foreground/30"
+                    }`}
+                  >
+                    {c.icon}
+                    <div className="text-left">
+                      <div className="text-sm font-semibold text-foreground">{c.symbol}</div>
+                      <div className="text-xs text-muted-foreground">{c.label}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* Network Selector */}
             {availableNetworks.length > 1 && (
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">
-                  Jaringan (Network)
+                <label className="mb-2 block text-sm font-medium text-foreground">
+                  Pilih Jaringan
                 </label>
-                <NativeSelect
-                  value={network}
-                  onChange={(e) => setNetwork(e.target.value)}
-                  options={[
-                    { value: "", label: "Pilih jaringan..." },
-                    ...availableNetworks.map((n) => ({ value: n, label: n })),
-                  ]}
-                  className="h-12"
-                />
+                <div className="grid grid-cols-3 gap-2">
+                  {availableNetworks.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setNetwork(n)}
+                      className={`rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                        network === n
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border bg-card text-muted-foreground hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
+            {/* Address Input */}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">
                 Alamat Wallet Tujuan
@@ -258,16 +295,17 @@ export default function WithdrawPage() {
               )}
             </div>
 
+            {/* Memo for TON */}
             {(cryptoCurrency === "TON" || network === "TON") && (
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-foreground">
-                  Memo / Tag <span className="text-muted-foreground">(opsional)</span>
+                  Memo <span className="text-muted-foreground">(opsional)</span>
                 </label>
                 <input
                   type="text"
                   value={memo}
                   onChange={(e) => setMemo(e.target.value)}
-                  placeholder="Memo untuk TON (jika diperlukan)"
+                  placeholder="Memo jika diperlukan"
                   className="h-12 w-full rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
@@ -275,8 +313,8 @@ export default function WithdrawPage() {
 
             <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
               <p className="text-xs text-yellow-800">
-                ⚠️ Pastikan alamat dan jaringan benar. Pengiriman ke alamat atau jaringan yang salah
-                tidak dapat dikembalikan.
+                ⚠️ Pastikan alamat dan jaringan sudah benar. Pengiriman ke alamat atau jaringan yang
+                salah tidak dapat dikembalikan.
               </p>
             </div>
 
@@ -307,7 +345,7 @@ export default function WithdrawPage() {
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">
-                Jumlah Penarikan (IDR)
+                Jumlah Penarikan
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
@@ -353,7 +391,7 @@ export default function WithdrawPage() {
                   <span>Rp{parsedAmount.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Platform fee (2%)</span>
+                  <span className="text-muted-foreground">Biaya layanan</span>
                   <span>Rp{fee.toLocaleString("id-ID")}</span>
                 </div>
                 <hr className="border-border" />
@@ -362,16 +400,15 @@ export default function WithdrawPage() {
                   <span>Rp{totalDeduction.toLocaleString("id-ID")}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  * Rp{netAmount.toLocaleString("id-ID")} akan dikonversi ke {cryptoCurrency} dan
-                  dikirim ke alamat tujuan. Fee jaringan ditanggung oleh platform.
+                  Rp{parsedAmount.toLocaleString("id-ID")} akan dikonversi ke {cryptoCurrency} dan
+                  dikirim ke alamat tujuan
                 </p>
               </div>
             )}
 
             {totalDeduction > wallet.balance && parsedAmount > 0 && (
               <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-                Saldo tidak cukup. Diperlukan Rp{totalDeduction.toLocaleString("id-ID")} (saldo: Rp
-                {wallet.balance.toLocaleString("id-ID")})
+                Saldo tidak cukup. Diperlukan Rp{totalDeduction.toLocaleString("id-ID")}
               </div>
             )}
 
@@ -417,7 +454,7 @@ export default function WithdrawPage() {
                   <span>Rp{parsedAmount.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Platform fee (2%)</span>
+                  <span className="text-muted-foreground">Biaya layanan</span>
                   <span>Rp{fee.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="flex justify-between font-semibold">

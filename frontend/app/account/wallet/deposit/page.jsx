@@ -11,11 +11,38 @@ import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
-import NativeSelect from "@/components/ui/NativeSelect";
 
 const CRYPTO_OPTIONS = [
-  { value: "USDT", label: "USDT (Tether)" },
-  { value: "TON", label: "TON (Toncoin)" },
+  {
+    value: "USDT",
+    label: "Tether",
+    symbol: "USDT",
+    color: "bg-emerald-500",
+    icon: (
+      <svg viewBox="0 0 32 32" className="h-8 w-8">
+        <circle cx="16" cy="16" r="16" fill="#26A17B" />
+        <path
+          d="M17.922 17.383v-.002c-.11.008-.677.042-1.942.042-1.01 0-1.721-.03-1.971-.042v.003c-3.888-.171-6.79-.848-6.79-1.658 0-.809 2.902-1.486 6.79-1.66v2.644c.254.018.982.061 1.988.061 1.207 0 1.812-.05 1.925-.06v-2.643c3.88.173 6.775.85 6.775 1.658 0 .81-2.895 1.485-6.775 1.657m0-3.59v-2.366h5.414V7.819H8.595v3.608h5.414v2.365c-4.4.202-7.709 1.074-7.709 2.118 0 1.044 3.309 1.915 7.709 2.118v7.582h3.913v-7.584c4.393-.202 7.694-1.073 7.694-2.116 0-1.043-3.301-1.914-7.694-2.117"
+          fill="#fff"
+        />
+      </svg>
+    ),
+  },
+  {
+    value: "TON",
+    label: "Toncoin",
+    symbol: "TON",
+    color: "bg-sky-500",
+    icon: (
+      <svg viewBox="0 0 32 32" className="h-8 w-8">
+        <circle cx="16" cy="16" r="16" fill="#0098EA" />
+        <path
+          d="M21.767 10H10.233c-1.834 0-2.874 2.02-1.756 3.41l7.003 8.713a.93.93 0 001.04 0l7.003-8.713c1.118-1.39.078-3.41-1.756-3.41zm-7.25 2.12h-3.284l3.284 4.09V12.12zm2.966 4.09l3.284-4.09h-3.284v4.09z"
+          fill="#fff"
+        />
+      </svg>
+    ),
+  },
 ];
 
 const quickAmounts = [50000, 100000, 200000, 500000, 1000000];
@@ -27,7 +54,6 @@ function normalizeWallet(payload) {
     data.balance ?? data.Balance ?? data.availableBalance ?? data.AvailableBalance ?? 0;
   const pinSetRaw =
     data.pinSet ?? data.PinSet ?? data.pin_set ?? data.hasPin ?? data.has_pin ?? false;
-
   return {
     balance: Number(balanceRaw) || 0,
     has_pin: Boolean(pinSetRaw),
@@ -83,17 +109,14 @@ export default function DepositPage() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  // Step 1: amount & crypto selection
   const [amount, setAmount] = useState("");
   const [payCurrency, setPayCurrency] = useState("USDT");
 
-  // Step 2: payment details from OxaPay
   const [depositData, setDepositData] = useState(null);
   const [countdown, setCountdown] = useState(0);
   const pollRef = useRef(null);
   const countdownRef = useRef(null);
 
-  // History
   const [depositHistory, setDepositHistory] = useState([]);
 
   const parsedAmount = parseInt(String(amount).replace(/\D/g, ""), 10) || 0;
@@ -115,20 +138,24 @@ export default function DepositPage() {
 
   async function loadData() {
     try {
-      const [walletRes, historyRes] = await Promise.all([
+      const [walletRes, historyRes] = await Promise.allSettled([
         fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME),
         fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.DEPOSITS + "?limit=10"),
       ]);
-      const w = normalizeWallet(walletRes);
-      setWallet(w);
 
-      if (!w.has_pin) {
-        router.push("/account/wallet/set-pin?redirect=deposit");
-        return;
+      if (walletRes.status === "fulfilled") {
+        const w = normalizeWallet(walletRes.value);
+        setWallet(w);
+        if (!w.has_pin) {
+          router.push("/account/wallet/set-pin?redirect=deposit");
+          return;
+        }
       }
 
-      const items = extractFeatureItems(historyRes) || [];
-      setDepositHistory(items.map(normalizeDeposit));
+      if (historyRes.status === "fulfilled") {
+        const items = extractFeatureItems(historyRes.value) || [];
+        setDepositHistory(items.map(normalizeDeposit));
+      }
     } catch (e) {
       logger.error("Failed to load deposit data", e);
       if (e.code === "TWO_FACTOR_REQUIRED") {
@@ -154,10 +181,7 @@ export default function DepositPage() {
     try {
       const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.DEPOSITS, {
         method: "POST",
-        body: JSON.stringify({
-          amount: parsedAmount,
-          payCurrency,
-        }),
+        body: JSON.stringify({ amount: parsedAmount, payCurrency }),
       });
 
       const data = unwrapFeatureData(response) || response;
@@ -199,9 +223,7 @@ export default function DepositPage() {
       const now = Math.floor(Date.now() / 1000);
       const remaining = expiredAtUnix - now;
       setCountdown(remaining > 0 ? remaining : 0);
-      if (remaining <= 0 && countdownRef.current) {
-        clearInterval(countdownRef.current);
-      }
+      if (remaining <= 0 && countdownRef.current) clearInterval(countdownRef.current);
     };
     updateCountdown();
     countdownRef.current = setInterval(updateCountdown, 1000);
@@ -296,7 +318,7 @@ export default function DepositPage() {
             </svg>
             {step === 2 ? "Kembali" : "Wallet"}
           </button>
-          <h1 className="text-xl font-bold text-foreground">Deposit Crypto</h1>
+          <h1 className="text-xl font-bold text-foreground">Deposit</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Saldo: Rp{wallet.balance.toLocaleString("id-ID")}
           </p>
@@ -307,9 +329,7 @@ export default function DepositPage() {
           {[1, 2, 3].map((s) => (
             <div
               key={s}
-              className={`h-1.5 flex-1 rounded-full transition-colors ${
-                s <= step ? "bg-primary" : "bg-muted"
-              }`}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${s <= step ? "bg-primary" : "bg-muted"}`}
             />
           ))}
         </div>
@@ -323,9 +343,37 @@ export default function DepositPage() {
         {/* STEP 1: Amount & Crypto Selection */}
         {step === 1 && (
           <div className="space-y-5">
+            {/* Crypto Selector */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Pilih Mata Uang
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {CRYPTO_OPTIONS.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setPayCurrency(c.value)}
+                    className={`flex items-center gap-3 rounded-xl border-2 p-3.5 transition-all ${
+                      payCurrency === c.value
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border bg-card hover:border-muted-foreground/30"
+                    }`}
+                  >
+                    {c.icon}
+                    <div className="text-left">
+                      <div className="text-sm font-semibold text-foreground">{c.symbol}</div>
+                      <div className="text-xs text-muted-foreground">{c.label}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Amount Input */}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">
-                Jumlah Deposit (IDR)
+                Jumlah Deposit
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
@@ -354,18 +402,7 @@ export default function DepositPage() {
               </div>
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">
-                Mata Uang Crypto
-              </label>
-              <NativeSelect
-                value={payCurrency}
-                onChange={(e) => setPayCurrency(e.target.value)}
-                options={CRYPTO_OPTIONS.map((c) => ({ value: c.value, label: c.label }))}
-                className="h-12"
-              />
-            </div>
-
+            {/* Fee Summary */}
             {parsedAmount >= minDeposit && (
               <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
                 <div className="flex justify-between text-sm">
@@ -373,17 +410,16 @@ export default function DepositPage() {
                   <span>Rp{parsedAmount.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Platform fee (~5%)</span>
+                  <span className="text-muted-foreground">Biaya layanan</span>
                   <span>Rp{platformFee.toLocaleString("id-ID")}</span>
                 </div>
                 <hr className="border-border" />
                 <div className="flex justify-between text-sm font-semibold">
-                  <span>Total bayar (dalam {payCurrency})</span>
+                  <span>Total pembayaran</span>
                   <span>Rp{totalCharge.toLocaleString("id-ID")}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  * Total akan dikonversi ke {payCurrency} dengan rate saat itu. Fee jaringan
-                  ditambahkan oleh OxaPay.
+                  Total akan dikonversi ke {payCurrency} dengan kurs saat pembayaran
                 </p>
               </div>
             )}
@@ -393,12 +429,12 @@ export default function DepositPage() {
               onClick={handleCreateDeposit}
               className="h-12 w-full rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {processing ? "Memproses..." : "Lanjutkan Deposit"}
+              {processing ? "Memproses..." : "Lanjutkan"}
             </button>
           </div>
         )}
 
-        {/* STEP 2: Payment Details (Address, QR, Countdown) */}
+        {/* STEP 2: Payment Details */}
         {step === 2 && depositData && (
           <div className="space-y-5">
             <div className="rounded-lg border border-border bg-card p-4 text-center space-y-3">
@@ -407,27 +443,18 @@ export default function DepositPage() {
                 {depositData.payAmount} {depositData.payCurrency}
               </div>
               <div className="text-xs text-muted-foreground">
-                ≈ Rp{depositData.amount.toLocaleString("id-ID")} + fee
-              </div>
-              <div className="text-xs text-muted-foreground">
                 Jaringan: <span className="font-medium text-foreground">{depositData.network}</span>
               </div>
             </div>
 
-            {/* QR Code */}
             {depositData.qrCode && (
               <div className="flex justify-center">
                 <div className="rounded-lg border border-border bg-white p-3">
-                  <img
-                    src={depositData.qrCode}
-                    alt="QR Code pembayaran crypto"
-                    className="h-48 w-48"
-                  />
+                  <img src={depositData.qrCode} alt="QR Code pembayaran" className="h-48 w-48" />
                 </div>
               </div>
             )}
 
-            {/* Address */}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-muted-foreground">
                 Alamat Pembayaran
@@ -458,19 +485,20 @@ export default function DepositPage() {
               </div>
               {countdown <= 0 && (
                 <p className="mt-2 text-xs text-destructive">
-                  Waktu pembayaran habis. Silakan buat deposit baru.
+                  Waktu habis. Silakan buat deposit baru.
                 </p>
               )}
             </div>
 
-            {/* Info */}
             <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 space-y-1">
               <p className="text-xs text-yellow-800 font-medium">⚠️ Perhatian</p>
               <ul className="text-xs text-yellow-700 space-y-0.5 list-disc pl-4">
                 <li>Kirim tepat sesuai jumlah yang tertera</li>
-                <li>Pastikan jaringan yang digunakan benar ({depositData.network})</li>
-                <li>Dana dikirim ke alamat lain setelah kedaluwarsa akan hilang</li>
-                <li>Saldo akan otomatis masuk setelah konfirmasi blockchain</li>
+                <li>
+                  Pastikan jaringan yang digunakan adalah <strong>{depositData.network}</strong>
+                </li>
+                <li>Alamat hanya berlaku selama waktu yang ditentukan</li>
+                <li>Saldo otomatis masuk setelah konfirmasi jaringan</li>
               </ul>
             </div>
 

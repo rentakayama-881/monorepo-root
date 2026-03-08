@@ -7,6 +7,7 @@ namespace FeatureService.Api.Models.Entities;
 /// Crypto withdrawal request via OxaPay payout.
 /// Flow: user requests → wallet deducted → OxaPay payout → callback confirms.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class Withdrawal
 {
     [BsonId]
