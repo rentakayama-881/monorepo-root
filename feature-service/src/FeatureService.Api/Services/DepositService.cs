@@ -24,6 +24,7 @@ public class DepositService : IDepositService
     private readonly ILogger<DepositService> _logger;
 
     private const long MinDeposit = 2000;
+    private const long MaxDeposit = 4_000_000; // Rp 4 juta
 
     public DepositService(
         MongoDbContext dbContext,
@@ -44,6 +45,9 @@ public class DepositService : IDepositService
         if (request.Amount < MinDeposit)
             throw new ArgumentException($"Minimum deposit Rp{MinDeposit:N0}");
 
+        if (request.Amount > MaxDeposit)
+            throw new ArgumentException($"Maksimum deposit Rp{MaxDeposit:N0}");
+
         // Check for existing unexpired deposit for this user
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var existingPending = await _deposits
@@ -60,9 +64,15 @@ public class DepositService : IDepositService
         }
 
         // Calculate fee: amount ÷ 0.95 = total charge, fee = total - amount
-        var chargeAmountDecimal = Math.Ceiling((decimal)request.Amount / 0.95m);
-        var chargeAmount = (long)chargeAmountDecimal;
-        var platformFee = chargeAmount - request.Amount;
+        // Use checked arithmetic to prevent overflow
+        long chargeAmount;
+        long platformFee;
+        checked
+        {
+            var chargeAmountDecimal = Math.Ceiling((decimal)request.Amount / 0.95m);
+            chargeAmount = (long)chargeAmountDecimal;
+            platformFee = chargeAmount - request.Amount;
+        }
 
         var payCurrency = request.PayCurrency ?? _oxaPaySettings.DefaultPayCurrency;
         var network = request.Network ?? _oxaPaySettings.DefaultNetwork;

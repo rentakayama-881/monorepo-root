@@ -19,6 +19,18 @@ public interface IOxaPayService
     /// Returns the price of 1 unit of the currency in IDR.
     /// </summary>
     Task<decimal?> GetCryptoPriceInIdrAsync(string cryptoCurrency);
+
+    /// <summary>
+    /// Verify a payment by calling OxaPay GET /payment/{trackId}.
+    /// Returns the actual payment status from OxaPay, or null if verification fails.
+    /// </summary>
+    Task<OxaPayPaymentInfo?> VerifyPaymentAsync(string trackId);
+
+    /// <summary>
+    /// Validate HMAC signature of an OxaPay callback payload.
+    /// Computes HMAC-SHA512 of the payload using MerchantApiKey and compares with the provided hmac.
+    /// </summary>
+    bool ValidateCallbackHmac(OxaPayCallbackPayload payload);
 }
 
 public class OxaPayService : IOxaPayService
@@ -145,6 +157,80 @@ public class OxaPayService : IOxaPayService
             _logger.LogWarning(ex, "Failed to fetch crypto price for {Currency} from CoinGecko", cryptoCurrency);
             return null;
         }
+    }
+
+    public async Task<OxaPayPaymentInfo?> VerifyPaymentAsync(string trackId)
+    {
+        try
+        {
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"payment/{trackId}");
+            httpRequest.Headers.Add("merchant_api_key", _settings.MerchantApiKey);
+
+            var response = await _httpClient.SendAsync(httpRequest);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            _logger.LogDebug("OxaPay verify payment response: {StatusCode} {Body}", response.StatusCode, responseBody);
+
+            var result = JsonSerializer.Deserialize<OxaPayPaymentInfoResponse>(responseBody, JsonOptions);
+            if (result?.Status != 200 || result.Data == null)
+            {
+                _logger.LogWarning("OxaPay payment verification failed for trackId={TrackId}: status={Status}",
+                    trackId, result?.Status);
+                return null;
+            }
+
+            return result.Data;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "OxaPay payment verification error for trackId={TrackId}", trackId);
+            return null;
+        }
+    }
+
+    public bool ValidateCallbackHmac(OxaPayCallbackPayload payload)
+    {
+        if (string.IsNullOrEmpty(payload.Hmac))
+            return false;
+
+        var hmacData = BuildHmacData(payload);
+        using var hmac = new System.Security.Cryptography.HMACSHA512(
+            Encoding.UTF8.GetBytes(_settings.MerchantApiKey));
+        var computedBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(hmacData));
+        var computedHmac = Convert.ToHexString(computedBytes).ToLowerInvariant();
+
+        return System.Security.Cryptography.CryptographicOperations
+            .FixedTimeEquals(
+                Encoding.UTF8.GetBytes(computedHmac),
+                Encoding.UTF8.GetBytes(payload.Hmac.ToLowerInvariant()));
+    }
+
+    private static string BuildHmacData(OxaPayCallbackPayload payload)
+    {
+        // Build sorted key=value pairs from non-null, non-hmac fields
+        var fields = new SortedDictionary<string, string>(StringComparer.Ordinal);
+
+        if (payload.TrackId != null) fields["track_id"] = payload.TrackId;
+        if (payload.Status != null) fields["status"] = payload.Status;
+        if (payload.PayCurrency != null) fields["pay_currency"] = payload.PayCurrency;
+        if (payload.PayAmount != null) fields["pay_amount"] = payload.PayAmount.Value.ToString("G");
+        if (payload.Network != null) fields["network"] = payload.Network;
+        if (payload.Address != null) fields["address"] = payload.Address;
+        if (payload.OrderId != null) fields["order_id"] = payload.OrderId;
+        if (payload.Price != null) fields["price"] = payload.Price.Value.ToString("G");
+        if (payload.Amount != null) fields["amount"] = payload.Amount.Value.ToString("G");
+        if (payload.Currency != null) fields["currency"] = payload.Currency;
+        if (payload.FeePaidByPayer != null) fields["fee_paid_by_payer"] = payload.FeePaidByPayer.Value.ToString("G");
+        if (payload.UnderPaidCoverage != null) fields["under_paid_coverage"] = payload.UnderPaidCoverage.Value.ToString("G");
+        if (payload.ReceivedAmount != null) fields["received_amount"] = payload.ReceivedAmount.Value.ToString("G");
+        if (payload.TxId != null) fields["txID"] = payload.TxId;
+        if (payload.Type != null) fields["type"] = payload.Type;
+        if (payload.Description != null) fields["description"] = payload.Description;
+        if (payload.Email != null) fields["email"] = payload.Email;
+        if (payload.Date != null) fields["date"] = payload.Date.Value.ToString();
+        if (payload.ExpiredAt != null) fields["expired_at"] = payload.ExpiredAt.Value.ToString();
+
+        return string.Join("&", fields.Select(kv => $"{kv.Key}={kv.Value}"));
     }
 
     private static string MaskAddress(string address)
@@ -286,6 +372,29 @@ public class OxaPayCallbackPayload
     public long? ExpiredAt { get; set; }
     [JsonPropertyName("hmac")]
     public string? Hmac { get; set; }
+}
+
+// ==================
+// PAYMENT INFO (for server-side verification)
+// ==================
+
+public class OxaPayPaymentInfoResponse
+{
+    public OxaPayPaymentInfo? Data { get; set; }
+    public string? Message { get; set; }
+    public OxaPayError? Error { get; set; }
+    public int Status { get; set; }
+    public string? Version { get; set; }
+}
+
+public class OxaPayPaymentInfo
+{
+    public string? TrackId { get; set; }
+    public string? Status { get; set; }
+    public decimal? Amount { get; set; }
+    public string? Currency { get; set; }
+    public string? Type { get; set; }
+    public string? OrderId { get; set; }
 }
 
 // ==================

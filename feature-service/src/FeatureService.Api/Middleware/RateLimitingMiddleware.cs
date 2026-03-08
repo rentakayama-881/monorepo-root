@@ -3,8 +3,8 @@ using System.Collections.Concurrent;
 namespace FeatureService.Api.Middleware;
 
 /// <summary>
-/// Simple in-memory rate limiter for API endpoints
-/// Uses sliding window algorithm
+/// In-memory rate limiter with per-route policy support.
+/// Uses sliding window algorithm with separate limits for financial, callback, and general endpoints.
 /// </summary>
 public class RateLimitingMiddleware
 {
@@ -12,6 +12,21 @@ public class RateLimitingMiddleware
     private readonly ILogger<RateLimitingMiddleware> _logger;
     private readonly RateLimitOptions _options;
     private static readonly ConcurrentDictionary<string, RateLimitEntry> _clients = new();
+
+    private static readonly string[] FinancialPrefixes =
+    [
+        "/api/v1/wallets/deposits",
+        "/api/v1/wallets/withdrawals",
+        "/api/v1/wallets/transfers",
+        "/api/v1/wallets/set-pin",
+        "/api/v1/wallets/verify-pin",
+        "/api/v1/market-purchases"
+    ];
+
+    private static readonly string[] CallbackPrefixes =
+    [
+        "/api/v1/callbacks"
+    ];
 
     public RateLimitingMiddleware(RequestDelegate next, ILogger<RateLimitingMiddleware> logger, RateLimitOptions options)
     {
@@ -22,87 +37,94 @@ public class RateLimitingMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        // Skip rate limiting for health checks
         if (context.Request.Path.StartsWithSegments("/health"))
         {
             await _next(context);
             return;
         }
 
-        var clientId = GetClientIdentifier(context);
+        var path = context.Request.Path.Value ?? "";
+        var policy = ClassifyRequest(path);
+        var (maxRequests, windowSeconds) = GetPolicyLimits(policy);
+
+        var clientId = GetClientIdentifier(context, policy);
+        var bucketKey = $"{policy}:{clientId}";
         var now = DateTime.UtcNow;
 
-        // Get or create rate limit entry for this client
-        var entry = _clients.GetOrAdd(clientId, _ => new RateLimitEntry());
+        var entry = _clients.GetOrAdd(bucketKey, _ => new RateLimitEntry());
 
         lock (entry)
         {
-            // Remove expired timestamps
-            var windowStart = now.AddSeconds(-_options.WindowSeconds);
+            var windowStart = now.AddSeconds(-windowSeconds);
             while (entry.RequestTimestamps.Count > 0 && entry.RequestTimestamps.Peek() < windowStart)
             {
                 entry.RequestTimestamps.Dequeue();
             }
 
-            // Check if limit exceeded
-            if (entry.RequestTimestamps.Count >= _options.MaxRequests)
+            if (entry.RequestTimestamps.Count >= maxRequests)
             {
-                _logger.LogWarning("Rate limit exceeded for client {ClientId}", clientId);
-                
+                _logger.LogWarning("Rate limit exceeded for {BucketKey} (policy={Policy}, limit={Limit}/{Window}s)",
+                    bucketKey, policy, maxRequests, windowSeconds);
+
                 context.Response.StatusCode = 429;
-                context.Response.Headers.Append("Retry-After", _options.WindowSeconds.ToString());
-                context.Response.Headers.Append("X-RateLimit-Limit", _options.MaxRequests.ToString());
+                context.Response.Headers.Append("Retry-After", windowSeconds.ToString());
+                context.Response.Headers.Append("X-RateLimit-Limit", maxRequests.ToString());
                 context.Response.Headers.Append("X-RateLimit-Remaining", "0");
-                context.Response.Headers.Append("X-RateLimit-Reset", windowStart.AddSeconds(_options.WindowSeconds).ToString("O"));
-
                 context.Response.ContentType = "application/json";
-                var response = new
-                {
-                    success = false,
-                    error = new
-                    {
-                        code = "TOO_MANY_REQUESTS",
-                        message = $"Rate limit exceeded. Maximum {_options.MaxRequests} requests per {_options.WindowSeconds} seconds."
-                    },
-                    meta = new
-                    {
-                        requestId = context.Items["RequestId"]?.ToString() ?? Guid.NewGuid().ToString(),
-                        timestamp = now
-                    }
-                };
-
                 return;
             }
 
-            // Add current request timestamp
             entry.RequestTimestamps.Enqueue(now);
         }
 
-        // Add rate limit headers
-        context.Response.Headers.Append("X-RateLimit-Limit", _options.MaxRequests.ToString());
-        context.Response.Headers.Append("X-RateLimit-Remaining", Math.Max(0, _options.MaxRequests - entry.RequestTimestamps.Count).ToString());
+        context.Response.Headers.Append("X-RateLimit-Limit", maxRequests.ToString());
+        context.Response.Headers.Append("X-RateLimit-Remaining",
+            Math.Max(0, maxRequests - entry.RequestTimestamps.Count).ToString());
 
         await _next(context);
 
-        // Cleanup old entries periodically (every 100 requests)
         if (Random.Shared.Next(100) == 0)
         {
             CleanupOldEntries();
         }
     }
 
-    private static string GetClientIdentifier(HttpContext context)
+    private static RateLimitPolicy ClassifyRequest(string path)
     {
-        // Use user ID if authenticated, otherwise use IP
-        var userId = context.User?.FindFirst("user_id")?.Value 
-            ?? context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        
-        if (!string.IsNullOrEmpty(userId))
+        foreach (var prefix in CallbackPrefixes)
         {
-            return $"user:{userId}";
+            if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return RateLimitPolicy.Callback;
         }
 
-        // Fallback to IP address
+        foreach (var prefix in FinancialPrefixes)
+        {
+            if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return RateLimitPolicy.Financial;
+        }
+
+        return RateLimitPolicy.Global;
+    }
+
+    private (int maxRequests, int windowSeconds) GetPolicyLimits(RateLimitPolicy policy) => policy switch
+    {
+        RateLimitPolicy.Financial => (_options.FinancialMaxRequests, _options.FinancialWindowSeconds),
+        RateLimitPolicy.Callback => (_options.CallbackMaxRequests, _options.CallbackWindowSeconds),
+        _ => (_options.MaxRequests, _options.WindowSeconds)
+    };
+
+    private static string GetClientIdentifier(HttpContext context, RateLimitPolicy policy)
+    {
+        // Financial endpoints: always use user_id for stricter per-user limiting
+        if (policy == RateLimitPolicy.Financial)
+        {
+            var userId = context.User?.FindFirst("user_id")?.Value
+                ?? context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+                return $"user:{userId}";
+        }
+
+        // Callbacks and general: use IP
         var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
         if (!string.IsNullOrEmpty(forwardedFor))
@@ -122,7 +144,7 @@ public class RateLimitingMiddleware
         {
             lock (kvp.Value)
             {
-                if (kvp.Value.RequestTimestamps.Count == 0 || 
+                if (kvp.Value.RequestTimestamps.Count == 0 ||
                     (kvp.Value.RequestTimestamps.Count > 0 && kvp.Value.RequestTimestamps.Peek() < cutoff))
                 {
                     keysToRemove.Add(kvp.Key);
@@ -140,22 +162,26 @@ public class RateLimitingMiddleware
     {
         public Queue<DateTime> RequestTimestamps { get; } = new();
     }
+
+    private enum RateLimitPolicy { Global, Financial, Callback }
 }
 
 /// <summary>
-/// Rate limit configuration options
+/// Rate limit configuration with per-policy limits.
 /// </summary>
 public class RateLimitOptions
 {
-    /// <summary>
-    /// Maximum number of requests allowed in the time window
-    /// </summary>
+    // Global: 100 req / 60s per IP
     public int MaxRequests { get; set; } = 100;
-
-    /// <summary>
-    /// Time window in seconds
-    /// </summary>
     public int WindowSeconds { get; set; } = 60;
+
+    // Financial (deposit, withdraw, transfer): 10 req / 60s per user
+    public int FinancialMaxRequests { get; set; } = 10;
+    public int FinancialWindowSeconds { get; set; } = 60;
+
+    // Callback: 30 req / 60s per IP
+    public int CallbackMaxRequests { get; set; } = 30;
+    public int CallbackWindowSeconds { get; set; } = 60;
 }
 
 /// <summary>
@@ -167,7 +193,7 @@ public static class RateLimitingMiddlewareExtensions
     {
         var options = new RateLimitOptions();
         configure?.Invoke(options);
-        
+
         return builder.UseMiddleware<RateLimitingMiddleware>(options);
     }
 }
