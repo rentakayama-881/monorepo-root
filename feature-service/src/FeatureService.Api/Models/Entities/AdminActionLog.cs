@@ -8,6 +8,7 @@ namespace FeatureService.Api.Models.Entities;
 /// The actual Validation Case data remains in PostgreSQL (Go backend).
 /// This stores the move history for audit purposes.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class ValidationCaseOwnershipTransfer
 {
     [BsonId]
@@ -86,6 +87,7 @@ public class ValidationCaseOwnershipTransfer
 /// Admin action log for audit trail.
 /// Tracks all moderation actions taken by admins.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class AdminActionLog
 {
     [BsonId]

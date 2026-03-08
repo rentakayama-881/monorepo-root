@@ -7,6 +7,7 @@ namespace FeatureService.Api.Models.Entities;
 /// Represents a user's wallet with their balance and PIN status.
 /// This is a mutable aggregate derived from the immutable TransactionLedger.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class UserWallet
 {
     [BsonId]

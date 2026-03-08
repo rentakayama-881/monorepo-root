@@ -6,6 +6,7 @@ namespace FeatureService.Api.Models.Entities;
 /// <summary>
 /// Tracks hidden records (Validation Cases) that are hidden by admin but not deleted.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class HiddenContent
 {
     [BsonId]

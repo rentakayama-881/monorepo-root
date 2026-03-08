@@ -7,6 +7,7 @@ namespace FeatureService.Api.Models.Entities;
 /// Represents a warning issued to a user by admin.
 /// Warnings accumulate and can lead to bans.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class UserWarning
 {
     [BsonId]

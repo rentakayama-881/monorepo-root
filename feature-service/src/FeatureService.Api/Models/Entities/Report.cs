@@ -7,6 +7,7 @@ namespace FeatureService.Api.Models.Entities;
 /// Represents a user report for Validation Cases.
 /// Reports are reviewed by admins who can take moderation actions.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class Report
 {
     [BsonId]

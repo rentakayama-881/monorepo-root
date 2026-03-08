@@ -3,6 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace FeatureService.Api.Models.Entities;
 
+[BsonIgnoreExtraElements]
 public class Transfer
 {
     [BsonId]

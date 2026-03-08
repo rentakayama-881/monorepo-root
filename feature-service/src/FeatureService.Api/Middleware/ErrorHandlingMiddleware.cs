@@ -24,7 +24,15 @@ public class ErrorHandlingMiddleware
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(context, ex);
+            _logger.LogError(ex, "Unhandled exception in pipeline for {Path}", context.Request.Path);
+            if (!context.Response.HasStarted)
+            {
+                await HandleExceptionAsync(context, ex);
+            }
+            else
+            {
+                _logger.LogError("Response already started, cannot write error body for {Path}", context.Request.Path);
+            }
         }
     }
 

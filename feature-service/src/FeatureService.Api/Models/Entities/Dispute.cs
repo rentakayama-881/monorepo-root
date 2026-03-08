@@ -6,6 +6,7 @@ namespace FeatureService.Api.Models.Entities;
 /// <summary>
 /// Dispute for transfer conflicts - when sender or receiver disagrees
 /// </summary>
+[BsonIgnoreExtraElements]
 public class Dispute
 {
     [BsonId]
@@ -77,6 +78,7 @@ public class Dispute
     public DateTime? ResolvedAt { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class DisputeEvidence
 {
     [BsonElement("type")]
@@ -95,6 +97,7 @@ public class DisputeEvidence
     public uint UploadedById { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class DisputeMessage
 {
     [BsonElement("id")]
@@ -116,6 +119,7 @@ public class DisputeMessage
     public DateTime SentAt { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class DisputeResolution
 {
     [BsonElement("type")]

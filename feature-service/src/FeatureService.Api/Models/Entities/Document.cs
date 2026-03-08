@@ -7,6 +7,7 @@ namespace FeatureService.Api.Models.Entities;
 /// Represents a document stored in user's profile.
 /// Documents are standalone files like white papers, articles, research papers.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class Document
 {
     [BsonId]

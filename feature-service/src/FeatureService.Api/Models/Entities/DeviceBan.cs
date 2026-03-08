@@ -7,6 +7,7 @@ namespace FeatureService.Api.Models.Entities;
 /// Represents a permanently banned device.
 /// Banned devices cannot create accounts or access the platform.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class DeviceBan
 {
     [BsonId]

@@ -8,6 +8,7 @@ namespace FeatureService.Api.Models.Entities;
 /// Every transaction creates TWO ledger entries (debit and credit).
 /// This ensures full auditability and balance verification.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class TransactionLedger
 {
     [BsonId]
