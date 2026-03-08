@@ -30,6 +30,9 @@ export default function useMarketChatGPTListing() {
       if (initial && isMountedRef.current) {
         setLoading(true);
       }
+      if (!initial && !silent && isMountedRef.current) {
+        setRefreshingListings(true);
+      }
 
       try {
         const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US&ts=${Date.now()}`, {
@@ -51,14 +54,16 @@ export default function useMarketChatGPTListing() {
         }
         return { ok: false, error: nextError };
       } finally {
-        if (initial && isMountedRef.current) {
-          setLoading(false);
+        if (isMountedRef.current) {
+          if (initial) setLoading(false);
+          setRefreshingListings(false);
         }
       }
     },
     [apiBase]
   );
 
+  // Initial load + periodic refresh
   useEffect(() => {
     void loadListings({ initial: true });
 
@@ -67,6 +72,18 @@ export default function useMarketChatGPTListing() {
     }, LISTING_REFRESH_INTERVAL_MS);
 
     return () => clearInterval(timer);
+  }, [loadListings]);
+
+  // Re-fetch when user returns to the tab
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible" && isMountedRef.current) {
+        void loadListings({ initial: true });
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [loadListings]);
 
   const accounts = useMemo(() => {
@@ -105,14 +122,7 @@ export default function useMarketChatGPTListing() {
   }, [filtered, pageStartIndex]);
 
   const refreshListings = useCallback(async () => {
-    if (isMountedRef.current) {
-      setRefreshingListings(true);
-    }
-
     const result = await loadListings({ initial: false, silent: false });
-    if (isMountedRef.current) {
-      setRefreshingListings(false);
-    }
     return result;
   }, [loadListings]);
 

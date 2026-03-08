@@ -300,9 +300,13 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
                     />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="truncate text-xs font-semibold text-foreground">
+                        <Link
+                          href={`/user/${owner.username}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="truncate text-xs font-semibold text-foreground hover:text-primary hover:underline"
+                        >
                           @{owner.username}
-                        </span>
+                        </Link>
                         {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
                       </div>
                       {Number(owner.guarantee_amount || owner.guaranteeAmount || 0) > 0 ? (
