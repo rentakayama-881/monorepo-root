@@ -71,12 +71,16 @@ try
 
     builder.Services.AddSingleton(jwtSettings);
 
-    // CORS
+    // CORS — load allowed origins from configuration (supports env var overrides via
+    // standard ASP.NET Core config: CORS__ALLOWEDORIGINS__0, __1, __2, etc.)
     var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
-    var envCorsOrigin = Environment.GetEnvironmentVariable("CORS__ALLOWEDORIGINS__0");
-    if (!string.IsNullOrEmpty(envCorsOrigin))
+    if (corsOrigins.Length == 0)
     {
-        corsOrigins = new[] { envCorsOrigin };
+        Log.Warning("No CORS origins configured — API will reject all cross-origin requests");
+    }
+    else
+    {
+        Log.Information("CORS allowed origins: {Origins}", string.Join(", ", corsOrigins));
     }
 
     builder.Services.AddCors(options =>
