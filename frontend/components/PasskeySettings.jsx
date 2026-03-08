@@ -4,19 +4,15 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { requireValidTokenOrThrow, readJsonSafe, throwApiError } from "@/lib/authRequest";
 import { getApiBase } from "@/lib/api";
-import {
-  fetchFeatureAuth,
-  FEATURE_ENDPOINTS,
-  unwrapFeatureData,
-} from "@/lib/featureApi";
+import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
 import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn";
 import PasskeyList from "./PasskeyList";
 import { SectionLoadingBlock } from "./ui/LoadingState";
 
 function isWebAuthnSupported() {
-  return typeof window !== "undefined" && !!(
-    window.PublicKeyCredential &&
-    typeof window.PublicKeyCredential === "function"
+  return (
+    typeof window !== "undefined" &&
+    !!(window.PublicKeyCredential && typeof window.PublicKeyCredential === "function")
   );
 }
 
@@ -29,13 +25,21 @@ function normalizePinStatus(payload) {
 
 const PasskeyIcon = (
   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"
+    />
   </svg>
 );
 
 const WarningIcon = (
   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+    />
   </svg>
 );
 
@@ -290,16 +294,17 @@ export default function PasskeySettings() {
 
   if (!webAuthnSupported) {
     return (
-      <section className="rounded-lg border border-border bg-card p-4">
-        <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+      <section className="settings-section">
+        <h3 className="settings-section-title flex items-center gap-2">
           {PasskeyIcon}
           Passkeys
         </h3>
-        <div className="mt-3 p-3 rounded-md bg-warning/10 border border-warning/20">
+        <div className="p-3 rounded-md bg-warning/10 border border-warning/20">
           <div className="flex items-start gap-2">
             <span className="text-warning">{WarningIcon}</span>
             <p className="text-sm text-warning">
-              Your browser does not support Passkey/WebAuthn. Gunakan browser modern seperti Chrome, Firefox, Safari, atau Edge versi terbaru.
+              Your browser does not support Passkey/WebAuthn. Gunakan browser modern seperti Chrome,
+              Firefox, Safari, atau Edge versi terbaru.
             </p>
           </div>
         </div>
@@ -309,19 +314,18 @@ export default function PasskeySettings() {
 
   return (
     <>
-      <section className="rounded-lg border border-border bg-card p-4">
+      <section className="settings-section">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+          <h3 className="settings-section-title flex items-center gap-2">
             {PasskeyIcon}
             Passkeys
           </h3>
-          <span className="text-xs text-muted-foreground">
-            {passkeys.length} terdaftar
-          </span>
+          <span className="text-xs text-muted-foreground">{passkeys.length} terdaftar</span>
         </div>
 
         <p className="mt-2 text-xs text-muted-foreground">
-          Passkeys memungkinkan Anda login tanpa password menggunakan fingerprint, face ID, atau security key.
+          Passkeys memungkinkan Anda login tanpa password menggunakan fingerprint, face ID, atau
+          security key.
         </p>
 
         {error && (
@@ -402,9 +406,7 @@ export default function PasskeySettings() {
               />
             </div>
 
-            {pinError && (
-              <p className="mt-2 text-sm text-destructive">{pinError}</p>
-            )}
+            {pinError && <p className="mt-2 text-sm text-destructive">{pinError}</p>}
 
             <div className="mt-6 flex gap-3">
               <button

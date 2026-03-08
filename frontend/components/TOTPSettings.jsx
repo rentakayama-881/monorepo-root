@@ -129,7 +129,9 @@ function TOTPSettingsContent() {
         setBackupCount(data.backup_codes.length);
       }
 
-      setSuccess("2FA enabled successfully. Important: Save your backup codes now. They are shown only once.");
+      setSuccess(
+        "2FA enabled successfully. Important: Save your backup codes now. They are shown only once."
+      );
       setSetupData(null);
       setSetupCode("");
       await fetchStatus();
@@ -188,24 +190,37 @@ function TOTPSettingsContent() {
 
   if (loading) {
     return (
-      <div className="rounded-[var(--radius)] border bg-card p-6">
+      <section className="settings-section">
+        <h3 className="settings-section-title mb-3">Autentikasi 2 Faktor (2FA)</h3>
         <SectionLoadingBlock lines={3} compact srLabel="Loading 2FA settings" />
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="rounded-[var(--radius)] border bg-card p-6 space-y-4">
+    <section className="settings-section">
+      <h3 className="settings-section-title mb-3">Autentikasi 2 Faktor (2FA)</h3>
       {setup2fa === "true" && !status.enabled && (
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 mb-4">
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-warning shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            <svg
+              className="w-5 h-5 text-warning shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+              />
             </svg>
             <div>
               <p className="text-sm font-medium text-warning">2FA Diperlukan</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Untuk menggunakan fitur wallet (kirim uang, tarik saldo, set PIN), Anda harus mengaktifkan 2FA terlebih dahulu.
+                Untuk menggunakan fitur wallet (kirim uang, tarik saldo, set PIN), Anda harus
+                mengaktifkan 2FA terlebih dahulu.
               </p>
             </div>
           </div>
@@ -221,11 +236,13 @@ function TOTPSettingsContent() {
             Add an extra security layer with an authenticator app
           </p>
         </div>
-        <div className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium ${
-          status.enabled
-            ? "border-success/20 bg-success/10 text-success"
-            : "border-border bg-muted/60 text-muted-foreground"
-        }`}>
+        <div
+          className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium ${
+            status.enabled
+              ? "border-success/20 bg-success/10 text-success"
+              : "border-border bg-muted/60 text-muted-foreground"
+          }`}
+        >
           {status.enabled ? "Active" : "Inactive"}
         </div>
       </div>
@@ -246,7 +263,8 @@ function TOTPSettingsContent() {
       {!status.enabled && !setupData && (
         <div className="pt-2">
           <p className="text-sm text-muted-foreground mb-3">
-            2FA uses apps such as Google Authenticator, Authy, or 1Password to generate verification codes.
+            2FA uses apps such as Google Authenticator, Authy, or 1Password to generate verification
+            codes.
           </p>
           <Button onClick={startSetup} disabled={setupLoading}>
             {setupLoading ? "Starting..." : "Enable 2FA"}
@@ -272,7 +290,8 @@ function TOTPSettingsContent() {
         <div className="space-y-4 pt-2">
           {status.verified_at && (
             <p className="text-xs text-muted-foreground">
-              Enabled on: {new Date(status.verified_at).toLocaleDateString("id-ID", { dateStyle: "long" })}
+              Enabled on:{" "}
+              {new Date(status.verified_at).toLocaleDateString("id-ID", { dateStyle: "long" })}
             </p>
           )}
 
@@ -282,18 +301,22 @@ function TOTPSettingsContent() {
               <span className="text-xs text-muted-foreground">{backupCount} remaining</span>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              Backup codes can be used to sign in when you do not have access to your authenticator app.
+              Backup codes can be used to sign in when you do not have access to your authenticator
+              app.
             </p>
 
             {backupCodes ? (
               <div className="space-y-2">
                 <div className="grid grid-cols-2 gap-2 p-3 bg-secondary rounded font-mono text-sm">
                   {backupCodes.map((code, i) => (
-                    <div key={i} className="text-foreground">{code}</div>
+                    <div key={i} className="text-foreground">
+                      {code}
+                    </div>
                   ))}
                 </div>
                 <p className="text-xs text-destructive font-medium">
-                  Important: Save these backup codes now. They are displayed only once and cannot be viewed again.
+                  Important: Save these backup codes now. They are displayed only once and cannot be
+                  viewed again.
                 </p>
                 <Button variant="secondary" size="sm" onClick={copyBackupCodes}>
                   Copy to Clipboard
@@ -301,8 +324,8 @@ function TOTPSettingsContent() {
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Backup codes are shown only once when you first enable 2FA.
-                If you lose them, disable and re-enable 2FA to generate new codes.
+                Backup codes are shown only once when you first enable 2FA. If you lose them,
+                disable and re-enable 2FA to generate new codes.
               </p>
             )}
           </div>
@@ -329,15 +352,16 @@ function TOTPSettingsContent() {
           }}
         />
       )}
-    </div>
+    </section>
   );
 }
 
 function TOTPSettingsLoading() {
   return (
-    <div className="rounded-[var(--radius)] border bg-card p-6">
+    <section className="settings-section">
+      <h3 className="settings-section-title mb-3">Autentikasi 2 Faktor (2FA)</h3>
       <SectionLoadingBlock lines={3} compact srLabel="Loading 2FA settings" />
-    </div>
+    </section>
   );
 }
 

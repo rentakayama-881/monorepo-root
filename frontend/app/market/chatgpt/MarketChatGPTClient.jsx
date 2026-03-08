@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CenteredSpinner } from "@/components/ui/LoadingState";
+import EmptyState from "@/components/ui/EmptyState";
 import Portal from "@/components/ui/Portal";
 import { fetchJsonAuth } from "@/lib/api";
 import {
@@ -47,6 +48,7 @@ export default function MarketChatGPTClient() {
   const [confirmItem, setConfirmItem] = useState(null);
   const [confirmCountdown, setConfirmCountdown] = useState(getCheckoutConfirmSeconds());
   const [blockingMessage, setBlockingMessage] = useState("");
+  const [lastUpdatedLabel, setLastUpdatedLabel] = useState("");
   const {
     loading,
     listingError,
@@ -63,6 +65,7 @@ export default function MarketChatGPTClient() {
     displayEnd,
     setPage,
     refreshListings,
+    lastFetchedAt,
   } = useMarketChatGPTListing();
 
   const confirmSeconds = getCheckoutConfirmSeconds();
@@ -80,6 +83,19 @@ export default function MarketChatGPTClient() {
   }, [confirmItem, confirmSeconds]);
 
   usePageScrollLock(Boolean(confirmItem || blockingMessage || checkoutFeedback));
+
+  useEffect(() => {
+    if (!lastFetchedAt) return;
+    function update() {
+      const seconds = Math.floor((Date.now() - lastFetchedAt) / 1000);
+      if (seconds < 5) setLastUpdatedLabel("Baru saja diperbarui");
+      else if (seconds < 60) setLastUpdatedLabel(`Diperbarui ${seconds} detik lalu`);
+      else setLastUpdatedLabel(`Diperbarui ${Math.floor(seconds / 60)} menit lalu`);
+    }
+    update();
+    const timer = setInterval(update, 5000);
+    return () => clearInterval(timer);
+  }, [lastFetchedAt]);
 
   async function runCheckout(item) {
     if (!item?.canBuy) {
@@ -169,10 +185,17 @@ export default function MarketChatGPTClient() {
               srLabel="Memuat daftar akun"
             />
           ) : (
-            <div className="text-xs text-muted-foreground">
-              {totalItems > 0
-                ? `Menampilkan ${displayStart}-${displayEnd} dari ${totalItems} akun`
-                : "Belum ada akun untuk ditampilkan"}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>
+                {totalItems > 0
+                  ? `Menampilkan ${displayStart}-${displayEnd} dari ${totalItems} akun`
+                  : "Belum ada akun untuk ditampilkan"}
+              </span>
+              {lastUpdatedLabel && !refreshingListings ? (
+                <span className="hidden sm:inline text-[10px] opacity-60">
+                  • {lastUpdatedLabel}
+                </span>
+              ) : null}
             </div>
           )}
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
@@ -208,9 +231,20 @@ export default function MarketChatGPTClient() {
             ))}
           </div>
         ) : totalItems === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            Belum ada akun yang cocok dengan pencarian Anda.
-          </p>
+          <EmptyState
+            compact
+            title="Belum ada akun tersedia"
+            description={
+              query
+                ? "Coba ubah kata kunci pencarian Anda."
+                : "Belum ada akun yang dijual saat ini. Cek kembali nanti."
+            }
+            action={
+              query
+                ? { label: "Hapus pencarian", onClick: () => setQuery("") }
+                : { label: "Muat ulang", onClick: () => void handleRefreshListings() }
+            }
+          />
         ) : (
           <>
             <div className="space-y-2 md:hidden">
@@ -228,8 +262,8 @@ export default function MarketChatGPTClient() {
               ))}
             </div>
 
-            <div className="hidden overflow-hidden rounded-lg border border-border bg-background md:block">
-              <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] gap-3 border-b border-border bg-muted/30 px-3 py-2 text-[11px] font-semibold text-muted-foreground">
+            <div className="hidden overflow-hidden rounded-xl border border-border/60 bg-card md:block">
+              <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] gap-3 border-b border-border/40 bg-muted/20 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <div>Akun</div>
                 <div>Harga</div>
                 <div>Status</div>
@@ -255,7 +289,7 @@ export default function MarketChatGPTClient() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/20 px-3 py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/10 px-3 py-2">
               <div className="text-[11px] text-muted-foreground">
                 Halaman {currentPage} dari {totalPages}
               </div>
@@ -348,7 +382,7 @@ function AccountActionButtons({ item, checkingOut, onDetail, onBuy, align = "lef
 
 function DesktopAccountRow({ item, checkingOut, onDetail, onBuy }) {
   return (
-    <article className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] items-center gap-3 px-3 py-2.5 text-xs">
+    <article className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] items-center gap-3 px-3 py-2.5 text-xs transition-colors hover:bg-muted/30">
       <div className="min-w-0">
         <div className="truncate font-medium text-foreground">{item.title}</div>
         <div className="mt-1 flex flex-wrap gap-1">
@@ -402,7 +436,7 @@ function DesktopAccountRowPlaceholder() {
 
 function MobileAccountCard({ item, checkingOut, onDetail, onBuy }) {
   return (
-    <article className="rounded-lg border border-border bg-background p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+    <article className="rounded-xl border border-border/60 bg-card p-3 transition-all hover:border-primary/30 hover:shadow-md">
       <div className="min-w-0">
         <h3 className="text-sm font-semibold leading-snug break-words text-foreground">
           {item.title}
@@ -453,7 +487,7 @@ function MobileAccountCardPlaceholder() {
     <article
       aria-hidden="true"
       data-testid="market-mobile-pagination-placeholder"
-      className="pointer-events-none rounded-lg border border-border bg-background p-3 opacity-0 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+      className="pointer-events-none rounded-xl border border-border/60 bg-card p-3 opacity-0"
     >
       <div className="h-28" />
     </article>

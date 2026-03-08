@@ -13,6 +13,7 @@ export default function useMarketChatGPTListing() {
   const [refreshingListings, setRefreshingListings] = useState(false);
   const [query, setQuery] = useState("");
   const [response, setResponse] = useState(null);
+  const [lastFetchedAt, setLastFetchedAt] = useState(null);
   const [page, setPage] = useState(1);
   const isMountedRef = useRef(false);
   const apiBase = useMemo(() => getApiBase(), []);
@@ -45,6 +46,7 @@ export default function useMarketChatGPTListing() {
         if (isMountedRef.current) {
           setResponse(data);
           setListingError("");
+          setLastFetchedAt(Date.now());
         }
         return { ok: true };
       } catch (err) {
@@ -143,5 +145,6 @@ export default function useMarketChatGPTListing() {
     displayEnd: Math.min(totalItems, pageStartIndex + paginatedItems.length),
     setPage,
     refreshListings,
+    lastFetchedAt,
   };
 }

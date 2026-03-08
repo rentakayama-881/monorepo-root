@@ -67,6 +67,36 @@ function mapWalletTypeLabel(type, description) {
   return description || type || "Transaksi wallet";
 }
 
+function getTypeBadge(type, kind) {
+  const t = String(type || "").toLowerCase();
+  if (t === "deposit")
+    return {
+      label: "Deposit",
+      cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    };
+  if (t === "withdrawal")
+    return {
+      label: "Withdraw",
+      cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    };
+  if (t === "fee")
+    return {
+      label: "Fee",
+      cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    };
+  if (kind === "transfer")
+    return {
+      label: "Transfer",
+      cls: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    };
+  if (t.includes("market"))
+    return {
+      label: "Market",
+      cls: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+    };
+  return { label: "Wallet", cls: "bg-muted text-muted-foreground" };
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return "-";
   let date;
@@ -136,15 +166,19 @@ export default function TransactionsContent() {
   }, [router]);
 
   const rows = useMemo(() => {
+    let source;
     if (activeTab === "wallet") {
-      return [...walletTransactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      source = walletTransactions;
+    } else if (activeTab === "transfer") {
+      source = transfers;
+    } else if (activeTab === "deposit") {
+      source = walletTransactions.filter((t) => t.type.toLowerCase() === "deposit");
+    } else if (activeTab === "withdraw") {
+      source = walletTransactions.filter((t) => t.type.toLowerCase() === "withdrawal");
+    } else {
+      source = [...walletTransactions, ...transfers];
     }
-    if (activeTab === "transfer") {
-      return [...transfers].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    }
-    return [...walletTransactions, ...transfers].sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-    );
+    return [...source].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }, [activeTab, walletTransactions, transfers]);
 
   return (
@@ -165,12 +199,14 @@ export default function TransactionsContent() {
           </Link>
         </div>
 
-        <div className="mb-6 rounded-lg border border-border bg-card p-4">
-          <div className="text-sm text-muted-foreground">Saldo Wallet</div>
-          <div className="text-2xl font-bold text-foreground">
+        <div className="mb-6 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/10 p-5">
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Saldo Wallet
+          </div>
+          <div className="mt-1 text-3xl font-extrabold text-foreground tracking-tight">
             Rp {wallet.balance.toLocaleString("id-ID")}
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-4 flex gap-2">
             <Link
               href="/account/wallet/deposit"
               className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-emerald-700"
@@ -209,9 +245,11 @@ export default function TransactionsContent() {
           </div>
         </div>
 
-        <div className="mb-4 flex gap-2 border-b border-border">
+        <div className="mb-4 flex gap-1 overflow-x-auto border-b border-border">
           {[
             { key: "all", label: "Semua" },
+            { key: "deposit", label: "Deposit" },
+            { key: "withdraw", label: "Withdraw" },
             { key: "wallet", label: "Wallet" },
             { key: "transfer", label: "Transfer" },
           ].map((tab) => (
@@ -248,11 +286,19 @@ export default function TransactionsContent() {
                 row.kind === "wallet"
                   ? mapWalletTypeLabel(row.type, row.description)
                   : row.description;
+              const badge = getTypeBadge(row.type, row.kind);
               const content = (
                 <div className="rounded-lg border border-border bg-card p-4 transition hover:border-muted-foreground/70">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
-                      <div className="text-sm font-medium text-foreground">{title}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground">{title}</span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}
+                        >
+                          {badge.label}
+                        </span>
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         {formatDate(row.createdAt)}
                       </div>

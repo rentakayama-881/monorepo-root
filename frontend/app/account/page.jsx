@@ -71,7 +71,9 @@ function AccountPageContent() {
   const [username, setUsername] = useState("");
   const [form, setForm] = useState({ full_name: "", bio: "", pronouns: "", company: "" });
   const [socials, setSocials] = useState([{ label: "", url: "" }]);
-  const [telegramAuth, setTelegramAuth] = useState(() => normalizeTelegramAuth({ connected: false }));
+  const [telegramAuth, setTelegramAuth] = useState(() =>
+    normalizeTelegramAuth({ connected: false })
+  );
 
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
@@ -83,7 +85,10 @@ function AccountPageContent() {
   const [primaryBadgeId, setPrimaryBadgeId] = useState(null);
   const [savingBadge, setSavingBadge] = useState(false);
 
-  const featureBase = useMemo(() => process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id", []);
+  const featureBase = useMemo(
+    () => process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id",
+    []
+  );
   const [walletBalance, setWalletBalance] = useState(null);
   const [guaranteeAmount, setGuaranteeAmount] = useState(0);
   const [guaranteeLoading, setGuaranteeLoading] = useState(false);
@@ -95,7 +100,9 @@ function AccountPageContent() {
 
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaveMessage, setProfileSaveMessage] = useState("");
-  const [savedProfileSignature, setSavedProfileSignature] = useState(JSON.stringify(normalizeAccountPayload({}, [])));
+  const [savedProfileSignature, setSavedProfileSignature] = useState(
+    JSON.stringify(normalizeAccountPayload({}, []))
+  );
   const passkeySectionRef = useRef(null);
   const [highlightPasskeySection, setHighlightPasskeySection] = useState(false);
 
@@ -141,7 +148,9 @@ function AccountPageContent() {
         const normalized = normalizeAccountPayload(nextForm, socialAccounts);
 
         setForm(nextForm);
-        setSocials(normalized.social_accounts.length ? normalized.social_accounts : [{ label: "", url: "" }]);
+        setSocials(
+          normalized.social_accounts.length ? normalized.social_accounts : [{ label: "", url: "" }]
+        );
         setTelegramAuth(normalizeTelegramAuth(data.telegram_auth));
         setSavedProfileSignature(JSON.stringify(normalized));
         setProfileSaveMessage("");
@@ -240,7 +249,8 @@ function AccountPageContent() {
       if (!Number.isFinite(amount)) throw new Error("Jumlah jaminan tidak valid");
       if (amount < 100000) throw new Error("Minimal jaminan adalah Rp 100.000");
       if (walletBalance != null && amount > walletBalance) throw new Error("Saldo tidak mencukupi");
-      if (!setGuaranteePin || String(setGuaranteePin).length !== 6) throw new Error("PIN harus 6 digit");
+      if (!setGuaranteePin || String(setGuaranteePin).length !== 6)
+        throw new Error("PIN harus 6 digit");
 
       const response = await fetchWithAuth(`${featureBase}/api/v1/guarantees`, {
         method: "POST",
@@ -497,14 +507,25 @@ function AccountPageContent() {
       {setup2fa === "true" && (
         <div className="mb-6 rounded-lg border border-warning/30 bg-warning/10 p-4">
           <div className="flex items-start gap-3">
-            <svg className="w-6 h-6 text-warning shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            <svg
+              className="w-6 h-6 text-warning shrink-0"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              />
             </svg>
             <div>
               <p className="font-semibold text-warning">2FA Diperlukan untuk Fitur Wallet</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Untuk menggunakan fitur kirim uang, tarik saldo, dan set PIN, Anda harus mengaktifkan 2FA terlebih dahulu.
-                Scroll ke bawah ke bagian &quot;Keamanan&quot; dan klik tombol &quot;Aktifkan 2FA&quot;.
+                Untuk menggunakan fitur kirim uang, tarik saldo, dan set PIN, Anda harus
+                mengaktifkan 2FA terlebih dahulu. Scroll ke bawah ke bagian &quot;Keamanan&quot; dan
+                klik tombol &quot;Aktifkan 2FA&quot;.
               </p>
             </div>
           </div>
@@ -513,7 +534,9 @@ function AccountPageContent() {
 
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">Account Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Manage your account settings and preferences</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage your account settings and preferences
+        </p>
       </div>
 
       {loading ? (
@@ -521,78 +544,92 @@ function AccountPageContent() {
           <CenteredSpinner className="justify-start" sizeClass="h-5 w-5" />
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {error && <Alert variant="error" message={error} />}
           {ok && <Alert variant="success" message={ok} />}
 
-          <AvatarSection
-            avatarPreview={avatarPreview}
-            avatarUrl={avatarUrl}
-            displayName={username || me?.full_name || me?.email}
-            avatarFile={avatarFile}
-            avatarDeleting={avatarDeleting}
-            avatarUploading={avatarUploading}
-            onAvatarFileChange={onAvatarFileChange}
-            onDeleteAvatar={deleteAvatar}
-            onUploadAvatar={uploadAvatar}
-            onCancelAvatarPreview={cancelAvatarPreview}
-          />
+          {/* Profile Group */}
+          <div className="rounded-xl border border-border bg-card px-5">
+            <AvatarSection
+              avatarPreview={avatarPreview}
+              avatarUrl={avatarUrl}
+              displayName={username || me?.full_name || me?.email}
+              avatarFile={avatarFile}
+              avatarDeleting={avatarDeleting}
+              avatarUploading={avatarUploading}
+              onAvatarFileChange={onAvatarFileChange}
+              onDeleteAvatar={deleteAvatar}
+              onUploadAvatar={uploadAvatar}
+              onCancelAvatarPreview={cancelAvatarPreview}
+            />
 
-          <BadgesSection
-            badges={badges}
-            primaryBadgeId={primaryBadgeId}
-            savingBadge={savingBadge}
-            onSavePrimaryBadge={savePrimaryBadge}
-          />
+            <BadgesSection
+              badges={badges}
+              primaryBadgeId={primaryBadgeId}
+              savingBadge={savingBadge}
+              onSavePrimaryBadge={savePrimaryBadge}
+            />
 
-          <GuaranteeSection
-            guaranteeAmount={guaranteeAmount}
-            guaranteeLoading={guaranteeLoading}
-            walletBalance={walletBalance}
-            releaseGuaranteePin={releaseGuaranteePin}
-            setReleaseGuaranteePin={setReleaseGuaranteePin}
-            setGuaranteeAmountInput={setGuaranteeAmountInput}
-            setSetGuaranteeAmountInput={setSetGuaranteeAmountInput}
-            setGuaranteePin={setGuaranteePin}
-            setSetGuaranteePin={setSetGuaranteePin}
-            guaranteeReleasing={guaranteeReleasing}
-            guaranteeSubmitting={guaranteeSubmitting}
-            onSubmitReleaseGuarantee={submitReleaseGuarantee}
-            onSubmitSetGuarantee={submitSetGuarantee}
-          />
+            <ProfileSection
+              form={form}
+              setForm={setForm}
+              socials={socials}
+              updateSocial={updateSocial}
+              removeSocial={removeSocial}
+              addSocial={addSocial}
+              profileDirty={profileDirty}
+              profileSaving={profileSaving}
+              profileSaveMessage={profileSaveMessage}
+              onSaveAccount={saveAccount}
+            />
 
-          <ProfileSection
-            form={form}
-            setForm={setForm}
-            socials={socials}
-            updateSocial={updateSocial}
-            removeSocial={removeSocial}
-            addSocial={addSocial}
-            profileDirty={profileDirty}
-            profileSaving={profileSaving}
-            profileSaveMessage={profileSaveMessage}
-            onSaveAccount={saveAccount}
-          />
-
-          <TelegramAuthSection
-            telegramAuth={telegramAuth}
-            onTelegramAuthChange={setTelegramAuth}
-          />
-
-          <UsernameSection username={username} />
-
-          <TOTPSettings />
-          <div
-            id="passkey-settings"
-            ref={passkeySectionRef}
-            className={`rounded-[var(--radius)] transition-shadow duration-300 ${
-              highlightPasskeySection
-                ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
-                : ""
-            }`}
-          >
-            <PasskeySettings />
+            <UsernameSection username={username} />
           </div>
+
+          {/* Wallet & Guarantee */}
+          <div className="rounded-xl border border-border bg-card px-5">
+            <GuaranteeSection
+              guaranteeAmount={guaranteeAmount}
+              guaranteeLoading={guaranteeLoading}
+              walletBalance={walletBalance}
+              releaseGuaranteePin={releaseGuaranteePin}
+              setReleaseGuaranteePin={setReleaseGuaranteePin}
+              setGuaranteeAmountInput={setGuaranteeAmountInput}
+              setSetGuaranteeAmountInput={setSetGuaranteeAmountInput}
+              setGuaranteePin={setGuaranteePin}
+              setSetGuaranteePin={setSetGuaranteePin}
+              guaranteeReleasing={guaranteeReleasing}
+              guaranteeSubmitting={guaranteeSubmitting}
+              onSubmitReleaseGuarantee={submitReleaseGuarantee}
+              onSubmitSetGuarantee={submitSetGuarantee}
+            />
+          </div>
+
+          {/* Integrations */}
+          <div className="rounded-xl border border-border bg-card px-5">
+            <TelegramAuthSection
+              telegramAuth={telegramAuth}
+              onTelegramAuthChange={setTelegramAuth}
+            />
+          </div>
+
+          {/* Security */}
+          <div className="rounded-xl border border-border bg-card px-5">
+            <TOTPSettings />
+            <div
+              id="passkey-settings"
+              ref={passkeySectionRef}
+              className={`transition-shadow duration-300 ${
+                highlightPasskeySection
+                  ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background rounded-lg"
+                  : ""
+              }`}
+            >
+              <PasskeySettings />
+            </div>
+          </div>
+
+          {/* Danger Zone */}
           <DeleteAccountSection apiBase={apiBase} />
         </div>
       )}

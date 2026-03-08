@@ -9,7 +9,10 @@ const TELEGRAM_WIDGET_SRC = "https://telegram.org/js/telegram-widget.js?22";
 const TELEGRAM_WIDGET_HANDLER = "__aivalidTelegramLoginHandler";
 
 function normalizeBotUsername(value) {
-  return String(value || "").trim().replace(/^@/, "").toLowerCase();
+  return String(value || "")
+    .trim()
+    .replace(/^@/, "")
+    .toLowerCase();
 }
 
 function isTelegramWidgetIframe(iframe) {
@@ -31,7 +34,11 @@ function iframeMatchesBot(iframe, botUsername) {
   const src = String(iframe?.getAttribute("src") || iframe?.src || "").toLowerCase();
   const id = String(iframe?.id || "").toLowerCase();
   const className = typeof iframe?.className === "string" ? iframe.className.toLowerCase() : "";
-  return src.includes(`/embed/${normalizedBot}`) || id.includes(normalizedBot) || className.includes(normalizedBot);
+  return (
+    src.includes(`/embed/${normalizedBot}`) ||
+    id.includes(normalizedBot) ||
+    className.includes(normalizedBot)
+  );
 }
 
 function cleanupTelegramWidgetArtifacts({ container, sectionRoot, botUsername }) {
@@ -116,8 +123,11 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
   const widgetContainerRef = useRef(null);
 
   const botUsername = useMemo(
-    () => String(process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "").trim().replace(/^@/, ""),
-    [],
+    () =>
+      String(process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "")
+        .trim()
+        .replace(/^@/, ""),
+    []
   );
 
   const currentAuth = useMemo(() => normalizeTelegramAuth(telegramAuth), [telegramAuth]);
@@ -214,7 +224,7 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
   return (
     <section ref={sectionRef} className="settings-section">
       <h3 className="settings-section-title mb-3">Telegram Auth</h3>
-      <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="text-sm font-semibold text-foreground">Status</div>
@@ -247,15 +257,21 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
               <div>{displayName}</div>
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Telegram User ID</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                Telegram User ID
+              </div>
               <div>{currentAuth.telegram_user_id || "-"}</div>
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Verified At</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                Verified At
+              </div>
               <div>{formatVerifiedAt(currentAuth.verified_at)}</div>
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Contact Link</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                Contact Link
+              </div>
               {currentAuth.deep_link ? (
                 <a
                   href={currentAuth.deep_link}
@@ -285,7 +301,8 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
               className="text-sm text-foreground [&_*]:!text-foreground"
             />
             <div className="text-xs text-muted-foreground">
-              Setelah login Telegram berhasil, sistem akan memverifikasi signature resmi dari Telegram.
+              Setelah login Telegram berhasil, sistem akan memverifikasi signature resmi dari
+              Telegram.
             </div>
           </div>
         )}

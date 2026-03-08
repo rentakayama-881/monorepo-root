@@ -202,9 +202,12 @@ export default function WithdrawPage() {
             {step > 1 ? "Kembali" : "Wallet"}
           </button>
           <h1 className="text-xl font-bold text-foreground">Penarikan</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Saldo: Rp{wallet.balance.toLocaleString("id-ID")}
-          </p>
+          <div className="mt-2 inline-flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-1.5">
+            <span className="text-xs text-muted-foreground">Saldo saat ini</span>
+            <span className="text-sm font-bold text-foreground">
+              Rp{wallet.balance.toLocaleString("id-ID")}
+            </span>
+          </div>
         </div>
 
         {/* Step Indicator */}

@@ -6,6 +6,7 @@ import NativeSelect from "@/components/ui/NativeSelect";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import { TagList } from "@/components/ui/TagPill";
+import EmptyState from "@/components/ui/EmptyState";
 import { formatIDR } from "@/lib/format";
 import { formatDate } from "@/lib/format";
 import { DATE_FORMATS } from "@/lib/constants";
@@ -244,7 +245,7 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
                 key={String(vc.id)}
                 href={`/validation-cases/${encodeURIComponent(String(vc.id))}`}
                 prefetch={false}
-                className="group block rounded-[var(--radius)] border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-sm"
+                className="group block rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -292,7 +293,7 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
                 </dl>
 
                 {owner.username ? (
-                  <div className="mt-3 flex items-center gap-2 border-t pt-2">
+                  <div className="mt-3 flex items-center gap-2 border-t border-border/40 pt-2">
                     <Avatar
                       src={owner.avatar_url || owner.avatarUrl}
                       name={owner.username || owner.full_name}
@@ -322,9 +323,10 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
           })}
         </div>
       ) : (
-        <div className="rounded-[var(--radius)] border border-dashed bg-card py-12 text-center">
-          <p className="text-sm text-muted-foreground">Tidak ada case yang cocok dengan filter.</p>
-        </div>
+        <EmptyState
+          title="Tidak ada case ditemukan"
+          description="Coba ubah filter atau kata kunci pencarian Anda."
+        />
       )}
     </div>
   );
