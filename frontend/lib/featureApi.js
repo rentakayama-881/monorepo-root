@@ -125,6 +125,7 @@ export const FEATURE_ENDPOINTS = {
     PIN_VERIFY: "/api/v1/wallets/pin/verify",
     TRANSACTIONS: "/api/v1/wallets/transactions",
     DEPOSITS: "/api/v1/wallets/deposits",
+    DEPOSITS_PENDING: "/api/v1/wallets/deposits/pending",
     DEPOSIT_STATUS: (id) => `/api/v1/wallets/deposits/${id}/status`,
   },
 

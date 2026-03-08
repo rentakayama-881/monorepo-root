@@ -100,6 +100,21 @@ function formatCountdown(seconds) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+const NETWORK_DISPLAY_MAP = {
+  "tron network": "TRC20",
+  "ton network": "TON",
+  "bsc mainnet": "BEP20",
+  "ethereum mainnet": "ERC20",
+  "polygon mainnet": "Polygon",
+  "solana mainnet": "SOL",
+};
+
+function normalizeNetworkName(oxaPayNetwork, userSelected) {
+  if (userSelected) return userSelected;
+  if (!oxaPayNetwork) return "";
+  return NETWORK_DISPLAY_MAP[oxaPayNetwork.toLowerCase()] || oxaPayNetwork;
+}
+
 export default function DepositPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -150,9 +165,10 @@ export default function DepositPage() {
 
   async function loadData() {
     try {
-      const [walletRes, historyRes] = await Promise.allSettled([
+      const [walletRes, historyRes, pendingRes] = await Promise.allSettled([
         fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME),
         fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.DEPOSITS + "?limit=10"),
+        fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.DEPOSITS_PENDING),
       ]);
 
       if (walletRes.status === "fulfilled") {
@@ -167,6 +183,38 @@ export default function DepositPage() {
       if (historyRes.status === "fulfilled") {
         const items = extractFeatureItems(historyRes.value) || [];
         setDepositHistory(items.map(normalizeDeposit));
+      }
+
+      if (pendingRes.status === "fulfilled" && step === 1) {
+        const pendingData = unwrapFeatureData(pendingRes.value) || pendingRes.value;
+        const pendingId =
+          pendingData?.id ??
+          pendingData?.Id ??
+          pendingData?.depositId ??
+          pendingData?.DepositId ??
+          "";
+        if (pendingId) {
+          const deposit = {
+            id: pendingId,
+            trackId: pendingData.trackId ?? pendingData.TrackId ?? "",
+            address: pendingData.address ?? pendingData.Address ?? "",
+            qrCode: pendingData.qrCode ?? pendingData.QrCode ?? "",
+            payAmount: pendingData.payAmount ?? pendingData.PayAmount ?? "",
+            payCurrency: pendingData.payCurrency ?? pendingData.PayCurrency ?? payCurrency,
+            network: normalizeNetworkName(pendingData.network ?? pendingData.Network ?? ""),
+            rate: pendingData.rate ?? pendingData.Rate ?? "",
+            expiredAt: Number(pendingData.expiredAt ?? pendingData.ExpiredAt ?? 0),
+            platformFee: Number(pendingData.platformFee ?? pendingData.PlatformFee ?? 0),
+            amount: Number(pendingData.amount ?? pendingData.Amount ?? 0),
+          };
+          const now = Math.floor(Date.now() / 1000);
+          if (deposit.expiredAt > now && deposit.address) {
+            setDepositData(deposit);
+            setStep(2);
+            startCountdown(deposit.expiredAt);
+            startPolling(deposit.id);
+          }
+        }
       }
     } catch (e) {
       logger.error("Failed to load deposit data", e);
@@ -208,7 +256,7 @@ export default function DepositPage() {
         qrCode: data.qrCode ?? data.QrCode ?? "",
         payAmount: data.payAmount ?? data.PayAmount ?? "",
         payCurrency: data.payCurrency ?? data.PayCurrency ?? payCurrency,
-        network: data.network ?? data.Network ?? "",
+        network: normalizeNetworkName(data.network ?? data.Network ?? "", network),
         rate: data.rate ?? data.Rate ?? "",
         expiredAt: Number(data.expiredAt ?? data.ExpiredAt ?? 0),
         platformFee: Number(data.platformFee ?? data.PlatformFee ?? 0),
@@ -633,7 +681,7 @@ export default function DepositPage() {
                         <div className="text-xs text-muted-foreground">
                           {d.payCurrency}
                           {d.payAmount ? ` • ${d.payAmount}` : ""}
-                          {d.network ? ` • ${d.network}` : ""}
+                          {d.network ? ` • ${normalizeNetworkName(d.network)}` : ""}
                         </div>
                       </div>
                       <div className="text-right">

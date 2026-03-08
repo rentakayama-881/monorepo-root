@@ -47,6 +47,7 @@ public record DepositRequestResponse(
     long PlatformFee,
     string PayCurrency,
     string PayAmount,
+    string Network,
     string Status,
     DateTime CreatedAt,
     long ExpiredAt
@@ -61,6 +62,7 @@ public record DepositStatusResponse(
     string Status,
     string PayAmount,
     string PayCurrency,
+    string Network,
     string Address,
     string? QrCode,
     long ExpiredAt,

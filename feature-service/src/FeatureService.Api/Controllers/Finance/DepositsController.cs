@@ -94,6 +94,32 @@ public class DepositsController : ApiControllerBase
     }
 
     /// <summary>
+    /// Get user's active pending deposit (for resuming after page refresh)
+    /// </summary>
+    [HttpGet("pending")]
+    [ProducesResponseType(typeof(ApiResponse<CreateDepositResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPendingDeposit()
+    {
+        var user = _userContext.GetCurrentUser();
+        if (user == null)
+            return ApiUnauthorized("UNAUTHORIZED", "User tidak terautentikasi");
+
+        try
+        {
+            var result = await _depositService.GetPendingDepositAsync(user.UserId);
+            if (result == null)
+                return ApiOk<object>(new { }, "Tidak ada deposit yang menunggu pembayaran");
+
+            return ApiOk(result, "Deposit menunggu pembayaran");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting pending deposit for user {UserId}", user.UserId);
+            return ApiError(500, "INTERNAL_ERROR", "Gagal memuat deposit");
+        }
+    }
+
+    /// <summary>
     /// Get user's deposit history
     /// </summary>
     [HttpGet]

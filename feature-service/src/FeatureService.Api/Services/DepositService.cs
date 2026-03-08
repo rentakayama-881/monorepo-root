@@ -12,6 +12,7 @@ public interface IDepositService
     Task<CreateDepositResponse> CreateRequestAsync(uint userId, string username, CreateDepositRequest request);
     Task<DepositHistoryResponse> GetUserDepositsAsync(uint userId, int limit = 50);
     Task<DepositStatusResponse?> GetDepositStatusAsync(string depositId, uint userId);
+    Task<CreateDepositResponse?> GetPendingDepositAsync(uint userId);
     Task<(bool success, string? error)> HandleCallbackAsync(OxaPayCallbackPayload payload);
 }
 
@@ -151,12 +152,41 @@ public class DepositService : IDepositService
             d.PlatformFee,
             d.PayCurrency,
             d.PayAmount,
+            d.Network ?? d.PayCurrency,
             d.Status.ToString(),
             d.CreatedAt,
             d.ExpiredAt
         )).ToList();
 
         return new DepositHistoryResponse(items, deposits.Count);
+    }
+
+    public async Task<CreateDepositResponse?> GetPendingDepositAsync(uint userId)
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var deposit = await _deposits
+            .Find(d => d.UserId == userId
+                && d.Status == DepositStatus.WaitingPayment
+                && d.ExpiredAt > now)
+            .SortByDescending(d => d.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (deposit == null)
+            return null;
+
+        return new CreateDepositResponse(
+            deposit.Id,
+            deposit.TrackId,
+            deposit.Address,
+            deposit.QrCode,
+            deposit.PayAmount,
+            deposit.PayCurrency,
+            deposit.Network ?? deposit.PayCurrency,
+            deposit.Rate,
+            deposit.ExpiredAt,
+            deposit.PlatformFee,
+            deposit.Amount
+        );
     }
 
     public async Task<DepositStatusResponse?> GetDepositStatusAsync(string depositId, uint userId)
@@ -172,6 +202,7 @@ public class DepositService : IDepositService
             deposit.Status.ToString(),
             deposit.PayAmount,
             deposit.PayCurrency,
+            deposit.Network ?? deposit.PayCurrency,
             deposit.Address,
             deposit.QrCode,
             deposit.ExpiredAt,
@@ -253,9 +284,30 @@ public class DepositService : IDepositService
             Builders<DepositRequest>.Filter.Ne(d => d.Status, DepositStatus.Approved));
 
         var now = DateTime.UtcNow;
+
+        // Calculate credit amount based on actual received crypto
+        // If OxaPay reports receivedAmount, convert back to IDR using stored rate
+        long creditAmountIdr = deposit.Amount; // fallback to original
+        if (payload.ReceivedAmount is > 0 && decimal.TryParse(deposit.Rate, out var rate) && rate > 0)
+        {
+            // rate = crypto_per_idr, so idr = receivedAmount / rate
+            var actualIdr = payload.ReceivedAmount.Value / rate;
+            // Subtract platform fee percentage (~5.26% = 1 - 1/1.0526)
+            var afterFee = Math.Floor(actualIdr * 0.95m);
+            var computedIdr = (long)afterFee;
+            if (computedIdr > 0)
+            {
+                creditAmountIdr = computedIdr;
+                _logger.LogInformation(
+                    "Deposit {DepositId}: received {Received} {Currency}, converted to {Idr} IDR (rate {Rate}, original {Original} IDR)",
+                    deposit.Id, payload.ReceivedAmount, deposit.PayCurrency, creditAmountIdr, deposit.Rate, deposit.Amount);
+            }
+        }
+
         var update = Builders<DepositRequest>.Update
             .Set(d => d.Status, DepositStatus.Approved)
             .Set(d => d.OxaPayStatus, payload.Status)
+            .Set(d => d.Amount, creditAmountIdr)
             .Set(d => d.UpdatedAt, now)
             .Set(d => d.CreditedAt, now);
 
@@ -266,13 +318,13 @@ public class DepositService : IDepositService
             return;
         }
 
-        // Credit wallet with the original requested amount (not the charge amount)
+        // Credit wallet with the calculated amount
         string walletTransactionId;
         try
         {
             walletTransactionId = await _walletService.AddBalanceAsync(
                 deposit.UserId,
-                deposit.Amount,
+                creditAmountIdr,
                 $"Deposit {deposit.PayCurrency} ({deposit.TrackId})",
                 TransactionType.Deposit,
                 deposit.Id,
@@ -283,7 +335,7 @@ public class DepositService : IDepositService
         {
             _logger.LogCritical(ex,
                 "CRITICAL: Failed to credit wallet after deposit approval. DepositId: {DepositId}, UserId: {UserId}, Amount: {Amount}",
-                deposit.Id, deposit.UserId, deposit.Amount);
+                deposit.Id, deposit.UserId, creditAmountIdr);
 
             // Rollback status
             try
