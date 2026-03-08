@@ -17,7 +17,7 @@ const CRYPTO_OPTIONS = [
     value: "USDT",
     label: "Tether",
     symbol: "USDT",
-    color: "bg-emerald-500",
+    networks: ["TRC20", "TON", "BEP20", "ERC20", "Polygon", "SOL"],
     icon: (
       <svg viewBox="0 0 32 32" className="h-8 w-8">
         <circle cx="16" cy="16" r="16" fill="#26A17B" />
@@ -32,7 +32,7 @@ const CRYPTO_OPTIONS = [
     value: "TON",
     label: "Toncoin",
     symbol: "TON",
-    color: "bg-sky-500",
+    networks: ["TON"],
     icon: (
       <svg viewBox="0 0 32 32" className="h-8 w-8">
         <circle cx="16" cy="16" r="16" fill="#0098EA" />
@@ -111,6 +111,7 @@ export default function DepositPage() {
 
   const [amount, setAmount] = useState("");
   const [payCurrency, setPayCurrency] = useState("USDT");
+  const [network, setNetwork] = useState("TRC20");
 
   const [depositData, setDepositData] = useState(null);
   const [countdown, setCountdown] = useState(0);
@@ -122,6 +123,9 @@ export default function DepositPage() {
   const parsedAmount = parseInt(String(amount).replace(/\D/g, ""), 10) || 0;
   const platformFee = Math.ceil(parsedAmount / 0.95) - parsedAmount;
   const totalCharge = parsedAmount + platformFee;
+
+  const selectedCrypto = CRYPTO_OPTIONS.find((c) => c.value === payCurrency);
+  const availableNetworks = selectedCrypto?.networks || [];
 
   useEffect(() => {
     const token = getToken();
@@ -135,6 +139,14 @@ export default function DepositPage() {
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (availableNetworks.length === 1) {
+      setNetwork(availableNetworks[0]);
+    } else if (availableNetworks.length > 1) {
+      setNetwork(availableNetworks[0]);
+    }
+  }, [payCurrency]);
 
   async function loadData() {
     try {
@@ -181,7 +193,11 @@ export default function DepositPage() {
     try {
       const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.DEPOSITS, {
         method: "POST",
-        body: JSON.stringify({ amount: parsedAmount, payCurrency }),
+        body: JSON.stringify({
+          amount: parsedAmount,
+          payCurrency,
+          network: network || null,
+        }),
       });
 
       const data = unwrapFeatureData(response) || response;
@@ -370,6 +386,31 @@ export default function DepositPage() {
               </div>
             </div>
 
+            {/* Network Selector */}
+            {availableNetworks.length > 1 && (
+              <div>
+                <label className="mb-2 block text-sm font-medium text-foreground">
+                  Pilih Jaringan
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {availableNetworks.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setNetwork(n)}
+                      className={`rounded-lg border-2 px-3 py-2 text-xs font-medium transition-all ${
+                        network === n
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border bg-card text-muted-foreground hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Amount Input */}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">
@@ -419,13 +460,14 @@ export default function DepositPage() {
                   <span>Rp{totalCharge.toLocaleString("id-ID")}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Total akan dikonversi ke {payCurrency} dengan kurs saat pembayaran
+                  Total akan dikonversi ke {payCurrency} dengan kurs saat pembayaran. Biaya jaringan
+                  blockchain sudah termasuk dalam jumlah kripto yang ditampilkan.
                 </p>
               </div>
             )}
 
             <button
-              disabled={parsedAmount < minDeposit || processing}
+              disabled={parsedAmount < minDeposit || processing || !network}
               onClick={handleCreateDeposit}
               className="h-12 w-full rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -445,6 +487,9 @@ export default function DepositPage() {
               <div className="text-xs text-muted-foreground">
                 Jaringan: <span className="font-medium text-foreground">{depositData.network}</span>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Jumlah di atas sudah termasuk semua biaya
+              </p>
             </div>
 
             {depositData.qrCode && (
