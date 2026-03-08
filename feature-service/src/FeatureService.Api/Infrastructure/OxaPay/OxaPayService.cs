@@ -246,24 +246,43 @@ public class OxaPayError
 /// </summary>
 public class OxaPayCallbackPayload
 {
+    [JsonPropertyName("track_id")]
     public string? TrackId { get; set; }
+    [JsonPropertyName("status")]
     public string? Status { get; set; }
+    [JsonPropertyName("pay_currency")]
     public string? PayCurrency { get; set; }
+    [JsonPropertyName("pay_amount")]
     public decimal? PayAmount { get; set; }
+    [JsonPropertyName("network")]
     public string? Network { get; set; }
+    [JsonPropertyName("address")]
     public string? Address { get; set; }
+    [JsonPropertyName("order_id")]
     public string? OrderId { get; set; }
+    [JsonPropertyName("price")]
     public decimal? Price { get; set; }
+    [JsonPropertyName("amount")]
     public decimal? Amount { get; set; }
+    [JsonPropertyName("currency")]
     public string? Currency { get; set; }
+    [JsonPropertyName("fee_paid_by_payer")]
     public decimal? FeePaidByPayer { get; set; }
+    [JsonPropertyName("under_paid_coverage")]
     public decimal? UnderPaidCoverage { get; set; }
+    [JsonPropertyName("received_amount")]
     public decimal? ReceivedAmount { get; set; }
+    [JsonPropertyName("txID")]
     public string? TxId { get; set; }
+    [JsonPropertyName("type")]
     public string? Type { get; set; }
+    [JsonPropertyName("description")]
     public string? Description { get; set; }
+    [JsonPropertyName("email")]
     public string? Email { get; set; }
+    [JsonPropertyName("date")]
     public long? Date { get; set; }
+    [JsonPropertyName("expired_at")]
     public long? ExpiredAt { get; set; }
     [JsonPropertyName("hmac")]
     public string? Hmac { get; set; }
