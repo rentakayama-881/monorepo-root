@@ -92,8 +92,8 @@ type repoMetaState struct {
 	RepoVerdicts         []RepoVerdictItem        `json:"repo_verdicts"`
 	RepoConfidenceVotes  []RepoConfidenceVoteItem `json:"repo_confidence_votes"`
 	RepoPayout           *RepoPayoutLedger        `json:"repo_payout,omitempty"`
-	BountyReserveOrderID string                   `json:"bounty_reserve_order_id,omitempty"`
-	BountyReserveStatus  string                   `json:"bounty_reserve_status,omitempty"`
+	BountyReserveOrderID string                   `json:"repo_bounty_reserve_order_id,omitempty"`
+	BountyReserveStatus  string                   `json:"repo_bounty_reserve_status,omitempty"`
 }
 
 func defaultRepoMetaState() repoMetaState {
