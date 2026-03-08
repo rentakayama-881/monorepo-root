@@ -45,8 +45,8 @@ const CRYPTO_OPTIONS = [
   },
 ];
 
-const quickAmounts = [50000, 100000, 200000, 500000, 1000000];
-const minDeposit = 10000;
+const quickAmounts = [2000, 5000, 10000, 50000, 100000];
+const minDeposit = 2000;
 
 function normalizeWallet(payload) {
   const data = unwrapFeatureData(payload) || {};

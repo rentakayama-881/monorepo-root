@@ -23,7 +23,7 @@ public class DepositService : IDepositService
     private readonly OxaPaySettings _oxaPaySettings;
     private readonly ILogger<DepositService> _logger;
 
-    private const long MinDeposit = 10000;
+    private const long MinDeposit = 2000;
 
     public DepositService(
         MongoDbContext dbContext,

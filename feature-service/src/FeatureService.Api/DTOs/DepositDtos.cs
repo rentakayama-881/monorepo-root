@@ -9,7 +9,7 @@ namespace FeatureService.Api.DTOs;
 public class CreateDepositRequest
 {
     [Required(ErrorMessage = "Jumlah deposit wajib diisi")]
-    [Range(10000, long.MaxValue, ErrorMessage = "Minimum deposit Rp 10.000")]
+    [Range(2000, long.MaxValue, ErrorMessage = "Minimum deposit Rp 2.000")]
     public long Amount { get; set; }
 
     /// <summary>
