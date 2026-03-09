@@ -10,6 +10,7 @@ import { Badge, BadgeChip } from "@/components/ui/Badge";
 import ValidationCaseTable from "@/components/ui/ValidationCaseTable";
 import Skeleton from "@/components/ui/Skeleton";
 import UserProfileSkeleton from "./UserProfileSkeleton";
+import { Link as LinkIcon, UserRound, Building2 } from "lucide-react";
 
 const SOCIAL_ICONS = {
   instagram: (
@@ -37,22 +38,7 @@ const SOCIAL_ICONS = {
       <path d="M19.944 7.925c.013.174.013.349.013.523 0 5.326-4.055 11.468-11.468 11.468-2.282 0-4.406-.663-6.19-1.804.316.037.62.05.948.05 1.886 0 3.622-.646 5.007-1.73a4.043 4.043 0 01-3.773-2.799c.25.037.5.062.76.062.362 0 .725-.05 1.063-.137a4.037 4.037 0 01-3.235-3.96v-.05c.538.3 1.162.487 1.823.512a4.034 4.034 0 01-1.798-3.36c0-.75.2-1.435.55-2.035a11.468 11.468 0 008.312 4.219 4.558 4.558 0 01-.1-.925 4.037 4.037 0 014.03-4.03c1.162 0 2.208.487 2.943 1.26a7.985 7.985 0 002.56-.987 4.023 4.023 0 01-1.773 2.222 8.092 8.092 0 002.32-.625 8.681 8.681 0 01-2.01 2.085z" />
     </svg>
   ),
-  link: (
-    <svg
-      className="h-4 w-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M13.5 6.75h3.75a3 3 0 013 3v3.75a3 3 0 01-3 3H13.5m-3-9H6.75a3 3 0 00-3 3v3.75a3 3 0 003 3H10.5m-4.5-4.5h12"
-      />
-    </svg>
-  ),
+  link: <LinkIcon className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />,
 };
 
 function normalizeSocialUrl(url) {
@@ -239,43 +225,13 @@ export default function UserProfilePage() {
           <div className="flex flex-wrap gap-4 text-sm">
             {pronouns && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8.25 8.5a3.25 3.25 0 116.5 0 3.25 3.25 0 01-6.5 0z"
-                  />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 19.5a6 6 0 0112 0" />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.5 6.5h3m0 0v-3m0 3l-3-3"
-                  />
-                </svg>
+                <UserRound className="h-4 w-4" strokeWidth={1.5} />
                 <span>{pronouns}</span>
               </div>
             )}
             {profile.company && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"
-                  />
-                </svg>
+                <Building2 className="h-4 w-4" strokeWidth={1.5} />
                 <span>{profile.company}</span>
               </div>
             )}

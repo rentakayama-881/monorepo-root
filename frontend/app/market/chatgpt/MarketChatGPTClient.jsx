@@ -536,7 +536,7 @@ function SpecDrawer({ item, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-label="Detail akun"
-        className="fixed z-[110] w-full border-l border-border bg-card shadow-2xl animate-slide-up md:top-0 md:right-0 md:h-full md:w-[380px] md:animate-slide-in-from-right bottom-0 left-0 max-h-[82vh] md:max-h-none rounded-t-2xl md:rounded-none"
+        className="fixed z-[110] w-full border-l border-border bg-card shadow-2xl animate-slide-up md:top-0 md:right-0 md:h-full md:w-96 md:animate-slide-in-from-right bottom-0 left-0 max-h-[82vh] md:max-h-none rounded-t-2xl md:rounded-none"
       >
         <div className="flex items-start justify-between border-b border-border px-3 py-2.5">
           <div className="min-w-0">
