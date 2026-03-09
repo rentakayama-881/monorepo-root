@@ -19,7 +19,9 @@ function formatDate(ts) {
 }
 
 function statusLabel(statusRaw) {
-  const s = String(statusRaw || "").toLowerCase().trim();
+  const s = String(statusRaw || "")
+    .toLowerCase()
+    .trim();
   if (!s) return "Unknown";
   const map = {
     open: "Open",
@@ -27,15 +29,17 @@ function statusLabel(statusRaw) {
     on_hold_owner_inactive: "On Hold (Owner Inactive)",
     offer_accepted: "Offer Accepted",
     funds_locked: "Funds Locked",
-    artifact_submitted: "Under Owner Review",
-    completed: "Concluded",
+    artifact_submitted: "Artifact Submitted",
+    completed: "Completed",
     disputed: "Disputed",
   };
   return map[s] || s.replace(/_/g, " ");
 }
 
 function statusStyle(statusRaw) {
-  const s = String(statusRaw || "").toLowerCase().trim();
+  const s = String(statusRaw || "")
+    .toLowerCase()
+    .trim();
   switch (s) {
     case "completed":
       return "border-emerald-200 bg-emerald-50 text-emerald-900";
@@ -71,7 +75,11 @@ function formatDeleteCaseError(err, fallback = "Gagal menghapus Validation Case"
   const message = String(err?.message || fallback).trim();
   const details = String(err?.details || "").trim();
   if (!details) return message || fallback;
-  const generic = new Set(["input tidak valid", "kesalahan database", "terjadi kesalahan internal"]);
+  const generic = new Set([
+    "input tidak valid",
+    "kesalahan database",
+    "terjadi kesalahan internal",
+  ]);
   if (generic.has(message.toLowerCase())) {
     return details;
   }
@@ -79,11 +87,17 @@ function formatDeleteCaseError(err, fallback = "Gagal menghapus Validation Case"
 }
 
 function isCaseDeletable(statusRaw) {
-  return String(statusRaw || "").trim().toLowerCase() === "open";
+  return (
+    String(statusRaw || "")
+      .trim()
+      .toLowerCase() === "open"
+  );
 }
 
 function deleteStatusHint(statusRaw) {
-  const s = String(statusRaw || "").trim().toLowerCase();
+  const s = String(statusRaw || "")
+    .trim()
+    .toLowerCase();
   if (!s || s === "open") return "";
   if (s === "funds_locked") return "Case terkunci karena escrow aktif.";
   if (s === "artifact_submitted") return "Case sedang review owner.";
@@ -93,7 +107,10 @@ function deleteStatusHint(statusRaw) {
 }
 
 function sensitivityText(levelRaw) {
-  const level = String(levelRaw || "S1").toUpperCase().trim() || "S1";
+  const level =
+    String(levelRaw || "S1")
+      .toUpperCase()
+      .trim() || "S1";
   const labels = {
     S0: "Public",
     S1: "Restricted",
@@ -109,7 +126,10 @@ function MyValidationCasesLoading() {
     <div className="space-y-3" aria-busy="true" aria-live="polite">
       <div className="space-y-3 sm:hidden">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={`mobile-${i}`} className="rounded-[var(--radius)] border border-border bg-card p-4">
+          <div
+            key={`mobile-${i}`}
+            className="rounded-[var(--radius)] border border-border bg-card p-4"
+          >
             <div className="space-y-2">
               <Skeleton className="h-3 w-20" />
               <Skeleton className="h-5 w-2/3" />
@@ -194,7 +214,9 @@ export default function MyValidationCasesPage() {
     setDeletingId(targetId);
     setError("");
     try {
-      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(targetId)}`, { method: "DELETE" });
+      await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(targetId)}`, {
+        method: "DELETE",
+      });
       setDeleteTarget(null);
       await load();
     } catch (e) {
@@ -240,12 +262,19 @@ export default function MyValidationCasesPage() {
               const badge = owner?.primary_badge || null;
               const canDelete = isCaseDeletable(vc?.status);
               const deleteHint = deleteStatusHint(vc?.status);
-              const ownerHref = owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "";
+              const ownerHref = owner?.username
+                ? `/user/${encodeURIComponent(owner.username)}`
+                : "";
               return (
-                <article key={String(id)} className="rounded-[var(--radius)] border border-border bg-card px-4 py-3">
+                <article
+                  key={String(id)}
+                  className="rounded-[var(--radius)] border border-border bg-card px-4 py-3"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="font-mono text-[11px] text-muted-foreground">Case #{String(id)}</div>
+                      <div className="font-mono text-[11px] text-muted-foreground">
+                        Case #{String(id)}
+                      </div>
                       <Link
                         href={href}
                         prefetch={false}
@@ -257,7 +286,11 @@ export default function MyValidationCasesPage() {
                     <StatusPill status={vc?.status} />
                   </div>
 
-                  {vc?.summary ? <div className="mt-2 line-clamp-2 text-xs text-muted-foreground">{vc.summary}</div> : null}
+                  {vc?.summary ? (
+                    <div className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+                      {vc.summary}
+                    </div>
+                  ) : null}
                   {Array.isArray(vc?.tags) && vc.tags.length > 0 ? (
                     <div className="mt-2">
                       <TagList tags={vc.tags} size="xs" />
@@ -267,15 +300,21 @@ export default function MyValidationCasesPage() {
                   <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <dt className="text-muted-foreground">Bounty</dt>
-                      <dd className="mt-0.5 font-semibold text-foreground">{formatIDR(vc?.bounty_amount)}</dd>
+                      <dd className="mt-0.5 font-semibold text-foreground">
+                        {formatIDR(vc?.bounty_amount)}
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-muted-foreground">Filed</dt>
-                      <dd className="mt-0.5 font-mono text-muted-foreground">{formatDate(vc?.created_at)}</dd>
+                      <dd className="mt-0.5 font-mono text-muted-foreground">
+                        {formatDate(vc?.created_at)}
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-muted-foreground">Sensitivity</dt>
-                      <dd className="mt-0.5 font-mono text-foreground">{sensitivityText(vc?.sensitivity_level)}</dd>
+                      <dd className="mt-0.5 font-mono text-foreground">
+                        {sensitivityText(vc?.sensitivity_level)}
+                      </dd>
                     </div>
                   </dl>
 
@@ -284,11 +323,17 @@ export default function MyValidationCasesPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         {ownerHref ? (
-                          <Link href={ownerHref} prefetch={false} className="truncate text-xs font-semibold text-foreground hover:underline">
+                          <Link
+                            href={ownerHref}
+                            prefetch={false}
+                            className="truncate text-xs font-semibold text-foreground hover:underline"
+                          >
                             @{owner?.username || "-"}
                           </Link>
                         ) : (
-                          <span className="truncate text-xs font-semibold text-foreground">@{owner?.username || "-"}</span>
+                          <span className="truncate text-xs font-semibold text-foreground">
+                            @{owner?.username || "-"}
+                          </span>
                         )}
                         {badge ? <Badge badge={badge} size="xs" /> : null}
                       </div>
@@ -313,10 +358,16 @@ export default function MyValidationCasesPage() {
                       type="button"
                       title={canDelete ? "Delete case" : deleteHint}
                     >
-                      {String(deletingId) === String(id) ? "Deleting..." : canDelete ? "Delete" : "Locked"}
+                      {String(deletingId) === String(id)
+                        ? "Deleting..."
+                        : canDelete
+                          ? "Delete"
+                          : "Locked"}
                     </button>
                   </div>
-                  {!canDelete ? <div className="mt-1 text-[11px] text-muted-foreground">{deleteHint}</div> : null}
+                  {!canDelete ? (
+                    <div className="mt-1 text-[11px] text-muted-foreground">{deleteHint}</div>
+                  ) : null}
                 </article>
               );
             })}
@@ -327,13 +378,27 @@ export default function MyValidationCasesPage() {
               <table className="w-full min-w-[980px] text-sm">
                 <thead className="bg-secondary/60 text-muted-foreground [&_th]:whitespace-nowrap">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Case</th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Title</th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Status</th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Sensitivity</th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Bounty</th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Filed</th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Action</th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                      Case
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                      Title
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                      Sensitivity
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                      Bounty
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                      Filed
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -353,11 +418,17 @@ export default function MyValidationCasesPage() {
                         </td>
                         <td className="px-4 py-3 align-top">
                           <div className="min-w-0">
-                            <Link href={href} prefetch={false} className="block font-semibold text-foreground hover:underline">
+                            <Link
+                              href={href}
+                              prefetch={false}
+                              className="block font-semibold text-foreground hover:underline"
+                            >
                               {vc?.title || "(untitled)"}
                             </Link>
                             {vc?.summary ? (
-                              <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{vc.summary}</div>
+                              <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                {vc.summary}
+                              </div>
                             ) : null}
                             {Array.isArray(vc?.tags) && vc.tags.length > 0 ? (
                               <div className="mt-2">
@@ -397,14 +468,28 @@ export default function MyValidationCasesPage() {
                               type="button"
                               title={canDelete ? "Delete case" : deleteHint}
                             >
-                              {String(deletingId) === String(id) ? "Deleting..." : canDelete ? "Delete" : "Locked"}
+                              {String(deletingId) === String(id)
+                                ? "Deleting..."
+                                : canDelete
+                                  ? "Delete"
+                                  : "Locked"}
                             </button>
                           </div>
-                          {!canDelete ? <div className="mt-1 text-[11px] text-muted-foreground">{deleteHint}</div> : null}
+                          {!canDelete ? (
+                            <div className="mt-1 text-[11px] text-muted-foreground">
+                              {deleteHint}
+                            </div>
+                          ) : null}
 
                           <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                            <Avatar src={owner?.avatar_url} name={owner?.username || ""} size="xs" />
-                            <span className="font-semibold text-foreground">@{owner?.username || "-"}</span>
+                            <Avatar
+                              src={owner?.avatar_url}
+                              name={owner?.username || ""}
+                              size="xs"
+                            />
+                            <span className="font-semibold text-foreground">
+                              @{owner?.username || "-"}
+                            </span>
                             {badge ? <Badge badge={badge} size="xs" /> : null}
                           </div>
                         </td>
@@ -434,12 +519,14 @@ export default function MyValidationCasesPage() {
             Case ini akan dihapus permanen dari daftar milik kamu.
           </div>
           <div className="rounded-[var(--radius)] border border-border bg-secondary/30 px-3 py-2">
-            <div className="font-mono text-[11px] text-muted-foreground">Case #{deleteTarget?.id || "-"}</div>
-            <div className="mt-1 font-semibold text-foreground">{deleteTarget?.title || "(untitled)"}</div>
+            <div className="font-mono text-[11px] text-muted-foreground">
+              Case #{deleteTarget?.id || "-"}
+            </div>
+            <div className="mt-1 font-semibold text-foreground">
+              {deleteTarget?.title || "(untitled)"}
+            </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Aksi ini tidak bisa dibatalkan.
-          </div>
+          <div className="text-xs text-muted-foreground">Aksi ini tidak bisa dibatalkan.</div>
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"

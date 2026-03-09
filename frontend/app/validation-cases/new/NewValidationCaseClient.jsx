@@ -870,7 +870,6 @@ export default function NewValidationCaseClient() {
                 }
                 options={[
                   { value: "task_input", label: formatRepoFileKindLabel("task_input") },
-                  { value: "case_readme", label: formatRepoFileKindLabel("case_readme") },
                   {
                     value: "sensitive_context",
                     label: formatRepoFileKindLabel("sensitive_context"),

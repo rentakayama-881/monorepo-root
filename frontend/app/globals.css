@@ -1408,11 +1408,11 @@ html {
 
 /* Settings section */
 .settings-section {
-  @apply py-5 space-y-4 border-b border-border/50 last:border-b-0;
+  @apply py-6 space-y-4 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-border/30;
 }
 
 .settings-section-title {
-  @apply text-xs font-semibold text-muted-foreground uppercase tracking-wider;
+  @apply text-sm font-semibold text-foreground tracking-normal;
 }
 
 /* Danger zone */

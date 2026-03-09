@@ -57,16 +57,16 @@ function statusBadgeClass(statusRaw) {
 
 function statusLabel(statusRaw) {
   const s = normalizeStatus(statusRaw);
-  if (!s) return "Tidak diketahui";
+  if (!s) return "Unknown";
   const map = {
-    open: "Terbuka",
-    waiting_owner_response: "Menunggu Respons Owner",
-    on_hold_owner_inactive: "Owner Tidak Aktif",
-    offer_accepted: "Final Offer Diterima",
-    funds_locked: "Dana Terkunci",
-    artifact_submitted: "Dalam Review Owner",
-    completed: "Selesai",
-    disputed: "Disengketakan",
+    open: "Open",
+    waiting_owner_response: "Waiting Owner Response",
+    on_hold_owner_inactive: "On Hold (Owner Inactive)",
+    offer_accepted: "Offer Accepted",
+    funds_locked: "Funds Locked",
+    artifact_submitted: "Artifact Submitted",
+    completed: "Completed",
+    disputed: "Disputed",
   };
   return map[s] || s.replace(/_/g, " ");
 }
@@ -76,25 +76,25 @@ function workflowSummaryLabel(
   { artifactId = "", transferId = "", acceptedFinalOfferId = 0 } = {}
 ) {
   const s = normalizeStatus(statusRaw);
-  if (s === "completed") return "Selesai";
-  if (s === "disputed") return "Dispute terlampir";
-  if (s === "on_hold_owner_inactive") return "Ditahan: owner tidak aktif";
-  if (s === "waiting_owner_response") return "Menunggu respons owner";
-  if (artifactId) return "Dalam review owner";
-  if (transferId) return "Dana terkunci di escrow";
-  if (acceptedFinalOfferId) return "Final Offer diterima";
-  return "Terbuka";
+  if (s === "completed") return "Completed";
+  if (s === "disputed") return "Disputed";
+  if (s === "on_hold_owner_inactive") return "On Hold (Owner Inactive)";
+  if (s === "waiting_owner_response") return "Waiting Owner Response";
+  if (artifactId) return "Artifact Submitted";
+  if (transferId) return "Funds Locked";
+  if (acceptedFinalOfferId) return "Offer Accepted";
+  return "Open";
 }
 
 function consultationStatusLabel(statusRaw) {
   const s = normalizeStatus(statusRaw);
   if (!s) return "-";
   const map = {
-    pending: "Menunggu Review Owner",
-    approved: "Disetujui",
-    rejected: "Ditolak",
-    waiting_owner_response: "Menunggu Respons Owner",
-    owner_timeout: "Batas Waktu Owner Habis",
+    pending: "Pending Owner Review",
+    approved: "Approved",
+    rejected: "Rejected",
+    waiting_owner_response: "Waiting Owner Response",
+    owner_timeout: "Owner Timeout",
   };
   return map[s] || s.replace(/_/g, " ");
 }
@@ -1066,10 +1066,6 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                 {vc?.summary && !looksLikeMarkdownText(vc?.summary) ? (
                   <p className="text-sm text-muted-foreground">{vc.summary}</p>
                 ) : null}
-                <div className="text-sm text-muted-foreground">
-                  Case langsung ready setelah dibuat dan validator bisa apply tanpa flow konsultasi
-                  legacy.
-                </div>
               </div>
 
               {Array.isArray(vc?.tags) && vc.tags.length > 0 ? (
@@ -1077,11 +1073,9 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
               ) : null}
 
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-                <span>Owner {ownerHandle}</span>
+                <span>{ownerHandle}</span>
                 <span aria-hidden="true">•</span>
                 <span>Sensitivitas {sensitivity.level}</span>
-                <span aria-hidden="true">•</span>
-                <span>{workflowSummary}</span>
               </div>
             </div>
 
@@ -1157,11 +1151,9 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
               ) : null}
 
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-                <span>Owner {ownerHandle}</span>
+                <span>{ownerHandle}</span>
                 <span aria-hidden="true">•</span>
                 <span>Sensitivitas {sensitivity.level}</span>
-                <span aria-hidden="true">•</span>
-                <span>{workflowSummary}</span>
               </div>
             </header>
 
@@ -1733,7 +1725,13 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                                 Receiver
                               </th>
                               <td className="px-4 py-3 font-semibold text-foreground">
-                                @{escrowDraft.receiver_username}
+                                <Link
+                                  href={`/user/${encodeURIComponent(escrowDraft.receiver_username)}`}
+                                  prefetch={false}
+                                  className="hover:underline hover:text-primary"
+                                >
+                                  @{escrowDraft.receiver_username}
+                                </Link>
                               </td>
                             </tr>
                             <tr>
@@ -2038,9 +2036,13 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                               name={ev?.actor?.username || ""}
                               size="xs"
                             />
-                            <span className="font-semibold text-foreground">
+                            <Link
+                              href={`/user/${encodeURIComponent(ev.actor.username)}`}
+                              prefetch={false}
+                              className="font-semibold text-foreground hover:underline hover:text-primary"
+                            >
                               @{ev.actor.username}
-                            </span>
+                            </Link>
                             <span>melakukan pembaruan ini.</span>
                           </>
                         ) : (

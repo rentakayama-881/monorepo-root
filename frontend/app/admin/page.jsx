@@ -26,7 +26,6 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
     totalBadges: 0,
     totalUsers: 0,
-    pendingReports: 0,
     activeDeviceBans: 0,
     warningsToday: 0,
     hiddenContent: 0,
@@ -75,7 +74,6 @@ export default function AdminDashboardPage() {
             const modData = unwrapApiData(modPayload) || {};
             setStats((prev) => ({
               ...prev,
-              pendingReports: Number(modData.pendingReports ?? modData.PendingReports ?? 0) || 0,
               activeDeviceBans:
                 Number(modData.activeDeviceBans ?? modData.ActiveDeviceBans ?? 0) || 0,
               warningsToday:
@@ -107,12 +105,6 @@ export default function AdminDashboardPage() {
       color: "text-primary",
     },
     {
-      label: "Pending Reports",
-      value: stats.pendingReports,
-      href: "/admin/reports",
-      color: "text-destructive",
-    },
-    {
       label: "Active Bans",
       value: stats.activeDeviceBans,
       href: "/admin/device-bans",
@@ -139,22 +131,20 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="mt-1 text-muted-foreground">Selamat datang di Admin Panel</p>
+        <p className="mt-1 text-sm text-muted-foreground">Selamat datang di Admin Panel</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map((stat) => (
           <Link key={stat.href} href={stat.href}>
-            <Card className="p-6 hover:border-primary transition-colors cursor-pointer">
-              <div className="flex items-center gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-                </div>
-              </div>
+            <Card className="group p-5 hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {stat.label}
+              </p>
+              <p className={`mt-2 text-3xl font-bold ${stat.color}`}>{stat.value}</p>
             </Card>
           </Link>
         ))}
@@ -166,23 +156,23 @@ export default function AdminDashboardPage() {
           <div className="space-y-2">
             <Link
               href="/admin/badges"
-              className="block rounded-lg px-4 py-3 bg-muted/50 hover:bg-accent transition-colors"
+              className="block rounded-lg px-4 py-3 bg-muted/30 hover:bg-accent transition-colors"
             >
-              <span className="font-medium">Manage Badges</span>
+              <span className="font-medium text-foreground">Manage Badges</span>
               <p className="text-sm text-muted-foreground">Create, edit, or delete badges</p>
             </Link>
             <Link
               href="/admin/users"
-              className="block rounded-lg px-4 py-3 bg-muted/50 hover:bg-accent transition-colors"
+              className="block rounded-lg px-4 py-3 bg-muted/30 hover:bg-accent transition-colors"
             >
-              <span className="font-medium">Manage Users</span>
+              <span className="font-medium text-foreground">Manage Users</span>
               <p className="text-sm text-muted-foreground">Assign or revoke badges from users</p>
             </Link>
             <Link
               href="/admin/integrations/lzt"
-              className="block rounded-lg px-4 py-3 bg-muted/50 hover:bg-accent transition-colors"
+              className="block rounded-lg px-4 py-3 bg-muted/30 hover:bg-accent transition-colors"
             >
-              <span className="font-medium">LZT Integration</span>
+              <span className="font-medium text-foreground">LZT Integration</span>
               <p className="text-sm text-muted-foreground">
                 Test request Market API dari backend secara aman
               </p>

@@ -535,7 +535,7 @@ function AccountPageContent() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">Account Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your account settings and preferences
+          Kelola pengaturan akun dan preferensi Anda
         </p>
       </div>
 
@@ -544,90 +544,110 @@ function AccountPageContent() {
           <CenteredSpinner className="justify-start" sizeClass="h-5 w-5" />
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-10">
           {error && <Alert variant="error" message={error} />}
           {ok && <Alert variant="success" message={ok} />}
 
-          {/* Profile Group */}
-          <div className="rounded-xl border border-border bg-card px-5">
-            <AvatarSection
-              avatarPreview={avatarPreview}
-              avatarUrl={avatarUrl}
-              displayName={username || me?.full_name || me?.email}
-              avatarFile={avatarFile}
-              avatarDeleting={avatarDeleting}
-              avatarUploading={avatarUploading}
-              onAvatarFileChange={onAvatarFileChange}
-              onDeleteAvatar={deleteAvatar}
-              onUploadAvatar={uploadAvatar}
-              onCancelAvatarPreview={cancelAvatarPreview}
-            />
+          {/* Profile & Identity */}
+          <section>
+            <h2 className="text-lg font-semibold text-foreground mb-1">Profil & Identitas</h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              Informasi publik yang terlihat di profil Anda
+            </p>
+            <div className="rounded-xl border border-border/60 bg-card/80 px-6">
+              <AvatarSection
+                avatarPreview={avatarPreview}
+                avatarUrl={avatarUrl}
+                displayName={username || me?.full_name || me?.email}
+                avatarFile={avatarFile}
+                avatarDeleting={avatarDeleting}
+                avatarUploading={avatarUploading}
+                onAvatarFileChange={onAvatarFileChange}
+                onDeleteAvatar={deleteAvatar}
+                onUploadAvatar={uploadAvatar}
+                onCancelAvatarPreview={cancelAvatarPreview}
+              />
 
-            <BadgesSection
-              badges={badges}
-              primaryBadgeId={primaryBadgeId}
-              savingBadge={savingBadge}
-              onSavePrimaryBadge={savePrimaryBadge}
-            />
+              <BadgesSection
+                badges={badges}
+                primaryBadgeId={primaryBadgeId}
+                savingBadge={savingBadge}
+                onSavePrimaryBadge={savePrimaryBadge}
+              />
 
-            <ProfileSection
-              form={form}
-              setForm={setForm}
-              socials={socials}
-              updateSocial={updateSocial}
-              removeSocial={removeSocial}
-              addSocial={addSocial}
-              profileDirty={profileDirty}
-              profileSaving={profileSaving}
-              profileSaveMessage={profileSaveMessage}
-              onSaveAccount={saveAccount}
-            />
+              <ProfileSection
+                form={form}
+                setForm={setForm}
+                socials={socials}
+                updateSocial={updateSocial}
+                removeSocial={removeSocial}
+                addSocial={addSocial}
+                profileDirty={profileDirty}
+                profileSaving={profileSaving}
+                profileSaveMessage={profileSaveMessage}
+                onSaveAccount={saveAccount}
+              />
 
-            <UsernameSection username={username} />
-          </div>
+              <UsernameSection username={username} />
+            </div>
+          </section>
 
-          {/* Wallet & Guarantee */}
-          <div className="rounded-xl border border-border bg-card px-5">
-            <GuaranteeSection
-              guaranteeAmount={guaranteeAmount}
-              guaranteeLoading={guaranteeLoading}
-              walletBalance={walletBalance}
-              releaseGuaranteePin={releaseGuaranteePin}
-              setReleaseGuaranteePin={setReleaseGuaranteePin}
-              setGuaranteeAmountInput={setGuaranteeAmountInput}
-              setSetGuaranteeAmountInput={setSetGuaranteeAmountInput}
-              setGuaranteePin={setGuaranteePin}
-              setSetGuaranteePin={setSetGuaranteePin}
-              guaranteeReleasing={guaranteeReleasing}
-              guaranteeSubmitting={guaranteeSubmitting}
-              onSubmitReleaseGuarantee={submitReleaseGuarantee}
-              onSubmitSetGuarantee={submitSetGuarantee}
-            />
-          </div>
+          {/* Finance */}
+          <section>
+            <h2 className="text-lg font-semibold text-foreground mb-1">Keuangan</h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              Jaminan profil dan pengaturan keuangan
+            </p>
+            <div className="rounded-xl border border-border/60 bg-card/80 px-6">
+              <GuaranteeSection
+                guaranteeAmount={guaranteeAmount}
+                guaranteeLoading={guaranteeLoading}
+                walletBalance={walletBalance}
+                releaseGuaranteePin={releaseGuaranteePin}
+                setReleaseGuaranteePin={setReleaseGuaranteePin}
+                setGuaranteeAmountInput={setGuaranteeAmountInput}
+                setSetGuaranteeAmountInput={setSetGuaranteeAmountInput}
+                setGuaranteePin={setGuaranteePin}
+                setSetGuaranteePin={setSetGuaranteePin}
+                guaranteeReleasing={guaranteeReleasing}
+                guaranteeSubmitting={guaranteeSubmitting}
+                onSubmitReleaseGuarantee={submitReleaseGuarantee}
+                onSubmitSetGuarantee={submitSetGuarantee}
+              />
+            </div>
+          </section>
 
           {/* Integrations */}
-          <div className="rounded-xl border border-border bg-card px-5">
-            <TelegramAuthSection
-              telegramAuth={telegramAuth}
-              onTelegramAuthChange={setTelegramAuth}
-            />
-          </div>
+          <section>
+            <h2 className="text-lg font-semibold text-foreground mb-1">Integrasi</h2>
+            <p className="text-sm text-muted-foreground mb-5">Hubungkan akun pihak ketiga</p>
+            <div className="rounded-xl border border-border/60 bg-card/80 px-6">
+              <TelegramAuthSection
+                telegramAuth={telegramAuth}
+                onTelegramAuthChange={setTelegramAuth}
+              />
+            </div>
+          </section>
 
           {/* Security */}
-          <div className="rounded-xl border border-border bg-card px-5">
-            <TOTPSettings />
-            <div
-              id="passkey-settings"
-              ref={passkeySectionRef}
-              className={`transition-shadow duration-300 ${
-                highlightPasskeySection
-                  ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background rounded-lg"
-                  : ""
-              }`}
-            >
-              <PasskeySettings />
+          <section>
+            <h2 className="text-lg font-semibold text-foreground mb-1">Keamanan</h2>
+            <p className="text-sm text-muted-foreground mb-5">Autentikasi dua faktor dan passkey</p>
+            <div className="rounded-xl border border-border/60 bg-card/80 px-6">
+              <TOTPSettings />
+              <div
+                id="passkey-settings"
+                ref={passkeySectionRef}
+                className={`transition-shadow duration-300 ${
+                  highlightPasskeySection
+                    ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background rounded-lg"
+                    : ""
+                }`}
+              >
+                <PasskeySettings />
+              </div>
             </div>
-          </div>
+          </section>
 
           {/* Danger Zone */}
           <DeleteAccountSection apiBase={apiBase} />

@@ -38,19 +38,31 @@ const SOCIAL_ICONS = {
     </svg>
   ),
   link: (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6.75h3.75a3 3 0 013 3v3.75a3 3 0 01-3 3H13.5m-3-9H6.75a3 3 0 00-3 3v3.75a3 3 0 003 3H10.5m-4.5-4.5h12" />
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M13.5 6.75h3.75a3 3 0 013 3v3.75a3 3 0 01-3 3H13.5m-3-9H6.75a3 3 0 00-3 3v3.75a3 3 0 003 3H10.5m-4.5-4.5h12"
+      />
     </svg>
   ),
 };
 
 function normalizeSocialUrl(url) {
   if (!url) return "";
-  const rawUrl = typeof url === "string"
-    ? url
-    : (typeof url === "object" && url?.url)
-      ? String(url.url)
-      : String(url);
+  const rawUrl =
+    typeof url === "string"
+      ? url
+      : typeof url === "object" && url?.url
+        ? String(url.url)
+        : String(url);
   const trimmed = rawUrl.trim();
   if (!trimmed) return "";
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
@@ -60,11 +72,14 @@ function normalizeSocialUrl(url) {
 function detectSocialType(label, url) {
   const normalizedLabel = (label || "").toLowerCase();
   const normalizedUrl = (url || "").toLowerCase();
-  if (normalizedLabel.includes("instagram") || normalizedUrl.includes("instagram.com")) return "instagram";
+  if (normalizedLabel.includes("instagram") || normalizedUrl.includes("instagram.com"))
+    return "instagram";
   if (normalizedLabel === "x" || normalizedUrl.includes("x.com")) return "x";
-  if (normalizedLabel.includes("twitter") || normalizedUrl.includes("twitter.com")) return "twitter";
+  if (normalizedLabel.includes("twitter") || normalizedUrl.includes("twitter.com"))
+    return "twitter";
   if (normalizedLabel.includes("github") || normalizedUrl.includes("github.com")) return "github";
-  if (normalizedLabel.includes("linkedin") || normalizedUrl.includes("linkedin.com")) return "linkedin";
+  if (normalizedLabel.includes("linkedin") || normalizedUrl.includes("linkedin.com"))
+    return "linkedin";
   return "link";
 }
 
@@ -83,8 +98,8 @@ export default function UserProfilePage() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      fetch(`${API}/api/user/${username}`).then(r => r.json()),
-      fetch(`${API}/api/user/${username}/badges`).then(r => r.json()),
+      fetch(`${API}/api/user/${username}`).then((r) => r.json()),
+      fetch(`${API}/api/user/${username}/badges`).then((r) => r.json()),
     ])
       .then(([user, badgeData]) => {
         setProfile(user);
@@ -96,7 +111,7 @@ export default function UserProfilePage() {
   // Load tab content
   useEffect(() => {
     if (!profile) return;
-    
+
     const loadTabContent = async () => {
       setLoadingContent(true);
       try {
@@ -113,26 +128,32 @@ export default function UserProfilePage() {
         setLoadingContent(false);
       }
     };
-    
+
     loadTabContent();
   }, [API, username, profile, activeTab]);
 
   if (loading) {
     return <UserProfileSkeleton />;
   }
-  
-  if (!profile || profile.error) return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="text-center py-12">
-        <div className="mx-auto mb-4 h-12 w-12 rounded-full border border-border bg-secondary/60" aria-hidden="true" />
-        <h2 className="text-xl font-semibold text-foreground mb-2">User Not Found</h2>
-        <p className="text-muted-foreground">The user @{username} does not exist or has been removed.</p>
-        <Link href="/" className="inline-block mt-4 text-primary hover:underline">
-          Return to Home
-        </Link>
+
+  if (!profile || profile.error)
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <div
+            className="mx-auto mb-4 h-12 w-12 rounded-full border border-border bg-secondary/60"
+            aria-hidden="true"
+          />
+          <h2 className="text-xl font-semibold text-foreground mb-2">User Not Found</h2>
+          <p className="text-muted-foreground">
+            The user @{username} does not exist or has been removed.
+          </p>
+          <Link href="/" className="inline-block mt-4 text-primary hover:underline">
+            Return to Home
+          </Link>
+        </div>
       </div>
-    </div>
-  );
+    );
 
   const displayName = profile.full_name || profile.username || "";
   const rawSocialAccounts = profile.social_accounts;
@@ -152,7 +173,8 @@ export default function UserProfilePage() {
       if (!url) return null;
       const label = String(account?.label || "").trim();
       const type = detectSocialType(label, url);
-      const fallbackLabel = type === "link" ? "Website" : `${type.charAt(0).toUpperCase()}${type.slice(1)}`;
+      const fallbackLabel =
+        type === "link" ? "Website" : `${type.charAt(0).toUpperCase()}${type.slice(1)}`;
       const displayLabel = label || fallbackLabel;
       return {
         url,
@@ -169,27 +191,21 @@ export default function UserProfilePage() {
       <div className="flex flex-col gap-4 mb-8">
         {/* Avatar + Name row */}
         <div className="flex items-start gap-4">
-          <Avatar 
-            src={profile.avatar_url} 
-            name={displayName} 
-            size="xl"
-            className="shrink-0"
-          />
+          <Avatar src={profile.avatar_url} name={displayName} size="xl" className="shrink-0" />
           <div className="min-w-0 flex-1 pt-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold text-foreground">
-                {displayName || "(No Name)"}
-              </h1>
+              <h1 className="text-2xl font-bold text-foreground">{displayName || "(No Name)"}</h1>
               {profile.primary_badge && <Badge badge={profile.primary_badge} size="sm" />}
             </div>
             <p className="text-muted-foreground">@{profile.username}</p>
-            
+
             {/* Join date */}
             {profile.created_at && (
               <p className="text-sm text-muted-foreground mt-1">
-                Joined {new Date(profile.created_at * 1000).toLocaleDateString('en-US', { 
-                  month: 'long', 
-                  year: 'numeric' 
+                Joined{" "}
+                {new Date(profile.created_at * 1000).toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
                 })}
               </p>
             )}
@@ -208,7 +224,6 @@ export default function UserProfilePage() {
                 </span>
               )}
             </div>
-
           </div>
         </div>
 
@@ -224,18 +239,42 @@ export default function UserProfilePage() {
           <div className="flex flex-wrap gap-4 text-sm">
             {pronouns && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 8.5a3.25 3.25 0 116.5 0 3.25 3.25 0 01-6.5 0z" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8.25 8.5a3.25 3.25 0 116.5 0 3.25 3.25 0 01-6.5 0z"
+                  />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 19.5a6 6 0 0112 0" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6.5h3m0 0v-3m0 3l-3-3" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.5 6.5h3m0 0v-3m0 3l-3-3"
+                  />
                 </svg>
                 <span>{pronouns}</span>
               </div>
             )}
             {profile.company && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"
+                  />
                 </svg>
                 <span>{profile.company}</span>
               </div>
@@ -254,24 +293,15 @@ export default function UserProfilePage() {
             ))}
           </div>
         )}
-        
-        {/* Badges */}
-        {badges.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {badges.map(b => (
-              <BadgeChip key={b.id} badge={b} />
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Tabs */}
       <nav className="flex gap-1 border-b border-border mb-6">
-        <button 
+        <button
           onClick={() => setActiveTab("validation_cases")}
           className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-            activeTab === "validation_cases" 
-              ? "text-primary" 
+            activeTab === "validation_cases"
+              ? "text-primary"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -283,9 +313,7 @@ export default function UserProfilePage() {
         <button
           onClick={() => setActiveTab("badges")}
           className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-            activeTab === "badges" 
-              ? "text-primary" 
-              : "text-muted-foreground hover:text-foreground"
+            activeTab === "badges" ? "text-primary" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Badges
@@ -294,7 +322,7 @@ export default function UserProfilePage() {
           )}
         </button>
       </nav>
-      
+
       {/* Tab Content */}
       <div className="min-h-[200px]">
         {loadingContent ? (
@@ -327,9 +355,14 @@ export default function UserProfilePage() {
               <div>
                 {badges.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {badges.map(b => (
-                      <div key={b.id} className="rounded-lg border border-border bg-card p-4 text-center">
-                        <div className="mx-auto mb-2 h-10 w-10 rounded-full bg-secondary/60 border border-border" aria-hidden="true" />
+                    {badges.map((b) => (
+                      <div
+                        key={b.id}
+                        className="rounded-lg border border-border bg-card p-4 text-center"
+                      >
+                        <div className="mx-auto mb-2 flex items-center justify-center">
+                          <Badge badge={b} size="lg" variant="icon" />
+                        </div>
                         <div className="font-medium text-foreground text-sm">{b.name}</div>
                         {b.description && (
                           <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
@@ -341,7 +374,7 @@ export default function UserProfilePage() {
                   </div>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
-                    <p>No badges earned yet</p>
+                    <p>Belum memiliki badge</p>
                   </div>
                 )}
               </div>
