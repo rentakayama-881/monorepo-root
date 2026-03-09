@@ -46,7 +46,13 @@ func SetPrimaryBadge(c *gin.Context) {
 	}
 
 	// Update user's primary badge (Ent)
-	_, err := database.GetEntClient().User.UpdateOneID(int(userID)).SetNillablePrimaryBadgeID(req.BadgeID).Save(c.Request.Context())
+	update := database.GetEntClient().User.UpdateOneID(int(userID))
+	if req.BadgeID != nil && *req.BadgeID > 0 {
+		update = update.SetPrimaryBadgeID(*req.BadgeID)
+	} else {
+		update = update.ClearPrimaryBadgeID()
+	}
+	_, err := update.Save(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"code": "SRV001", "message": "Gagal mengupdate primary badge"},

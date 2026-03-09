@@ -1,14 +1,31 @@
+import { useState } from "react";
 import { BadgeChip } from "@/components/ui/Badge";
 import Select from "@/components/ui/Select";
+import Button from "@/components/ui/Button";
 
 export default function BadgesSection({ badges, primaryBadgeId, savingBadge, onSavePrimaryBadge }) {
+  const [selectedBadgeId, setSelectedBadgeId] = useState(null);
+  const hasChanges = selectedBadgeId !== null;
+  const currentValue = hasChanges ? selectedBadgeId : primaryBadgeId ? String(primaryBadgeId) : "";
+
+  function handleConfirm() {
+    if (selectedBadgeId === null) return;
+    onSavePrimaryBadge(selectedBadgeId);
+    setSelectedBadgeId(null);
+  }
+
+  function handleCancel() {
+    setSelectedBadgeId(null);
+  }
+
   return (
     <section className="settings-section">
       <h3 className="settings-section-title mb-3">Badges</h3>
       <div className="mt-3 space-y-3">
         {badges.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Badge hanya di dapatkan dari reputasi & kontribusi, baik internal maupun eksternal platform yang mempunyai legitimasi.
+            Badge hanya di dapatkan dari reputasi & kontribusi, baik internal maupun eksternal
+            platform yang mempunyai legitimasi.
           </p>
         ) : (
           <>
@@ -18,13 +35,16 @@ export default function BadgesSection({ badges, primaryBadgeId, savingBadge, onS
               ))}
             </div>
             <div className="mt-4">
-              <label className="text-sm font-medium text-foreground">Primary Badge (tampil di username)</label>
-              <div className="mt-2 flex items-center gap-2">
+              <label className="text-sm font-medium text-foreground">Display Badge</label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Pilih badge yang ingin ditampilkan di samping username Anda.
+              </p>
+              <div className="mt-2">
                 <Select
-                  value={primaryBadgeId ? String(primaryBadgeId) : ""}
-                  onChange={(e) => onSavePrimaryBadge(e.target.value)}
+                  value={currentValue}
+                  onChange={(e) => setSelectedBadgeId(e.target.value)}
                   disabled={savingBadge}
-                  className="flex-1"
+                  className="w-full"
                 >
                   <option value="">Tidak ada badge ditampilkan</option>
                   {badges.map((badge) => (
@@ -33,11 +53,23 @@ export default function BadgesSection({ badges, primaryBadgeId, savingBadge, onS
                     </option>
                   ))}
                 </Select>
-                {savingBadge && (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-border border-t-foreground" />
-                )}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Badge yang dipilih akan muncul di samping username Anda.</p>
+              {hasChanges && (
+                <div className="mt-3 flex items-center gap-2">
+                  <Button type="button" size="sm" onClick={handleConfirm} disabled={savingBadge}>
+                    {savingBadge ? "Menyimpan..." : "Simpan"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancel}
+                    disabled={savingBadge}
+                  >
+                    Batal
+                  </Button>
+                </div>
+              )}
             </div>
           </>
         )}

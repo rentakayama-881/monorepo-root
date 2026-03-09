@@ -47,9 +47,19 @@ function statusBadgeClass(statusRaw) {
     case "open":
       return "bg-success/15 text-success border-success/30";
     case "completed":
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800";
+      return "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
     case "disputed":
       return "bg-destructive/10 text-destructive border-destructive/30";
+    case "on_hold_owner_inactive":
+      return "border-orange-200 bg-orange-50 text-orange-900 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-400";
+    case "waiting_owner_response":
+      return "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+    case "funds_locked":
+      return "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
+    case "artifact_submitted":
+      return "border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-400";
+    case "offer_accepted":
+      return "border-violet-200 bg-violet-50 text-violet-950 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-400";
     default:
       return "bg-secondary text-muted-foreground border-border";
   }

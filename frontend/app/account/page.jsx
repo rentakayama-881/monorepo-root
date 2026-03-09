@@ -350,11 +350,7 @@ function AccountPageContent() {
       if (!response.ok) throw new Error("Gagal menyimpan primary badge");
 
       setPrimaryBadgeId(badgeId ? Number(badgeId) : null);
-      setOk("Primary badge diperbarui. Halaman akan direfresh...");
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      setOk(badgeId ? "Display badge berhasil dipasang." : "Display badge berhasil dilepas.");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
