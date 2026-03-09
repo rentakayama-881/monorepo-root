@@ -60,6 +60,28 @@ export function boolText(value) {
   return "";
 }
 
+function hasCyrillic(s) {
+  return /[\u0400-\u04FF]/.test(s);
+}
+
+function pickLatinTitle(item, index) {
+  const candidates = [
+    item?.title_en,
+    item?.title,
+    item?.name_en,
+    item?.name,
+    item?.account_title,
+    item?.description_en,
+    item?.description,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim() && !hasCyrillic(c)) return c.trim();
+  }
+  const sub = item?.chatgpt_subscription;
+  if (typeof sub === "string" && sub.trim()) return `${sub.trim()} Account`;
+  return `Akun ${index + 1}`;
+}
+
 export function toDisplayAccount(item, index) {
   const id =
     item?.chatgpt_item_id ?? item?.item_id ?? item?.account_id ?? item?.id ?? `row-${index}`;
@@ -90,15 +112,7 @@ export function toDisplayAccount(item, index) {
 
   return {
     id: String(id),
-    title:
-      item?.title_en ??
-      item?.title ??
-      item?.name_en ??
-      item?.name ??
-      item?.account_title ??
-      item?.description_en ??
-      item?.description ??
-      `Akun ${index + 1}`,
+    title: pickLatinTitle(item, index),
     displayPriceIDR: normalizedIDR,
     priceSourceSymbol: item?.price_source_symbol ?? "",
     priceSourceCurrency: item?.price_source_currency ?? "",
@@ -155,7 +169,7 @@ function normalizeCheckoutErrorMessage(message) {
   ) {
     return "Akun saat ini belum tersedia untuk dibeli.";
   }
-  return raw || "Pembelian belum dapat diproses saat ini.";
+  return "Pembelian belum dapat diproses saat ini.";
 }
 
 export function toCheckoutFeedback(message) {

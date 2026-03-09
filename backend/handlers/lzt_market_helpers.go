@@ -301,12 +301,25 @@ func normalizeItemTitle(item map[string]interface{}) string {
 	for _, key := range []string{"title_en", "title", "name_en", "name", "account_title", "description_en", "description"} {
 		if v, ok := item[key]; ok {
 			s := strings.TrimSpace(fmt.Sprintf("%v", v))
-			if s != "" {
+			if s != "" && !containsCyrillic(s) {
 				return s
 			}
 		}
 	}
+	sub := firstNonEmptyString(item, "chatgpt_subscription")
+	if sub != "" {
+		return sub + " Account"
+	}
 	return "ChatGPT Account"
+}
+
+func containsCyrillic(s string) bool {
+	for _, r := range s {
+		if r >= 0x0400 && r <= 0x04FF {
+			return true
+		}
+	}
+	return false
 }
 
 func normalizeItemPrice(item map[string]interface{}) string {
@@ -1048,7 +1061,7 @@ func normalizeUserFacingFailureReason(reason string) string {
 	if strings.Contains(lower, "retry_request") {
 		return "Checker sedang error. Coba lagi sebentar."
 	}
-	return msg
+	return "Terjadi kendala sementara. Silakan coba lagi."
 }
 
 func normalizeCheckerErrorMessage(err error) string {
@@ -1236,4 +1249,17 @@ func readBoolEnvLocal(key string, fallback bool) bool {
 	default:
 		return fallback
 	}
+}
+
+// isMarketPurchaseOrderID returns true if the orderID looks like it belongs to
+// a real market purchase (not a validation-case bounty or other internal reservation).
+func isMarketPurchaseOrderID(orderID string) bool {
+id := strings.TrimSpace(orderID)
+if id == "" {
+return false
+}
+if strings.HasPrefix(id, "validation-case:") {
+return false
+}
+return true
 }

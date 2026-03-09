@@ -13,10 +13,18 @@ function normalizeFailure(message) {
   const raw = String(message || "").trim();
   const lower = raw.toLowerCase();
 
-  if (lower.includes("timed out") || lower.includes("timeout") || lower.includes("context canceled")) {
+  if (
+    lower.includes("timed out") ||
+    lower.includes("timeout") ||
+    lower.includes("context canceled")
+  ) {
     return "Permintaan melebihi batas waktu. Silakan coba lagi.";
   }
-  if (lower.includes("saldo kamu tidak mencukupi") || lower.includes("saldo wallet anda tidak mencukupi") || lower.includes("insufficient")) {
+  if (
+    lower.includes("saldo kamu tidak mencukupi") ||
+    lower.includes("saldo wallet anda tidak mencukupi") ||
+    lower.includes("insufficient")
+  ) {
     return "Saldo wallet Anda belum mencukupi.";
   }
   if (
@@ -33,7 +41,7 @@ function normalizeFailure(message) {
   if (lower.includes("checker") || lower.includes("retry_request")) {
     return "Sistem verifikasi sedang sibuk. Silakan coba lagi dalam beberapa saat.";
   }
-  return raw || "Terjadi kendala sementara pada proses pembelian.";
+  return "Terjadi kendala sementara pada proses pembelian.";
 }
 
 function getStepLabel(step) {
@@ -107,11 +115,14 @@ export default function MarketChatGPTOrderDetailPage() {
         setLoading(true);
       }
       try {
-        const data = await fetchJsonAuth(`/api/market/chatgpt/orders/${encodeURIComponent(orderID)}?ts=${Date.now()}`, {
-          method: "GET",
-          timeout: 20000,
-          cache: "no-store",
-        });
+        const data = await fetchJsonAuth(
+          `/api/market/chatgpt/orders/${encodeURIComponent(orderID)}?ts=${Date.now()}`,
+          {
+            method: "GET",
+            timeout: 20000,
+            cache: "no-store",
+          }
+        );
         if (!active) return;
         setError("");
 
@@ -162,19 +173,29 @@ export default function MarketChatGPTOrderDetailPage() {
   return (
     <main className="container py-10 space-y-6">
       <header className="space-y-2">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Marketplace</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          Marketplace
+        </div>
         <h1 className="text-2xl font-semibold text-foreground">Detail Pembelian</h1>
-        <p className="text-sm text-muted-foreground">Ringkasan status dan data akun yang berhasil dibeli.</p>
+        <p className="text-sm text-muted-foreground">
+          Ringkasan status dan data akun yang berhasil dibeli.
+        </p>
       </header>
 
       <section className="rounded-lg border border-border bg-card p-4 space-y-4">
-        {loading ? <SectionLoadingBlock lines={4} compact srLabel="Memuat detail pembelian" /> : null}
-
-        {error ? (
-          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
+        {loading ? (
+          <SectionLoadingBlock lines={4} compact srLabel="Memuat detail pembelian" />
         ) : null}
 
-        {!loading && !error && !order ? <p className="text-sm text-muted-foreground">Data pembelian tidak ditemukan.</p> : null}
+        {error ? (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </div>
+        ) : null}
+
+        {!loading && !error && !order ? (
+          <p className="text-sm text-muted-foreground">Data pembelian tidak ditemukan.</p>
+        ) : null}
 
         {!loading && !error && order ? (
           <div className="space-y-4">
@@ -182,7 +203,10 @@ export default function MarketChatGPTOrderDetailPage() {
               <Row label="Langganan" value={normalizeSubscription(order)} />
               <Row label="Harga" value={order?.price_display || order?.price || "-"} />
               <Row label="Status" value={statusText} />
-              <Row label="Penjual" value={order?.seller || order?.delivery?.account?.seller || "-"} />
+              <Row
+                label="Penjual"
+                value={order?.seller || order?.delivery?.account?.seller || "-"}
+              />
             </div>
 
             {statusNormalized === "failed" && order?.failure_reason ? (
@@ -194,9 +218,15 @@ export default function MarketChatGPTOrderDetailPage() {
             <div className="rounded-md border border-border bg-background p-3 space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Status Proses</div>
-                  <div className="mt-1 text-sm text-foreground">{currentStep ? getStepLabel(currentStep) : "Menunggu pembaruan status..."}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">Terakhir diperbarui: {formatDateTime(currentStep?.at)}</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    Status Proses
+                  </div>
+                  <div className="mt-1 text-sm text-foreground">
+                    {currentStep ? getStepLabel(currentStep) : "Menunggu pembaruan status..."}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Terakhir diperbarui: {formatDateTime(currentStep?.at)}
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -215,7 +245,9 @@ export default function MarketChatGPTOrderDetailPage() {
             </div>
 
             <div className="rounded-md border border-border bg-background p-3">
-              <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Data Akun</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Data Akun
+              </div>
               {statusNormalized === "fulfilled" ? (
                 <div className="mt-3 space-y-3">
                   <CredentialBlock
@@ -255,11 +287,14 @@ export default function MarketChatGPTOrderDetailPage() {
                   />
 
                   <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
-                    Demi keamanan, segera ubah password akun utama dan email pemulihan setelah pembelian selesai.
+                    Demi keamanan, segera ubah password akun utama dan email pemulihan setelah
+                    pembelian selesai.
                   </div>
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Data akun akan ditampilkan setelah transaksi selesai.</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Data akun akan ditampilkan setelah transaksi selesai.
+                </p>
               )}
             </div>
           </div>
@@ -267,10 +302,16 @@ export default function MarketChatGPTOrderDetailPage() {
       </section>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Link href="/market/chatgpt" className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40">
+        <Link
+          href="/market/chatgpt"
+          className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40"
+        >
           Kembali ke daftar akun
         </Link>
-        <Link href="/account/my-purchases" className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40">
+        <Link
+          href="/account/my-purchases"
+          className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40"
+        >
           Buka Riwayat Pembelian
         </Link>
         <button
@@ -328,9 +369,15 @@ function ProgressModal({ open, lock, order, onClose }) {
         <div className="w-full max-w-lg rounded-xl border border-border bg-card p-4 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Progress Pembelian</div>
+              <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                Progress Pembelian
+              </div>
               <h2 className="mt-1 text-base font-semibold text-foreground">
-                {status === "failed" ? "Pembelian Gagal" : status === "fulfilled" ? "Pembelian Selesai" : "Pembelian Sedang Diproses"}
+                {status === "failed"
+                  ? "Pembelian Gagal"
+                  : status === "fulfilled"
+                    ? "Pembelian Selesai"
+                    : "Pembelian Sedang Diproses"}
               </h2>
             </div>
             {!lock ? (
@@ -351,7 +398,9 @@ function ProgressModal({ open, lock, order, onClose }) {
           ) : null}
 
           {status === "failed" ? (
-            <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{failureMessage}</div>
+            <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {failureMessage}
+            </div>
           ) : null}
 
           <div className="mt-3 max-h-[48vh] space-y-2 overflow-auto pr-1">
@@ -359,13 +408,22 @@ function ProgressModal({ open, lock, order, onClose }) {
               <p className="text-xs text-muted-foreground">Menunggu pembaruan status...</p>
             ) : (
               steps.map((step, idx) => (
-                <div key={`${step?.code || "step"}-${idx}`} className="rounded-md border border-border bg-background p-2.5">
+                <div
+                  key={`${step?.code || "step"}-${idx}`}
+                  className="rounded-md border border-border bg-background p-2.5"
+                >
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-xs font-medium text-foreground">{getStepLabel(step)}</div>
                     <StepBadge status={step?.status} />
                   </div>
-                  {step?.message ? <div className="mt-1 text-xs text-muted-foreground">{normalizeFailure(step.message)}</div> : null}
-                  <div className="mt-1 text-[11px] text-muted-foreground">{formatDateTime(step?.at)}</div>
+                  {step?.message ? (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {normalizeFailure(step.message)}
+                    </div>
+                  ) : null}
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    {formatDateTime(step?.at)}
+                  </div>
                 </div>
               ))
             )}
@@ -379,12 +437,24 @@ function ProgressModal({ open, lock, order, onClose }) {
 function StepBadge({ status }) {
   const normalized = String(status || "").toLowerCase();
   if (normalized === "done") {
-    return <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">Selesai</span>;
+    return (
+      <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">
+        Selesai
+      </span>
+    );
   }
   if (normalized === "failed") {
-    return <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">Gagal</span>;
+    return (
+      <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">
+        Gagal
+      </span>
+    );
   }
-  return <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700">Diproses</span>;
+  return (
+    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700">
+      Diproses
+    </span>
+  );
 }
 
 function CredentialBlock({ title, rows }) {
@@ -421,7 +491,12 @@ function LinkBlock({ title, rows }) {
         {validRows.map(([label, value]) => (
           <div key={label} className="grid gap-1 sm:grid-cols-[160px,1fr]">
             <div className="text-xs text-muted-foreground">{label}</div>
-            <a href={value} target="_blank" rel="noreferrer" className="text-sm break-all text-primary underline underline-offset-2">
+            <a
+              href={value}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm break-all text-primary underline underline-offset-2"
+            >
               {value}
             </a>
           </div>

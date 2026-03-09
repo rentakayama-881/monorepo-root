@@ -432,6 +432,9 @@ func (h *LZTMarketHandler) ListMyPublicChatGPTOrders(c *gin.Context) {
 					if _, exists := seenOrderIDs[orderID]; exists {
 						continue
 					}
+					if !isMarketPurchaseOrderID(orderID) {
+						continue
+					}
 
 					fallback := publicMarketOrder{
 						ID:           orderID,
@@ -483,6 +486,9 @@ func (h *LZTMarketHandler) GetMyPublicChatGPTOrderDetail(c *gin.Context) {
 			if err == nil && history != nil {
 				for _, item := range history.Items {
 					if strings.TrimSpace(item.OrderID) != orderID {
+						continue
+					}
+					if !isMarketPurchaseOrderID(strings.TrimSpace(item.OrderID)) {
 						continue
 					}
 					order = publicMarketOrder{
