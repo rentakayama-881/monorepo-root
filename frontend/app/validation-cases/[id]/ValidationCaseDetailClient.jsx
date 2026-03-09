@@ -45,7 +45,7 @@ function statusBadgeClass(statusRaw) {
   const s = normalizeStatus(statusRaw);
   switch (s) {
     case "open":
-      return "bg-success/15 text-success border-success/30";
+      return "border-border bg-card text-foreground";
     case "completed":
       return "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
     case "disputed":

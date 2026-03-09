@@ -32,7 +32,7 @@ export async function fetchCasePublic(id) {
     const res = await fetch(
       `${API_BASE}/api/validation-cases/${encodeURIComponent(String(id))}/public`,
       {
-        next: { revalidate: 60 },
+        next: { revalidate: 10 },
       }
     );
     if (!res.ok) return null;
