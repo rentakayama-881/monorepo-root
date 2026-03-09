@@ -8,9 +8,9 @@ export default function BadgesSection({ badges, primaryBadgeId, savingBadge, onS
   const hasChanges = selectedBadgeId !== null;
   const currentValue = hasChanges ? selectedBadgeId : primaryBadgeId ? String(primaryBadgeId) : "";
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (selectedBadgeId === null) return;
-    onSavePrimaryBadge(selectedBadgeId);
+    await onSavePrimaryBadge(selectedBadgeId);
     setSelectedBadgeId(null);
   }
 

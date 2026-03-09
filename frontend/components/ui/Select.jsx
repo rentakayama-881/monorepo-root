@@ -41,11 +41,11 @@ export default function Select({
   const selectId = propId || generatedId;
   const errorId = `${selectId}-error`;
   const hintId = `${selectId}-hint`;
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedValues, setSelectedValues] = useState(
-    multiSelect ? (controlledValue || []) : controlledValue || ""
+    multiSelect ? controlledValue || [] : controlledValue || ""
   );
   const containerRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -65,9 +65,7 @@ export default function Select({
 
   // Filter options based on search query
   const filteredOptions = searchQuery
-    ? normalizedOptions.filter((opt) =>
-        opt.label.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? normalizedOptions.filter((opt) => opt.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : normalizedOptions;
 
   // Use children if provided and not searchable/multiselect
@@ -167,13 +165,19 @@ export default function Select({
         {label && (
           <label htmlFor={selectId} className="mb-1 block text-sm font-medium text-foreground">
             {label}
-            {required && <span className="text-destructive ml-1" aria-hidden="true">*</span>}
+            {required && (
+              <span className="text-destructive ml-1" aria-hidden="true">
+                *
+              </span>
+            )}
           </label>
         )}
         <div className="relative">
           <select
             id={selectId}
             className={selectStyles}
+            value={controlledValue}
+            onChange={onChange}
             aria-invalid={!!error}
             aria-describedby={describedBy}
             aria-required={required || undefined}
@@ -187,8 +191,18 @@ export default function Select({
             {children}
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-            <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg
+              className="h-4 w-4 text-muted-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </div>
         </div>
@@ -209,9 +223,11 @@ export default function Select({
     error
       ? "border-destructive focus-visible:outline-destructive"
       : success
-      ? "border-success focus-visible:outline-success"
-      : "border-border",
-    !error && !success && "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary",
+        ? "border-success focus-visible:outline-success"
+        : "border-border",
+    !error &&
+      !success &&
+      "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary",
     isOpen && "ring-2 ring-ring",
     className
   );
@@ -221,7 +237,11 @@ export default function Select({
       {label && (
         <label className="mb-1 block text-sm font-medium text-foreground">
           {label}
-          {required && <span className="text-destructive ml-1" aria-hidden="true">*</span>}
+          {required && (
+            <span className="text-destructive ml-1" aria-hidden="true">
+              *
+            </span>
+          )}
         </label>
       )}
 
@@ -248,20 +268,38 @@ export default function Select({
                       className="hover:text-foreground"
                       aria-label={`Remove ${opt?.label || val}`}
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   </span>
                 );
               })
             ) : (
-              <span className={!selectedValues || (multiSelect && selectedValues.length === 0) ? "text-muted-foreground" : ""}>
+              <span
+                className={
+                  !selectedValues || (multiSelect && selectedValues.length === 0)
+                    ? "text-muted-foreground"
+                    : ""
+                }
+              >
                 {getDisplayText()}
               </span>
             )}
             {multiSelect && selectedValues.length > 3 && (
-              <span className="text-xs text-muted-foreground">+{selectedValues.length - 3} more</span>
+              <span className="text-xs text-muted-foreground">
+                +{selectedValues.length - 3} more
+              </span>
             )}
           </div>
           <svg
@@ -336,8 +374,18 @@ export default function Select({
                               {renderOption ? renderOption(opt) : opt.label}
                             </span>
                             {isSelected && (
-                              <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              <svg
+                                className="w-4 h-4 text-primary"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
                               </svg>
                             )}
                           </button>
