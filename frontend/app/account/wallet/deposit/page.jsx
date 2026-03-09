@@ -90,6 +90,8 @@ function getStatusLabel(status) {
     return { label: "Kedaluwarsa", color: "text-gray-500 bg-gray-50 border-gray-200" };
   if (s === "failed" || s === "5")
     return { label: "Gagal", color: "text-red-600 bg-red-50 border-red-200" };
+  if (s === "cancelled" || s === "6")
+    return { label: "Dibatalkan", color: "text-gray-500 bg-gray-50 border-gray-200" };
   return { label: status, color: "text-gray-600 bg-gray-50 border-gray-200" };
 }
 
@@ -109,8 +111,7 @@ const NETWORK_DISPLAY_MAP = {
   "solana mainnet": "SOL",
 };
 
-function normalizeNetworkName(oxaPayNetwork, userSelected) {
-  if (userSelected) return userSelected;
+function normalizeNetworkName(oxaPayNetwork) {
   if (!oxaPayNetwork) return "";
   return NETWORK_DISPLAY_MAP[oxaPayNetwork.toLowerCase()] || oxaPayNetwork;
 }
@@ -134,6 +135,7 @@ export default function DepositPage() {
   const countdownRef = useRef(null);
 
   const [depositHistory, setDepositHistory] = useState([]);
+  const [cancelling, setCancelling] = useState(false);
 
   const parsedAmount = parseInt(String(amount).replace(/\D/g, ""), 10) || 0;
   const platformFee = Math.ceil(parsedAmount / 0.95) - parsedAmount;
@@ -141,6 +143,32 @@ export default function DepositPage() {
 
   const selectedCrypto = CRYPTO_OPTIONS.find((c) => c.value === payCurrency);
   const availableNetworks = selectedCrypto?.networks || [];
+
+  function resetDepositState() {
+    if (pollRef.current) clearInterval(pollRef.current);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    setDepositData(null);
+    setCountdown(0);
+    setAmount("");
+    setPayCurrency("USDT");
+    setNetwork("TRC20");
+    setError("");
+    setCopied(false);
+    setProcessing(false);
+    setCancelling(false);
+  }
+
+  function isDepositDataComplete(data) {
+    return (
+      data &&
+      data.id &&
+      data.address &&
+      data.payAmount &&
+      data.payCurrency &&
+      data.network &&
+      data.expiredAt > 0
+    );
+  }
 
   useEffect(() => {
     const token = getToken();
@@ -255,12 +283,12 @@ export default function DepositPage() {
         address: data.address ?? data.Address ?? "",
         qrCode: data.qrCode ?? data.QrCode ?? "",
         payAmount: data.payAmount ?? data.PayAmount ?? "",
-        payCurrency: data.payCurrency ?? data.PayCurrency ?? payCurrency,
-        network: normalizeNetworkName(data.network ?? data.Network ?? "", network),
+        payCurrency: data.payCurrency ?? data.PayCurrency ?? "",
+        network: normalizeNetworkName(data.network ?? data.Network ?? ""),
         rate: data.rate ?? data.Rate ?? "",
         expiredAt: Number(data.expiredAt ?? data.ExpiredAt ?? 0),
         platformFee: Number(data.platformFee ?? data.PlatformFee ?? 0),
-        amount: Number(data.amount ?? data.Amount ?? parsedAmount),
+        amount: Number(data.amount ?? data.Amount ?? 0),
       };
 
       setDepositData(deposit);
@@ -310,13 +338,15 @@ export default function DepositPage() {
           status === "expired" ||
           status === "4" ||
           status === "failed" ||
-          status === "5"
+          status === "5" ||
+          status === "cancelled" ||
+          status === "6"
         ) {
           clearInterval(pollRef.current);
           clearInterval(countdownRef.current);
           setError("Deposit kedaluwarsa atau gagal. Silakan buat deposit baru.");
+          resetDepositState();
           setStep(1);
-          setDepositData(null);
         }
       } catch (e) {
         logger.warn("Deposit status poll error", e);
@@ -332,6 +362,24 @@ export default function DepositPage() {
       });
     }
   }, [depositData]);
+
+  async function handleCancelDeposit() {
+    if (!depositData?.id || cancelling) return;
+    setCancelling(true);
+    setError("");
+    try {
+      await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.DEPOSIT_CANCEL(depositData.id), {
+        method: "POST",
+      });
+      resetDepositState();
+      setStep(1);
+    } catch (e) {
+      logger.error("Failed to cancel deposit", e);
+      setError(getErrorMessage(e, "Gagal membatalkan deposit"));
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   function handleAmountChange(e) {
     const raw = e.target.value.replace(/\D/g, "");
@@ -357,31 +405,27 @@ export default function DepositPage() {
       <div className="mx-auto max-w-md px-4 py-6">
         {/* Header */}
         <div className="mb-6">
-          <button
-            onClick={() => {
-              if (step === 2) {
-                if (pollRef.current) clearInterval(pollRef.current);
-                if (countdownRef.current) clearInterval(countdownRef.current);
-                setStep(1);
-                setDepositData(null);
-                setError("");
-              } else {
-                router.push("/account/wallet/transactions");
-              }
-            }}
-            className="mb-3 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
+          {step !== 2 && (
+            <button
+              onClick={() => router.push("/account/wallet/transactions")}
+              className="mb-3 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
-            {step === 2 ? "Kembali" : "Wallet"}
-          </button>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 19.5L8.25 12l7.5-7.5"
+                />
+              </svg>
+              Wallet
+            </button>
+          )}
           <h1 className="text-xl font-bold text-foreground">Deposit</h1>
           <div className="mt-2 inline-flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-1.5">
             <span className="text-xs text-muted-foreground">Saldo saat ini</span>
@@ -528,7 +572,7 @@ export default function DepositPage() {
         )}
 
         {/* STEP 2: Payment Details */}
-        {step === 2 && depositData && (
+        {step === 2 && isDepositDataComplete(depositData) && (
           <div className="space-y-5">
             <div className="rounded-lg border border-border bg-card p-4 text-center space-y-3">
               <div className="text-sm text-muted-foreground">Kirim tepat</div>
@@ -616,6 +660,44 @@ export default function DepositPage() {
               </svg>
               Menunggu pembayaran...
             </div>
+
+            {/* Cancel Deposit */}
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+              <p className="text-xs text-muted-foreground text-center">
+                Salah input? Anda dapat membatalkan deposit ini dan membuat yang baru.
+              </p>
+              <p className="text-xs text-destructive/80 text-center font-medium">
+                ⚠️ Jika Anda sudah mengirim kripto ke alamat di atas, pembayaran tetap akan diproses
+                dan saldo Anda akan bertambah.
+              </p>
+              <button
+                onClick={handleCancelDeposit}
+                disabled={cancelling}
+                className="h-9 w-full rounded-lg border border-destructive/30 text-destructive text-sm hover:bg-destructive/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {cancelling ? "Membatalkan..." : "Batalkan Deposit"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: Incomplete data guard — fallback to step 1 */}
+        {step === 2 && !isDepositDataComplete(depositData) && (
+          <div className="space-y-4 text-center">
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+              <p className="text-sm text-yellow-800">
+                Data pembayaran tidak lengkap. Silakan buat deposit baru.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                resetDepositState();
+                setStep(1);
+              }}
+              className="h-10 w-full rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"
+            >
+              Buat Deposit Baru
+            </button>
           </div>
         )}
 
@@ -646,10 +728,8 @@ export default function DepositPage() {
             </div>
             <button
               onClick={() => {
+                resetDepositState();
                 setStep(1);
-                setDepositData(null);
-                setAmount("");
-                setError("");
               }}
               className="h-10 w-full rounded-lg border border-input text-sm hover:bg-accent transition-colors"
             >

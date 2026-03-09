@@ -141,4 +141,42 @@ public class DepositsController : ApiControllerBase
             return ApiError(500, "INTERNAL_ERROR", "Gagal memuat riwayat deposit");
         }
     }
+
+    /// <summary>
+    /// Cancel a pending deposit request.
+    /// Only works if status is WaitingPayment. If crypto was already sent to the address,
+    /// the OxaPay callback will still process and credit the wallet.
+    /// </summary>
+    [HttpPost("{id}/cancel")]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CancelDeposit(string id)
+    {
+        var user = _userContext.GetCurrentUser();
+        if (user == null)
+            return ApiUnauthorized("UNAUTHORIZED", "User tidak terautentikasi");
+
+        var twoFactorCheck = RequiresTwoFactorAuth();
+        if (twoFactorCheck != null) return twoFactorCheck;
+
+        try
+        {
+            var (success, error) = await _depositService.CancelDepositAsync(id, user.UserId);
+            if (!success)
+            {
+                if (error == "Deposit tidak ditemukan")
+                    return ApiNotFound("DEPOSIT_NOT_FOUND", error);
+                return ApiBadRequest("CANCEL_FAILED", error ?? "Gagal membatalkan deposit");
+            }
+
+            return ApiOk<object>(new { cancelled = true }, "Deposit berhasil dibatalkan");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling deposit {DepositId} for user {UserId}", id, user.UserId);
+            return ApiError(500, "INTERNAL_ERROR", "Gagal membatalkan deposit");
+        }
+    }
 }

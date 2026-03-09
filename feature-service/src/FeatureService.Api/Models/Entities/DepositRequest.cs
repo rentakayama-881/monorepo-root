@@ -115,5 +115,6 @@ public enum DepositStatus
     Paid,
     Approved,
     Expired,
-    Failed
+    Failed,
+    Cancelled
 }

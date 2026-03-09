@@ -14,6 +14,7 @@ public interface IDepositService
     Task<DepositStatusResponse?> GetDepositStatusAsync(string depositId, uint userId);
     Task<CreateDepositResponse?> GetPendingDepositAsync(uint userId);
     Task<(bool success, string? error)> HandleCallbackAsync(OxaPayCallbackPayload payload);
+    Task<(bool success, string? error)> CancelDepositAsync(string depositId, uint userId);
 }
 
 public class DepositService : IDepositService
@@ -49,7 +50,7 @@ public class DepositService : IDepositService
         if (request.Amount > MaxDeposit)
             throw new ArgumentException($"Maksimum deposit Rp{MaxDeposit:N0}");
 
-        // Check for existing unexpired deposit for this user
+        // Check for existing unexpired deposit for this user (skip cancelled)
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var existingPending = await _deposits
             .Find(d => d.UserId == userId
@@ -241,7 +242,25 @@ public class DepositService : IDepositService
         }
 
         var callbackStatus = payload.Status?.ToLowerInvariant() ?? "";
-        _logger.LogInformation("OxaPay callback: deposit {DepositId} status={Status}", deposit.Id, payload.Status);
+        _logger.LogInformation("OxaPay callback: deposit {DepositId} status={Status} depositStatus={DepositStatus}",
+            deposit.Id, payload.Status, deposit.Status);
+
+        // If deposit was cancelled by user but payment arrived, still process it to protect funds.
+        // Log warning for monitoring.
+        if (deposit.Status == DepositStatus.Cancelled)
+        {
+            if (callbackStatus is "paid" or "complete" or "sending")
+            {
+                _logger.LogWarning(
+                    "OxaPay callback: deposit {DepositId} was CANCELLED but payment received (status={Status}). Processing to protect user funds.",
+                    deposit.Id, payload.Status);
+                await CreditWalletForDeposit(deposit, payload);
+                return (true, null);
+            }
+            _logger.LogInformation("OxaPay callback: deposit {DepositId} cancelled, ignoring non-payment callback status={Status}",
+                deposit.Id, payload.Status);
+            return (true, null);
+        }
 
         switch (callbackStatus)
         {
@@ -386,6 +405,38 @@ public class DepositService : IDepositService
             .Set(d => d.UpdatedAt, DateTime.UtcNow);
 
         await _deposits.UpdateOneAsync(d => d.Id == depositId, update);
+    }
+
+    public async Task<(bool success, string? error)> CancelDepositAsync(string depositId, uint userId)
+    {
+        var deposit = await _deposits
+            .Find(d => d.Id == depositId && d.UserId == userId)
+            .FirstOrDefaultAsync();
+
+        if (deposit == null)
+            return (false, "Deposit tidak ditemukan");
+
+        if (deposit.Status != DepositStatus.WaitingPayment)
+            return (false, $"Deposit tidak dapat dibatalkan (status: {deposit.Status})");
+
+        var filter = Builders<DepositRequest>.Filter.And(
+            Builders<DepositRequest>.Filter.Eq(d => d.Id, depositId),
+            Builders<DepositRequest>.Filter.Eq(d => d.Status, DepositStatus.WaitingPayment));
+
+        var update = Builders<DepositRequest>.Update
+            .Set(d => d.Status, DepositStatus.Cancelled)
+            .Set(d => d.OxaPayStatus, "cancelled_by_user")
+            .Set(d => d.UpdatedAt, DateTime.UtcNow);
+
+        var result = await _deposits.UpdateOneAsync(filter, update);
+        if (result.ModifiedCount == 0)
+        {
+            _logger.LogWarning("Cancel deposit {DepositId} failed: status changed during cancel (race condition)", depositId);
+            return (false, "Deposit sudah berubah status, tidak dapat dibatalkan");
+        }
+
+        _logger.LogInformation("Deposit {DepositId} cancelled by user {UserId}", depositId, userId);
+        return (true, null);
     }
 
     private static CreateDepositResponse MapToCreateResponse(DepositRequest d) => new(

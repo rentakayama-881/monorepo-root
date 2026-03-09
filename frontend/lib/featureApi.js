@@ -127,6 +127,7 @@ export const FEATURE_ENDPOINTS = {
     DEPOSITS: "/api/v1/wallets/deposits",
     DEPOSITS_PENDING: "/api/v1/wallets/deposits/pending",
     DEPOSIT_STATUS: (id) => `/api/v1/wallets/deposits/${id}/status`,
+    DEPOSIT_CANCEL: (id) => `/api/v1/wallets/deposits/${id}/cancel`,
   },
 
   // Transfers (Escrow)
