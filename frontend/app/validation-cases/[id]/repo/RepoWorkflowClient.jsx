@@ -255,8 +255,9 @@ export default function RepoWorkflowClient({
 
   const canAttach = isOwner || isAssigned;
   const actionLocked = busy || uploadingDocument;
-  const stakeEligible = Boolean(repoTree?.stake_eligible);
-  const applyDisabled = actionLocked || applyingValidator || isAssigned || !stakeEligible;
+  const stakeEligible = repoTree != null ? Boolean(repoTree.stake_eligible) : true;
+  const applyDisabled =
+    !repoTree || actionLocked || applyingValidator || isAssigned || !stakeEligible;
   const canFinalize = Boolean(repoTree?.can_finalize);
   const payout = repoTree?.payout || null;
 
@@ -291,14 +292,14 @@ export default function RepoWorkflowClient({
       return await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/workspace/tree`, {
         method: "GET",
         clearSessionOn401: false,
-        timeout: 20000,
+        timeout: 30000,
       });
     } catch (err) {
       if (err?.status === 404) {
         return fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/repo/tree`, {
           method: "GET",
           clearSessionOn401: false,
-          timeout: 20000,
+          timeout: 30000,
         });
       }
       throw err;
@@ -310,7 +311,7 @@ export default function RepoWorkflowClient({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload || {}),
-      timeout: 20000,
+      timeout: 30000,
       ...requestOptions,
     };
 
@@ -601,9 +602,16 @@ export default function RepoWorkflowClient({
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-[var(--radius)] bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="flex items-center justify-between gap-3 rounded-[var(--radius)] bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
-          {error}
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => loadAll({ withSkeleton: true })}
+            className="shrink-0 rounded-[var(--radius)] border border-destructive/30 px-3 py-1 text-xs font-medium hover:bg-destructive/10"
+          >
+            Coba lagi
+          </button>
         </div>
       ) : null}
       {msg ? (
@@ -788,7 +796,7 @@ export default function RepoWorkflowClient({
             {applyingValidator ? (
               <div className="text-xs text-primary">Request apply sedang diproses...</div>
             ) : null}
-            {!stakeEligible ? (
+            {repoTree && !stakeEligible ? (
               <div className="text-xs text-amber-700">
                 Stake kamu belum memenuhi syarat untuk apply case ini.
               </div>
