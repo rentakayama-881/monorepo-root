@@ -21,18 +21,13 @@ test.describe("Wallet flows", () => {
 
     await page.goto("/account/wallet/set-pin");
 
-    // TODO: replace with exact selectors for PIN set form if available.
-    const pinInputs = page.locator('input[name="pin"], input[inputmode="numeric"]');
-    await pinInputs.first().fill(testPin);
-    if ((await pinInputs.count()) > 1) {
-      await pinInputs.nth(1).fill(testPin);
-    }
-    await page.locator('button[type="submit"]').first().click();
+    await page.getByTestId("setpin-pin-input").fill(testPin);
+    await page.getByTestId("setpin-confirm-input").fill(testPin);
+    await page.getByTestId("setpin-save-button").click();
 
     await page.goto("/account/wallet/send");
 
-    // TODO: replace with dedicated transfer PIN gate selector.
-    await expect(page.getByText(/pin|masukkan pin|verifikasi pin/i)).toBeVisible();
+    await expect(page.getByTestId("transfer-pin-input")).toBeVisible();
   });
 
   test("PIN lockout after 4 failed attempts", async ({ page }) => {
@@ -45,9 +40,8 @@ test.describe("Wallet flows", () => {
     await page.goto("/account/wallet/send");
 
     for (let i = 0; i < 4; i += 1) {
-      // TODO: replace with stable selector for transfer PIN verification input.
-      await page.locator('input[name="pin"], input[inputmode="numeric"]').first().fill("0000");
-      await page.locator('button[type="submit"]').first().click();
+      await page.getByTestId("transfer-pin-input").fill("0000");
+      await page.getByTestId("transfer-submit-button").click();
     }
 
     await expect(page.getByText(/terkunci|locked|coba lagi/i)).toBeVisible();

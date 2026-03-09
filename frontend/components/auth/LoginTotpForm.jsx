@@ -41,6 +41,7 @@ export default function LoginTotpForm({
           <AuthField label={useBackupCode ? "Backup Code" : "6-Digit Code"} htmlFor="totp-code">
             <input
               id="totp-code"
+              data-testid="totp-code-input"
               type="text"
               inputMode={useBackupCode ? "text" : "numeric"}
               pattern={useBackupCode ? undefined : "[0-9]*"}
@@ -56,7 +57,12 @@ export default function LoginTotpForm({
 
           <ApiErrorAlert error={error} />
 
-          <button type="submit" disabled={loading || totpCode.length < minCodeLength} className={AUTH_PRIMARY_BUTTON_CLASS}>
+          <button
+            type="submit"
+            data-testid="totp-submit-button"
+            disabled={loading || totpCode.length < minCodeLength}
+            className={AUTH_PRIMARY_BUTTON_CLASS}
+          >
             {loading ? "Verifying..." : "Verify"}
           </button>
 

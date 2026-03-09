@@ -2,11 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  fetchFeatureAuth,
-  FEATURE_ENDPOINTS,
-  unwrapFeatureData,
-} from "@/lib/featureApi";
+import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
 import { fetchJsonAuth } from "@/lib/api";
 import { getValidToken } from "@/lib/tokenRefresh";
 import { getErrorMessage } from "@/lib/errorMessage";
@@ -45,7 +41,12 @@ export default function SetPinContent() {
         const totpRes = await fetchJsonAuth("/api/auth/totp/status");
         if (!totpRes.enabled) {
           // Redirect to 2FA setup with return URL
-          router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/set-pin" + (redirect ? "?redirect=" + redirect : "")));
+          router.push(
+            "/account/security?setup2fa=true&redirect=" +
+              encodeURIComponent(
+                "/account/wallet/set-pin" + (redirect ? "?redirect=" + redirect : "")
+              )
+          );
           return;
         }
 
@@ -62,7 +63,10 @@ export default function SetPinContent() {
         logger.error("Failed to check wallet:", e);
         // If Feature Service unavailable, show error
         if (e.status === 403 && e.code === "TWO_FACTOR_REQUIRED") {
-          router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/set-pin"));
+          router.push(
+            "/account/security?setup2fa=true&redirect=" +
+              encodeURIComponent("/account/wallet/set-pin")
+          );
           return;
         }
       }
@@ -127,7 +131,10 @@ export default function SetPinContent() {
     } catch (e) {
       logger.error("Failed to set PIN:", e);
       if (e.code === "TWO_FACTOR_REQUIRED") {
-        router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/set-pin"));
+        router.push(
+          "/account/security?setup2fa=true&redirect=" +
+            encodeURIComponent("/account/wallet/set-pin")
+        );
         return;
       }
       setError(getErrorMessage(e, "Unable to save PIN."));
@@ -158,7 +165,12 @@ export default function SetPinContent() {
           className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back
         </Link>
@@ -179,9 +191,7 @@ export default function SetPinContent() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Create Transaction PIN
-          </h1>
+          <h1 className="text-2xl font-bold text-foreground">Create Transaction PIN</h1>
           <p className="text-sm text-muted-foreground mt-1">
             This PIN protects your financial transactions
           </p>
@@ -214,6 +224,7 @@ export default function SetPinContent() {
               </label>
               <input
                 type="password"
+                data-testid="setpin-pin-input"
                 inputMode="numeric"
                 maxLength={6}
                 value={pin}
@@ -226,6 +237,7 @@ export default function SetPinContent() {
                 Avoid predictable PINs such as 123456
               </p>
               <button
+                data-testid="setpin-continue-button"
                 onClick={() => setStep(2)}
                 disabled={pin.length !== 6}
                 className="mt-6 w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
@@ -243,6 +255,7 @@ export default function SetPinContent() {
               </label>
               <input
                 type="password"
+                data-testid="setpin-confirm-input"
                 inputMode="numeric"
                 maxLength={6}
                 value={confirmPin}
@@ -262,6 +275,7 @@ export default function SetPinContent() {
                   Back
                 </button>
                 <button
+                  data-testid="setpin-save-button"
                   onClick={handleSubmit}
                   disabled={processing || confirmPin.length !== 6 || confirmPin !== pin}
                   className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
@@ -276,14 +290,24 @@ export default function SetPinContent() {
         {/* Critical warning - PIN cannot be reset */}
         <div className="mt-6 rounded-lg bg-destructive/10 border border-destructive/30 p-4">
           <div className="flex gap-3">
-            <svg className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <svg
+              className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
             <div className="text-sm">
               <p className="font-semibold text-destructive mb-1">Important Notice</p>
               <p className="text-muted-foreground">
-                <strong>PIN cannot be reset or recovered.</strong> If you forget your PIN,
-                you will not be able to perform transactions and will need to contact support for assistance.
+                <strong>PIN cannot be reset or recovered.</strong> If you forget your PIN, you will
+                not be able to perform transactions and will need to contact support for assistance.
                 Make sure you remember the PIN you set.
               </p>
             </div>
@@ -293,8 +317,18 @@ export default function SetPinContent() {
         {/* Security notice */}
         <div className="mt-6 rounded-lg bg-primary/10 border border-primary/30 p-4">
           <div className="flex gap-3">
-            <svg className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            <svg
+              className="h-5 w-5 text-primary flex-shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
             </svg>
             <div className="text-sm text-muted-foreground">
               <p className="font-medium text-primary mb-1">Security Tips</p>

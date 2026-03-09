@@ -49,6 +49,7 @@ export default function LoginCredentialsForm({
           <AuthField label="Email" htmlFor="login-email">
             <input
               id="login-email"
+              data-testid="login-email-input"
               type="email"
               required
               value={email}
@@ -61,6 +62,7 @@ export default function LoginCredentialsForm({
           <AuthField label="Password" htmlFor="login-password">
             <input
               id="login-password"
+              data-testid="login-password-input"
               type="password"
               required
               value={password}
@@ -71,14 +73,22 @@ export default function LoginCredentialsForm({
           </AuthField>
 
           <div className="text-right">
-            <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+            >
               Forgot password?
             </Link>
           </div>
 
           <ApiErrorAlert error={error} className="mb-2" />
 
-          <button type="submit" disabled={loading} className={AUTH_PRIMARY_BUTTON_CLASS}>
+          <button
+            type="submit"
+            data-testid="login-submit-button"
+            disabled={loading}
+            className={AUTH_PRIMARY_BUTTON_CLASS}
+          >
             {loading ? "Signing in..." : "Login"}
           </button>
         </form>
@@ -94,7 +104,11 @@ export default function LoginCredentialsForm({
               </div>
             </div>
 
-            <PasskeyLoginButton loading={passkeyLoading} disabled={loading} onClick={onPasskeyLogin} />
+            <PasskeyLoginButton
+              loading={passkeyLoading}
+              disabled={loading}
+              onClick={onPasskeyLogin}
+            />
           </>
         ) : null}
       </AuthCard>

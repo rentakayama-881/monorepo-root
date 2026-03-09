@@ -100,6 +100,7 @@ export default function RegisterPage() {
             <AuthField label="Email" htmlFor="register-email">
               <input
                 id="register-email"
+                data-testid="register-email-input"
                 type="email"
                 required
                 value={form.email}
@@ -112,6 +113,7 @@ export default function RegisterPage() {
             <AuthField label="Password" htmlFor="register-password">
               <input
                 id="register-password"
+                data-testid="register-password-input"
                 type="password"
                 required
                 value={form.password}
@@ -168,7 +170,12 @@ export default function RegisterPage() {
             {error ? <AuthNotice variant="error">{error}</AuthNotice> : null}
             {info ? <AuthNotice variant="success">{info}</AuthNotice> : null}
 
-            <button type="submit" disabled={loading} className={AUTH_PRIMARY_BUTTON_CLASS}>
+            <button
+              type="submit"
+              data-testid="register-submit-button"
+              disabled={loading}
+              className={AUTH_PRIMARY_BUTTON_CLASS}
+            >
               {loading ? "Creating account..." : "Create account"}
             </button>
           </form>

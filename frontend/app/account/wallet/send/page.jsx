@@ -1,11 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  fetchFeatureAuth,
-  FEATURE_ENDPOINTS,
-  unwrapFeatureData,
-} from "@/lib/featureApi";
+import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
@@ -65,9 +61,7 @@ export default function SendMoneyPage() {
 
       try {
         // Get wallet and PIN status from Feature Service
-        const walletData = normalizeWallet(
-          await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME)
-        );
+        const walletData = normalizeWallet(await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME));
         setWallet(walletData);
 
         // If PIN not set, redirect to set PIN page
@@ -78,7 +72,9 @@ export default function SendMoneyPage() {
         logger.error("Failed to load wallet:", e);
         // Check for 2FA requirement
         if (e.code === "TWO_FACTOR_REQUIRED") {
-          router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/send"));
+          router.push(
+            "/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/send")
+          );
         }
       }
     }
@@ -93,14 +89,18 @@ export default function SendMoneyPage() {
         try {
           const userData = normalizeSearchUser(
             await fetchFeatureAuth(
-            FEATURE_ENDPOINTS.TRANSFERS.SEARCH_USER + `?username=${encodeURIComponent(searchQuery)}`
-          ));
+              FEATURE_ENDPOINTS.TRANSFERS.SEARCH_USER +
+                `?username=${encodeURIComponent(searchQuery)}`
+            )
+          );
           if (userData && userData.exists) {
-            setSearchResults([{
-              id: userData.userId,
-              username: userData.username,
-              avatar_url: userData.avatarUrl
-            }]);
+            setSearchResults([
+              {
+                id: userData.userId,
+                username: userData.username,
+                avatar_url: userData.avatarUrl,
+              },
+            ]);
           } else {
             setSearchResults([]);
           }
@@ -163,7 +163,9 @@ export default function SendMoneyPage() {
     } catch (e) {
       logger.error("Transfer failed:", e);
       if (e.code === "TWO_FACTOR_REQUIRED") {
-        router.push("/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/send"));
+        router.push(
+          "/account/security?setup2fa=true&redirect=" + encodeURIComponent("/account/wallet/send")
+        );
         return;
       }
       setError(getErrorMessage(e, "Unable to send funds."));
@@ -179,299 +181,321 @@ export default function SendMoneyPage() {
 
   return (
     <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-lg px-4 py-8">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground">Send Funds</h1>
-            <p className="text-sm text-muted-foreground">
-              Transfer uang ke pengguna lain dengan sistem escrow
-            </p>
-          </div>
+      <div className="mx-auto max-w-lg px-4 py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground">Send Funds</h1>
+          <p className="text-sm text-muted-foreground">
+            Transfer uang ke pengguna lain dengan sistem escrow
+          </p>
+        </div>
 
-          {/* Progress Steps */}
-          <div className="mb-6 flex items-center justify-between">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className="flex items-center">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
-                    step >= s
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted/50 text-muted-foreground"
-                  }`}
-                >
-                  {s}
-                </div>
-                {s < 3 && (
-                  <div
-                    className={`h-1 w-16 ${
-                      step > s ? "bg-primary" : "bg-muted/50"
-                    }`}
-                  />
-                )}
+        {/* Progress Steps */}
+        <div className="mb-6 flex items-center justify-between">
+          {[1, 2, 3].map((s) => (
+            <div key={s} className="flex items-center">
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
+                  step >= s
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/50 text-muted-foreground"
+                }`}
+              >
+                {s}
               </div>
-            ))}
-          </div>
-
-          {/* Current Balance */}
-          <div className="mb-6 rounded-lg border border-border bg-card p-4">
-            <div className="text-sm text-muted-foreground">Available Balance</div>
-            <div className="text-xl font-bold text-foreground">
-              Rp {wallet.balance.toLocaleString("id-ID")}
+              {s < 3 && <div className={`h-1 w-16 ${step > s ? "bg-primary" : "bg-muted/50"}`} />}
             </div>
-          </div>
+          ))}
+        </div>
 
-          {/* Step 1: Select User */}
-          {step === 1 && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Find Recipient
-                </label>
+        {/* Current Balance */}
+        <div className="mb-6 rounded-lg border border-border bg-card p-4">
+          <div className="text-sm text-muted-foreground">Available Balance</div>
+          <div className="text-xl font-bold text-foreground">
+            Rp {wallet.balance.toLocaleString("id-ID")}
+          </div>
+        </div>
+
+        {/* Step 1: Select User */}
+        {step === 1 && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Find Recipient
+              </label>
+              <input
+                type="text"
+                data-testid="transfer-recipient-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Ketik username (min 3 karakter)"
+                className="w-full rounded-lg border border-border bg-card px-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+
+            {/* Search Results */}
+            {searching && (
+              <div className="rounded-lg border border-border bg-card p-4 text-center text-muted-foreground">
+                <svg
+                  className="animate-spin h-5 w-5 mx-auto mb-2 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Mencari...
+              </div>
+            )}
+
+            {!searching && searchQuery.length >= 3 && searchResults.length === 0 && (
+              <div className="rounded-lg border border-border bg-card p-4 text-center text-muted-foreground">
+                <svg
+                  className="h-8 w-8 mx-auto mb-2 text-muted-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <p>User not found</p>
+                <p className="text-xs mt-1">Username minimal 7 karakter</p>
+              </div>
+            )}
+
+            {!searching && searchResults.length > 0 && (
+              <div className="rounded-lg border border-border bg-card divide-y divide-border">
+                {searchResults.map((user) => (
+                  <button
+                    key={user.id}
+                    onClick={() => handleSelectUser(user)}
+                    className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-muted/50"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                      {user.username.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-medium text-foreground">{user.username}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 2: Amount & Hold Period */}
+        {step === 2 && (
+          <div className="space-y-4">
+            {/* Selected User */}
+            <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                {selectedUser?.username.slice(0, 2).toUpperCase()}
+              </div>
+              <div className="flex-1">
+                <div className="font-medium text-foreground">{selectedUser?.username}</div>
+                <div className="text-xs text-muted-foreground">Recipient</div>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedUser(null);
+                  setSearchQuery("");
+                  setStep(1);
+                }}
+                className="text-sm text-primary hover:underline"
+              >
+                Ubah
+              </button>
+            </div>
+
+            {/* Amount */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Jumlah Transfer
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  Rp
+                </span>
                 <input
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Ketik username (min 3 karakter)"
-                  className="w-full rounded-lg border border-border bg-card px-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
+                  data-testid="transfer-amount-input"
+                  value={amount}
+                  onChange={(e) => setAmount(formatCurrency(e.target.value))}
+                  placeholder="0"
+                  className="w-full rounded-lg border border-border bg-card px-10 py-3 text-lg font-semibold text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
-
-              {/* Search Results */}
-              {searching && (
-                <div className="rounded-lg border border-border bg-card p-4 text-center text-muted-foreground">
-                  <svg className="animate-spin h-5 w-5 mx-auto mb-2 text-primary" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Mencari...
-                </div>
-              )}
-
-              {!searching && searchQuery.length >= 3 && searchResults.length === 0 && (
-                <div className="rounded-lg border border-border bg-card p-4 text-center text-muted-foreground">
-                  <svg className="h-8 w-8 mx-auto mb-2 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p>User not found</p>
-                  <p className="text-xs mt-1">Username minimal 7 karakter</p>
-                </div>
-              )}
-
-              {!searching && searchResults.length > 0 && (
-                <div className="rounded-lg border border-border bg-card divide-y divide-border">
-                  {searchResults.map((user) => (
-                    <button
-                      key={user.id}
-                      onClick={() => handleSelectUser(user)}
-                      className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-muted/50"
-                    >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                        {user.username.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="font-medium text-foreground">
-                          {user.username}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-          )}
 
-          {/* Step 2: Amount & Hold Period */}
-          {step === 2 && (
-            <div className="space-y-4">
-              {/* Selected User */}
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                  {selectedUser?.username.slice(0, 2).toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-foreground">
-                    {selectedUser?.username}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Recipient</div>
-                </div>
+            {/* Hold Period */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Periode Hold</label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Funds will be held during this period before being auto-released to the recipient.
+                You may release earlier if needed.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => {
-                    setSelectedUser(null);
-                    setSearchQuery("");
-                    setStep(1);
-                  }}
-                  className="text-sm text-primary hover:underline"
+                  type="button"
+                  onClick={() => setHoldDays(7)}
+                  className={`rounded-lg border p-3 text-center transition ${
+                    holdDays === 7
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary"
+                  }`}
                 >
-                  Ubah
+                  <div className="text-lg font-bold">7 Hari</div>
+                  <div className="text-xs opacity-70">Rekomendasi</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHoldDays(30)}
+                  className={`rounded-lg border p-3 text-center transition ${
+                    holdDays === 30
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary"
+                  }`}
+                >
+                  <div className="text-lg font-bold">30 Hari</div>
+                  <div className="text-xs opacity-70">Large Transaction</div>
                 </button>
               </div>
+            </div>
 
-              {/* Amount */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Jumlah Transfer
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    Rp
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Deskripsi (Opsional)
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Contoh: Pembayaran untuk jasa desain logo"
+                rows={2}
+                className="w-full rounded-lg border border-border bg-card px-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+
+            {error && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="flex-1 rounded-lg border border-border bg-card py-3 font-semibold text-foreground transition hover:bg-muted/50"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleAmountNext}
+                className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90"
+              >
+                Lanjutkan
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Confirm & PIN */}
+        {step === 3 && (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Summary */}
+            <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+              <h3 className="font-semibold text-foreground">Ringkasan Transfer</h3>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Recipient</span>
+                <span className="font-medium text-foreground">{selectedUser?.username}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Jumlah</span>
+                <span className="font-bold text-lg text-foreground">Rp {amount}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Periode Hold</span>
+                <span className="font-medium text-foreground">{holdDays} Hari</span>
+              </div>
+              {description && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Deskripsi</span>
+                  <span className="font-medium text-foreground text-right max-w-48 truncate">
+                    {description}
                   </span>
-                  <input
-                    type="text"
-                    value={amount}
-                    onChange={(e) => setAmount(formatCurrency(e.target.value))}
-                    placeholder="0"
-                    className="w-full rounded-lg border border-border bg-card px-10 py-3 text-lg font-semibold text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
-                  />
-                </div>
-              </div>
-
-              {/* Hold Period */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Periode Hold
-                </label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Funds will be held during this period before being auto-released to the recipient. You may release earlier if needed.
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setHoldDays(7)}
-                    className={`rounded-lg border p-3 text-center transition ${
-                      holdDays === 7
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-foreground hover:border-primary"
-                    }`}
-                  >
-                    <div className="text-lg font-bold">7 Hari</div>
-                    <div className="text-xs opacity-70">Rekomendasi</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setHoldDays(30)}
-                    className={`rounded-lg border p-3 text-center transition ${
-                      holdDays === 30
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-foreground hover:border-primary"
-                    }`}
-                  >
-                    <div className="text-lg font-bold">30 Hari</div>
-                    <div className="text-xs opacity-70">Large Transaction</div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Deskripsi (Opsional)
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Contoh: Pembayaran untuk jasa desain logo"
-                  rows={2}
-                  className="w-full rounded-lg border border-border bg-card px-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
-
-              {error && (
-                <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 text-sm text-destructive">
-                  {error}
                 </div>
               )}
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="flex-1 rounded-lg border border-border bg-card py-3 font-semibold text-foreground transition hover:bg-muted/50"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAmountNext}
-                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90"
-                >
-                  Lanjutkan
-                </button>
-              </div>
             </div>
-          )}
 
-          {/* Step 3: Confirm & PIN */}
-          {step === 3 && (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Summary */}
-              <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                <h3 className="font-semibold text-foreground">Ringkasan Transfer</h3>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Recipient</span>
-                  <span className="font-medium text-foreground">{selectedUser?.username}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Jumlah</span>
-                  <span className="font-bold text-lg text-foreground">Rp {amount}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Periode Hold</span>
-                  <span className="font-medium text-foreground">{holdDays} Hari</span>
-                </div>
-                {description && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Deskripsi</span>
-                    <span className="font-medium text-foreground text-right max-w-48 truncate">{description}</span>
-                  </div>
-                )}
+            {/* Info Box */}
+            <div className="rounded-lg bg-primary/10 border border-primary/30 p-3 text-sm text-muted-foreground">
+              <p>
+                Funds will be held for {holdDays} days. After the hold period ends, funds are
+                automatically released to {selectedUser?.username}. You can release them earlier
+                from the Transactions menu.
+              </p>
+            </div>
+
+            {/* PIN */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Enter Transaction PIN
+              </label>
+              <input
+                type="password"
+                data-testid="transfer-pin-input"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="••••••"
+                maxLength={6}
+                className="w-full rounded-lg border border-border bg-card px-4 py-3 text-center text-2xl tracking-widest text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+
+            {error && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+                {error}
               </div>
+            )}
 
-              {/* Info Box */}
-              <div className="rounded-lg bg-primary/10 border border-primary/30 p-3 text-sm text-muted-foreground">
-                <p>
-                  Funds will be held for {holdDays} days. After the hold period ends, funds are automatically released to {selectedUser?.username}. You can release them earlier from the Transactions menu.
-                </p>
-              </div>
-
-              {/* PIN */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Enter Transaction PIN
-                </label>
-                <input
-                  type="password"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="••••••"
-                  maxLength={6}
-                  className="w-full rounded-lg border border-border bg-card px-4 py-3 text-center text-2xl tracking-widest text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
-
-              {error && (
-                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="flex-1 rounded-lg border border-border bg-card py-3 font-semibold text-foreground transition hover:bg-muted/50"
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || pin.length !== 6}
-                  className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {loading ? "Processing..." : "Send Funds"}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="flex-1 rounded-lg border border-border bg-card py-3 font-semibold text-foreground transition hover:bg-muted/50"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                data-testid="transfer-submit-button"
+                disabled={loading || pin.length !== 6}
+                className="flex-1 rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? "Processing..." : "Send Funds"}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
+    </div>
   );
 }

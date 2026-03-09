@@ -29,16 +29,9 @@ test.describe("Transfer flows", () => {
 
       await senderPage.goto("/account/wallet/send");
 
-      // TODO: replace with stable transfer form selectors (data-testid).
-      await senderPage
-        .locator('input[name="recipient"], input[name="receiver"], input[type="text"]')
-        .first()
-        .fill(receiverIdentifier);
-      await senderPage
-        .locator('input[name="amount"], input[type="number"]')
-        .first()
-        .fill(transferAmount);
-      await senderPage.locator('button[type="submit"]').first().click();
+      await senderPage.getByTestId("transfer-recipient-input").fill(receiverIdentifier);
+      await senderPage.getByTestId("transfer-amount-input").fill(transferAmount);
+      await senderPage.getByTestId("transfer-submit-button").click();
 
       await expect(senderPage.getByText(/pending|menunggu|berhasil dibuat/i)).toBeVisible();
 
@@ -56,7 +49,7 @@ test.describe("Transfer flows", () => {
 
     await page.goto(`/account/wallet/transactions/${transferID}`);
 
-    // TODO: replace with stable release action selector.
+    // role-based selector: no data-testid on transaction detail actions
     await page
       .getByRole("button", { name: /release|lepaskan|selesaikan/i })
       .first()
@@ -71,7 +64,7 @@ test.describe("Transfer flows", () => {
 
     await page.goto(`/account/wallet/transactions/${transferID}`);
 
-    // TODO: replace with stable cancel action selector.
+    // role-based selector: no data-testid on transaction detail actions
     await page
       .getByRole("button", { name: /cancel|batalkan/i })
       .first()

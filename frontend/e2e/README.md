@@ -40,4 +40,4 @@ npm run e2e:ui
 ## Catatan
 
 - Test saat ini bersifat skeleton/template.
-- Beberapa selector masih placeholder dengan komentar `TODO`; sesuaikan dengan `data-testid` aktual UI.
+- Selector menggunakan `data-testid` yang sudah tersedia di komponen UI. Untuk action button di halaman detail transaksi, digunakan role-based selector.

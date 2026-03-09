@@ -144,8 +144,8 @@ func (q *EmailQueue) processJob(workerID int, job EmailJob) {
 
 	// All retries exhausted
 	totalDuration := time.Since(job.CreatedAt)
-	log.Printf("[EmailQueue] Worker %d: ✗✗ All retries exhausted for %s (total time: %v)", workerID, job.Recipient, totalDuration)
-	// TODO: Add dead letter queue or alerting here
+	log.Printf("[EmailQueue] Worker %d: ✗✗ DEAD LETTER — All %d retries exhausted for %s (type=%d, total_time=%v, last_error=%v)",
+		workerID, q.maxRetries, job.Recipient, job.Type, totalDuration, err)
 }
 
 // Shutdown gracefully shuts down the email queue

@@ -16,13 +16,9 @@ test.describe("Auth flows", () => {
 
     await page.goto("/register");
 
-    // TODO: switch to stable data-testid selectors if available.
-    await page.locator('input[name="email"], input[type="email"]').first().fill(registerEmail);
-    await page
-      .locator('input[name="password"], input[type="password"]')
-      .first()
-      .fill(registerPassword);
-    await page.locator('button[type="submit"]').first().click();
+    await page.getByTestId("register-email-input").fill(registerEmail);
+    await page.getByTestId("register-password-input").fill(registerPassword);
+    await page.getByTestId("register-submit-button").click();
 
     await expect(page.getByText(/verifikasi|verification|cek email/i)).toBeVisible();
 
@@ -30,17 +26,13 @@ test.describe("Auth flows", () => {
     await expect(page.getByText(/verified|terverifikasi|berhasil/i)).toBeVisible();
 
     await page.goto("/login");
-    await page.locator('input[name="email"], input[type="email"]').first().fill(registerEmail);
-    await page
-      .locator('input[name="password"], input[type="password"]')
-      .first()
-      .fill(registerPassword);
-    await page.locator('button[type="submit"]').first().click();
+    await page.getByTestId("login-email-input").fill(registerEmail);
+    await page.getByTestId("login-password-input").fill(registerPassword);
+    await page.getByTestId("login-submit-button").click();
 
     await expect(page).not.toHaveURL(/\/login$/);
 
-    // TODO: replace fallback selector with deterministic logout button selector.
-    const logoutButton = page.getByRole("button", { name: /logout|keluar|sign out/i }).first();
+    const logoutButton = page.getByTestId("logout-button");
     if (await logoutButton.count()) {
       await logoutButton.click();
       await expect(page).toHaveURL(/\/login|\/$/);
@@ -50,15 +42,9 @@ test.describe("Auth flows", () => {
   test("Login with invalid credentials shows error", async ({ page }) => {
     await page.goto("/login");
 
-    await page
-      .locator('input[name="email"], input[type="email"]')
-      .first()
-      .fill("not-registered@example.com");
-    await page
-      .locator('input[name="password"], input[type="password"]')
-      .first()
-      .fill("WrongPassword123");
-    await page.locator('button[type="submit"]').first().click();
+    await page.getByTestId("login-email-input").fill("not-registered@example.com");
+    await page.getByTestId("login-password-input").fill("WrongPassword123");
+    await page.getByTestId("login-submit-button").click();
 
     await expect(
       page.getByText(/email atau password salah|invalid credentials|login gagal/i)
@@ -73,14 +59,10 @@ test.describe("Auth flows", () => {
 
     await page.goto("/login");
 
-    await page.locator('input[name="email"], input[type="email"]').first().fill(login2FAEmail);
-    await page
-      .locator('input[name="password"], input[type="password"]')
-      .first()
-      .fill(login2FAPassword);
-    await page.locator('button[type="submit"]').first().click();
+    await page.getByTestId("login-email-input").fill(login2FAEmail);
+    await page.getByTestId("login-password-input").fill(login2FAPassword);
+    await page.getByTestId("login-submit-button").click();
 
-    // TODO: replace text-based check with explicit TOTP form selector.
-    await expect(page.getByText(/totp|otp|authenticator|kode verifikasi/i)).toBeVisible();
+    await expect(page.getByTestId("totp-code-input")).toBeVisible();
   });
 });
