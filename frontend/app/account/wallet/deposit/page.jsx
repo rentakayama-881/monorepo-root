@@ -11,6 +11,7 @@ import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
+import { ChevronLeft, Loader2, Check } from "lucide-react";
 
 const CRYPTO_OPTIONS = [
   {
@@ -410,19 +411,7 @@ export default function DepositPage() {
               onClick={() => router.push("/account/wallet/transactions")}
               className="mb-3 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 19.5L8.25 12l7.5-7.5"
-                />
-              </svg>
+              <ChevronLeft className="h-4 w-4" />
               Wallet
             </button>
           )}
@@ -643,26 +632,12 @@ export default function DepositPage() {
             </div>
 
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
+              <Loader2 className="h-4 w-4 animate-spin" />
               Menunggu pembayaran...
             </div>
 
             {/* Cancel Deposit */}
-            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+            <div className="space-y-3 pt-2">
               <p className="text-xs text-muted-foreground text-center">
                 Salah input? Anda dapat membatalkan deposit ini dan membuat yang baru.
               </p>
@@ -705,15 +680,7 @@ export default function DepositPage() {
         {step === 3 && (
           <div className="space-y-5 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <svg
-                className="h-8 w-8 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
+              <Check className="h-8 w-8 text-green-600" strokeWidth={2} />
             </div>
             <h2 className="text-lg font-bold text-foreground">Deposit Berhasil!</h2>
             <p className="text-sm text-muted-foreground">

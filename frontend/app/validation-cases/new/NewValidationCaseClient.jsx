@@ -685,11 +685,8 @@ export default function NewValidationCaseClient() {
           </div>
         </div>
 
-        <div className="space-y-4 md:space-y-6 px-4 py-4 md:px-5 md:py-5">
-          <div
-            id="case-setup"
-            className="rounded-[var(--radius)] border border-border bg-secondary/30 p-3 md:p-4"
-          >
+        <div className="space-y-6 md:space-y-8 px-4 py-5 md:px-6 md:py-6">
+          <div id="case-setup" className="space-y-3 md:space-y-4">
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Case Setup (Wajib)
             </div>
@@ -747,7 +744,7 @@ export default function NewValidationCaseClient() {
             <label className="text-xs font-semibold text-muted-foreground">
               README Design Templates
             </label>
-            <div className="mt-2 rounded-[var(--radius)] border border-border bg-gradient-to-br from-slate-50 via-cyan-50 to-indigo-100 p-3 md:p-4">
+            <div className="mt-2 rounded-[var(--radius)] border border-border/60 bg-gradient-to-br from-slate-50/60 via-cyan-50/40 to-indigo-50/60 p-3 md:p-4">
               <div className="text-sm font-semibold text-foreground">
                 GitHub-style template siap edit
               </div>
@@ -829,10 +826,7 @@ export default function NewValidationCaseClient() {
             </div>
           </div>
 
-          <div
-            id="workspace-files"
-            className="rounded-[var(--radius)] border border-border bg-secondary/20 p-3 md:p-4"
-          >
+          <div id="workspace-files" className="space-y-3">
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Workspace Files
             </div>
@@ -968,7 +962,7 @@ export default function NewValidationCaseClient() {
             <label className="text-xs font-semibold text-muted-foreground">
               Checklist Protokol (Wajib)
             </label>
-            <div className="mt-2 space-y-2 rounded-[var(--radius)] border border-border bg-secondary/20 p-2.5 md:p-3">
+            <div className="mt-2 space-y-2 rounded-[var(--radius)] bg-secondary/10 p-2.5 md:p-3">
               {checklistItems.map((item) => (
                 <label key={item.key} className="flex items-start gap-2 text-sm text-foreground">
                   <input
