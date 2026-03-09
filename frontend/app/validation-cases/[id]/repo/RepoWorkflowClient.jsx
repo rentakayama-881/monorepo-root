@@ -13,6 +13,7 @@ import { FEATURE_ENDPOINTS, getFeatureApiBase } from "@/lib/featureApi";
 import { useUploadDocument } from "@/lib/useDocuments";
 import { formatIDR, formatDateTime } from "@/lib/format";
 import { formatRepoFileKindLabel, formatRepoFileVisibilityLabel } from "@/lib/repoFileLabels";
+import { Download, ShieldCheck } from "lucide-react";
 import WorkspaceWorkflowSkeleton from "../WorkspaceWorkflowSkeleton";
 
 function normalizeErr(err, fallback) {
@@ -125,42 +126,15 @@ function legacyWorkspacePath(path) {
 }
 
 function DownloadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
-      <path d="M12 3v11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path
-        d="m8 11 4 4 4-4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M4 19h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
+  return <Download className="h-3.5 w-3.5" aria-hidden="true" />;
 }
 
 function ConfidenceIcon({ active = false }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
+    <ShieldCheck
       className={`h-4 w-4 ${active ? "text-success" : "text-muted-foreground"}`}
       aria-hidden="true"
-    >
-      <path
-        d="m12 3 7 3v5c0 4.3-2.6 8.4-7 10-4.4-1.6-7-5.7-7-10V6l7-3Z"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
-      <path
-        d="m9.2 12 1.9 1.9 3.7-3.7"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    />
   );
 }
 

@@ -12,6 +12,7 @@ import Portal from "./ui/Portal";
 import { AUTH_CHANGED_EVENT, getToken, TOKEN_KEY } from "@/lib/auth";
 import { getApiBase } from "@/lib/api";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
+import { Menu, Plus } from "lucide-react";
 
 const Sidebar = dynamic(() => import("./Sidebar"), { ssr: false });
 const ProfileSidebar = dynamic(() => import("./ProfileSidebar"), { ssr: false });
@@ -158,20 +159,7 @@ export default function Header() {
           aria-expanded={sidebarOpen}
           type="button"
         >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            className="text-foreground"
-          >
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
+          <Menu className="w-6 h-6 text-foreground" strokeWidth={1.5} />
         </button>
 
         {/* Logo - AIvalid */}
@@ -205,18 +193,7 @@ export default function Header() {
             aria-label="Create Validation Case"
             title="Create Validation Case"
           >
-            <svg
-              className="h-4 w-4 text-foreground"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
+            <Plus className="h-4 w-4 text-foreground" aria-hidden="true" />
           </Link>
 
           {/* Theme toggle */}

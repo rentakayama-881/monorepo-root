@@ -6,6 +6,7 @@ import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
+import { ChevronLeft } from "lucide-react";
 
 const CRYPTO_CURRENCIES = [
   {
@@ -175,7 +176,7 @@ export default function WithdrawPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-md px-4 py-6">
+      <div className="mx-auto max-w-md px-4 sm:px-6 py-6">
         {/* Header */}
         <div className="mb-6">
           <button
@@ -190,15 +191,7 @@ export default function WithdrawPage() {
             }}
             className="mb-3 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
+            <ChevronLeft className="h-4 w-4" />
             {step > 1 ? "Kembali" : "Wallet"}
           </button>
           <h1 className="text-xl font-bold text-foreground">Penarikan</h1>
@@ -262,7 +255,7 @@ export default function WithdrawPage() {
                 <label className="mb-2 block text-sm font-medium text-foreground">
                   Pilih Jaringan
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {availableNetworks.map((n) => (
                     <button
                       key={n}

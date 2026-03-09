@@ -5,6 +5,7 @@ import Link from "next/link";
 import logger from "@/lib/logger";
 import { getAdminToken } from "@/lib/adminAuth";
 import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
+import { ChevronLeft } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
 
@@ -13,8 +14,7 @@ function normalizeResolution(payload) {
   return {
     type: payload?.type ?? payload?.Type ?? "",
     refundToSender: Number(payload?.refundToSender ?? payload?.RefundToSender ?? 0) || 0,
-    releaseToReceiver:
-      Number(payload?.releaseToReceiver ?? payload?.ReleaseToReceiver ?? 0) || 0,
+    releaseToReceiver: Number(payload?.releaseToReceiver ?? payload?.ReleaseToReceiver ?? 0) || 0,
     note: payload?.note ?? payload?.Note ?? "",
   };
 }
@@ -75,10 +75,8 @@ function normalizeDispute(payload) {
     createdAt: data?.createdAt ?? data?.CreatedAt ?? null,
     senderUsername,
     receiverUsername,
-    initiatorUsername:
-      data?.initiatorUsername ?? data?.InitiatorUsername ?? senderUsername,
-    respondentUsername:
-      data?.respondentUsername ?? data?.RespondentUsername ?? receiverUsername,
+    initiatorUsername: data?.initiatorUsername ?? data?.InitiatorUsername ?? senderUsername,
+    respondentUsername: data?.respondentUsername ?? data?.RespondentUsername ?? receiverUsername,
     resolution: normalizeResolution(data?.resolution ?? data?.Resolution ?? null),
     messages: extractFeatureItems(data?.messages ?? data?.Messages).map(normalizeDisputeMessage),
     evidence: extractFeatureItems(data?.evidence ?? data?.Evidence).map(normalizeDisputeEvidence),
@@ -113,7 +111,7 @@ export default function AdminDisputeDetailPage() {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers: {
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
         ...options.headers,
       },
@@ -141,8 +139,7 @@ export default function AdminDisputeDetailPage() {
     const container = messagesContainerRef.current;
     if (!container) return true;
 
-    const distanceToBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight;
+    const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     return distanceToBottom <= 96;
   };
 
@@ -161,26 +158,33 @@ export default function AdminDisputeDetailPage() {
   };
 
   // Load dispute
-  const loadDispute = async () => {
-    try {
-      const data = await fetchWithAuth(`/api/v1/admin/disputes/${disputeId}`);
-      setDispute(normalizeDispute(data));
-      setError("");
-    } catch (e) {
-      logger.error("Failed to load dispute:", e);
-      setError("Dispute tidak ditemukan");
-    }
-    setLoading(false);
-  };
-
   useEffect(() => {
     if (!getAdminToken()) {
       router.push("/admin/login");
       return;
     }
-    loadDispute();
-    const interval = setInterval(loadDispute, 5000);
-    return () => clearInterval(interval);
+
+    let cancelled = false;
+    const fetchDispute = async () => {
+      try {
+        const data = await fetchWithAuth(`/api/v1/admin/disputes/${disputeId}`);
+        if (!cancelled) {
+          setDispute(normalizeDispute(data));
+          setError("");
+        }
+      } catch (e) {
+        logger.error("Failed to load dispute:", e);
+        if (!cancelled) setError("Dispute tidak ditemukan");
+      }
+      if (!cancelled) setLoading(false);
+    };
+
+    fetchDispute();
+    const interval = setInterval(fetchDispute, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [disputeId, router]);
 
   useEffect(() => {
@@ -251,9 +255,11 @@ export default function AdminDisputeDetailPage() {
 
       setShowConfirmModal(false);
       setSuccess(
-        pendingAction === "refund" ? "Dana berhasil dikembalikan ke pembeli" :
-        pendingAction === "force-release" ? "Dana berhasil dilepaskan ke penjual" :
-        "Transaksi dilanjutkan mengikuti hold time"
+        pendingAction === "refund"
+          ? "Dana berhasil dikembalikan ke pembeli"
+          : pendingAction === "force-release"
+            ? "Dana berhasil dilepaskan ke penjual"
+            : "Transaksi dilanjutkan mengikuti hold time"
       );
       await loadDispute();
     } catch (e) {
@@ -295,7 +301,10 @@ export default function AdminDisputeDetailPage() {
     return new Intl.NumberFormat("id-ID").format(amount);
   };
 
-  const normalizeStatus = (status) => String(status || "").replace(/\s+/g, "").toLowerCase();
+  const normalizeStatus = (status) =>
+    String(status || "")
+      .replace(/\s+/g, "")
+      .toLowerCase();
 
   const getStatusColor = (status) => {
     switch (normalizeStatus(status)) {
@@ -332,7 +341,11 @@ export default function AdminDisputeDetailPage() {
   };
 
   const getCategoryLabel = (category) => {
-    switch (String(category || "").replace(/\s+/g, "").toLowerCase()) {
+    switch (
+      String(category || "")
+        .replace(/\s+/g, "")
+        .toLowerCase()
+    ) {
       case "itemnotreceived":
         return "Barang Tidak Diterima";
       case "itemnotasdescribed":
@@ -376,15 +389,18 @@ export default function AdminDisputeDetailPage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <Link href="/admin/disputes" className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+        <Link
+          href="/admin/disputes"
+          className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-2"
+        >
+          <ChevronLeft className="w-4 h-4" />
           Kembali ke Disputes
         </Link>
         <div className="flex items-center justify-between mt-2">
           <h1 className="text-2xl font-bold text-foreground">Dispute #{disputeId?.slice(-6)}</h1>
-          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${getStatusColor(dispute.status)}`}>
+          <span
+            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${getStatusColor(dispute.status)}`}
+          >
             {getStatusLabel(dispute.status)}
           </span>
         </div>
@@ -408,15 +424,19 @@ export default function AdminDisputeDetailPage() {
           {/* Dispute Info */}
           <div className="bg-card rounded-lg border border-border p-6">
             <h2 className="font-semibold text-foreground mb-4">Detail Dispute</h2>
-            
+
             <div className="space-y-3 text-sm">
               <div>
                 <span className="text-muted-foreground">Kategori:</span>
-                <div className="font-medium text-foreground">{getCategoryLabel(dispute.category)}</div>
+                <div className="font-medium text-foreground">
+                  {getCategoryLabel(dispute.category)}
+                </div>
               </div>
               <div>
                 <span className="text-muted-foreground">Jumlah:</span>
-                <div className="font-bold text-primary text-lg">Rp {formatAmount(dispute.amount)}</div>
+                <div className="font-bold text-primary text-lg">
+                  Rp {formatAmount(dispute.amount)}
+                </div>
               </div>
               <div>
                 <span className="text-muted-foreground">Dibuat:</span>
@@ -430,11 +450,15 @@ export default function AdminDisputeDetailPage() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Pembeli (Pengirim):</span>
-                <span className="font-medium text-foreground">@{dispute.senderUsername || dispute.initiatorUsername}</span>
+                <span className="font-medium text-foreground">
+                  @{dispute.senderUsername || dispute.initiatorUsername}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Penjual (Penerima):</span>
-                <span className="font-medium text-foreground">@{dispute.receiverUsername || dispute.respondentUsername}</span>
+                <span className="font-medium text-foreground">
+                  @{dispute.receiverUsername || dispute.respondentUsername}
+                </span>
               </div>
             </div>
 
@@ -514,13 +538,17 @@ export default function AdminDisputeDetailPage() {
                 {dispute.resolution.refundToSender > 0 && (
                   <div>
                     <span className="text-muted-foreground">Ke Pembeli:</span>
-                    <div className="font-medium text-foreground">Rp {formatAmount(dispute.resolution.refundToSender)}</div>
+                    <div className="font-medium text-foreground">
+                      Rp {formatAmount(dispute.resolution.refundToSender)}
+                    </div>
                   </div>
                 )}
                 {dispute.resolution.releaseToReceiver > 0 && (
                   <div>
                     <span className="text-muted-foreground">Ke Penjual:</span>
-                    <div className="font-medium text-foreground">Rp {formatAmount(dispute.resolution.releaseToReceiver)}</div>
+                    <div className="font-medium text-foreground">
+                      Rp {formatAmount(dispute.resolution.releaseToReceiver)}
+                    </div>
                   </div>
                 )}
                 {dispute.resolution.note && (
@@ -539,7 +567,9 @@ export default function AdminDisputeDetailPage() {
           <div className="bg-card rounded-lg border border-border overflow-hidden h-full flex flex-col">
             <div className="px-6 py-4 border-b border-border">
               <h3 className="font-semibold text-foreground">Diskusi Mediasi</h3>
-              <p className="text-xs text-muted-foreground">Chat antara pembeli, penjual, dan admin</p>
+              <p className="text-xs text-muted-foreground">
+                Chat antara pembeli, penjual, dan admin
+              </p>
             </div>
 
             {/* Messages */}
@@ -563,19 +593,25 @@ export default function AdminDisputeDetailPage() {
                 const isBuyer = msg.senderUsername === buyerUsername;
 
                 return (
-                  <div key={msg.id} className={`flex ${isAdmin ? "justify-center" : isBuyer ? "justify-start" : "justify-end"}`}>
-                    <div className={`max-w-[75%] ${
-                      isAdmin 
-                        ? "bg-warning/10 border border-warning/20 w-full" 
-                        : isBuyer 
-                          ? "bg-primary/10 border border-primary/20" 
-                          : "bg-success/10 border border-success/20"
-                    } rounded-lg px-4 py-2`}>
-                      <div className={`text-xs font-medium mb-1 ${
-                        isAdmin ? "text-warning" : isBuyer ? "text-primary" : "text-success"
-                      }`}>
-                        {isAdmin && "👑 "}
-                        @{msg.senderUsername}
+                  <div
+                    key={msg.id}
+                    className={`flex ${isAdmin ? "justify-center" : isBuyer ? "justify-start" : "justify-end"}`}
+                  >
+                    <div
+                      className={`max-w-[75%] ${
+                        isAdmin
+                          ? "bg-warning/10 border border-warning/20 w-full"
+                          : isBuyer
+                            ? "bg-primary/10 border border-primary/20"
+                            : "bg-success/10 border border-success/20"
+                      } rounded-lg px-4 py-2`}
+                    >
+                      <div
+                        className={`text-xs font-medium mb-1 ${
+                          isAdmin ? "text-warning" : isBuyer ? "text-primary" : "text-success"
+                        }`}
+                      >
+                        {isAdmin && "👑 "}@{msg.senderUsername}
                         {isAdmin ? " (Admin)" : isBuyer ? " (Pembeli)" : " (Penjual)"}
                       </div>
                       <p className="text-sm text-foreground">{msg.content}</p>
@@ -620,17 +656,20 @@ export default function AdminDisputeDetailPage() {
           <h3 className="font-semibold text-foreground mb-4">Bukti yang Dilampirkan</h3>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {dispute.evidence.map((ev, idx) => (
-              <a key={idx} href={ev.url} target="_blank" rel="noopener noreferrer" 
-                 className="block rounded-lg border border-border p-3 hover:border-primary transition">
+              <a
+                key={idx}
+                href={ev.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-lg border border-border p-3 hover:border-primary transition"
+              >
                 <div className="text-3xl mb-2">
                   {ev.type === "image" ? "🖼️" : ev.type === "document" ? "📄" : "📸"}
                 </div>
                 <div className="text-sm font-medium text-foreground truncate">
                   {ev.description || `Bukti ${idx + 1}`}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {formatDate(ev.uploadedAt)}
-                </div>
+                <div className="text-xs text-muted-foreground">{formatDate(ev.uploadedAt)}</div>
               </a>
             ))}
           </div>
@@ -646,11 +685,14 @@ export default function AdminDisputeDetailPage() {
               {pendingAction === "force-release" && "💰 Lepaskan ke Penjual"}
               {pendingAction === "refund" && "↩️ Kembalikan ke Pembeli"}
             </h3>
-            
+
             <p className="text-sm text-muted-foreground mb-4">
-              {pendingAction === "continue" && "Transaksi akan dilanjutkan dan mengikuti hold time normal. Dispute akan ditutup."}
-              {pendingAction === "force-release" && `Dana Rp ${formatAmount(dispute.amount)} akan langsung dikirim ke penjual @${dispute.respondentUsername}.`}
-              {pendingAction === "refund" && `Dana Rp ${formatAmount(dispute.amount)} akan dikembalikan ke pembeli @${dispute.initiatorUsername}.`}
+              {pendingAction === "continue" &&
+                "Transaksi akan dilanjutkan dan mengikuti hold time normal. Dispute akan ditutup."}
+              {pendingAction === "force-release" &&
+                `Dana Rp ${formatAmount(dispute.amount)} akan langsung dikirim ke penjual @${dispute.respondentUsername}.`}
+              {pendingAction === "refund" &&
+                `Dana Rp ${formatAmount(dispute.amount)} akan dikembalikan ke pembeli @${dispute.initiatorUsername}.`}
             </p>
 
             <div className="mb-4">

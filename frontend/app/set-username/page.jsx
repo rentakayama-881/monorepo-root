@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { getApiBase } from "@/lib/api";
 import { getValidToken } from "@/lib/tokenRefresh";
+import { Check, X } from "lucide-react";
 
 // Regex untuk validasi username: huruf kecil, angka, underscore. Min 7, max 30
 const usernameRegex = /^[a-z0-9_]{7,30}$/;
@@ -17,15 +18,23 @@ export default function SetUsernamePage() {
   const validation = useMemo(() => {
     const trimmed = username.trim().toLowerCase();
     if (!trimmed) return { valid: false, message: "", show: false };
-    
+
     if (trimmed.length < 7) {
-      return { valid: false, message: `${7 - trimmed.length} karakter lagi dibutuhkan`, show: true };
+      return {
+        valid: false,
+        message: `${7 - trimmed.length} karakter lagi dibutuhkan`,
+        show: true,
+      };
     }
     if (trimmed.length > 30) {
       return { valid: false, message: "Username terlalu panjang (maks 30 karakter)", show: true };
     }
     if (!/^[a-z0-9_]+$/.test(trimmed)) {
-      return { valid: false, message: "Hanya boleh huruf kecil, angka, dan underscore", show: true };
+      return {
+        valid: false,
+        message: "Hanya boleh huruf kecil, angka, dan underscore",
+        show: true,
+      };
     }
     if (usernameRegex.test(trimmed)) {
       return { valid: true, message: "Username tersedia", show: true };
@@ -46,7 +55,7 @@ export default function SetUsernamePage() {
     setSuccess("");
 
     const trimmed = username.trim().toLowerCase();
-    
+
     if (!validation.valid) {
       setError(validation.message || "Username tidak valid");
       return;
@@ -98,7 +107,9 @@ export default function SetUsernamePage() {
         <div>
           <label className="text-sm font-medium text-foreground">Username</label>
           <div className="relative mt-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              @
+            </span>
             <input
               type="text"
               value={username}
@@ -109,28 +120,24 @@ export default function SetUsernamePage() {
               className="w-full rounded-lg border border-border bg-card pl-8 pr-10 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
             {validation.show && (
-              <span className={`absolute right-3 top-1/2 -translate-y-1/2 ${validation.valid ? "text-success" : "text-destructive"}`}>
-                {validation.valid ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                )}
+              <span
+                className={`absolute right-3 top-1/2 -translate-y-1/2 ${validation.valid ? "text-success" : "text-destructive"}`}
+              >
+                {validation.valid ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
               </span>
             )}
           </div>
-          
+
           {/* Hint / Validation Message */}
           <div className="mt-1.5 flex items-center justify-between">
-            <p className={`text-xs ${validation.show ? (validation.valid ? "text-success" : "text-destructive") : "text-muted-foreground"}`}>
-              {validation.show ? validation.message : "Huruf kecil, angka, underscore. Min 7 karakter."}
+            <p
+              className={`text-xs ${validation.show ? (validation.valid ? "text-success" : "text-destructive") : "text-muted-foreground"}`}
+            >
+              {validation.show
+                ? validation.message
+                : "Huruf kecil, angka, underscore. Min 7 karakter."}
             </p>
-            <span className="text-xs text-muted-foreground">
-              {username.length}/30
-            </span>
+            <span className="text-xs text-muted-foreground">{username.length}/30</span>
           </div>
         </div>
 

@@ -12,6 +12,7 @@ import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
+import { ChevronLeft, Paperclip } from "lucide-react";
 
 function normalizeCurrentUser(payload) {
   return {
@@ -27,8 +28,7 @@ function normalizeDisputeMessage(message) {
     senderUsername: message?.senderUsername ?? message?.SenderUsername ?? "User",
     isAdmin: Boolean(message?.isAdmin ?? message?.IsAdmin ?? false),
     content: message?.content ?? message?.Content ?? message?.message ?? "",
-    createdAt:
-      message?.createdAt ?? message?.CreatedAt ?? message?.created_at ?? null,
+    createdAt: message?.createdAt ?? message?.CreatedAt ?? message?.created_at ?? null,
   };
 }
 
@@ -37,8 +37,7 @@ function normalizeDisputeEvidence(evidence) {
     id: evidence?.id ?? evidence?.Id ?? "",
     description: evidence?.description ?? evidence?.Description ?? "",
     fileUrl: evidence?.fileUrl ?? evidence?.FileUrl ?? evidence?.file_url ?? "",
-    createdAt:
-      evidence?.createdAt ?? evidence?.CreatedAt ?? evidence?.created_at ?? null,
+    createdAt: evidence?.createdAt ?? evidence?.CreatedAt ?? evidence?.created_at ?? null,
     username:
       evidence?.user?.username ??
       evidence?.user?.Username ??
@@ -77,16 +76,14 @@ function normalizeDispute(payload) {
     id: data?.id ?? data?.Id ?? "",
     status: String(statusRaw).toLowerCase(),
     phase: phaseMap[String(phaseRaw).replace(/\s+/g, "").toLowerCase()] ?? "negotiation",
-    phaseDeadline:
-      data?.phaseDeadline ?? data?.PhaseDeadline ?? data?.phase_deadline ?? null,
+    phaseDeadline: data?.phaseDeadline ?? data?.PhaseDeadline ?? data?.phase_deadline ?? null,
     amount: Number(data?.amount ?? data?.Amount ?? 0) || 0,
     senderId: Number(data?.senderId ?? data?.SenderId ?? 0) || 0,
     receiverId: Number(data?.receiverId ?? data?.ReceiverId ?? 0) || 0,
     senderUsername: data?.senderUsername ?? data?.SenderUsername ?? "Unknown",
     receiverUsername: data?.receiverUsername ?? data?.ReceiverUsername ?? "Unknown",
     resolution: normalizedResolution,
-    adminNotes:
-      data?.adminNotes ?? data?.AdminNotes ?? data?.admin_notes ?? data?.Admin_Note ?? "",
+    adminNotes: data?.adminNotes ?? data?.AdminNotes ?? data?.admin_notes ?? data?.Admin_Note ?? "",
     admin_notes:
       data?.adminNotes ?? data?.AdminNotes ?? data?.admin_notes ?? data?.Admin_Note ?? "",
     messages: extractFeatureItems(data?.messages ?? data?.Messages).map(normalizeDisputeMessage),
@@ -127,8 +124,7 @@ export default function DisputeDetailPage() {
     const container = messagesContainerRef.current;
     if (!container) return true;
 
-    const distanceToBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight;
+    const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     return distanceToBottom <= 96;
   };
 
@@ -257,9 +253,10 @@ export default function DisputeDetailPage() {
     setProcessing(true);
 
     try {
-      const endpoint = action === "release"
-        ? `/api/v1/disputes/${disputeId}/mutual-release`
-        : `/api/v1/disputes/${disputeId}/mutual-refund`;
+      const endpoint =
+        action === "release"
+          ? `/api/v1/disputes/${disputeId}/mutual-release`
+          : `/api/v1/disputes/${disputeId}/mutual-refund`;
 
       await fetchFeatureAuth(endpoint, { method: "POST" });
       await refreshDispute();
@@ -273,9 +270,10 @@ export default function DisputeDetailPage() {
     setProcessing(true);
 
     try {
-      const endpoint = dispute.phase === "negotiation"
-        ? `/api/v1/disputes/${disputeId}/escalate-evidence`
-        : `/api/v1/disputes/${disputeId}/escalate-admin`;
+      const endpoint =
+        dispute.phase === "negotiation"
+          ? `/api/v1/disputes/${disputeId}/escalate-evidence`
+          : `/api/v1/disputes/${disputeId}/escalate-admin`;
 
       await fetchFeatureAuth(endpoint, { method: "POST" });
       await refreshDispute();
@@ -310,7 +308,9 @@ export default function DisputeDetailPage() {
   };
 
   const getResolutionLabel = (resolution) => {
-    const value = String(resolution || "").replace(/\s+/g, "").toLowerCase();
+    const value = String(resolution || "")
+      .replace(/\s+/g, "")
+      .toLowerCase();
     if (!value) return "Completed";
     if (value.includes("split")) return "Funds Split";
     if (value.includes("refund")) return "Refund to Sender";
@@ -332,7 +332,13 @@ export default function DisputeDetailPage() {
   };
 
   if (loading) {
-    return <PageLoadingBlock className="min-h-screen bg-background" maxWidthClass="max-w-3xl" lines={4} />;
+    return (
+      <PageLoadingBlock
+        className="min-h-screen bg-background"
+        maxWidthClass="max-w-3xl"
+        lines={4}
+      />
+    );
   }
 
   if (!dispute) {
@@ -351,309 +357,307 @@ export default function DisputeDetailPage() {
   const phaseInfo = getPhaseInfo(dispute.phase);
   // Use senderId/receiverId from transfer, NOT initiatorId
   // This ensures logic is based on who SENT money, not who opened dispute
-  const isSender = currentUser?.id === dispute.senderId || currentUser?.username === dispute.senderUsername;
-  const isReceiver = currentUser?.id === dispute.receiverId || currentUser?.username === dispute.receiverUsername;
+  const isSender =
+    currentUser?.id === dispute.senderId || currentUser?.username === dispute.senderUsername;
+  const isReceiver =
+    currentUser?.id === dispute.receiverId || currentUser?.username === dispute.receiverUsername;
   const isOpen = dispute.status?.toLowerCase() === "open";
 
   return (
     <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-3xl px-4 py-8">
-          <Link
-            href="/account/wallet/disputes"
-            className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </Link>
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <Link
+          href="/account/wallet/disputes"
+          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back
+        </Link>
 
-          {error && (
-            <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-destructive">
-              {error}
-            </div>
-          )}
+        {error && (
+          <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-destructive">
+            {error}
+          </div>
+        )}
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Phase Info */}
-              {isOpen && (
-                <div className={`rounded-lg p-4 ${phaseInfo.containerClass}`}>
-                  <div className={`font-medium mb-1 ${phaseInfo.titleClass}`}>
-                    {phaseInfo.title}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Phase Info */}
+            {isOpen && (
+              <div className={`rounded-lg p-4 ${phaseInfo.containerClass}`}>
+                <div className={`font-medium mb-1 ${phaseInfo.titleClass}`}>{phaseInfo.title}</div>
+                <div className="text-sm text-muted-foreground">{phaseInfo.description}</div>
+                {dispute.phaseDeadline && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Deadline: {formatDate(dispute.phaseDeadline)}
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {phaseInfo.description}
-                  </div>
-                  {dispute.phaseDeadline && (
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      Deadline: {formatDate(dispute.phaseDeadline)}
-                    </div>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
+            )}
 
-              {/* Messages */}
-              <div className="rounded-lg border border-border bg-card">
-                <div className="border-b border-border p-4">
-                  <h3 className="font-semibold text-foreground">Discussion</h3>
-                </div>
-                <div
-                  ref={messagesContainerRef}
-                  onScroll={handleMessagesScroll}
-                  className="h-80 overflow-y-auto p-4 space-y-4"
-                >
-                  {dispute.messages?.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8">
-                      No messages yet
-                    </div>
-                  ) : (
-                    dispute.messages?.map((msg) => (
+            {/* Messages */}
+            <div className="rounded-lg border border-border bg-card">
+              <div className="border-b border-border p-4">
+                <h3 className="font-semibold text-foreground">Discussion</h3>
+              </div>
+              <div
+                ref={messagesContainerRef}
+                onScroll={handleMessagesScroll}
+                className="h-80 overflow-y-auto p-4 space-y-4"
+              >
+                {dispute.messages?.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">No messages yet</div>
+                ) : (
+                  dispute.messages?.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex ${
+                        msg.senderId === currentUser?.id ||
+                        msg.senderUsername === currentUser?.username
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
                       <div
-                        key={msg.id}
-                        className={`flex ${
-                          msg.senderId === currentUser?.id ||
-                          msg.senderUsername === currentUser?.username
-                            ? "justify-end"
-                            : "justify-start"
-                        }`}
-                      >
-                        <div
-                          className={`max-w-xs rounded-lg p-3 ${
-                            msg.isAdmin
-                              ? "bg-accent text-accent-foreground border border-border"
-                              : msg.senderId === currentUser?.id || msg.senderUsername === currentUser?.username
+                        className={`max-w-xs rounded-lg p-3 ${
+                          msg.isAdmin
+                            ? "bg-accent text-accent-foreground border border-border"
+                            : msg.senderId === currentUser?.id ||
+                                msg.senderUsername === currentUser?.username
                               ? "bg-primary text-primary-foreground"
                               : "bg-background border border-border"
+                        }`}
+                      >
+                        <div className="text-xs font-medium mb-1">
+                          {msg.isAdmin ? "Admin" : msg.senderUsername || "User"}
+                        </div>
+                        <div className="text-sm">{msg.content}</div>
+                        <div
+                          className={`text-xs mt-1 ${
+                            msg.senderId === currentUser?.id ||
+                            msg.senderUsername === currentUser?.username
+                              ? "text-primary-foreground/70"
+                              : "text-muted-foreground"
                           }`}
                         >
-                          <div className="text-xs font-medium mb-1">
-                            {msg.isAdmin ? "Admin" : msg.senderUsername || "User"}
-                          </div>
-                          <div className="text-sm">{msg.content}</div>
-                          <div
-                            className={`text-xs mt-1 ${
-                              msg.senderId === currentUser?.id ||
-                              msg.senderUsername === currentUser?.username
-                                ? "text-primary-foreground/70"
-                                : "text-muted-foreground"
-                            }`}
-                          >
-                            {formatDate(msg.createdAt)}
-                          </div>
+                          {formatDate(msg.createdAt)}
                         </div>
                       </div>
-                    ))
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Message Input */}
+              {isOpen && (
+                <form onSubmit={sendMessage} className="border-t border-border p-4">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Write a message..."
+                      className="flex-1 rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
+                    />
+                    <button
+                      type="submit"
+                      disabled={sendingMessage || !message.trim()}
+                      className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* Evidence Section */}
+            {(dispute.phase === "evidence" || dispute.phase === "admin_review") && (
+              <div className="rounded-lg border border-border bg-card">
+                <div className="border-b border-border p-4 flex items-center justify-between">
+                  <h3 className="font-semibold text-foreground">Evidence</h3>
+                  {isOpen && dispute.phase === "evidence" && (
+                    <button
+                      onClick={() => setShowEvidenceForm(!showEvidenceForm)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      + Add Evidence
+                    </button>
                   )}
                 </div>
 
-                {/* Message Input */}
-                {isOpen && (
-                  <form onSubmit={sendMessage} className="border-t border-border p-4">
+                {/* Add Evidence Form */}
+                {showEvidenceForm && (
+                  <form onSubmit={addEvidence} className="border-b border-border p-4 space-y-3">
+                    <textarea
+                      value={evidenceDescription}
+                      onChange={(e) => setEvidenceDescription(e.target.value)}
+                      placeholder="Describe your evidence..."
+                      rows={3}
+                      className="w-full rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="url"
+                      value={evidenceUrl}
+                      onChange={(e) => setEvidenceUrl(e.target.value)}
+                      placeholder="Evidence file URL (optional)"
+                      className="w-full rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
+                    />
                     <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Write a message..."
-                        className="flex-1 rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEvidenceForm(false)}
+                        className="px-4 py-2 text-sm"
+                      >
+                        Cancel
+                      </button>
                       <button
                         type="submit"
-                        disabled={sendingMessage || !message.trim()}
-                        className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+                        disabled={processing || !evidenceDescription.trim()}
+                        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                       >
-                        Send
+                        Submit Evidence
                       </button>
                     </div>
                   </form>
                 )}
-              </div>
 
-              {/* Evidence Section */}
-              {(dispute.phase === "evidence" || dispute.phase === "admin_review") && (
-                <div className="rounded-lg border border-border bg-card">
-                  <div className="border-b border-border p-4 flex items-center justify-between">
-                    <h3 className="font-semibold text-foreground">Evidence</h3>
-                    {isOpen && dispute.phase === "evidence" && (
-                      <button
-                        onClick={() => setShowEvidenceForm(!showEvidenceForm)}
-                        className="text-sm text-primary hover:underline"
+                <div className="p-4 space-y-3">
+                  {dispute.evidence?.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-4">
+                      No evidence submitted yet
+                    </div>
+                  ) : (
+                    dispute.evidence?.map((ev) => (
+                      <div
+                        key={ev.id}
+                        className="rounded-lg bg-background border border-border p-4"
                       >
-                        + Add Evidence
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Add Evidence Form */}
-                  {showEvidenceForm && (
-                    <form onSubmit={addEvidence} className="border-b border-border p-4 space-y-3">
-                      <textarea
-                        value={evidenceDescription}
-                        onChange={(e) => setEvidenceDescription(e.target.value)}
-                        placeholder="Describe your evidence..."
-                        rows={3}
-                        className="w-full rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
-                      />
-                      <input
-                        type="url"
-                        value={evidenceUrl}
-                        onChange={(e) => setEvidenceUrl(e.target.value)}
-                        placeholder="Evidence file URL (optional)"
-                        className="w-full rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowEvidenceForm(false)}
-                          className="px-4 py-2 text-sm"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={processing || !evidenceDescription.trim()}
-                          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-                        >
-                          Submit Evidence
-                        </button>
-                      </div>
-                    </form>
-                  )}
-
-                  <div className="p-4 space-y-3">
-                    {dispute.evidence?.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-4">
-                        No evidence submitted yet
-                      </div>
-                    ) : (
-                      dispute.evidence?.map((ev) => (
-                        <div
-                          key={ev.id}
-                          className="rounded-lg bg-background border border-border p-4"
-                        >
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm font-medium text-foreground">
-                              {ev.username}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDate(ev.createdAt)}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{ev.description}</p>
-                          {ev.fileUrl && (
-                            <a
-                              href={ev.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                            >
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                              </svg>
-                              View Attachment
-                            </a>
-                          )}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-sm font-medium text-foreground">{ev.username}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(ev.createdAt)}
+                          </span>
                         </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Transfer Info */}
-              <div className="rounded-lg border border-border bg-card p-4">
-                <h3 className="font-semibold text-foreground mb-4">Transfer Details</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Amount</span>
-                    <span className="font-medium text-foreground">
-                      Rp {dispute.amount?.toLocaleString("id-ID") || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Buyer (Fund Sender)</span>
-                    <span className="font-medium text-foreground">
-                      @{dispute.senderUsername}{isSender && " (You)"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Seller (Fund Recipient)</span>
-                    <span className="font-medium text-foreground">
-                      @{dispute.receiverUsername}{isReceiver && " (You)"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              {isOpen && (
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="font-semibold text-foreground mb-4">Actions</h3>
-                  <div className="space-y-3">
-                    {/* Refund - Only receiver (penjual) can agree to refund */}
-                    {isReceiver ? (
-                      <button
-                        onClick={() => handleMutualAction("refund")}
-                        disabled={processing}
-                        className="w-full rounded-lg border border-border py-2 text-sm font-medium transition hover:bg-background disabled:opacity-50"
-                      >
-                        Agree to Sender Refund
-                      </button>
-                    ) : (
-                      <div className="text-xs text-muted-foreground bg-warning/5 border border-warning/20 rounded-lg p-3">
-                        <p className="font-medium text-warning mb-1">Awaiting Response</p>
-                        <p>You opened this dispute. Wait for the recipient response or escalate to admin review if necessary.</p>
+                        <p className="text-sm text-muted-foreground">{ev.description}</p>
+                        {ev.fileUrl && (
+                          <a
+                            href={ev.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                          >
+                            <Paperclip className="h-4 w-4" />
+                            View Attachment
+                          </a>
+                        )}
                       </div>
-                    )}
-
-                    {/* Info for receiver about defense */}
-                    {isReceiver && (
-                      <div className="text-xs text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg p-3">
-                        <p className="font-medium text-primary mb-1">Info</p>
-                        <p>If you want to proceed with this transaction, provide your response in chat. The team will decide based on the discussion.</p>
-                      </div>
-                    )}
-
-                    {/* Escalate - only for sender (who opened dispute) */}
-                    {isSender && dispute.phase !== "admin_review" && (
-                      <button
-                        onClick={escalateDispute}
-                        disabled={processing}
-                        className="w-full rounded-lg border border-warning/30 py-2 text-sm font-medium text-warning transition hover:bg-warning/10 disabled:opacity-50"
-                      >
-                        {dispute.phase === "negotiation"
-                          ? "Escalate to Evidence Phase"
-                          : "Escalate to Admin"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Resolution Result */}
-              {dispute.status === "resolved" && (
-                <div className="rounded-lg border border-success/30 bg-success/10 p-4">
-                  <h3 className="font-semibold text-success mb-2">Dispute Resolved</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Result: <strong className="text-foreground">
-                      {getResolutionLabel(dispute.resolution)}
-                    </strong>
-                  </p>
-                  {dispute.admin_notes && (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Notes: {dispute.admin_notes}
-                    </p>
+                    ))
                   )}
                 </div>
-              )}
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Transfer Info */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="font-semibold text-foreground mb-4">Transfer Details</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-medium text-foreground">
+                    Rp {dispute.amount?.toLocaleString("id-ID") || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Buyer (Fund Sender)</span>
+                  <span className="font-medium text-foreground">
+                    @{dispute.senderUsername}
+                    {isSender && " (You)"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Seller (Fund Recipient)</span>
+                  <span className="font-medium text-foreground">
+                    @{dispute.receiverUsername}
+                    {isReceiver && " (You)"}
+                  </span>
+                </div>
+              </div>
             </div>
+
+            {/* Actions */}
+            {isOpen && (
+              <div className="rounded-lg border border-border bg-card p-4">
+                <h3 className="font-semibold text-foreground mb-4">Actions</h3>
+                <div className="space-y-3">
+                  {/* Refund - Only receiver (penjual) can agree to refund */}
+                  {isReceiver ? (
+                    <button
+                      onClick={() => handleMutualAction("refund")}
+                      disabled={processing}
+                      className="w-full rounded-lg border border-border py-2 text-sm font-medium transition hover:bg-background disabled:opacity-50"
+                    >
+                      Agree to Sender Refund
+                    </button>
+                  ) : (
+                    <div className="text-xs text-muted-foreground bg-warning/5 border border-warning/20 rounded-lg p-3">
+                      <p className="font-medium text-warning mb-1">Awaiting Response</p>
+                      <p>
+                        You opened this dispute. Wait for the recipient response or escalate to
+                        admin review if necessary.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Info for receiver about defense */}
+                  {isReceiver && (
+                    <div className="text-xs text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg p-3">
+                      <p className="font-medium text-primary mb-1">Info</p>
+                      <p>
+                        If you want to proceed with this transaction, provide your response in chat.
+                        The team will decide based on the discussion.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Escalate - only for sender (who opened dispute) */}
+                  {isSender && dispute.phase !== "admin_review" && (
+                    <button
+                      onClick={escalateDispute}
+                      disabled={processing}
+                      className="w-full rounded-lg border border-warning/30 py-2 text-sm font-medium text-warning transition hover:bg-warning/10 disabled:opacity-50"
+                    >
+                      {dispute.phase === "negotiation"
+                        ? "Escalate to Evidence Phase"
+                        : "Escalate to Admin"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Resolution Result */}
+            {dispute.status === "resolved" && (
+              <div className="rounded-lg border border-success/30 bg-success/10 p-4">
+                <h3 className="font-semibold text-success mb-2">Dispute Resolved</h3>
+                <p className="text-sm text-muted-foreground">
+                  Result:{" "}
+                  <strong className="text-foreground">
+                    {getResolutionLabel(dispute.resolution)}
+                  </strong>
+                </p>
+                {dispute.admin_notes && (
+                  <p className="mt-2 text-sm text-muted-foreground">Notes: {dispute.admin_notes}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
+    </div>
   );
 }

@@ -2,13 +2,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  fetchFeatureAuth,
-  unwrapFeatureData,
-  extractFeatureItems,
-} from "@/lib/featureApi";
+import { fetchFeatureAuth, unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
 import logger from "@/lib/logger";
+import { ChevronLeft } from "lucide-react";
 
 function normalizeDispute(item) {
   return {
@@ -17,8 +14,7 @@ function normalizeDispute(item) {
     category: item?.category ?? item?.Category ?? "Other",
     amount: Number(item?.amount ?? item?.Amount ?? 0) || 0,
     createdAt: item?.createdAt ?? item?.CreatedAt ?? null,
-    respondentUsername:
-      item?.respondentUsername ?? item?.RespondentUsername ?? "Unknown",
+    respondentUsername: item?.respondentUsername ?? item?.RespondentUsername ?? "Unknown",
   };
 }
 
@@ -35,23 +31,25 @@ export default function DisputesListPage() {
       return;
     }
 
-    loadDisputes();
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetchFeatureAuth("/api/v1/disputes");
+        const disputeData = unwrapFeatureData(response);
+        const items = extractFeatureItems(disputeData)
+          .map(normalizeDispute)
+          .filter((d) => d.id);
+        if (!cancelled) setDisputes(items);
+      } catch (e) {
+        logger.error("Failed to load disputes:", e);
+        if (!cancelled) setDisputes([]);
+      }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
-
-  const loadDisputes = async () => {
-    try {
-      const response = await fetchFeatureAuth("/api/v1/disputes");
-      const disputeData = unwrapFeatureData(response);
-      const items = extractFeatureItems(disputeData)
-        .map(normalizeDispute)
-        .filter((d) => d.id);
-      setDisputes(items);
-    } catch (e) {
-      logger.error("Failed to load disputes:", e);
-      setDisputes([]);
-    }
-    setLoading(false);
-  };
 
   // Format date
   const formatDate = (dateStr) => {
@@ -111,12 +109,13 @@ export default function DisputesListPage() {
       case "cancelled":
       case "closed":
         return "Cancelled";
-      default: return status;
+      default:
+        return status;
     }
   };
 
   // Filter disputes
-  const filteredDisputes = disputes.filter(d => {
+  const filteredDisputes = disputes.filter((d) => {
     const status = String(d.status || "").toLowerCase();
     if (filter === "all") return true;
     if (filter === "active") return !["resolved", "cancelled", "closed"].includes(status);
@@ -137,10 +136,11 @@ export default function DisputesListPage() {
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/account/wallet/transactions" className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+          <Link
+            href="/account/wallet/transactions"
+            className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-2"
+          >
+            <ChevronLeft className="w-4 h-4" />
             Back to Transaction History
           </Link>
           <h1 className="text-2xl font-bold text-foreground mt-2">Dispute Saya</h1>
@@ -176,7 +176,7 @@ export default function DisputesListPage() {
               {filter === "all" ? "No Disputes" : "No Results"}
             </h2>
             <p className="text-muted-foreground">
-              {filter === "all" 
+              {filter === "all"
                 ? "Semua transaksi Anda berjalan lancar tanpa masalah."
                 : "No disputes match this filter."}
             </p>
@@ -192,7 +192,9 @@ export default function DisputesListPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(dispute.status)}`}>
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(dispute.status)}`}
+                      >
                         {getStatusLabel(dispute.status)}
                       </span>
                       <span className="text-xs text-muted-foreground">
@@ -200,10 +202,15 @@ export default function DisputesListPage() {
                       </span>
                     </div>
                     <div className="font-medium text-foreground mb-1">
-                      {dispute.category === "ItemNotReceived" ? "Item Not Received" :
-                       dispute.category === "ItemNotAsDescribed" ? "Not as Described" :
-                       dispute.category === "Fraud" ? "Suspected Fraud" :
-                       dispute.category === "SellerNotResponding" ? "Seller Not Responding" : "Other"}
+                      {dispute.category === "ItemNotReceived"
+                        ? "Item Not Received"
+                        : dispute.category === "ItemNotAsDescribed"
+                          ? "Not as Described"
+                          : dispute.category === "Fraud"
+                            ? "Suspected Fraud"
+                            : dispute.category === "SellerNotResponding"
+                              ? "Seller Not Responding"
+                              : "Other"}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       vs @{dispute.respondentUsername}

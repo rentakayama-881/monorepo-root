@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Check } from "lucide-react";
 
 const CATEGORIES = {
   coding: {
@@ -7,7 +8,12 @@ const CATEGORIES = {
     metaTitle: "Validasi Kode AI - Cek Kualitas Kode Program Buatan AI",
     metaDescription:
       "Kirim kode program buatan ChatGPT, Copilot, atau AI lainnya untuk direview oleh developer berpengalaman. Cek bug, keamanan, dan kualitas kode AI Anda.",
-    keywords: ["validasi kode AI", "cek kode program AI", "review kode ChatGPT", "bug review AI code"],
+    keywords: [
+      "validasi kode AI",
+      "cek kode program AI",
+      "review kode ChatGPT",
+      "bug review AI code",
+    ],
     h1: "Validasi Kode Program Buatan AI",
     intro:
       "Kode program yang dihasilkan oleh AI seperti ChatGPT, GitHub Copilot, atau Claude sering kali terlihat benar di permukaan — tetapi bisa mengandung bug tersembunyi, masalah keamanan, atau pola yang tidak optimal. AIValid menghubungkan Anda dengan developer berpengalaman yang akan mereview kode AI secara menyeluruh.",
@@ -127,7 +133,12 @@ const CATEGORIES = {
     metaTitle: "Security Review AI - Audit Keamanan Output & Kode Buatan AI",
     metaDescription:
       "Audit keamanan untuk kode, konfigurasi, atau infrastruktur yang dihasilkan AI. Identifikasi vulnerability dan risiko sebelum deployment ke production.",
-    keywords: ["validasi keamanan AI", "security review AI", "audit keamanan kode AI", "pentest AI code"],
+    keywords: [
+      "validasi keamanan AI",
+      "security review AI",
+      "audit keamanan kode AI",
+      "pentest AI code",
+    ],
     h1: "Security Review untuk Output AI",
     intro:
       "Kode dan konfigurasi yang dihasilkan AI sering mengandung kerentanan keamanan yang tidak terdeteksi: injection vulnerabilities, misconfiguration, exposed secrets, atau pola yang tidak aman. AIValid menyediakan security reviewer berpengalaman untuk audit mendalam.",
@@ -198,27 +209,17 @@ export default async function CategoryLandingPage({ params }) {
       />
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
         <header className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-            {cat.h1}
-          </h1>
-          <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-            {cat.intro}
-          </p>
+          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">{cat.h1}</h1>
+          <p className="mt-3 text-base text-muted-foreground leading-relaxed">{cat.intro}</p>
         </header>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-lg font-semibold text-foreground">
-            Mengapa Perlu Validasi?
-          </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {cat.description}
-          </p>
+          <h2 className="mb-3 text-lg font-semibold text-foreground">Mengapa Perlu Validasi?</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">{cat.description}</p>
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Cara Kerja
-          </h2>
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Cara Kerja</h2>
           <ol className="space-y-3">
             {cat.steps.map((step, i) => (
               <li key={i} className="flex gap-3">
@@ -232,23 +233,11 @@ export default async function CategoryLandingPage({ params }) {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Contoh Penggunaan
-          </h2>
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Contoh Penggunaan</h2>
           <ul className="space-y-2">
             {cat.useCases.map((useCase, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                <svg
-                  className="mt-0.5 h-4 w-4 shrink-0 text-success"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
                 <span>{useCase}</span>
               </li>
             ))}
@@ -256,11 +245,10 @@ export default async function CategoryLandingPage({ params }) {
         </section>
 
         <section className="rounded-lg border border-primary/20 bg-primary/5 p-6">
-          <h2 className="mb-2 text-lg font-semibold text-foreground">
-            Mulai Validasi Sekarang
-          </h2>
+          <h2 className="mb-2 text-lg font-semibold text-foreground">Mulai Validasi Sekarang</h2>
           <p className="mb-4 text-sm text-muted-foreground">
-            Daftar gratis dan kirimkan kasus validasi pertama Anda. Validator ahli siap mereview dalam hitungan jam.
+            Daftar gratis dan kirimkan kasus validasi pertama Anda. Validator ahli siap mereview
+            dalam hitungan jam.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
@@ -279,9 +267,7 @@ export default async function CategoryLandingPage({ params }) {
         </section>
 
         <nav className="mt-8 border-t border-border pt-6">
-          <h3 className="mb-3 text-sm font-semibold text-foreground">
-            Kategori Validasi Lainnya
-          </h3>
+          <h3 className="mb-3 text-sm font-semibold text-foreground">Kategori Validasi Lainnya</h3>
           <div className="flex flex-wrap gap-2">
             {Object.entries(CATEGORIES)
               .filter(([slug]) => slug !== category)

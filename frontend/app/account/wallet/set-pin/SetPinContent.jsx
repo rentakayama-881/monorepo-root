@@ -7,6 +7,7 @@ import { fetchJsonAuth } from "@/lib/api";
 import { getValidToken } from "@/lib/tokenRefresh";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
+import { ChevronLeft, Lock, AlertTriangle, ShieldCheck } from "lucide-react";
 
 function normalizePinStatus(payload) {
   const data = unwrapFeatureData(payload) || {};
@@ -145,7 +146,7 @@ export default function SetPinContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-md px-4 py-8">
+        <div className="mx-auto max-w-md px-4 sm:px-6 py-8">
           <div className="animate-pulse">
             <div className="h-16 w-16 rounded-full bg-border mx-auto mb-4" />
             <div className="h-8 w-48 bg-border rounded mx-auto mb-2" />
@@ -159,37 +160,18 @@ export default function SetPinContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-md px-4 py-8">
+      <div className="mx-auto max-w-md px-4 sm:px-6 py-8">
         <Link
           href="/account"
           className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
+          <ChevronLeft className="h-4 w-4" />
           Back
         </Link>
 
         <div className="text-center mb-8">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <svg
-              className="h-8 w-8 text-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
+            <Lock className="h-8 w-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Create Transaction PIN</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -290,19 +272,7 @@ export default function SetPinContent() {
         {/* Critical warning - PIN cannot be reset */}
         <div className="mt-6 rounded-lg bg-destructive/10 border border-destructive/30 p-4">
           <div className="flex gap-3">
-            <svg
-              className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
+            <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
             <div className="text-sm">
               <p className="font-semibold text-destructive mb-1">Important Notice</p>
               <p className="text-muted-foreground">
@@ -317,19 +287,7 @@ export default function SetPinContent() {
         {/* Security notice */}
         <div className="mt-6 rounded-lg bg-primary/10 border border-primary/30 p-4">
           <div className="flex gap-3">
-            <svg
-              className="h-5 w-5 text-primary flex-shrink-0 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              />
-            </svg>
+            <ShieldCheck className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div className="text-sm text-muted-foreground">
               <p className="font-medium text-primary mb-1">Security Tips</p>
               <ul className="list-disc list-inside space-y-1">
