@@ -8,54 +8,34 @@ import { fetchWithAuth } from "@/lib/tokenRefresh";
 import { maskEmail } from "@/lib/email";
 import Avatar from "@/components/ui/Avatar";
 import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton";
+import {
+  Send,
+  ClipboardList,
+  ShieldAlert,
+  Landmark,
+  User,
+  ShoppingBag,
+  FileCheck2,
+  ChevronRight,
+  X,
+  LogOut,
+  ArrowDownToLine,
+} from "lucide-react";
 
 const walletLinks = [
-  {
-    href: "/account/wallet/send",
-    label: "Send Funds",
-    iconPath: "M12 19l9 2-9-18-9 18 9-2zm0 0v-8",
-  },
-  {
-    href: "/account/wallet/transactions",
-    label: "Transactions",
-    iconPath:
-      "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
-  },
-  {
-    href: "/account/wallet/disputes",
-    label: "Dispute Center",
-    iconPath:
-      "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
-  },
-  {
-    href: "/account/wallet/withdraw",
-    label: "Withdraw",
-    iconPath:
-      "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z",
-  },
+  { href: "/account/wallet/send", label: "Send Funds", Icon: Send },
+  { href: "/account/wallet/transactions", label: "Transactions", Icon: ClipboardList },
+  { href: "/account/wallet/disputes", label: "Dispute Center", Icon: ShieldAlert },
+  { href: "/account/wallet/withdraw", label: "Withdraw", Icon: Landmark },
 ];
 
 const accountLinks = [
-  {
-    href: "/account",
-    label: "Account",
-    iconPath: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
-  },
-  {
-    href: "/account/my-purchases",
-    label: "My Purchase",
-    iconPath:
-      "M3 7h18M6 7V5a2 2 0 012-2h8a2 2 0 012 2v2m-1 0v12a2 2 0 01-2 2H9a2 2 0 01-2-2V7m3 4h4m-4 4h4",
-  },
-  {
-    href: "/account/validation-cases",
-    label: "My Validation Cases",
-    iconPath:
-      "M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z",
-  },
+  { href: "/account", label: "Account", Icon: User },
+  { href: "/account/my-purchases", label: "My Purchase", Icon: ShoppingBag },
+  { href: "/account/validation-cases", label: "My Validation Cases", Icon: FileCheck2 },
 ];
 
-function MenuItemLink({ href, label, iconPath, isActive }) {
+function MenuItemLink({ href, label, Icon, isActive }) {
   const itemClassName = isActive
     ? "group flex items-center justify-between rounded-lg border border-foreground/20 bg-accent px-3 py-2 transition-colors"
     : "group flex items-center justify-between rounded-lg border border-border/70 bg-background/60 px-3 py-2 transition-colors hover:border-border hover:bg-accent/60";
@@ -69,26 +49,13 @@ function MenuItemLink({ href, label, iconPath, isActive }) {
   return (
     <Link href={href} className={itemClassName} aria-current={isActive ? "page" : undefined}>
       <span className={labelClassName}>
-        <svg
-          className={iconClassName}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.9"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
-        </svg>
+        <Icon className={iconClassName} strokeWidth={1.9} />
         {label}
       </span>
-      <svg
+      <ChevronRight
         className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-      </svg>
+        strokeWidth={1.9}
+      />
     </Link>
   );
 }
@@ -428,7 +395,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
                 <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-success ring-2 ring-card" />
               </div>
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-foreground">{displayName}</div>
+                <div className="truncate text-xs font-semibold text-foreground">{displayName}</div>
                 {user.email && (
                   <div className="text-[11px] text-muted-foreground">{maskEmail(user.email)}</div>
                 )}
@@ -443,15 +410,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
               type="button"
             >
               <span className="sr-only">Close profile menu</span>
-              <svg
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2"
-                fill="none"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
-              </svg>
+              <X className="h-5 w-5" strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -480,9 +439,10 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
               </div>
               <Link
                 href="/account/wallet/deposit"
-                className="rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
-                + Deposit
+                <ArrowDownToLine className="h-3 w-3" strokeWidth={2.5} />
+                Deposit
               </Link>
             </div>
           </div>
@@ -497,7 +457,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
                 key={item.href}
                 href={item.href}
                 label={item.label}
-                iconPath={item.iconPath}
+                Icon={item.Icon}
                 isActive={isLinkActive(item.href)}
               />
             ))}
@@ -511,7 +471,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
                 key={item.href}
                 href={item.href}
                 label={item.label}
-                iconPath={item.iconPath}
+                Icon={item.Icon}
                 isActive={isLinkActive(item.href)}
               />
             ))}
@@ -532,19 +492,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
               {isSigningOut ? (
                 <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               ) : (
-                <svg
-                  className="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
+                <LogOut className="h-4 w-4" strokeWidth={2} />
               )}
               {isSigningOut ? "Signing out..." : "Sign Out"}
             </span>
