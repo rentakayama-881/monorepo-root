@@ -2,14 +2,14 @@ import Skeleton, { SkeletonText } from "@/components/ui/Skeleton";
 
 export default function NewValidationCaseSkeleton() {
   return (
-    <main className="container min-h-screen py-10" aria-busy="true" aria-live="polite">
-      <div className="mb-8">
+    <main className="container min-h-screen py-5 md:py-10" aria-busy="true" aria-live="polite">
+      <div className="mb-6">
         <SkeletonText width="w-52" height="h-4" />
-        <SkeletonText width="w-80" height="h-9" className="mt-3" />
-        <SkeletonText width="w-full max-w-3xl" height="h-4" className="mt-3" />
+        <SkeletonText width="w-80" height="h-8" className="mt-2" />
+        <SkeletonText width="w-full max-w-3xl" height="h-4" className="mt-2" />
       </div>
 
-      <div className="mb-6 rounded-2xl bg-secondary/20 px-5 py-5">
+      <div className="mb-4 rounded-2xl bg-secondary/20 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div className="space-y-2">
             <SkeletonText width="w-36" height="h-3" />
@@ -17,15 +17,15 @@ export default function NewValidationCaseSkeleton() {
           </div>
           <Skeleton className="h-7 w-24 rounded-full" />
         </div>
-        <Skeleton className="mt-4 h-2.5 w-full rounded-full" />
-        <div className="mt-4 flex flex-wrap gap-2">
+        <Skeleton className="mt-3 h-2.5 w-full rounded-full" />
+        <div className="mt-3 flex gap-2 overflow-x-auto">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={`nav-${i}`} className="h-7 w-28 rounded-full" />
+            <Skeleton key={`nav-${i}`} className="h-7 w-28 shrink-0 rounded-full" />
           ))}
         </div>
       </div>
 
-      <div className="space-y-6 rounded-2xl bg-secondary/20 px-5 py-6">
+      <div className="space-y-4 md:space-y-6 rounded-2xl bg-secondary/20 px-4 py-4 md:px-5 md:py-6">
         <div>
           <SkeletonText width="w-20" height="h-3" />
           <Skeleton className="mt-2 h-11 w-full rounded-xl" />

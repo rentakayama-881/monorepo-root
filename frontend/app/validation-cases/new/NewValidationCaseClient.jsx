@@ -574,33 +574,39 @@ export default function NewValidationCaseClient() {
   }
 
   return (
-    <main className="container py-8 md:py-10 [scrollbar-gutter:stable]">
-      <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/validation-cases" prefetch={false} className="hover:underline">
-          Validation Case Index
+    <main className="container py-5 md:py-10 [scrollbar-gutter:stable]">
+      <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <Link href="/" className="hover:underline">
+          Home
         </Link>
         <span>/</span>
-        <span className="text-foreground">Create</span>
+        <Link href="/validation-cases" prefetch={false} className="hover:underline">
+          Daftar Case
+        </Link>
+        <span>/</span>
+        <span className="text-foreground">Buat Baru</span>
       </nav>
 
-      <header className="mb-6">
+      <header className="mb-4 md:mb-6">
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           README-First Case Builder
         </div>
-        <h1 className="mt-2 text-2xl font-semibold text-foreground">Create Validation Case</h1>
-        <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+        <h1 className="mt-1.5 text-xl md:text-2xl font-semibold text-foreground">
+          Create Validation Case
+        </h1>
+        <p className="mt-1.5 max-w-3xl text-sm text-muted-foreground">
           Jelaskan kebutuhan validasi langsung di README case, lalu lampirkan file pendukung. Tidak
           perlu alur chat panjang sebelum case diproses validator.
         </p>
       </header>
 
       {locked ? (
-        <div className="mb-5 rounded-[var(--radius)] border border-border bg-secondary/60 px-5 py-4 text-sm text-muted-foreground">
+        <div className="mb-4 rounded-[var(--radius)] border border-border bg-secondary/60 px-4 py-3 text-sm text-muted-foreground">
           Intake sedang ditutup.
         </div>
       ) : null}
       {!telegramReady ? (
-        <div className="mb-5 rounded-[var(--radius)] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+        <div className="mb-4 rounded-[var(--radius)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           {telegramChecking ? (
             "Memverifikasi Telegram Auth akun Anda..."
           ) : (
@@ -615,12 +621,12 @@ export default function NewValidationCaseClient() {
         </div>
       ) : null}
 
-      <div className="mb-5 min-h-[64px]">
+      <div className="mb-4 min-h-[48px]">
         {error ? (
           <div
             role="alert"
             aria-live="polite"
-            className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900"
+            className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
           >
             {error}
           </div>
@@ -630,15 +636,15 @@ export default function NewValidationCaseClient() {
           <div
             role="status"
             aria-live="polite"
-            className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900"
+            className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
           >
             {ok}
           </div>
         ) : null}
       </div>
 
-      <section className="mb-5 rounded-[var(--radius)] border border-cyan-200/80 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-100 px-5 py-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <section className="mb-4 rounded-[var(--radius)] border border-cyan-200/80 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-100 px-4 py-3 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-900/80">
               Workspace Readiness
@@ -651,18 +657,18 @@ export default function NewValidationCaseClient() {
             {readinessPercent}% ready
           </div>
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-cyan-100">
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-cyan-100">
           <div
             className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 transition-all"
             style={{ width: `${readinessPercent}%` }}
           />
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
           {createNavigationSections.map((section) => (
             <a
               key={section.id}
               href={`#${section.id}`}
-              className="rounded-full border border-cyan-300 bg-white/85 px-3 py-1 text-xs font-semibold text-cyan-900 hover:bg-cyan-100"
+              className="shrink-0 rounded-full border border-cyan-300 bg-white/85 px-3 py-1 text-xs font-semibold text-cyan-900 hover:bg-cyan-100"
             >
               {section.label}
             </a>
@@ -671,23 +677,23 @@ export default function NewValidationCaseClient() {
       </section>
 
       <section className="rounded-[var(--radius)] border border-border bg-card shadow-sm">
-        <div className="border-b border-border px-5 py-4">
+        <div className="border-b border-border px-4 py-3">
           <div className="text-sm font-semibold text-foreground">Case Setup</div>
-          <div className="mt-1 text-xs text-muted-foreground">
+          <div className="mt-0.5 text-xs text-muted-foreground">
             Tulis README case, set sensitivity + bounty, upload file yang relevan, lalu create. Case
             langsung ready.
           </div>
         </div>
 
-        <div className="space-y-6 px-5 py-5">
+        <div className="space-y-4 md:space-y-6 px-4 py-4 md:px-5 md:py-5">
           <div
             id="case-setup"
-            className="rounded-[var(--radius)] border border-border bg-secondary/30 p-4"
+            className="rounded-[var(--radius)] border border-border bg-secondary/30 p-3 md:p-4"
           >
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Case Setup (Wajib)
             </div>
-            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
               <div className="md:col-span-2">
                 <label className="text-xs font-semibold text-muted-foreground">Title</label>
                 <input
@@ -741,7 +747,7 @@ export default function NewValidationCaseClient() {
             <label className="text-xs font-semibold text-muted-foreground">
               README Design Templates
             </label>
-            <div className="mt-2 rounded-[var(--radius)] border border-border bg-gradient-to-br from-slate-50 via-cyan-50 to-indigo-100 p-4">
+            <div className="mt-2 rounded-[var(--radius)] border border-border bg-gradient-to-br from-slate-50 via-cyan-50 to-indigo-100 p-3 md:p-4">
               <div className="text-sm font-semibold text-foreground">
                 GitHub-style template siap edit
               </div>
@@ -749,13 +755,13 @@ export default function NewValidationCaseClient() {
                 Pilih template visual, lalu klik insert. Isi tetap custom dari kamu sendiri. Tag
                 protocol tetap wajib.
               </div>
-              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-3 grid grid-cols-2 gap-2 md:gap-3 xl:grid-cols-3">
                 {VALIDATION_CASE_README_TEMPLATES.map((template) => {
                   const selected = activeReadmeTemplateId === template.id;
                   return (
                     <article
                       key={template.id}
-                      className={`rounded-[var(--radius)] border p-3 shadow-sm transition ${
+                      className={`rounded-[var(--radius)] border p-2.5 md:p-3 shadow-sm transition ${
                         template.palette?.cardClass || "border-border bg-card"
                       } ${selected ? "ring-2 ring-primary/60" : ""}`}
                     >
@@ -825,7 +831,7 @@ export default function NewValidationCaseClient() {
 
           <div
             id="workspace-files"
-            className="rounded-[var(--radius)] border border-border bg-secondary/20 p-4"
+            className="rounded-[var(--radius)] border border-border bg-secondary/20 p-3 md:p-4"
           >
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Workspace Files
@@ -838,7 +844,7 @@ export default function NewValidationCaseClient() {
               Queue saat ini: {workspaceBootstrapFiles.length} file.
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-3">
               <input
                 key={workspaceFileInputKey}
                 type="file"
@@ -962,7 +968,7 @@ export default function NewValidationCaseClient() {
             <label className="text-xs font-semibold text-muted-foreground">
               Checklist Protokol (Wajib)
             </label>
-            <div className="mt-2 space-y-2 rounded-[var(--radius)] border border-border bg-secondary/20 p-3">
+            <div className="mt-2 space-y-2 rounded-[var(--radius)] border border-border bg-secondary/20 p-2.5 md:p-3">
               {checklistItems.map((item) => (
                 <label key={item.key} className="flex items-start gap-2 text-sm text-foreground">
                   <input
@@ -978,7 +984,7 @@ export default function NewValidationCaseClient() {
             </div>
           </div>
 
-          <div className="mt-6 relative z-[120]">
+          <div className="mt-4 relative z-[120]">
             <label className="text-xs font-semibold text-muted-foreground">Tags (Wajib)</label>
             {tagsAvailable ? (
               <TagSelector
@@ -1002,7 +1008,7 @@ export default function NewValidationCaseClient() {
 
           <div className="flex items-center justify-end gap-2">
             <Button href="/validation-cases" prefetch={false} variant="secondary" size="sm">
-              Back to Case Index
+              Kembali
             </Button>
             <Button
               onClick={submit}

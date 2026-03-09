@@ -969,8 +969,12 @@ export default function RepoWorkflowClient({
   return (
     <main className="container py-10 space-y-6">
       <nav className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <Link href="/" className="hover:underline">
+          Home
+        </Link>
+        <span>/</span>
         <Link href="/validation-cases" className="hover:underline" prefetch={false}>
-          Validation Case Index
+          Daftar Case
         </Link>
         <span>/</span>
         <Link
@@ -978,7 +982,7 @@ export default function RepoWorkflowClient({
           className="hover:underline"
           prefetch={false}
         >
-          Case #{id}
+          <span className="font-mono text-xs">#{id}</span>
         </Link>
         <span>/</span>
         <span className="text-foreground">Repo</span>
