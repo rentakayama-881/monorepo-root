@@ -343,39 +343,40 @@
   .dark {
     /* =========================
      Semantic tokens (DARK)
-     Deep space with indigo undertone
+     Deep space with barely-perceptible indigo undertone
+     Chroma 0.003–0.005 keeps surfaces neutral, hue 280 for subtle brand
      ========================= */
-    --background: oklch(0.155 0.012 280);
-    --foreground: oklch(0.96 0.005 280);
+    --background: oklch(0.155 0.004 280);
+    --foreground: oklch(0.96 0.003 280);
 
-    --card: oklch(0.21 0.015 280);
-    --card-foreground: oklch(0.96 0.005 280);
+    --card: oklch(0.21 0.005 280);
+    --card-foreground: oklch(0.96 0.003 280);
 
-    --popover: oklch(0.21 0.015 280);
-    --popover-foreground: oklch(0.96 0.005 280);
+    --popover: oklch(0.21 0.005 280);
+    --popover-foreground: oklch(0.96 0.003 280);
 
     --primary: oklch(0.72 0.06 280);
-    --primary-foreground: oklch(0.155 0.012 280);
+    --primary-foreground: oklch(0.155 0.004 280);
 
-    --secondary: oklch(0.27 0.015 280);
-    --secondary-foreground: oklch(0.96 0.005 280);
+    --secondary: oklch(0.27 0.005 280);
+    --secondary-foreground: oklch(0.96 0.003 280);
 
-    --muted: oklch(0.27 0.012 35);
-    --muted-foreground: oklch(0.65 0.02 280);
+    --muted: oklch(0.27 0.004 35);
+    --muted-foreground: oklch(0.65 0.008 280);
 
-    --accent: oklch(0.27 0.02 280);
-    --accent-foreground: oklch(0.96 0.005 280);
+    --accent: oklch(0.27 0.005 280);
+    --accent-foreground: oklch(0.96 0.003 280);
 
     --destructive: oklch(0.704 0.191 22.216);
     --destructive-foreground: oklch(1 0 0);
 
-    --border: oklch(1 0.01 280 / 12%);
-    --input: oklch(1 0.01 280 / 16%);
+    --border: oklch(1 0.003 280 / 12%);
+    --input: oklch(1 0.003 280 / 16%);
     --ring: oklch(0.6 0.07 279);
 
     --success: oklch(0.74 0.18 145);
     --warning: oklch(0.82 0.13 85);
-    --warning-foreground: oklch(0.155 0.012 280);
+    --warning-foreground: oklch(0.155 0.004 280);
     --error: oklch(0.704 0.191 22.216);
 
     color-scheme: dark;
@@ -386,38 +387,39 @@
     :root:not(.light):not(.dark) {
       /* =========================
          Semantic tokens (DARK) — system preference
+         Chroma 0.003–0.005 keeps surfaces neutral
          ========================= */
-      --background: oklch(0.155 0.012 280);
-      --foreground: oklch(0.96 0.005 280);
+      --background: oklch(0.155 0.004 280);
+      --foreground: oklch(0.96 0.003 280);
 
-      --card: oklch(0.21 0.015 280);
-      --card-foreground: oklch(0.96 0.005 280);
+      --card: oklch(0.21 0.005 280);
+      --card-foreground: oklch(0.96 0.003 280);
 
-      --popover: oklch(0.21 0.015 280);
-      --popover-foreground: oklch(0.96 0.005 280);
+      --popover: oklch(0.21 0.005 280);
+      --popover-foreground: oklch(0.96 0.003 280);
 
       --primary: oklch(0.72 0.06 280);
-      --primary-foreground: oklch(0.155 0.012 280);
+      --primary-foreground: oklch(0.155 0.004 280);
 
-      --secondary: oklch(0.27 0.015 280);
-      --secondary-foreground: oklch(0.96 0.005 280);
+      --secondary: oklch(0.27 0.005 280);
+      --secondary-foreground: oklch(0.96 0.003 280);
 
-      --muted: oklch(0.27 0.012 35);
-      --muted-foreground: oklch(0.65 0.02 280);
+      --muted: oklch(0.27 0.004 35);
+      --muted-foreground: oklch(0.65 0.008 280);
 
-      --accent: oklch(0.27 0.02 280);
-      --accent-foreground: oklch(0.96 0.005 280);
+      --accent: oklch(0.27 0.005 280);
+      --accent-foreground: oklch(0.96 0.003 280);
 
       --destructive: oklch(0.704 0.191 22.216);
       --destructive-foreground: oklch(1 0 0);
 
-      --border: oklch(1 0.01 280 / 12%);
-      --input: oklch(1 0.01 280 / 16%);
+      --border: oklch(1 0.003 280 / 12%);
+      --input: oklch(1 0.003 280 / 16%);
       --ring: oklch(0.6 0.07 279);
 
       --success: oklch(0.74 0.18 145);
       --warning: oklch(0.82 0.13 85);
-      --warning-foreground: oklch(0.155 0.012 280);
+      --warning-foreground: oklch(0.155 0.004 280);
       --error: oklch(0.704 0.191 22.216);
 
       color-scheme: dark;
