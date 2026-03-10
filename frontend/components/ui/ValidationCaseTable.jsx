@@ -92,7 +92,7 @@ export default function ValidationCaseTable({
     <div className="space-y-3">
       <div className="space-y-3 sm:hidden">
         {items.length === 0 ? (
-          <div className="rounded-[var(--radius)] border border-border bg-card px-4 py-9 text-center text-sm text-muted-foreground">
+          <div className="rounded-none border border-border bg-background px-4 py-9 text-center text-sm text-muted-foreground">
             Tidak ada Validation Case pada indeks ini.
           </div>
         ) : (
@@ -108,7 +108,7 @@ export default function ValidationCaseTable({
             return (
               <article
                 key={String(id)}
-                className="rounded-[var(--radius)] border border-border bg-card px-4 py-3"
+                className="rounded-none border border-border bg-background px-4 py-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -166,7 +166,7 @@ export default function ValidationCaseTable({
                   ) : null}
                 </dl>
 
-                <div className="mt-3 flex items-center gap-2 rounded-[calc(var(--radius)-2px)] border border-border/70 bg-secondary/20 px-2.5 py-2">
+                <div className="mt-3 flex items-center gap-2 rounded-none border border-border/70 bg-secondary/20 px-2.5 py-2">
                   <Avatar
                     src={owner?.avatar_url || owner?.avatarUrl}
                     name={owner?.username || ""}
@@ -202,7 +202,7 @@ export default function ValidationCaseTable({
         )}
       </div>
 
-      <div className="hidden sm:block overflow-hidden rounded-[var(--radius)] border border-border bg-card">
+      <div className="hidden sm:block overflow-hidden rounded-none border border-border bg-background">
         <div className="w-full overflow-x-auto">
           <table className="w-full min-w-[980px] text-sm">
             <thead className="bg-secondary/60 text-muted-foreground [&_th]:whitespace-nowrap">

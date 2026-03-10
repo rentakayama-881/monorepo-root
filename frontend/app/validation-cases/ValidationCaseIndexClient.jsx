@@ -245,7 +245,7 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
                 key={String(vc.id)}
                 href={`/validation-cases/${encodeURIComponent(String(vc.id))}`}
                 prefetch={false}
-                className="group block rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5"
+                className="group block rounded-none border border-border/60 bg-background p-4 transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">

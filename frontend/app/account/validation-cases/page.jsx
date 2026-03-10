@@ -128,7 +128,7 @@ function MyValidationCasesLoading() {
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={`mobile-${i}`}
-            className="rounded-[var(--radius)] border border-border bg-card p-4"
+            className="rounded-none border border-border bg-background p-4"
           >
             <div className="space-y-2">
               <Skeleton className="h-3 w-20" />
@@ -143,7 +143,7 @@ function MyValidationCasesLoading() {
         ))}
       </div>
 
-      <div className="hidden sm:block overflow-hidden rounded-[var(--radius)] border border-border bg-card">
+      <div className="hidden sm:block overflow-hidden rounded-none border border-border bg-background">
         <div className="p-4">
           <div className="grid grid-cols-7 gap-3 border-b border-border pb-3">
             {Array.from({ length: 7 }).map((_, i) => (
@@ -249,7 +249,7 @@ export default function MyValidationCasesPage() {
       {loading ? (
         <MyValidationCasesLoading />
       ) : items.length === 0 ? (
-        <div className="rounded-[var(--radius)] border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-none border border-border bg-background px-5 py-10 text-center text-sm text-muted-foreground">
           Belum ada Validation Case.
         </div>
       ) : (
@@ -268,7 +268,7 @@ export default function MyValidationCasesPage() {
               return (
                 <article
                   key={String(id)}
-                  className="rounded-[var(--radius)] border border-border bg-card px-4 py-3"
+                  className="rounded-none border border-border bg-background px-4 py-3"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -373,7 +373,7 @@ export default function MyValidationCasesPage() {
             })}
           </div>
 
-          <div className="hidden sm:block overflow-hidden rounded-[var(--radius)] border border-border bg-card">
+          <div className="hidden sm:block overflow-hidden rounded-none border border-border bg-background">
             <div className="w-full overflow-x-auto">
               <table className="w-full min-w-[980px] text-sm">
                 <thead className="bg-secondary/60 text-muted-foreground [&_th]:whitespace-nowrap">

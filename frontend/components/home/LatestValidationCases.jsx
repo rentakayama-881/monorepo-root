@@ -74,7 +74,7 @@ export default async function LatestValidationCases() {
                 key={String(vc.id)}
                 href={`/validation-cases/${encodeURIComponent(String(vc.id))}`}
                 prefetch={false}
-                className="group block rounded-[var(--radius)] border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-sm"
+                className="group block rounded-none border bg-background p-4 transition-all hover:border-primary/50 hover:shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
@@ -115,7 +115,7 @@ export default async function LatestValidationCases() {
           })}
         </div>
       ) : (
-        <div className="rounded-[var(--radius)] border border-dashed bg-card py-12 text-center">
+        <div className="rounded-none border border-dashed bg-background py-12 text-center">
           <svg
             className="mx-auto h-12 w-12 text-muted-foreground opacity-50"
             viewBox="0 0 24 24"
