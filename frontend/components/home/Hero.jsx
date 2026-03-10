@@ -1,4 +1,5 @@
 import Button from "../ui/Button";
+import { ArrowRight } from "lucide-react";
 
 const STEPS = [
   {
@@ -44,14 +45,13 @@ export default function Hero() {
 
           {/* Heading */}
           <h1
-            className="mt-8 text-center text-balance animate-slide-up text-4xl font-bold tracking-tighter text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
+            className="mt-8 text-center text-balance animate-slide-up text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl"
             style={{ animationDelay: "0.08s" }}
           >
-            Hasilkan uang dengan sesama pengguna AI
-            <br className="hidden sm:block" /> validasi hasil kerja AI,
+            Validasi Karya AI oleh Ahli Manusia,
             <br />
             <span className="rainbow-text">
-              untuk hasil yang efektif dan efisiensi langganan AI{" "}
+              Raih Penghasilan, Pastikan Kualitas
             </span>
           </h1>
 
@@ -63,11 +63,11 @@ export default function Hero() {
 
           {/* Description */}
           <p
-            className="mx-auto mt-6 max-w-2xl text-center text-base text-muted-foreground sm:text-lg animate-slide-up"
+            className="mx-auto mt-6 max-w-2xl text-center text-balance text-base text-muted-foreground sm:text-lg animate-slide-up"
             style={{ animationDelay: "0.18s" }}
           >
-            Owner buat case dan tetapkan bounty — otomatis potong saldo. Validator ajukan request,
-            disetujui, lalu kerjakan. Tiga validator mengerjakan, confidence tertinggi dapat bounty.
+            Pemilik case menetapkan bounty dan validator ahli mengerjakan validasi.
+            Validator dengan confidence tertinggi memperoleh bounty secara otomatis.
           </p>
 
           {/* CTA */}
@@ -80,21 +80,7 @@ export default function Hero() {
               prefetch={false}
               size="lg"
               variant="gradient"
-              iconRight={
-                <svg
-                  className="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-                  />
-                </svg>
-              }
+              iconRight={<ArrowRight className="size-4" />}
             >
               Lihat Daftar Case
             </Button>
