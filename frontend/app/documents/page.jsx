@@ -253,7 +253,7 @@ export default function DocumentsPage() {
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full ${
+                      className={`text-[10px] px-2 py-0.5 rounded-sm ${
                         doc.visibility === "public"
                           ? "bg-success/10 text-success"
                           : "bg-muted text-muted-foreground"
@@ -261,7 +261,7 @@ export default function DocumentsPage() {
                     >
                       {doc.visibility === "public" ? "Publik" : "Privat"}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    <span className="text-[10px] px-2 py-0.5 rounded-sm bg-muted text-muted-foreground">
                       {DOCUMENT_CATEGORIES.find((c) => c.value === doc.category)?.label ||
                         doc.category}
                     </span>

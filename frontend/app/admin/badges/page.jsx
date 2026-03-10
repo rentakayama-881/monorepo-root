@@ -498,7 +498,7 @@ export default function AdminBadgesPage() {
               
               {/* Chip style */}
               <span 
-                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-sm text-xs font-medium"
                 style={{ 
                   backgroundColor: formData.color + "15",
                   color: formData.color 

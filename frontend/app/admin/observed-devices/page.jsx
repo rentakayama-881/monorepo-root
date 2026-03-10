@@ -233,7 +233,7 @@ export default function ObservedDevicesPage() {
                         {device.account_count}
                       </span>
                       {device.blocked && (
-                        <span className="ml-2 inline-flex items-center rounded-full border border-destructive/20 bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+                        <span className="ml-2 inline-flex items-center rounded-sm border border-destructive/20 bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
                           Blocked
                         </span>
                       )}

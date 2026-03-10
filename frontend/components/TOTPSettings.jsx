@@ -237,7 +237,7 @@ function TOTPSettingsContent() {
           </p>
         </div>
         <div
-          className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium ${
+          className={`inline-flex items-center rounded-sm border px-2 py-1 text-xs font-medium ${
             status.enabled
               ? "border-success/20 bg-success/10 text-success"
               : "border-border bg-muted/60 text-muted-foreground"

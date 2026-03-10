@@ -263,7 +263,7 @@ export default function TransactionDetailPage() {
     };
     return (
       <span
-        className={`rounded-full border px-3 py-1 text-sm font-medium ${styles[normalized] || styles.held}`}
+        className={`rounded-sm border px-3 py-1 text-sm font-medium ${styles[normalized] || styles.held}`}
       >
         {labels[normalized] || status}
       </span>

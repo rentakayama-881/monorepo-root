@@ -167,7 +167,7 @@ export default function HiddenContentPage() {
               {contents.map((content) => (
                 <tr key={content.id} className="border-b border-border hover:bg-muted/50">
                   <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-muted/50 text-foreground">
+                    <span className="px-2 py-0.5 rounded-sm text-xs bg-muted/50 text-foreground">
                       {getContentTypeLabel(content.contentType)}
                     </span>
                   </td>

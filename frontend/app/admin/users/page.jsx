@@ -410,7 +410,7 @@ export default function AdminUsersPage() {
                         </span>
                         {user.primary_badge && (
                           <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-xs"
                             style={{
                               backgroundColor:
                                 (user.primary_badge.color || "#6366f1") + "20",

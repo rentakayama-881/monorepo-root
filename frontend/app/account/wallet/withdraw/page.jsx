@@ -362,7 +362,7 @@ export default function WithdrawPage() {
                     key={val}
                     type="button"
                     onClick={() => handleQuickAmount(val)}
-                    className="rounded-full border border-input px-3 py-1 text-xs hover:bg-accent transition-colors"
+                    className="rounded-sm border border-input px-3 py-1 text-xs hover:bg-accent transition-colors"
                   >
                     {(val / 1000).toLocaleString("id-ID")}rb
                   </button>
@@ -373,7 +373,7 @@ export default function WithdrawPage() {
                     const maxAmount = Math.floor(wallet.balance / (1 + feePercent));
                     if (maxAmount > 0) handleQuickAmount(maxAmount);
                   }}
-                  className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs text-primary hover:bg-primary/10 transition-colors"
+                  className="rounded-sm border border-primary/30 bg-primary/5 px-3 py-1 text-xs text-primary hover:bg-primary/10 transition-colors"
                 >
                   Maks
                 </button>

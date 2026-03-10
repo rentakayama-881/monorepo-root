@@ -117,7 +117,7 @@ export default function AuditLogsPage() {
     };
     return (
       <span
-        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
+        className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-medium ${
           styles[normalizedAction] || "border-border bg-muted/60 text-muted-foreground"
         }`}
       >

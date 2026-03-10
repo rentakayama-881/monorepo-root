@@ -123,7 +123,7 @@ export default function WarningsPage() {
     };
     return (
       <span
-        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${
+        className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-medium ${
           styles[normalized] || styles.moderate
         }`}
       >
@@ -181,7 +181,7 @@ export default function WarningsPage() {
                   <div className="flex items-center gap-2 mb-2">
                     {getSeverityBadge(warning.severity)}
                     {warning.isAcknowledged && (
-                      <span className="inline-flex items-center rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
+                      <span className="inline-flex items-center rounded-sm border border-success/20 bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
                         Acknowledged
                       </span>
                     )}

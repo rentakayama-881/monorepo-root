@@ -37,7 +37,7 @@ export default function Hero() {
         <div className="mx-auto max-w-4xl">
           {/* Badge */}
           <div className="flex justify-center animate-slide-up">
-            <span className="rainbow-border inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-foreground">
+            <span className="rainbow-border inline-flex items-center gap-2 rounded-sm px-4 py-1.5 text-xs font-medium text-foreground">
               Platform Validasi AI oleh Ahli Manusia
             </span>
           </div>

@@ -10,7 +10,7 @@ export default function UserProfileSkeleton() {
           <div className="min-w-0 flex-1 pt-1 space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <SkeletonText width="w-48" height="h-7" />
-              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-6 w-20 rounded-sm" />
             </div>
             <SkeletonText width="w-40" height="h-4" />
             <SkeletonText width="w-32" height="h-4" />
@@ -20,9 +20,9 @@ export default function UserProfileSkeleton() {
         <Skeleton className="h-12 w-full rounded-md" />
 
         <div className="flex flex-wrap gap-2">
-          <Skeleton className="h-8 w-20 rounded-full" />
-          <Skeleton className="h-8 w-24 rounded-full" />
-          <Skeleton className="h-8 w-16 rounded-full" />
+          <Skeleton className="h-8 w-20 rounded-sm" />
+          <Skeleton className="h-8 w-24 rounded-sm" />
+          <Skeleton className="h-8 w-16 rounded-sm" />
         </div>
       </div>
 

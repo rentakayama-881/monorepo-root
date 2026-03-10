@@ -87,7 +87,7 @@ export default function ChangelogPage() {
         <h2 className="mb-2 text-lg font-semibold">Versi Saat Ini</h2>
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           <span className="font-medium text-foreground">v{latest.version}</span>
-          <span className="rounded-full border px-2 py-0.5 text-xs">{latest.label}</span>
+          <span className="rounded-sm border px-2 py-0.5 text-xs">{latest.label}</span>
           <span className="flex items-center gap-1">
             <ClockIcon className="h-4 w-4" />
             {new Date(latest.date).toLocaleDateString("id-ID", {
@@ -107,7 +107,7 @@ export default function ChangelogPage() {
           >
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold">v{release.version}</h2>
-              <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+              <span className="rounded-sm border px-2 py-0.5 text-xs text-muted-foreground">
                 {release.label}
               </span>
             </div>
