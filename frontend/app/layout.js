@@ -140,20 +140,6 @@ export default function RootLayout({ children }) {
           type="font/woff2"
           crossOrigin="anonymous"
         />
-        <link
-          rel="preload"
-          href="/fonts/ibm-plex/sans/IBMPlexSans-Medium.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="/fonts/ibm-plex/sans/IBMPlexSans-SemiBold.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
         {/* Synchronous theme init — must run before first paint to prevent flash */}
         <script
           dangerouslySetInnerHTML={{
@@ -166,7 +152,6 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="flex min-h-screen flex-col antialiased bg-background text-foreground">
-
         {/* Skip to main content link for accessibility */}
         <a href="#main-content" className="skip-link">
           Skip to main content
@@ -180,7 +165,12 @@ export default function RootLayout({ children }) {
                   <Header />
                   <ApiStatusBanner />
 
-                  <div id="main-content" role="main" tabIndex={-1} className="flex-1 pt-[var(--header-height)]">
+                  <div
+                    id="main-content"
+                    role="main"
+                    tabIndex={-1}
+                    className="flex-1 pt-[var(--header-height)]"
+                  >
                     {children}
                   </div>
 

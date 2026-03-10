@@ -3,20 +3,28 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { fetchJson, fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { LOCKED_CATEGORIES } from "@/lib/constants";
 import { VALIDATION_CASE_README_TEMPLATES } from "@/lib/validationCaseReadmeTemplates";
 import { useUploadDocument } from "@/lib/useDocuments";
 import TagSelector from "@/components/ui/TagSelector";
-import MarkdownEditor from "@/components/ui/MarkdownEditor";
-import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import Button from "@/components/ui/Button";
 import NativeSelect from "@/components/ui/NativeSelect";
 import NewValidationCaseSkeleton from "./NewValidationCaseSkeleton";
 import Skeleton from "@/components/ui/Skeleton";
 import { formatIDR } from "@/lib/format";
 import { formatRepoFileKindLabel, formatRepoFileVisibilityLabel } from "@/lib/repoFileLabels";
+
+const MarkdownEditor = dynamic(() => import("@/components/ui/MarkdownEditor"), {
+  ssr: false,
+  loading: () => <div className="h-48 animate-pulse bg-border/30 rounded-lg" />,
+});
+const MarkdownPreview = dynamic(() => import("@/components/ui/MarkdownPreview"), {
+  ssr: false,
+  loading: () => <div className="h-32 animate-pulse bg-border/30 rounded-lg" />,
+});
 
 const checklistItems = [
   {

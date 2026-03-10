@@ -1,22 +1,34 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import AvatarSection from "@/components/account/AvatarSection";
 import BadgesSection from "@/components/account/BadgesSection";
-import DeleteAccountSection from "@/components/account/DeleteAccountSection";
-import GuaranteeSection from "@/components/account/GuaranteeSection";
 import ProfileSection from "@/components/account/ProfileSection";
-import TelegramAuthSection from "@/components/account/TelegramAuthSection";
 import UsernameSection from "@/components/account/UsernameSection";
-import PasskeySettings from "@/components/PasskeySettings";
-import TOTPSettings from "@/components/TOTPSettings";
 import Alert from "@/components/ui/Alert";
 import { CenteredSpinner } from "@/components/ui/LoadingState";
 import { AlertTriangle } from "lucide-react";
 import { getToken } from "@/lib/auth";
 import { getApiBase } from "@/lib/api";
 import { fetchWithAuth } from "@/lib/tokenRefresh";
+
+const GuaranteeSection = dynamic(() => import("@/components/account/GuaranteeSection"), {
+  loading: () => <div className="h-32 animate-pulse bg-border/30 rounded-lg" />,
+});
+const TelegramAuthSection = dynamic(() => import("@/components/account/TelegramAuthSection"), {
+  loading: () => <div className="h-20 animate-pulse bg-border/30 rounded-lg" />,
+});
+const PasskeySettings = dynamic(() => import("@/components/PasskeySettings"), {
+  loading: () => <div className="h-20 animate-pulse bg-border/30 rounded-lg" />,
+});
+const TOTPSettings = dynamic(() => import("@/components/TOTPSettings"), {
+  loading: () => <div className="h-20 animate-pulse bg-border/30 rounded-lg" />,
+});
+const DeleteAccountSection = dynamic(() => import("@/components/account/DeleteAccountSection"), {
+  loading: () => <div className="h-16 animate-pulse bg-border/30 rounded-lg" />,
+});
 
 function normalizeAccountPayload(formValue = {}, socialsValue = []) {
   const normalizedSocials = (Array.isArray(socialsValue) ? socialsValue : [])
@@ -125,15 +137,35 @@ function AccountPageContent() {
 
     let cancelled = false;
     setLoading(true);
+    setGuaranteeLoading(true);
 
-    const loadAccount = async () => {
-      try {
-        const response = await fetchWithAuth(`${apiBase}/account/me`);
-        if (!response.ok) throw new Error("Gagal memuat akun");
+    const loadAll = async () => {
+      const [accountResult, badgesResult, walletResult, guaranteeResult] = await Promise.allSettled(
+        [
+          fetchWithAuth(`${apiBase}/account/me`).then(async (r) => {
+            if (!r.ok) throw new Error("Gagal memuat akun");
+            return r.json();
+          }),
+          fetchWithAuth(`${apiBase}/account/badges`).then(async (r) => {
+            if (!r.ok) return null;
+            return r.json();
+          }),
+          fetchWithAuth(`${featureBase}/api/v1/wallets/me`).then(async (r) => {
+            if (!r.ok) return null;
+            return r.json();
+          }),
+          fetchWithAuth(`${featureBase}/api/v1/guarantees/me`).then(async (r) => {
+            if (!r.ok) return null;
+            return r.json();
+          }),
+        ]
+      );
 
-        const data = await response.json();
-        if (cancelled) return;
+      if (cancelled) return;
 
+      // Account (critical — show error if fails)
+      if (accountResult.status === "fulfilled") {
+        const data = accountResult.value;
         setMe(data);
         setUsername(data.username || "");
         setAvatarUrl(data.avatar_url || "");
@@ -155,59 +187,67 @@ function AccountPageContent() {
         setTelegramAuth(normalizeTelegramAuth(data.telegram_auth));
         setSavedProfileSignature(JSON.stringify(normalized));
         setProfileSaveMessage("");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+      } else {
+        setError(
+          accountResult.reason instanceof Error
+            ? accountResult.reason.message
+            : String(accountResult.reason)
+        );
       }
+
+      // Badges (non-critical — silently ignore errors)
+      if (badgesResult.status === "fulfilled" && badgesResult.value) {
+        setBadges(badgesResult.value.badges || []);
+        setPrimaryBadgeId(badgesResult.value.primary_badge_id || null);
+      }
+
+      // Wallet (non-critical)
+      if (walletResult.status === "fulfilled" && walletResult.value) {
+        const wallet = walletResult.value;
+        setWalletBalance(typeof wallet?.balance === "number" ? wallet.balance : 0);
+      }
+
+      // Guarantee (non-critical)
+      if (guaranteeResult.status === "fulfilled" && guaranteeResult.value) {
+        const guarantee = guaranteeResult.value;
+        setGuaranteeAmount(typeof guarantee?.amount === "number" ? guarantee.amount : 0);
+      }
+
+      setLoading(false);
+      setGuaranteeLoading(false);
     };
 
-    loadAccount();
+    loadAll();
     return () => {
       cancelled = true;
     };
-  }, [apiBase, authed]);
-
-  useEffect(() => {
-    if (!authed) return;
-
-    const loadBadges = async () => {
-      try {
-        const response = await fetchWithAuth(`${apiBase}/account/badges`);
-        if (!response.ok) return;
-
-        const data = await response.json();
-        setBadges(data.badges || []);
-        setPrimaryBadgeId(data.primary_badge_id || null);
-      } catch {
-        // Ignore badge fetch errors.
-      }
-    };
-
-    loadBadges();
-  }, [apiBase, authed]);
-
-  function generateIdempotencyKey() {
-    return crypto.randomUUID();
-  }
+  }, [apiBase, featureBase, authed]);
 
   async function loadWalletAndGuarantee() {
     if (!authed) return;
 
     setGuaranteeLoading(true);
     try {
-      const walletResponse = await fetchWithAuth(`${featureBase}/api/v1/wallets/me`);
-      if (walletResponse.ok) {
-        const wallet = await walletResponse.json();
-        setWalletBalance(typeof wallet?.balance === "number" ? wallet.balance : 0);
-      }
+      const [walletResult, guaranteeResult] = await Promise.allSettled([
+        fetchWithAuth(`${featureBase}/api/v1/wallets/me`).then(async (r) => {
+          if (!r.ok) return null;
+          return r.json();
+        }),
+        fetchWithAuth(`${featureBase}/api/v1/guarantees/me`).then(async (r) => {
+          if (!r.ok) return null;
+          return r.json();
+        }),
+      ]);
 
-      const guaranteeResponse = await fetchWithAuth(`${featureBase}/api/v1/guarantees/me`);
-      if (guaranteeResponse.ok) {
-        const guarantee = await guaranteeResponse.json();
-        setGuaranteeAmount(typeof guarantee?.amount === "number" ? guarantee.amount : 0);
+      if (walletResult.status === "fulfilled" && walletResult.value) {
+        setWalletBalance(
+          typeof walletResult.value?.balance === "number" ? walletResult.value.balance : 0
+        );
+      }
+      if (guaranteeResult.status === "fulfilled" && guaranteeResult.value) {
+        setGuaranteeAmount(
+          typeof guaranteeResult.value?.amount === "number" ? guaranteeResult.value.amount : 0
+        );
       }
     } catch {
       // Ignore feature-service errors on account page.
@@ -215,12 +255,6 @@ function AccountPageContent() {
       setGuaranteeLoading(false);
     }
   }
-
-  useEffect(() => {
-    loadWalletAndGuarantee();
-    // Omit loadWalletAndGuarantee — stable by intent, re-runs on auth/base change only
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authed, featureBase]);
 
   useEffect(() => {
     if (focus !== "passkeys" || loading) return;
@@ -238,6 +272,10 @@ function AccountPageContent() {
 
     return () => window.clearTimeout(timeoutId);
   }, [focus, loading]);
+
+  function generateIdempotencyKey() {
+    return crypto.randomUUID();
+  }
 
   async function submitSetGuarantee(event) {
     event.preventDefault();
@@ -359,23 +397,23 @@ function AccountPageContent() {
     }
   }
 
-  function updateSocial(index, key, value) {
+  const updateSocial = useCallback((index, key, value) => {
     setSocials((prev) => {
       const copy = [...prev];
       copy[index] = { ...copy[index], [key]: value };
       return copy;
     });
-  }
+  }, []);
 
-  function addSocial() {
+  const addSocial = useCallback(() => {
     setSocials((prev) => [...prev, { label: "", url: "" }]);
-  }
+  }, []);
 
-  function removeSocial(index) {
+  const removeSocial = useCallback((index) => {
     setSocials((prev) => prev.filter((_, idx) => idx !== index));
-  }
+  }, []);
 
-  function onAvatarFileChange(event) {
+  const onAvatarFileChange = useCallback((event) => {
     setOk("");
     setError("");
 
@@ -395,12 +433,12 @@ function AccountPageContent() {
     } else {
       setAvatarPreview("");
     }
-  }
+  }, []);
 
-  function cancelAvatarPreview() {
+  const cancelAvatarPreview = useCallback(() => {
     setAvatarFile(null);
     setAvatarPreview("");
-  }
+  }, []);
 
   async function uploadAvatar() {
     setError("");

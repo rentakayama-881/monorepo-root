@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getApiBase } from "@/lib/api";
@@ -118,6 +118,33 @@ export default function UserProfilePage() {
     loadTabContent();
   }, [API, username, profile, activeTab]);
 
+  const normalizedSocials = useMemo(() => {
+    if (!profile?.social_accounts) return [];
+    const rawSocialAccounts = profile.social_accounts;
+    let socialAccounts = [];
+    if (Array.isArray(rawSocialAccounts)) {
+      socialAccounts = rawSocialAccounts;
+    } else if (typeof rawSocialAccounts === "object") {
+      if (Array.isArray(rawSocialAccounts.items)) {
+        socialAccounts = rawSocialAccounts.items;
+      } else {
+        socialAccounts = Object.entries(rawSocialAccounts).map(([label, url]) => ({ label, url }));
+      }
+    }
+    return socialAccounts
+      .map((account) => {
+        const url = normalizeSocialUrl(account?.url);
+        if (!url) return null;
+        const label = String(account?.label || "").trim();
+        const type = detectSocialType(label, url);
+        const fallbackLabel =
+          type === "link" ? "Website" : `${type.charAt(0).toUpperCase()}${type.slice(1)}`;
+        const displayLabel = label || fallbackLabel;
+        return { url, type, label: displayLabel };
+      })
+      .filter(Boolean);
+  }, [profile?.social_accounts]);
+
   if (loading) {
     return <UserProfileSkeleton />;
   }
@@ -142,33 +169,6 @@ export default function UserProfilePage() {
     );
 
   const displayName = profile.full_name || profile.username || "";
-  const rawSocialAccounts = profile.social_accounts;
-  let socialAccounts = [];
-  if (Array.isArray(rawSocialAccounts)) {
-    socialAccounts = rawSocialAccounts;
-  } else if (rawSocialAccounts && typeof rawSocialAccounts === "object") {
-    if (Array.isArray(rawSocialAccounts.items)) {
-      socialAccounts = rawSocialAccounts.items;
-    } else {
-      socialAccounts = Object.entries(rawSocialAccounts).map(([label, url]) => ({ label, url }));
-    }
-  }
-  const normalizedSocials = socialAccounts
-    .map((account) => {
-      const url = normalizeSocialUrl(account?.url);
-      if (!url) return null;
-      const label = String(account?.label || "").trim();
-      const type = detectSocialType(label, url);
-      const fallbackLabel =
-        type === "link" ? "Website" : `${type.charAt(0).toUpperCase()}${type.slice(1)}`;
-      const displayLabel = label || fallbackLabel;
-      return {
-        url,
-        type,
-        label: displayLabel,
-      };
-    })
-    .filter(Boolean);
   const pronouns = String(profile.pronouns || "").trim();
 
   return (
