@@ -94,17 +94,14 @@ export default function DeviceBansPage() {
         body.expiresAt = new Date(form.expiresAt).toISOString();
       }
 
-      const res = await fetch(
-        `${getFeatureApiBase()}/api/v1/admin/moderation/device-bans`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        }
-      );
+      const res = await fetch(`${getFeatureApiBase()}/api/v1/admin/moderation/device-bans`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
       if (!res.ok) {
         let msg = `Gagal membuat device ban (${res.status})`;
         try {
@@ -177,9 +174,7 @@ export default function DeviceBansPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">Device Bans</h1>
-        <Button onClick={() => setShowCreateModal(true)}>
-          + New Device Ban
-        </Button>
+        <Button onClick={() => setShowCreateModal(true)}>+ New Device Ban</Button>
       </div>
 
       {error && (
@@ -193,15 +188,15 @@ export default function DeviceBansPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : bans.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Tidak ada device ban aktif
-        </div>
+        <div className="text-center py-12 text-muted-foreground">Tidak ada device ban aktif</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Device Fingerprint</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Device Fingerprint
+                </th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">User ID</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Reason</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
@@ -217,22 +212,22 @@ export default function DeviceBansPage() {
                   status === "Permanent"
                     ? "border-destructive/20 bg-destructive/10 text-destructive"
                     : status === "Active"
-                    ? "border-warning/20 bg-warning/10 text-warning"
-                    : "border-border bg-muted/60 text-muted-foreground";
+                      ? "border-warning/20 bg-warning/10 text-warning"
+                      : "border-border bg-muted/60 text-muted-foreground";
 
                 return (
                   <tr key={ban.id} className="border-b border-border hover:bg-muted/50">
-                    <td className="py-3 px-4 font-mono text-xs truncate max-w-48">{ban.deviceFingerprint}</td>
+                    <td className="py-3 px-4 font-mono text-xs truncate max-w-48">
+                      {ban.deviceFingerprint}
+                    </td>
                     <td className="py-3 px-4">
-                      {ban.userId ? (
-                        <span className="font-mono text-xs">{ban.userId}</span>
-                      ) : (
-                        "-"
-                      )}
+                      {ban.userId ? <span className="font-mono text-xs">{ban.userId}</span> : "-"}
                     </td>
                     <td className="py-3 px-4 max-w-48 truncate">{ban.reason}</td>
                     <td className="py-3 px-4">
-                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${statusColor}`}>
+                      <span
+                        className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-medium ${statusColor}`}
+                      >
                         {status}
                       </span>
                     </td>
@@ -243,11 +238,7 @@ export default function DeviceBansPage() {
                       {ban.isPermanent ? "-" : formatDateTime(ban.expiresAt)}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => handleUnban(ban.id)}
-                      >
+                      <Button size="sm" variant="danger" onClick={() => handleUnban(ban.id)}>
                         Unban
                       </Button>
                     </td>
@@ -294,9 +285,7 @@ export default function DeviceBansPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Reason *
-                </label>
+                <label className="block text-sm font-medium text-foreground mb-1">Reason *</label>
                 <textarea
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
@@ -334,11 +323,7 @@ export default function DeviceBansPage() {
               )}
 
               <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowCreateModal(false)}
-                >
+                <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={createLoading}>

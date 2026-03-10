@@ -193,7 +193,7 @@ export default function DisputesListPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span
-                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(dispute.status)}`}
+                        className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-medium ${getStatusColor(dispute.status)}`}
                       >
                         {getStatusLabel(dispute.status)}
                       </span>

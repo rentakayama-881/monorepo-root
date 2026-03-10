@@ -1,6 +1,6 @@
 /**
  * Badge System - Styled like prompts.chat verified badges
- * 
+ *
  * Badge types:
  * - verified: Blue checkmark (like prompts.chat)
  * - admin: Shield icon
@@ -16,48 +16,112 @@ import Link from "next/link";
 // Badge icon components (outline style, GitHub-like)
 const BadgeIcons = {
   verified: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
       <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
       <path d="m9 12 2 2 4-4" />
     </svg>
   ),
   admin: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
       <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
       <path d="m9 12 2 2 4-4" />
     </svg>
   ),
   moderator: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
       <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
     </svg>
   ),
   contributor: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
       <path d="m16 18 6-6-6-6" />
       <path d="m8 6-6 6 6 6" />
     </svg>
   ),
   premium: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
       <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
       <path d="M5 21h14" />
     </svg>
   ),
   checkmark: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
       <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
       <path d="m9 12 2 2 4-4" />
     </svg>
   ),
   trusted: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
       <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
       <path d="m9 12 2 2 4-4" />
     </svg>
   ),
   default: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
       <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
     </svg>
   ),
@@ -93,7 +157,9 @@ function pickFirst(...values) {
 }
 
 function normalizeIconType(value) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function hexToRgba(hex, alpha) {
@@ -210,7 +276,7 @@ export function Badge({
     return (
       <span
         className={clsx(
-          "inline-flex items-center rounded-full border font-medium animate-pulse-subtle",
+          "inline-flex items-center rounded-sm border font-medium animate-pulse-subtle",
           sizes.gap,
           sizes.text,
           sizes.padding,
@@ -225,8 +291,14 @@ export function Badge({
         {...props}
       >
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: config.color }}></span>
-          <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: config.color }}></span>
+          <span
+            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+            style={{ backgroundColor: config.color }}
+          ></span>
+          <span
+            className="relative inline-flex rounded-full h-2 w-2"
+            style={{ backgroundColor: config.color }}
+          ></span>
         </span>
         {renderBadgeIcon(config, sizes.icon)}
         {(showLabel || variant === "pulse") && <span>{config.label}</span>}
@@ -265,14 +337,14 @@ export function Badge({
 
   // Chip variant (with background)
   return (
-      <span
-        className={clsx(
-          "inline-flex items-center justify-center rounded-[var(--radius)] border font-medium w-fit whitespace-nowrap shrink-0 overflow-hidden",
-          sizes.gap,
-          sizes.text,
-          sizes.padding,
-          className
-        )}
+    <span
+      className={clsx(
+        "inline-flex items-center justify-center rounded-[var(--radius)] border font-medium w-fit whitespace-nowrap shrink-0 overflow-hidden",
+        sizes.gap,
+        sizes.text,
+        sizes.padding,
+        className
+      )}
       style={{
         backgroundColor: tone.backgroundColor,
         borderColor: tone.borderColor,
@@ -320,7 +392,7 @@ export function BadgeChip({ badge, onRemove, size = "sm", className = "" }) {
         <button
           type="button"
           onClick={onRemove}
-          className="ml-1 -mr-1 p-0.5 rounded-full hover:bg-current/10 transition-all active:scale-90"
+          className="ml-1 -mr-1 p-0.5 rounded-sm hover:bg-current/10 transition-all active:scale-90"
           aria-label={`Remove ${config.label}`}
         >
           <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
@@ -347,7 +419,7 @@ export function BadgeList({ badges = [], maxDisplay = 5, size = "sm", className 
         <BadgeChip key={badge.id || badge.ID || i} badge={badge} size={size} />
       ))}
       {remaining > 0 && (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-secondary text-muted-foreground">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs bg-secondary text-muted-foreground">
           +{remaining} lainnya
         </span>
       )}
@@ -373,18 +445,13 @@ export function UsernameWithBadge({
       <span className={clsx("font-medium", usernameClassName)}>@{username}</span>
       {verified && <Badge type="verified" size={size} />}
       {isAdmin && <Badge type="admin" size={size} />}
-      {primaryBadge && !verified && !isAdmin && (
-        <Badge badge={primaryBadge} size={size} />
-      )}
+      {primaryBadge && !verified && !isAdmin && <Badge badge={primaryBadge} size={size} />}
     </span>
   );
 
   if (linkToProfile && username) {
     return (
-      <Link
-        href={`/user/${username}`}
-        className="hover:underline transition-colors"
-      >
+      <Link href={`/user/${username}`} className="hover:underline transition-colors">
         {content}
       </Link>
     );

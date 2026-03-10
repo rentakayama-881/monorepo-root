@@ -294,7 +294,7 @@ export default function TransactionsContent() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-foreground">{title}</span>
                         <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}
+                          className={`rounded-sm px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}
                         >
                           {badge.label}
                         </span>

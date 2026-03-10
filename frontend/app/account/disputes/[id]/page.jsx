@@ -348,7 +348,7 @@ export default function DisputeCenterPage() {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <span
-                  className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${getStatusColor(dispute?.status)}`}
+                  className={`inline-flex items-center rounded-sm border px-3 py-1 text-xs font-medium ${getStatusColor(dispute?.status)}`}
                 >
                   {getStatusLabel(dispute?.status)}
                 </span>

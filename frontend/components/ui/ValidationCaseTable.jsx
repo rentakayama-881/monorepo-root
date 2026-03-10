@@ -13,7 +13,9 @@ function formatDate(ts) {
 }
 
 function statusLabel(statusRaw) {
-  const s = String(statusRaw || "").toLowerCase().trim();
+  const s = String(statusRaw || "")
+    .toLowerCase()
+    .trim();
   if (!s) return "Unknown";
   const map = {
     open: "Open",
@@ -29,7 +31,9 @@ function statusLabel(statusRaw) {
 }
 
 function statusStyle(statusRaw) {
-  const s = String(statusRaw || "").toLowerCase().trim();
+  const s = String(statusRaw || "")
+    .toLowerCase()
+    .trim();
   switch (s) {
     case "completed":
       return "border-emerald-200 bg-emerald-50 text-emerald-900";
@@ -52,7 +56,10 @@ function statusStyle(statusRaw) {
 }
 
 function sensitivityText(levelRaw) {
-  const level = String(levelRaw || "S1").toUpperCase().trim() || "S1";
+  const level =
+    String(levelRaw || "S1")
+      .toUpperCase()
+      .trim() || "S1";
   const labels = {
     S0: "Public",
     S1: "Restricted",
@@ -67,14 +74,18 @@ function sensitivityText(levelRaw) {
 function StatusPill({ status }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${statusStyle(status)}`}
+      className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${statusStyle(status)}`}
     >
       {statusLabel(status)}
     </span>
   );
 }
 
-export default function ValidationCaseTable({ cases, baseHref = "/validation-cases", showCategory = true }) {
+export default function ValidationCaseTable({
+  cases,
+  baseHref = "/validation-cases",
+  showCategory = true,
+}) {
   const items = Array.isArray(cases) ? cases : [];
 
   return (
@@ -91,12 +102,19 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
             const owner = vc?.owner || vc?.user || {};
             const ownerName = owner?.username ? `@${owner.username}` : "-";
             const ownerBadge = owner?.primary_badge || owner?.primaryBadge || null;
-            const ownerProfileHref = owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "";
+            const ownerProfileHref = owner?.username
+              ? `/user/${encodeURIComponent(owner.username)}`
+              : "";
             return (
-              <article key={String(id)} className="rounded-[var(--radius)] border border-border bg-card px-4 py-3">
+              <article
+                key={String(id)}
+                className="rounded-[var(--radius)] border border-border bg-card px-4 py-3"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="font-mono text-[11px] text-muted-foreground">Case #{String(id)}</div>
+                    <div className="font-mono text-[11px] text-muted-foreground">
+                      Case #{String(id)}
+                    </div>
                     <Link
                       href={href}
                       prefetch={false}
@@ -108,7 +126,11 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
                   <StatusPill status={vc?.status} />
                 </div>
 
-                {vc?.summary ? <div className="mt-2 text-xs text-muted-foreground line-clamp-2">{vc.summary}</div> : null}
+                {vc?.summary ? (
+                  <div className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                    {vc.summary}
+                  </div>
+                ) : null}
                 {Array.isArray(vc?.tags) && vc.tags.length > 0 ? (
                   <div className="mt-2">
                     <TagList tags={vc.tags} size="xs" />
@@ -118,34 +140,52 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
                 <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <dt className="text-muted-foreground">Bounty</dt>
-                    <dd className="mt-0.5 font-semibold text-foreground">{formatIDR(vc?.bounty_amount)}</dd>
+                    <dd className="mt-0.5 font-semibold text-foreground">
+                      {formatIDR(vc?.bounty_amount)}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Filed</dt>
-                    <dd className="mt-0.5 font-mono text-muted-foreground">{formatDate(vc?.created_at)}</dd>
+                    <dd className="mt-0.5 font-mono text-muted-foreground">
+                      {formatDate(vc?.created_at)}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Sensitivity</dt>
-                    <dd className="mt-0.5 font-mono text-foreground">{sensitivityText(vc?.sensitivity_level)}</dd>
+                    <dd className="mt-0.5 font-mono text-foreground">
+                      {sensitivityText(vc?.sensitivity_level)}
+                    </dd>
                   </div>
                   {showCategory ? (
                     <div className="col-span-2">
                       <dt className="text-muted-foreground">Type</dt>
-                      <dd className="mt-0.5 text-foreground">{vc?.category?.name || vc?.category?.slug || "-"}</dd>
+                      <dd className="mt-0.5 text-foreground">
+                        {vc?.category?.name || vc?.category?.slug || "-"}
+                      </dd>
                     </div>
                   ) : null}
                 </dl>
 
                 <div className="mt-3 flex items-center gap-2 rounded-[calc(var(--radius)-2px)] border border-border/70 bg-secondary/20 px-2.5 py-2">
-                  <Avatar src={owner?.avatar_url || owner?.avatarUrl} name={owner?.username || ""} size="xs" />
+                  <Avatar
+                    src={owner?.avatar_url || owner?.avatarUrl}
+                    name={owner?.username || ""}
+                    size="xs"
+                  />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       {ownerProfileHref ? (
-                        <Link href={ownerProfileHref} prefetch={false} className="truncate text-xs font-semibold text-foreground hover:underline">
+                        <Link
+                          href={ownerProfileHref}
+                          prefetch={false}
+                          className="truncate text-xs font-semibold text-foreground hover:underline"
+                        >
                           {ownerName}
                         </Link>
                       ) : (
-                        <span className="truncate text-xs font-semibold text-foreground">{ownerName}</span>
+                        <span className="truncate text-xs font-semibold text-foreground">
+                          {ownerName}
+                        </span>
                       )}
                       {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
                     </div>
@@ -167,22 +207,41 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
           <table className="w-full min-w-[980px] text-sm">
             <thead className="bg-secondary/60 text-muted-foreground [&_th]:whitespace-nowrap">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Case</th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Title</th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Status</th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Sensitivity</th>
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                  Case
+                </th>
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                  Title
+                </th>
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                  Sensitivity
+                </th>
                 {showCategory && (
-                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Type</th>
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                    Type
+                  </th>
                 )}
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Bounty</th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Owner</th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">Filed</th>
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                  Bounty
+                </th>
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                  Owner
+                </th>
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                  Filed
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={showCategory ? 8 : 7} className="px-4 py-10 text-center text-muted-foreground">
+                  <td
+                    colSpan={showCategory ? 8 : 7}
+                    className="px-4 py-10 text-center text-muted-foreground"
+                  >
                     Tidak ada Validation Case pada indeks ini.
                   </td>
                 </tr>
@@ -193,7 +252,9 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
                   const owner = vc?.owner || vc?.user || {};
                   const ownerName = owner?.username ? `@${owner.username}` : "-";
                   const ownerBadge = owner?.primary_badge || owner?.primaryBadge || null;
-                  const ownerProfileHref = owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "";
+                  const ownerProfileHref = owner?.username
+                    ? `/user/${encodeURIComponent(owner.username)}`
+                    : "";
 
                   return (
                     <tr key={String(id)} className="hover:bg-secondary/40">
@@ -204,11 +265,17 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
                       </td>
                       <td className="px-4 py-3 align-top">
                         <div className="min-w-0">
-                          <Link href={href} prefetch={false} className="block font-semibold text-foreground hover:underline">
+                          <Link
+                            href={href}
+                            prefetch={false}
+                            className="block font-semibold text-foreground hover:underline"
+                          >
                             {vc?.title || "(untitled)"}
                           </Link>
                           {vc?.summary ? (
-                            <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{vc.summary}</div>
+                            <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                              {vc.summary}
+                            </div>
                           ) : null}
                           {Array.isArray(vc?.tags) && vc.tags.length > 0 ? (
                             <div className="mt-2">
@@ -233,21 +300,32 @@ export default function ValidationCaseTable({ cases, baseHref = "/validation-cas
                       </td>
                       <td className="px-4 py-3 align-top">
                         <div className="flex items-center gap-2">
-                          <Avatar src={owner?.avatar_url || owner?.avatarUrl} name={owner?.username || ""} size="xs" />
+                          <Avatar
+                            src={owner?.avatar_url || owner?.avatarUrl}
+                            name={owner?.username || ""}
+                            size="xs"
+                          />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               {ownerProfileHref ? (
-                                <Link href={ownerProfileHref} prefetch={false} className="truncate font-semibold text-foreground hover:underline">
+                                <Link
+                                  href={ownerProfileHref}
+                                  prefetch={false}
+                                  className="truncate font-semibold text-foreground hover:underline"
+                                >
                                   {ownerName}
                                 </Link>
                               ) : (
-                                <span className="truncate font-semibold text-foreground">{ownerName}</span>
+                                <span className="truncate font-semibold text-foreground">
+                                  {ownerName}
+                                </span>
                               )}
                               {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
                             </div>
                             {Number(owner?.guarantee_amount || owner?.guaranteeAmount || 0) > 0 ? (
                               <div className="mt-0.5 text-[11px] text-muted-foreground whitespace-nowrap">
-                                Stake: {formatIDR(owner?.guarantee_amount || owner?.guaranteeAmount)}
+                                Stake:{" "}
+                                {formatIDR(owner?.guarantee_amount || owner?.guaranteeAmount)}
                               </div>
                             ) : null}
                           </div>

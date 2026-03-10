@@ -81,7 +81,7 @@ export default async function LatestValidationCases() {
                     {vc.title}
                   </span>
                   <span
-                    className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusColorClass}`}
+                    className={`shrink-0 inline-flex items-center rounded-sm border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusColorClass}`}
                   >
                     {String(vc.status || "unknown")}
                   </span>
@@ -98,13 +98,13 @@ export default async function LatestValidationCases() {
                     {vc.tags.slice(0, 3).map((tag) => (
                       <span
                         key={tag.slug || tag.name}
-                        className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                        className="inline-flex rounded-sm bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
                       >
                         {tag.name || tag.slug}
                       </span>
                     ))}
                     {vc.tags.length > 3 && (
-                      <span className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      <span className="inline-flex rounded-sm bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                         +{vc.tags.length - 3}
                       </span>
                     )}

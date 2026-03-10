@@ -250,7 +250,7 @@ function CaseSection({ title, subtitle, children }) {
 function StatusBadge({ status }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusBadgeClass(
+      className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusBadgeClass(
         status
       )}`}
     >
@@ -2129,7 +2129,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
                   </dt>
                   <dd className="text-right">
                     <span
-                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${sensitivity.badgeClass}`}
+                      className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-semibold ${sensitivity.badgeClass}`}
                     >
                       {sensitivity.level}
                     </span>

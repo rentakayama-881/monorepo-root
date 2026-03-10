@@ -44,7 +44,7 @@ export default function AdminDisputesPage() {
         const status = filter === "all" ? "" : `?status=${filter}`;
         const res = await fetch(`${API_BASE}/api/v1/admin/disputes${status}`, {
           headers: {
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
@@ -86,7 +86,10 @@ export default function AdminDisputesPage() {
     return new Intl.NumberFormat("id-ID").format(amount);
   };
 
-  const normalizeStatus = (status) => String(status || "").replace(/\s+/g, "").toLowerCase();
+  const normalizeStatus = (status) =>
+    String(status || "")
+      .replace(/\s+/g, "")
+      .toLowerCase();
 
   // Get status color
   const getStatusColor = (status) => {
@@ -126,7 +129,11 @@ export default function AdminDisputesPage() {
 
   // Get category label
   const getCategoryLabel = (category) => {
-    switch (String(category || "").replace(/\s+/g, "").toLowerCase()) {
+    switch (
+      String(category || "")
+        .replace(/\s+/g, "")
+        .toLowerCase()
+    ) {
       case "itemnotreceived":
         return "Barang Tidak Diterima";
       case "itemnotasdescribed":
@@ -163,11 +170,14 @@ export default function AdminDisputesPage() {
           },
           {
             label: "Butuh Bukti",
-            value: disputes.filter((d) => normalizeStatus(d.status) === "waitingforevidence").length,
+            value: disputes.filter((d) => normalizeStatus(d.status) === "waitingforevidence")
+              .length,
           },
           {
             label: "Total Aktif",
-            value: disputes.filter((d) => !["resolved", "cancelled"].includes(normalizeStatus(d.status))).length,
+            value: disputes.filter(
+              (d) => !["resolved", "cancelled"].includes(normalizeStatus(d.status))
+            ).length,
           },
         ].map((stat, idx) => (
           <div key={idx} className="bg-card rounded-lg border border-border p-4">
@@ -210,7 +220,9 @@ export default function AdminDisputesPage() {
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-xl font-bold text-foreground mb-2">Tidak Ada Dispute</h2>
           <p className="text-muted-foreground">
-            {filter === "all" ? "Belum ada dispute yang dibuat." : `Tidak ada dispute dengan status "${getStatusLabel(filter)}".`}
+            {filter === "all"
+              ? "Belum ada dispute yang dibuat."
+              : `Tidak ada dispute dengan status "${getStatusLabel(filter)}".`}
           </p>
         </div>
       ) : (
@@ -218,13 +230,27 @@ export default function AdminDisputesPage() {
           <table className="w-full">
             <thead className="bg-muted/30 border-b border-border">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">ID</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Kategori</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Pihak</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Jumlah</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Tanggal</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase">Aksi</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                  ID
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                  Kategori
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                  Pihak
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">
+                  Jumlah
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                  Tanggal
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase">
+                  Aksi
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -253,7 +279,9 @@ export default function AdminDisputesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium ${getStatusColor(dispute.status)}`}>
+                    <span
+                      className={`inline-flex items-center rounded-sm border px-2 py-1 text-xs font-medium ${getStatusColor(dispute.status)}`}
+                    >
                       {getStatusLabel(dispute.status)}
                     </span>
                   </td>

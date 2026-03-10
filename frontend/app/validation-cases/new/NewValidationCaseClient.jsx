@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { fetchJson, fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
@@ -614,7 +615,7 @@ export default function NewValidationCaseClient() {
         </div>
       ) : null}
       {!telegramReady ? (
-        <div className="mb-4 rounded-[var(--radius)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="mb-4 rounded-[var(--radius)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning-foreground">
           {telegramChecking ? (
             "Memverifikasi Telegram Auth akun Anda..."
           ) : (
@@ -634,7 +635,7 @@ export default function NewValidationCaseClient() {
           <div
             role="alert"
             aria-live="polite"
-            className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
+            className="rounded-[var(--radius)] border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
           >
             {error}
           </div>
@@ -644,30 +645,30 @@ export default function NewValidationCaseClient() {
           <div
             role="status"
             aria-live="polite"
-            className="rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+            className="rounded-[var(--radius)] border border-success/30 bg-success/10 px-4 py-3 text-sm text-success"
           >
             {ok}
           </div>
         ) : null}
       </div>
 
-      <section className="mb-4 rounded-[var(--radius)] border border-cyan-200/80 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-100 px-4 py-3 shadow-sm">
+      <section className="mb-4 rounded-[var(--radius)] border border-primary/20 gradient-subtle px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-900/80">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               Workspace Readiness
             </div>
-            <div className="mt-1 text-sm font-semibold text-slate-900">
+            <div className="mt-1 text-sm font-semibold text-foreground">
               {readinessDoneCount}/{requiredReadinessItems.length} syarat wajib selesai
             </div>
           </div>
-          <div className="rounded-full border border-cyan-300 bg-white/80 px-3 py-1 text-xs font-semibold text-cyan-900">
+          <div className="rounded-sm border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
             {readinessPercent}% ready
           </div>
         </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-cyan-100">
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-secondary">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 transition-all"
+            className="h-full rounded-full bg-gradient-to-r from-primary/70 via-primary to-primary/80 transition-all"
             style={{ width: `${readinessPercent}%` }}
           />
         </div>
@@ -676,7 +677,7 @@ export default function NewValidationCaseClient() {
             <a
               key={section.id}
               href={`#${section.id}`}
-              className="shrink-0 rounded-full border border-cyan-300 bg-white/85 px-3 py-1 text-xs font-semibold text-cyan-900 hover:bg-cyan-100"
+              className="shrink-0 rounded-sm border border-primary/30 bg-card px-3 py-1 text-xs font-semibold text-primary hover:bg-accent"
             >
               {section.label}
             </a>
@@ -752,7 +753,7 @@ export default function NewValidationCaseClient() {
             <label className="text-xs font-semibold text-muted-foreground">
               README Design Templates
             </label>
-            <div className="mt-2 rounded-[var(--radius)] border border-border/60 bg-gradient-to-br from-slate-50/60 via-cyan-50/40 to-indigo-50/60 p-3 md:p-4">
+            <div className="mt-2 rounded-[var(--radius)] border border-border/60 gradient-subtle p-3 md:p-4">
               <div className="text-sm font-semibold text-foreground">
                 GitHub-style template siap edit
               </div>
@@ -766,19 +767,23 @@ export default function NewValidationCaseClient() {
                   return (
                     <article
                       key={template.id}
-                      className={`rounded-[var(--radius)] border p-2.5 md:p-3 shadow-sm transition ${
-                        template.palette?.cardClass || "border-border bg-card"
-                      } ${selected ? "ring-2 ring-primary/60" : ""}`}
+                      className={cn(
+                        "rounded-[var(--radius)] border p-2.5 md:p-3 transition",
+                        template.palette?.tplClass,
+                        template.palette?.cardClass || "border-border bg-card",
+                        selected && "ring-2 ring-primary/60"
+                      )}
                     >
                       <div className="flex flex-wrap gap-1.5">
                         {Array.isArray(template.previewBadges)
                           ? template.previewBadges.map((badgeLabel) => (
                               <span
                                 key={`${template.id}-${badgeLabel}`}
-                                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${
+                                className={cn(
+                                  "rounded-sm border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
                                   template.palette?.badgeClass ||
-                                  "border-border bg-secondary/40 text-foreground"
-                                }`}
+                                    "border-border bg-secondary/40 text-foreground"
+                                )}
                               >
                                 {badgeLabel}
                               </span>
@@ -798,10 +803,12 @@ export default function NewValidationCaseClient() {
                         type="button"
                         onClick={() => insertReadmeTemplate(template)}
                         disabled={formDisabled}
-                        className={`mt-3 inline-flex w-full items-center justify-center rounded-[var(--radius)] border px-3 py-1.5 text-xs font-semibold transition ${
+                        className={cn(
+                          "mt-3 inline-flex w-full items-center justify-center rounded-[var(--radius)] border px-3 py-1.5 text-xs font-semibold transition",
                           template.palette?.buttonClass ||
-                          "border-border text-foreground hover:bg-secondary"
-                        } disabled:cursor-not-allowed disabled:opacity-60`}
+                            "border-border text-foreground hover:bg-secondary",
+                          "disabled:cursor-not-allowed disabled:opacity-60"
+                        )}
                       >
                         Insert Template
                       </button>

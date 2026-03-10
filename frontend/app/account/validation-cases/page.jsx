@@ -64,7 +64,7 @@ function statusStyle(statusRaw) {
 function StatusPill({ status }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${statusStyle(status)}`}
+      className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${statusStyle(status)}`}
     >
       {statusLabel(status)}
     </span>

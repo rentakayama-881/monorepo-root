@@ -35,11 +35,13 @@ export const VALIDATION_CASE_README_TEMPLATES = [
     id: "academic-thesis-review",
     name: "Academic Thesis Review",
     category: "Academic",
-    description: "Template review skripsi/tesis dengan fokus metodologi, sitasi, dan kesiapan submit.",
+    description:
+      "Template review skripsi/tesis dengan fokus metodologi, sitasi, dan kesiapan submit.",
     palette: {
-      cardClass: "border-cyan-300/80 bg-gradient-to-br from-cyan-50 via-sky-50 to-blue-100",
-      badgeClass: "border-cyan-300 bg-cyan-100 text-cyan-900",
-      buttonClass: "border-cyan-300 text-cyan-900 hover:bg-cyan-100",
+      tplClass: "tpl-academic",
+      cardClass: "tpl-card",
+      badgeClass: "tpl-badge",
+      buttonClass: "tpl-btn",
     },
     previewBadges: ["Academic", "Methodology", "Citation"],
     snippet: `# [Judul Case Akademik]
@@ -65,11 +67,13 @@ ${readmeTemplateCoreSections}
     id: "business-deck-audit",
     name: "Business Deck Audit",
     category: "Business",
-    description: "Untuk deck presentasi klien, pitch, atau proposal bisnis dengan tolok ukur eksekutif.",
+    description:
+      "Untuk deck presentasi klien, pitch, atau proposal bisnis dengan tolok ukur eksekutif.",
     palette: {
-      cardClass: "border-emerald-300/80 bg-gradient-to-br from-emerald-50 via-lime-50 to-teal-100",
-      badgeClass: "border-emerald-300 bg-emerald-100 text-emerald-900",
-      buttonClass: "border-emerald-300 text-emerald-900 hover:bg-emerald-100",
+      tplClass: "tpl-business",
+      cardClass: "tpl-card",
+      badgeClass: "tpl-badge",
+      buttonClass: "tpl-btn",
     },
     previewBadges: ["Business", "Pitch", "Executive"],
     snippet: `# [Judul Case Business Deck]
@@ -96,11 +100,13 @@ ${readmeTemplateCoreSections}
     id: "product-spec-validation",
     name: "Product Spec Validation",
     category: "Product",
-    description: "Template untuk PRD/spec produk agar requirement, flow, dan acceptance test lebih tajam.",
+    description:
+      "Template untuk PRD/spec produk agar requirement, flow, dan acceptance test lebih tajam.",
     palette: {
-      cardClass: "border-violet-300/80 bg-gradient-to-br from-violet-50 via-indigo-50 to-purple-100",
-      badgeClass: "border-violet-300 bg-violet-100 text-violet-900",
-      buttonClass: "border-violet-300 text-violet-900 hover:bg-violet-100",
+      tplClass: "tpl-product",
+      cardClass: "tpl-card",
+      badgeClass: "tpl-badge",
+      buttonClass: "tpl-btn",
     },
     previewBadges: ["Product", "PRD", "UX Flow"],
     snippet: `# [Judul Case Product Spec]
@@ -129,9 +135,10 @@ ${readmeTemplateCoreSections}
     category: "Data",
     description: "Template quality check untuk analisis data, dashboard, atau model insight.",
     palette: {
-      cardClass: "border-amber-300/80 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100",
-      badgeClass: "border-amber-300 bg-amber-100 text-amber-900",
-      buttonClass: "border-amber-300 text-amber-900 hover:bg-amber-100",
+      tplClass: "tpl-data",
+      cardClass: "tpl-card",
+      badgeClass: "tpl-badge",
+      buttonClass: "tpl-btn",
     },
     previewBadges: ["Data", "QA", "Insights"],
     snippet: `# [Judul Case Data Analysis]
@@ -160,9 +167,10 @@ ${readmeTemplateCoreSections}
     category: "Design",
     description: "Kerangka review visual/UI untuk website, app screen, atau brand asset.",
     palette: {
-      cardClass: "border-rose-300/80 bg-gradient-to-br from-rose-50 via-pink-50 to-fuchsia-100",
-      badgeClass: "border-rose-300 bg-rose-100 text-rose-900",
-      buttonClass: "border-rose-300 text-rose-900 hover:bg-rose-100",
+      tplClass: "tpl-design",
+      cardClass: "tpl-card",
+      badgeClass: "tpl-badge",
+      buttonClass: "tpl-btn",
     },
     previewBadges: ["Design", "UX", "Visual QA"],
     snippet: `# [Judul Case Design Review]
@@ -189,11 +197,13 @@ ${readmeTemplateCoreSections}
     id: "engineering-audit-flow",
     name: "Engineering Audit Flow",
     category: "Technical",
-    description: "Template audit teknis/code review agar validator fokus ke correctness dan risiko produksi.",
+    description:
+      "Template audit teknis/code review agar validator fokus ke correctness dan risiko produksi.",
     palette: {
-      cardClass: "border-slate-300/80 bg-gradient-to-br from-slate-50 via-zinc-50 to-gray-100",
-      badgeClass: "border-slate-300 bg-slate-100 text-slate-900",
-      buttonClass: "border-slate-300 text-slate-900 hover:bg-slate-100",
+      tplClass: "tpl-engineering",
+      cardClass: "tpl-card",
+      badgeClass: "tpl-badge",
+      buttonClass: "tpl-btn",
     },
     previewBadges: ["Technical", "Audit", "Reliability"],
     snippet: `# [Judul Case Engineering Audit]
@@ -222,9 +232,10 @@ ${readmeTemplateCoreSections}
     category: "Marketing",
     description: "Template untuk cek materi campaign agar messaging konsisten dan siap publish.",
     palette: {
-      cardClass: "border-lime-300/80 bg-gradient-to-br from-lime-50 via-green-50 to-emerald-100",
-      badgeClass: "border-lime-300 bg-lime-100 text-lime-900",
-      buttonClass: "border-lime-300 text-lime-900 hover:bg-lime-100",
+      tplClass: "tpl-marketing",
+      cardClass: "tpl-card",
+      badgeClass: "tpl-badge",
+      buttonClass: "tpl-btn",
     },
     previewBadges: ["Marketing", "Campaign", "Messaging"],
     snippet: `# [Judul Case Marketing Campaign]
@@ -251,11 +262,13 @@ ${readmeTemplateCoreSections}
     id: "compliance-legal-review",
     name: "Compliance Legal Review",
     category: "Compliance",
-    description: "Template review dokumen yang sensitif terhadap aturan, disclaimer, dan jejak persetujuan.",
+    description:
+      "Template review dokumen yang sensitif terhadap aturan, disclaimer, dan jejak persetujuan.",
     palette: {
-      cardClass: "border-indigo-300/80 bg-gradient-to-br from-indigo-50 via-blue-50 to-sky-100",
-      badgeClass: "border-indigo-300 bg-indigo-100 text-indigo-900",
-      buttonClass: "border-indigo-300 text-indigo-900 hover:bg-indigo-100",
+      tplClass: "tpl-compliance",
+      cardClass: "tpl-card",
+      badgeClass: "tpl-badge",
+      buttonClass: "tpl-btn",
     },
     previewBadges: ["Compliance", "Legal", "Risk Control"],
     snippet: `# [Judul Case Compliance Review]
@@ -281,6 +294,8 @@ ${readmeTemplateCoreSections}
 ];
 
 export function getValidationCaseReadmeTemplateById(id) {
-  const key = String(id || "").trim().toLowerCase();
+  const key = String(id || "")
+    .trim()
+    .toLowerCase();
   return VALIDATION_CASE_README_TEMPLATES.find((template) => template.id === key) || null;
 }

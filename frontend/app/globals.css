@@ -299,39 +299,39 @@
 
     /* =========================
      Semantic tokens (LIGHT)
-     prompts.chat baseline
+     Space-Indigo primary, Deep-Mocha warmth
      ========================= */
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    --background: oklch(0.99 0.002 280);
+    --foreground: oklch(0.18 0.015 280);
 
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
+    --card-foreground: oklch(0.18 0.015 280);
 
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
+    --popover-foreground: oklch(0.18 0.015 280);
 
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.4 0.09 279);
+    --primary-foreground: oklch(0.99 0.005 280);
 
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.965 0.006 280);
+    --secondary-foreground: oklch(0.22 0.015 280);
 
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
+    --muted: oklch(0.955 0.005 35);
+    --muted-foreground: oklch(0.5 0.02 280);
 
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --accent: oklch(0.955 0.012 280);
+    --accent-foreground: oklch(0.22 0.015 280);
 
     --destructive: oklch(0.577 0.245 27.325);
     --destructive-foreground: oklch(1 0 0);
 
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: oklch(0.91 0.008 280);
+    --input: oklch(0.91 0.008 280);
+    --ring: oklch(0.55 0.085 279);
 
     --success: oklch(0.65 0.18 145);
     --warning: oklch(0.8 0.14 85);
-    --warning-foreground: oklch(0.205 0 0);
+    --warning-foreground: oklch(0.22 0.015 280);
     --error: oklch(0.577 0.245 27.325);
   }
 
@@ -343,38 +343,39 @@
   .dark {
     /* =========================
      Semantic tokens (DARK)
+     Deep space with indigo undertone
      ========================= */
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
+    --background: oklch(0.155 0.012 280);
+    --foreground: oklch(0.96 0.005 280);
 
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
+    --card: oklch(0.21 0.015 280);
+    --card-foreground: oklch(0.96 0.005 280);
 
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.21 0.015 280);
+    --popover-foreground: oklch(0.96 0.005 280);
 
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
+    --primary: oklch(0.72 0.06 280);
+    --primary-foreground: oklch(0.155 0.012 280);
 
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.27 0.015 280);
+    --secondary-foreground: oklch(0.96 0.005 280);
 
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
+    --muted: oklch(0.27 0.012 35);
+    --muted-foreground: oklch(0.65 0.02 280);
 
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
+    --accent: oklch(0.27 0.02 280);
+    --accent-foreground: oklch(0.96 0.005 280);
 
     --destructive: oklch(0.704 0.191 22.216);
     --destructive-foreground: oklch(1 0 0);
 
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
+    --border: oklch(1 0.01 280 / 12%);
+    --input: oklch(1 0.01 280 / 16%);
+    --ring: oklch(0.6 0.07 279);
 
     --success: oklch(0.74 0.18 145);
     --warning: oklch(0.82 0.13 85);
-    --warning-foreground: oklch(0.145 0 0);
+    --warning-foreground: oklch(0.155 0.012 280);
     --error: oklch(0.704 0.191 22.216);
 
     color-scheme: dark;
@@ -384,39 +385,39 @@
   @media (prefers-color-scheme: dark) {
     :root:not(.light):not(.dark) {
       /* =========================
-         Semantic tokens (DARK)
+         Semantic tokens (DARK) — system preference
          ========================= */
-      --background: oklch(0.145 0 0);
-      --foreground: oklch(0.985 0 0);
+      --background: oklch(0.155 0.012 280);
+      --foreground: oklch(0.96 0.005 280);
 
-      --card: oklch(0.205 0 0);
-      --card-foreground: oklch(0.985 0 0);
+      --card: oklch(0.21 0.015 280);
+      --card-foreground: oklch(0.96 0.005 280);
 
-      --popover: oklch(0.205 0 0);
-      --popover-foreground: oklch(0.985 0 0);
+      --popover: oklch(0.21 0.015 280);
+      --popover-foreground: oklch(0.96 0.005 280);
 
-      --primary: oklch(0.922 0 0);
-      --primary-foreground: oklch(0.205 0 0);
+      --primary: oklch(0.72 0.06 280);
+      --primary-foreground: oklch(0.155 0.012 280);
 
-      --secondary: oklch(0.269 0 0);
-      --secondary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.27 0.015 280);
+      --secondary-foreground: oklch(0.96 0.005 280);
 
-      --muted: oklch(0.269 0 0);
-      --muted-foreground: oklch(0.708 0 0);
+      --muted: oklch(0.27 0.012 35);
+      --muted-foreground: oklch(0.65 0.02 280);
 
-      --accent: oklch(0.269 0 0);
-      --accent-foreground: oklch(0.985 0 0);
+      --accent: oklch(0.27 0.02 280);
+      --accent-foreground: oklch(0.96 0.005 280);
 
       --destructive: oklch(0.704 0.191 22.216);
       --destructive-foreground: oklch(1 0 0);
 
-      --border: oklch(1 0 0 / 10%);
-      --input: oklch(1 0 0 / 15%);
-      --ring: oklch(0.556 0 0);
+      --border: oklch(1 0.01 280 / 12%);
+      --input: oklch(1 0.01 280 / 16%);
+      --ring: oklch(0.6 0.07 279);
 
       --success: oklch(0.74 0.18 145);
       --warning: oklch(0.82 0.13 85);
-      --warning-foreground: oklch(0.145 0 0);
+      --warning-foreground: oklch(0.155 0.012 280);
       --error: oklch(0.704 0.191 22.216);
 
       color-scheme: dark;
@@ -1355,7 +1356,7 @@ html {
 
 /* Filter chips */
 .filter-chip {
-  @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
+  @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium
          border border-border bg-card hover:bg-accent transition-colors cursor-pointer;
 }
 
@@ -1923,4 +1924,157 @@ html {
     oklch(0.62 0.17 235),
     oklch(0.55 0.18 280)
   );
+}
+
+/* ===== Template Palette Classes (light + dark auto-switch) ===== */
+/* Each template palette defines card, badge, and button styles
+   that work correctly in both light and dark modes using oklch. */
+
+.tpl-academic {
+  --tpl-hue: 200;
+  --tpl-l: 0.88;
+  --tpl-c: 0.04;
+}
+.tpl-business {
+  --tpl-hue: 160;
+  --tpl-l: 0.88;
+  --tpl-c: 0.04;
+}
+.tpl-product {
+  --tpl-hue: 290;
+  --tpl-l: 0.88;
+  --tpl-c: 0.04;
+}
+.tpl-data {
+  --tpl-hue: 85;
+  --tpl-l: 0.88;
+  --tpl-c: 0.04;
+}
+.tpl-design {
+  --tpl-hue: 350;
+  --tpl-l: 0.88;
+  --tpl-c: 0.04;
+}
+.tpl-engineering {
+  --tpl-hue: 280;
+  --tpl-l: 0.88;
+  --tpl-c: 0.03;
+}
+.tpl-marketing {
+  --tpl-hue: 140;
+  --tpl-l: 0.88;
+  --tpl-c: 0.04;
+}
+.tpl-compliance {
+  --tpl-hue: 260;
+  --tpl-l: 0.88;
+  --tpl-c: 0.04;
+}
+
+/* Template card — light mode */
+.tpl-card {
+  border-color: oklch(var(--tpl-l) var(--tpl-c) var(--tpl-hue) / 0.5);
+  background: linear-gradient(
+    135deg,
+    oklch(0.97 0.015 var(--tpl-hue)) 0%,
+    oklch(0.96 0.01 calc(var(--tpl-hue) + 20)) 50%,
+    oklch(0.97 0.015 calc(var(--tpl-hue) + 40)) 100%
+  );
+}
+
+/* Template card — dark mode */
+.dark .tpl-card,
+:root:not(.light):not(.dark) .tpl-card {
+  border-color: oklch(0.45 0.04 var(--tpl-hue) / 0.35);
+  background: linear-gradient(
+    135deg,
+    oklch(0.22 0.02 var(--tpl-hue)) 0%,
+    oklch(0.21 0.015 calc(var(--tpl-hue) + 20)) 50%,
+    oklch(0.22 0.02 calc(var(--tpl-hue) + 40)) 100%
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) .tpl-card {
+    border-color: oklch(0.45 0.04 var(--tpl-hue) / 0.35);
+    background: linear-gradient(
+      135deg,
+      oklch(0.22 0.02 var(--tpl-hue)) 0%,
+      oklch(0.21 0.015 calc(var(--tpl-hue) + 20)) 50%,
+      oklch(0.22 0.02 calc(var(--tpl-hue) + 40)) 100%
+    );
+  }
+}
+
+/* Template badge */
+.tpl-badge {
+  border-color: oklch(var(--tpl-l) var(--tpl-c) var(--tpl-hue) / 0.4);
+  background-color: oklch(var(--tpl-l) calc(var(--tpl-c) * 0.6) var(--tpl-hue) / 0.3);
+  color: oklch(0.35 0.06 var(--tpl-hue));
+}
+
+.dark .tpl-badge,
+:root:not(.light):not(.dark) .tpl-badge {
+  border-color: oklch(0.5 0.04 var(--tpl-hue) / 0.3);
+  background-color: oklch(0.3 0.03 var(--tpl-hue) / 0.4);
+  color: oklch(0.8 0.05 var(--tpl-hue));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) .tpl-badge {
+    border-color: oklch(0.5 0.04 var(--tpl-hue) / 0.3);
+    background-color: oklch(0.3 0.03 var(--tpl-hue) / 0.4);
+    color: oklch(0.8 0.05 var(--tpl-hue));
+  }
+}
+
+/* Template button */
+.tpl-btn {
+  border-color: oklch(var(--tpl-l) var(--tpl-c) var(--tpl-hue) / 0.5);
+  color: oklch(0.35 0.06 var(--tpl-hue));
+}
+
+.tpl-btn:hover {
+  background-color: oklch(var(--tpl-l) calc(var(--tpl-c) * 0.5) var(--tpl-hue) / 0.25);
+}
+
+.dark .tpl-btn,
+:root:not(.light):not(.dark) .tpl-btn {
+  border-color: oklch(0.5 0.04 var(--tpl-hue) / 0.35);
+  color: oklch(0.8 0.05 var(--tpl-hue));
+}
+
+.dark .tpl-btn:hover,
+:root:not(.light):not(.dark) .tpl-btn:hover {
+  background-color: oklch(0.3 0.03 var(--tpl-hue) / 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) .tpl-btn {
+    border-color: oklch(0.5 0.04 var(--tpl-hue) / 0.35);
+    color: oklch(0.8 0.05 var(--tpl-hue));
+  }
+  :root:not(.light):not(.dark) .tpl-btn:hover {
+    background-color: oklch(0.3 0.03 var(--tpl-hue) / 0.35);
+  }
+}
+
+/* ===== Gradient Utilities ===== */
+.gradient-subtle {
+  background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%);
+}
+
+.gradient-brand {
+  background: linear-gradient(135deg, oklch(0.4 0.09 279) 0%, oklch(0.48 0.15 346) 100%);
+}
+
+.dark .gradient-brand,
+:root:not(.light):not(.dark) .gradient-brand {
+  background: linear-gradient(135deg, oklch(0.55 0.08 279) 0%, oklch(0.6 0.12 346) 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) .gradient-brand {
+    background: linear-gradient(135deg, oklch(0.55 0.08 279) 0%, oklch(0.6 0.12 346) 100%);
+  }
 }

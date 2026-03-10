@@ -399,7 +399,7 @@ export default function AdminDisputeDetailPage() {
         <div className="flex items-center justify-between mt-2">
           <h1 className="text-2xl font-bold text-foreground">Dispute #{disputeId?.slice(-6)}</h1>
           <span
-            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${getStatusColor(dispute.status)}`}
+            className={`inline-flex items-center rounded-sm border px-3 py-1 text-xs font-medium ${getStatusColor(dispute.status)}`}
           >
             {getStatusLabel(dispute.status)}
           </span>

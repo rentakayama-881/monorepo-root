@@ -83,7 +83,7 @@ function sensitivityText(levelRaw) {
 function StatusPill({ status }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${statusStyle(status)}`}
+      className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${statusStyle(status)}`}
     >
       {statusLabel(status)}
     </span>

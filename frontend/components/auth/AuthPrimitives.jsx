@@ -29,7 +29,9 @@ export function AuthHeader({ title, description }) {
 }
 
 export function AuthCard({ children, className = "" }) {
-  return <div className={cn("rounded-lg border border-input bg-card p-4 shadow-soft", className)}>{children}</div>;
+  return (
+    <div className={cn("rounded-lg border border-input bg-card p-4", className)}>{children}</div>
+  );
 }
 
 export function AuthField({ label, htmlFor, children }) {

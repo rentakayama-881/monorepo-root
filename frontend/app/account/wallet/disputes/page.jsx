@@ -82,7 +82,7 @@ export default function DisputesPage() {
           : "Closed";
     return (
       <span
-        className={`rounded-full border px-2 py-0.5 text-xs font-medium ${statusStyles[normalizedStatus] || statusStyles.open}`}
+        className={`rounded-sm border px-2 py-0.5 text-xs font-medium ${statusStyles[normalizedStatus] || statusStyles.open}`}
       >
         {label}
       </span>

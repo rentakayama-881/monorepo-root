@@ -157,7 +157,7 @@ export default function MarketChatGPTClient() {
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-xl font-semibold text-foreground">Akun ChatGPT</h1>
           {cachedBadge === "Live" ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
+            <span className="inline-flex items-center gap-1 rounded-sm border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
               <span
                 className="inline-block h-1.5 w-1.5 rounded-full bg-success animate-pulse"
                 aria-hidden="true"
@@ -352,7 +352,7 @@ function TinyBadge({ label, tone = "neutral" }) {
       ? "border-warning/30 bg-warning/10 text-warning"
       : "border-border bg-background text-muted-foreground";
   return (
-    <span className={`inline-flex rounded-full border px-1.5 py-0.5 text-[10px] ${toneClass}`}>
+    <span className={`inline-flex rounded-sm border px-1.5 py-0.5 text-[10px] ${toneClass}`}>
       {label}
     </span>
   );

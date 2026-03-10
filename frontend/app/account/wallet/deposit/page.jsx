@@ -733,7 +733,7 @@ export default function DepositPage() {
                       </div>
                       <div className="text-right">
                         <span
-                          className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${statusInfo.color}`}
+                          className={`inline-block rounded-sm border px-2 py-0.5 text-xs font-medium ${statusInfo.color}`}
                         >
                           {statusInfo.label}
                         </span>

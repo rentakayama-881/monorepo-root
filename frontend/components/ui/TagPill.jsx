@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import clsx from 'clsx';
-import { TagIcon } from './TagIcons';
+import clsx from "clsx";
+import { TagIcon } from "./TagIcons";
 
 /**
  * GitHub-style Tag Pill Component
@@ -9,7 +9,7 @@ import { TagIcon } from './TagIcons';
  */
 export function TagPill({
   tag,
-  size = 'sm',
+  size = "sm",
   className = "",
   onClick = null,
   onRemove = null,
@@ -18,12 +18,12 @@ export function TagPill({
   const isClickable = typeof onClick === "function";
   const canRemove = !isClickable && typeof onRemove === "function";
   const Component = isClickable ? "button" : "span";
-  
+
   const sizeClasses = {
-    xs: 'px-2 py-0.5 text-[11px] leading-4',
-    sm: 'px-2.5 py-1 text-xs leading-4',
-    md: 'px-3 py-1.5 text-sm leading-5',
-    lg: 'px-4 py-2 text-sm leading-5',
+    xs: "px-2 py-0.5 text-[11px] leading-4",
+    sm: "px-2.5 py-1 text-xs leading-4",
+    md: "px-3 py-1.5 text-sm leading-5",
+    lg: "px-4 py-2 text-sm leading-5",
   };
 
   return (
@@ -32,9 +32,10 @@ export function TagPill({
       type={isClickable ? "button" : undefined}
       aria-pressed={isClickable ? selected : undefined}
       className={clsx(
-        "inline-flex items-center gap-1.5 rounded-full border font-medium select-none",
+        "inline-flex items-center gap-1.5 rounded-sm border font-medium select-none",
         "bg-secondary text-foreground border-border",
-        isClickable && "cursor-pointer hover:bg-accent hover:border-foreground/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+        isClickable &&
+          "cursor-pointer hover:bg-accent hover:border-foreground/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
         selected && "bg-primary/10 text-primary border-primary/20",
         sizeClasses[size],
         className
@@ -53,7 +54,7 @@ export function TagPill({
           type="button"
           onClick={() => onRemove?.(tag.slug)}
           className={clsx(
-            "ml-0.5 inline-flex items-center justify-center rounded-full p-0.5",
+            "ml-0.5 inline-flex items-center justify-center rounded-sm p-0.5",
             "text-muted-foreground hover:text-foreground hover:bg-muted/60",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           )}
@@ -70,7 +71,7 @@ export function TagPill({
  * Tag List Component
  * Displays multiple tags in a horizontal list
  */
-export function TagList({ tags, size = 'sm', maxDisplay = null, className = "" }) {
+export function TagList({ tags, size = "sm", maxDisplay = null, className = "" }) {
   const displayTags = maxDisplay ? tags.slice(0, maxDisplay) : tags;
   const remainingCount = maxDisplay && tags.length > maxDisplay ? tags.length - maxDisplay : 0;
 
@@ -80,9 +81,7 @@ export function TagList({ tags, size = 'sm', maxDisplay = null, className = "" }
         <TagPill key={tag.slug} tag={tag} size={size} />
       ))}
       {remainingCount > 0 && (
-        <span className="text-xs text-muted-foreground ml-1">
-          +{remainingCount} more
-        </span>
+        <span className="text-xs text-muted-foreground ml-1">+{remainingCount} more</span>
       )}
     </div>
   );
