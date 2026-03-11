@@ -44,9 +44,10 @@ public class SecureWithdrawalServiceIdempotencyTests
 
         var request = new CreateWithdrawalRequest(
             Amount: 150_000,
-            BankCode: "BCA",
-            AccountNumber: "1234567890",
-            AccountName: "John Doe",
+            CryptoAddress: "TQ9w7Tn4P3pK8sD2xR6m",
+            CryptoCurrency: "USDT",
+            Network: "TRC20",
+            Memo: null,
             Pin: "123456");
 
         var result = await sut.CreateWithdrawalAsync(
@@ -111,9 +112,10 @@ public class SecureWithdrawalServiceIdempotencyTests
 
         var request = new CreateWithdrawalRequest(
             Amount: 200_000,
-            BankCode: "BNI",
-            AccountNumber: "9876543210",
-            AccountName: "Jane Doe",
+            CryptoAddress: "UQ2k8x4m9d7q3p6s1z5a",
+            CryptoCurrency: "TON",
+            Network: "TON",
+            Memo: "memo-01",
             Pin: "123456");
 
         var result = await sut.CreateWithdrawalAsync(
@@ -146,7 +148,7 @@ public class SecureWithdrawalServiceIdempotencyTests
         const string expectedKey = "wd_cancel:77:cached-null";
         const string withdrawalId = "wd_cancel_cached_null";
 
-        var withdrawal = CreatePendingWithdrawal(withdrawalId, userId);
+        var withdrawal = CreateProcessingWithdrawal(withdrawalId, userId);
 
         var innerService = new Mock<IWithdrawalService>(MockBehavior.Strict);
         var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
@@ -200,13 +202,13 @@ public class SecureWithdrawalServiceIdempotencyTests
     }
 
     [Fact]
-    public async Task ProcessWithdrawalAsync_WhenCachedPayloadMissingSuccess_ReturnsBlockedErrorAndSkipsInnerService()
+    public async Task CancelWithdrawalAsync_WhenCachedPayloadMissingSuccess_ReturnsBlockedError()
     {
-        const uint adminId = 55;
-        const string expectedKey = "wd_process:55:cached-schema-mismatch";
-        const string withdrawalId = "wd_process_cached_schema";
+        const uint userId = 78;
+        const string expectedKey = "wd_cancel:78:cached-schema-mismatch";
+        const string withdrawalId = "wd_cancel_cached_schema";
 
-        var withdrawal = CreatePendingWithdrawal(withdrawalId, userId: 12);
+        var withdrawal = CreateProcessingWithdrawal(withdrawalId, userId);
 
         var innerService = new Mock<IWithdrawalService>(MockBehavior.Strict);
         var idempotencyService = new Mock<IIdempotencyService>(MockBehavior.Strict);
@@ -231,22 +233,17 @@ public class SecureWithdrawalServiceIdempotencyTests
             auditService.Object,
             withdrawals.Object);
 
-        var (success, error) = await sut.ProcessWithdrawalAsync(
+        var (success, error) = await sut.CancelWithdrawalAsync(
             withdrawalId,
-            adminId,
-            "admin_55",
-            new ProcessWithdrawalRequest(Approve: true, RejectionReason: null),
+            userId,
+            pin: "123456",
             idempotencyKey: "cached-schema-mismatch");
 
         Assert.False(success);
         Assert.Equal(InvalidCachedIdempotencyResultMessage, error);
 
         innerService.Verify(
-            s => s.ProcessWithdrawalAsync(
-                It.IsAny<string>(),
-                It.IsAny<uint>(),
-                It.IsAny<string>(),
-                It.IsAny<ProcessWithdrawalRequest>()),
+            s => s.CancelWithdrawalAsync(It.IsAny<string>(), It.IsAny<uint>(), It.IsAny<string>()),
             Times.Never);
         idempotencyService.Verify(
             s => s.StoreResultAsync(
@@ -284,7 +281,7 @@ public class SecureWithdrawalServiceIdempotencyTests
             logger.Object);
     }
 
-    private static Withdrawal CreatePendingWithdrawal(string id, uint userId)
+    private static Withdrawal CreateProcessingWithdrawal(string id, uint userId)
     {
         return new Withdrawal
         {
@@ -292,13 +289,15 @@ public class SecureWithdrawalServiceIdempotencyTests
             UserId = userId,
             Username = $"user_{userId}",
             Amount = 100_000,
-            Fee = 5_000,
-            NetAmount = 95_000,
-            BankCode = "BCA",
-            BankName = "Bank BCA",
-            AccountNumber = "1234567890",
-            AccountName = "John Doe",
-            Status = WithdrawalStatus.Pending,
+            Fee = 2_000,
+            NetAmount = 100_000,
+            CryptoAddress = "TQ9w7Tn4P3pK8sD2xR6m",
+            CryptoCurrency = "USDT",
+            CryptoNetwork = "TRC20",
+            CryptoAmount = "6.25",
+            Memo = null,
+            TrackId = "track_001",
+            Status = WithdrawalStatus.Processing,
             Reference = "WD-REF-001",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow

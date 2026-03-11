@@ -7,11 +7,9 @@ import (
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/badge"
 	"backend-gin/ent/consultationrequest"
-	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
-	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
@@ -598,21 +596,6 @@ func (_c *UserCreate) AddPasswordResetTokens(v ...*PasswordResetToken) *UserCrea
 	return _c.AddPasswordResetTokenIDs(ids...)
 }
 
-// AddCredentialIDs adds the "credentials" edge to the Credential entity by IDs.
-func (_c *UserCreate) AddCredentialIDs(ids ...int) *UserCreate {
-	_c.mutation.AddCredentialIDs(ids...)
-	return _c
-}
-
-// AddCredentials adds the "credentials" edges to the Credential entity.
-func (_c *UserCreate) AddCredentials(v ...*Credential) *UserCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddCredentialIDs(ids...)
-}
-
 // AddTotpPendingTokenIDs adds the "totp_pending_tokens" edge to the TOTPPendingToken entity by IDs.
 func (_c *UserCreate) AddTotpPendingTokenIDs(ids ...int) *UserCreate {
 	_c.mutation.AddTotpPendingTokenIDs(ids...)
@@ -746,21 +729,6 @@ func (_c *UserCreate) AddArtifactSubmissions(v ...*ArtifactSubmission) *UserCrea
 		ids[i] = v[i].ID
 	}
 	return _c.AddArtifactSubmissionIDs(ids...)
-}
-
-// AddEndorsementIDs adds the "endorsements" edge to the Endorsement entity by IDs.
-func (_c *UserCreate) AddEndorsementIDs(ids ...int) *UserCreate {
-	_c.mutation.AddEndorsementIDs(ids...)
-	return _c
-}
-
-// AddEndorsements adds the "endorsements" edges to the Endorsement entity.
-func (_c *UserCreate) AddEndorsements(v ...*Endorsement) *UserCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddEndorsementIDs(ids...)
 }
 
 // SetPrimaryBadge sets the "primary_badge" edge to the Badge entity.
@@ -1207,22 +1175,6 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.CredentialsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.CredentialsTable,
-			Columns: []string{user.CredentialsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(credential.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := _c.mutation.TotpPendingTokensIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -1360,22 +1312,6 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.EndorsementsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.EndorsementsTable,
-			Columns: []string{user.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

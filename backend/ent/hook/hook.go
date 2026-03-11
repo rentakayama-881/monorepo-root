@@ -68,18 +68,6 @@ func (f CategoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CategoryMutation", m)
 }
 
-// The ChainCursorFunc type is an adapter to allow the use of ordinary
-// function as ChainCursor mutator.
-type ChainCursorFunc func(context.Context, *ent.ChainCursorMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f ChainCursorFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.ChainCursorMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ChainCursorMutation", m)
-}
-
 // The ConsultationRequestFunc type is an adapter to allow the use of ordinary
 // function as ConsultationRequest mutator.
 type ConsultationRequestFunc func(context.Context, *ent.ConsultationRequestMutation) (ent.Value, error)
@@ -90,18 +78,6 @@ func (f ConsultationRequestFunc) Mutate(ctx context.Context, m ent.Mutation) (en
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConsultationRequestMutation", m)
-}
-
-// The CredentialFunc type is an adapter to allow the use of ordinary
-// function as Credential mutator.
-type CredentialFunc func(context.Context, *ent.CredentialMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f CredentialFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.CredentialMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CredentialMutation", m)
 }
 
 // The DeviceFingerprintFunc type is an adapter to allow the use of ordinary
@@ -138,18 +114,6 @@ func (f EmailVerificationTokenFunc) Mutate(ctx context.Context, m ent.Mutation) 
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EmailVerificationTokenMutation", m)
-}
-
-// The EndorsementFunc type is an adapter to allow the use of ordinary
-// function as Endorsement mutator.
-type EndorsementFunc func(context.Context, *ent.EndorsementMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f EndorsementFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.EndorsementMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EndorsementMutation", m)
 }
 
 // The FinalOfferFunc type is an adapter to allow the use of ordinary

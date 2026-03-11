@@ -8,29 +8,29 @@ namespace FeatureService.Api.DTOs;
 // =====================
 
 public record CreateWithdrawalRequest(
-    [Required]
-    [Range(10000, 100000000, ErrorMessage = "Minimal penarikan Rp10.000, maksimal Rp100.000.000")]
+    [property: Required]
+    [property: Range(10000, 100000000, ErrorMessage = "Minimal penarikan Rp10.000, maksimal Rp100.000.000")]
     long Amount,
     
-    [Required(ErrorMessage = "Alamat crypto wajib diisi")]
-    [StringLength(256, MinimumLength = 10, ErrorMessage = "Alamat crypto tidak valid")]
+    [property: Required(ErrorMessage = "Alamat crypto wajib diisi")]
+    [property: StringLength(256, MinimumLength = 10, ErrorMessage = "Alamat crypto tidak valid")]
     string CryptoAddress,
     
-    [Required(ErrorMessage = "Mata uang crypto wajib diisi")]
-    [StringLength(20, MinimumLength = 2)]
+    [property: Required(ErrorMessage = "Mata uang crypto wajib diisi")]
+    [property: StringLength(20, MinimumLength = 2)]
     string CryptoCurrency,
     
     string? Network,
     
     string? Memo,
     
-    [Required]
-    [StringLength(6, MinimumLength = 6)]
+    [property: Required]
+    [property: StringLength(6, MinimumLength = 6)]
     string Pin
 );
 
 public record CancelWithdrawalRequest(
-    [Required]
+    [property: Required]
     string Pin
 );
 

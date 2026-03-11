@@ -155,7 +155,6 @@ func (User) Edges() []ent.Edge {
 		edge.To("session_locks", SessionLock.Type),
 		edge.To("email_verification_tokens", EmailVerificationToken.Type),
 		edge.To("password_reset_tokens", PasswordResetToken.Type),
-		edge.To("credentials", Credential.Type),
 		edge.To("totp_pending_tokens", TOTPPendingToken.Type),
 		edge.To("security_events", SecurityEvent.Type),
 		edge.To("device_fingerprints", DeviceFingerprint.Type),
@@ -165,7 +164,6 @@ func (User) Edges() []ent.Edge {
 		edge.To("consultation_requests", ConsultationRequest.Type),
 		edge.To("final_offers", FinalOffer.Type),
 		edge.To("artifact_submissions", ArtifactSubmission.Type),
-		edge.To("endorsements", Endorsement.Type),
 		edge.To("primary_badge", Badge.Type).
 			Field("primary_badge_id").
 			Unique(),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/lib/ThemeContext";
 import { STORAGE_KEYS } from "@/lib/constants";
@@ -19,111 +19,114 @@ export default function CommandPalette({ isOpen, onClose }) {
   const { theme, setTheme } = useTheme();
 
   // Define all available commands
-  const commands = useMemo(() => [
-    // Navigation
-    {
-      id: "nav-home",
-      group: "Navigation",
-      title: "Go to Home",
-      icon: "HOME",
-      action: () => router.push("/"),
-      keywords: ["home", "beranda", "dashboard"],
-    },
-    {
-      id: "nav-case-index",
-      group: "Navigation",
-      title: "Go to Validation Case Index",
-      icon: "INDEX",
-      action: () => router.push("/validation-cases"),
-      keywords: ["validation", "case", "index", "registry", "docket"],
-    },
-    {
-      id: "nav-my-cases",
-      group: "Navigation",
-      title: "Go to My Validation Cases",
-      icon: "MINE",
-      action: () => router.push("/account/validation-cases"),
-      keywords: ["my", "cases", "validation", "docket"],
-    },
-    {
-      id: "nav-about",
-      group: "Navigation",
-      title: "Go to About",
-      icon: "ABOUT",
-      action: () => router.push("/about-content"),
-      keywords: ["about", "tentang"],
-    },
-    {
-      id: "nav-rules",
-      group: "Navigation",
-      title: "Go to Rules",
-      icon: "RULES",
-      action: () => router.push("/rules-content"),
-      keywords: ["rules", "aturan", "peraturan"],
-    },
-    {
-      id: "nav-account",
-      group: "Navigation",
-      title: "Go to Settings",
-      icon: "SET",
-      action: () => router.push("/account"),
-      keywords: ["settings", "pengaturan", "account", "akun"],
-    },
-    
-    // Actions
-    {
-      id: "action-search",
-      group: "Actions",
-      title: "Search",
-      icon: "FIND",
-      action: () => {
-        onClose();
-        setTimeout(() => {
-          const searchInput = document.querySelector('input[type="search"]');
-          if (searchInput) searchInput.focus();
-        }, 100);
+  const commands = useMemo(
+    () => [
+      // Navigation
+      {
+        id: "nav-home",
+        group: "Navigation",
+        title: "Go to Home",
+        icon: "HOME",
+        action: () => router.push("/"),
+        keywords: ["home", "beranda", "dashboard"],
       },
-      keywords: ["search", "cari", "find", "filter"],
-    },
-    {
-      id: "action-theme-light",
-      group: "Actions",
-      title: "Switch to Light Mode",
-      icon: "LIGHT",
-      action: () => setTheme("light"),
-      keywords: ["theme", "light", "terang", "bright"],
-      hidden: theme === "light",
-    },
-    {
-      id: "action-theme-dark",
-      group: "Actions",
-      title: "Switch to Dark Mode",
-      icon: "DARK",
-      action: () => setTheme("dark"),
-      keywords: ["theme", "dark", "gelap", "night"],
-      hidden: theme === "dark",
-    },
-    {
-      id: "action-theme-system",
-      group: "Actions",
-      title: "Use System Theme",
-      icon: "AUTO",
-      action: () => setTheme("system"),
-      keywords: ["theme", "system", "auto", "sistem"],
-      hidden: theme === "system",
-    },
-  ], [router, theme, setTheme, onClose]);
+      {
+        id: "nav-case-index",
+        group: "Navigation",
+        title: "Go to Validation Case Index",
+        icon: "INDEX",
+        action: () => router.push("/validation-cases"),
+        keywords: ["validation", "case", "index", "registry", "docket"],
+      },
+      {
+        id: "nav-my-cases",
+        group: "Navigation",
+        title: "Go to My Validation Cases",
+        icon: "MINE",
+        action: () => router.push("/account/validation-cases"),
+        keywords: ["my", "cases", "validation", "docket"],
+      },
+      {
+        id: "nav-about",
+        group: "Navigation",
+        title: "Go to About",
+        icon: "ABOUT",
+        action: () => router.push("/about-content"),
+        keywords: ["about", "tentang"],
+      },
+      {
+        id: "nav-rules",
+        group: "Navigation",
+        title: "Go to Rules",
+        icon: "RULES",
+        action: () => router.push("/rules-content"),
+        keywords: ["rules", "aturan", "peraturan"],
+      },
+      {
+        id: "nav-account",
+        group: "Navigation",
+        title: "Go to Settings",
+        icon: "SET",
+        action: () => router.push("/account"),
+        keywords: ["settings", "pengaturan", "account", "akun"],
+      },
+
+      // Actions
+      {
+        id: "action-search",
+        group: "Actions",
+        title: "Search",
+        icon: "FIND",
+        action: () => {
+          onClose();
+          setTimeout(() => {
+            const searchInput = document.querySelector('input[type="search"]');
+            if (searchInput) searchInput.focus();
+          }, 100);
+        },
+        keywords: ["search", "cari", "find", "filter"],
+      },
+      {
+        id: "action-theme-light",
+        group: "Actions",
+        title: "Switch to Light Mode",
+        icon: "LIGHT",
+        action: () => setTheme("light"),
+        keywords: ["theme", "light", "terang", "bright"],
+        hidden: theme === "light",
+      },
+      {
+        id: "action-theme-dark",
+        group: "Actions",
+        title: "Switch to Dark Mode",
+        icon: "DARK",
+        action: () => setTheme("dark"),
+        keywords: ["theme", "dark", "gelap", "night"],
+        hidden: theme === "dark",
+      },
+      {
+        id: "action-theme-system",
+        group: "Actions",
+        title: "Use System Theme",
+        icon: "AUTO",
+        action: () => setTheme("system"),
+        keywords: ["theme", "system", "auto", "sistem"],
+        hidden: theme === "system",
+      },
+    ],
+    [router, theme, setTheme, onClose]
+  );
 
   // Fuzzy search matching
   const filteredCommands = useMemo(() => {
-    if (!search) return commands.filter(cmd => !cmd.hidden);
+    if (!search) return commands.filter((cmd) => !cmd.hidden);
 
     const searchLower = search.toLowerCase();
     return commands
-      .filter(cmd => !cmd.hidden)
-      .filter(cmd => {
+      .filter((cmd) => !cmd.hidden)
+      .filter((cmd) => {
         const titleMatch = cmd.title.toLowerCase().includes(searchLower);
-        const keywordMatch = cmd.keywords.some(kw => kw.toLowerCase().includes(searchLower));
+        const keywordMatch = cmd.keywords.some((kw) => kw.toLowerCase().includes(searchLower));
         return titleMatch || keywordMatch;
       })
       .sort((a, b) => {
@@ -139,7 +142,7 @@ export default function CommandPalette({ isOpen, onClose }) {
   // Group commands by category
   const groupedCommands = useMemo(() => {
     const groups = {};
-    filteredCommands.forEach(cmd => {
+    filteredCommands.forEach((cmd) => {
       if (!groups[cmd.group]) {
         groups[cmd.group] = [];
       }
@@ -150,10 +153,11 @@ export default function CommandPalette({ isOpen, onClose }) {
 
   // Reset state when opened
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+
+    const resetTimer = setTimeout(() => {
       setSearch("");
       setSelectedIndex(0);
-      // Load recent searches from localStorage
       try {
         const recent = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECENT_SEARCHES) || "[]");
         setRecentSearches(recent);
@@ -161,12 +165,33 @@ export default function CommandPalette({ isOpen, onClose }) {
         logger.warn("Failed to load recent searches:", error);
         setRecentSearches([]);
       }
-      // Focus input
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 50);
-    }
+    }, 0);
+
+    const focusTimer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
+
+    return () => {
+      clearTimeout(resetTimer);
+      clearTimeout(focusTimer);
+    };
   }, [isOpen]);
+
+  const executeCommand = useCallback(
+    (command) => {
+      const recent = [command.id, ...recentSearches.filter((id) => id !== command.id)].slice(0, 5);
+      setRecentSearches(recent);
+      try {
+        localStorage.setItem(STORAGE_KEYS.RECENT_SEARCHES, JSON.stringify(recent));
+      } catch (error) {
+        logger.warn("Failed to save recent searches:", error);
+      }
+
+      command.action();
+      onClose();
+    },
+    [onClose, recentSearches]
+  );
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -175,10 +200,10 @@ export default function CommandPalette({ isOpen, onClose }) {
     const handleKeyDown = (e) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex(prev => Math.min(prev + 1, filteredCommands.length - 1));
+        setSelectedIndex((prev) => Math.min(prev + 1, filteredCommands.length - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedIndex(prev => Math.max(prev - 1, 0));
+        setSelectedIndex((prev) => Math.max(prev - 1, 0));
       } else if (e.key === "Enter") {
         e.preventDefault();
         if (filteredCommands[selectedIndex]) {
@@ -192,7 +217,7 @@ export default function CommandPalette({ isOpen, onClose }) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, selectedIndex, filteredCommands, onClose]);
+  }, [isOpen, selectedIndex, filteredCommands, onClose, executeCommand]);
 
   // Keep selected item in view
   useEffect(() => {
@@ -202,40 +227,15 @@ export default function CommandPalette({ isOpen, onClose }) {
     }
   }, [selectedIndex]);
 
-  const executeCommand = (command) => {
-    // Save to recent searches
-    const recent = [command.id, ...recentSearches.filter(id => id !== command.id)].slice(0, 5);
-    setRecentSearches(recent);
-    try {
-      localStorage.setItem(STORAGE_KEYS.RECENT_SEARCHES, JSON.stringify(recent));
-    } catch (error) {
-      // Ignore localStorage errors (e.g., quota exceeded, private browsing)
-      logger.warn("Failed to save recent searches:", error);
-    }
-
-    // Execute command
-    command.action();
-    onClose();
-  };
-
   if (!isOpen) return null;
 
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="command-palette-overlay"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="command-palette-overlay" onClick={onClose} aria-hidden="true" />
 
       {/* Command Palette */}
-      <div
-        className="command-palette"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Command palette"
-      >
+      <div className="command-palette" role="dialog" aria-modal="true" aria-label="Command palette">
         {/* Search Input */}
         <input
           ref={inputRef}

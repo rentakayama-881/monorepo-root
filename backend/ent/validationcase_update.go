@@ -6,7 +6,6 @@ import (
 	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/category"
 	"backend-gin/ent/consultationrequest"
-	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/predicate"
 	"backend-gin/ent/tag"
@@ -473,21 +472,6 @@ func (_u *ValidationCaseUpdate) AddArtifactSubmissions(v ...*ArtifactSubmission)
 	return _u.AddArtifactSubmissionIDs(ids...)
 }
 
-// AddEndorsementIDs adds the "endorsements" edge to the Endorsement entity by IDs.
-func (_u *ValidationCaseUpdate) AddEndorsementIDs(ids ...int) *ValidationCaseUpdate {
-	_u.mutation.AddEndorsementIDs(ids...)
-	return _u
-}
-
-// AddEndorsements adds the "endorsements" edges to the Endorsement entity.
-func (_u *ValidationCaseUpdate) AddEndorsements(v ...*Endorsement) *ValidationCaseUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddEndorsementIDs(ids...)
-}
-
 // Mutation returns the ValidationCaseMutation object of the builder.
 func (_u *ValidationCaseUpdate) Mutation() *ValidationCaseMutation {
 	return _u.mutation
@@ -608,27 +592,6 @@ func (_u *ValidationCaseUpdate) RemoveArtifactSubmissions(v ...*ArtifactSubmissi
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveArtifactSubmissionIDs(ids...)
-}
-
-// ClearEndorsements clears all "endorsements" edges to the Endorsement entity.
-func (_u *ValidationCaseUpdate) ClearEndorsements() *ValidationCaseUpdate {
-	_u.mutation.ClearEndorsements()
-	return _u
-}
-
-// RemoveEndorsementIDs removes the "endorsements" edge to Endorsement entities by IDs.
-func (_u *ValidationCaseUpdate) RemoveEndorsementIDs(ids ...int) *ValidationCaseUpdate {
-	_u.mutation.RemoveEndorsementIDs(ids...)
-	return _u
-}
-
-// RemoveEndorsements removes "endorsements" edges to Endorsement entities.
-func (_u *ValidationCaseUpdate) RemoveEndorsements(v ...*Endorsement) *ValidationCaseUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveEndorsementIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1124,51 +1087,6 @@ func (_u *ValidationCaseUpdate) sqlSave(ctx context.Context) (_node int, err err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.EndorsementsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   validationcase.EndorsementsTable,
-			Columns: []string{validationcase.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedEndorsementsIDs(); len(nodes) > 0 && !_u.mutation.EndorsementsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   validationcase.EndorsementsTable,
-			Columns: []string{validationcase.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.EndorsementsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   validationcase.EndorsementsTable,
-			Columns: []string{validationcase.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{validationcase.Label}
@@ -1626,21 +1544,6 @@ func (_u *ValidationCaseUpdateOne) AddArtifactSubmissions(v ...*ArtifactSubmissi
 	return _u.AddArtifactSubmissionIDs(ids...)
 }
 
-// AddEndorsementIDs adds the "endorsements" edge to the Endorsement entity by IDs.
-func (_u *ValidationCaseUpdateOne) AddEndorsementIDs(ids ...int) *ValidationCaseUpdateOne {
-	_u.mutation.AddEndorsementIDs(ids...)
-	return _u
-}
-
-// AddEndorsements adds the "endorsements" edges to the Endorsement entity.
-func (_u *ValidationCaseUpdateOne) AddEndorsements(v ...*Endorsement) *ValidationCaseUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddEndorsementIDs(ids...)
-}
-
 // Mutation returns the ValidationCaseMutation object of the builder.
 func (_u *ValidationCaseUpdateOne) Mutation() *ValidationCaseMutation {
 	return _u.mutation
@@ -1761,27 +1664,6 @@ func (_u *ValidationCaseUpdateOne) RemoveArtifactSubmissions(v ...*ArtifactSubmi
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveArtifactSubmissionIDs(ids...)
-}
-
-// ClearEndorsements clears all "endorsements" edges to the Endorsement entity.
-func (_u *ValidationCaseUpdateOne) ClearEndorsements() *ValidationCaseUpdateOne {
-	_u.mutation.ClearEndorsements()
-	return _u
-}
-
-// RemoveEndorsementIDs removes the "endorsements" edge to Endorsement entities by IDs.
-func (_u *ValidationCaseUpdateOne) RemoveEndorsementIDs(ids ...int) *ValidationCaseUpdateOne {
-	_u.mutation.RemoveEndorsementIDs(ids...)
-	return _u
-}
-
-// RemoveEndorsements removes "endorsements" edges to Endorsement entities.
-func (_u *ValidationCaseUpdateOne) RemoveEndorsements(v ...*Endorsement) *ValidationCaseUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveEndorsementIDs(ids...)
 }
 
 // Where appends a list predicates to the ValidationCaseUpdate builder.
@@ -2300,51 +2182,6 @@ func (_u *ValidationCaseUpdateOne) sqlSave(ctx context.Context) (_node *Validati
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.EndorsementsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   validationcase.EndorsementsTable,
-			Columns: []string{validationcase.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedEndorsementsIDs(); len(nodes) > 0 && !_u.mutation.EndorsementsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   validationcase.EndorsementsTable,
-			Columns: []string{validationcase.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.EndorsementsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   validationcase.EndorsementsTable,
-			Columns: []string{validationcase.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

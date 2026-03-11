@@ -27,8 +27,11 @@ function extractRetryAfterFromError(err) {
 export default function VerifyEmailClient() {
   const params = useSearchParams();
   const token = params.get("token") || "";
-  const [status, setStatus] = useState("pending");
-  const [message, setMessage] = useState("Checking verification token...");
+  const [verification, setVerification] = useState(() => ({
+    token,
+    status: token ? "pending" : "idle",
+    message: token ? "Verifying token..." : "",
+  }));
 
   // Resend state
   const [resendEmail, setResendEmail] = useState("");
@@ -36,16 +39,17 @@ export default function VerifyEmailClient() {
   const [resendMessage, setResendMessage] = useState("");
   const [cooldown, setCooldown] = useState(0);
 
+  const status = !token ? "error" : verification.token === token ? verification.status : "pending";
+  const message = !token
+    ? "Verification token was not found."
+    : verification.token === token
+      ? verification.message
+      : "Verifying token...";
+
   useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setMessage("Verification token was not found.");
-      return;
-    }
+    if (!token) return;
 
     let cancelled = false;
-    setStatus("pending");
-    setMessage("Verifying token...");
 
     fetchJson(`/api/auth/verify/confirm`, {
       method: "POST",
@@ -55,13 +59,19 @@ export default function VerifyEmailClient() {
       .then((data) => {
         if (cancelled) return;
 
-        setStatus("success");
-        setMessage(data.message || "Email verified successfully. You may now sign in.");
+        setVerification({
+          token,
+          status: "success",
+          message: data.message || "Email verified successfully. You may now sign in.",
+        });
       })
       .catch((err) => {
         if (cancelled) return;
-        setStatus("error");
-        setMessage(err?.message || "Invalid verification token.");
+        setVerification({
+          token,
+          status: "error",
+          message: err?.message || "Invalid verification token.",
+        });
       });
 
     return () => {
@@ -101,7 +111,9 @@ export default function VerifyEmailClient() {
       setResendStatus("error");
       const retryAfter = extractRetryAfterFromError(err);
       if (err?.code === "RATE001" || err?.code === "AUTH016" || err?.code === "AUTH018") {
-        setResendMessage(err?.details || err?.message || "Too many requests. Please try again shortly.");
+        setResendMessage(
+          err?.details || err?.message || "Too many requests. Please try again shortly."
+        );
         setCooldown(retryAfter > 0 ? retryAfter : 60);
       } else {
         setResendMessage(err?.message || "Unable to send a verification email.");
@@ -146,9 +158,7 @@ export default function VerifyEmailClient() {
       {status === "error" && (
         <div className="space-y-4 rounded-lg border border-border bg-card p-6">
           <div>
-            <h2 className="text-base font-semibold text-foreground">
-              Resend Verification Email
-            </h2>
+            <h2 className="text-base font-semibold text-foreground">Resend Verification Email</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Enter your email address to receive a new verification link.
             </p>
@@ -170,21 +180,17 @@ export default function VerifyEmailClient() {
               disabled={resendStatus === "loading" || cooldown > 0}
               className="w-full"
             >
-              {resendStatus === "loading" ? (
-                "Sending..."
-              ) : cooldown > 0 ? (
-                `Wait ${cooldown} seconds`
-              ) : (
-                "Resend Email"
-              )}
+              {resendStatus === "loading"
+                ? "Sending..."
+                : cooldown > 0
+                  ? `Wait ${cooldown} seconds`
+                  : "Resend Email"}
             </Button>
           </form>
 
           {resendMessage && (
             <div
-              className={`rounded-md border px-4 py-3 text-sm ${
-                resendStyles[resendStatus] || ""
-              }`}
+              className={`rounded-md border px-4 py-3 text-sm ${resendStyles[resendStatus] || ""}`}
             >
               {resendMessage}
             </div>

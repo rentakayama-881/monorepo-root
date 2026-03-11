@@ -1441,29 +1441,6 @@ func HasArtifactSubmissionsWith(preds ...predicate.ArtifactSubmission) predicate
 	})
 }
 
-// HasEndorsements applies the HasEdge predicate on the "endorsements" edge.
-func HasEndorsements() predicate.ValidationCase {
-	return predicate.ValidationCase(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, EndorsementsTable, EndorsementsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasEndorsementsWith applies the HasEdge predicate on the "endorsements" edge with a given conditions (other predicates).
-func HasEndorsementsWith(preds ...predicate.Endorsement) predicate.ValidationCase {
-	return predicate.ValidationCase(func(s *sql.Selector) {
-		step := newEndorsementsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.ValidationCase) predicate.ValidationCase {
 	return predicate.ValidationCase(sql.AndPredicates(predicates...))

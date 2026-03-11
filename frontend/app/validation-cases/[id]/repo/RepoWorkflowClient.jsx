@@ -262,22 +262,11 @@ export default function RepoWorkflowClient({
   }
 
   async function getWorkspaceTree() {
-    try {
-      return await fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/workspace/tree`, {
-        method: "GET",
-        clearSessionOn401: false,
-        timeout: 30000,
-      });
-    } catch (err) {
-      if (err?.status === 404) {
-        return fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/repo/tree`, {
-          method: "GET",
-          clearSessionOn401: false,
-          timeout: 30000,
-        });
-      }
-      throw err;
-    }
+    return fetchJsonAuth(`/api/validation-cases/${encodeURIComponent(id)}/workspace/tree`, {
+      method: "GET",
+      clearSessionOn401: false,
+      timeout: 30000,
+    });
   }
 
   async function postWorkspace(path, payload, requestOptions = {}) {

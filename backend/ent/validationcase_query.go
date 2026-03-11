@@ -6,7 +6,6 @@ import (
 	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/category"
 	"backend-gin/ent/consultationrequest"
-	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/predicate"
 	"backend-gin/ent/tag"
@@ -38,7 +37,6 @@ type ValidationCaseQuery struct {
 	withConsultationRequests *ConsultationRequestQuery
 	withFinalOffers          *FinalOfferQuery
 	withArtifactSubmissions  *ArtifactSubmissionQuery
-	withEndorsements         *EndorsementQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -222,28 +220,6 @@ func (_q *ValidationCaseQuery) QueryArtifactSubmissions() *ArtifactSubmissionQue
 			sqlgraph.From(validationcase.Table, validationcase.FieldID, selector),
 			sqlgraph.To(artifactsubmission.Table, artifactsubmission.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, validationcase.ArtifactSubmissionsTable, validationcase.ArtifactSubmissionsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryEndorsements chains the current query on the "endorsements" edge.
-func (_q *ValidationCaseQuery) QueryEndorsements() *EndorsementQuery {
-	query := (&EndorsementClient{config: _q.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := _q.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(validationcase.Table, validationcase.FieldID, selector),
-			sqlgraph.To(endorsement.Table, endorsement.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, validationcase.EndorsementsTable, validationcase.EndorsementsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -450,7 +426,6 @@ func (_q *ValidationCaseQuery) Clone() *ValidationCaseQuery {
 		withConsultationRequests: _q.withConsultationRequests.Clone(),
 		withFinalOffers:          _q.withFinalOffers.Clone(),
 		withArtifactSubmissions:  _q.withArtifactSubmissions.Clone(),
-		withEndorsements:         _q.withEndorsements.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -534,17 +509,6 @@ func (_q *ValidationCaseQuery) WithArtifactSubmissions(opts ...func(*ArtifactSub
 	return _q
 }
 
-// WithEndorsements tells the query-builder to eager-load the nodes that are connected to
-// the "endorsements" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ValidationCaseQuery) WithEndorsements(opts ...func(*EndorsementQuery)) *ValidationCaseQuery {
-	query := (&EndorsementClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	_q.withEndorsements = query
-	return _q
-}
-
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -623,7 +587,7 @@ func (_q *ValidationCaseQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	var (
 		nodes       = []*ValidationCase{}
 		_spec       = _q.querySpec()
-		loadedTypes = [8]bool{
+		loadedTypes = [7]bool{
 			_q.withUser != nil,
 			_q.withCategory != nil,
 			_q.withTags != nil,
@@ -631,7 +595,6 @@ func (_q *ValidationCaseQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 			_q.withConsultationRequests != nil,
 			_q.withFinalOffers != nil,
 			_q.withArtifactSubmissions != nil,
-			_q.withEndorsements != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -700,13 +663,6 @@ func (_q *ValidationCaseQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 			func(n *ValidationCase, e *ArtifactSubmission) {
 				n.Edges.ArtifactSubmissions = append(n.Edges.ArtifactSubmissions, e)
 			}); err != nil {
-			return nil, err
-		}
-	}
-	if query := _q.withEndorsements; query != nil {
-		if err := _q.loadEndorsements(ctx, query, nodes,
-			func(n *ValidationCase) { n.Edges.Endorsements = []*Endorsement{} },
-			func(n *ValidationCase, e *Endorsement) { n.Edges.Endorsements = append(n.Edges.Endorsements, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -937,36 +893,6 @@ func (_q *ValidationCaseQuery) loadArtifactSubmissions(ctx context.Context, quer
 	}
 	query.Where(predicate.ArtifactSubmission(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(validationcase.ArtifactSubmissionsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.ValidationCaseID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "validation_case_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (_q *ValidationCaseQuery) loadEndorsements(ctx context.Context, query *EndorsementQuery, nodes []*ValidationCase, init func(*ValidationCase), assign func(*ValidationCase, *Endorsement)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*ValidationCase)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(endorsement.FieldValidationCaseID)
-	}
-	query.Where(predicate.Endorsement(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(validationcase.EndorsementsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

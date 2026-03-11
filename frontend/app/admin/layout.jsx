@@ -1,53 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Skeleton from "@/components/ui/Skeleton";
-import {
-  clearAdminSession,
-  getAdminInfo,
-  getAdminToken,
-} from "@/lib/adminAuth";
+import { clearAdminSession, getAdminInfo, getAdminToken } from "@/lib/adminAuth";
+import useIsClient from "@/lib/useIsClient";
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [admin, setAdmin] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
+  const isClient = useIsClient();
+  const isLoginPage = pathname === "/admin/login";
 
-  // Wait for client-side mount before accessing browser auth storage
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    // Skip if not mounted yet (SSR) or on login page
-    if (!mounted) return;
-    
-    if (pathname === "/admin/login") {
-      setLoading(false);
-      return;
-    }
+  const admin = useMemo(() => {
+    if (!isClient || isLoginPage) return null;
 
     try {
       const token = getAdminToken();
       const adminInfo = getAdminInfo();
-
-      if (!token || !adminInfo) {
-        router.push("/admin/login");
-        return;
-      }
-
-      setAdmin(adminInfo);
+      if (!token || !adminInfo) return null;
+      return adminInfo;
     } catch {
-      router.push("/admin/login");
-      return;
+      return null;
     }
+  }, [isClient, isLoginPage]);
 
-    setLoading(false);
-  }, [pathname, router, mounted]);
+  useEffect(() => {
+    if (!isClient || isLoginPage || admin) return;
+    router.push("/admin/login");
+  }, [admin, isClient, isLoginPage, router]);
 
   const handleLogout = () => {
     clearAdminSession();
@@ -55,12 +37,12 @@ export default function AdminLayout({ children }) {
   };
 
   // Show login page without layout
-  if (pathname === "/admin/login") {
+  if (isLoginPage) {
     return children;
   }
 
   // Show loading until mounted and auth checked
-  if (!mounted || loading) {
+  if (!isClient || !admin) {
     return (
       <div className="min-h-screen bg-background p-6">
         <div className="mx-auto max-w-6xl space-y-4">
@@ -94,10 +76,7 @@ export default function AdminLayout({ children }) {
       <header className="fixed top-0 left-0 right-0 z-50 h-14 border-b border-border bg-card">
         <div className="flex h-full items-center justify-between px-4">
           <div className="flex items-center gap-4">
-            <Link
-              href="/admin"
-              className="text-lg font-semibold text-foreground"
-            >
+            <Link href="/admin" className="text-lg font-semibold text-foreground">
               Admin Panel
             </Link>
             <span className="text-xs px-2 py-0.5 rounded-sm border border-warning/20 bg-warning/10 text-warning">
@@ -106,13 +85,8 @@ export default function AdminLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {admin?.name}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="text-sm text-destructive hover:opacity-80"
-            >
+            <span className="text-sm text-muted-foreground">{admin?.name}</span>
+            <button onClick={handleLogout} className="text-sm text-destructive hover:opacity-80">
               Logout
             </button>
           </div>

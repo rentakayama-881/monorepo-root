@@ -7,11 +7,9 @@ import (
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/badge"
 	"backend-gin/ent/consultationrequest"
-	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
-	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
@@ -766,21 +764,6 @@ func (_u *UserUpdate) AddPasswordResetTokens(v ...*PasswordResetToken) *UserUpda
 	return _u.AddPasswordResetTokenIDs(ids...)
 }
 
-// AddCredentialIDs adds the "credentials" edge to the Credential entity by IDs.
-func (_u *UserUpdate) AddCredentialIDs(ids ...int) *UserUpdate {
-	_u.mutation.AddCredentialIDs(ids...)
-	return _u
-}
-
-// AddCredentials adds the "credentials" edges to the Credential entity.
-func (_u *UserUpdate) AddCredentials(v ...*Credential) *UserUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddCredentialIDs(ids...)
-}
-
 // AddTotpPendingTokenIDs adds the "totp_pending_tokens" edge to the TOTPPendingToken entity by IDs.
 func (_u *UserUpdate) AddTotpPendingTokenIDs(ids ...int) *UserUpdate {
 	_u.mutation.AddTotpPendingTokenIDs(ids...)
@@ -914,21 +897,6 @@ func (_u *UserUpdate) AddArtifactSubmissions(v ...*ArtifactSubmission) *UserUpda
 		ids[i] = v[i].ID
 	}
 	return _u.AddArtifactSubmissionIDs(ids...)
-}
-
-// AddEndorsementIDs adds the "endorsements" edge to the Endorsement entity by IDs.
-func (_u *UserUpdate) AddEndorsementIDs(ids ...int) *UserUpdate {
-	_u.mutation.AddEndorsementIDs(ids...)
-	return _u
-}
-
-// AddEndorsements adds the "endorsements" edges to the Endorsement entity.
-func (_u *UserUpdate) AddEndorsements(v ...*Endorsement) *UserUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddEndorsementIDs(ids...)
 }
 
 // SetPrimaryBadge sets the "primary_badge" edge to the Badge entity.
@@ -1107,27 +1075,6 @@ func (_u *UserUpdate) RemovePasswordResetTokens(v ...*PasswordResetToken) *UserU
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePasswordResetTokenIDs(ids...)
-}
-
-// ClearCredentials clears all "credentials" edges to the Credential entity.
-func (_u *UserUpdate) ClearCredentials() *UserUpdate {
-	_u.mutation.ClearCredentials()
-	return _u
-}
-
-// RemoveCredentialIDs removes the "credentials" edge to Credential entities by IDs.
-func (_u *UserUpdate) RemoveCredentialIDs(ids ...int) *UserUpdate {
-	_u.mutation.RemoveCredentialIDs(ids...)
-	return _u
-}
-
-// RemoveCredentials removes "credentials" edges to Credential entities.
-func (_u *UserUpdate) RemoveCredentials(v ...*Credential) *UserUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveCredentialIDs(ids...)
 }
 
 // ClearTotpPendingTokens clears all "totp_pending_tokens" edges to the TOTPPendingToken entity.
@@ -1317,27 +1264,6 @@ func (_u *UserUpdate) RemoveArtifactSubmissions(v ...*ArtifactSubmission) *UserU
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveArtifactSubmissionIDs(ids...)
-}
-
-// ClearEndorsements clears all "endorsements" edges to the Endorsement entity.
-func (_u *UserUpdate) ClearEndorsements() *UserUpdate {
-	_u.mutation.ClearEndorsements()
-	return _u
-}
-
-// RemoveEndorsementIDs removes the "endorsements" edge to Endorsement entities by IDs.
-func (_u *UserUpdate) RemoveEndorsementIDs(ids ...int) *UserUpdate {
-	_u.mutation.RemoveEndorsementIDs(ids...)
-	return _u
-}
-
-// RemoveEndorsements removes "endorsements" edges to Endorsement entities.
-func (_u *UserUpdate) RemoveEndorsements(v ...*Endorsement) *UserUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveEndorsementIDs(ids...)
 }
 
 // ClearPrimaryBadge clears the "primary_badge" edge to the Badge entity.
@@ -1950,51 +1876,6 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.CredentialsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.CredentialsTable,
-			Columns: []string{user.CredentialsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(credential.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedCredentialsIDs(); len(nodes) > 0 && !_u.mutation.CredentialsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.CredentialsTable,
-			Columns: []string{user.CredentialsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(credential.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.CredentialsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.CredentialsTable,
-			Columns: []string{user.CredentialsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(credential.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.TotpPendingTokensCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -2393,51 +2274,6 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.EndorsementsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.EndorsementsTable,
-			Columns: []string{user.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedEndorsementsIDs(); len(nodes) > 0 && !_u.mutation.EndorsementsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.EndorsementsTable,
-			Columns: []string{user.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.EndorsementsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.EndorsementsTable,
-			Columns: []string{user.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -3212,21 +3048,6 @@ func (_u *UserUpdateOne) AddPasswordResetTokens(v ...*PasswordResetToken) *UserU
 	return _u.AddPasswordResetTokenIDs(ids...)
 }
 
-// AddCredentialIDs adds the "credentials" edge to the Credential entity by IDs.
-func (_u *UserUpdateOne) AddCredentialIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.AddCredentialIDs(ids...)
-	return _u
-}
-
-// AddCredentials adds the "credentials" edges to the Credential entity.
-func (_u *UserUpdateOne) AddCredentials(v ...*Credential) *UserUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddCredentialIDs(ids...)
-}
-
 // AddTotpPendingTokenIDs adds the "totp_pending_tokens" edge to the TOTPPendingToken entity by IDs.
 func (_u *UserUpdateOne) AddTotpPendingTokenIDs(ids ...int) *UserUpdateOne {
 	_u.mutation.AddTotpPendingTokenIDs(ids...)
@@ -3360,21 +3181,6 @@ func (_u *UserUpdateOne) AddArtifactSubmissions(v ...*ArtifactSubmission) *UserU
 		ids[i] = v[i].ID
 	}
 	return _u.AddArtifactSubmissionIDs(ids...)
-}
-
-// AddEndorsementIDs adds the "endorsements" edge to the Endorsement entity by IDs.
-func (_u *UserUpdateOne) AddEndorsementIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.AddEndorsementIDs(ids...)
-	return _u
-}
-
-// AddEndorsements adds the "endorsements" edges to the Endorsement entity.
-func (_u *UserUpdateOne) AddEndorsements(v ...*Endorsement) *UserUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddEndorsementIDs(ids...)
 }
 
 // SetPrimaryBadge sets the "primary_badge" edge to the Badge entity.
@@ -3553,27 +3359,6 @@ func (_u *UserUpdateOne) RemovePasswordResetTokens(v ...*PasswordResetToken) *Us
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePasswordResetTokenIDs(ids...)
-}
-
-// ClearCredentials clears all "credentials" edges to the Credential entity.
-func (_u *UserUpdateOne) ClearCredentials() *UserUpdateOne {
-	_u.mutation.ClearCredentials()
-	return _u
-}
-
-// RemoveCredentialIDs removes the "credentials" edge to Credential entities by IDs.
-func (_u *UserUpdateOne) RemoveCredentialIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.RemoveCredentialIDs(ids...)
-	return _u
-}
-
-// RemoveCredentials removes "credentials" edges to Credential entities.
-func (_u *UserUpdateOne) RemoveCredentials(v ...*Credential) *UserUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveCredentialIDs(ids...)
 }
 
 // ClearTotpPendingTokens clears all "totp_pending_tokens" edges to the TOTPPendingToken entity.
@@ -3763,27 +3548,6 @@ func (_u *UserUpdateOne) RemoveArtifactSubmissions(v ...*ArtifactSubmission) *Us
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveArtifactSubmissionIDs(ids...)
-}
-
-// ClearEndorsements clears all "endorsements" edges to the Endorsement entity.
-func (_u *UserUpdateOne) ClearEndorsements() *UserUpdateOne {
-	_u.mutation.ClearEndorsements()
-	return _u
-}
-
-// RemoveEndorsementIDs removes the "endorsements" edge to Endorsement entities by IDs.
-func (_u *UserUpdateOne) RemoveEndorsementIDs(ids ...int) *UserUpdateOne {
-	_u.mutation.RemoveEndorsementIDs(ids...)
-	return _u
-}
-
-// RemoveEndorsements removes "endorsements" edges to Endorsement entities.
-func (_u *UserUpdateOne) RemoveEndorsements(v ...*Endorsement) *UserUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveEndorsementIDs(ids...)
 }
 
 // ClearPrimaryBadge clears the "primary_badge" edge to the Badge entity.
@@ -4426,51 +4190,6 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.CredentialsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.CredentialsTable,
-			Columns: []string{user.CredentialsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(credential.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedCredentialsIDs(); len(nodes) > 0 && !_u.mutation.CredentialsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.CredentialsTable,
-			Columns: []string{user.CredentialsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(credential.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.CredentialsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.CredentialsTable,
-			Columns: []string{user.CredentialsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(credential.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.TotpPendingTokensCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -4869,51 +4588,6 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.EndorsementsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.EndorsementsTable,
-			Columns: []string{user.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedEndorsementsIDs(); len(nodes) > 0 && !_u.mutation.EndorsementsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.EndorsementsTable,
-			Columns: []string{user.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.EndorsementsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.EndorsementsTable,
-			Columns: []string{user.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

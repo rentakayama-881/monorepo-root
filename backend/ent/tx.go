@@ -22,20 +22,14 @@ type Tx struct {
 	Badge *BadgeClient
 	// Category is the client for interacting with the Category builders.
 	Category *CategoryClient
-	// ChainCursor is the client for interacting with the ChainCursor builders.
-	ChainCursor *ChainCursorClient
 	// ConsultationRequest is the client for interacting with the ConsultationRequest builders.
 	ConsultationRequest *ConsultationRequestClient
-	// Credential is the client for interacting with the Credential builders.
-	Credential *CredentialClient
 	// DeviceFingerprint is the client for interacting with the DeviceFingerprint builders.
 	DeviceFingerprint *DeviceFingerprintClient
 	// DeviceUserMapping is the client for interacting with the DeviceUserMapping builders.
 	DeviceUserMapping *DeviceUserMappingClient
 	// EmailVerificationToken is the client for interacting with the EmailVerificationToken builders.
 	EmailVerificationToken *EmailVerificationTokenClient
-	// Endorsement is the client for interacting with the Endorsement builders.
-	Endorsement *EndorsementClient
 	// FinalOffer is the client for interacting with the FinalOffer builders.
 	FinalOffer *FinalOfferClient
 	// IPGeoCache is the client for interacting with the IPGeoCache builders.
@@ -204,13 +198,10 @@ func (tx *Tx) init() {
 	tx.BackupCode = NewBackupCodeClient(tx.config)
 	tx.Badge = NewBadgeClient(tx.config)
 	tx.Category = NewCategoryClient(tx.config)
-	tx.ChainCursor = NewChainCursorClient(tx.config)
 	tx.ConsultationRequest = NewConsultationRequestClient(tx.config)
-	tx.Credential = NewCredentialClient(tx.config)
 	tx.DeviceFingerprint = NewDeviceFingerprintClient(tx.config)
 	tx.DeviceUserMapping = NewDeviceUserMappingClient(tx.config)
 	tx.EmailVerificationToken = NewEmailVerificationTokenClient(tx.config)
-	tx.Endorsement = NewEndorsementClient(tx.config)
 	tx.FinalOffer = NewFinalOfferClient(tx.config)
 	tx.IPGeoCache = NewIPGeoCacheClient(tx.config)
 	tx.MarketPurchaseOrder = NewMarketPurchaseOrderClient(tx.config)

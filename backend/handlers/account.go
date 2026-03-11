@@ -16,11 +16,9 @@ import (
 	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/consultationrequest"
-	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
-	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
@@ -716,13 +714,6 @@ func DeleteAccountHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Artifact Submission"})
 		return
 	}
-	if _, err := tx.Endorsement.Delete().
-		Where(endorsement.HasValidationCaseWith(validationcase.UserIDEQ(ownerUserID))).
-		Exec(ctx); err != nil {
-		rollbackWithLog()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Endorsement"})
-		return
-	}
 
 	// 2. Delete all user's Validation Cases (domain replacement for legacy threads)
 	if _, err := tx.ValidationCase.Delete().Where(validationcase.UserIDEQ(ownerUserID)).Exec(ctx); err != nil {
@@ -751,13 +742,6 @@ func DeleteAccountHandler(c *gin.Context) {
 		Exec(ctx); err != nil {
 		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Artifact Submission user"})
-		return
-	}
-	if _, err := tx.Endorsement.Delete().
-		Where(endorsement.ValidatorUserIDEQ(ownerUserID)).
-		Exec(ctx); err != nil {
-		rollbackWithLog()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Endorsement user"})
 		return
 	}
 	if _, err := tx.ValidationCaseLog.Delete().
@@ -803,14 +787,7 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	// 9. Delete user credentials
-	if _, err := tx.Credential.Delete().Where(credential.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
-		rollbackWithLog()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus kredensial"})
-		return
-	}
-
-	// 10. Delete user badges
+	// 9. Delete user badges
 	if _, err := tx.UserBadge.Delete().Where(userbadge.UserIDEQ(int(user.ID))).Exec(ctx); err != nil {
 		rollbackWithLog()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus badge"})

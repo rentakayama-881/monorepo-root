@@ -34,8 +34,23 @@ public class DepositService : IDepositService
         IOxaPayService oxaPayService,
         OxaPaySettings oxaPaySettings,
         ILogger<DepositService> logger)
+        : this(
+            dbContext.GetCollection<DepositRequest>("deposit_requests"),
+            walletService,
+            oxaPayService,
+            oxaPaySettings,
+            logger)
     {
-        _deposits = dbContext.GetCollection<DepositRequest>("deposit_requests");
+    }
+
+    internal DepositService(
+        IMongoCollection<DepositRequest> deposits,
+        IWalletService walletService,
+        IOxaPayService oxaPayService,
+        OxaPaySettings oxaPaySettings,
+        ILogger<DepositService> logger)
+    {
+        _deposits = deposits;
         _walletService = walletService;
         _oxaPayService = oxaPayService;
         _oxaPaySettings = oxaPaySettings;

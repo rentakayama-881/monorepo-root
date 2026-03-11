@@ -12,7 +12,6 @@ import (
 	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/category"
 	"backend-gin/ent/consultationrequest"
-	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/tag"
 	"backend-gin/ent/user"
@@ -589,15 +588,6 @@ func (s *EntValidationCaseService) DeleteValidationCase(ctx context.Context, own
 			zap.Error(err),
 		)
 		return apperrors.ErrDatabase.WithDetails("Gagal menghapus Artifact Submission")
-	}
-	if _, err := tx.Endorsement.Delete().
-		Where(endorsement.ValidationCaseIDEQ(int(validationCaseID))).
-		Exec(ctx); err != nil {
-		logger.Error("Failed to delete endorsements",
-			zap.Uint("validation_case_id", validationCaseID),
-			zap.Error(err),
-		)
-		return apperrors.ErrDatabase.WithDetails("Gagal menghapus Endorsement")
 	}
 
 	if err := tx.ValidationCase.DeleteOneID(int(validationCaseID)).Exec(ctx); err != nil {

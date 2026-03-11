@@ -6,7 +6,6 @@ import (
 	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/category"
 	"backend-gin/ent/consultationrequest"
-	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/tag"
 	"backend-gin/ent/user"
@@ -379,21 +378,6 @@ func (_c *ValidationCaseCreate) AddArtifactSubmissions(v ...*ArtifactSubmission)
 		ids[i] = v[i].ID
 	}
 	return _c.AddArtifactSubmissionIDs(ids...)
-}
-
-// AddEndorsementIDs adds the "endorsements" edge to the Endorsement entity by IDs.
-func (_c *ValidationCaseCreate) AddEndorsementIDs(ids ...int) *ValidationCaseCreate {
-	_c.mutation.AddEndorsementIDs(ids...)
-	return _c
-}
-
-// AddEndorsements adds the "endorsements" edges to the Endorsement entity.
-func (_c *ValidationCaseCreate) AddEndorsements(v ...*Endorsement) *ValidationCaseCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddEndorsementIDs(ids...)
 }
 
 // Mutation returns the ValidationCaseMutation object of the builder.
@@ -792,22 +776,6 @@ func (_c *ValidationCaseCreate) createSpec() (*ValidationCase, *sqlgraph.CreateS
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(artifactsubmission.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.EndorsementsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   validationcase.EndorsementsTable,
-			Columns: []string{validationcase.EndorsementsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(endorsement.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -114,9 +114,10 @@ public class IdempotencyErrorMappingTests
 
         var result = await controller.CreateWithdrawal(new CreateWithdrawalRequest(
             Amount: 100_000,
-            BankCode: "BCA",
-            AccountNumber: "1234567890",
-            AccountName: "John Doe",
+            CryptoAddress: "TQ9w7Tn4P3pK8sD2xR6m",
+            CryptoCurrency: "USDT",
+            Network: "TRC20",
+            Memo: null,
             Pin: "123456"));
 
         var objectResult = result.Should().BeOfType<ObjectResult>().Subject;

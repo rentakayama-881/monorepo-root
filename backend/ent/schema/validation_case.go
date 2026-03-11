@@ -110,7 +110,6 @@ func (ValidationCase) Edges() []ent.Edge {
 		edge.To("consultation_requests", ConsultationRequest.Type),
 		edge.To("final_offers", FinalOffer.Type),
 		edge.To("artifact_submissions", ArtifactSubmission.Type),
-		edge.To("endorsements", Endorsement.Type),
 	}
 }
 

@@ -599,18 +599,6 @@ func main() {
 				validationCases.POST("/:id/workspace/finalize", middleware.AuthMiddleware(), repoWorkflowHandler.FinalizeRepoCase)
 				validationCases.POST("/:id/workspace/verdicts", middleware.AuthMiddleware(), repoWorkflowHandler.SubmitVerdict)
 				validationCases.GET("/:id/workspace/consensus", middleware.AuthMiddleware(), repoWorkflowHandler.GetConsensus)
-
-				// Legacy aliases for existing clients and historical links.
-				validationCases.GET("/:id/repo/tree", middleware.AuthMiddleware(), repoWorkflowHandler.GetRepoTree)
-				validationCases.POST("/:id/repo/files", middleware.AuthMiddleware(), repoWorkflowHandler.AttachRepoFile)
-				validationCases.POST("/:id/publish", middleware.AuthMiddleware(), repoWorkflowHandler.PublishRepoCase)
-				validationCases.POST("/:id/apply", middleware.AuthMiddleware(), repoWorkflowHandler.ApplyForRepoCase)
-				validationCases.POST("/:id/validators/assign", middleware.AuthMiddleware(), repoWorkflowHandler.AssignValidators)
-				validationCases.POST("/:id/validators/auto-assign", middleware.AuthMiddleware(), repoWorkflowHandler.AutoAssignValidators)
-				validationCases.POST("/:id/confidence/vote", middleware.AuthMiddleware(), repoWorkflowHandler.VoteConfidence)
-				validationCases.POST("/:id/finalize", middleware.AuthMiddleware(), repoWorkflowHandler.FinalizeRepoCase)
-				validationCases.POST("/:id/verdicts", middleware.AuthMiddleware(), repoWorkflowHandler.SubmitVerdict)
-				validationCases.GET("/:id/consensus", middleware.AuthMiddleware(), repoWorkflowHandler.GetConsensus)
 			}
 
 			// Tags endpoints

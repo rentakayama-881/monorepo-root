@@ -152,7 +152,9 @@ function normalizeCheckoutErrorMessage(message) {
   }
   if (
     lower.includes("saldo kamu tidak mencukupi") ||
+    lower.includes("saldo kamu belum mencukupi") ||
     lower.includes("saldo wallet anda tidak mencukupi") ||
+    lower.includes("saldo wallet anda belum mencukupi") ||
     lower.includes("insufficient") ||
     lower.includes("balance")
   ) {

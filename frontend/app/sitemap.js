@@ -64,12 +64,6 @@ export default async function sitemap() {
       changeFrequency: "daily",
       priority: 0.9,
     },
-    {
-      url: `${BASE_URL}/threads`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.8,
-    },
   ];
 
   // Category landing pages

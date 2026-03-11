@@ -72,8 +72,6 @@ const (
 	EdgeFinalOffers = "final_offers"
 	// EdgeArtifactSubmissions holds the string denoting the artifact_submissions edge name in mutations.
 	EdgeArtifactSubmissions = "artifact_submissions"
-	// EdgeEndorsements holds the string denoting the endorsements edge name in mutations.
-	EdgeEndorsements = "endorsements"
 	// Table holds the table name of the validationcase in the database.
 	Table = "validation_cases"
 	// UserTable is the table that holds the user relation/edge.
@@ -123,13 +121,6 @@ const (
 	ArtifactSubmissionsInverseTable = "artifact_submissions"
 	// ArtifactSubmissionsColumn is the table column denoting the artifact_submissions relation/edge.
 	ArtifactSubmissionsColumn = "validation_case_id"
-	// EndorsementsTable is the table that holds the endorsements relation/edge.
-	EndorsementsTable = "endorsements"
-	// EndorsementsInverseTable is the table name for the Endorsement entity.
-	// It exists in this package in order to avoid circular dependency with the "endorsement" package.
-	EndorsementsInverseTable = "endorsements"
-	// EndorsementsColumn is the table column denoting the endorsements relation/edge.
-	EndorsementsColumn = "validation_case_id"
 )
 
 // Columns holds all SQL columns for validationcase fields.
@@ -415,20 +406,6 @@ func ByArtifactSubmissions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpti
 		sqlgraph.OrderByNeighborTerms(s, newArtifactSubmissionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByEndorsementsCount orders the results by endorsements count.
-func ByEndorsementsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newEndorsementsStep(), opts...)
-	}
-}
-
-// ByEndorsements orders the results by endorsements terms.
-func ByEndorsements(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newEndorsementsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -476,12 +453,5 @@ func newArtifactSubmissionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ArtifactSubmissionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ArtifactSubmissionsTable, ArtifactSubmissionsColumn),
-	)
-}
-func newEndorsementsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(EndorsementsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, EndorsementsTable, EndorsementsColumn),
 	)
 }

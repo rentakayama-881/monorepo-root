@@ -19,7 +19,6 @@ export default function robots() {
           "/register/",
           "/components-demo/",
           "/validation-cases/new",
-          "/documents/upload",
         ],
       },
     ],

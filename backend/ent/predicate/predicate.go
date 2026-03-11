@@ -21,14 +21,8 @@ type Badge func(*sql.Selector)
 // Category is the predicate function for category builders.
 type Category func(*sql.Selector)
 
-// ChainCursor is the predicate function for chaincursor builders.
-type ChainCursor func(*sql.Selector)
-
 // ConsultationRequest is the predicate function for consultationrequest builders.
 type ConsultationRequest func(*sql.Selector)
-
-// Credential is the predicate function for credential builders.
-type Credential func(*sql.Selector)
 
 // DeviceFingerprint is the predicate function for devicefingerprint builders.
 type DeviceFingerprint func(*sql.Selector)
@@ -38,9 +32,6 @@ type DeviceUserMapping func(*sql.Selector)
 
 // EmailVerificationToken is the predicate function for emailverificationtoken builders.
 type EmailVerificationToken func(*sql.Selector)
-
-// Endorsement is the predicate function for endorsement builders.
-type Endorsement func(*sql.Selector)
 
 // FinalOffer is the predicate function for finaloffer builders.
 type FinalOffer func(*sql.Selector)

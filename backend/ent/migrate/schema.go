@@ -153,28 +153,6 @@ var (
 			},
 		},
 	}
-	// ChainCursorsColumns holds the columns for the "chain_cursors" table.
-	ChainCursorsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString, Size: 64},
-		{Name: "chain_id", Type: field.TypeUint64},
-		{Name: "last_processed", Type: field.TypeUint64, Default: 0},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-	}
-	// ChainCursorsTable holds the schema information for the "chain_cursors" table.
-	ChainCursorsTable = &schema.Table{
-		Name:       "chain_cursors",
-		Columns:    ChainCursorsColumns,
-		PrimaryKey: []*schema.Column{ChainCursorsColumns[0]},
-		Indexes: []*schema.Index{
-			{
-				Name:    "chaincursor_name_chain_id",
-				Unique:  true,
-				Columns: []*schema.Column{ChainCursorsColumns[1], ChainCursorsColumns[2]},
-			},
-		},
-	}
 	// ConsultationRequestsColumns holds the columns for the "consultation_requests" table.
 	ConsultationRequestsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -251,37 +229,6 @@ var (
 				Name:    "consultationrequest_validator_user_id_status_workflow_cycle",
 				Unique:  false,
 				Columns: []*schema.Column{ConsultationRequestsColumns[12], ConsultationRequestsColumns[4], ConsultationRequestsColumns[5]},
-			},
-		},
-	}
-	// CredentialsColumns holds the columns for the "credentials" table.
-	CredentialsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "platform", Type: field.TypeString, Nullable: true, Default: ""},
-		{Name: "description", Type: field.TypeString, Nullable: true, Default: ""},
-		{Name: "user_id", Type: field.TypeInt},
-	}
-	// CredentialsTable holds the schema information for the "credentials" table.
-	CredentialsTable = &schema.Table{
-		Name:       "credentials",
-		Columns:    CredentialsColumns,
-		PrimaryKey: []*schema.Column{CredentialsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "credentials_users_credentials",
-				Columns:    []*schema.Column{CredentialsColumns[6]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "credential_user_id",
-				Unique:  false,
-				Columns: []*schema.Column{CredentialsColumns[6]},
 			},
 		},
 	}
@@ -392,45 +339,6 @@ var (
 				Name:    "emailverificationtoken_token_hash",
 				Unique:  true,
 				Columns: []*schema.Column{EmailVerificationTokensColumns[4]},
-			},
-		},
-	}
-	// EndorsementsColumns holds the columns for the "endorsements" table.
-	EndorsementsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "certified_artifact_document_id", Type: field.TypeString, Nullable: true},
-		{Name: "stance", Type: field.TypeString, Nullable: true, Size: 32, Default: "endorse"},
-		{Name: "note", Type: field.TypeString, Nullable: true, Size: 2147483647, Default: ""},
-		{Name: "validator_user_id", Type: field.TypeInt},
-		{Name: "validation_case_id", Type: field.TypeInt},
-	}
-	// EndorsementsTable holds the schema information for the "endorsements" table.
-	EndorsementsTable = &schema.Table{
-		Name:       "endorsements",
-		Columns:    EndorsementsColumns,
-		PrimaryKey: []*schema.Column{EndorsementsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "endorsements_users_endorsements",
-				Columns:    []*schema.Column{EndorsementsColumns[7]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "endorsements_validation_cases_endorsements",
-				Columns:    []*schema.Column{EndorsementsColumns[8]},
-				RefColumns: []*schema.Column{ValidationCasesColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "endorsement_validation_case_id_validator_user_id",
-				Unique:  true,
-				Columns: []*schema.Column{EndorsementsColumns[8], EndorsementsColumns[7]},
 			},
 		},
 	}
@@ -1217,13 +1125,10 @@ var (
 		BackupCodesTable,
 		BadgesTable,
 		CategoriesTable,
-		ChainCursorsTable,
 		ConsultationRequestsTable,
-		CredentialsTable,
 		DeviceFingerprintsTable,
 		DeviceUserMappingsTable,
 		EmailVerificationTokensTable,
-		EndorsementsTable,
 		FinalOffersTable,
 		IPGeoCacheTable,
 		MarketPurchaseOrdersTable,
@@ -1263,17 +1168,10 @@ func init() {
 	CategoriesTable.Annotation = &entsql.Annotation{
 		Table: "categories",
 	}
-	ChainCursorsTable.Annotation = &entsql.Annotation{
-		Table: "chain_cursors",
-	}
 	ConsultationRequestsTable.ForeignKeys[0].RefTable = UsersTable
 	ConsultationRequestsTable.ForeignKeys[1].RefTable = ValidationCasesTable
 	ConsultationRequestsTable.Annotation = &entsql.Annotation{
 		Table: "consultation_requests",
-	}
-	CredentialsTable.ForeignKeys[0].RefTable = UsersTable
-	CredentialsTable.Annotation = &entsql.Annotation{
-		Table: "credentials",
 	}
 	DeviceFingerprintsTable.ForeignKeys[0].RefTable = UsersTable
 	DeviceFingerprintsTable.Annotation = &entsql.Annotation{
@@ -1286,11 +1184,6 @@ func init() {
 	EmailVerificationTokensTable.ForeignKeys[0].RefTable = UsersTable
 	EmailVerificationTokensTable.Annotation = &entsql.Annotation{
 		Table: "email_verification_tokens",
-	}
-	EndorsementsTable.ForeignKeys[0].RefTable = UsersTable
-	EndorsementsTable.ForeignKeys[1].RefTable = ValidationCasesTable
-	EndorsementsTable.Annotation = &entsql.Annotation{
-		Table: "endorsements",
 	}
 	FinalOffersTable.ForeignKeys[0].RefTable = UsersTable
 	FinalOffersTable.ForeignKeys[1].RefTable = ValidationCasesTable

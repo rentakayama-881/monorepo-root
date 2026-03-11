@@ -96,8 +96,6 @@ const (
 	EdgeEmailVerificationTokens = "email_verification_tokens"
 	// EdgePasswordResetTokens holds the string denoting the password_reset_tokens edge name in mutations.
 	EdgePasswordResetTokens = "password_reset_tokens"
-	// EdgeCredentials holds the string denoting the credentials edge name in mutations.
-	EdgeCredentials = "credentials"
 	// EdgeTotpPendingTokens holds the string denoting the totp_pending_tokens edge name in mutations.
 	EdgeTotpPendingTokens = "totp_pending_tokens"
 	// EdgeSecurityEvents holds the string denoting the security_events edge name in mutations.
@@ -116,8 +114,6 @@ const (
 	EdgeFinalOffers = "final_offers"
 	// EdgeArtifactSubmissions holds the string denoting the artifact_submissions edge name in mutations.
 	EdgeArtifactSubmissions = "artifact_submissions"
-	// EdgeEndorsements holds the string denoting the endorsements edge name in mutations.
-	EdgeEndorsements = "endorsements"
 	// EdgePrimaryBadge holds the string denoting the primary_badge edge name in mutations.
 	EdgePrimaryBadge = "primary_badge"
 	// Table holds the table name of the user in the database.
@@ -178,13 +174,6 @@ const (
 	PasswordResetTokensInverseTable = "password_reset_tokens"
 	// PasswordResetTokensColumn is the table column denoting the password_reset_tokens relation/edge.
 	PasswordResetTokensColumn = "user_id"
-	// CredentialsTable is the table that holds the credentials relation/edge.
-	CredentialsTable = "credentials"
-	// CredentialsInverseTable is the table name for the Credential entity.
-	// It exists in this package in order to avoid circular dependency with the "credential" package.
-	CredentialsInverseTable = "credentials"
-	// CredentialsColumn is the table column denoting the credentials relation/edge.
-	CredentialsColumn = "user_id"
 	// TotpPendingTokensTable is the table that holds the totp_pending_tokens relation/edge.
 	TotpPendingTokensTable = "totp_pending_tokens"
 	// TotpPendingTokensInverseTable is the table name for the TOTPPendingToken entity.
@@ -248,13 +237,6 @@ const (
 	ArtifactSubmissionsInverseTable = "artifact_submissions"
 	// ArtifactSubmissionsColumn is the table column denoting the artifact_submissions relation/edge.
 	ArtifactSubmissionsColumn = "validator_user_id"
-	// EndorsementsTable is the table that holds the endorsements relation/edge.
-	EndorsementsTable = "endorsements"
-	// EndorsementsInverseTable is the table name for the Endorsement entity.
-	// It exists in this package in order to avoid circular dependency with the "endorsement" package.
-	EndorsementsInverseTable = "endorsements"
-	// EndorsementsColumn is the table column denoting the endorsements relation/edge.
-	EndorsementsColumn = "validator_user_id"
 	// PrimaryBadgeTable is the table that holds the primary_badge relation/edge.
 	PrimaryBadgeTable = "users"
 	// PrimaryBadgeInverseTable is the table name for the Badge entity.
@@ -639,20 +621,6 @@ func ByPasswordResetTokens(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpti
 	}
 }
 
-// ByCredentialsCount orders the results by credentials count.
-func ByCredentialsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newCredentialsStep(), opts...)
-	}
-}
-
-// ByCredentials orders the results by credentials terms.
-func ByCredentials(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newCredentialsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByTotpPendingTokensCount orders the results by totp_pending_tokens count.
 func ByTotpPendingTokensCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -779,20 +747,6 @@ func ByArtifactSubmissions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpti
 	}
 }
 
-// ByEndorsementsCount orders the results by endorsements count.
-func ByEndorsementsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newEndorsementsStep(), opts...)
-	}
-}
-
-// ByEndorsements orders the results by endorsements terms.
-func ByEndorsements(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newEndorsementsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByPrimaryBadgeField orders the results by primary_badge field.
 func ByPrimaryBadgeField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -853,13 +807,6 @@ func newPasswordResetTokensStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PasswordResetTokensInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, PasswordResetTokensTable, PasswordResetTokensColumn),
-	)
-}
-func newCredentialsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(CredentialsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, CredentialsTable, CredentialsColumn),
 	)
 }
 func newTotpPendingTokensStep() *sqlgraph.Step {
@@ -923,13 +870,6 @@ func newArtifactSubmissionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ArtifactSubmissionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ArtifactSubmissionsTable, ArtifactSubmissionsColumn),
-	)
-}
-func newEndorsementsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(EndorsementsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, EndorsementsTable, EndorsementsColumn),
 	)
 }
 func newPrimaryBadgeStep() *sqlgraph.Step {

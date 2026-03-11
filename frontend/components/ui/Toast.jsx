@@ -1,6 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import PropTypes from "prop-types";
 import clsx from "clsx";
 
@@ -37,46 +45,44 @@ export function ToastProvider({ children, position = "bottom-right" }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const toast = useCallback(
-    (options) => addToast(options),
-    [addToast]
+  const toast = useMemo(
+    () =>
+      Object.assign((options) => addToast(options), {
+        success: (title, description, options = {}) =>
+          addToast({ title, description, variant: "success", ...options }),
+        error: (title, description, options = {}) =>
+          addToast({ title, description, variant: "error", ...options }),
+        warning: (title, description, options = {}) =>
+          addToast({ title, description, variant: "warning", ...options }),
+        info: (title, description, options = {}) =>
+          addToast({ title, description, variant: "info", ...options }),
+        promise: async (promise, { loading, success, error }) => {
+          const id = addToast({
+            title: loading,
+            variant: "info",
+            duration: 0,
+          });
+
+          try {
+            const result = await promise;
+            removeToast(id);
+            addToast({
+              title: typeof success === "function" ? success(result) : success,
+              variant: "success",
+            });
+            return result;
+          } catch (err) {
+            removeToast(id);
+            addToast({
+              title: typeof error === "function" ? error(err) : error,
+              variant: "error",
+            });
+            throw err;
+          }
+        },
+      }),
+    [addToast, removeToast]
   );
-
-  // Shorthand methods
-  toast.success = (title, description, options = {}) =>
-    addToast({ title, description, variant: "success", ...options });
-  toast.error = (title, description, options = {}) =>
-    addToast({ title, description, variant: "error", ...options });
-  toast.warning = (title, description, options = {}) =>
-    addToast({ title, description, variant: "warning", ...options });
-  toast.info = (title, description, options = {}) =>
-    addToast({ title, description, variant: "info", ...options });
-
-  // Promise toast
-  toast.promise = async (promise, { loading, success, error }) => {
-    const id = addToast({
-      title: loading,
-      variant: "info",
-      duration: 0,
-    });
-
-    try {
-      const result = await promise;
-      removeToast(id);
-      addToast({
-        title: typeof success === "function" ? success(result) : success,
-        variant: "success",
-      });
-      return result;
-    } catch (err) {
-      removeToast(id);
-      addToast({
-        title: typeof error === "function" ? error(err) : error,
-        variant: "error",
-      });
-      throw err;
-    }
-  };
 
   return (
     <ToastContext.Provider value={{ toast, removeToast }}>
@@ -126,12 +132,7 @@ function ToastContainer({ toasts, onRemove, position }) {
       )}
     >
       {toasts.map((toast, index) => (
-        <Toast
-          key={toast.id}
-          {...toast}
-          onClose={() => onRemove(toast.id)}
-          index={index}
-        />
+        <Toast key={toast.id} {...toast} onClose={() => onRemove(toast.id)} index={index} />
       ))}
     </div>
   );
@@ -251,9 +252,7 @@ function Toast({ title, description, variant, onClose, duration, action, index }
           <div className="flex-1 min-w-0">
             {title && <p className="font-medium">{title}</p>}
             {description && (
-              <p className={`text-sm ${title ? "mt-1 opacity-90" : ""}`}>
-                {description}
-              </p>
+              <p className={`text-sm ${title ? "mt-1 opacity-90" : ""}`}>{description}</p>
             )}
             {action && (
               <button
@@ -269,12 +268,7 @@ function Toast({ title, description, variant, onClose, duration, action, index }
             className="flex-shrink-0 rounded p-1 opacity-70 hover:opacity-100 transition-opacity"
             aria-label="Close notification"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

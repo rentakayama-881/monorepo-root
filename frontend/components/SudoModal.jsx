@@ -19,6 +19,24 @@ export function useSudo() {
 const SUDO_TOKEN_KEY = "sudo_token";
 const SUDO_EXPIRES_KEY = "sudo_expires";
 
+function loadStoredSudoState() {
+  const token = safeStorageGet(SUDO_TOKEN_KEY);
+  const expires = safeStorageGet(SUDO_EXPIRES_KEY);
+
+  if (!token || !expires) {
+    return { token: null, expires: null };
+  }
+
+  const expiresAt = new Date(expires);
+  if (expiresAt > new Date()) {
+    return { token, expires: expiresAt };
+  }
+
+  safeStorageRemove(SUDO_TOKEN_KEY);
+  safeStorageRemove(SUDO_EXPIRES_KEY);
+  return { token: null, expires: null };
+}
+
 function safeStorageGet(key) {
   try {
     return localStorage.getItem(key);
@@ -45,28 +63,12 @@ function safeStorageRemove(key) {
 
 // Sudo Provider Component
 export function SudoProvider({ children }) {
-  const [sudoToken, setSudoToken] = useState(null);
-  const [sudoExpires, setSudoExpires] = useState(null);
+  const [sudoState, setSudoState] = useState(loadStoredSudoState);
   const [showModal, setShowModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [requiresTOTP, setRequiresTOTP] = useState(false);
-
-  // Load sudo token from storage on mount
-  useEffect(() => {
-    const token = safeStorageGet(SUDO_TOKEN_KEY);
-    const expires = safeStorageGet(SUDO_EXPIRES_KEY);
-    if (token && expires) {
-      const expiresAt = new Date(expires);
-      if (expiresAt > new Date()) {
-        setSudoToken(token);
-        setSudoExpires(expiresAt);
-      } else {
-        // Expired, clear storage
-        safeStorageRemove(SUDO_TOKEN_KEY);
-        safeStorageRemove(SUDO_EXPIRES_KEY);
-      }
-    }
-  }, []);
+  const sudoToken = sudoState.token;
+  const sudoExpires = sudoState.expires;
 
   // Check if sudo is active
   const isSudoActive = useCallback(() => {
@@ -76,41 +78,51 @@ export function SudoProvider({ children }) {
 
   // Store sudo token
   const storeSudoToken = useCallback((token, expiresAt) => {
-    setSudoToken(token);
-    setSudoExpires(new Date(expiresAt));
+    setSudoState({
+      token,
+      expires: new Date(expiresAt),
+    });
     safeStorageSet(SUDO_TOKEN_KEY, token);
     safeStorageSet(SUDO_EXPIRES_KEY, expiresAt);
   }, []);
 
   // Clear sudo token
   const clearSudoToken = useCallback(() => {
-    setSudoToken(null);
-    setSudoExpires(null);
+    setSudoState({
+      token: null,
+      expires: null,
+    });
     safeStorageRemove(SUDO_TOKEN_KEY);
     safeStorageRemove(SUDO_EXPIRES_KEY);
   }, []);
 
   // Request sudo mode - returns promise that resolves when sudo is granted
-  const requestSudo = useCallback((action) => {
-    return new Promise((resolve, reject) => {
-      if (isSudoActive()) {
-        resolve(sudoToken);
-        return;
-      }
-      setPendingAction({ resolve, reject, action });
-      setShowModal(true);
-    });
-  }, [isSudoActive, sudoToken]);
+  const requestSudo = useCallback(
+    (action) => {
+      return new Promise((resolve, reject) => {
+        if (isSudoActive()) {
+          resolve(sudoToken);
+          return;
+        }
+        setPendingAction({ resolve, reject, action });
+        setShowModal(true);
+      });
+    },
+    [isSudoActive, sudoToken]
+  );
 
   // Handle sudo verification success
-  const onSudoSuccess = useCallback((token, expiresAt) => {
-    storeSudoToken(token, expiresAt);
-    if (pendingAction) {
-      pendingAction.resolve(token);
-      setPendingAction(null);
-    }
-    setShowModal(false);
-  }, [storeSudoToken, pendingAction]);
+  const onSudoSuccess = useCallback(
+    (token, expiresAt) => {
+      storeSudoToken(token, expiresAt);
+      if (pendingAction) {
+        pendingAction.resolve(token);
+        setPendingAction(null);
+      }
+      setShowModal(false);
+    },
+    [storeSudoToken, pendingAction]
+  );
 
   // Handle sudo verification cancel
   const onSudoCancel = useCallback(() => {
@@ -169,7 +181,13 @@ export function SudoProvider({ children }) {
 }
 
 // Sudo Modal Component
-function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initialRequiresTOTP, onCheckStatus }) {
+function SudoModal({
+  onSuccess,
+  onCancel,
+  actionDescription,
+  requiresTOTP: initialRequiresTOTP,
+  onCheckStatus,
+}) {
   const [password, setPassword] = useState("");
   const [totpCode, setTotpCode] = useState("");
   const [useBackupCode, setUseBackupCode] = useState(false);
@@ -260,8 +278,18 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
         <div className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10">
-              <svg className="h-5 w-5 text-warning" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              <svg
+                className="h-5 w-5 text-warning"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                />
               </svg>
             </div>
             <div>
@@ -303,7 +331,11 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
                     maxLength={useBackupCode ? 9 : 6}
                     required
                     value={totpCode}
-                    onChange={(e) => setTotpCode(useBackupCode ? e.target.value : e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) =>
+                      setTotpCode(
+                        useBackupCode ? e.target.value : e.target.value.replace(/\D/g, "")
+                      )
+                    }
                     className={`${inputClass} font-mono text-center tracking-widest`}
                     placeholder={useBackupCode ? "XXXX-XXXX" : "000000"}
                   />
@@ -336,7 +368,11 @@ function SudoModal({ onSuccess, onCancel, actionDescription, requiresTOTP: initi
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !password || (requiresTOTP && totpCode.length < (useBackupCode ? 8 : 6))}
+                  disabled={
+                    loading ||
+                    !password ||
+                    (requiresTOTP && totpCode.length < (useBackupCode ? 8 : 6))
+                  }
                   className={primaryButton}
                 >
                   {loading ? (
@@ -390,14 +426,17 @@ export function withSudoProtection(WrappedComponent, actionDescription) {
 export function useSudoAction(actionDescription) {
   const { requestSudo, sudoToken, isSudoActive } = useSudo();
 
-  const execute = useCallback(async (action) => {
-    try {
-      const token = await requestSudo(actionDescription);
-      return await action(token);
-    } catch (err) {
-      throw err;
-    }
-  }, [requestSudo, actionDescription]);
+  const execute = useCallback(
+    async (action) => {
+      try {
+        const token = await requestSudo(actionDescription);
+        return await action(token);
+      } catch (err) {
+        throw err;
+      }
+    },
+    [requestSudo, actionDescription]
+  );
 
   return {
     execute,

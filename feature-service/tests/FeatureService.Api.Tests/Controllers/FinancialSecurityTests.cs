@@ -200,9 +200,10 @@ public class FinancialSecurityTests
         // Arrange
         var request = new CreateWithdrawalRequest(
             Amount: 50000,
-            BankCode: "BCA",
-            AccountNumber: "1234567890",
-            AccountName: "John Doe",
+            CryptoAddress: "TQ9w7Tn4P3pK8sD2xR6m",
+            CryptoCurrency: "USDT",
+            Network: "TRC20",
+            Memo: null,
             Pin: "123456"
         );
 

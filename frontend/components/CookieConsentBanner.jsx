@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Button from "./ui/Button";
+import useIsClient from "@/lib/useIsClient";
 
 const COOKIE_CONSENT_KEY = "cookie-consent";
 
@@ -38,12 +39,10 @@ function CookieIcon({ className = "h-3.5 w-3.5" }) {
 }
 
 export default function CookieConsentBanner() {
+  const isClient = useIsClient();
   const [consent, setConsent] = useState("pending");
   const [confirmReject, setConfirmReject] = useState(false);
-
-  useEffect(() => {
-    setConsent(getCookieConsent());
-  }, []);
+  const currentConsent = consent === "pending" && isClient ? getCookieConsent() : consent;
 
   const accept = () => {
     try {
@@ -64,7 +63,7 @@ export default function CookieConsentBanner() {
     setConsent("rejected");
   };
 
-  if (consent !== null) return null;
+  if (!isClient || currentConsent !== null) return null;
 
   const message = confirmReject
     ? "Tolak analitik? Cookie esensial tetap aktif."
@@ -88,23 +87,13 @@ export default function CookieConsentBanner() {
               >
                 Batal
               </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={reject}
-              >
+              <Button variant="destructive" size="sm" className="h-7 text-xs" onClick={reject}>
                 Tolak Analitik
               </Button>
             </>
           ) : (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={reject}
-              >
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={reject}>
                 Tolak
               </Button>
               <Button

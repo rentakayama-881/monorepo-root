@@ -8,13 +8,10 @@ import (
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/badge"
 	"backend-gin/ent/category"
-	"backend-gin/ent/chaincursor"
 	"backend-gin/ent/consultationrequest"
-	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
-	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/ipgeocache"
 	"backend-gin/ent/marketpurchaseorder"
@@ -178,40 +175,6 @@ func init() {
 	categoryDescDescription := categoryFields[2].Descriptor()
 	// category.DefaultDescription holds the default value on creation for the description field.
 	category.DefaultDescription = categoryDescDescription.Default.(string)
-	chaincursorFields := schema.ChainCursor{}.Fields()
-	_ = chaincursorFields
-	// chaincursorDescName is the schema descriptor for name field.
-	chaincursorDescName := chaincursorFields[0].Descriptor()
-	// chaincursor.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	chaincursor.NameValidator = func() func(string) error {
-		validators := chaincursorDescName.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(name string) error {
-			for _, fn := range fns {
-				if err := fn(name); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// chaincursorDescLastProcessed is the schema descriptor for last_processed field.
-	chaincursorDescLastProcessed := chaincursorFields[2].Descriptor()
-	// chaincursor.DefaultLastProcessed holds the default value on creation for the last_processed field.
-	chaincursor.DefaultLastProcessed = chaincursorDescLastProcessed.Default.(uint64)
-	// chaincursorDescCreatedAt is the schema descriptor for created_at field.
-	chaincursorDescCreatedAt := chaincursorFields[3].Descriptor()
-	// chaincursor.DefaultCreatedAt holds the default value on creation for the created_at field.
-	chaincursor.DefaultCreatedAt = chaincursorDescCreatedAt.Default.(func() time.Time)
-	// chaincursorDescUpdatedAt is the schema descriptor for updated_at field.
-	chaincursorDescUpdatedAt := chaincursorFields[4].Descriptor()
-	// chaincursor.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	chaincursor.DefaultUpdatedAt = chaincursorDescUpdatedAt.Default.(func() time.Time)
-	// chaincursor.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	chaincursor.UpdateDefaultUpdatedAt = chaincursorDescUpdatedAt.UpdateDefault.(func() time.Time)
 	consultationrequestMixin := schema.ConsultationRequest{}.Mixin()
 	consultationrequestMixinFields0 := consultationrequestMixin[0].Fields()
 	_ = consultationrequestMixinFields0
@@ -257,33 +220,6 @@ func init() {
 	consultationrequestDescAutoClosedReason := consultationrequestFields[9].Descriptor()
 	// consultationrequest.AutoClosedReasonValidator is a validator for the "auto_closed_reason" field. It is called by the builders before save.
 	consultationrequest.AutoClosedReasonValidator = consultationrequestDescAutoClosedReason.Validators[0].(func(string) error)
-	credentialMixin := schema.Credential{}.Mixin()
-	credentialMixinFields0 := credentialMixin[0].Fields()
-	_ = credentialMixinFields0
-	credentialFields := schema.Credential{}.Fields()
-	_ = credentialFields
-	// credentialDescCreatedAt is the schema descriptor for created_at field.
-	credentialDescCreatedAt := credentialMixinFields0[0].Descriptor()
-	// credential.DefaultCreatedAt holds the default value on creation for the created_at field.
-	credential.DefaultCreatedAt = credentialDescCreatedAt.Default.(func() time.Time)
-	// credentialDescUpdatedAt is the schema descriptor for updated_at field.
-	credentialDescUpdatedAt := credentialMixinFields0[1].Descriptor()
-	// credential.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	credential.DefaultUpdatedAt = credentialDescUpdatedAt.Default.(func() time.Time)
-	// credential.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	credential.UpdateDefaultUpdatedAt = credentialDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// credentialDescUserID is the schema descriptor for user_id field.
-	credentialDescUserID := credentialFields[0].Descriptor()
-	// credential.UserIDValidator is a validator for the "user_id" field. It is called by the builders before save.
-	credential.UserIDValidator = credentialDescUserID.Validators[0].(func(int) error)
-	// credentialDescPlatform is the schema descriptor for platform field.
-	credentialDescPlatform := credentialFields[1].Descriptor()
-	// credential.DefaultPlatform holds the default value on creation for the platform field.
-	credential.DefaultPlatform = credentialDescPlatform.Default.(string)
-	// credentialDescDescription is the schema descriptor for description field.
-	credentialDescDescription := credentialFields[2].Descriptor()
-	// credential.DefaultDescription holds the default value on creation for the description field.
-	credential.DefaultDescription = credentialDescDescription.Default.(string)
 	devicefingerprintMixin := schema.DeviceFingerprint{}.Mixin()
 	devicefingerprintMixinFields0 := devicefingerprintMixin[0].Fields()
 	_ = devicefingerprintMixinFields0
@@ -423,39 +359,6 @@ func init() {
 			return nil
 		}
 	}()
-	endorsementMixin := schema.Endorsement{}.Mixin()
-	endorsementMixinFields0 := endorsementMixin[0].Fields()
-	_ = endorsementMixinFields0
-	endorsementFields := schema.Endorsement{}.Fields()
-	_ = endorsementFields
-	// endorsementDescCreatedAt is the schema descriptor for created_at field.
-	endorsementDescCreatedAt := endorsementMixinFields0[0].Descriptor()
-	// endorsement.DefaultCreatedAt holds the default value on creation for the created_at field.
-	endorsement.DefaultCreatedAt = endorsementDescCreatedAt.Default.(func() time.Time)
-	// endorsementDescUpdatedAt is the schema descriptor for updated_at field.
-	endorsementDescUpdatedAt := endorsementMixinFields0[1].Descriptor()
-	// endorsement.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	endorsement.DefaultUpdatedAt = endorsementDescUpdatedAt.Default.(func() time.Time)
-	// endorsement.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	endorsement.UpdateDefaultUpdatedAt = endorsementDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// endorsementDescValidationCaseID is the schema descriptor for validation_case_id field.
-	endorsementDescValidationCaseID := endorsementFields[0].Descriptor()
-	// endorsement.ValidationCaseIDValidator is a validator for the "validation_case_id" field. It is called by the builders before save.
-	endorsement.ValidationCaseIDValidator = endorsementDescValidationCaseID.Validators[0].(func(int) error)
-	// endorsementDescValidatorUserID is the schema descriptor for validator_user_id field.
-	endorsementDescValidatorUserID := endorsementFields[1].Descriptor()
-	// endorsement.ValidatorUserIDValidator is a validator for the "validator_user_id" field. It is called by the builders before save.
-	endorsement.ValidatorUserIDValidator = endorsementDescValidatorUserID.Validators[0].(func(int) error)
-	// endorsementDescStance is the schema descriptor for stance field.
-	endorsementDescStance := endorsementFields[3].Descriptor()
-	// endorsement.DefaultStance holds the default value on creation for the stance field.
-	endorsement.DefaultStance = endorsementDescStance.Default.(string)
-	// endorsement.StanceValidator is a validator for the "stance" field. It is called by the builders before save.
-	endorsement.StanceValidator = endorsementDescStance.Validators[0].(func(string) error)
-	// endorsementDescNote is the schema descriptor for note field.
-	endorsementDescNote := endorsementFields[4].Descriptor()
-	// endorsement.DefaultNote holds the default value on creation for the note field.
-	endorsement.DefaultNote = endorsementDescNote.Default.(string)
 	finalofferMixin := schema.FinalOffer{}.Mixin()
 	finalofferMixinFields0 := finalofferMixin[0].Fields()
 	_ = finalofferMixinFields0

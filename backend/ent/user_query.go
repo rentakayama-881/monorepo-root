@@ -7,11 +7,9 @@ import (
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/badge"
 	"backend-gin/ent/consultationrequest"
-	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
-	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/passkey"
 	"backend-gin/ent/passwordresettoken"
@@ -51,7 +49,6 @@ type UserQuery struct {
 	withSessionLocks            *SessionLockQuery
 	withEmailVerificationTokens *EmailVerificationTokenQuery
 	withPasswordResetTokens     *PasswordResetTokenQuery
-	withCredentials             *CredentialQuery
 	withTotpPendingTokens       *TOTPPendingTokenQuery
 	withSecurityEvents          *SecurityEventQuery
 	withDeviceFingerprints      *DeviceFingerprintQuery
@@ -61,7 +58,6 @@ type UserQuery struct {
 	withConsultationRequests    *ConsultationRequestQuery
 	withFinalOffers             *FinalOfferQuery
 	withArtifactSubmissions     *ArtifactSubmissionQuery
-	withEndorsements            *EndorsementQuery
 	withPrimaryBadge            *BadgeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -275,28 +271,6 @@ func (_q *UserQuery) QueryPasswordResetTokens() *PasswordResetTokenQuery {
 	return query
 }
 
-// QueryCredentials chains the current query on the "credentials" edge.
-func (_q *UserQuery) QueryCredentials() *CredentialQuery {
-	query := (&CredentialClient{config: _q.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := _q.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(credential.Table, credential.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.CredentialsTable, user.CredentialsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryTotpPendingTokens chains the current query on the "totp_pending_tokens" edge.
 func (_q *UserQuery) QueryTotpPendingTokens() *TOTPPendingTokenQuery {
 	query := (&TOTPPendingTokenClient{config: _q.config}).Query()
@@ -488,28 +462,6 @@ func (_q *UserQuery) QueryArtifactSubmissions() *ArtifactSubmissionQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(artifactsubmission.Table, artifactsubmission.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.ArtifactSubmissionsTable, user.ArtifactSubmissionsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryEndorsements chains the current query on the "endorsements" edge.
-func (_q *UserQuery) QueryEndorsements() *EndorsementQuery {
-	query := (&EndorsementClient{config: _q.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := _q.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(endorsement.Table, endorsement.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.EndorsementsTable, user.EndorsementsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -739,7 +691,6 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withSessionLocks:            _q.withSessionLocks.Clone(),
 		withEmailVerificationTokens: _q.withEmailVerificationTokens.Clone(),
 		withPasswordResetTokens:     _q.withPasswordResetTokens.Clone(),
-		withCredentials:             _q.withCredentials.Clone(),
 		withTotpPendingTokens:       _q.withTotpPendingTokens.Clone(),
 		withSecurityEvents:          _q.withSecurityEvents.Clone(),
 		withDeviceFingerprints:      _q.withDeviceFingerprints.Clone(),
@@ -749,7 +700,6 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withConsultationRequests:    _q.withConsultationRequests.Clone(),
 		withFinalOffers:             _q.withFinalOffers.Clone(),
 		withArtifactSubmissions:     _q.withArtifactSubmissions.Clone(),
-		withEndorsements:            _q.withEndorsements.Clone(),
 		withPrimaryBadge:            _q.withPrimaryBadge.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -842,17 +792,6 @@ func (_q *UserQuery) WithPasswordResetTokens(opts ...func(*PasswordResetTokenQue
 		opt(query)
 	}
 	_q.withPasswordResetTokens = query
-	return _q
-}
-
-// WithCredentials tells the query-builder to eager-load the nodes that are connected to
-// the "credentials" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *UserQuery) WithCredentials(opts ...func(*CredentialQuery)) *UserQuery {
-	query := (&CredentialClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	_q.withCredentials = query
 	return _q
 }
 
@@ -955,17 +894,6 @@ func (_q *UserQuery) WithArtifactSubmissions(opts ...func(*ArtifactSubmissionQue
 	return _q
 }
 
-// WithEndorsements tells the query-builder to eager-load the nodes that are connected to
-// the "endorsements" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *UserQuery) WithEndorsements(opts ...func(*EndorsementQuery)) *UserQuery {
-	query := (&EndorsementClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	_q.withEndorsements = query
-	return _q
-}
-
 // WithPrimaryBadge tells the query-builder to eager-load the nodes that are connected to
 // the "primary_badge" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithPrimaryBadge(opts ...func(*BadgeQuery)) *UserQuery {
@@ -1055,7 +983,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [20]bool{
+		loadedTypes = [18]bool{
 			_q.withPasskeys != nil,
 			_q.withSessions != nil,
 			_q.withBackupCodes != nil,
@@ -1064,7 +992,6 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withSessionLocks != nil,
 			_q.withEmailVerificationTokens != nil,
 			_q.withPasswordResetTokens != nil,
-			_q.withCredentials != nil,
 			_q.withTotpPendingTokens != nil,
 			_q.withSecurityEvents != nil,
 			_q.withDeviceFingerprints != nil,
@@ -1074,7 +1001,6 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withConsultationRequests != nil,
 			_q.withFinalOffers != nil,
 			_q.withArtifactSubmissions != nil,
-			_q.withEndorsements != nil,
 			_q.withPrimaryBadge != nil,
 		}
 	)
@@ -1156,13 +1082,6 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
-	if query := _q.withCredentials; query != nil {
-		if err := _q.loadCredentials(ctx, query, nodes,
-			func(n *User) { n.Edges.Credentials = []*Credential{} },
-			func(n *User, e *Credential) { n.Edges.Credentials = append(n.Edges.Credentials, e) }); err != nil {
-			return nil, err
-		}
-	}
 	if query := _q.withTotpPendingTokens; query != nil {
 		if err := _q.loadTotpPendingTokens(ctx, query, nodes,
 			func(n *User) { n.Edges.TotpPendingTokens = []*TOTPPendingToken{} },
@@ -1233,13 +1152,6 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			func(n *User, e *ArtifactSubmission) {
 				n.Edges.ArtifactSubmissions = append(n.Edges.ArtifactSubmissions, e)
 			}); err != nil {
-			return nil, err
-		}
-	}
-	if query := _q.withEndorsements; query != nil {
-		if err := _q.loadEndorsements(ctx, query, nodes,
-			func(n *User) { n.Edges.Endorsements = []*Endorsement{} },
-			func(n *User, e *Endorsement) { n.Edges.Endorsements = append(n.Edges.Endorsements, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1477,36 +1389,6 @@ func (_q *UserQuery) loadPasswordResetTokens(ctx context.Context, query *Passwor
 	}
 	query.Where(predicate.PasswordResetToken(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.PasswordResetTokensColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.UserID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (_q *UserQuery) loadCredentials(ctx context.Context, query *CredentialQuery, nodes []*User, init func(*User), assign func(*User, *Credential)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*User)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(credential.FieldUserID)
-	}
-	query.Where(predicate.Credential(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(user.CredentialsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -1783,36 +1665,6 @@ func (_q *UserQuery) loadArtifactSubmissions(ctx context.Context, query *Artifac
 	}
 	query.Where(predicate.ArtifactSubmission(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.ArtifactSubmissionsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.ValidatorUserID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "validator_user_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (_q *UserQuery) loadEndorsements(ctx context.Context, query *EndorsementQuery, nodes []*User, init func(*User), assign func(*User, *Endorsement)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*User)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(endorsement.FieldValidatorUserID)
-	}
-	query.Where(predicate.Endorsement(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(user.EndorsementsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

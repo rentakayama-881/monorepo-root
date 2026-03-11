@@ -86,11 +86,9 @@ type ValidationCaseEdges struct {
 	FinalOffers []*FinalOffer `json:"final_offers,omitempty"`
 	// ArtifactSubmissions holds the value of the artifact_submissions edge.
 	ArtifactSubmissions []*ArtifactSubmission `json:"artifact_submissions,omitempty"`
-	// Endorsements holds the value of the endorsements edge.
-	Endorsements []*Endorsement `json:"endorsements,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [8]bool
+	loadedTypes [7]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -158,15 +156,6 @@ func (e ValidationCaseEdges) ArtifactSubmissionsOrErr() ([]*ArtifactSubmission, 
 		return e.ArtifactSubmissions, nil
 	}
 	return nil, &NotLoadedError{edge: "artifact_submissions"}
-}
-
-// EndorsementsOrErr returns the Endorsements value or an error if the edge
-// was not loaded in eager-loading.
-func (e ValidationCaseEdges) EndorsementsOrErr() ([]*Endorsement, error) {
-	if e.loadedTypes[7] {
-		return e.Endorsements, nil
-	}
-	return nil, &NotLoadedError{edge: "endorsements"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -391,11 +380,6 @@ func (_m *ValidationCase) QueryFinalOffers() *FinalOfferQuery {
 // QueryArtifactSubmissions queries the "artifact_submissions" edge of the ValidationCase entity.
 func (_m *ValidationCase) QueryArtifactSubmissions() *ArtifactSubmissionQuery {
 	return NewValidationCaseClient(_m.config).QueryArtifactSubmissions(_m)
-}
-
-// QueryEndorsements queries the "endorsements" edge of the ValidationCase entity.
-func (_m *ValidationCase) QueryEndorsements() *EndorsementQuery {
-	return NewValidationCaseClient(_m.config).QueryEndorsements(_m)
 }
 
 // Update returns a builder for updating this ValidationCase.

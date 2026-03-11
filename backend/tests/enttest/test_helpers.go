@@ -161,9 +161,6 @@ func (tc *TestClient) CleanupTables(ctx context.Context) error {
 	if _, err := tc.Session.Delete().Exec(ctx); err != nil {
 		return err
 	}
-	if _, err := tc.Credential.Delete().Exec(ctx); err != nil {
-		return err
-	}
 	if _, err := tc.EmailVerificationToken.Delete().Exec(ctx); err != nil {
 		return err
 	}
@@ -171,9 +168,6 @@ func (tc *TestClient) CleanupTables(ctx context.Context) error {
 		return err
 	}
 	if _, err := tc.UserBadge.Delete().Exec(ctx); err != nil {
-		return err
-	}
-	if _, err := tc.Endorsement.Delete().Exec(ctx); err != nil {
 		return err
 	}
 	if _, err := tc.ArtifactSubmission.Delete().Exec(ctx); err != nil {

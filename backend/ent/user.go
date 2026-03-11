@@ -109,8 +109,6 @@ type UserEdges struct {
 	EmailVerificationTokens []*EmailVerificationToken `json:"email_verification_tokens,omitempty"`
 	// PasswordResetTokens holds the value of the password_reset_tokens edge.
 	PasswordResetTokens []*PasswordResetToken `json:"password_reset_tokens,omitempty"`
-	// Credentials holds the value of the credentials edge.
-	Credentials []*Credential `json:"credentials,omitempty"`
 	// TotpPendingTokens holds the value of the totp_pending_tokens edge.
 	TotpPendingTokens []*TOTPPendingToken `json:"totp_pending_tokens,omitempty"`
 	// SecurityEvents holds the value of the security_events edge.
@@ -129,13 +127,11 @@ type UserEdges struct {
 	FinalOffers []*FinalOffer `json:"final_offers,omitempty"`
 	// ArtifactSubmissions holds the value of the artifact_submissions edge.
 	ArtifactSubmissions []*ArtifactSubmission `json:"artifact_submissions,omitempty"`
-	// Endorsements holds the value of the endorsements edge.
-	Endorsements []*Endorsement `json:"endorsements,omitempty"`
 	// PrimaryBadge holds the value of the primary_badge edge.
 	PrimaryBadge *Badge `json:"primary_badge,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [20]bool
+	loadedTypes [18]bool
 }
 
 // PasskeysOrErr returns the Passkeys value or an error if the edge
@@ -210,19 +206,10 @@ func (e UserEdges) PasswordResetTokensOrErr() ([]*PasswordResetToken, error) {
 	return nil, &NotLoadedError{edge: "password_reset_tokens"}
 }
 
-// CredentialsOrErr returns the Credentials value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) CredentialsOrErr() ([]*Credential, error) {
-	if e.loadedTypes[8] {
-		return e.Credentials, nil
-	}
-	return nil, &NotLoadedError{edge: "credentials"}
-}
-
 // TotpPendingTokensOrErr returns the TotpPendingTokens value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) TotpPendingTokensOrErr() ([]*TOTPPendingToken, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[8] {
 		return e.TotpPendingTokens, nil
 	}
 	return nil, &NotLoadedError{edge: "totp_pending_tokens"}
@@ -231,7 +218,7 @@ func (e UserEdges) TotpPendingTokensOrErr() ([]*TOTPPendingToken, error) {
 // SecurityEventsOrErr returns the SecurityEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) SecurityEventsOrErr() ([]*SecurityEvent, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[9] {
 		return e.SecurityEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "security_events"}
@@ -240,7 +227,7 @@ func (e UserEdges) SecurityEventsOrErr() ([]*SecurityEvent, error) {
 // DeviceFingerprintsOrErr returns the DeviceFingerprints value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) DeviceFingerprintsOrErr() ([]*DeviceFingerprint, error) {
-	if e.loadedTypes[11] {
+	if e.loadedTypes[10] {
 		return e.DeviceFingerprints, nil
 	}
 	return nil, &NotLoadedError{edge: "device_fingerprints"}
@@ -249,7 +236,7 @@ func (e UserEdges) DeviceFingerprintsOrErr() ([]*DeviceFingerprint, error) {
 // DeviceUserMappingsOrErr returns the DeviceUserMappings value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) DeviceUserMappingsOrErr() ([]*DeviceUserMapping, error) {
-	if e.loadedTypes[12] {
+	if e.loadedTypes[11] {
 		return e.DeviceUserMappings, nil
 	}
 	return nil, &NotLoadedError{edge: "device_user_mappings"}
@@ -258,7 +245,7 @@ func (e UserEdges) DeviceUserMappingsOrErr() ([]*DeviceUserMapping, error) {
 // SudoSessionsOrErr returns the SudoSessions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) SudoSessionsOrErr() ([]*SudoSession, error) {
-	if e.loadedTypes[13] {
+	if e.loadedTypes[12] {
 		return e.SudoSessions, nil
 	}
 	return nil, &NotLoadedError{edge: "sudo_sessions"}
@@ -267,7 +254,7 @@ func (e UserEdges) SudoSessionsOrErr() ([]*SudoSession, error) {
 // ValidationCaseLogsOrErr returns the ValidationCaseLogs value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ValidationCaseLogsOrErr() ([]*ValidationCaseLog, error) {
-	if e.loadedTypes[14] {
+	if e.loadedTypes[13] {
 		return e.ValidationCaseLogs, nil
 	}
 	return nil, &NotLoadedError{edge: "validation_case_logs"}
@@ -276,7 +263,7 @@ func (e UserEdges) ValidationCaseLogsOrErr() ([]*ValidationCaseLog, error) {
 // ConsultationRequestsOrErr returns the ConsultationRequests value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ConsultationRequestsOrErr() ([]*ConsultationRequest, error) {
-	if e.loadedTypes[15] {
+	if e.loadedTypes[14] {
 		return e.ConsultationRequests, nil
 	}
 	return nil, &NotLoadedError{edge: "consultation_requests"}
@@ -285,7 +272,7 @@ func (e UserEdges) ConsultationRequestsOrErr() ([]*ConsultationRequest, error) {
 // FinalOffersOrErr returns the FinalOffers value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) FinalOffersOrErr() ([]*FinalOffer, error) {
-	if e.loadedTypes[16] {
+	if e.loadedTypes[15] {
 		return e.FinalOffers, nil
 	}
 	return nil, &NotLoadedError{edge: "final_offers"}
@@ -294,19 +281,10 @@ func (e UserEdges) FinalOffersOrErr() ([]*FinalOffer, error) {
 // ArtifactSubmissionsOrErr returns the ArtifactSubmissions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ArtifactSubmissionsOrErr() ([]*ArtifactSubmission, error) {
-	if e.loadedTypes[17] {
+	if e.loadedTypes[16] {
 		return e.ArtifactSubmissions, nil
 	}
 	return nil, &NotLoadedError{edge: "artifact_submissions"}
-}
-
-// EndorsementsOrErr returns the Endorsements value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) EndorsementsOrErr() ([]*Endorsement, error) {
-	if e.loadedTypes[18] {
-		return e.Endorsements, nil
-	}
-	return nil, &NotLoadedError{edge: "endorsements"}
 }
 
 // PrimaryBadgeOrErr returns the PrimaryBadge value or an error if the edge
@@ -314,7 +292,7 @@ func (e UserEdges) EndorsementsOrErr() ([]*Endorsement, error) {
 func (e UserEdges) PrimaryBadgeOrErr() (*Badge, error) {
 	if e.PrimaryBadge != nil {
 		return e.PrimaryBadge, nil
-	} else if e.loadedTypes[19] {
+	} else if e.loadedTypes[17] {
 		return nil, &NotFoundError{label: badge.Label}
 	}
 	return nil, &NotLoadedError{edge: "primary_badge"}
@@ -620,11 +598,6 @@ func (_m *User) QueryPasswordResetTokens() *PasswordResetTokenQuery {
 	return NewUserClient(_m.config).QueryPasswordResetTokens(_m)
 }
 
-// QueryCredentials queries the "credentials" edge of the User entity.
-func (_m *User) QueryCredentials() *CredentialQuery {
-	return NewUserClient(_m.config).QueryCredentials(_m)
-}
-
 // QueryTotpPendingTokens queries the "totp_pending_tokens" edge of the User entity.
 func (_m *User) QueryTotpPendingTokens() *TOTPPendingTokenQuery {
 	return NewUserClient(_m.config).QueryTotpPendingTokens(_m)
@@ -668,11 +641,6 @@ func (_m *User) QueryFinalOffers() *FinalOfferQuery {
 // QueryArtifactSubmissions queries the "artifact_submissions" edge of the User entity.
 func (_m *User) QueryArtifactSubmissions() *ArtifactSubmissionQuery {
 	return NewUserClient(_m.config).QueryArtifactSubmissions(_m)
-}
-
-// QueryEndorsements queries the "endorsements" edge of the User entity.
-func (_m *User) QueryEndorsements() *EndorsementQuery {
-	return NewUserClient(_m.config).QueryEndorsements(_m)
 }
 
 // QueryPrimaryBadge queries the "primary_badge" edge of the User entity.

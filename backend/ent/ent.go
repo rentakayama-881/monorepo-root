@@ -8,13 +8,10 @@ import (
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/badge"
 	"backend-gin/ent/category"
-	"backend-gin/ent/chaincursor"
 	"backend-gin/ent/consultationrequest"
-	"backend-gin/ent/credential"
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
-	"backend-gin/ent/endorsement"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/ipgeocache"
 	"backend-gin/ent/marketpurchaseorder"
@@ -105,13 +102,10 @@ func checkColumn(t, c string) error {
 			backupcode.Table:              backupcode.ValidColumn,
 			badge.Table:                   badge.ValidColumn,
 			category.Table:                category.ValidColumn,
-			chaincursor.Table:             chaincursor.ValidColumn,
 			consultationrequest.Table:     consultationrequest.ValidColumn,
-			credential.Table:              credential.ValidColumn,
 			devicefingerprint.Table:       devicefingerprint.ValidColumn,
 			deviceusermapping.Table:       deviceusermapping.ValidColumn,
 			emailverificationtoken.Table:  emailverificationtoken.ValidColumn,
-			endorsement.Table:             endorsement.ValidColumn,
 			finaloffer.Table:              finaloffer.ValidColumn,
 			ipgeocache.Table:              ipgeocache.ValidColumn,
 			marketpurchaseorder.Table:     marketpurchaseorder.ValidColumn,
