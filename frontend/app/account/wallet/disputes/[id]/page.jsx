@@ -266,23 +266,6 @@ export default function DisputeDetailPage() {
     setProcessing(false);
   };
 
-  const escalateDispute = async () => {
-    setProcessing(true);
-
-    try {
-      const endpoint =
-        dispute.phase === "negotiation"
-          ? `/api/v1/disputes/${disputeId}/escalate-evidence`
-          : `/api/v1/disputes/${disputeId}/escalate-admin`;
-
-      await fetchFeatureAuth(endpoint, { method: "POST" });
-      await refreshDispute();
-    } catch (e) {
-      logger.error("Failed to escalate:", e);
-    }
-    setProcessing(false);
-  };
-
   const getPhaseInfo = (phase) => {
     const info = {
       negotiation: {
@@ -622,19 +605,6 @@ export default function DisputeDetailPage() {
                         The team will decide based on the discussion.
                       </p>
                     </div>
-                  )}
-
-                  {/* Escalate - only for sender (who opened dispute) */}
-                  {isSender && dispute.phase !== "admin_review" && (
-                    <button
-                      onClick={escalateDispute}
-                      disabled={processing}
-                      className="w-full rounded-lg border border-warning/30 py-2 text-sm font-medium text-warning transition hover:bg-warning/10 disabled:opacity-50"
-                    >
-                      {dispute.phase === "negotiation"
-                        ? "Escalate to Evidence Phase"
-                        : "Escalate to Admin"}
-                    </button>
                   )}
                 </div>
               </div>
