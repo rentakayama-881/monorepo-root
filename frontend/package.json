@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "prebuild": "node scripts/prebuild-check.mjs",
-    "build": "next build --webpack",
+    "build": "next build",
     "audit:prod": "node scripts/audit-prod-allowlist.mjs",
     "start": "next start",
     "lint": "eslint .",
