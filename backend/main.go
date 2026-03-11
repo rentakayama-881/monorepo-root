@@ -90,7 +90,7 @@ func buildCORSConfig() cors.Config {
 	corsConfig.AllowOrigins = allowedList
 	corsConfig.AllowOriginFunc = func(origin string) bool {
 		if origin == "" {
-			return true
+			return false
 		}
 		_, ok := allowedSet[origin]
 		return ok

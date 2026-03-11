@@ -88,8 +88,16 @@ try
         options.AddDefaultPolicy(policy =>
         {
             policy.WithOrigins(corsOrigins)
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
+                  .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                  .WithHeaders(
+                      "Content-Type",
+                      "Authorization",
+                      "Accept",
+                      "X-PQC-Signature",
+                      "X-PQC-Key-Id",
+                      "X-PQC-Timestamp",
+                      "X-Idempotency-Key",
+                      "X-Requested-With")
                   .AllowCredentials();
         });
     });
