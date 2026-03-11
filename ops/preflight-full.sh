@@ -56,6 +56,9 @@ fi
 log "INFO" "Running preflight gates (scope=$SCOPE)"
 log "INFO" "Report file: $REPORT_FILE"
 
+# Security scan runs regardless of scope — secrets affect all services
+run_step "security: scan for secret leaks" "$OPS_ROOT/ops/security-scan.sh"
+
 if [[ "$SCOPE" == "all" || "$SCOPE" == "backend" || "$SCOPE" == "backend-feature" ]]; then
   run_step "backend: go vet" run_in_dir "$OPS_ROOT/backend" go vet ./...
   run_step "backend: go test -v ./..." run_in_dir "$OPS_ROOT/backend" go test -v ./...

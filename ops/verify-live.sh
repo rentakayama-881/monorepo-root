@@ -146,4 +146,37 @@ feature_version_payload="$(fetch_json_with_retry "$FEATURE_VERSION_URL" "feature
 run_step "feature-service health/version payload" printf '%s\n' "$feature_version_payload"
 verify_sha_match "feature-service" "$feature_version_payload"
 
+# ── HSTS preload header verification ────────────────────────
+# Ensures HSTS with preload directive is active on both backends.
+# Submit domains at https://hstspreload.org after confirming headers.
+verify_hsts_header() {
+  local url="$1"
+  local label="$2"
+  local hsts_header
+
+  hsts_header="$(curl -fsS --max-time "$TIMEOUT_SECONDS" -I "$url" 2>/dev/null \
+    | grep -i '^strict-transport-security:' || true)"
+
+  if [[ -z "$hsts_header" ]]; then
+    log "WARN" "$label: Missing Strict-Transport-Security header at $url"
+    return 0
+  fi
+
+  local has_preload has_subdomains has_max_age
+  has_preload="$(echo "$hsts_header" | grep -ci 'preload' || true)"
+  has_subdomains="$(echo "$hsts_header" | grep -ci 'includeSubDomains' || true)"
+  has_max_age="$(echo "$hsts_header" | grep -ci 'max-age' || true)"
+
+  if [[ "$has_preload" -gt 0 && "$has_subdomains" -gt 0 && "$has_max_age" -gt 0 ]]; then
+    log "OK" "$label: HSTS preload-ready — $hsts_header"
+  else
+    log "WARN" "$label: HSTS header incomplete (need max-age + includeSubDomains + preload) — $hsts_header"
+  fi
+}
+
+if [[ "$ENV_NAME" == "prod" ]]; then
+  run_step "HSTS header check (api)" verify_hsts_header "https://api.aivalid.id/health" "api.aivalid.id"
+  run_step "HSTS header check (feature)" verify_hsts_header "https://feature.aivalid.id/api/v1/health" "feature.aivalid.id"
+fi
+
 log "OK" "Live verification passed for environment $ENV_NAME"
