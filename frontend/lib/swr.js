@@ -1,15 +1,33 @@
+import { useState, useEffect } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 import { getApiBase } from "./api";
-import { getToken } from "./auth";
+import { getToken, AUTH_CHANGED_EVENT } from "./auth";
 import { fetchWithAuth } from "./tokenRefresh";
+
+/**
+ * Reactive auth token hook — listens for AUTH_CHANGED_EVENT
+ * and returns a React state that updates when token changes.
+ * This makes SWR keys responsive to login/logout events.
+ */
+function useAuthToken() {
+  const [token, setToken] = useState(() => getToken());
+
+  useEffect(() => {
+    const sync = () => setToken(getToken());
+    window.addEventListener(AUTH_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(AUTH_CHANGED_EVENT, sync);
+  }, []);
+
+  return token;
+}
 
 export const swrConfig = {
   revalidateOnFocus: true,
   revalidateOnReconnect: true,
   shouldRetryOnError: true,
   keepPreviousData: true,
-  dedupingInterval: 2000,
-  focusThrottleInterval: 5000,
+  dedupingInterval: 5000,
+  focusThrottleInterval: 30000,
   errorRetryCount: 2,
   errorRetryInterval: 5000,
   onErrorRetry: (error, key, config, revalidate, { retryCount }) => {
@@ -23,11 +41,11 @@ export const swrConfig = {
 
 export async function authFetcher(url) {
   const res = await fetchWithAuth(url);
-  
+
   if (!res) {
     throw new Error("Unauthorized");
   }
-  
+
   if (!res.ok) {
     const error = new Error("API Error");
     try {
@@ -40,7 +58,7 @@ export async function authFetcher(url) {
     }
     throw error;
   }
-  
+
   return res.json();
 }
 
@@ -48,7 +66,7 @@ export async function publicFetcher(url) {
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
   });
-  
+
   if (!res.ok) {
     const error = new Error("API Error");
     try {
@@ -61,12 +79,12 @@ export async function publicFetcher(url) {
     }
     throw error;
   }
-  
+
   return res.json();
 }
 
 export function useUser() {
-  const token = getToken();
+  const token = useAuthToken();
 
   const { data, error, isLoading, isValidating, mutate } = useSWR(
     token ? `${getApiBase()}/api/account/me` : null,
@@ -89,7 +107,7 @@ export function useUser() {
 }
 
 export function useWallet() {
-  const token = getToken();
+  const token = useAuthToken();
   const featureBase = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
 
   const { data, error, isLoading, mutate } = useSWR(
@@ -128,8 +146,8 @@ export function useValidationCase(validationCaseId) {
 }
 
 export function useMyValidationCases() {
-  const token = getToken();
-  
+  const token = useAuthToken();
+
   const { data, error, isLoading, mutate } = useSWR(
     token ? `${getApiBase()}/api/validation-cases/me` : null,
     authFetcher,
@@ -166,7 +184,7 @@ export function useValidationCaseCategories() {
 }
 
 export function useCanDeleteAccount() {
-  const token = getToken();
+  const token = useAuthToken();
 
   const { data, error, isLoading, mutate } = useSWR(
     token ? `${getApiBase()}/api/account/can-delete` : null,
@@ -190,8 +208,8 @@ export function useCanDeleteAccount() {
 }
 
 export function useTOTPStatus() {
-  const token = getToken();
-  
+  const token = useAuthToken();
+
   const { data, error, isLoading, mutate } = useSWR(
     token ? `${getApiBase()}/api/auth/totp/status` : null,
     authFetcher,
@@ -212,7 +230,7 @@ export function useTOTPStatus() {
 
 export function invalidateCache(keyOrKeys) {
   if (Array.isArray(keyOrKeys)) {
-    keyOrKeys.forEach(key => globalMutate(key));
+    keyOrKeys.forEach((key) => globalMutate(key));
   } else {
     globalMutate(keyOrKeys);
   }
@@ -232,7 +250,7 @@ export function invalidateValidationCases() {
   const base = getApiBase();
   globalMutate(`${base}/api/validation-cases/me`);
   globalMutate(
-    (key) => typeof key === 'string' && key.includes("/api/validation-cases"),
+    (key) => typeof key === "string" && key.includes("/api/validation-cases"),
     undefined,
     { revalidate: true }
   );

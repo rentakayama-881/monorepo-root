@@ -329,6 +329,24 @@ func main() {
 	services.InitEmailRateLimiter()
 	authEntService := services.NewEntAuthService()
 	sessionEntService := services.NewEntSessionService()
+
+	// Session cleanup goroutine — delete expired sessions every hour
+	// Prevents DB bloat on Neon free tier (CleanupExpiredSessions exists but was never called)
+	sessionCleanupTicker := time.NewTicker(1 * time.Hour)
+	go func() {
+		for range sessionCleanupTicker.C {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			affected, err := sessionEntService.CleanupExpiredSessions(ctx)
+			cancel()
+			if err != nil {
+				logger.Error("Session cleanup failed", zap.Error(err))
+			} else if affected > 0 {
+				logger.Info("Session cleanup completed", zap.Int("deleted", affected))
+			}
+		}
+	}()
+	defer sessionCleanupTicker.Stop()
+
 	totpEntService := services.NewEntTOTPService(logger.GetLogger())
 	sudoEntService := services.NewEntSudoService(logger.GetLogger(), totpEntService)
 

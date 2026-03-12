@@ -1,12 +1,6 @@
 import { getApiBase } from "./api";
 import logger from "./logger";
-import {
-  getToken,
-  getRefreshToken,
-  isTokenExpired,
-  setTokens,
-  clearToken,
-} from "./auth";
+import { getToken, getRefreshToken, isTokenExpired, setTokens, clearToken } from "./auth";
 
 let refreshPromise = null;
 
@@ -61,7 +55,13 @@ export async function refreshAccessToken() {
         }
 
         // Check if account is locked (403 with specific message)
-        if (res.status === 403 && (data?.code === "AUTH009" || data?.code === "AUTH012" || data?.message?.includes("terkunci") || data?.error?.includes("terkunci"))) {
+        if (
+          res.status === 403 &&
+          (data?.code === "AUTH009" ||
+            data?.code === "AUTH012" ||
+            data?.message?.includes("terkunci") ||
+            data?.error?.includes("terkunci"))
+        ) {
           // Account locked - redirect silently
           clearToken();
           redirectToAccountLockedLogin();
@@ -94,18 +94,26 @@ export async function refreshAccessToken() {
 
 export async function getValidToken() {
   const token = getToken();
-  
+
   if (!token) {
     return null;
   }
 
   if (isTokenExpired()) {
-    const refreshed = await refreshAccessToken();
-    if (refreshed) return refreshed;
+    // Retry refresh with exponential backoff: 2s, 4s, 8s
+    // Grace period ~14s before giving up — handles transient network issues
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) return refreshed;
 
-    // Refresh can fail due to missing refresh token or transient network issues.
-    // If the access token is still present, try it and let the API decide.
-    return getToken();
+      if (attempt < 2) {
+        await new Promise((r) => setTimeout(r, 2000 * Math.pow(2, attempt)));
+      }
+    }
+
+    // All retries exhausted — session is truly expired
+    clearToken();
+    return null;
   }
 
   return token;
@@ -113,9 +121,11 @@ export async function getValidToken() {
 
 export async function fetchWithAuth(url, options = {}) {
   let token = await getValidToken();
-  
+
   if (!token) {
-    throw new Error("Not authenticated");
+    const error = new Error("Not authenticated");
+    error.status = 401;
+    throw error;
   }
 
   const authOptions = {
@@ -135,6 +145,11 @@ export async function fetchWithAuth(url, options = {}) {
     if (token) {
       authOptions.headers.Authorization = `Bearer ${token}`;
       res = await fetch(url, authOptions);
+    }
+
+    // If still 401 after retry, clear session to prevent zombie state
+    if (!token || res.status === 401) {
+      clearToken();
     }
   }
 

@@ -2,8 +2,51 @@
 
 import React, { createContext, useContext, useEffect, useCallback } from "react";
 import { useUser, useWallet, invalidateUserData } from "./swr";
-import { getToken, clearToken, setTokens } from "./auth";
+import { getToken, getTokenExpiry, clearToken, setTokens, AUTH_CHANGED_EVENT } from "./auth";
 import { getApiBase } from "./api";
+import { refreshAccessToken } from "./tokenRefresh";
+
+/**
+ * Proactive token refresh timer — refreshes access token
+ * 1 minute before expiry to prevent token expiration.
+ * Pattern: Auth0 SDK (checkSession), Firebase SDK (onIdTokenChanged)
+ */
+function useTokenRefreshTimer() {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let timerId = null;
+
+    const scheduleRefresh = () => {
+      const expiry = getTokenExpiry();
+      if (!expiry || !getToken()) return;
+
+      // Refresh 1 minute before expiry (access token is 5 min)
+      const refreshAt = expiry.getTime() - 60_000;
+      const delay = Math.max(refreshAt - Date.now(), 0);
+
+      timerId = setTimeout(async () => {
+        const token = await refreshAccessToken();
+        if (token) scheduleRefresh();
+      }, delay);
+    };
+
+    scheduleRefresh();
+
+    // Re-schedule on login/token refresh
+    const handleAuthChange = () => {
+      if (timerId) clearTimeout(timerId);
+      if (getToken()) scheduleRefresh();
+    };
+
+    window.addEventListener(AUTH_CHANGED_EVENT, handleAuthChange);
+
+    return () => {
+      if (timerId) clearTimeout(timerId);
+      window.removeEventListener(AUTH_CHANGED_EVENT, handleAuthChange);
+    };
+  }, []);
+}
 
 /**
  * UserContext - Single source of truth for user authentication and data
@@ -15,7 +58,16 @@ const UserContext = createContext(null);
  * UserProvider - Wrap your app with this to provide user context
  */
 export function UserProvider({ children }) {
-  const { user, isLoading: userLoading, error: userError, mutate: mutateUser, isLoggedIn } = useUser();
+  // Proactive token refresh — prevents token expiry
+  useTokenRefreshTimer();
+
+  const {
+    user,
+    isLoading: userLoading,
+    error: userError,
+    mutate: mutateUser,
+    isLoggedIn,
+  } = useUser();
   const { wallet, isLoading: walletLoading, mutate: mutateWallet } = useWallet();
 
   // Refresh all user data
@@ -41,10 +93,10 @@ export function UserProvider({ children }) {
     } catch {
       // Ignore errors - clear tokens anyway
     }
-    
+
     clearToken();
     invalidateUserData();
-    
+
     // Redirect to home
     if (typeof window !== "undefined") {
       window.location.href = "/";
@@ -52,12 +104,15 @@ export function UserProvider({ children }) {
   }, []);
 
   // Handle login success - call after successful login
-  const onLoginSuccess = useCallback((accessToken, refreshToken, expiresIn) => {
-    setTokens(accessToken, refreshToken, expiresIn);
-    invalidateUserData();
-    mutateUser();
-    mutateWallet();
-  }, [mutateUser, mutateWallet]);
+  const onLoginSuccess = useCallback(
+    (accessToken, refreshToken, expiresIn) => {
+      setTokens(accessToken, refreshToken, expiresIn);
+      invalidateUserData();
+      mutateUser();
+      mutateWallet();
+    },
+    [mutateUser, mutateWallet]
+  );
 
   // Listen for storage events (logout in other tab)
   useEffect(() => {
@@ -98,18 +153,18 @@ export function UserProvider({ children }) {
     isLoggedIn,
     isLoading: userLoading,
     error: userError,
-    
+
     // Wallet data
     wallet,
     walletLoading,
-    
+
     // Actions
     refreshUser,
     mutateUser,
     mutateWallet,
     logout,
     onLoginSuccess,
-    
+
     // Computed values
     username: user?.username || null,
     email: user?.email || null,
@@ -118,11 +173,7 @@ export function UserProvider({ children }) {
     hasPinSet: wallet?.pin_set || false,
   };
 
-  return (
-    <UserContext.Provider value={value}>
-      {children}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
 
 /**
