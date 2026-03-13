@@ -11,7 +11,9 @@ import { getToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/errorMessage";
 import logger from "@/lib/logger";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
-import { ChevronLeft, Loader2, Check } from "lucide-react";
+import { ChevronLeft, Check } from "lucide-react";
+import PaymentWaiting from "@/components/wallet/PaymentWaiting";
+import { TonIcon, UsdtIcon } from "@/components/wallet/CryptoIcons";
 
 const CRYPTO_OPTIONS = [
   {
@@ -19,30 +21,14 @@ const CRYPTO_OPTIONS = [
     label: "Tether",
     symbol: "USDT",
     networks: ["TRC20", "TON", "BEP20", "ERC20", "Polygon", "SOL"],
-    icon: (
-      <svg viewBox="0 0 32 32" className="h-8 w-8">
-        <circle cx="16" cy="16" r="16" fill="#26A17B" />
-        <path
-          d="M17.922 17.383v-.002c-.11.008-.677.042-1.942.042-1.01 0-1.721-.03-1.971-.042v.003c-3.888-.171-6.79-.848-6.79-1.658 0-.809 2.902-1.486 6.79-1.66v2.644c.254.018.982.061 1.988.061 1.207 0 1.812-.05 1.925-.06v-2.643c3.88.173 6.775.85 6.775 1.658 0 .81-2.895 1.485-6.775 1.657m0-3.59v-2.366h5.414V7.819H8.595v3.608h5.414v2.365c-4.4.202-7.709 1.074-7.709 2.118 0 1.044 3.309 1.915 7.709 2.118v7.582h3.913v-7.584c4.393-.202 7.694-1.073 7.694-2.116 0-1.043-3.301-1.914-7.694-2.117"
-          fill="#fff"
-        />
-      </svg>
-    ),
+    icon: <UsdtIcon />,
   },
   {
     value: "TON",
     label: "Toncoin",
     symbol: "TON",
     networks: ["TON"],
-    icon: (
-      <svg viewBox="0 0 32 32" className="h-8 w-8">
-        <circle cx="16" cy="16" r="16" fill="#0098EA" />
-        <path
-          d="M21.818 10H10.182C8.348 10 7.307 12.02 8.426 13.41l6.819 8.49c.398.503 1.112.503 1.51 0l6.819-8.49c1.119-1.39.078-3.41-1.756-3.41zM14.5 12.12h-3.284l3.284 4.09v-4.09zm3 4.09l3.284-4.09H17.5v4.09z"
-          fill="#fff"
-        />
-      </svg>
-    ),
+    icon: <TonIcon />,
   },
 ];
 
@@ -96,13 +82,6 @@ function getStatusLabel(status) {
   return { label: status, color: "text-gray-600 bg-gray-50 border-gray-200" };
 }
 
-function formatCountdown(seconds) {
-  if (seconds <= 0) return "00:00";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
 const NETWORK_DISPLAY_MAP = {
   "tron network": "TRC20",
   "ton network": "TON",
@@ -132,6 +111,7 @@ export default function DepositPage() {
 
   const [depositData, setDepositData] = useState(null);
   const [countdown, setCountdown] = useState(0);
+  const [countdownTotal, setCountdownTotal] = useState(0);
   const pollRef = useRef(null);
   const countdownRef = useRef(null);
 
@@ -150,6 +130,7 @@ export default function DepositPage() {
     if (countdownRef.current) clearInterval(countdownRef.current);
     setDepositData(null);
     setCountdown(0);
+    setCountdownTotal(0);
     setAmount("");
     setPayCurrency("USDT");
     setNetwork("TRC20");
@@ -312,6 +293,9 @@ export default function DepositPage() {
 
   function startCountdown(expiredAtUnix) {
     if (countdownRef.current) clearInterval(countdownRef.current);
+    const now = Math.floor(Date.now() / 1000);
+    const initial = expiredAtUnix - now;
+    if (initial > 0) setCountdownTotal(initial);
     const updateCountdown = () => {
       const now = Math.floor(Date.now() / 1000);
       const remaining = expiredAtUnix - now;
@@ -562,98 +546,15 @@ export default function DepositPage() {
 
         {/* STEP 2: Payment Details */}
         {step === 2 && isDepositDataComplete(depositData) && (
-          <div className="space-y-5">
-            <div className="rounded-lg border border-border bg-card p-4 text-center space-y-3">
-              <div className="text-sm text-muted-foreground">Kirim tepat</div>
-              <div className="text-2xl font-bold text-foreground">
-                {depositData.payAmount} {depositData.payCurrency}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Jaringan: <span className="font-medium text-foreground">{depositData.network}</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Jumlah di atas sudah termasuk semua biaya
-              </p>
-            </div>
-
-            {depositData.qrCode && (
-              <div className="flex justify-center">
-                <div className="rounded-lg border border-border bg-white p-3">
-                  <img src={depositData.qrCode} alt="QR Code pembayaran" className="h-48 w-48" />
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-muted-foreground">
-                Alamat Pembayaran
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={depositData.address}
-                  className="h-10 flex-1 rounded-lg border border-input bg-muted/30 px-3 text-xs font-mono"
-                />
-                <button
-                  onClick={handleCopyAddress}
-                  className="h-10 rounded-lg border border-input px-3 text-sm hover:bg-accent transition-colors"
-                >
-                  {copied ? "✓" : "Salin"}
-                </button>
-              </div>
-            </div>
-
-            {/* Countdown */}
-            <div className="rounded-lg border border-border bg-muted/30 p-4 text-center">
-              <div className="text-sm text-muted-foreground mb-1">Sisa waktu pembayaran</div>
-              <div
-                className={`text-3xl font-mono font-bold ${countdown <= 300 ? "text-destructive" : "text-foreground"}`}
-              >
-                {formatCountdown(countdown)}
-              </div>
-              {countdown <= 0 && (
-                <p className="mt-2 text-xs text-destructive">
-                  Waktu habis. Silakan buat deposit baru.
-                </p>
-              )}
-            </div>
-
-            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 space-y-1">
-              <p className="text-xs text-yellow-800 font-medium">⚠️ Perhatian</p>
-              <ul className="text-xs text-yellow-700 space-y-0.5 list-disc pl-4">
-                <li>Kirim tepat sesuai jumlah yang tertera</li>
-                <li>
-                  Pastikan jaringan yang digunakan adalah <strong>{depositData.network}</strong>
-                </li>
-                <li>Alamat hanya berlaku selama waktu yang ditentukan</li>
-                <li>Saldo otomatis masuk setelah konfirmasi jaringan</li>
-              </ul>
-            </div>
-
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Menunggu pembayaran...
-            </div>
-
-            {/* Cancel Deposit */}
-            <div className="space-y-3 pt-2">
-              <p className="text-xs text-muted-foreground text-center">
-                Salah input? Anda dapat membatalkan deposit ini dan membuat yang baru.
-              </p>
-              <p className="text-xs text-destructive/80 text-center font-medium">
-                ⚠️ Jika Anda sudah mengirim kripto ke alamat di atas, pembayaran tetap akan diproses
-                dan saldo Anda akan bertambah.
-              </p>
-              <button
-                onClick={handleCancelDeposit}
-                disabled={cancelling}
-                className="h-9 w-full rounded-lg border border-destructive/30 text-destructive text-sm hover:bg-destructive/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {cancelling ? "Membatalkan..." : "Batalkan Deposit"}
-              </button>
-            </div>
-          </div>
+          <PaymentWaiting
+            depositData={depositData}
+            countdown={countdown}
+            countdownTotal={countdownTotal}
+            copied={copied}
+            onCopyAddress={handleCopyAddress}
+            cancelling={cancelling}
+            onCancelDeposit={handleCancelDeposit}
+          />
         )}
 
         {/* STEP 2: Incomplete data guard — fallback to step 1 */}
