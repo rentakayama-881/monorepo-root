@@ -1,4 +1,3 @@
-export const MARKET_PAGE_SIZE = 10;
 export const JAKARTA_TIMEZONE = "Asia/Jakarta";
 
 export function getCheckoutConfirmSeconds() {
@@ -110,6 +109,10 @@ export function toDisplayAccount(item, index) {
     parseUnixSeconds(item?.update_stat_date) ||
     parseUnixSeconds(item?.edit_date);
 
+  const subscription = item?.chatgpt_subscription || "";
+  const country = item?.chatgpt_country || "";
+  const tier = item?.openai_tier || "";
+
   return {
     id: String(id),
     title: pickLatinTitle(item, index),
@@ -117,7 +120,9 @@ export function toDisplayAccount(item, index) {
     priceSourceSymbol: item?.price_source_symbol ?? "",
     priceSourceCurrency: item?.price_source_currency ?? "",
     priceIDR: item?.price_idr ?? 0,
-    status: item?.item_state ?? item?.status ?? item?.state ?? item?.availability ?? "Tersedia",
+    subscription,
+    country,
+    tier,
     seller,
     canBuy: normalizeBool(item?.canBuyItem) && hasIDRPrice && !isFallbackID,
     idValid: !isFallbackID,
