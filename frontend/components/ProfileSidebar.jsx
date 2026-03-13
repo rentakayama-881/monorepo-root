@@ -389,7 +389,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
         <div className="shrink-0 p-3 pb-0">
           <div className="flex items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="relative">
+              <div className="relative shrink-0">
                 <Avatar src={user.avatar_url} name={displayName} size="sm" />
                 {/* Status indicator */}
                 <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-success ring-2 ring-card" />

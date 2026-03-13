@@ -32,29 +32,29 @@ function FallbackUserIcon({ className = "" }) {
  * @param {boolean} props.showStatus - Show status indicator (default: false)
  * @param {string} props.className - Additional classes
  */
-export default function Avatar({ 
-  src, 
-  name, 
-  size = "md", 
+export default function Avatar({
+  src,
+  name,
+  size = "md",
   status = null,
   showStatus = false,
-  className = "" 
+  className = "",
 }) {
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const avatarUrl = resolveAvatarSrc(src);
   const initials = getInitials(name);
   const bgColor = getAvatarColor(name);
 
   const sizes = {
-    xxs: "h-5 w-5 text-[9px]",      // 20px - untuk inline mentions
-    xs: "h-6 w-6 text-[10px]",       // 24px - untuk header, Validation Case Index
-    sm: "h-8 w-8 text-xs",           // 32px - untuk Case Log rows / tables
-    md: "h-10 w-10 text-sm",         // 40px - default
-    lg: "h-16 w-16 text-lg",         // 64px - untuk cards/hero
-    xl: "h-20 w-20 text-xl",         // 80px - untuk profile preview
-    "2xl": "h-64 w-64 text-5xl",     // 256px - untuk profile page
+    xxs: "h-5 w-5 text-[9px]", // 20px - untuk inline mentions
+    xs: "h-6 w-6 text-[10px]", // 24px - untuk header, Validation Case Index
+    sm: "h-8 w-8 text-xs", // 32px - untuk Case Log rows / tables
+    md: "h-10 w-10 text-sm", // 40px - default
+    lg: "h-16 w-16 text-lg", // 64px - untuk cards/hero
+    xl: "h-20 w-20 text-xl", // 80px - untuk profile preview
+    "2xl": "h-64 w-64 text-5xl", // 256px - untuk profile page
   };
 
   const statusSizes = {
@@ -76,53 +76,50 @@ export default function Avatar({
   const sizeClass = sizes[size] || sizes.md;
   const statusSizeClass = statusSizes[size] || statusSizes.md;
 
-  const avatarContent = avatarUrl && !imageError ? (
-    <div className="relative">
-      {isLoading && (
-        <div
+  const avatarContent =
+    avatarUrl && !imageError ? (
+      <div className="relative shrink-0">
+        {isLoading && (
+          <div
+            className={cn("absolute inset-0 rounded-full bg-secondary animate-pulse", sizeClass)}
+          />
+        )}
+        <img
+          src={avatarUrl}
+          alt={name || "Avatar"}
           className={cn(
-            "absolute inset-0 rounded-full bg-secondary animate-pulse",
-            sizeClass
+            "aspect-square rounded-full border bg-secondary object-cover",
+            sizeClass,
+            isLoading && "opacity-0",
+            className
           )}
+          onLoad={() => setIsLoading(false)}
+          onError={() => {
+            setImageError(true);
+            setIsLoading(false);
+          }}
         />
-      )}
-      <img
-        src={avatarUrl}
-        alt={name || "Avatar"}
+      </div>
+    ) : (
+      <div
         className={cn(
-          "rounded-full border bg-secondary object-cover",
+          "flex shrink-0 items-center justify-center rounded-full border border-border font-semibold text-white select-none aspect-square",
           sizeClass,
-          isLoading && "opacity-0",
           className
         )}
-        onLoad={() => setIsLoading(false)}
-        onError={() => {
-          setImageError(true);
-          setIsLoading(false);
-        }}
-      />
-    </div>
-  ) : (
-    // Show initials with colored background
-    <div
-      className={cn(
-        "flex items-center justify-center rounded-full border border-border font-semibold text-white select-none",
-        sizeClass,
-        className
-      )}
-      style={{ backgroundColor: bgColor }}
-      title={name}
-    >
-      {initials ? initials : <FallbackUserIcon />}
-    </div>
-  );
+        style={{ backgroundColor: bgColor }}
+        title={name}
+      >
+        {initials ? initials : <FallbackUserIcon />}
+      </div>
+    );
 
   // Wrap in container for status indicator
   if (showStatus && status) {
     return (
       <div className="relative inline-block">
         {avatarContent}
-        <span 
+        <span
           className={cn(
             "absolute bottom-0 right-0 rounded-full ring-background",
             statusSizeClass,
