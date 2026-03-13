@@ -107,6 +107,13 @@ This document lists all required and optional environment variables for the AIVa
 |----------|-------------|---------|
 | `FEATURE_SERVICE_URL` | URL of ASP.NET Feature Service | `http://localhost:5000` |
 
+### Inter-Service Authentication
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SERVICE_TOKEN` | Token for authenticating outgoing calls from Go Backend to Feature Service. Feature Service validates this on incoming requests via `X-Service-Token` header. **Required in production.** | `dev-service-token` (dev only) |
+| `INTERNAL_API_KEY` | Token for authenticating incoming callbacks from Feature Service to Go Backend `/api/internal/*` endpoints. Sent via `X-Internal-Api-Key` header. **Required in production.** | - |
+
 ---
 
 ## 🔷 Feature Service (`feature-service/`)
@@ -146,6 +153,9 @@ This document lists all required and optional environment variables for the AIVa
 | `ADMIN_JWT_SECRET` | Admin JWT secret (must match Go backend) | - |
 | `REDIS__CONNECTIONSTRING` | Redis connection string/URL (recommended: `rediss://...`) | - |
 | `REDIS__REQUIRETLS` | Require TLS for non-local Redis endpoints | `true` |
+| `SERVICE_TOKEN` | Token for validating incoming requests from Go Backend (checked via `X-Service-Token` header). Must match Go Backend's `SERVICE_TOKEN`. **Required in production.** | - |
+| `GOBACKEND__BASEURL` | Base URL of Go Backend for internal callbacks | `http://127.0.0.1:8080` |
+| `GOBACKEND__INTERNALAPIKEY` | Token sent as `X-Internal-Api-Key` header when making callbacks to Go Backend `/api/internal/*` endpoints. Must match Go Backend's `INTERNAL_API_KEY`. **Required in production.** | - |
 
 ---
 
@@ -181,6 +191,8 @@ This document lists all required and optional environment variables for the AIVa
 4. **ADMIN_JWT_SECRET** is used by Go backend to sign admin tokens and by Feature Service to verify them
 5. **Minimum key lengths**: JWT secrets should be at least 32 characters
 6. **In production**: Use environment variables directly, not `.env` files
+7. **SERVICE_TOKEN must match** between Go Backend (outgoing) and Feature Service (incoming validation)
+8. **INTERNAL_API_KEY (Go Backend) must match GOBACKEND__INTERNALAPIKEY (Feature Service)** for internal service callbacks
 
 ---
 
@@ -210,3 +222,5 @@ cp frontend/.env.example frontend/.env.local
 5. ✅ Set GIN_MODE=release for Go backend
 6. ✅ Set ASPNETCORE_ENVIRONMENT=Production for Feature Service
 7. ✅ Configure SSL/TLS for all services
+8. ✅ Set SERVICE_TOKEN (same value on Go Backend and Feature Service)
+9. ✅ Set INTERNAL_API_KEY on Go Backend and GOBACKEND__INTERNALAPIKEY on Feature Service (same value)

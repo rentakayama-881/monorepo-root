@@ -183,7 +183,7 @@ jobs:
             chmod +x "$APP_DIR/app"
 
             restart_backend_service() {
-              for svc in alephdraad-backend.service backend.service aivalid-backend; do
+              for svc in aivalid-backend alephdraad-backend.service backend.service; do
                 if sudo systemctl restart "$svc" >/dev/null 2>&1; then
                   if sudo systemctl is-active --quiet "$svc"; then
                     echo "✅ Restarted service: $svc"
@@ -191,7 +191,7 @@ jobs:
                   fi
                 fi
               done
-              echo "❌ Failed to restart known backend services (alephdraad-backend.service/backend.service/aivalid-backend)"
+              echo "❌ Failed to restart known backend services (aivalid-backend/alephdraad-backend.service/backend.service)"
               return 1
             }
 

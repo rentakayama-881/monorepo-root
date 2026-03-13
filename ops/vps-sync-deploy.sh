@@ -13,9 +13,9 @@ ensure_command curl
 
 TARGET_REF=""
 REPO_DIR="${OPS_REPO_DIR:-$OPS_ROOT}"
-BACKUP_ROOT="${OPS_BACKUP_ROOT:-/opt/alephdraad/backups}"
-BACKEND_BINARY_PATH="${BACKEND_BINARY_PATH:-/opt/alephdraad/backend/app}"
-FEATURE_DEPLOY_DIR="${FEATURE_DEPLOY_DIR:-/opt/alephdraad/feature-service}"
+BACKUP_ROOT="${OPS_BACKUP_ROOT:-/opt/aivalid/backups}"
+BACKEND_BINARY_PATH="${BACKEND_BINARY_PATH:-/opt/aivalid/backend/app}"
+FEATURE_DEPLOY_DIR="${FEATURE_DEPLOY_DIR:-/opt/aivalid/feature-service}"
 BACKEND_SYSTEMD_UNITS="${BACKEND_SYSTEMD_UNITS:-alephdraad-backend.service backend.service aivalid-backend}"
 FEATURE_SYSTEMD_UNITS="${FEATURE_SYSTEMD_UNITS:-feature-service.service featureservice.service feature-service}"
 DEPLOY_ENV="prod"

@@ -90,7 +90,7 @@ Never trust hardcoded numbers — always discover state dynamically.
 | Service | Stack | Domain | Deploy |
 |---------|-------|--------|--------|
 | Go Backend (`backend/`) | Gin + Ent ORM + PostgreSQL | Auth, users, cases, workflow, market proxy | VPS systemd → :8080 |
-| Feature Service (`feature-service/`) | .NET 9 + MongoDB + Redis | Finance (wallets, escrow, disputes), PQC keys | VPS systemd → :5000 |
+| Feature Service (`feature-service/`) | .NET 8 + MongoDB + Redis | Finance (wallets, escrow, disputes), PQC keys | VPS systemd → :5000 |
 | Frontend (`frontend/`) | Next.js App Router + React + SWR + Tailwind v4 | All user-facing UI | Vercel auto-deploy |
 
 ### Domains
@@ -102,9 +102,9 @@ Never trust hardcoded numbers — always discover state dynamically.
 
 ```
 Frontend ─── REST ──→ Go Backend       (lib/api.js: fetchJson, fetchJsonAuth)
-Frontend ─── REST ──→ Feature Service  (lib/featureApi.js: featureFetch, featureFetchAuth)
+Frontend ─── REST ──→ Feature Service  (lib/featureApi.js: fetchFeature, fetchFeatureAuth)
 Go Backend ── HTTP ──→ Feature Service (escrow operations)
-Feature Service ── callback ──→ Go Backend (/api/internal/* with SERVICE_TOKEN)
+Feature Service ── callback ──→ Go Backend (/api/internal/* with INTERNAL_API_KEY)
 ```
 
 ### Key Patterns
@@ -215,7 +215,7 @@ Scopes for conventional commits: `frontend`, `backend`, `feature-svc`, `ops`, `a
 | Logging | `lib/logger.js` — never raw `console.*` in app/lib code |
 | Images | Every `<img>` must have `alt` attribute |
 | SQL | Ent ORM only — never raw SQL |
-| Internal calls | Require `SERVICE_TOKEN` header |
+| Internal calls | Backend→Feature: `SERVICE_TOKEN`; Feature→Backend: `INTERNAL_API_KEY` (`X-Internal-Api-Key`) |
 | Wallet PIN | PBKDF2, 310K iterations, 4-fail lockout 4h |
 | Idempotency | Required for all financial write operations |
 

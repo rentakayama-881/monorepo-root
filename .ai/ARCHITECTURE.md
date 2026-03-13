@@ -35,9 +35,9 @@
 
 ```
 Frontend ─── REST ──→ Go Backend       (lib/api.js: fetchJson, fetchJsonAuth)
-Frontend ─── REST ──→ Feature Service  (lib/featureApi.js: featureFetch, featureFetchAuth)
+Frontend ─── REST ──→ Feature Service  (lib/featureApi.js: fetchFeature, fetchFeatureAuth)
 Go Backend ── HTTP ──→ Feature Service (escrow operations)
-Feature Service ── callback ──→ Go Backend (/api/internal/* with SERVICE_TOKEN)
+Feature Service ── callback ──→ Go Backend (/api/internal/* with INTERNAL_API_KEY)
 ```
 
 **Env vars for API base:**

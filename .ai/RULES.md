@@ -75,7 +75,7 @@ bash ops/quality-score.sh
 - Credibility stake: minimum Rp 100,000
 - User data: never expose emails, passwords, PINs, tokens in API responses
 - All financial operations through Feature Service, never Go backend directly
-- Internal service calls use `SERVICE_TOKEN` header
+- Backend→Feature Service calls use `SERVICE_TOKEN` header; Feature Service→Backend callbacks use `INTERNAL_API_KEY` (`X-Internal-Api-Key`)
 - Every `<img>` must have an `alt` attribute
 - All SEO pages need proper metadata (title, description, openGraph)
 - User-facing text must be in Indonesian

@@ -21,7 +21,7 @@
 - Check: any `dangerouslySetInnerHTML`, user-controlled `href`, SVG injection
 
 ## 4. SSRF (P0)
-- Internal callbacks use `SERVICE_TOKEN` header
+- Internal callbacks (Feature Service → Go Backend) use `X-Internal-Api-Key` header (env: `INTERNAL_API_KEY`)
 - Market proxy contacts external LZT Market API — ensure no user-controlled URL manipulation
 - Check: no user-controlled URLs in server-side fetch
 - Check: market proxy validates/sanitizes all parameters before forwarding
@@ -59,7 +59,7 @@
 
 ## 11. Over-Privileged Service Boundaries
 - Internal auth middleware: `backend/middleware/internal_auth.go`
-- Check: internal endpoints return 401 without SERVICE_TOKEN
+- Check: internal endpoints return 401 without valid `INTERNAL_API_KEY`
 
 ## 12. Sensitive Logging
 - No request body logging for financial endpoints
