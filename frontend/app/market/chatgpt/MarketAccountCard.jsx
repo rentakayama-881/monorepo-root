@@ -92,7 +92,7 @@ export function MarketAccountCard({ item, checkingOut, onDetail, onBuy }) {
       </div>
 
       {!item.idValid ? (
-        <div className="mt-1.5 rounded-[var(--radius)] bg-warning/10 px-2.5 py-1 text-[10px] text-warning-foreground">
+        <div className="mt-1.5 rounded-[var(--radius)] bg-warning/10 px-2.5 py-1 text-[10px] text-foreground">
           ID akun belum valid. Silakan muat ulang daftar.
         </div>
       ) : null}

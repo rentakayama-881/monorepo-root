@@ -20,7 +20,7 @@ export function CheckoutConfirmModal({ item, countdown, onCancel, onConfirm, dis
             dengan harga
             <span className="font-medium text-foreground"> {item.displayPriceIDR}</span>.
           </p>
-          <p className="mt-2 text-xs text-warning-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             Untuk mencegah pembelian tidak sengaja, tombol konfirmasi akan aktif setelah hitung
             mundur selesai.
           </p>
@@ -70,7 +70,7 @@ export function CheckoutBlockingModal({ message }) {
             </span>
           </div>
           <p className="mt-3 text-sm text-muted-foreground">{message}</p>
-          <p className="mt-2 text-xs text-warning-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             Mohon jangan menutup atau me-refresh halaman hingga proses selesai.
           </p>
         </div>
@@ -97,9 +97,7 @@ export function CheckoutFeedbackModal({ feedback, onClose, onRefresh, refreshing
           <div
             className={cn(
               "rounded-[var(--radius)] px-3 py-2.5 text-sm leading-relaxed",
-              isWarning
-                ? "bg-warning/10 text-warning-foreground"
-                : "bg-destructive/10 text-destructive"
+              isWarning ? "bg-warning/10 text-foreground" : "bg-destructive/10 text-destructive"
             )}
           >
             {feedback.message}
