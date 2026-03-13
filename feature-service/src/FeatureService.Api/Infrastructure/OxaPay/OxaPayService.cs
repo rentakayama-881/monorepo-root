@@ -15,12 +15,6 @@ public interface IOxaPayService
     Task<OxaPayPayoutResponse> CreatePayoutAsync(OxaPayPayoutRequest request);
 
     /// <summary>
-    /// Get the current price of a crypto currency in IDR.
-    /// Returns the price of 1 unit of the currency in IDR.
-    /// </summary>
-    Task<decimal?> GetCryptoPriceInIdrAsync(string cryptoCurrency);
-
-    /// <summary>
     /// Verify a payment by calling OxaPay GET /payment/{trackId}.
     /// Returns the actual payment status from OxaPay, or null if verification fails.
     /// </summary>
@@ -123,40 +117,6 @@ public class OxaPayService : IOxaPayService
         }
 
         return result;
-    }
-
-    public async Task<decimal?> GetCryptoPriceInIdrAsync(string cryptoCurrency)
-    {
-        var coinId = cryptoCurrency.ToUpperInvariant() switch
-        {
-            "USDT" => "tether",
-            "TON" => "the-open-network",
-            _ => null
-        };
-
-        if (coinId == null) return null;
-
-        try
-        {
-            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            var url = $"https://api.coingecko.com/api/v3/simple/price?ids={coinId}&vs_currencies=idr";
-            var response = await httpClient.GetStringAsync(url);
-            var doc = System.Text.Json.JsonDocument.Parse(response);
-
-            if (doc.RootElement.TryGetProperty(coinId, out var coinObj) &&
-                coinObj.TryGetProperty("idr", out var idrPrice))
-            {
-                return idrPrice.GetDecimal();
-            }
-
-            _logger.LogWarning("CoinGecko price not found for {CoinId}", coinId);
-            return null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to fetch crypto price for {Currency} from CoinGecko", cryptoCurrency);
-            return null;
-        }
     }
 
     public async Task<OxaPayPaymentInfo?> VerifyPaymentAsync(string trackId)

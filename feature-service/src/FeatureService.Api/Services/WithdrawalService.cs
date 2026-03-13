@@ -22,6 +22,7 @@ public class WithdrawalService : IWithdrawalService
     private readonly IMongoCollection<Withdrawal> _withdrawals;
     private readonly IWalletService _walletService;
     private readonly IOxaPayService _oxaPayService;
+    private readonly ICryptoPricingService _cryptoPricingService;
     private readonly OxaPaySettings _oxaPaySettings;
     private readonly ILogger<WithdrawalService> _logger;
 
@@ -42,12 +43,14 @@ public class WithdrawalService : IWithdrawalService
         MongoDbContext dbContext,
         IWalletService walletService,
         IOxaPayService oxaPayService,
+        ICryptoPricingService cryptoPricingService,
         OxaPaySettings oxaPaySettings,
         ILogger<WithdrawalService> logger)
     {
         _withdrawals = dbContext.GetCollection<Withdrawal>("withdrawals");
         _walletService = walletService;
         _oxaPayService = oxaPayService;
+        _cryptoPricingService = cryptoPricingService;
         _oxaPaySettings = oxaPaySettings;
         _logger = logger;
     }
@@ -131,8 +134,8 @@ public class WithdrawalService : IWithdrawalService
         decimal cryptoAmount;
         try
         {
-            // Convert IDR to crypto amount
-            var priceInIdr = await _oxaPayService.GetCryptoPriceInIdrAsync(currency);
+            // Convert IDR to crypto amount using multi-source pricing
+            var priceInIdr = await _cryptoPricingService.GetPriceInIdrAsync(currency);
             if (priceInIdr == null || priceInIdr <= 0)
             {
                 _logger.LogError("Failed to get crypto price for {Currency}", currency);

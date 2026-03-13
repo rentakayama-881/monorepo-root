@@ -367,6 +367,9 @@ try
         client.Timeout = TimeSpan.FromSeconds(oxaPaySettings.TimeoutSeconds);
     });
 
+    // Crypto pricing service (multi-source: Binance + CoinGecko + cache)
+    builder.Services.AddSingleton<ICryptoPricingService, CryptoPricingService>();
+
     // Deposit & Withdrawal services (using OxaPay)
     builder.Services.AddScoped<IDepositService, DepositService>();
     builder.Services.AddScoped<IWithdrawalService, WithdrawalService>();
