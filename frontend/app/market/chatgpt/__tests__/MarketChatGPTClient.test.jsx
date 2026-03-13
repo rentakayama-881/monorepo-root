@@ -203,4 +203,23 @@ describe("MarketChatGPTClient", () => {
       expect(screen.queryByText("Detail Akun")).not.toBeInTheDocument();
     });
   });
+
+  it("menampilkan empty state tanpa crash saat search tidak menemukan hasil", async () => {
+    render(<MarketChatGPTClient />);
+
+    await screen.findByText("Menampilkan 1-1 dari 1 akun");
+
+    const searchInput = screen.getByPlaceholderText(
+      "Cari judul, penjual, status, atau waktu upload..."
+    );
+    fireEvent.change(searchInput, { target: { value: "xyznotfound999" } });
+
+    expect(await screen.findByText("Belum ada akun tersedia")).toBeInTheDocument();
+    expect(screen.getByText("Coba ubah kata kunci pencarian Anda.")).toBeInTheDocument();
+
+    const clearButton = screen.getByRole("button", { name: "Hapus pencarian" });
+    fireEvent.click(clearButton);
+
+    expect(await screen.findByText("Menampilkan 1-1 dari 1 akun")).toBeInTheDocument();
+  });
 });

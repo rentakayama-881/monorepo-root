@@ -27,7 +27,24 @@ export default function EmptyState({ icon, title, description, action, compact =
           {description}
         </p>
       ) : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+      {action ? (
+        <div className="mt-4">
+          {typeof action === "object" &&
+          action !== null &&
+          !("$$typeof" in action) &&
+          action.label ? (
+            <button
+              type="button"
+              onClick={action.onClick}
+              className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40"
+            >
+              {action.label}
+            </button>
+          ) : (
+            action
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

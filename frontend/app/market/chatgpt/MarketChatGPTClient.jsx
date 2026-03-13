@@ -240,9 +240,23 @@ export default function MarketChatGPTClient() {
                 : "Belum ada akun yang dijual saat ini. Cek kembali nanti."
             }
             action={
-              query
-                ? { label: "Hapus pencarian", onClick: () => setQuery("") }
-                : { label: "Muat ulang", onClick: () => void handleRefreshListings() }
+              query ? (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40"
+                >
+                  Hapus pencarian
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void handleRefreshListings()}
+                  className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40"
+                >
+                  Muat ulang
+                </button>
+              )
             }
           />
         ) : (
