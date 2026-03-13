@@ -1,4 +1,5 @@
 import Portal from "@/components/ui/Portal";
+import { cn } from "@/lib/utils";
 
 export function CheckoutConfirmModal({ item, countdown, onCancel, onConfirm, disabled }) {
   if (!item) return null;
@@ -94,11 +95,12 @@ export function CheckoutFeedbackModal({ feedback, onClose, onRefresh, refreshing
           className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-2xl"
         >
           <div
-            className={`rounded-xl px-4 py-3 text-sm leading-relaxed ${
+            className={cn(
+              "rounded-[var(--radius)] px-3 py-2.5 text-sm leading-relaxed",
               isWarning
                 ? "bg-warning/10 text-warning-foreground"
                 : "bg-destructive/10 text-destructive"
-            }`}
+            )}
           >
             {feedback.message}
           </div>

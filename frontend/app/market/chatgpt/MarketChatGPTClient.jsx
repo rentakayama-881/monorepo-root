@@ -143,41 +143,44 @@ export default function MarketChatGPTClient() {
     <div className="space-y-6 [scrollbar-gutter:stable]">
       <header className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Akun ChatGPT</h1>
+          <h1 className="text-xl font-semibold text-foreground">Akun ChatGPT</h1>
           {isLive ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600">
+            <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
               <span
-                className="inline-block size-1.5 rounded-full bg-emerald-500 animate-pulse"
+                className="inline-block size-1.5 rounded-full bg-success animate-pulse"
                 aria-hidden="true"
               />
               Live
             </span>
           ) : null}
         </div>
-        <p className="text-sm text-muted-foreground">
-          Temukan akun ChatGPT premium dengan harga terbaik.
+        <p className="text-xs text-muted-foreground">
+          Catatan penting: apabila Anda melihat harga yang tampak tidak wajar, kemungkinan besar itu
+          adalah harga sementara (placeholder) sebelum penjual menyelesaikan kesiapan akun untuk
+          transaksi final.
         </p>
       </header>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 sm:max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative flex-1 sm:max-w-sm">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cari akun..."
-            className="w-full rounded-xl bg-muted/50 py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:bg-muted/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label="Cari akun"
+            className="w-full rounded-[var(--radius)] bg-muted/50 py-1.5 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground transition-colors focus:bg-muted/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => void handleRefreshListings()}
             disabled={refreshingListings}
-            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius)] px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            <RefreshCw className={cn("size-4", refreshingListings && "animate-spin")} />
+            <RefreshCw className={cn("size-3.5", refreshingListings && "animate-spin")} />
             <span className="hidden sm:inline">
               {refreshingListings ? "Memuat ulang..." : "Muat ulang"}
             </span>
@@ -222,7 +225,7 @@ export default function MarketChatGPTClient() {
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="rounded-xl px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="rounded-[var(--radius)] px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 Hapus pencarian
               </button>
@@ -230,7 +233,7 @@ export default function MarketChatGPTClient() {
               <button
                 type="button"
                 onClick={() => void handleRefreshListings()}
-                className="rounded-xl px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="rounded-[var(--radius)] px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 Muat ulang
               </button>

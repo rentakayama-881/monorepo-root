@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatUnixDate, boolText } from "./marketChatGPTUtils";
 
@@ -7,7 +8,7 @@ export function ChatGPTIcon({ className }) {
       viewBox="0 0 41 41"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("size-8 shrink-0", className)}
+      className={cn("size-5 shrink-0", className)}
       aria-hidden="true"
     >
       <path
@@ -21,7 +22,7 @@ export function ChatGPTIcon({ className }) {
 function SubscriptionBadge({ label }) {
   if (!label) return null;
   return (
-    <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-600">
+    <span className="inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">
       {label}
     </span>
   );
@@ -30,7 +31,7 @@ function SubscriptionBadge({ label }) {
 function InfoPill({ children }) {
   if (!children) return null;
   return (
-    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+    <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
       {children}
     </span>
   );
@@ -40,40 +41,40 @@ export function MarketAccountCard({ item, checkingOut, onDetail, onBuy }) {
   return (
     <article
       className={cn(
-        "group relative rounded-xl bg-card p-4 transition-all",
-        "hover:bg-accent/40 hover:shadow-lg",
+        "group relative rounded-[var(--radius)] bg-card p-3 transition-all",
+        "hover:bg-accent/40 hover:shadow-md",
         "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
       )}
     >
-      <div className="flex gap-3">
+      <div className="flex gap-2.5">
         <ChatGPTIcon className="mt-0.5" />
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold leading-snug text-foreground line-clamp-2">
+          <h3 className="text-xs font-semibold leading-snug text-foreground break-words">
             {item.title}
           </h3>
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <div className="mt-1 flex flex-wrap items-center gap-1">
             <SubscriptionBadge label={item.subscription} />
             {item.country ? <InfoPill>{item.country}</InfoPill> : null}
             {item.tier ? <InfoPill>Tier {item.tier}</InfoPill> : null}
           </div>
 
-          <div className="mt-3 flex items-end justify-between gap-3">
+          <div className="mt-2 flex items-end justify-between gap-2">
             <div>
-              <div className="text-lg font-bold text-foreground">{item.displayPriceIDR}</div>
-              <div className="mt-0.5 text-xs text-muted-foreground">
+              <div className="text-sm font-bold text-foreground">{item.displayPriceIDR}</div>
+              <div className="mt-0.5 text-[10px] text-muted-foreground">
                 {item.seller !== "-" ? `${item.seller}` : ""}
                 {item.seller !== "-" && item.uploadedAtLabel !== "-" ? " · " : ""}
                 {item.uploadedAtLabel !== "-" ? item.uploadedAtLabel : ""}
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={onDetail}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="rounded-[var(--radius)] px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 Detail
               </button>
@@ -81,7 +82,7 @@ export function MarketAccountCard({ item, checkingOut, onDetail, onBuy }) {
                 type="button"
                 onClick={onBuy}
                 disabled={Boolean(checkingOut) || !item.canBuy}
-                className="rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-[0.97] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="rounded-[var(--radius)] bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-[0.97] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 {checkingOut === item.id ? "Memproses..." : item.canBuy ? "Beli" : "Belum siap"}
               </button>
@@ -91,7 +92,7 @@ export function MarketAccountCard({ item, checkingOut, onDetail, onBuy }) {
       </div>
 
       {!item.idValid ? (
-        <div className="mt-2 rounded-lg bg-warning/10 px-3 py-1.5 text-[11px] text-warning-foreground">
+        <div className="mt-1.5 rounded-[var(--radius)] bg-warning/10 px-2.5 py-1 text-[10px] text-warning-foreground">
           ID akun belum valid. Silakan muat ulang daftar.
         </div>
       ) : null}
@@ -101,23 +102,23 @@ export function MarketAccountCard({ item, checkingOut, onDetail, onBuy }) {
 
 export function MarketAccountCardSkeleton() {
   return (
-    <div className="rounded-xl bg-card p-4" aria-hidden="true">
-      <div className="flex gap-3">
-        <div className="size-8 shrink-0 animate-pulse rounded-lg bg-muted" />
-        <div className="min-w-0 flex-1 space-y-3">
-          <div className="h-4 w-3/4 animate-pulse rounded-md bg-muted" />
-          <div className="flex gap-1.5">
-            <div className="h-5 w-16 animate-pulse rounded-full bg-muted" />
-            <div className="h-5 w-12 animate-pulse rounded-full bg-muted" />
+    <div className="rounded-[var(--radius)] bg-card p-3" aria-hidden="true">
+      <div className="flex gap-2.5">
+        <div className="size-5 shrink-0 animate-pulse rounded bg-muted" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="h-3.5 w-3/4 animate-pulse rounded bg-muted" />
+          <div className="flex gap-1">
+            <div className="h-4 w-14 animate-pulse rounded-full bg-muted" />
+            <div className="h-4 w-10 animate-pulse rounded-full bg-muted" />
           </div>
           <div className="flex items-end justify-between">
-            <div className="space-y-1.5">
-              <div className="h-6 w-28 animate-pulse rounded-md bg-muted" />
-              <div className="h-3 w-40 animate-pulse rounded-md bg-muted" />
+            <div className="space-y-1">
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+              <div className="h-2.5 w-32 animate-pulse rounded bg-muted" />
             </div>
-            <div className="flex gap-1.5">
-              <div className="h-8 w-16 animate-pulse rounded-lg bg-muted" />
-              <div className="h-8 w-14 animate-pulse rounded-lg bg-muted" />
+            <div className="flex gap-1">
+              <div className="h-6 w-14 animate-pulse rounded-[var(--radius)] bg-muted" />
+              <div className="h-6 w-12 animate-pulse rounded-[var(--radius)] bg-muted" />
             </div>
           </div>
         </div>
@@ -157,46 +158,40 @@ export function SpecDrawer({ item, onClose }) {
         aria-label="Detail akun"
         className="fixed z-[110] w-full bg-card shadow-2xl animate-slide-up md:top-0 md:right-0 md:h-full md:w-96 md:animate-slide-in-from-right bottom-0 left-0 max-h-[82vh] md:max-h-none rounded-t-2xl md:rounded-none"
       >
-        <div className="flex items-start justify-between px-4 py-3">
+        <div className="flex items-start justify-between px-3 py-2.5">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <ChatGPTIcon className="size-6" />
-              <h2 className="truncate text-sm font-semibold text-foreground">{item.title}</h2>
+            <div className="flex items-center gap-1.5">
+              <ChatGPTIcon className="size-4" />
+              <h2 className="truncate text-xs font-semibold text-foreground">{item.title}</h2>
             </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              <span className="text-sm font-bold text-foreground">{item.displayPriceIDR}</span>
-              <span className="text-xs text-muted-foreground">· {item.seller}</span>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <span className="text-xs font-bold text-foreground">{item.displayPriceIDR}</span>
+              {item.seller !== "-" ? (
+                <span className="text-[10px] text-muted-foreground">· {item.seller}</span>
+              ) : null}
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="rounded-[var(--radius)] p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             aria-label="Tutup"
           >
-            <svg
-              className="size-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
+            <X className="size-4" />
           </button>
         </div>
 
         <div className="h-px bg-border/50" />
 
-        <div className="h-[calc(82vh-80px)] md:h-[calc(100vh-80px)] overflow-auto p-4">
-          <div className="space-y-1">
+        <div className="h-[calc(82vh-68px)] md:h-[calc(100vh-68px)] overflow-auto p-3">
+          <div className="space-y-0.5">
             {specs.map(([label, value]) => (
               <div
                 key={label}
-                className="flex items-baseline justify-between gap-4 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/30"
+                className="flex items-baseline justify-between gap-3 rounded-[var(--radius)] px-2.5 py-2 transition-colors hover:bg-muted/30"
               >
-                <span className="text-xs text-muted-foreground">{label}</span>
-                <span className="text-sm font-medium text-foreground text-right break-all">
+                <span className="text-[10px] text-muted-foreground">{label}</span>
+                <span className="text-xs font-medium text-foreground text-right break-all">
                   {String(value)}
                 </span>
               </div>
