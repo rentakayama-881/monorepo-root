@@ -41,8 +41,8 @@ const CRYPTO_CURRENCIES = [
   },
 ];
 
-const quickAmounts = [50000, 100000, 200000, 500000, 1000000];
-const minWithdraw = 50000;
+const quickAmounts = [10000, 50000, 100000, 200000, 500000, 1000000];
+const minWithdraw = 10000;
 const feePercent = 0.02;
 
 function normalizeWallet(payload) {
@@ -380,14 +380,14 @@ export default function WithdrawPage() {
               </div>
             </div>
 
-            {parsedAmount >= minWithdraw && (
+            {parsedAmount > 0 && (
               <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Jumlah penarikan</span>
                   <span>Rp{parsedAmount.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Biaya layanan</span>
+                  <span className="text-muted-foreground">Biaya layanan (2%)</span>
                   <span>Rp{fee.toLocaleString("id-ID")}</span>
                 </div>
                 <hr className="border-border" />
@@ -402,9 +402,17 @@ export default function WithdrawPage() {
               </div>
             )}
 
-            {totalDeduction > wallet.balance && parsedAmount > 0 && (
+            {parsedAmount > 0 && parsedAmount < minWithdraw && (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-sm text-amber-700 dark:text-amber-400">
+                Minimal penarikan Rp{minWithdraw.toLocaleString("id-ID")}
+              </div>
+            )}
+
+            {parsedAmount >= minWithdraw && totalDeduction > wallet.balance && (
               <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-                Saldo tidak cukup. Diperlukan Rp{totalDeduction.toLocaleString("id-ID")}
+                Saldo tidak cukup. Diperlukan Rp{totalDeduction.toLocaleString("id-ID")} (termasuk
+                fee 2% Rp{fee.toLocaleString("id-ID")}). Saldo Anda: Rp
+                {wallet.balance.toLocaleString("id-ID")}
               </div>
             )}
 

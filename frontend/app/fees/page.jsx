@@ -48,26 +48,16 @@ const feeRows = [
   },
   {
     type: "Penarikan Dana",
-    fee: "Rp 7.500",
-    notes: "Biaya flat per proses penarikan ke rekening bank.",
+    fee: "2%",
+    notes: "Biaya layanan dari jumlah penarikan ke crypto wallet.",
   },
 ];
 
 const withdrawalTiers = [
   {
-    tier: "Pengguna Baru",
-    criteria: "Total transaksi < Rp 1.000.000",
+    tier: "Semua Pengguna",
+    criteria: "-",
     min: "Rp 10.000",
-  },
-  {
-    tier: "Pengguna Aktif",
-    criteria: "Total transaksi >= Rp 1.000.000",
-    min: "Rp 400.000",
-  },
-  {
-    tier: "Pengguna Premium",
-    criteria: "Total transaksi >= Rp 30.000.000",
-    min: "Rp 900.000",
   },
 ];
 
@@ -161,7 +151,8 @@ export default function FeesPage() {
               alignRight={[2]}
             />
             <p className="mt-3 text-xs text-muted-foreground">
-              Kebijakan minimum penarikan mengikuti level aktivitas transaksi pengguna.
+              Minimal penarikan adalah Rp 10.000. Biaya layanan 2% dipotong dari saldo di atas
+              jumlah penarikan.
             </p>
           </article>
         </section>

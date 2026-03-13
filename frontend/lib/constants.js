@@ -108,7 +108,7 @@ export const VALIDATION = {
     MAX_AMOUNT: 100000000,
   },
   WITHDRAW: {
-    MIN_AMOUNT: 50000,
+    MIN_AMOUNT: 10000,
     MAX_AMOUNT: 100000000,
   },
 };
@@ -116,7 +116,7 @@ export const VALIDATION = {
 // Quick Amount Options
 export const QUICK_AMOUNTS = {
   deposit: [50000, 100000, 200000, 500000, 1000000],
-  withdraw: [100000, 250000, 500000, 1000000],
+  withdraw: [10000, 50000, 100000, 250000, 500000, 1000000],
 };
 
 // Available Banks for Withdrawal
@@ -167,7 +167,4 @@ export const STORAGE_KEYS = {
 };
 
 // Locked Categories (intake closed; cannot create new Validation Cases)
-export const LOCKED_CATEGORIES = [
-  "kolaborator-phd",
-  "drama-korea",
-];
+export const LOCKED_CATEGORIES = ["kolaborator-phd", "drama-korea"];
