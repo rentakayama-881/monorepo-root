@@ -135,6 +135,13 @@ export default function RootLayout({ children }) {
         />
         <link
           rel="preload"
+          href="/fonts/ibm-plex/sans/IBMPlexSans-SemiBold.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
           href="/fonts/ibm-plex/sans/IBMPlexSans-Regular.woff2"
           as="font"
           type="font/woff2"

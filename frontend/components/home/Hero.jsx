@@ -37,7 +37,7 @@ export default function Hero() {
       <div className="container relative z-10 py-16 md:py-24">
         <div className="mx-auto max-w-4xl">
           {/* Badge */}
-          <div className="flex justify-center animate-slide-up">
+          <div className="flex justify-center hero-animated animate-slide-up">
             <span className="rainbow-border inline-flex items-center gap-2 rounded-sm px-4 py-1.5 text-xs font-medium text-foreground">
               Platform Validasi AI oleh Ahli Manusia
             </span>
@@ -45,7 +45,7 @@ export default function Hero() {
 
           {/* Heading */}
           <h1
-            className="mt-8 text-center text-balance animate-slide-up text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl"
+            className="mt-8 text-center text-balance hero-animated animate-slide-up text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl"
             style={{ animationDelay: "0.08s" }}
           >
             Validasi Karya AI oleh Ahli Manusia,
@@ -57,13 +57,13 @@ export default function Hero() {
 
           {/* Rainbow divider */}
           <div
-            className="mx-auto mt-6 rainbow-line-h w-24 rounded-full animate-slide-up"
+            className="mx-auto mt-6 rainbow-line-h w-24 rounded-full hero-animated animate-slide-up"
             style={{ animationDelay: "0.14s" }}
           />
 
           {/* Description */}
           <p
-            className="mx-auto mt-6 max-w-2xl text-center text-balance text-base text-muted-foreground sm:text-lg animate-slide-up"
+            className="mx-auto mt-6 max-w-2xl text-center text-balance text-base text-muted-foreground sm:text-lg hero-animated animate-slide-up"
             style={{ animationDelay: "0.18s" }}
           >
             Pemilik case menetapkan bounty dan validator ahli mengerjakan validasi.
@@ -72,7 +72,7 @@ export default function Hero() {
 
           {/* CTA */}
           <div
-            className="mt-10 flex justify-center animate-slide-up"
+            className="mt-10 flex justify-center hero-animated animate-slide-up"
             style={{ animationDelay: "0.22s" }}
           >
             <Button
@@ -88,7 +88,7 @@ export default function Hero() {
 
           {/* Flow Steps — numbered circles connected by rainbow line */}
           <div
-            className="mt-16 animate-slide-up"
+            className="mt-16 hero-animated animate-slide-up"
             style={{ animationDelay: "0.3s", animationDuration: "0.8s" }}
           >
             <div className="relative">

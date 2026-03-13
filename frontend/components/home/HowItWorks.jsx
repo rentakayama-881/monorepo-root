@@ -17,7 +17,7 @@ const STEPS = [
 
 export default function HowItWorks() {
   return (
-    <section className="animate-fade-in">
+    <section>
       <div className="mb-8 flex flex-col gap-1">
         <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
           Cara kerja

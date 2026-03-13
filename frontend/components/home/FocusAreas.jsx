@@ -27,7 +27,7 @@ const AREAS = [
 
 export default function FocusAreas() {
   return (
-    <section className="animate-fade-in">
+    <section>
       <div className="mb-4 flex flex-col gap-1">
         <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
           Bidang yang bisa divalidasi
