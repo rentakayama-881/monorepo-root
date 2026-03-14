@@ -11,6 +11,8 @@ import (
 
 "backend-gin/config"
 "backend-gin/ent"
+"backend-gin/logger"
+"go.uber.org/zap"
 )
 
 func shouldSyncWorkspaceFileSharing(file RepoCaseFileItem) bool {
@@ -89,7 +91,9 @@ func (s *EntValidationCaseRepoWorkflowService) updateWorkspaceDocumentSharing(
 
 	if resp.StatusCode != http.StatusOK {
 		var body map[string]interface{}
-		_ = json.NewDecoder(resp.Body).Decode(&body)
+		if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+			logger.Warn("failed to decode feature-service sharing error", zap.Error(err))
+		}
 		if msg, ok := body["error"].(string); ok && strings.TrimSpace(msg) != "" {
 			return fmt.Errorf("feature-service: %s", msg)
 		}

@@ -212,7 +212,9 @@ func loadRepoMetaState(meta map[string]interface{}) repoMetaState {
 	if err != nil {
 		return state
 	}
-	_ = json.Unmarshal(raw, &state)
+	if err := json.Unmarshal(raw, &state); err != nil {
+		logger.Warn("failed to unmarshal repo workflow state", zap.Error(err))
+	}
 
 	state.WorkflowFamily = normalizeWorkflowFamily(state.WorkflowFamily)
 	state.ProtocolMode = normalizeRepoMode(state.ProtocolMode)

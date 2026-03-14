@@ -54,7 +54,9 @@ func coerceContentToMap(content interface{}) map[string]interface{} {
 		if json.Unmarshal(b, &str) == nil {
 			return map[string]interface{}{"text": str}
 		}
-		_ = json.Unmarshal(b, &contentMap)
+		if err := json.Unmarshal(b, &contentMap); err != nil {
+			logger.Warn("failed to unmarshal case content as map", zap.Error(err))
+		}
 		return contentMap
 	}
 }

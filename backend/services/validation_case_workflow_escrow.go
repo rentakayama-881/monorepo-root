@@ -13,6 +13,8 @@ import (
 	"backend-gin/ent"
 	"backend-gin/ent/validationcase"
 	apperrors "backend-gin/errors"
+	"backend-gin/logger"
+	"go.uber.org/zap"
 )
 
 type featureServiceError struct {
@@ -271,7 +273,9 @@ func (s *EntValidationCaseWorkflowService) shareDocumentWithCaseOwner(ctx contex
 
 	if resp.StatusCode != http.StatusOK {
 		var body map[string]interface{}
-		_ = json.NewDecoder(resp.Body).Decode(&body)
+		if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+			logger.Warn("failed to decode feature-service error response", zap.Error(err))
+		}
 		if msg, ok := body["error"].(string); ok && strings.TrimSpace(msg) != "" {
 			return fmt.Errorf("feature-service: %s", msg)
 		}
