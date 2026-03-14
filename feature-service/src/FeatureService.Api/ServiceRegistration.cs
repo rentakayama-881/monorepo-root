@@ -5,14 +5,7 @@ using Microsoft.OpenApi.Models;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Serilog;
-using StackExchange.Redis;
-using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Infrastructure.Auth;
-using FeatureService.Api.Infrastructure.Redis;
-using FeatureService.Api.Infrastructure.PQC;
-using FeatureService.Api.Infrastructure.Idempotency;
-using FeatureService.Api.Infrastructure.Audit;
-using FeatureService.Api.Infrastructure.Security;
 using FeatureService.Api.Services;
 using FeatureService.Api.Middleware;
 
@@ -22,21 +15,9 @@ public static class ServiceRegistration
 {
     public static WebApplicationBuilder AddFeatureServices(this WebApplicationBuilder builder)
     {
-        // MongoDB
-        var mongoSettings = new MongoDbSettings();
-        builder.Configuration.GetSection("MongoDB").Bind(mongoSettings);
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MONGODB__CONNECTIONSTRING")))
-        {
-            mongoSettings.ConnectionString = Environment.GetEnvironmentVariable("MONGODB__CONNECTIONSTRING")!;
-        }
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MONGODB__DATABASENAME")))
-        {
-            mongoSettings.DatabaseName = Environment.GetEnvironmentVariable("MONGODB__DATABASENAME")!;
-        }
-    
-        builder.Services.AddSingleton(mongoSettings);
-        builder.Services.AddSingleton<MongoDbContext>();
-    
+        builder.AddInfrastructureServices();
+        builder.AddFinancialServices();
+
         // JWT
         var jwtSettings = new JwtSettings();
         builder.Configuration.GetSection("Jwt").Bind(jwtSettings);
@@ -315,7 +296,7 @@ public static class ServiceRegistration
         builder.Services.AddAuthorization();
         builder.Services.AddMemoryCache();
     
-        // Register services
+        // Register core services
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<IUserContextAccessor, UserContextAccessor>();
         // Live 2FA verifier — calls Go backend to prevent stale JWT claim bypass
@@ -324,175 +305,9 @@ public static class ServiceRegistration
             client.Timeout = TimeSpan.FromSeconds(5);
         });
     
-        // Register financial services
-        builder.Services.AddScoped<IWalletService, WalletService>();
-        builder.Services.AddScoped<IMarketPurchaseWalletService, MarketPurchaseWalletService>();
-        builder.Services.AddScoped<IGuaranteeService, GuaranteeService>();
-        builder.Services.AddHttpClient<IGuaranteeService, GuaranteeService>();
-        builder.Services.AddScoped<ILedgerBackfillService, LedgerBackfillService>();
-        builder.Services.AddScoped<ITransferService, TransferService>();
-        builder.Services.AddHttpClient<ITransferService, TransferService>();
-        builder.Services.AddHostedService<TransferAutoReleaseHostedService>();
-        builder.Services.AddScoped<IDisputeService, DisputeService>();
-        builder.Services.AddHttpClient<IDisputeService, DisputeService>();
-    
-        // OxaPay crypto payment gateway
-        var oxaPaySettings = new FeatureService.Api.Infrastructure.OxaPay.OxaPaySettings();
-        builder.Configuration.GetSection("OxaPay").Bind(oxaPaySettings);
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OXAPAY__MERCHANTAPIKEY")))
-            oxaPaySettings.MerchantApiKey = Environment.GetEnvironmentVariable("OXAPAY__MERCHANTAPIKEY")!;
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OXAPAY__PAYOUTAPIKEY")))
-            oxaPaySettings.PayoutApiKey = Environment.GetEnvironmentVariable("OXAPAY__PAYOUTAPIKEY")!;
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OXAPAY__CALLBACKBASEURL")))
-            oxaPaySettings.CallbackBaseUrl = Environment.GetEnvironmentVariable("OXAPAY__CALLBACKBASEURL")!;
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OXAPAY__DEFAULTPAYCURRENCY")))
-            oxaPaySettings.DefaultPayCurrency = Environment.GetEnvironmentVariable("OXAPAY__DEFAULTPAYCURRENCY")!;
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OXAPAY__DEFAULTNETWORK")))
-            oxaPaySettings.DefaultNetwork = Environment.GetEnvironmentVariable("OXAPAY__DEFAULTNETWORK")!;
-        builder.Services.AddSingleton(oxaPaySettings);
-        builder.Services.AddHttpClient<FeatureService.Api.Infrastructure.OxaPay.IOxaPayService,
-            FeatureService.Api.Infrastructure.OxaPay.OxaPayService>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(oxaPaySettings.TimeoutSeconds);
-        });
-    
-        // Crypto pricing service (multi-source: Binance + CoinGecko + cache)
-        builder.Services.AddSingleton<ICryptoPricingService, CryptoPricingService>();
-    
-        // Deposit & Withdrawal services (using OxaPay)
-        builder.Services.AddScoped<IDepositService, DepositService>();
-        builder.Services.AddScoped<IWithdrawalService, WithdrawalService>();
-    
-        // Configure Redis Sentinel for idempotency
-        var redisSettings = new RedisSettings();
-        builder.Configuration.GetSection("Redis").Bind(redisSettings);
-    
-        // Override with environment variables if present
-        // NOTE: We use uppercase env vars in deployment (.env via systemd EnvironmentFile),
-        // so read them explicitly instead of relying on the default config binder.
-        var envRedisConnectionString =
-            Environment.GetEnvironmentVariable("REDIS__CONNECTIONSTRING")
-            ?? Environment.GetEnvironmentVariable("REDIS__URL")
-            ?? Environment.GetEnvironmentVariable("REDIS_URL");
-        if (!string.IsNullOrEmpty(envRedisConnectionString))
-        {
-            redisSettings.ConnectionString = envRedisConnectionString!;
-        }
-    
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS__DIRECTENDPOINT")))
-        {
-            redisSettings.DirectEndpoint = Environment.GetEnvironmentVariable("REDIS__DIRECTENDPOINT")!;
-        }
-    
-        var envRedisSentinels = Environment.GetEnvironmentVariable("REDIS__SENTINELENDPOINTS");
-        if (!string.IsNullOrEmpty(envRedisSentinels))
-        {
-            redisSettings.SentinelEndpoints = envRedisSentinels!
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        }
-    
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS__SERVICENAME")))
-        {
-            redisSettings.ServiceName = Environment.GetEnvironmentVariable("REDIS__SERVICENAME")!;
-        }
-        var envRedisUser =
-            Environment.GetEnvironmentVariable("REDIS__USER")
-            ?? Environment.GetEnvironmentVariable("REDIS__USERNAME");
-        if (!string.IsNullOrEmpty(envRedisUser))
-        {
-            redisSettings.User = envRedisUser!;
-        }
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS__PASSWORD")))
-        {
-            redisSettings.Password = Environment.GetEnvironmentVariable("REDIS__PASSWORD")!;
-        }
-        var envRequireTls = Environment.GetEnvironmentVariable("REDIS__REQUIRETLS");
-        if (!string.IsNullOrEmpty(envRequireTls) && bool.TryParse(envRequireTls, out var requireTls))
-        {
-            redisSettings.RequireTls = requireTls;
-        }
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS__SSLHOST")))
-        {
-            redisSettings.SslHost = Environment.GetEnvironmentVariable("REDIS__SSLHOST")!;
-        }
-    
-        builder.Services.AddSingleton(redisSettings);
-        builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-        {
-            var settings = sp.GetRequiredService<RedisSettings>();
-            var logger = sp.GetRequiredService<ILogger<Program>>();
-            return RedisConnectionFactory.CreateConnection(settings, logger);
-        });
-    
-        // Register Post-Quantum Cryptography service
-        builder.Services.AddSingleton<IPostQuantumCryptoService, PostQuantumCryptoService>();
-    
-        // Register Hybrid Post-Quantum Cryptography service (PQC + Classical)
-        // Combines CRYSTALS-Dilithium3+Ed25519 for signatures and CRYSTALS-Kyber768+ECDH for key encapsulation
-        builder.Services.AddSingleton<IHybridCryptoService, HybridCryptoService>();
-    
-        // Register Idempotency service (Redis-based)
-        builder.Services.AddScoped<IIdempotencyService, RedisIdempotencyService>();
-    
-        // Register Audit Trail service
-        builder.Services.AddScoped<IAuditTrailService, AuditTrailService>();
-    
-        // Register Key Derivation service (HKDF - RFC 5869)
-        builder.Services.AddSingleton<IKeyDerivationService, KeyDerivationService>();
-    
-        // Register Key Management service (HSM-ready abstraction, software implementation)
-        // For production with high security requirements, replace with HSM-backed implementation
-        builder.Services.AddSingleton<IKeyManagementService, SoftwareKeyManagementService>();
-    
-        // Register At-Rest Encryption service
-        var encryptionKey = builder.Configuration["Security:MasterEncryptionKey"]
-            ?? Environment.GetEnvironmentVariable("SECURITY__MASTERENCRYPTIONKEY");
-    
-        if (string.IsNullOrEmpty(encryptionKey))
-        {
-            Log.Warning("MasterEncryptionKey not configured. Using auto-generated key (not suitable for production).");
-        }
-    
-        builder.Services.AddSingleton<IAtRestEncryptionService>(sp =>
-        {
-            var config = sp.GetRequiredService<IConfiguration>();
-            var logger = sp.GetRequiredService<ILogger<AtRestEncryptionService>>();
-            return new AtRestEncryptionService(config, logger);
-        });
-    
-        // Register Secure Transfer and Withdrawal services (with idempotency and audit)
-        builder.Services.AddScoped<ISecureTransferService, SecureTransferService>();
-        builder.Services.AddScoped<ISecureWithdrawalService, SecureWithdrawalService>();
-    
-        // Register moderation services
-        builder.Services.AddScoped<IReportService, ReportService>();
-        builder.Services.AddScoped<IDeviceBanService, DeviceBanService>();
-        builder.Services.AddScoped<IUserWarningService, UserWarningService>();
-        builder.Services.AddScoped<IAdminModerationService, AdminModerationService>();
-    
-        // Register user cleanup service (for account deletion)
-        builder.Services.AddScoped<IUserCleanupService, UserCleanupService>();
-    
-        // Register document storage service
-        builder.Services.AddScoped<IDocumentService, DocumentService>();
-    
-        builder.Services.AddHttpClient<IAdminModerationService, AdminModerationService>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(30);
-        });
-    
         // Add FluentValidation
         builder.Services.AddFluentValidationAutoValidation();
         builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-    
-        // Add Health Checks
-        builder.Services.AddHealthChecks()
-            .AddMongoDb(
-                mongoSettings.ConnectionString,
-                name: "mongodb",
-                timeout: TimeSpan.FromSeconds(3),
-                tags: new[] { "db", "mongodb" }
-            );
     
         builder.Services.AddControllers()
             .AddJsonOptions(options =>
