@@ -43,7 +43,10 @@ func (s *EntSessionService) CreateSession(ctx context.Context, u *ent.User, ipAd
 	if err == nil && len(activeSessions) >= MaxConcurrentSessions {
 		// Revoke oldest session to make room for new one
 		oldestSession := activeSessions[len(activeSessions)-1]
-		_ = s.RevokeSession(ctx, oldestSession.ID, "New session created - max concurrent sessions reached")
+		if err := s.RevokeSession(ctx, oldestSession.ID, "New session created - max concurrent sessions reached"); err != nil {
+			logger.Warn("failed to revoke oldest session on concurrent limit",
+				zap.Int("session_id", oldestSession.ID), zap.Error(err))
+		}
 		logger.Info("Revoked oldest session due to concurrent limit",
 			zap.Int("user_id", u.ID),
 			zap.Int("revoked_session_id", oldestSession.ID))

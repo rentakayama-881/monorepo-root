@@ -14,6 +14,7 @@ import (
 	"backend-gin/ent/validationcase"
 	apperrors "backend-gin/errors"
 	"backend-gin/logger"
+	"backend-gin/utils"
 	"go.uber.org/zap"
 )
 
@@ -55,7 +56,7 @@ func (s *EntValidationCaseWorkflowService) getFeatureTransfer(ctx context.Contex
 		req.Header.Set("Authorization", authHeader)
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := utils.DefaultHTTPClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -85,7 +86,7 @@ func (s *EntValidationCaseWorkflowService) getFeatureDispute(ctx context.Context
 		req.Header.Set("Authorization", authHeader)
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := utils.DefaultHTTPClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -264,7 +265,7 @@ func (s *EntValidationCaseWorkflowService) shareDocumentWithCaseOwner(ctx contex
 		req.Header.Set("Authorization", authHeader)
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := utils.DefaultHTTPClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return err

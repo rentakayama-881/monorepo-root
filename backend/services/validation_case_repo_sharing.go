@@ -7,11 +7,11 @@ import (
 "fmt"
 "net/http"
 "strings"
-"time"
 
 "backend-gin/config"
 "backend-gin/ent"
 "backend-gin/logger"
+"backend-gin/utils"
 "go.uber.org/zap"
 )
 
@@ -82,7 +82,7 @@ func (s *EntValidationCaseRepoWorkflowService) updateWorkspaceDocumentSharing(
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", authHeader)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := utils.DefaultHTTPClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return err

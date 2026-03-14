@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"backend-gin/config"
+	"backend-gin/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -85,8 +85,7 @@ func callFeatureServiceValidation(c *gin.Context, userID uint) (*FeatureServiceV
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := utils.DefaultHTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

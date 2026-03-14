@@ -6,10 +6,10 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"backend-gin/config"
 	"backend-gin/database"
+	"backend-gin/utils"
 	"backend-gin/ent/artifactsubmission"
 	"backend-gin/ent/backupcode"
 	"backend-gin/ent/consultationrequest"
@@ -48,8 +48,7 @@ func callFeatureServiceCleanup(c *gin.Context, userID uint) (*FeatureServiceClea
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := utils.LongHTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
