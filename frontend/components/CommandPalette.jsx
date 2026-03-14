@@ -232,7 +232,12 @@ export default function CommandPalette({ isOpen, onClose }) {
   return (
     <>
       {/* Backdrop */}
-      <div className="command-palette-overlay" onClick={onClose} aria-hidden="true" />
+      <div
+        className="command-palette-overlay"
+        onClick={onClose}
+        role="presentation"
+        aria-hidden="true"
+      />
 
       {/* Command Palette */}
       <div className="command-palette" role="dialog" aria-modal="true" aria-label="Command palette">

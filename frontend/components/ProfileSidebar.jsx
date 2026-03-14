@@ -30,7 +30,12 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
   if (loadError && !isLoading) {
     return (
       <>
-        <div className={overlayClassName} onClick={onClose} aria-hidden="true" />
+        <div
+          className={overlayClassName}
+          onClick={onClose}
+          role="presentation"
+          aria-hidden="true"
+        />
         <div
           ref={panelRef}
           className={panelPaddedClassName}
@@ -66,7 +71,12 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
   if (isLoading) {
     return (
       <>
-        <div className={overlayClassName} onClick={onClose} aria-hidden="true" />
+        <div
+          className={overlayClassName}
+          onClick={onClose}
+          role="presentation"
+          aria-hidden="true"
+        />
         <div
           ref={panelRef}
           className={panelPaddedClassName}
@@ -102,7 +112,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
 
   return (
     <>
-      <div className={overlayClassName} onClick={onClose} aria-hidden="true" />
+      <div className={overlayClassName} onClick={onClose} role="presentation" aria-hidden="true" />
       <div
         ref={panelRef}
         className={panelBaseClassName}

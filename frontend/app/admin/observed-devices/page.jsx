@@ -43,15 +43,12 @@ export default function ObservedDevicesPage() {
       });
       if (search) params.set("search", search);
 
-      const res = await fetch(
-        `${getApiBase()}/admin/observed-devices?${params}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const res = await fetch(`${getApiBase()}/admin/observed-devices?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!res.ok) {
         let msg = `Gagal memuat observed devices (${res.status})`;
@@ -105,25 +102,21 @@ export default function ObservedDevicesPage() {
         body.expiresAt = new Date(banForm.expiresAt).toISOString();
       }
 
-      const res = await fetch(
-        `${getFeatureApiBase()}/api/v1/admin/moderation/device-bans`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        }
-      );
+      const res = await fetch(`${getFeatureApiBase()}/api/v1/admin/moderation/device-bans`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
 
       if (!res.ok) {
         let msg = `Gagal membuat device ban (${res.status})`;
         try {
           const resBody = await res.json();
           if (resBody?.error?.message) msg = resBody.error.message;
-          else if (resBody?.error)
-            msg = typeof resBody.error === "string" ? resBody.error : msg;
+          else if (resBody?.error) msg = typeof resBody.error === "string" ? resBody.error : msg;
           else if (resBody?.message) msg = resBody.message;
         } catch {}
         throw new Error(msg);
@@ -143,9 +136,7 @@ export default function ObservedDevicesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">
-          Observed Devices
-        </h1>
+        <h1 className="text-2xl font-bold text-foreground">Observed Devices</h1>
       </div>
 
       {/* Search */}
@@ -155,6 +146,7 @@ export default function ObservedDevicesPage() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search by fingerprint hash or user ID..."
+          aria-label="Cari berdasarkan fingerprint hash atau user ID"
           className="flex-1 max-w-md px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm"
         />
         <Button type="submit" size="sm">
@@ -187,9 +179,7 @@ export default function ObservedDevicesPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : devices.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Tidak ada observed devices
-        </div>
+        <div className="text-center py-12 text-muted-foreground">Tidak ada observed devices</div>
       ) : (
         <>
           <div className="overflow-x-auto">
@@ -205,18 +195,12 @@ export default function ObservedDevicesPage() {
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                     Last Seen
                   </th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                    IP
-                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">IP</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                     User Agent
                   </th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                    Users
-                  </th>
-                  <th className="text-right py-3 px-4 font-medium text-muted-foreground">
-                    Action
-                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Users</th>
+                  <th className="text-right py-3 px-4 font-medium text-muted-foreground">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -229,9 +213,7 @@ export default function ObservedDevicesPage() {
                       {device.fingerprint_hash}
                     </td>
                     <td className="py-3 px-4">
-                      <span className="font-mono text-xs">
-                        {device.account_count}
-                      </span>
+                      <span className="font-mono text-xs">{device.account_count}</span>
                       {device.blocked && (
                         <span className="ml-2 inline-flex items-center rounded-sm border border-destructive/20 bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
                           Blocked
@@ -241,26 +223,15 @@ export default function ObservedDevicesPage() {
                     <td className="py-3 px-4 text-xs text-muted-foreground">
                       {formatDateTime(device.last_seen_at)}
                     </td>
-                    <td className="py-3 px-4 font-mono text-xs">
-                      {device.ip_address || "-"}
-                    </td>
-                    <td
-                      className="py-3 px-4 text-xs max-w-40 truncate"
-                      title={device.user_agent}
-                    >
+                    <td className="py-3 px-4 font-mono text-xs">{device.ip_address || "-"}</td>
+                    <td className="py-3 px-4 text-xs max-w-40 truncate" title={device.user_agent}>
                       {device.user_agent || "-"}
                     </td>
                     <td className="py-3 px-4 text-xs">
-                      {device.user_ids.length > 0
-                        ? device.user_ids.join(", ")
-                        : "-"}
+                      {device.user_ids.length > 0 ? device.user_ids.join(", ") : "-"}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => openBanModal(device)}
-                      >
+                      <Button size="sm" variant="danger" onClick={() => openBanModal(device)}>
                         Ban Device
                       </Button>
                     </td>
@@ -272,9 +243,7 @@ export default function ObservedDevicesPage() {
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-            <span>
-              Total: {total} devices
-            </span>
+            <span>Total: {total} devices</span>
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -305,9 +274,7 @@ export default function ObservedDevicesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-card rounded-lg max-w-md w-full">
             <div className="p-6 border-b border-border">
-              <h2 className="text-xl font-semibold text-foreground">
-                Ban Device
-              </h2>
+              <h2 className="text-xl font-semibold text-foreground">Ban Device</h2>
             </div>
 
             <form onSubmit={handleBan} className="p-6 space-y-4">
@@ -324,14 +291,10 @@ export default function ObservedDevicesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Reason *
-                </label>
+                <label className="block text-sm font-medium text-foreground mb-1">Reason *</label>
                 <textarea
                   value={banForm.reason}
-                  onChange={(e) =>
-                    setBanForm({ ...banForm, reason: e.target.value })
-                  }
+                  onChange={(e) => setBanForm({ ...banForm, reason: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   rows={3}
                   required
@@ -343,15 +306,10 @@ export default function ObservedDevicesPage() {
                   type="checkbox"
                   id="banIsPermanent"
                   checked={banForm.isPermanent}
-                  onChange={(e) =>
-                    setBanForm({ ...banForm, isPermanent: e.target.checked })
-                  }
+                  onChange={(e) => setBanForm({ ...banForm, isPermanent: e.target.checked })}
                   className="rounded border-border"
                 />
-                <label
-                  htmlFor="banIsPermanent"
-                  className="text-sm text-foreground"
-                >
+                <label htmlFor="banIsPermanent" className="text-sm text-foreground">
                   Permanent Ban
                 </label>
               </div>
@@ -364,20 +322,14 @@ export default function ObservedDevicesPage() {
                   <input
                     type="datetime-local"
                     value={banForm.expiresAt}
-                    onChange={(e) =>
-                      setBanForm({ ...banForm, expiresAt: e.target.value })
-                    }
+                    onChange={(e) => setBanForm({ ...banForm, expiresAt: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   />
                 </div>
               )}
 
               <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setBanModal(null)}
-                >
+                <Button type="button" variant="secondary" onClick={() => setBanModal(null)}>
                   Cancel
                 </Button>
                 <Button type="submit" variant="danger" disabled={banLoading}>

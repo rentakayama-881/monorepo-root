@@ -22,15 +22,13 @@ export default function TOTPSetupWizard({
         <div className="flex justify-center mb-4">
           <img
             src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setupData.qr_code_url)}`}
-            alt="TOTP QR Code"
+            alt="QR code pengaturan TOTP"
             className="rounded-[var(--radius)] border"
             width={200}
             height={200}
           />
         </div>
-        <p className="text-sm text-muted-foreground mb-2">
-          Or enter this code manually:
-        </p>
+        <p className="text-sm text-muted-foreground mb-2">Or enter this code manually:</p>
         <code className="block p-2 bg-secondary rounded text-sm font-mono text-foreground break-all select-all">
           {setupData.secret}
         </code>

@@ -268,6 +268,7 @@ export default function DeviceBansPage() {
                   value={form.deviceFingerprint}
                   onChange={(e) => setForm({ ...form, deviceFingerprint: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                  aria-label="Device Fingerprint"
                   required
                 />
               </div>
@@ -281,6 +282,7 @@ export default function DeviceBansPage() {
                   value={form.userId}
                   onChange={(e) => setForm({ ...form, userId: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                  aria-label="User ID"
                 />
               </div>
 
@@ -290,6 +292,7 @@ export default function DeviceBansPage() {
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                  aria-label="Reason"
                   rows={3}
                   required
                 />
@@ -318,6 +321,7 @@ export default function DeviceBansPage() {
                     value={form.expiresAt}
                     onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                    aria-label="Expires At"
                   />
                 </div>
               )}
