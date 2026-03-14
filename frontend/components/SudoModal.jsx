@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext, useCallback } from "react";
-import { requireValidTokenOrThrow, readJsonSafe, throwApiError } from "@/lib/authRequest";
+import { useState, useCallback, createContext, useContext } from "react";
+import { requireValidTokenOrThrow, readJsonSafe } from "@/lib/authRequest";
 import { getApiBase } from "@/lib/api";
+import { loadStoredSudoState, saveSudoToken, clearSudoStorage } from "./sudo/sudo-storage";
+import SudoVerifyForm from "./sudo/SudoVerifyForm";
 
 // Sudo Context for global state management
 const SudoContext = createContext(null);
@@ -15,52 +17,6 @@ export function useSudo() {
   return context;
 }
 
-// Storage keys
-const SUDO_TOKEN_KEY = "sudo_token";
-const SUDO_EXPIRES_KEY = "sudo_expires";
-
-function loadStoredSudoState() {
-  const token = safeStorageGet(SUDO_TOKEN_KEY);
-  const expires = safeStorageGet(SUDO_EXPIRES_KEY);
-
-  if (!token || !expires) {
-    return { token: null, expires: null };
-  }
-
-  const expiresAt = new Date(expires);
-  if (expiresAt > new Date()) {
-    return { token, expires: expiresAt };
-  }
-
-  safeStorageRemove(SUDO_TOKEN_KEY);
-  safeStorageRemove(SUDO_EXPIRES_KEY);
-  return { token: null, expires: null };
-}
-
-function safeStorageGet(key) {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function safeStorageSet(key, value) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Ignore storage write failures for resilience in restricted environments.
-  }
-}
-
-function safeStorageRemove(key) {
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    // Ignore storage remove failures for resilience in restricted environments.
-  }
-}
-
 // Sudo Provider Component
 export function SudoProvider({ children }) {
   const [sudoState, setSudoState] = useState(loadStoredSudoState);
@@ -70,33 +26,27 @@ export function SudoProvider({ children }) {
   const sudoToken = sudoState.token;
   const sudoExpires = sudoState.expires;
 
-  // Check if sudo is active
   const isSudoActive = useCallback(() => {
     if (!sudoToken || !sudoExpires) return false;
     return new Date() < sudoExpires;
   }, [sudoToken, sudoExpires]);
 
-  // Store sudo token
   const storeSudoToken = useCallback((token, expiresAt) => {
     setSudoState({
       token,
       expires: new Date(expiresAt),
     });
-    safeStorageSet(SUDO_TOKEN_KEY, token);
-    safeStorageSet(SUDO_EXPIRES_KEY, expiresAt);
+    saveSudoToken(token, expiresAt);
   }, []);
 
-  // Clear sudo token
   const clearSudoToken = useCallback(() => {
     setSudoState({
       token: null,
       expires: null,
     });
-    safeStorageRemove(SUDO_TOKEN_KEY);
-    safeStorageRemove(SUDO_EXPIRES_KEY);
+    clearSudoStorage();
   }, []);
 
-  // Request sudo mode - returns promise that resolves when sudo is granted
   const requestSudo = useCallback(
     (action) => {
       return new Promise((resolve, reject) => {
@@ -111,7 +61,6 @@ export function SudoProvider({ children }) {
     [isSudoActive, sudoToken]
   );
 
-  // Handle sudo verification success
   const onSudoSuccess = useCallback(
     (token, expiresAt) => {
       storeSudoToken(token, expiresAt);
@@ -124,7 +73,6 @@ export function SudoProvider({ children }) {
     [storeSudoToken, pendingAction]
   );
 
-  // Handle sudo verification cancel
   const onSudoCancel = useCallback(() => {
     if (pendingAction) {
       pendingAction.reject(new Error("Verification was canceled"));
@@ -133,7 +81,6 @@ export function SudoProvider({ children }) {
     setShowModal(false);
   }, [pendingAction]);
 
-  // Fetch sudo status (to check if TOTP required)
   const fetchSudoStatus = useCallback(async () => {
     try {
       const token = await requireValidTokenOrThrow();
@@ -168,7 +115,7 @@ export function SudoProvider({ children }) {
     <SudoContext.Provider value={value}>
       {children}
       {showModal && (
-        <SudoModal
+        <SudoVerifyForm
           onSuccess={onSudoSuccess}
           onCancel={onSudoCancel}
           actionDescription={pendingAction?.action}
@@ -177,223 +124,6 @@ export function SudoProvider({ children }) {
         />
       )}
     </SudoContext.Provider>
-  );
-}
-
-// Sudo Modal Component
-function SudoModal({
-  onSuccess,
-  onCancel,
-  actionDescription,
-  requiresTOTP: initialRequiresTOTP,
-  onCheckStatus,
-}) {
-  const [password, setPassword] = useState("");
-  const [totpCode, setTotpCode] = useState("");
-  const [useBackupCode, setUseBackupCode] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [requiresTOTP, setRequiresTOTP] = useState(initialRequiresTOTP || false);
-  const [checking, setChecking] = useState(true);
-
-  // Check sudo status on mount
-  useEffect(() => {
-    let isMounted = true;
-
-    async function checkStatus() {
-      setChecking(true);
-      try {
-        const status = await onCheckStatus();
-        if (!isMounted) return;
-        if (status && typeof status.requires_totp === "boolean") {
-          setRequiresTOTP(status.requires_totp);
-        }
-      } catch {
-        // Silently fail - status check is non-critical
-      }
-      if (isMounted) {
-        setChecking(false);
-      }
-    }
-
-    checkStatus();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [onCheckStatus]);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      const token = await requireValidTokenOrThrow();
-      const body = {
-        password,
-      };
-      if (requiresTOTP) {
-        if (useBackupCode) {
-          body.backup_code = totpCode;
-        } else {
-          body.totp_code = totpCode;
-        }
-      }
-
-      const res = await fetch(`${getApiBase()}/api/auth/sudo/verify`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        await throwApiError(res, "Verification failed");
-      }
-
-      const data = await readJsonSafe(res);
-      if (!data?.sudo_token || !data?.expires_at) {
-        throw new Error("Verification failed");
-      }
-
-      onSuccess(data.sudo_token, data.expires_at);
-    } catch (err) {
-      setError(err?.message || "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const inputClass =
-    "w-full rounded-md border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary";
-  const primaryButton =
-    "w-full inline-flex justify-center items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60";
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md mx-4 rounded-[var(--radius)] border bg-background shadow-xl">
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10">
-              <svg
-                className="h-5 w-5 text-warning"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">Konfirmasi Identitas</h3>
-              <p className="text-sm text-muted-foreground">
-                {actionDescription || "Aksi ini memerlukan verifikasi ulang"}
-              </p>
-            </div>
-          </div>
-
-          {checking ? (
-            <div className="flex items-center justify-center py-8">
-              <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={inputClass}
-                  placeholder="Enter your password"
-                  autoFocus
-                />
-              </div>
-
-              {requiresTOTP && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
-                    {useBackupCode ? "Backup Code" : "Kode 2FA"}
-                  </label>
-                  <input
-                    type="text"
-                    inputMode={useBackupCode ? "text" : "numeric"}
-                    pattern={useBackupCode ? undefined : "[0-9]*"}
-                    maxLength={useBackupCode ? 9 : 6}
-                    required
-                    value={totpCode}
-                    onChange={(e) =>
-                      setTotpCode(
-                        useBackupCode ? e.target.value : e.target.value.replace(/\D/g, "")
-                      )
-                    }
-                    className={`${inputClass} font-mono text-center tracking-widest`}
-                    placeholder={useBackupCode ? "XXXX-XXXX" : "000000"}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUseBackupCode(!useBackupCode);
-                      setTotpCode("");
-                    }}
-                    className="text-xs text-muted-foreground hover:text-foreground hover:underline"
-                  >
-                    {useBackupCode ? "Use authenticator code" : "Enter 2FA code or backup code"}
-                  </button>
-                </div>
-              )}
-
-              {error && (
-                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={onCancel}
-                  className="flex-1 inline-flex justify-center items-center rounded-md border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={
-                    loading ||
-                    !password ||
-                    (requiresTOTP && totpCode.length < (useBackupCode ? 8 : 6))
-                  }
-                  className={primaryButton}
-                >
-                  {loading ? (
-                    <>
-                      <span className="inline-block h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Memverifikasi...
-                    </>
-                  ) : (
-                    "Konfirmasi"
-                  )}
-                </button>
-              </div>
-
-              <p className="text-xs text-center text-muted-foreground">
-                Tindakan ini memiliki batasan
-              </p>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -445,4 +175,4 @@ export function useSudoAction(actionDescription) {
   };
 }
 
-export default SudoModal;
+export default SudoVerifyForm;
