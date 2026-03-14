@@ -10,11 +10,11 @@ import {
   titleMinLength,
   titleMaxLength,
   hasConnectedTelegramAuth,
-  getTagDimensionFromSlug,
   formatCreateCaseError,
   extractDocumentId,
   pickDefaultCategory,
 } from "./newCaseUtils";
+import { validateNewCaseSubmit, normalizeTagSlugs } from "./newCaseSubmitValidation";
 import { useWorkspaceFiles } from "./useWorkspaceFiles";
 
 export function useNewValidationCase() {
@@ -259,86 +259,27 @@ export function useNewValidationCase() {
     setOk("");
     setWorkspaceUploadStageMsg("");
 
-    if (!caseType?.slug) {
-      setError("Konfigurasi intake belum siap. Hubungi admin.");
-      return;
-    }
-
-    if (locked) {
-      setError("Intake sedang ditutup.");
-      return;
-    }
-    if (telegramGateLocked) {
-      setError(
-        "Sebelum membuat Validation Case, sambungkan akun Telegram terverifikasi di Account Settings."
-      );
-      return;
-    }
-
     const title = String(form.title || "").trim();
     const bounty = Number(form.bounty_amount || 0);
     const caseRecord = String(form.case_record_text || "").trim();
     const sensitivity = String(form.sensitivity || "S1")
       .trim()
       .toUpperCase();
+    const tagSlugs = normalizeTagSlugs(selectedTags);
 
-    if (title.length < titleMinLength) {
-      setError(`Title minimal ${titleMinLength} karakter.`);
-      return;
-    }
-    if (title.length > titleMaxLength) {
-      setError(`Title maksimal ${titleMaxLength} karakter.`);
-      return;
-    }
-    if (!bounty || bounty < 10000) {
-      setError("Bounty minimal Rp 10.000.");
-      return;
-    }
-    if (!Number.isSafeInteger(bounty)) {
-      setError("Nominal bounty terlalu besar.");
-      return;
-    }
-    if (!sensitivityOptions.includes(sensitivity)) {
-      setError("Sensitivitas harus S0, S1, S2, atau S3.");
-      return;
-    }
-    if (!caseRecord) {
-      setError("Case Record wajib diisi.");
-      return;
-    }
-    if (/t\.me\/|telegram|wa\.me\/|whatsapp/i.test(caseRecord)) {
-      setError("Case Record tidak boleh memuat kontak langsung.");
-      return;
-    }
-    const normalizedTagSlugs = Array.from(
-      new Set(
-        selectedTags
-          .map((t) =>
-            String(t?.slug || "")
-              .toLowerCase()
-              .trim()
-          )
-          .filter(Boolean)
-      )
-    );
-    if (normalizedTagSlugs.length < 2 || normalizedTagSlugs.length > 4) {
-      setError("Tags wajib minimal 2 dan maksimal 4 sesuai taxonomy.");
-      return;
-    }
-    const seenDimensions = new Map();
-    for (const slug of normalizedTagSlugs) {
-      const dim = getTagDimensionFromSlug(slug);
-      if (!dim) continue;
-      const existing = seenDimensions.get(dim);
-      if (existing) {
-        setError(`Tag dimensi '${dim}' hanya boleh satu (${existing} dan ${slug}).`);
-        return;
-      }
-      seenDimensions.set(dim, slug);
-    }
-    const unchecked = checklistItems.find((it) => !Boolean(form.checklist?.[it.key]));
-    if (unchecked) {
-      setError("Checklist protokol wajib dilengkapi sebelum submit.");
+    const validationError = validateNewCaseSubmit({
+      caseType,
+      locked,
+      telegramGateLocked,
+      title,
+      bounty,
+      sensitivity,
+      caseRecord,
+      normalizedTagSlugs: tagSlugs,
+      checklist: form.checklist,
+    });
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -384,7 +325,7 @@ export function useNewValidationCase() {
         content_type: "json",
         content,
         bounty_amount: bounty,
-        tag_slugs: normalizedTagSlugs,
+        tag_slugs: tagSlugs,
         workspace_bootstrap_files: workspaceBootstrapPayload,
         meta: {
           workflow_family: "evidence_validation_workspace",
