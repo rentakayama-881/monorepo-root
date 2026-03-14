@@ -3,9 +3,11 @@ package utils
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"time"
+
+	"backend-gin/logger"
+	"go.uber.org/zap"
 )
 
 // EmailType represents the type of email to send
@@ -59,7 +61,7 @@ func InitEmailQueue(workerCount int) {
 			go globalEmailQueue.worker(i)
 		}
 
-		log.Printf("[EmailQueue] Started with %d workers", workerCount)
+		logger.Info("email queue started", zap.Int("workers", workerCount))
 	})
 }
 
@@ -79,11 +81,10 @@ func (q *EmailQueue) Enqueue(job EmailJob) error {
 
 	select {
 	case q.jobs <- job:
-		log.Printf("[EmailQueue] Job enqueued for %s (type: %d)", job.Recipient, job.Type)
+		logger.Info("email job enqueued", zap.String("recipient", job.Recipient), zap.Int("type", int(job.Type)))
 		return nil
 	default:
-		// Queue is full
-		log.Printf("[EmailQueue] Queue full, dropping job for %s", job.Recipient)
+		logger.Warn("email queue full, dropping job", zap.String("recipient", job.Recipient))
 		return fmt.Errorf("email queue is full")
 	}
 }
@@ -95,7 +96,7 @@ func (q *EmailQueue) worker(id int) {
 	for {
 		select {
 		case <-q.ctx.Done():
-			log.Printf("[EmailQueue] Worker %d shutting down", id)
+			logger.Info("email worker shutting down", zap.Int("worker_id", id))
 			return
 		case job := <-q.jobs:
 			q.processJob(id, job)
@@ -108,17 +109,19 @@ func (q *EmailQueue) processJob(workerID int, job EmailJob) {
 	var err error
 	queueDuration := time.Since(job.CreatedAt)
 	
-	// Log queue duration - helps identify delays
 	if queueDuration > 5*time.Second {
-		log.Printf("[EmailQueue] WARNING: Worker %d: Job for %s was queued for %v (longer than expected)", workerID, job.Recipient, queueDuration)
+		logger.Warn("email job queued longer than expected",
+			zap.Int("worker_id", workerID), zap.String("recipient", job.Recipient), zap.Duration("queue_duration", queueDuration))
 	} else {
-		log.Printf("[EmailQueue] Worker %d: Processing job for %s (queued for %v)", workerID, job.Recipient, queueDuration)
+		logger.Info("processing email job",
+			zap.Int("worker_id", workerID), zap.String("recipient", job.Recipient), zap.Duration("queue_duration", queueDuration))
 	}
 
 	for attempt := 0; attempt <= q.maxRetries; attempt++ {
 		if attempt > 0 {
-			log.Printf("[EmailQueue] Worker %d: Retry %d for %s", workerID, attempt, job.Recipient)
-			time.Sleep(q.retryDelay * time.Duration(attempt)) // Exponential backoff
+			logger.Info("retrying email send",
+				zap.Int("worker_id", workerID), zap.Int("attempt", attempt), zap.String("recipient", job.Recipient))
+			time.Sleep(q.retryDelay * time.Duration(attempt))
 		}
 
 		startTime := time.Now()
@@ -128,32 +131,38 @@ func (q *EmailQueue) processJob(workerID int, job EmailJob) {
 		case EmailTypePasswordReset:
 			err = sendPasswordResetEmailDirect(job.Recipient, job.Token)
 		default:
-			log.Printf("[EmailQueue] Worker %d: Unknown email type %d", workerID, job.Type)
+			logger.Error("unknown email type", zap.Int("worker_id", workerID), zap.Int("type", int(job.Type)))
 			return
 		}
 		sendDuration := time.Since(startTime)
 
 		if err == nil {
 			totalDuration := time.Since(job.CreatedAt)
-			log.Printf("[EmailQueue] Worker %d: ✓ Successfully sent email to %s (API call: %v, Total: %v)", workerID, job.Recipient, sendDuration, totalDuration)
+			logger.Info("email sent successfully",
+				zap.Int("worker_id", workerID), zap.String("recipient", job.Recipient),
+				zap.Duration("api_call", sendDuration), zap.Duration("total", totalDuration))
 			return
 		}
 
-		log.Printf("[EmailQueue] Worker %d: ✗ Failed to send email to %s: %v (took %v)", workerID, job.Recipient, err, sendDuration)
+		logger.Warn("email send failed",
+			zap.Int("worker_id", workerID), zap.String("recipient", job.Recipient),
+			zap.Error(err), zap.Duration("duration", sendDuration))
 	}
 
 	// All retries exhausted
 	totalDuration := time.Since(job.CreatedAt)
-	log.Printf("[EmailQueue] Worker %d: ✗✗ DEAD LETTER — All %d retries exhausted for %s (type=%d, total_time=%v, last_error=%v)",
-		workerID, q.maxRetries, job.Recipient, job.Type, totalDuration, err)
+	logger.Error("email dead letter — all retries exhausted",
+		zap.Int("worker_id", workerID), zap.Int("max_retries", q.maxRetries),
+		zap.String("recipient", job.Recipient), zap.Int("type", int(job.Type)),
+		zap.Duration("total_time", totalDuration), zap.Error(err))
 }
 
 // Shutdown gracefully shuts down the email queue
 func (q *EmailQueue) Shutdown() {
-	log.Println("[EmailQueue] Shutting down...")
+	logger.Info("email queue shutting down")
 	q.cancel()
 	q.wg.Wait()
-	log.Println("[EmailQueue] Shutdown complete")
+	logger.Info("email queue shutdown complete")
 }
 
 // QueueVerificationEmail adds a verification email to the queue
