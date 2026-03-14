@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchJson, fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { isWorkspaceValidationCase } from "@/lib/validationCaseWorkflow";
@@ -30,33 +30,36 @@ export function useValidationCaseWorkflow({ id, initialCaseData, router }) {
 
   // ── Core helpers (used by sub-hooks) ────────────────────────────────
 
-  async function reloadCase({ showSkeleton = true } = {}) {
-    if (showSkeleton) {
-      setError("");
-      setLoading(true);
-    }
-    try {
-      const data = await fetchJson(
-        `/api/validation-cases/${encodeURIComponent(String(id))}/public`,
-        {
-          method: "GET",
-          cache: "no-store",
+  const reloadCase = useCallback(
+    async ({ showSkeleton = true } = {}) => {
+      if (showSkeleton) {
+        setError("");
+        setLoading(true);
+      }
+      try {
+        const data = await fetchJson(
+          `/api/validation-cases/${encodeURIComponent(String(id))}/public`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+        setVc(data);
+      } catch (e) {
+        if (showSkeleton) {
+          setError(e?.message || "Gagal memuat Validation Case Record");
+          setVc(null);
         }
-      );
-      setVc(data);
-    } catch (e) {
-      if (showSkeleton) {
-        setError(e?.message || "Gagal memuat Validation Case Record");
-        setVc(null);
+      } finally {
+        if (showSkeleton) {
+          setLoading(false);
+        }
       }
-    } finally {
-      if (showSkeleton) {
-        setLoading(false);
-      }
-    }
-  }
+    },
+    [id]
+  );
 
-  async function loadMeIfAuthed() {
+  const loadMeIfAuthed = useCallback(async () => {
     if (!isAuthed) {
       setMe(null);
       return;
@@ -67,7 +70,7 @@ export function useValidationCaseWorkflow({ id, initialCaseData, router }) {
     } catch {
       setMe(null);
     }
-  }
+  }, [isAuthed]);
 
   // ── Case log sub-hook ───────────────────────────────────────────────
 
@@ -267,13 +270,16 @@ export function useValidationCaseWorkflow({ id, initialCaseData, router }) {
       return;
     }
     reloadCase({ showSkeleton: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, reloadCase, loadMeIfAuthed]);
+
+  const vcId = vc?.id;
+  const vcMeta = vc?.meta;
+  const meId = me?.id;
 
   useEffect(() => {
-    if (!vc || !me) return;
+    if (!vcId || !meId) return;
     if (!isAuthed) return;
-    if (isWorkspaceValidationCase(vc?.meta)) {
+    if (isWorkspaceValidationCase(vcMeta)) {
       return;
     }
     if (isOwner) {
@@ -281,8 +287,7 @@ export function useValidationCaseWorkflow({ id, initialCaseData, router }) {
     } else {
       loadNonOwnerWorkflowRef.current?.();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vc?.id, vc?.meta, me?.id, isAuthed, isOwner]);
+  }, [vcId, vcMeta, meId, isAuthed, isOwner]);
 
   // ── Return identical shape ──────────────────────────────────────────
 

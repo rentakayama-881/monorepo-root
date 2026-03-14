@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { FEATURE_ENDPOINTS, getFeatureApiBase } from "@/lib/featureApi";
@@ -144,16 +144,17 @@ export function useRepoWorkflow({ id, router }) {
     }
   }
 
+  const loadAllRef = useRef(loadAll);
+  loadAllRef.current = loadAll;
+
   useEffect(() => {
     if (!isAuthed) {
       const redirectTarget = `/validation-cases/${encodeURIComponent(id)}`;
       router.push(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
       return;
     }
-    loadAll({ withSkeleton: true });
-    // Omit loadAll — stable by intent, re-runs on id/auth change only
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, isAuthed]);
+    loadAllRef.current({ withSkeleton: true });
+  }, [id, isAuthed, router]);
 
   useEffect(() => {
     if (!canAttach) return;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { fetchJsonAuth } from "@/lib/api";
 import { getToken } from "@/lib/auth";
@@ -26,7 +26,7 @@ export default function useValidationCasesList() {
   const [deletingId, setDeletingId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     setError("");
     setLoading(true);
     try {
@@ -38,7 +38,7 @@ export default function useValidationCasesList() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     const token = getToken();
@@ -47,9 +47,7 @@ export default function useValidationCasesList() {
       return;
     }
     load();
-    // Mount-only: auth check + initial data load
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [router, load]);
 
   function openDeleteDialog(validationCase) {
     const id = validationCase?.id;

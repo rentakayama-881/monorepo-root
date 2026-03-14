@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   fetchFeatureAuth,
@@ -127,22 +127,25 @@ export default function useDisputeDetail() {
     autoScrollEnabledRef.current = isNearBottom();
   };
 
-  const fetchDisputeData = async (isInitialLoad = false) => {
-    if (isInitialLoad) {
-      setLoading(true);
-    }
-    try {
-      const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.DETAIL(disputeId));
-      setDispute(normalizeDispute(response));
-    } catch (e) {
-      logger.error("Failed to load dispute:", e);
-      setError("Dispute not found or you do not have access.");
-    } finally {
+  const fetchDisputeData = useCallback(
+    async (isInitialLoad = false) => {
       if (isInitialLoad) {
-        setLoading(false);
+        setLoading(true);
       }
-    }
-  };
+      try {
+        const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.DETAIL(disputeId));
+        setDispute(normalizeDispute(response));
+      } catch (e) {
+        logger.error("Failed to load dispute:", e);
+        setError("Dispute not found or you do not have access.");
+      } finally {
+        if (isInitialLoad) {
+          setLoading(false);
+        }
+      }
+    },
+    [disputeId]
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -179,7 +182,7 @@ export default function useDisputeDetail() {
         clearInterval(interval);
       }
     };
-  }, [router, disputeId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [router, disputeId, fetchDisputeData]);
 
   useEffect(() => {
     const messages = dispute?.messages ?? [];

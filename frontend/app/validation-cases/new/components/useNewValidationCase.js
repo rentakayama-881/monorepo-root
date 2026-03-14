@@ -159,9 +159,7 @@ export function useNewValidationCase() {
     if (!isAuthed) {
       router.push("/login");
     }
-    // Mount-only: redirect unauthenticated users
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthed, router]);
 
   useEffect(() => {
     let cancelled = false;
