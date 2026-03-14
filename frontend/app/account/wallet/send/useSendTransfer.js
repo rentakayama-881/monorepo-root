@@ -83,8 +83,9 @@ export default function useSendTransfer() {
   }, [router]);
 
   useEffect(() => {
+    let cancelled = false;
     const timer = setTimeout(async () => {
-      if (searchQuery.length >= 3) {
+      if (searchQuery.length >= 3 && !cancelled) {
         setSearching(true);
         try {
           const userData = normalizeSearchUser(
@@ -93,29 +94,40 @@ export default function useSendTransfer() {
                 `?username=${encodeURIComponent(searchQuery)}`
             )
           );
-          if (userData && userData.exists) {
-            setSearchResults([
-              {
-                id: userData.userId,
-                username: userData.username,
-                avatar_url: userData.avatarUrl,
-              },
-            ]);
-          } else {
-            setSearchResults([]);
+          if (!cancelled) {
+            if (userData && userData.exists) {
+              setSearchResults([
+                {
+                  id: userData.userId,
+                  username: userData.username,
+                  avatar_url: userData.avatarUrl,
+                },
+              ]);
+            } else {
+              setSearchResults([]);
+            }
           }
         } catch (e) {
           logger.error("Search failed:", e);
-          setSearchResults([]);
+          if (!cancelled) {
+            setSearchResults([]);
+          }
         } finally {
-          setSearching(false);
+          if (!cancelled) {
+            setSearching(false);
+          }
         }
       } else {
-        setSearchResults([]);
+        if (!cancelled) {
+          setSearchResults([]);
+        }
       }
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [searchQuery]);
 
   const handleSelectUser = (user) => {

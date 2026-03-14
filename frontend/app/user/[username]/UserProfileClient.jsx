@@ -83,13 +83,17 @@ export default function UserProfilePage() {
   // Load profile and badges
   useEffect(() => {
     setLoading(true);
-    Promise.all([
+    Promise.allSettled([
       fetch(`${API}/api/user/${username}`).then((r) => r.json()),
       fetch(`${API}/api/user/${username}/badges`).then((r) => r.json()),
     ])
-      .then(([user, badgeData]) => {
-        setProfile(user);
-        setBadges(user.badges || badgeData.badges || []);
+      .then(([userResult, badgeResult]) => {
+        const user = userResult.status === "fulfilled" ? userResult.value : null;
+        const badgeData = badgeResult.status === "fulfilled" ? badgeResult.value : null;
+        if (user) {
+          setProfile(user);
+          setBadges(user.badges || badgeData?.badges || []);
+        }
       })
       .finally(() => setLoading(false));
   }, [API, username]);

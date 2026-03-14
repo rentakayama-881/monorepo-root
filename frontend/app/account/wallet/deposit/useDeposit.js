@@ -207,7 +207,7 @@ export default function useDeposit() {
     } else if (availableNetworks.length > 1) {
       setNetwork(availableNetworks[0]);
     }
-  }, [payCurrency]);
+  }, [availableNetworks]);
 
   async function handleCreateDeposit() {
     if (parsedAmount < minDeposit) {
