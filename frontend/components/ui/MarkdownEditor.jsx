@@ -1,122 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-
-/**
- * GitHub-style Markdown Editor
- *
- * Features:
- * - Full toolbar like GitHub
- * - Write/Preview tabs
- * - Keyboard shortcuts (Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+E)
- * - Smart text wrapping and line insertion
- * - Proper code block insertion
- * - Programmatic snippet insertion at cursor
- */
-
-// Toolbar button
-function ToolbarBtn({ onClick, title, children, disabled, active }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      className={`p-1.5 rounded transition-colors ${
-        active
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-      } disabled:opacity-40 disabled:cursor-not-allowed`}
-    >
-      {children}
-    </button>
-  );
-}
-
-// Separator
-function Sep() {
-  return <div className="w-px h-5 bg-border mx-1" />;
-}
-
-// SVG Icons - GitHub style
-const I = {
-  h1: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M3.75 2a.75.75 0 01.75.75V7h7V2.75a.75.75 0 011.5 0v10.5a.75.75 0 01-1.5 0V8.5h-7v4.75a.75.75 0 01-1.5 0V2.75A.75.75 0 013.75 2z" />
-    </svg>
-  ),
-  h2: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M3.75 2a.75.75 0 01.75.75V7h7V2.75a.75.75 0 011.5 0v10.5a.75.75 0 01-1.5 0V8.5h-7v4.75a.75.75 0 01-1.5 0V2.75A.75.75 0 013.75 2z" />
-    </svg>
-  ),
-  h3: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M3.75 2a.75.75 0 01.75.75V7h7V2.75a.75.75 0 011.5 0v10.5a.75.75 0 01-1.5 0V8.5h-7v4.75a.75.75 0 01-1.5 0V2.75A.75.75 0 013.75 2z" />
-    </svg>
-  ),
-  bold: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M4 2a1 1 0 00-1 1v10a1 1 0 001 1h5.5a3.5 3.5 0 001.852-6.47A3.5 3.5 0 008.5 2H4zm4.5 5a1.5 1.5 0 100-3H5v3h3.5zM5 9v3h4.5a1.5 1.5 0 000-3H5z" />
-    </svg>
-  ),
-  italic: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M6 2.75A.75.75 0 016.75 2h6.5a.75.75 0 010 1.5h-2.505l-3.858 9H9.25a.75.75 0 010 1.5h-6.5a.75.75 0 010-1.5h2.505l3.858-9H6.75A.75.75 0 016 2.75z" />
-    </svg>
-  ),
-  strike: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M8 1a.75.75 0 01.75.75v.5h4.5a.75.75 0 010 1.5H8.75v1H11a3 3 0 013 3v.25a3 3 0 01-3 3H8.75v3.25a.75.75 0 01-1.5 0V11H5a3 3 0 01-3-3v-.25a3 3 0 013-3h2.25v-1h-4.5a.75.75 0 010-1.5h4.5v-.5A.75.75 0 018 1zM5 7.75A1.5 1.5 0 003.5 9.25v.25a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5v-.25a1.5 1.5 0 00-1.5-1.5H5z" />
-    </svg>
-  ),
-  quote: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M1.75 2.5a.75.75 0 000 1.5h10.5a.75.75 0 000-1.5H1.75zm4 5a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5zm0 5a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5zM2.5 7.75a.75.75 0 00-1.5 0v6a.75.75 0 001.5 0v-6z" />
-    </svg>
-  ),
-  code: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M4.72 3.22a.75.75 0 011.06 1.06L2.06 8l3.72 3.72a.75.75 0 11-1.06 1.06L.47 8.53a.75.75 0 010-1.06l4.25-4.25zm6.56 0a.75.75 0 10-1.06 1.06L13.94 8l-3.72 3.72a.75.75 0 101.06 1.06l4.25-4.25a.75.75 0 000-1.06l-4.25-4.25z" />
-    </svg>
-  ),
-  link: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-.025 5.45a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25z" />
-    </svg>
-  ),
-  ul: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M2 4a1 1 0 100-2 1 1 0 000 2zm3.75-1.5a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5zm0 5a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5zm0 5a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5zM3 8a1 1 0 11-2 0 1 1 0 012 0zm-1 6a1 1 0 100-2 1 1 0 000 2z" />
-    </svg>
-  ),
-  ol: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M2.003 2.5a.5.5 0 00-.723-.447l-1.003.5a.5.5 0 00.446.895l.28-.14V6H.5a.5.5 0 000 1h2.006a.5.5 0 100-1h-.503V2.5zM5 3.25a.75.75 0 01.75-.75h8.5a.75.75 0 010 1.5h-8.5A.75.75 0 015 3.25zm0 5a.75.75 0 01.75-.75h8.5a.75.75 0 010 1.5h-8.5A.75.75 0 015 8.25zm0 5a.75.75 0 01.75-.75h8.5a.75.75 0 010 1.5h-8.5a.75.75 0 01-.75-.75z" />
-    </svg>
-  ),
-  task: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M6 8a2 2 0 100-4 2 2 0 000 4z" />
-      <path d="M2 1.75C2 .784 2.784 0 3.75 0h8.5C13.216 0 14 .784 14 1.75v12.5A1.75 1.75 0 0112.25 16h-8.5A1.75 1.75 0 012 14.25V1.75zm1.75-.25a.25.25 0 00-.25.25v12.5c0 .138.112.25.25.25h8.5a.25.25 0 00.25-.25V1.75a.25.25 0 00-.25-.25h-8.5z" />
-    </svg>
-  ),
-  img: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M1.75 2.5a.25.25 0 00-.25.25v10.5c0 .138.112.25.25.25h.94l5.077-5.078a1.75 1.75 0 012.412-.06L14.5 10.31V2.75a.25.25 0 00-.25-.25H1.75zm12.5 11H4.81l5.048-5.047a.25.25 0 01.344-.009l4.298 3.889v.917a.25.25 0 01-.25.25zm1.75-11v10.5A1.75 1.75 0 0114.25 15H1.75A1.75 1.75 0 010 13.25V2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75zM5.5 6a.5.5 0 11-1 0 .5.5 0 011 0zM7 6a2 2 0 11-4 0 2 2 0 014 0z" />
-    </svg>
-  ),
-  table: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0114.25 16H1.75A1.75 1.75 0 010 14.25V1.75zM1.5 6.5v7.75c0 .138.112.25.25.25H5v-8H1.5zM5 5V1.5H1.75a.25.25 0 00-.25.25V5H5zm1.5 1.5v8h7.75a.25.25 0 00.25-.25V6.5H6.5zm8-1.5V1.75a.25.25 0 00-.25-.25H6.5V5h8z" />
-    </svg>
-  ),
-  mention: (
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M5.475 4.5a.515.515 0 00-.507.611l.92 5.06a.515.515 0 00.507.419H7.76a.515.515 0 00.507-.419l.92-5.06a.515.515 0 00-.507-.611H5.475zm2.93 7.59a5.5 5.5 0 111.97-2.636l-.127.699a.903.903 0 001.772.362l.134-.74A7 7 0 107.5 14.5a7.041 7.041 0 003.401-.879l-.532-1.137a5.508 5.508 0 01-1.964.606z" />
-    </svg>
-  ),
-};
+import { ToolbarBtn, Sep, I, MarkdownEditorPreview } from "./markdown-editor-utils";
 
 export default function MarkdownEditor({
   value = "",
@@ -454,20 +339,11 @@ export default function MarkdownEditor({
           />
         </>
       ) : (
-        /* Preview pane */
-        <div className="px-4 py-3 overflow-auto" style={{ minHeight }}>
-          {value.trim() ? (
-            PreviewComponent ? (
-              <PreviewComponent content={value} />
-            ) : (
-              <pre className="whitespace-pre-wrap text-sm text-foreground font-mono">{value}</pre>
-            )
-          ) : (
-            <p className="text-muted-foreground italic text-sm">
-              Tidak ada konten untuk di-preview
-            </p>
-          )}
-        </div>
+        <MarkdownEditorPreview
+          value={value}
+          minHeight={minHeight}
+          PreviewComponent={PreviewComponent}
+        />
       )}
 
       {/* Footer */}
