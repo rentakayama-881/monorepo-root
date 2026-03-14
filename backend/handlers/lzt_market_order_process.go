@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"backend-gin/config"
 	"context"
 	"net/http"
 	"strings"
@@ -10,10 +11,10 @@ import (
 )
 
 func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID, i18n, authHeader string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.MarketOrderTimeout)
 	defer cancel()
 
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "USER_BALANCE_CHECK",
 		Label:  "Memeriksa saldo user",
 		Status: "processing",
@@ -22,8 +23,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	if h.featureWallet != nil {
 		balanceInfo, balanceErr := h.featureWallet.GetMyWalletBalance(ctx, authHeader)
 		if balanceErr == nil && (balanceInfo == nil || balanceInfo.Balance <= 0) {
-			h.markOrderFailed(orderID, "USER_BALANCE_NOT_ENOUGH", "Saldo wallet Anda tidak mencukupi.")
-			h.appendOrderStep(orderID, publicOrderStep{
+			h.markOrderFailed(ctx, orderID, "USER_BALANCE_NOT_ENOUGH", "Saldo wallet Anda tidak mencukupi.")
+			h.appendOrderStep(ctx, orderID, publicOrderStep{
 				Code:    "USER_BALANCE_CHECK",
 				Label:   "Saldo user tidak mencukupi",
 				Status:  "failed",
@@ -33,21 +34,21 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 			return
 		}
 	}
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "USER_BALANCE_CHECK",
 		Label:  "Saldo user terdeteksi",
 		Status: "done",
 		At:     time.Now().UTC(),
 	})
 
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "PURCHASE_WORKFLOW",
 		Label:  "Menggunakan alur pembelian otomatis",
 		Status: "done",
 		At:     time.Now().UTC(),
 	})
 
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "USER_BALANCE_RESERVE",
 		Label:  "Mengunci saldo pembayaran",
 		Status: "processing",
@@ -55,8 +56,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	})
 
 	if h.featureWallet == nil {
-		h.markOrderFailed(orderID, "SYSTEM_CONFIG_ERROR", "Feature wallet client belum terkonfigurasi")
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.markOrderFailed(ctx, orderID, "SYSTEM_CONFIG_ERROR", "Feature wallet client belum terkonfigurasi")
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "USER_BALANCE_RESERVE",
 			Label:   "Gagal mengunci saldo pembayaran",
 			Status:  "failed",
@@ -66,13 +67,13 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		return
 	}
 
-	orderSnapshot, ok := h.getOrderForUser(orderID, userID)
+	orderSnapshot, ok := h.getOrderForUser(ctx, orderID, userID)
 	if !ok {
 		return
 	}
 	if orderSnapshot.PriceIDR <= 0 || orderSnapshot.SourcePrice <= 0 {
-		h.markOrderFailed(orderID, "PRICING_UNAVAILABLE", "Harga belum tersedia untuk item ini.")
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.markOrderFailed(ctx, orderID, "PRICING_UNAVAILABLE", "Harga belum tersedia untuk item ini.")
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "USER_BALANCE_RESERVE",
 			Label:   "Gagal mengunci saldo pembayaran",
 			Status:  "failed",
@@ -83,8 +84,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	}
 
 	if _, err := h.featureWallet.ReserveMarketPurchase(ctx, authHeader, orderID, orderSnapshot.PriceIDR); err != nil {
-		h.markOrderFailed(orderID, "USER_BALANCE_NOT_ENOUGH", "Saldo wallet Anda tidak mencukupi.")
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.markOrderFailed(ctx, orderID, "USER_BALANCE_NOT_ENOUGH", "Saldo wallet Anda tidak mencukupi.")
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "USER_BALANCE_RESERVE",
 			Label:   "Gagal mengunci saldo pembayaran",
 			Status:  "failed",
@@ -94,14 +95,14 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		return
 	}
 
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "USER_BALANCE_RESERVE",
 		Label:  "Saldo pembayaran berhasil dikunci",
 		Status: "done",
 		At:     time.Now().UTC(),
 	})
 
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "PLATFORM_READINESS_CHECK",
 		Label:  "Memverifikasi kesiapan sistem penjualan",
 		Status: "processing",
@@ -110,8 +111,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	supplierBalance := h.checkSupplierBalance(ctx, orderSnapshot.SourcePrice)
 	if supplierBalance.State == supplierBalanceStateInsufficient {
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Saldo sumber belum mencukupi")
-		h.markOrderFailed(orderID, "PLATFORM_READINESS_NOT_ENOUGH", "Akun belum siap untuk dijual saat ini.")
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.markOrderFailed(ctx, orderID, "PLATFORM_READINESS_NOT_ENOUGH", "Akun belum siap untuk dijual saat ini.")
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "PLATFORM_READINESS_CHECK",
 			Label:   "Kesiapan sistem belum mencukupi",
 			Status:  "failed",
@@ -123,8 +124,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	if supplierBalance.State == supplierBalanceStateUnknown && isProviderIntegrationFailureReason(supplierBalance.Reason) {
 		userFailureReason := "Layanan pembelian sedang mengalami gangguan sementara. Silakan coba lagi."
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
-		h.markOrderFailed(orderID, "PLATFORM_READINESS_CHECK_FAILED", userFailureReason)
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.markOrderFailed(ctx, orderID, "PLATFORM_READINESS_CHECK_FAILED", userFailureReason)
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "PLATFORM_READINESS_CHECK",
 			Label:   "Gagal memverifikasi kesiapan sistem",
 			Status:  "failed",
@@ -134,21 +135,21 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		return
 	}
 	if supplierBalance.State == supplierBalanceStateUnknown {
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "PLATFORM_READINESS_DEFERRED",
 			Label:   "Kesiapan sistem belum dapat dipastikan, proses dilanjutkan",
 			Status:  "done",
 			Message: "Verifikasi akhir dilakukan pada tahap eksekusi pembelian.",
 			At:      time.Now().UTC(),
 		})
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:   "PLATFORM_READINESS_CHECK",
 			Label:  "Pemeriksaan awal kesiapan dilewati (status belum pasti)",
 			Status: "done",
 			At:     time.Now().UTC(),
 		})
 	} else {
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:   "PLATFORM_READINESS_CHECK",
 			Label:  "Kesiapan sistem terverifikasi",
 			Status: "done",
@@ -156,7 +157,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		})
 	}
 
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "ITEM_AVAILABILITY_CHECK",
 		Label:  "Memverifikasi ketersediaan akun",
 		Status: "processing",
@@ -166,8 +167,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	if itemReadinessErr != nil {
 		userFailureReason := normalizeCheckerErrorMessage(itemReadinessErr)
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
-		h.markOrderFailed(orderID, "ITEM_AVAILABILITY_CHECK_FAILED", userFailureReason)
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.markOrderFailed(ctx, orderID, "ITEM_AVAILABILITY_CHECK_FAILED", userFailureReason)
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "ITEM_AVAILABILITY_CHECK",
 			Label:   "Verifikasi ketersediaan akun gagal",
 			Status:  "failed",
@@ -177,8 +178,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		return
 	}
 	if itemReadiness != nil && len(itemReadiness.Item) > 0 {
-		h.applyOrderItemSnapshot(orderID, itemReadiness.Item)
-		if refreshedOrder, found := h.getOrderForUser(orderID, userID); found {
+		h.applyOrderItemSnapshot(ctx, orderID, itemReadiness.Item)
+		if refreshedOrder, found := h.getOrderForUser(ctx, orderID, userID); found {
 			orderSnapshot = refreshedOrder
 		}
 	}
@@ -188,8 +189,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 			userFailureReason = "Akun belum siap untuk dijual saat ini."
 		}
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
-		h.markOrderFailed(orderID, "ITEM_UNAVAILABLE", userFailureReason)
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.markOrderFailed(ctx, orderID, "ITEM_UNAVAILABLE", userFailureReason)
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "ITEM_AVAILABILITY_CHECK",
 			Label:   "Akun tidak tersedia untuk dibeli",
 			Status:  "failed",
@@ -198,14 +199,14 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		})
 		return
 	}
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "ITEM_AVAILABILITY_CHECK",
 		Label:  "Akun tersedia untuk dibeli",
 		Status: "done",
 		At:     time.Now().UTC(),
 	})
 
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "PURCHASE_EXECUTION",
 		Label:  "Memproses pembelian akun",
 		Status: "processing",
@@ -221,8 +222,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 			zap.Error(buyErr),
 		)
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Provider transport error")
-		h.markOrderFailed(orderID, "CHECKER_ERROR", "Checker sedang error. Coba lagi sebentar.")
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.markOrderFailed(ctx, orderID, "CHECKER_ERROR", "Checker sedang error. Coba lagi sebentar.")
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "PURCHASE_EXECUTION",
 			Label:   "Proses pembelian gagal",
 			Status:  "failed",
@@ -252,8 +253,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 			zap.Strings("provider_errors", extractProviderErrors(resp)),
 		)
 		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
-		h.markOrderFailed(orderID, "PURCHASE_FAILED", userFailureReason)
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.markOrderFailed(ctx, orderID, "PURCHASE_FAILED", userFailureReason)
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "PURCHASE_EXECUTION",
 			Label:   "Proses pembelian gagal",
 			Status:  "failed",
@@ -262,14 +263,14 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		})
 		return
 	}
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "PURCHASE_EXECUTION",
 		Label:  "Pembelian akun berhasil",
 		Status: "done",
 		At:     time.Now().UTC(),
 	})
 
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "USER_BALANCE_CAPTURE",
 		Label:  "Menyelesaikan potongan saldo user",
 		Status: "processing",
@@ -277,8 +278,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	})
 	if _, err := h.featureWallet.CaptureMarketPurchase(ctx, authHeader, orderID); err != nil {
 		// Critical mismatch: provider succeeded but capture failed.
-		h.markOrderFailed(orderID, "CAPTURE_FAILED", "Pembelian berhasil, tetapi finalisasi saldo gagal.")
-		h.appendOrderStep(orderID, publicOrderStep{
+		h.markOrderFailed(ctx, orderID, "CAPTURE_FAILED", "Pembelian berhasil, tetapi finalisasi saldo gagal.")
+		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "USER_BALANCE_CAPTURE",
 			Label:   "Finalisasi saldo gagal",
 			Status:  "failed",
@@ -287,7 +288,7 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		})
 		return
 	}
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "USER_BALANCE_CAPTURE",
 		Label:  "Saldo user berhasil difinalisasi",
 		Status: "done",
@@ -295,8 +296,8 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	})
 
 	delivery := extractDeliveryPayload(resp)
-	h.markOrderFulfilled(orderID, delivery)
-	h.appendOrderStep(orderID, publicOrderStep{
+	h.markOrderFulfilled(ctx, orderID, delivery)
+	h.appendOrderStep(ctx, orderID, publicOrderStep{
 		Code:   "DELIVERY_READY",
 		Label:  "Data akun siap dikirim ke user",
 		Status: "done",

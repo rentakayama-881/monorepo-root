@@ -9,7 +9,7 @@ import (
 	"backend-gin/ent/marketpurchaseorder"
 )
 
-func (h *LZTMarketHandler) saveOrder(order *publicMarketOrder) {
+func (h *LZTMarketHandler) saveOrder(ctx context.Context, order *publicMarketOrder) {
 	if order == nil {
 		return
 	}
@@ -45,7 +45,7 @@ func (h *LZTMarketHandler) saveOrder(order *publicMarketOrder) {
 	if len(order.Delivery) > 0 {
 		create = create.SetDeliveryJSON(order.Delivery)
 	}
-	if _, err := create.Save(context.Background()); err == nil {
+	if _, err := create.Save(ctx); err == nil {
 		return
 	}
 
@@ -73,10 +73,10 @@ func (h *LZTMarketHandler) saveOrder(order *publicMarketOrder) {
 	if len(order.Delivery) > 0 {
 		upd = upd.SetDeliveryJSON(order.Delivery)
 	}
-	_, _ = upd.Save(context.Background())
+	_, _ = upd.Save(ctx)
 }
 
-func (h *LZTMarketHandler) appendOrderStep(orderID string, step publicOrderStep) {
+func (h *LZTMarketHandler) appendOrderStep(ctx context.Context, orderID string, step publicOrderStep) {
 	client := database.GetEntClient()
 	if client == nil {
 		return
@@ -92,17 +92,17 @@ func (h *LZTMarketHandler) appendOrderStep(orderID string, step publicOrderStep)
 		SetAt(step.At).
 		SetCreatedAt(step.At).
 		SetUpdatedAt(step.At).
-		Save(context.Background())
+		Save(ctx)
 
 	_, _ = client.MarketPurchaseOrder.
 		Update().
 		Where(marketpurchaseorder.OrderIDEQ(orderID)).
 		SetLastStepCode(strings.TrimSpace(step.Code)).
 		SetUpdatedAt(step.At).
-		Save(context.Background())
+		Save(ctx)
 }
 
-func (h *LZTMarketHandler) markOrderFailed(orderID, code, reason string) {
+func (h *LZTMarketHandler) markOrderFailed(ctx context.Context, orderID, code, reason string) {
 	client := database.GetEntClient()
 	if client == nil {
 		return
@@ -114,10 +114,10 @@ func (h *LZTMarketHandler) markOrderFailed(orderID, code, reason string) {
 		SetFailureCode(strings.TrimSpace(code)).
 		SetFailureReason(strings.TrimSpace(reason)).
 		SetUpdatedAt(time.Now().UTC()).
-		Save(context.Background())
+		Save(ctx)
 }
 
-func (h *LZTMarketHandler) markOrderFulfilled(orderID string, delivery map[string]interface{}) {
+func (h *LZTMarketHandler) markOrderFulfilled(ctx context.Context, orderID string, delivery map[string]interface{}) {
 	client := database.GetEntClient()
 	if client == nil {
 		return
@@ -132,10 +132,10 @@ func (h *LZTMarketHandler) markOrderFulfilled(orderID string, delivery map[strin
 	if len(delivery) > 0 {
 		upd = upd.SetDeliveryJSON(delivery)
 	}
-	_, _ = upd.Save(context.Background())
+	_, _ = upd.Save(ctx)
 }
 
-func (h *LZTMarketHandler) getOrderForUser(orderID string, userID uint) (publicMarketOrder, bool) {
+func (h *LZTMarketHandler) getOrderForUser(ctx context.Context, orderID string, userID uint) (publicMarketOrder, bool) {
 	client := database.GetEntClient()
 	if client == nil {
 		return publicMarketOrder{}, false
@@ -147,11 +147,11 @@ func (h *LZTMarketHandler) getOrderForUser(orderID string, userID uint) (publicM
 			marketpurchaseorder.OrderIDEQ(orderID),
 			marketpurchaseorder.UserIDEQ(int(userID)),
 		).
-		Only(context.Background())
+		Only(ctx)
 	if err != nil {
 		return publicMarketOrder{}, false
 	}
 	order := mapEntityToPublicMarketOrder(row)
-	order.Steps = h.loadOrderSteps(context.Background(), row.OrderID)
+	order.Steps = h.loadOrderSteps(ctx, row.OrderID)
 	return order.toClientDTO(true), true
 }

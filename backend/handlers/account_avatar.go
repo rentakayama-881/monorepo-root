@@ -58,7 +58,7 @@ func UploadAvatarHandler(c *gin.Context) {
 	}
 
 	filename := fmt.Sprintf("u%d_%d%s", user.ID, time.Now().Unix(), ext)
-	avatarURL, err := supabase.UploadFile(file, filename, contentTypes[ext])
+	avatarURL, err := supabase.UploadFile(c.Request.Context(), file, filename, contentTypes[ext])
 	if err != nil {
 		logger.Error("Failed to upload avatar to storage",
 			zap.Int("user_id", user.ID),

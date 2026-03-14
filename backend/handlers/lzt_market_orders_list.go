@@ -105,7 +105,7 @@ func (h *LZTMarketHandler) GetMyPublicChatGPTOrderDetail(c *gin.Context) {
 		return
 	}
 
-	order, ok := h.getOrderForUser(orderID, userID)
+	order, ok := h.getOrderForUser(c.Request.Context(), orderID, userID)
 	if !ok {
 		authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
 		if h.featureWallet != nil && authHeader != "" {

@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"time"
 
+	"backend-gin/config"
 	"backend-gin/ent"
 	"backend-gin/logger"
 
@@ -82,11 +82,11 @@ func InitEntDB() {
 	// Connection pool tuning (safe defaults for Neon)
 	db.SetMaxIdleConns(5)
 	db.SetMaxOpenConns(20)
-	db.SetConnMaxIdleTime(5 * time.Minute)
-	db.SetConnMaxLifetime(30 * time.Minute)
+	db.SetConnMaxIdleTime(config.DBConnMaxIdleTime)
+	db.SetConnMaxLifetime(config.DBConnMaxLifetime)
 
 	// Verify connectivity quickly
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.DBPingTimeout)
 	defer cancel()
 	if err := db.PingContext(ctx); err != nil {
 		logger.Fatal("Failed to ping database", zap.Error(err))
@@ -95,13 +95,13 @@ func InitEntDB() {
 	// One-time naming migration (Thread -> Validation Case) to keep DB aligned with domain terminology.
 	// Idempotent and safe: runs only when old tables exist and new tables do not.
 	// Do not fail service startup if this step times out due transient DB contention.
-	renameCtx, renameCancel := context.WithTimeout(context.Background(), 20*time.Second)
+	renameCtx, renameCancel := context.WithTimeout(context.Background(), config.DBRenameTimeout)
 	defer renameCancel()
 	if err := applyDomainRenames(renameCtx, db); err != nil {
 		logger.Warn("Skipping domain rename migration on startup", zap.Error(err))
 	}
 
-	preSchemaCtx, preSchemaCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	preSchemaCtx, preSchemaCancel := context.WithTimeout(context.Background(), config.DBMigrationTimeout)
 	defer preSchemaCancel()
 	if err := applyWorkflowCyclePreSchemaCleanup(preSchemaCtx, db); err != nil {
 		logger.Fatal("Failed to prepare workflow cycle migrations", zap.Error(err))
@@ -116,13 +116,13 @@ func InitEntDB() {
 	// Run migrations (optional depending on your setup)
 	// If you use Atlas/Ent migration files, keep this.
 	// If you manage migrations externally, you can remove/comment it.
-	ctx2, cancel2 := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx2, cancel2 := context.WithTimeout(context.Background(), config.DBMigrationTimeout)
 	defer cancel2()
 	if err := EntClient.Schema.Create(ctx2); err != nil {
 		logger.Fatal("Failed to run Ent migrations", zap.Error(err))
 	}
 
-	cycleCtx, cycleCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	cycleCtx, cycleCancel := context.WithTimeout(context.Background(), config.DBMigrationTimeout)
 	defer cycleCancel()
 	if err := applyWorkflowCycleMigrations(cycleCtx, db); err != nil {
 		logger.Fatal("Failed to apply workflow cycle migrations", zap.Error(err))

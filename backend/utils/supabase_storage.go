@@ -41,7 +41,7 @@ func (s *SupabaseStorage) IsConfigured() bool {
 
 // UploadFile uploads a file to Supabase Storage
 // Returns the public URL of the uploaded file
-func (s *SupabaseStorage) UploadFile(file multipart.File, filename string, contentType string) (string, error) {
+func (s *SupabaseStorage) UploadFile(ctx context.Context, file multipart.File, filename string, contentType string) (string, error) {
 	if !s.IsConfigured() {
 		return "", fmt.Errorf("supabase storage not configured")
 	}
@@ -60,7 +60,7 @@ func (s *SupabaseStorage) UploadFile(file multipart.File, filename string, conte
 	uploadURL := fmt.Sprintf("%s/storage/v1/object/%s/%s", s.URL, s.Bucket, uniqueName)
 
 	// Create request
-	req, err := http.NewRequestWithContext(context.Background(), "POST", uploadURL, bytes.NewReader(fileBytes))
+	req, err := http.NewRequestWithContext(ctx, "POST", uploadURL, bytes.NewReader(fileBytes))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -98,7 +98,7 @@ func (s *SupabaseStorage) UploadFile(file multipart.File, filename string, conte
 }
 
 // DeleteFile deletes a file from Supabase Storage
-func (s *SupabaseStorage) DeleteFile(filename string) error {
+func (s *SupabaseStorage) DeleteFile(ctx context.Context, filename string) error {
 	if !s.IsConfigured() {
 		return fmt.Errorf("supabase storage not configured")
 	}
@@ -110,7 +110,7 @@ func (s *SupabaseStorage) DeleteFile(filename string) error {
 		"prefixes": []string{filename},
 	})
 
-	req, err := http.NewRequestWithContext(context.Background(), "DELETE", deleteURL, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "DELETE", deleteURL, bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}

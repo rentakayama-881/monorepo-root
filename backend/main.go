@@ -96,10 +96,10 @@ func main() {
 
 	// Session cleanup goroutine — delete expired sessions every hour
 	// Prevents DB bloat on Neon free tier (CleanupExpiredSessions exists but was never called)
-	sessionCleanupTicker := time.NewTicker(1 * time.Hour)
+	sessionCleanupTicker := time.NewTicker(config.SessionCleanupInterval)
 	go func() {
 		for range sessionCleanupTicker.C {
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), config.SessionCleanupTimeout)
 			affected, err := sessionEntService.CleanupExpiredSessions(ctx)
 			cancel()
 			if err != nil {
@@ -261,10 +261,10 @@ func main() {
 	server := &http.Server{
 		Addr:              listenAddr,
 		Handler:           router,
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       120 * time.Second,
+		ReadHeaderTimeout: config.ServerReadHeaderTimeout,
+		ReadTimeout:       config.ServerReadTimeout,
+		WriteTimeout:      config.ServerWriteTimeout,
+		IdleTimeout:       config.ServerIdleTimeout,
 		MaxHeaderBytes:    1 << 20, // 1 MiB
 	}
 
@@ -283,7 +283,7 @@ func main() {
 	logger.Info("Received shutdown signal", zap.String("signal", sig.String()))
 
 	// Graceful shutdown with 30 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.GracefulShutdownTimeout)
 	defer cancel()
 
 	logger.Info("Shutting down server gracefully...")

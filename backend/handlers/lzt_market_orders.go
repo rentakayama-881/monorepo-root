@@ -41,7 +41,7 @@ func (h *LZTMarketHandler) loadOrderSteps(ctx context.Context, orderID string) [
 	return out
 }
 
-func (h *LZTMarketHandler) applyOrderItemSnapshot(orderID string, item map[string]interface{}) {
+func (h *LZTMarketHandler) applyOrderItemSnapshot(ctx context.Context, orderID string, item map[string]interface{}) {
 	sourcePrice, sourceCurrency, sourceSymbol := h.extractSourcePriceAndCurrency(item)
 	if sourcePrice <= 0 {
 		sourcePrice = extractNumericPrice(item)
@@ -75,7 +75,7 @@ func (h *LZTMarketHandler) applyOrderItemSnapshot(orderID string, item map[strin
 	if priceIDR > 0 {
 		upd = upd.SetPriceDisplay(formatIDR(priceIDR))
 	}
-	_, _ = upd.Save(context.Background())
+	_, _ = upd.Save(ctx)
 }
 
 // CreatePublicChatGPTOrder creates and executes a direct buy using backend LZT token.
@@ -250,8 +250,8 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 			At:     now,
 		},
 	}
-	h.saveOrder(order)
-	h.appendOrderStep(order.ID, publicOrderStep{
+	h.saveOrder(c.Request.Context(), order)
+	h.appendOrderStep(c.Request.Context(), order.ID, publicOrderStep{
 		Code:   "PROCESSING",
 		Label:  "Memulai proses pembelian",
 		Status: "processing",
@@ -260,7 +260,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 
 	go h.processOrderAsync(order.ID, userID, resolvedItemID, i18n, authHeader)
 
-	detail, _ := h.getOrderForUser(order.ID, userID)
+	detail, _ := h.getOrderForUser(c.Request.Context(), order.ID, userID)
 	c.JSON(http.StatusAccepted, gin.H{
 		"order": detail,
 	})

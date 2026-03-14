@@ -69,7 +69,7 @@ func AdminLogin(c *gin.Context) {
 		"name":     adminUser.Name,
 		"iss":      config.JWTIssuer,
 		"aud":      []string{config.JWTAudience},
-		"exp":      time.Now().Add(8 * time.Hour).Unix(), // 8 hour expiry
+		"exp":      time.Now().Add(config.AdminTokenExpiry).Unix(), // 8 hour expiry
 		"iat":      time.Now().Unix(),
 	})
 
