@@ -1,318 +1,40 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import {
-  fetchFeatureAuth,
-  FEATURE_ENDPOINTS,
-  unwrapFeatureData,
-  extractFeatureItems,
-} from "@/lib/featureApi";
-import { fetchJsonAuth } from "@/lib/api";
-import { getToken } from "@/lib/auth";
-import logger from "@/lib/logger";
+import { ChevronLeft } from "lucide-react";
 import { PageLoadingBlock } from "@/components/ui/LoadingState";
-import { ChevronLeft, Paperclip } from "lucide-react";
-
-function normalizeCurrentUser(payload) {
-  return {
-    id: Number(payload?.id ?? payload?.user_id ?? payload?.userId ?? 0) || 0,
-    username: payload?.username ?? payload?.Username ?? "",
-  };
-}
-
-function normalizeDisputeMessage(message) {
-  return {
-    id: message?.id ?? message?.Id ?? "",
-    senderId: Number(message?.senderId ?? message?.SenderId ?? 0) || 0,
-    senderUsername: message?.senderUsername ?? message?.SenderUsername ?? "User",
-    isAdmin: Boolean(message?.isAdmin ?? message?.IsAdmin ?? false),
-    content: message?.content ?? message?.Content ?? message?.message ?? "",
-    createdAt: message?.createdAt ?? message?.CreatedAt ?? message?.created_at ?? null,
-  };
-}
-
-function normalizeDisputeEvidence(evidence) {
-  return {
-    id: evidence?.id ?? evidence?.Id ?? "",
-    description: evidence?.description ?? evidence?.Description ?? "",
-    fileUrl: evidence?.fileUrl ?? evidence?.FileUrl ?? evidence?.file_url ?? "",
-    createdAt: evidence?.createdAt ?? evidence?.CreatedAt ?? evidence?.created_at ?? null,
-    username:
-      evidence?.user?.username ??
-      evidence?.user?.Username ??
-      evidence?.username ??
-      evidence?.Username ??
-      "User",
-  };
-}
-
-function normalizeDispute(payload) {
-  const data = unwrapFeatureData(payload) || {};
-  const statusRaw = data?.status ?? data?.Status ?? "open";
-  const phaseRaw = data?.phase ?? data?.Phase ?? "negotiation";
-  const resolutionRaw = data?.resolution ?? data?.Resolution ?? null;
-  const normalizedResolution =
-    typeof resolutionRaw === "string"
-      ? resolutionRaw.toLowerCase()
-      : String(
-          resolutionRaw?.type ??
-            resolutionRaw?.Type ??
-            resolutionRaw?.decision ??
-            resolutionRaw?.Decision ??
-            ""
-        ).toLowerCase();
-
-  const phaseMap = {
-    negotiation: "negotiation",
-    evidence: "evidence",
-    adminreview: "admin_review",
-    admin_review: "admin_review",
-    underreview: "admin_review",
-    under_review: "admin_review",
-  };
-
-  return {
-    id: data?.id ?? data?.Id ?? "",
-    status: String(statusRaw).toLowerCase(),
-    phase: phaseMap[String(phaseRaw).replace(/\s+/g, "").toLowerCase()] ?? "negotiation",
-    phaseDeadline: data?.phaseDeadline ?? data?.PhaseDeadline ?? data?.phase_deadline ?? null,
-    amount: Number(data?.amount ?? data?.Amount ?? 0) || 0,
-    senderId: Number(data?.senderId ?? data?.SenderId ?? 0) || 0,
-    receiverId: Number(data?.receiverId ?? data?.ReceiverId ?? 0) || 0,
-    senderUsername: data?.senderUsername ?? data?.SenderUsername ?? "Unknown",
-    receiverUsername: data?.receiverUsername ?? data?.ReceiverUsername ?? "Unknown",
-    resolution: normalizedResolution,
-    adminNotes: data?.adminNotes ?? data?.AdminNotes ?? data?.admin_notes ?? data?.Admin_Note ?? "",
-    admin_notes:
-      data?.adminNotes ?? data?.AdminNotes ?? data?.admin_notes ?? data?.Admin_Note ?? "",
-    messages: extractFeatureItems(data?.messages ?? data?.Messages).map(normalizeDisputeMessage),
-    evidence: extractFeatureItems(data?.evidence ?? data?.Evidence).map(normalizeDisputeEvidence),
-  };
-}
+import useWalletDisputeDetail from "./components/useWalletDisputeDetail";
+import PhaseInfoBanner from "./components/PhaseInfoBanner";
+import DisputeMessages from "./components/DisputeMessages";
+import EvidenceSection from "./components/EvidenceSection";
+import TransferDetails from "./components/TransferDetails";
+import DisputeActions from "./components/DisputeActions";
+import ResolutionResult from "./components/ResolutionResult";
 
 export default function DisputeDetailPage() {
-  const router = useRouter();
-  const params = useParams();
-  const disputeId = params.id;
-  const messagesContainerRef = useRef(null);
-  const autoScrollEnabledRef = useRef(true);
-  const lastMessageSignatureRef = useRef("");
-
-  const [dispute, setDispute] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [error, setError] = useState("");
-
-  // Message form
-  const [message, setMessage] = useState("");
-  const [sendingMessage, setSendingMessage] = useState(false);
-
-  // Evidence form
-  const [showEvidenceForm, setShowEvidenceForm] = useState(false);
-  const [evidenceDescription, setEvidenceDescription] = useState("");
-  const [evidenceUrl, setEvidenceUrl] = useState("");
-
-  const getLastMessageSignature = (messages) => {
-    if (!Array.isArray(messages) || messages.length === 0) return "";
-    const lastMessage = messages[messages.length - 1];
-    return `${lastMessage?.id ?? ""}-${lastMessage?.createdAt ?? ""}-${messages.length}`;
-  };
-
-  const isNearBottom = () => {
-    const container = messagesContainerRef.current;
-    if (!container) return true;
-
-    const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-    return distanceToBottom <= 96;
-  };
-
-  // Scroll only inside the message area to keep page position stable.
-  const scrollToBottom = (behavior = "auto") => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    container.scrollTo({
-      top: container.scrollHeight,
-      behavior,
-    });
-  };
-
-  const handleMessagesScroll = () => {
-    autoScrollEnabledRef.current = isNearBottom();
-  };
-
-  useEffect(() => {
-    async function loadData() {
-      const token = getToken();
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      // Fetch current user from API
-      try {
-        const userData = await fetchJsonAuth("/api/user/me");
-        setCurrentUser(normalizeCurrentUser(userData));
-      } catch (e) {
-        logger.error("Failed to load user:", e);
-      }
-
-      try {
-        const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.DETAIL(disputeId));
-        setDispute(normalizeDispute(response));
-      } catch (e) {
-        logger.error("Failed to load dispute:", e);
-        setError("Dispute not found");
-      }
-      setLoading(false);
-    }
-
-    loadData();
-  }, [router, disputeId]);
-
-  useEffect(() => {
-    const messages = dispute?.messages ?? [];
-    const signature = getLastMessageSignature(messages);
-
-    if (!signature) {
-      lastMessageSignatureRef.current = "";
-      return;
-    }
-
-    const isInitialBatch = !lastMessageSignatureRef.current;
-    const hasNewMessages = signature !== lastMessageSignatureRef.current;
-
-    if (!hasNewMessages) {
-      return;
-    }
-
-    lastMessageSignatureRef.current = signature;
-
-    if (isInitialBatch || autoScrollEnabledRef.current) {
-      scrollToBottom(isInitialBatch ? "auto" : "smooth");
-    }
-  }, [dispute?.messages]);
-
-  const refreshDispute = async () => {
-    try {
-      const response = await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.DETAIL(disputeId));
-      setDispute(normalizeDispute(response));
-    } catch (e) {
-      logger.error("Failed to refresh dispute:", e);
-    }
-  };
-
-  const sendMessage = async (e) => {
-    e.preventDefault();
-    if (!message.trim()) return;
-
-    setSendingMessage(true);
-    autoScrollEnabledRef.current = true;
-
-    try {
-      await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.MESSAGES(disputeId), {
-        method: "POST",
-        body: JSON.stringify({ content: message.trim() }),
-      });
-
-      setMessage("");
-      await refreshDispute();
-    } catch (e) {
-      logger.error("Failed to send message:", e);
-    }
-    setSendingMessage(false);
-  };
-
-  const addEvidence = async (e) => {
-    e.preventDefault();
-    if (!evidenceDescription.trim()) return;
-
-    setProcessing(true);
-
-    try {
-      await fetchFeatureAuth(FEATURE_ENDPOINTS.DISPUTES.EVIDENCE(disputeId), {
-        method: "POST",
-        body: JSON.stringify({
-          description: evidenceDescription.trim(),
-          fileUrl: evidenceUrl.trim() || null,
-        }),
-      });
-
-      setEvidenceDescription("");
-      setEvidenceUrl("");
-      setShowEvidenceForm(false);
-      await refreshDispute();
-    } catch (e) {
-      logger.error("Failed to add evidence:", e);
-    }
-    setProcessing(false);
-  };
-
-  const handleMutualAction = async (action) => {
-    setProcessing(true);
-
-    try {
-      const endpoint =
-        action === "release"
-          ? `/api/v1/disputes/${disputeId}/mutual-release`
-          : `/api/v1/disputes/${disputeId}/mutual-refund`;
-
-      await fetchFeatureAuth(endpoint, { method: "POST" });
-      await refreshDispute();
-    } catch (e) {
-      setError(e.message || "An error occurred");
-    }
-    setProcessing(false);
-  };
-
-  const getPhaseInfo = (phase) => {
-    const info = {
-      negotiation: {
-        title: "Negotiation Phase",
-        description: "Discuss with the counterparty to find a resolution.",
-        containerClass: "bg-warning/10 border border-warning/30",
-        titleClass: "text-warning",
-      },
-      evidence: {
-        title: "Evidence Phase",
-        description: "Upload supporting evidence for your claim.",
-        containerClass: "bg-accent border border-border",
-        titleClass: "text-accent-foreground",
-      },
-      admin_review: {
-        title: "Admin Review",
-        description: "Our team is currently reviewing this case.",
-        containerClass: "bg-primary/10 border border-primary/30",
-        titleClass: "text-primary",
-      },
-    };
-    return info[phase] || info.negotiation;
-  };
-
-  const getResolutionLabel = (resolution) => {
-    const value = String(resolution || "")
-      .replace(/\s+/g, "")
-      .toLowerCase();
-    if (!value) return "Completed";
-    if (value.includes("split")) return "Funds Split";
-    if (value.includes("refund")) return "Refund to Sender";
-    if (value.includes("release")) return "Release to Recipient";
-    if (value.includes("noaction")) return "No Action";
-    return resolution;
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "-";
-    const date = new Date(dateStr);
-    if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  const {
+    dispute,
+    loading,
+    processing,
+    currentUser,
+    error,
+    message,
+    setMessage,
+    sendingMessage,
+    showEvidenceForm,
+    setShowEvidenceForm,
+    evidenceDescription,
+    setEvidenceDescription,
+    evidenceUrl,
+    setEvidenceUrl,
+    messagesContainerRef,
+    onSendMessage,
+    onAddEvidence,
+    onMutualAction,
+    handleMessagesScroll,
+    isSender,
+    isReceiver,
+    isOpen,
+  } = useWalletDisputeDetail();
 
   if (loading) {
     return (
@@ -337,15 +59,6 @@ export default function DisputeDetailPage() {
     );
   }
 
-  const phaseInfo = getPhaseInfo(dispute.phase);
-  // Use senderId/receiverId from transfer, NOT initiatorId
-  // This ensures logic is based on who SENT money, not who opened dispute
-  const isSender =
-    currentUser?.id === dispute.senderId || currentUser?.username === dispute.senderUsername;
-  const isReceiver =
-    currentUser?.id === dispute.receiverId || currentUser?.username === dispute.receiverUsername;
-  const isOpen = dispute.status?.toLowerCase() === "open";
-
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-4 py-8">
@@ -366,265 +79,51 @@ export default function DisputeDetailPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Phase Info */}
-            {isOpen && (
-              <div className={`rounded-lg p-4 ${phaseInfo.containerClass}`}>
-                <div className={`font-medium mb-1 ${phaseInfo.titleClass}`}>{phaseInfo.title}</div>
-                <div className="text-sm text-muted-foreground">{phaseInfo.description}</div>
-                {dispute.phaseDeadline && (
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    Deadline: {formatDate(dispute.phaseDeadline)}
-                  </div>
-                )}
-              </div>
-            )}
+            <PhaseInfoBanner
+              phase={dispute.phase}
+              phaseDeadline={dispute.phaseDeadline}
+              isOpen={isOpen}
+            />
 
-            {/* Messages */}
-            <div className="rounded-lg border border-border bg-card">
-              <div className="border-b border-border p-4">
-                <h3 className="font-semibold text-foreground">Discussion</h3>
-              </div>
-              <div
-                ref={messagesContainerRef}
-                onScroll={handleMessagesScroll}
-                className="h-80 overflow-y-auto p-4 space-y-4"
-              >
-                {dispute.messages?.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">No messages yet</div>
-                ) : (
-                  dispute.messages?.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${
-                        msg.senderId === currentUser?.id ||
-                        msg.senderUsername === currentUser?.username
-                          ? "justify-end"
-                          : "justify-start"
-                      }`}
-                    >
-                      <div
-                        className={`max-w-xs rounded-lg p-3 ${
-                          msg.isAdmin
-                            ? "bg-accent text-accent-foreground border border-border"
-                            : msg.senderId === currentUser?.id ||
-                                msg.senderUsername === currentUser?.username
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-background border border-border"
-                        }`}
-                      >
-                        <div className="text-xs font-medium mb-1">
-                          {msg.isAdmin ? "Admin" : msg.senderUsername || "User"}
-                        </div>
-                        <div className="text-sm">{msg.content}</div>
-                        <div
-                          className={`text-xs mt-1 ${
-                            msg.senderId === currentUser?.id ||
-                            msg.senderUsername === currentUser?.username
-                              ? "text-primary-foreground/70"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {formatDate(msg.createdAt)}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+            <DisputeMessages
+              messages={dispute.messages}
+              currentUser={currentUser}
+              isOpen={isOpen}
+              messagesContainerRef={messagesContainerRef}
+              onScroll={handleMessagesScroll}
+              message={message}
+              onMessageChange={setMessage}
+              onSendMessage={onSendMessage}
+              sendingMessage={sendingMessage}
+            />
 
-              {/* Message Input */}
-              {isOpen && (
-                <form onSubmit={sendMessage} className="border-t border-border p-4">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Write a message..."
-                      className="flex-1 rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
-                    />
-                    <button
-                      type="submit"
-                      disabled={sendingMessage || !message.trim()}
-                      className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
-                    >
-                      Send
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-
-            {/* Evidence Section */}
-            {(dispute.phase === "evidence" || dispute.phase === "admin_review") && (
-              <div className="rounded-lg border border-border bg-card">
-                <div className="border-b border-border p-4 flex items-center justify-between">
-                  <h3 className="font-semibold text-foreground">Evidence</h3>
-                  {isOpen && dispute.phase === "evidence" && (
-                    <button
-                      onClick={() => setShowEvidenceForm(!showEvidenceForm)}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      + Add Evidence
-                    </button>
-                  )}
-                </div>
-
-                {/* Add Evidence Form */}
-                {showEvidenceForm && (
-                  <form onSubmit={addEvidence} className="border-b border-border p-4 space-y-3">
-                    <textarea
-                      value={evidenceDescription}
-                      onChange={(e) => setEvidenceDescription(e.target.value)}
-                      placeholder="Describe your evidence..."
-                      rows={3}
-                      className="w-full rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="url"
-                      value={evidenceUrl}
-                      onChange={(e) => setEvidenceUrl(e.target.value)}
-                      placeholder="Evidence file URL (optional)"
-                      className="w-full rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowEvidenceForm(false)}
-                        className="px-4 py-2 text-sm"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={processing || !evidenceDescription.trim()}
-                        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-                      >
-                        Submit Evidence
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                <div className="p-4 space-y-3">
-                  {dispute.evidence?.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-4">
-                      No evidence submitted yet
-                    </div>
-                  ) : (
-                    dispute.evidence?.map((ev) => (
-                      <div
-                        key={ev.id}
-                        className="rounded-lg bg-background border border-border p-4"
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-sm font-medium text-foreground">{ev.username}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(ev.createdAt)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{ev.description}</p>
-                        {ev.fileUrl && (
-                          <a
-                            href={ev.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                          >
-                            <Paperclip className="h-4 w-4" />
-                            View Attachment
-                          </a>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
+            <EvidenceSection
+              evidence={dispute.evidence}
+              phase={dispute.phase}
+              isOpen={isOpen}
+              showForm={showEvidenceForm}
+              onToggleForm={() => setShowEvidenceForm(!showEvidenceForm)}
+              evidenceDescription={evidenceDescription}
+              onEvidenceDescriptionChange={setEvidenceDescription}
+              evidenceUrl={evidenceUrl}
+              onEvidenceUrlChange={setEvidenceUrl}
+              onAddEvidence={onAddEvidence}
+              processing={processing}
+            />
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Transfer Info */}
-            <div className="rounded-lg border border-border bg-card p-4">
-              <h3 className="font-semibold text-foreground mb-4">Transfer Details</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Amount</span>
-                  <span className="font-medium text-foreground">
-                    Rp {dispute.amount?.toLocaleString("id-ID") || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Buyer (Fund Sender)</span>
-                  <span className="font-medium text-foreground">
-                    @{dispute.senderUsername}
-                    {isSender && " (You)"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Seller (Fund Recipient)</span>
-                  <span className="font-medium text-foreground">
-                    @{dispute.receiverUsername}
-                    {isReceiver && " (You)"}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <TransferDetails dispute={dispute} isSender={isSender} isReceiver={isReceiver} />
 
-            {/* Actions */}
-            {isOpen && (
-              <div className="rounded-lg border border-border bg-card p-4">
-                <h3 className="font-semibold text-foreground mb-4">Actions</h3>
-                <div className="space-y-3">
-                  {/* Refund - Only receiver (penjual) can agree to refund */}
-                  {isReceiver ? (
-                    <button
-                      onClick={() => handleMutualAction("refund")}
-                      disabled={processing}
-                      className="w-full rounded-lg border border-border py-2 text-sm font-medium transition hover:bg-background disabled:opacity-50"
-                    >
-                      Agree to Sender Refund
-                    </button>
-                  ) : (
-                    <div className="text-xs text-muted-foreground bg-warning/5 border border-warning/20 rounded-lg p-3">
-                      <p className="font-medium text-warning mb-1">Awaiting Response</p>
-                      <p>
-                        You opened this dispute. Wait for the recipient response or escalate to
-                        admin review if necessary.
-                      </p>
-                    </div>
-                  )}
+            <DisputeActions
+              isOpen={isOpen}
+              isReceiver={isReceiver}
+              processing={processing}
+              onMutualAction={onMutualAction}
+            />
 
-                  {/* Info for receiver about defense */}
-                  {isReceiver && (
-                    <div className="text-xs text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg p-3">
-                      <p className="font-medium text-primary mb-1">Info</p>
-                      <p>
-                        If you want to proceed with this transaction, provide your response in chat.
-                        The team will decide based on the discussion.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Resolution Result */}
-            {dispute.status === "resolved" && (
-              <div className="rounded-lg border border-success/30 bg-success/10 p-4">
-                <h3 className="font-semibold text-success mb-2">Dispute Resolved</h3>
-                <p className="text-sm text-muted-foreground">
-                  Result:{" "}
-                  <strong className="text-foreground">
-                    {getResolutionLabel(dispute.resolution)}
-                  </strong>
-                </p>
-                {dispute.admin_notes && (
-                  <p className="mt-2 text-sm text-muted-foreground">Notes: {dispute.admin_notes}</p>
-                )}
-              </div>
-            )}
+            <ResolutionResult dispute={dispute} />
           </div>
         </div>
       </div>

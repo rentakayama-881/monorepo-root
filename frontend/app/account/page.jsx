@@ -1,531 +1,71 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import dynamic from "next/dynamic";
-import AvatarSection from "@/components/account/AvatarSection";
-import BadgesSection from "@/components/account/BadgesSection";
-import ProfileSection from "@/components/account/ProfileSection";
-import UsernameSection from "@/components/account/UsernameSection";
 import Alert from "@/components/ui/Alert";
 import { CenteredSpinner } from "@/components/ui/LoadingState";
-import { AlertTriangle } from "lucide-react";
-import { getToken } from "@/lib/auth";
-import { getApiBase } from "@/lib/api";
-import { fetchWithAuth } from "@/lib/tokenRefresh";
+import { useAccountPage } from "./components/useAccountPage";
+import Setup2faBanner from "./components/Setup2faBanner";
+import ProfileIdentitySection from "./components/ProfileIdentitySection";
+import FinanceSection from "./components/FinanceSection";
+import IntegrationsSection from "./components/IntegrationsSection";
+import SecuritySection from "./components/SecuritySection";
 
-const GuaranteeSection = dynamic(() => import("@/components/account/GuaranteeSection"), {
-  loading: () => <div className="h-32 animate-pulse bg-border/30 rounded-lg" />,
-});
-const TelegramAuthSection = dynamic(() => import("@/components/account/TelegramAuthSection"), {
-  loading: () => <div className="h-20 animate-pulse bg-border/30 rounded-lg" />,
-});
-const PasskeySettings = dynamic(() => import("@/components/PasskeySettings"), {
-  loading: () => <div className="h-20 animate-pulse bg-border/30 rounded-lg" />,
-});
-const TOTPSettings = dynamic(() => import("@/components/TOTPSettings"), {
-  loading: () => <div className="h-20 animate-pulse bg-border/30 rounded-lg" />,
-});
 const DeleteAccountSection = dynamic(() => import("@/components/account/DeleteAccountSection"), {
   loading: () => <div className="h-16 animate-pulse bg-border/30 rounded-lg" />,
 });
 
-function normalizeAccountPayload(formValue = {}, socialsValue = []) {
-  const normalizedSocials = (Array.isArray(socialsValue) ? socialsValue : [])
-    .map((item) => ({
-      label: String(item?.label || "").trim(),
-      url: String(item?.url || "").trim(),
-    }))
-    .filter((item) => item.label || item.url);
-
-  return {
-    full_name: String(formValue.full_name || ""),
-    bio: String(formValue.bio || ""),
-    pronouns: String(formValue.pronouns || ""),
-    company: String(formValue.company || ""),
-    social_accounts: normalizedSocials,
-  };
-}
-
-function normalizeTelegramAuth(value = {}) {
-  const src = value && typeof value === "object" ? value : {};
-  return {
-    connected: Boolean(src.connected),
-    telegram_user_id: String(src.telegram_user_id || ""),
-    username: String(src.username || ""),
-    display_username: String(src.display_username || ""),
-    deep_link: String(src.deep_link || ""),
-    verified_at: String(src.verified_at || ""),
-    first_name: String(src.first_name || ""),
-    last_name: String(src.last_name || ""),
-    photo_url: String(src.photo_url || ""),
-  };
-}
-
 function AccountPageContent() {
-  const searchParams = useSearchParams();
-  const setup2fa = searchParams.get("setup2fa");
-  const focus = searchParams.get("focus");
-  const apiBase = `${getApiBase()}/api`;
-
-  const authed = useMemo(() => {
-    try {
-      return !!getToken();
-    } catch {
-      return false;
-    }
-  }, []);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [ok, setOk] = useState("");
-
-  const [me, setMe] = useState(null);
-  const [username, setUsername] = useState("");
-  const [form, setForm] = useState({ full_name: "", bio: "", pronouns: "", company: "" });
-  const [socials, setSocials] = useState([{ label: "", url: "" }]);
-  const [telegramAuth, setTelegramAuth] = useState(() =>
-    normalizeTelegramAuth({ connected: false })
-  );
-
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState("");
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const [avatarDeleting, setAvatarDeleting] = useState(false);
-
-  const [badges, setBadges] = useState([]);
-  const [primaryBadgeId, setPrimaryBadgeId] = useState(null);
-  const [savingBadge, setSavingBadge] = useState(false);
-
-  const featureBase = useMemo(
-    () => process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id",
-    []
-  );
-  const [walletBalance, setWalletBalance] = useState(null);
-  const [guaranteeAmount, setGuaranteeAmount] = useState(0);
-  const [guaranteeLoading, setGuaranteeLoading] = useState(false);
-  const [setGuaranteeAmountInput, setSetGuaranteeAmountInput] = useState("");
-  const [setGuaranteePin, setSetGuaranteePin] = useState("");
-  const [releaseGuaranteePin, setReleaseGuaranteePin] = useState("");
-  const [guaranteeSubmitting, setGuaranteeSubmitting] = useState(false);
-  const [guaranteeReleasing, setGuaranteeReleasing] = useState(false);
-
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileSaveMessage, setProfileSaveMessage] = useState("");
-  const [savedProfileSignature, setSavedProfileSignature] = useState(
-    JSON.stringify(normalizeAccountPayload({}, []))
-  );
-  const passkeySectionRef = useRef(null);
-  const [highlightPasskeySection, setHighlightPasskeySection] = useState(false);
-
-  const profilePayload = useMemo(() => normalizeAccountPayload(form, socials), [form, socials]);
-  const profilePayloadSignature = useMemo(() => JSON.stringify(profilePayload), [profilePayload]);
-  const profileDirty = profilePayloadSignature !== savedProfileSignature;
-
-  useEffect(() => {
-    if (profileDirty) {
-      setProfileSaveMessage("");
-    }
-  }, [profileDirty]);
-
-  useEffect(() => {
-    if (!authed) {
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setGuaranteeLoading(true);
-
-    const loadAll = async () => {
-      const [accountResult, badgesResult, walletResult, guaranteeResult] = await Promise.allSettled(
-        [
-          fetchWithAuth(`${apiBase}/account/me`).then(async (r) => {
-            if (!r.ok) throw new Error("Gagal memuat akun");
-            return r.json();
-          }),
-          fetchWithAuth(`${apiBase}/account/badges`).then(async (r) => {
-            if (!r.ok) return null;
-            return r.json();
-          }),
-          fetchWithAuth(`${featureBase}/api/v1/wallets/me`).then(async (r) => {
-            if (!r.ok) return null;
-            return r.json();
-          }),
-          fetchWithAuth(`${featureBase}/api/v1/guarantees/me`).then(async (r) => {
-            if (!r.ok) return null;
-            return r.json();
-          }),
-        ]
-      );
-
-      if (cancelled) return;
-
-      // Account (critical — show error if fails)
-      if (accountResult.status === "fulfilled") {
-        const data = accountResult.value;
-        setMe(data);
-        setUsername(data.username || "");
-        setAvatarUrl(data.avatar_url || "");
-
-        const nextForm = {
-          full_name: data.full_name || "",
-          bio: data.bio || "",
-          pronouns: data.pronouns || "",
-          company: data.company || "",
-        };
-
-        const socialAccounts = Array.isArray(data.social_accounts) ? data.social_accounts : [];
-        const normalized = normalizeAccountPayload(nextForm, socialAccounts);
-
-        setForm(nextForm);
-        setSocials(
-          normalized.social_accounts.length ? normalized.social_accounts : [{ label: "", url: "" }]
-        );
-        setTelegramAuth(normalizeTelegramAuth(data.telegram_auth));
-        setSavedProfileSignature(JSON.stringify(normalized));
-        setProfileSaveMessage("");
-      } else {
-        setError(
-          accountResult.reason instanceof Error
-            ? accountResult.reason.message
-            : String(accountResult.reason)
-        );
-      }
-
-      // Badges (non-critical — silently ignore errors)
-      if (badgesResult.status === "fulfilled" && badgesResult.value) {
-        setBadges(badgesResult.value.badges || []);
-        setPrimaryBadgeId(badgesResult.value.primary_badge_id || null);
-      }
-
-      // Wallet (non-critical)
-      if (walletResult.status === "fulfilled" && walletResult.value) {
-        const wallet = walletResult.value;
-        setWalletBalance(typeof wallet?.balance === "number" ? wallet.balance : 0);
-      }
-
-      // Guarantee (non-critical)
-      if (guaranteeResult.status === "fulfilled" && guaranteeResult.value) {
-        const guarantee = guaranteeResult.value;
-        setGuaranteeAmount(typeof guarantee?.amount === "number" ? guarantee.amount : 0);
-      }
-
-      setLoading(false);
-      setGuaranteeLoading(false);
-    };
-
-    loadAll();
-    return () => {
-      cancelled = true;
-    };
-  }, [apiBase, featureBase, authed]);
-
-  async function loadWalletAndGuarantee() {
-    if (!authed) return;
-
-    setGuaranteeLoading(true);
-    try {
-      const [walletResult, guaranteeResult] = await Promise.allSettled([
-        fetchWithAuth(`${featureBase}/api/v1/wallets/me`).then(async (r) => {
-          if (!r.ok) return null;
-          return r.json();
-        }),
-        fetchWithAuth(`${featureBase}/api/v1/guarantees/me`).then(async (r) => {
-          if (!r.ok) return null;
-          return r.json();
-        }),
-      ]);
-
-      if (walletResult.status === "fulfilled" && walletResult.value) {
-        setWalletBalance(
-          typeof walletResult.value?.balance === "number" ? walletResult.value.balance : 0
-        );
-      }
-      if (guaranteeResult.status === "fulfilled" && guaranteeResult.value) {
-        setGuaranteeAmount(
-          typeof guaranteeResult.value?.amount === "number" ? guaranteeResult.value.amount : 0
-        );
-      }
-    } catch {
-      // Ignore feature-service errors on account page.
-    } finally {
-      setGuaranteeLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (focus !== "passkeys" || loading) return;
-    if (!passkeySectionRef.current) return;
-
-    passkeySectionRef.current.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-    setHighlightPasskeySection(true);
-
-    const timeoutId = window.setTimeout(() => {
-      setHighlightPasskeySection(false);
-    }, 2000);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [focus, loading]);
-
-  function generateIdempotencyKey() {
-    return crypto.randomUUID();
-  }
-
-  async function submitSetGuarantee(event) {
-    event.preventDefault();
-    setError("");
-    setOk("");
-    setGuaranteeSubmitting(true);
-
-    try {
-      const amount = Number(setGuaranteeAmountInput);
-      if (!Number.isFinite(amount)) throw new Error("Jumlah jaminan tidak valid");
-      if (amount < 100000) throw new Error("Minimal jaminan adalah Rp 100.000");
-      if (walletBalance != null && amount > walletBalance) throw new Error("Saldo tidak mencukupi");
-      if (!setGuaranteePin || String(setGuaranteePin).length !== 6)
-        throw new Error("PIN harus 6 digit");
-
-      const response = await fetchWithAuth(`${featureBase}/api/v1/guarantees`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Idempotency-Key": generateIdempotencyKey(),
-        },
-        body: JSON.stringify({ amount, pin: setGuaranteePin }),
-      });
-
-      const rawText = await response.text();
-      if (!response.ok) {
-        let message = rawText;
-        try {
-          const parsed = JSON.parse(rawText);
-          message = parsed?.error?.message || parsed?.message || parsed?.error || rawText;
-        } catch {
-          // Keep raw text.
-        }
-        throw new Error(message || "Gagal mengunci jaminan");
-      }
-
-      let payload = {};
-      try {
-        payload = JSON.parse(rawText);
-      } catch {
-        // Keep fallback amount.
-      }
-
-      setGuaranteeAmount(typeof payload?.amount === "number" ? payload.amount : amount);
-      setOk("Jaminan berhasil dikunci.");
-      setSetGuaranteeAmountInput("");
-      setSetGuaranteePin("");
-      await loadWalletAndGuarantee();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setGuaranteeSubmitting(false);
-    }
-  }
-
-  async function submitReleaseGuarantee(event) {
-    event.preventDefault();
-    setError("");
-    setOk("");
-    setGuaranteeReleasing(true);
-
-    try {
-      if (!releaseGuaranteePin || String(releaseGuaranteePin).length !== 6) {
-        throw new Error("PIN harus 6 digit");
-      }
-
-      const response = await fetchWithAuth(`${featureBase}/api/v1/guarantees/release`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Idempotency-Key": generateIdempotencyKey(),
-        },
-        body: JSON.stringify({ pin: releaseGuaranteePin }),
-      });
-
-      const rawText = await response.text();
-      if (!response.ok) {
-        let message = rawText;
-        try {
-          const parsed = JSON.parse(rawText);
-          message = parsed?.error?.message || parsed?.message || parsed?.error || rawText;
-        } catch {
-          // Keep raw text.
-        }
-        throw new Error(message || "Gagal melepaskan jaminan");
-      }
-
-      setGuaranteeAmount(0);
-      setOk("Jaminan berhasil dilepaskan.");
-      setReleaseGuaranteePin("");
-      await loadWalletAndGuarantee();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setGuaranteeReleasing(false);
-    }
-  }
-
-  async function savePrimaryBadge(badgeId) {
-    setError("");
-    setOk("");
-    setSavingBadge(true);
-
-    try {
-      const response = await fetchWithAuth(`${apiBase}/account/primary-badge`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ badge_id: badgeId ? Number(badgeId) : null }),
-      });
-
-      if (!response.ok) throw new Error("Gagal menyimpan primary badge");
-
-      setPrimaryBadgeId(badgeId ? Number(badgeId) : null);
-      setOk(badgeId ? "Display badge berhasil dipasang." : "Display badge berhasil dilepas.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSavingBadge(false);
-    }
-  }
-
-  const updateSocial = useCallback((index, key, value) => {
-    setSocials((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [key]: value };
-      return copy;
-    });
-  }, []);
-
-  const addSocial = useCallback(() => {
-    setSocials((prev) => [...prev, { label: "", url: "" }]);
-  }, []);
-
-  const removeSocial = useCallback((index) => {
-    setSocials((prev) => prev.filter((_, idx) => idx !== index));
-  }, []);
-
-  const onAvatarFileChange = useCallback((event) => {
-    setOk("");
-    setError("");
-
-    const file = event.target.files && event.target.files[0];
-    if (file) {
-      const extension = file.name.toLowerCase().split(".").pop() || "";
-      if (!["jpg", "jpeg", "png"].includes(extension)) {
-        setError("Format gambar harus JPG atau PNG");
-        event.target.value = "";
-        return;
-      }
-    }
-
-    setAvatarFile(file || null);
-    if (file) {
-      setAvatarPreview(URL.createObjectURL(file));
-    } else {
-      setAvatarPreview("");
-    }
-  }, []);
-
-  const cancelAvatarPreview = useCallback(() => {
-    setAvatarFile(null);
-    setAvatarPreview("");
-  }, []);
-
-  async function uploadAvatar() {
-    setError("");
-    setOk("");
-    setAvatarUploading(true);
-
-    try {
-      if (!avatarFile) throw new Error("Pilih file gambar terlebih dahulu");
-
-      const formData = new FormData();
-      formData.append("file", avatarFile);
-
-      const response = await fetchWithAuth(`${apiBase}/account/avatar`, {
-        method: "PUT",
-        body: formData,
-      });
-
-      const rawText = await response.text();
-      if (!response.ok) throw new Error(rawText || "Gagal mengunggah avatar");
-
-      let parsed = {};
-      try {
-        parsed = JSON.parse(rawText);
-      } catch {
-        // Keep fallback URL.
-      }
-
-      const nextUrl = parsed.avatar_url || avatarUrl || "";
-      if (nextUrl) setAvatarUrl(nextUrl);
-      setOk("Foto profil diperbarui.");
-      cancelAvatarPreview();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setAvatarUploading(false);
-    }
-  }
-
-  async function deleteAvatar() {
-    setError("");
-    setOk("");
-    setAvatarDeleting(true);
-
-    try {
-      const response = await fetchWithAuth(`${apiBase}/account/avatar`, { method: "DELETE" });
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Gagal menghapus foto profil");
-      }
-
-      setAvatarUrl("");
-      setOk("Foto profil dihapus.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setAvatarDeleting(false);
-    }
-  }
-
-  async function saveAccount(event) {
-    event.preventDefault();
-    if (!profileDirty || profileSaving) return;
-
-    setError("");
-    setOk("");
-    setProfileSaveMessage("");
-    setProfileSaving(true);
-
-    try {
-      const response = await fetchWithAuth(`${apiBase}/account`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profilePayload),
-      });
-
-      if (!response.ok) {
-        throw new Error((await response.text()) || "Gagal menyimpan akun");
-      }
-
-      setSavedProfileSignature(profilePayloadSignature);
-      setProfileSaveMessage("Perubahan profil disimpan.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setProfileSaving(false);
-    }
-  }
+  const {
+    setup2fa,
+    authed,
+    loading,
+    error,
+    ok,
+    me,
+    username,
+    form,
+    setForm,
+    socials,
+    telegramAuth,
+    setTelegramAuth,
+    avatarUrl,
+    avatarFile,
+    avatarPreview,
+    avatarUploading,
+    avatarDeleting,
+    onAvatarFileChange,
+    onCancelAvatarPreview,
+    onUploadAvatar,
+    onDeleteAvatar,
+    badges,
+    primaryBadgeId,
+    savingBadge,
+    onSavePrimaryBadge,
+    profileDirty,
+    profileSaving,
+    profileSaveMessage,
+    onSaveAccount,
+    updateSocial,
+    addSocial,
+    removeSocial,
+    guaranteeAmount,
+    guaranteeLoading,
+    walletBalance,
+    releaseGuaranteePin,
+    setReleaseGuaranteePin,
+    setGuaranteeAmountInput,
+    setSetGuaranteeAmountInput,
+    setGuaranteePin,
+    setSetGuaranteePin,
+    guaranteeReleasing,
+    guaranteeSubmitting,
+    onSubmitSetGuarantee,
+    onSubmitReleaseGuarantee,
+    passkeySectionRef,
+    highlightPasskeySection,
+    apiBase,
+  } = useAccountPage();
 
   if (!authed) {
     return (
@@ -539,21 +79,7 @@ function AccountPageContent() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      {setup2fa === "true" && (
-        <div className="mb-6 rounded-lg border border-warning/30 bg-warning/10 p-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-6 h-6 text-warning shrink-0" />
-            <div>
-              <p className="font-semibold text-warning">2FA Diperlukan untuk Fitur Wallet</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Untuk menggunakan fitur kirim uang, tarik saldo, dan set PIN, Anda harus
-                mengaktifkan 2FA terlebih dahulu. Scroll ke bawah ke bagian &quot;Keamanan&quot; dan
-                klik tombol &quot;Aktifkan 2FA&quot;.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {setup2fa === "true" && <Setup2faBanner />}
 
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">Account Settings</h1>
@@ -571,106 +97,56 @@ function AccountPageContent() {
           {error && <Alert variant="error" message={error} />}
           {ok && <Alert variant="success" message={ok} />}
 
-          {/* Profile & Identity */}
-          <section>
-            <h2 className="text-lg font-semibold text-foreground mb-1">Profil & Identitas</h2>
-            <p className="text-sm text-muted-foreground mb-5">
-              Informasi publik yang terlihat di profil Anda
-            </p>
-            <div className="rounded-xl border border-border/60 bg-card/80 px-6">
-              <AvatarSection
-                avatarPreview={avatarPreview}
-                avatarUrl={avatarUrl}
-                displayName={username || me?.full_name || me?.email}
-                avatarFile={avatarFile}
-                avatarDeleting={avatarDeleting}
-                avatarUploading={avatarUploading}
-                onAvatarFileChange={onAvatarFileChange}
-                onDeleteAvatar={deleteAvatar}
-                onUploadAvatar={uploadAvatar}
-                onCancelAvatarPreview={cancelAvatarPreview}
-              />
+          <ProfileIdentitySection
+            avatarPreview={avatarPreview}
+            avatarUrl={avatarUrl}
+            displayName={username || me?.full_name || me?.email}
+            avatarFile={avatarFile}
+            avatarDeleting={avatarDeleting}
+            avatarUploading={avatarUploading}
+            onAvatarFileChange={onAvatarFileChange}
+            onDeleteAvatar={onDeleteAvatar}
+            onUploadAvatar={onUploadAvatar}
+            onCancelAvatarPreview={onCancelAvatarPreview}
+            badges={badges}
+            primaryBadgeId={primaryBadgeId}
+            savingBadge={savingBadge}
+            onSavePrimaryBadge={onSavePrimaryBadge}
+            form={form}
+            setForm={setForm}
+            socials={socials}
+            updateSocial={updateSocial}
+            removeSocial={removeSocial}
+            addSocial={addSocial}
+            profileDirty={profileDirty}
+            profileSaving={profileSaving}
+            profileSaveMessage={profileSaveMessage}
+            onSaveAccount={onSaveAccount}
+            username={username}
+          />
 
-              <BadgesSection
-                badges={badges}
-                primaryBadgeId={primaryBadgeId}
-                savingBadge={savingBadge}
-                onSavePrimaryBadge={savePrimaryBadge}
-              />
+          <FinanceSection
+            guaranteeAmount={guaranteeAmount}
+            guaranteeLoading={guaranteeLoading}
+            walletBalance={walletBalance}
+            releaseGuaranteePin={releaseGuaranteePin}
+            setReleaseGuaranteePin={setReleaseGuaranteePin}
+            setGuaranteeAmountInput={setGuaranteeAmountInput}
+            setSetGuaranteeAmountInput={setSetGuaranteeAmountInput}
+            setGuaranteePin={setGuaranteePin}
+            setSetGuaranteePin={setSetGuaranteePin}
+            guaranteeReleasing={guaranteeReleasing}
+            guaranteeSubmitting={guaranteeSubmitting}
+            onSubmitReleaseGuarantee={onSubmitReleaseGuarantee}
+            onSubmitSetGuarantee={onSubmitSetGuarantee}
+          />
 
-              <ProfileSection
-                form={form}
-                setForm={setForm}
-                socials={socials}
-                updateSocial={updateSocial}
-                removeSocial={removeSocial}
-                addSocial={addSocial}
-                profileDirty={profileDirty}
-                profileSaving={profileSaving}
-                profileSaveMessage={profileSaveMessage}
-                onSaveAccount={saveAccount}
-              />
+          <IntegrationsSection telegramAuth={telegramAuth} onTelegramAuthChange={setTelegramAuth} />
 
-              <UsernameSection username={username} />
-            </div>
-          </section>
-
-          {/* Finance */}
-          <section>
-            <h2 className="text-lg font-semibold text-foreground mb-1">Keuangan</h2>
-            <p className="text-sm text-muted-foreground mb-5">
-              Jaminan profil dan pengaturan keuangan
-            </p>
-            <div className="rounded-xl border border-border/60 bg-card/80 px-6">
-              <GuaranteeSection
-                guaranteeAmount={guaranteeAmount}
-                guaranteeLoading={guaranteeLoading}
-                walletBalance={walletBalance}
-                releaseGuaranteePin={releaseGuaranteePin}
-                setReleaseGuaranteePin={setReleaseGuaranteePin}
-                setGuaranteeAmountInput={setGuaranteeAmountInput}
-                setSetGuaranteeAmountInput={setSetGuaranteeAmountInput}
-                setGuaranteePin={setGuaranteePin}
-                setSetGuaranteePin={setSetGuaranteePin}
-                guaranteeReleasing={guaranteeReleasing}
-                guaranteeSubmitting={guaranteeSubmitting}
-                onSubmitReleaseGuarantee={submitReleaseGuarantee}
-                onSubmitSetGuarantee={submitSetGuarantee}
-              />
-            </div>
-          </section>
-
-          {/* Integrations */}
-          <section>
-            <h2 className="text-lg font-semibold text-foreground mb-1">Integrasi</h2>
-            <p className="text-sm text-muted-foreground mb-5">Hubungkan akun pihak ketiga</p>
-            <div className="rounded-xl border border-border/60 bg-card/80 px-6">
-              <TelegramAuthSection
-                telegramAuth={telegramAuth}
-                onTelegramAuthChange={setTelegramAuth}
-              />
-            </div>
-          </section>
-
-          {/* Security */}
-          <section>
-            <h2 className="text-lg font-semibold text-foreground mb-1">Keamanan</h2>
-            <p className="text-sm text-muted-foreground mb-5">Autentikasi dua faktor dan passkey</p>
-            <div className="rounded-xl border border-border/60 bg-card/80 px-6">
-              <TOTPSettings />
-              <div
-                id="passkey-settings"
-                ref={passkeySectionRef}
-                className={`transition-shadow duration-300 ${
-                  highlightPasskeySection
-                    ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background rounded-lg"
-                    : ""
-                }`}
-              >
-                <PasskeySettings />
-              </div>
-            </div>
-          </section>
+          <SecuritySection
+            passkeySectionRef={passkeySectionRef}
+            highlightPasskeySection={highlightPasskeySection}
+          />
 
           {/* Danger Zone */}
           <DeleteAccountSection apiBase={apiBase} />

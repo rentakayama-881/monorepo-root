@@ -1,365 +1,40 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import logger from "@/lib/logger";
-import { getAdminToken } from "@/lib/adminAuth";
-import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
 import { ChevronLeft } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
-
-function normalizeResolution(payload) {
-  if (!payload) return null;
-  return {
-    type: payload?.type ?? payload?.Type ?? "",
-    refundToSender: Number(payload?.refundToSender ?? payload?.RefundToSender ?? 0) || 0,
-    releaseToReceiver: Number(payload?.releaseToReceiver ?? payload?.ReleaseToReceiver ?? 0) || 0,
-    note: payload?.note ?? payload?.Note ?? "",
-  };
-}
-
-function normalizeDisputeMessage(message) {
-  return {
-    id: message?.id ?? message?.Id ?? "",
-    senderUsername: message?.senderUsername ?? message?.SenderUsername ?? "User",
-    isAdmin: Boolean(message?.isAdmin ?? message?.IsAdmin ?? false),
-    content: message?.content ?? message?.Content ?? message?.message ?? "",
-    sentAt:
-      message?.sentAt ??
-      message?.SentAt ??
-      message?.createdAt ??
-      message?.CreatedAt ??
-      message?.sent_at ??
-      null,
-  };
-}
-
-function normalizeDisputeEvidence(evidence) {
-  const typeRaw = evidence?.type ?? evidence?.Type ?? "other";
-  return {
-    id: evidence?.id ?? evidence?.Id ?? "",
-    url: evidence?.url ?? evidence?.Url ?? evidence?.fileUrl ?? evidence?.FileUrl ?? "",
-    type: String(typeRaw).toLowerCase(),
-    description: evidence?.description ?? evidence?.Description ?? "",
-    uploadedAt:
-      evidence?.uploadedAt ??
-      evidence?.UploadedAt ??
-      evidence?.createdAt ??
-      evidence?.CreatedAt ??
-      null,
-  };
-}
-
-function normalizeDispute(payload) {
-  const data = unwrapFeatureData(payload) || {};
-  const senderUsername =
-    data?.senderUsername ??
-    data?.SenderUsername ??
-    data?.initiatorUsername ??
-    data?.InitiatorUsername ??
-    "Unknown";
-  const receiverUsername =
-    data?.receiverUsername ??
-    data?.ReceiverUsername ??
-    data?.respondentUsername ??
-    data?.RespondentUsername ??
-    "Unknown";
-
-  return {
-    id: data?.id ?? data?.Id ?? "",
-    status: data?.status ?? data?.Status ?? "Open",
-    category: data?.category ?? data?.Category ?? "Other",
-    reason: data?.reason ?? data?.Reason ?? "",
-    amount: Number(data?.amount ?? data?.Amount ?? 0) || 0,
-    createdAt: data?.createdAt ?? data?.CreatedAt ?? null,
-    senderUsername,
-    receiverUsername,
-    initiatorUsername: data?.initiatorUsername ?? data?.InitiatorUsername ?? senderUsername,
-    respondentUsername: data?.respondentUsername ?? data?.RespondentUsername ?? receiverUsername,
-    resolution: normalizeResolution(data?.resolution ?? data?.Resolution ?? null),
-    messages: extractFeatureItems(data?.messages ?? data?.Messages).map(normalizeDisputeMessage),
-    evidence: extractFeatureItems(data?.evidence ?? data?.Evidence).map(normalizeDisputeEvidence),
-  };
-}
+import useAdminDisputeDetail from "./components/useAdminDisputeDetail";
+import { getStatusColor, getStatusLabel } from "./components/disputeHelpers";
+import DisputeInfoCard from "./components/DisputeInfoCard";
+import StatusUpdateCard from "./components/StatusUpdateCard";
+import AdminActionsCard from "./components/AdminActionsCard";
+import ResolutionCard from "./components/ResolutionCard";
+import MediationChat from "./components/MediationChat";
+import EvidenceSection from "./components/EvidenceSection";
+import ConfirmActionModal from "./components/ConfirmActionModal";
 
 export default function AdminDisputeDetailPage() {
-  const router = useRouter();
-  const params = useParams();
-  const disputeId = params.id;
-  const messagesContainerRef = useRef(null);
-  const autoScrollEnabledRef = useRef(true);
-  const lastMessageSignatureRef = useRef("");
-
-  const [dispute, setDispute] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null);
-  const [actionNote, setActionNote] = useState("");
-
-  const fetchWithAuth = async (endpoint, options = {}) => {
-    const token = getAdminToken();
-    if (!token) {
-      throw new Error("Sesi admin berakhir. Silakan login ulang.");
-    }
-
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error?.message || data.message || "Request failed");
-    }
-    if (res.status === 204) return null;
-
-    const contentType = res.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      return null;
-    }
-    return res.json().catch(() => null);
-  };
-
-  const getLastMessageSignature = (messages) => {
-    if (!Array.isArray(messages) || messages.length === 0) return "";
-    const lastMessage = messages[messages.length - 1];
-    return `${lastMessage?.id ?? ""}-${lastMessage?.sentAt ?? ""}-${messages.length}`;
-  };
-
-  const isNearBottom = () => {
-    const container = messagesContainerRef.current;
-    if (!container) return true;
-
-    const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-    return distanceToBottom <= 96;
-  };
-
-  // Scroll only within chat panel so page layout stays stable.
-  const scrollToBottom = (behavior = "auto") => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    container.scrollTo({
-      top: container.scrollHeight,
-      behavior,
-    });
-  };
-
-  const handleMessagesScroll = () => {
-    autoScrollEnabledRef.current = isNearBottom();
-  };
-
-  // Load dispute
-  useEffect(() => {
-    if (!getAdminToken()) {
-      router.push("/admin/login");
-      return;
-    }
-
-    let cancelled = false;
-    const fetchDispute = async () => {
-      try {
-        const data = await fetchWithAuth(`/api/v1/admin/disputes/${disputeId}`);
-        if (!cancelled) {
-          setDispute(normalizeDispute(data));
-          setError("");
-        }
-      } catch (e) {
-        logger.error("Failed to load dispute:", e);
-        if (!cancelled) setError("Dispute tidak ditemukan");
-      }
-      if (!cancelled) setLoading(false);
-    };
-
-    fetchDispute();
-    const interval = setInterval(fetchDispute, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [disputeId, router]);
-
-  useEffect(() => {
-    const messages = dispute?.messages ?? [];
-    const signature = getLastMessageSignature(messages);
-
-    if (!signature) {
-      lastMessageSignatureRef.current = "";
-      return;
-    }
-
-    const isInitialBatch = !lastMessageSignatureRef.current;
-    const hasNewMessages = signature !== lastMessageSignatureRef.current;
-
-    if (!hasNewMessages) {
-      return;
-    }
-
-    lastMessageSignatureRef.current = signature;
-
-    if (isInitialBatch || autoScrollEnabledRef.current) {
-      scrollToBottom(isInitialBatch ? "auto" : "smooth");
-    }
-  }, [dispute?.messages]);
-
-  // Send admin message
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!message.trim() || sending) return;
-
-    setSending(true);
-    setError("");
-    autoScrollEnabledRef.current = true;
-
-    try {
-      await fetchWithAuth(`/api/v1/admin/disputes/${disputeId}/messages`, {
-        method: "POST",
-        body: JSON.stringify({ content: message.trim() }),
-      });
-      setMessage("");
-      await loadDispute();
-    } catch (e) {
-      logger.error("Failed to send message:", e);
-      setError("Gagal mengirim pesan");
-    }
-    setSending(false);
-  };
-
-  // Handle action click
-  const handleAction = (action) => {
-    setPendingAction(action);
-    setActionNote("");
-    setShowConfirmModal(true);
-  };
-
-  // Confirm action
-  const confirmAction = async () => {
-    setProcessing(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const endpoint = `/api/v1/admin/disputes/${disputeId}/${pendingAction}`;
-      await fetchWithAuth(endpoint, {
-        method: "POST",
-        body: JSON.stringify({ note: actionNote }),
-      });
-
-      setShowConfirmModal(false);
-      setSuccess(
-        pendingAction === "refund"
-          ? "Dana berhasil dikembalikan ke pembeli"
-          : pendingAction === "force-release"
-            ? "Dana berhasil dilepaskan ke penjual"
-            : "Transaksi dilanjutkan mengikuti hold time"
-      );
-      await loadDispute();
-    } catch (e) {
-      logger.error("Action failed:", e);
-      setError(e.message || "Gagal memproses aksi");
-    }
-    setProcessing(false);
-  };
-
-  // Update status
-  const handleStatusUpdate = async (newStatus) => {
-    try {
-      await fetchWithAuth(`/api/v1/admin/disputes/${disputeId}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: newStatus }),
-      });
-      await loadDispute();
-    } catch (e) {
-      logger.error("Status update failed:", e);
-      setError("Gagal mengubah status");
-    }
-  };
-
-  // Format helpers
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "-";
-    const date = new Date(dateStr);
-    if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatAmount = (amount) => {
-    return new Intl.NumberFormat("id-ID").format(amount);
-  };
-
-  const normalizeStatus = (status) =>
-    String(status || "")
-      .replace(/\s+/g, "")
-      .toLowerCase();
-
-  const getStatusColor = (status) => {
-    switch (normalizeStatus(status)) {
-      case "open":
-        return "border-warning/20 bg-warning/10 text-warning";
-      case "underreview":
-        return "border-primary/20 bg-primary/10 text-primary";
-      case "waitingforevidence":
-        return "border-warning/20 bg-warning/10 text-warning";
-      case "resolved":
-        return "border-success/20 bg-success/10 text-success";
-      case "cancelled":
-        return "border-border bg-muted/60 text-muted-foreground";
-      default:
-        return "border-border bg-muted/60 text-muted-foreground";
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    switch (normalizeStatus(status)) {
-      case "open":
-        return "Menunggu Review";
-      case "underreview":
-        return "Sedang Ditinjau";
-      case "waitingforevidence":
-        return "Butuh Bukti";
-      case "resolved":
-        return "Selesai";
-      case "cancelled":
-        return "Dibatalkan";
-      default:
-        return status;
-    }
-  };
-
-  const getCategoryLabel = (category) => {
-    switch (
-      String(category || "")
-        .replace(/\s+/g, "")
-        .toLowerCase()
-    ) {
-      case "itemnotreceived":
-        return "Barang Tidak Diterima";
-      case "itemnotasdescribed":
-        return "Tidak Sesuai Deskripsi";
-      case "fraud":
-        return "Dugaan Penipuan";
-      case "sellernotresponding":
-        return "Penjual Tidak Merespons";
-      case "other":
-        return "Lainnya";
-      default:
-        return category;
-    }
-  };
+  const {
+    disputeId,
+    dispute,
+    loading,
+    error,
+    success,
+    message,
+    setMessage,
+    sending,
+    processing,
+    showConfirmModal,
+    setShowConfirmModal,
+    pendingAction,
+    actionNote,
+    setActionNote,
+    isClosed,
+    messagesContainerRef,
+    handleMessagesScroll,
+    handleSendMessage,
+    handleAction,
+    confirmAction,
+    handleStatusUpdate,
+  } = useAdminDisputeDetail();
 
   if (loading) {
     return (
@@ -382,8 +57,6 @@ export default function AdminDisputeDetailPage() {
       </div>
     );
   }
-
-  const isClosed = ["resolved", "cancelled"].includes(normalizeStatus(dispute.status));
 
   return (
     <div className="p-6">
@@ -421,317 +94,42 @@ export default function AdminDisputeDetailPage() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Left: Dispute Info & Actions */}
         <div className="xl:col-span-1 space-y-6">
-          {/* Dispute Info */}
-          <div className="bg-card rounded-lg border border-border p-6">
-            <h2 className="font-semibold text-foreground mb-4">Detail Dispute</h2>
+          <DisputeInfoCard dispute={dispute} />
 
-            <div className="space-y-3 text-sm">
-              <div>
-                <span className="text-muted-foreground">Kategori:</span>
-                <div className="font-medium text-foreground">
-                  {getCategoryLabel(dispute.category)}
-                </div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Jumlah:</span>
-                <div className="font-bold text-primary text-lg">
-                  Rp {formatAmount(dispute.amount)}
-                </div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Dibuat:</span>
-                <div className="text-foreground">{formatDate(dispute.createdAt)}</div>
-              </div>
-            </div>
+          {!isClosed && <StatusUpdateCard dispute={dispute} onStatusUpdate={handleStatusUpdate} />}
 
-            <hr className="my-4 border-border" />
+          {!isClosed && <AdminActionsCard onAction={handleAction} />}
 
-            <h3 className="font-medium text-foreground mb-2">Pihak Terlibat</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Pembeli (Pengirim):</span>
-                <span className="font-medium text-foreground">
-                  @{dispute.senderUsername || dispute.initiatorUsername}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Penjual (Penerima):</span>
-                <span className="font-medium text-foreground">
-                  @{dispute.receiverUsername || dispute.respondentUsername}
-                </span>
-              </div>
-            </div>
-
-            <hr className="my-4 border-border" />
-
-            <h3 className="font-medium text-foreground mb-2">Alasan Dispute</h3>
-            <p className="text-sm text-muted-foreground">{dispute.reason}</p>
-          </div>
-
-          {/* Status Update */}
-          {!isClosed && (
-            <div className="bg-card rounded-lg border border-border p-6">
-              <h2 className="font-semibold text-foreground mb-4">Ubah Status</h2>
-              <div className="space-y-2">
-                {["UnderReview", "WaitingForEvidence"].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => handleStatusUpdate(status)}
-                    disabled={normalizeStatus(dispute.status) === normalizeStatus(status)}
-                    className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition ${
-                      normalizeStatus(dispute.status) === normalizeStatus(status)
-                        ? "bg-muted text-muted-foreground cursor-not-allowed"
-                        : "bg-card border border-border hover:border-primary"
-                    }`}
-                  >
-                    {getStatusLabel(status)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Admin Actions */}
-          {!isClosed && (
-            <div className="bg-card rounded-lg border border-border p-6">
-              <h2 className="font-semibold text-foreground mb-4">Keputusan Admin</h2>
-              <div className="space-y-3">
-                <button
-                  onClick={() => handleAction("continue")}
-                  className="w-full py-3 px-4 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition"
-                >
-                  🔄 Lanjutkan Transaksi
-                </button>
-                <button
-                  onClick={() => handleAction("force-release")}
-                  className="w-full py-3 px-4 rounded-lg border border-success/25 bg-success/15 text-success font-medium hover:bg-success/20 transition"
-                >
-                  💰 Lepaskan ke Penjual
-                </button>
-                <button
-                  onClick={() => handleAction("refund")}
-                  className="w-full py-3 px-4 rounded-lg border border-warning/25 bg-warning/15 text-warning font-medium hover:bg-warning/20 transition"
-                >
-                  ↩️ Kembalikan ke Pembeli
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-4">
-                ⚠️ Keputusan tidak dapat dibatalkan. Pastikan Anda telah meninjau semua bukti.
-              </p>
-            </div>
-          )}
-
-          {/* Resolution */}
-          {dispute.resolution && (
-            <div className="bg-success/10 rounded-lg border border-success/20 p-6">
-              <h2 className="font-semibold text-success mb-4">✅ Keputusan</h2>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Tipe:</span>
-                  <div className="font-medium text-foreground">
-                    {dispute.resolution.type === "FullRefundToSender" && "Refund ke Pembeli"}
-                    {dispute.resolution.type === "FullReleaseToReceiver" && "Release ke Penjual"}
-                    {dispute.resolution.type === "Split" && "Dibagi"}
-                    {dispute.resolution.type === "NoAction" && "Transaksi Dilanjutkan"}
-                  </div>
-                </div>
-                {dispute.resolution.refundToSender > 0 && (
-                  <div>
-                    <span className="text-muted-foreground">Ke Pembeli:</span>
-                    <div className="font-medium text-foreground">
-                      Rp {formatAmount(dispute.resolution.refundToSender)}
-                    </div>
-                  </div>
-                )}
-                {dispute.resolution.releaseToReceiver > 0 && (
-                  <div>
-                    <span className="text-muted-foreground">Ke Penjual:</span>
-                    <div className="font-medium text-foreground">
-                      Rp {formatAmount(dispute.resolution.releaseToReceiver)}
-                    </div>
-                  </div>
-                )}
-                {dispute.resolution.note && (
-                  <div>
-                    <span className="text-muted-foreground">Catatan:</span>
-                    <div className="text-foreground">{dispute.resolution.note}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          {dispute.resolution && <ResolutionCard resolution={dispute.resolution} />}
         </div>
 
         {/* Right: Chat */}
         <div className="xl:col-span-2">
-          <div className="bg-card rounded-lg border border-border overflow-hidden h-full flex flex-col">
-            <div className="px-6 py-4 border-b border-border">
-              <h3 className="font-semibold text-foreground">Diskusi Mediasi</h3>
-              <p className="text-xs text-muted-foreground">
-                Chat antara pembeli, penjual, dan admin
-              </p>
-            </div>
-
-            {/* Messages */}
-            <div
-              ref={messagesContainerRef}
-              onScroll={handleMessagesScroll}
-              className="flex-1 overflow-y-auto p-4 space-y-4 bg-background/50"
-              style={{ minHeight: "400px", maxHeight: "500px" }}
-            >
-              {dispute.messages?.length === 0 && (
-                <div className="text-center text-muted-foreground py-8">
-                  <div className="text-4xl mb-2">💬</div>
-                  <p>Belum ada pesan dalam dispute ini.</p>
-                </div>
-              )}
-
-              {dispute.messages?.map((msg) => {
-                const isAdmin = msg.isAdmin;
-                // Use senderUsername (transfer sender = pembeli) for role determination
-                const buyerUsername = dispute.senderUsername || dispute.initiatorUsername;
-                const isBuyer = msg.senderUsername === buyerUsername;
-
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex ${isAdmin ? "justify-center" : isBuyer ? "justify-start" : "justify-end"}`}
-                  >
-                    <div
-                      className={`max-w-[75%] ${
-                        isAdmin
-                          ? "bg-warning/10 border border-warning/20 w-full"
-                          : isBuyer
-                            ? "bg-primary/10 border border-primary/20"
-                            : "bg-success/10 border border-success/20"
-                      } rounded-lg px-4 py-2`}
-                    >
-                      <div
-                        className={`text-xs font-medium mb-1 ${
-                          isAdmin ? "text-warning" : isBuyer ? "text-primary" : "text-success"
-                        }`}
-                      >
-                        {isAdmin && "👑 "}@{msg.senderUsername}
-                        {isAdmin ? " (Admin)" : isBuyer ? " (Pembeli)" : " (Penjual)"}
-                      </div>
-                      <p className="text-sm text-foreground">{msg.content}</p>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {formatDate(msg.sentAt)}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Admin Message Input */}
-            {!isClosed && (
-              <form onSubmit={handleSendMessage} className="p-4 border-t border-border">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Kirim pesan sebagai admin..."
-                    className="flex-1 rounded-lg border border-border bg-background px-4 py-2 text-foreground focus:outline-none focus:border-primary"
-                    disabled={sending}
-                  />
-                  <button
-                    type="submit"
-                    disabled={sending || !message.trim()}
-                    className="px-6 py-2 rounded-lg border border-warning/25 bg-warning/15 text-warning font-medium transition hover:bg-warning/20 disabled:opacity-50"
-                  >
-                    {sending ? "..." : "👑 Kirim"}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
+          <MediationChat
+            dispute={dispute}
+            isClosed={isClosed}
+            message={message}
+            sending={sending}
+            messagesContainerRef={messagesContainerRef}
+            onMessagesScroll={handleMessagesScroll}
+            onMessageChange={setMessage}
+            onSendMessage={handleSendMessage}
+          />
         </div>
       </div>
 
-      {/* Evidence */}
-      {dispute.evidence?.length > 0 && (
-        <div className="mt-6 bg-card rounded-lg border border-border p-6">
-          <h3 className="font-semibold text-foreground mb-4">Bukti yang Dilampirkan</h3>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {dispute.evidence.map((ev, idx) => (
-              <a
-                key={idx}
-                href={ev.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block rounded-lg border border-border p-3 hover:border-primary transition"
-              >
-                <div className="text-3xl mb-2">
-                  {ev.type === "image" ? "🖼️" : ev.type === "document" ? "📄" : "📸"}
-                </div>
-                <div className="text-sm font-medium text-foreground truncate">
-                  {ev.description || `Bukti ${idx + 1}`}
-                </div>
-                <div className="text-xs text-muted-foreground">{formatDate(ev.uploadedAt)}</div>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
+      <EvidenceSection evidence={dispute.evidence} />
 
-      {/* Confirm Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-lg bg-card p-6">
-            <h3 className="text-lg font-bold text-foreground mb-4">
-              {pendingAction === "continue" && "🔄 Lanjutkan Transaksi"}
-              {pendingAction === "force-release" && "💰 Lepaskan ke Penjual"}
-              {pendingAction === "refund" && "↩️ Kembalikan ke Pembeli"}
-            </h3>
-
-            <p className="text-sm text-muted-foreground mb-4">
-              {pendingAction === "continue" &&
-                "Transaksi akan dilanjutkan dan mengikuti hold time normal. Dispute akan ditutup."}
-              {pendingAction === "force-release" &&
-                `Dana Rp ${formatAmount(dispute.amount)} akan langsung dikirim ke penjual @${dispute.respondentUsername}.`}
-              {pendingAction === "refund" &&
-                `Dana Rp ${formatAmount(dispute.amount)} akan dikembalikan ke pembeli @${dispute.initiatorUsername}.`}
-            </p>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Catatan (opsional)
-              </label>
-              <textarea
-                value={actionNote}
-                onChange={(e) => setActionNote(e.target.value)}
-                placeholder="Tulis alasan keputusan..."
-                rows={3}
-                className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground focus:outline-none focus:border-primary resize-none"
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                disabled={processing}
-                className="flex-1 py-2 rounded-lg border border-border font-medium hover:bg-muted transition"
-              >
-                Batal
-              </button>
-              <button
-                onClick={confirmAction}
-                disabled={processing}
-                className={`flex-1 py-2 rounded-lg font-medium transition disabled:opacity-50 ${
-                  pendingAction === "refund"
-                    ? "border border-warning/25 bg-warning/15 text-warning hover:bg-warning/20"
-                    : pendingAction === "force-release"
-                      ? "border border-success/25 bg-success/15 text-success hover:bg-success/20"
-                      : "bg-primary text-primary-foreground hover:bg-primary/90"
-                }`}
-              >
-                {processing ? "Memproses..." : "Konfirmasi"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmActionModal
+          pendingAction={pendingAction}
+          actionNote={actionNote}
+          processing={processing}
+          dispute={dispute}
+          onActionNoteChange={setActionNote}
+          onConfirm={confirmAction}
+          onCancel={() => setShowConfirmModal(false)}
+        />
       )}
     </div>
   );
