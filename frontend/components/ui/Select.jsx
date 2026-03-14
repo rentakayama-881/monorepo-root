@@ -1,21 +1,17 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useId } from "react";
-import PropTypes from "prop-types";
 import clsx from "clsx";
+import {
+  normalizeOptions,
+  groupOptions,
+  filterOptions,
+  getDisplayText,
+  selectPropTypes,
+} from "./select-utils";
 
 /**
  * Enhanced select component with search, multi-select, and premium features
- * - label: string (optional, tampil di atas select)
- * - error: string (optional, tampil di bawah select)
- * - options: array of { value, label, group } atau array of strings
- * - placeholder: string (optional, option pertama yang disabled)
- * - searchable: boolean (enable search/filter)
- * - multiSelect: boolean (enable multi-select)
- * - loading: boolean (show loading state)
- * - emptyMessage: string (message when no options)
- * - children: ReactNode (optional, untuk custom options - only for non-searchable, non-multiselect)
- * - ...rest: props lain (value, onChange, dsb)
  */
 export default function Select({
   label = "",
@@ -50,25 +46,10 @@ export default function Select({
   const containerRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  // Normalize options to { value, label, group } format
-  const normalizedOptions = options.map((opt) =>
-    typeof opt === "string" ? { value: opt, label: opt } : opt
-  );
+  const normalizedOpts = normalizeOptions(options);
+  const groupedOpts = groupOptions(normalizedOpts);
+  const filteredOpts = filterOptions(normalizedOpts, searchQuery);
 
-  // Group options if they have group property
-  const groupedOptions = normalizedOptions.reduce((acc, opt) => {
-    const group = opt.group || "_default";
-    if (!acc[group]) acc[group] = [];
-    acc[group].push(opt);
-    return acc;
-  }, {});
-
-  // Filter options based on search query
-  const filteredOptions = searchQuery
-    ? normalizedOptions.filter((opt) => opt.label.toLowerCase().includes(searchQuery.toLowerCase()))
-    : normalizedOptions;
-
-  // Use children if provided and not searchable/multiselect
   const hasChildren = React.Children.count(children) > 0;
   const useNativeSelect = hasChildren && !searchable && !multiSelect;
 
@@ -110,7 +91,6 @@ export default function Select({
         ? selectedValues.filter((v) => v !== optionValue)
         : [...selectedValues, optionValue];
       setSelectedValues(newValues);
-      // Create a more complete synthetic event
       onChange?.({
         target: { value: newValues, name: rest.name || "" },
         currentTarget: { value: newValues, name: rest.name || "" },
@@ -139,16 +119,7 @@ export default function Select({
     });
   };
 
-  const getDisplayText = () => {
-    if (multiSelect) {
-      return selectedValues.length > 0
-        ? `${selectedValues.length} selected`
-        : placeholder || "Select options...";
-    }
-    const selected = normalizedOptions.find((opt) => opt.value === selectedValues);
-    return selected ? selected.label : placeholder || "Select option...";
-  };
-
+  const displayText = getDisplayText(normalizedOpts, selectedValues, multiSelect, placeholder);
   const describedBy = [hint && hintId, error && errorId].filter(Boolean).join(" ") || undefined;
 
   // Native select for simple cases
@@ -256,7 +227,7 @@ export default function Select({
           <div className="flex-1 text-left flex flex-wrap gap-1">
             {multiSelect && selectedValues.length > 0 ? (
               selectedValues.slice(0, 3).map((val) => {
-                const opt = normalizedOptions.find((o) => o.value === val);
+                const opt = normalizedOpts.find((o) => o.value === val);
                 return (
                   <span
                     key={val}
@@ -293,7 +264,7 @@ export default function Select({
                     : ""
                 }
               >
-                {getDisplayText()}
+                {displayText}
               </span>
             )}
             {multiSelect && selectedValues.length > 3 && (
@@ -336,14 +307,14 @@ export default function Select({
                 <div className="px-3 py-2 text-sm text-muted-foreground text-center">
                   Loading...
                 </div>
-              ) : filteredOptions.length === 0 ? (
+              ) : filteredOpts.length === 0 ? (
                 <div className="px-3 py-2 text-sm text-muted-foreground text-center">
                   {emptyMessage}
                 </div>
               ) : (
-                Object.entries(groupedOptions).map(([group, opts]) => {
+                Object.entries(groupedOpts).map(([group, opts]) => {
                   const groupFiltered = opts.filter(
-                    (opt) => !searchQuery || filteredOptions.includes(opt)
+                    (opt) => !searchQuery || filteredOpts.includes(opt)
                   );
                   if (groupFiltered.length === 0) return null;
 
@@ -410,31 +381,4 @@ export default function Select({
   );
 }
 
-Select.propTypes = {
-  label: PropTypes.string,
-  error: PropTypes.string,
-  hint: PropTypes.string,
-  options: PropTypes.arrayOf(
-    PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.shape({
-        value: PropTypes.string.isRequired,
-        label: PropTypes.string.isRequired,
-        group: PropTypes.string,
-      }),
-    ])
-  ),
-  placeholder: PropTypes.string,
-  searchable: PropTypes.bool,
-  multiSelect: PropTypes.bool,
-  loading: PropTypes.bool,
-  emptyMessage: PropTypes.string,
-  className: PropTypes.string,
-  children: PropTypes.node,
-  required: PropTypes.bool,
-  success: PropTypes.bool,
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.array]),
-  onChange: PropTypes.func,
-  renderOption: PropTypes.func,
-  id: PropTypes.string,
-};
+Select.propTypes = selectPropTypes;
