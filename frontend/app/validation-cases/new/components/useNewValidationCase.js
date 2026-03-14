@@ -15,6 +15,7 @@ import {
   extractDocumentId,
   pickDefaultCategory,
 } from "./newCaseUtils";
+import { useWorkspaceFiles } from "./useWorkspaceFiles";
 
 export function useNewValidationCase() {
   const router = useRouter();
@@ -47,15 +48,22 @@ export function useNewValidationCase() {
       no_contact_in_case_record: false,
     },
   });
-  const [workspaceUploadDraft, setWorkspaceUploadDraft] = useState({
-    file: null,
-    kind: "task_input",
-    label: "",
-    visibility: "public",
-  });
-  const [workspaceBootstrapFiles, setWorkspaceBootstrapFiles] = useState([]);
-  const [workspaceFileInputKey, setWorkspaceFileInputKey] = useState(0);
   const [workspaceUploadStageMsg, setWorkspaceUploadStageMsg] = useState("");
+  const {
+    workspaceUploadDraft,
+    setWorkspaceUploadDraft,
+    workspaceBootstrapFiles,
+    workspaceFileInputKey,
+    onWorkspaceFilePicked,
+    addWorkspaceBootstrapFile: addWorkspaceBootstrapFileRaw,
+    removeWorkspaceBootstrapFile,
+  } = useWorkspaceFiles();
+
+  function addWorkspaceBootstrapFile() {
+    const err = addWorkspaceBootstrapFileRaw();
+    if (err) setError(err);
+    else setError("");
+  }
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -246,64 +254,6 @@ export function useNewValidationCase() {
 
   function handleSnippetInserted(snippetId) {
     setInsertSnippetSignal((prev) => (prev?.id === snippetId ? null : prev));
-  }
-
-  function onWorkspaceFilePicked(file) {
-    if (!file) {
-      setWorkspaceUploadDraft((prev) => ({ ...prev, file: null }));
-      return;
-    }
-    const fallbackLabel = String(file.name || "")
-      .trim()
-      .replace(/\.[^/.]+$/, "");
-    setWorkspaceUploadDraft((prev) => ({
-      ...prev,
-      file,
-      label: String(prev.label || "").trim() || fallbackLabel || "Case file",
-    }));
-  }
-
-  function addWorkspaceBootstrapFile() {
-    const file = workspaceUploadDraft.file;
-    if (!file) {
-      setError("Pilih file dulu sebelum menambahkan ke daftar upload.");
-      return;
-    }
-
-    const kind = String(workspaceUploadDraft.kind || "task_input").trim();
-    const label = String(workspaceUploadDraft.label || "").trim();
-    const visibility =
-      kind === "sensitive_context"
-        ? "assigned_validators"
-        : String(workspaceUploadDraft.visibility || "public").trim();
-
-    if (!label) {
-      setError("Label file wajib diisi.");
-      return;
-    }
-
-    setWorkspaceBootstrapFiles((prev) => [
-      ...prev,
-      {
-        localId: crypto.randomUUID(),
-        file,
-        kind,
-        label,
-        visibility,
-      },
-    ]);
-    setWorkspaceUploadDraft({
-      file: null,
-      kind: "task_input",
-      label: "",
-      visibility: "public",
-    });
-    setWorkspaceFileInputKey((prev) => prev + 1);
-    setError("");
-  }
-
-  function removeWorkspaceBootstrapFile(localId) {
-    setWorkspaceBootstrapFiles((prev) => prev.filter((item) => item.localId !== localId));
   }
 
   async function submit() {
