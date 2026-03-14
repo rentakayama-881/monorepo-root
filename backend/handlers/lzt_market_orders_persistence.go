@@ -5,8 +5,11 @@ import (
 	"strings"
 	"time"
 
+	applog "backend-gin/logger"
+
 	"backend-gin/database"
 	"backend-gin/ent/marketpurchaseorder"
+	"go.uber.org/zap"
 )
 
 func (h *LZTMarketHandler) saveOrder(ctx context.Context, order *publicMarketOrder) {
@@ -73,7 +76,9 @@ func (h *LZTMarketHandler) saveOrder(ctx context.Context, order *publicMarketOrd
 	if len(order.Delivery) > 0 {
 		upd = upd.SetDeliveryJSON(order.Delivery)
 	}
-	_, _ = upd.Save(ctx)
+	if _, err := upd.Save(ctx); err != nil {
+		applog.Warn("failed to upsert market order", zap.String("order_id", order.ID), zap.Error(err))
+	}
 }
 
 func (h *LZTMarketHandler) appendOrderStep(ctx context.Context, orderID string, step publicOrderStep) {
@@ -82,7 +87,7 @@ func (h *LZTMarketHandler) appendOrderStep(ctx context.Context, orderID string, 
 		return
 	}
 	step.At = step.At.UTC()
-	_, _ = client.MarketPurchaseOrderStep.
+	if _, err := client.MarketPurchaseOrderStep.
 		Create().
 		SetOrderID(orderID).
 		SetCode(strings.TrimSpace(step.Code)).
@@ -92,14 +97,18 @@ func (h *LZTMarketHandler) appendOrderStep(ctx context.Context, orderID string, 
 		SetAt(step.At).
 		SetCreatedAt(step.At).
 		SetUpdatedAt(step.At).
-		Save(ctx)
+		Save(ctx); err != nil {
+		applog.Warn("failed to save order step", zap.String("order_id", orderID), zap.String("step", step.Code), zap.Error(err))
+	}
 
-	_, _ = client.MarketPurchaseOrder.
+	if _, err := client.MarketPurchaseOrder.
 		Update().
 		Where(marketpurchaseorder.OrderIDEQ(orderID)).
 		SetLastStepCode(strings.TrimSpace(step.Code)).
 		SetUpdatedAt(step.At).
-		Save(ctx)
+		Save(ctx); err != nil {
+		applog.Warn("failed to update order last step", zap.String("order_id", orderID), zap.Error(err))
+	}
 }
 
 func (h *LZTMarketHandler) markOrderFailed(ctx context.Context, orderID, code, reason string) {
@@ -107,14 +116,16 @@ func (h *LZTMarketHandler) markOrderFailed(ctx context.Context, orderID, code, r
 	if client == nil {
 		return
 	}
-	_, _ = client.MarketPurchaseOrder.
+	if _, err := client.MarketPurchaseOrder.
 		Update().
 		Where(marketpurchaseorder.OrderIDEQ(orderID)).
 		SetStatus("failed").
 		SetFailureCode(strings.TrimSpace(code)).
 		SetFailureReason(strings.TrimSpace(reason)).
 		SetUpdatedAt(time.Now().UTC()).
-		Save(ctx)
+		Save(ctx); err != nil {
+		applog.Error("failed to mark order as failed", zap.String("order_id", orderID), zap.String("code", code), zap.Error(err))
+	}
 }
 
 func (h *LZTMarketHandler) markOrderFulfilled(ctx context.Context, orderID string, delivery map[string]interface{}) {
@@ -132,7 +143,9 @@ func (h *LZTMarketHandler) markOrderFulfilled(ctx context.Context, orderID strin
 	if len(delivery) > 0 {
 		upd = upd.SetDeliveryJSON(delivery)
 	}
-	_, _ = upd.Save(ctx)
+	if _, err := upd.Save(ctx); err != nil {
+		applog.Error("failed to mark order fulfilled", zap.String("order_id", orderID), zap.Error(err))
+	}
 }
 
 func (h *LZTMarketHandler) getOrderForUser(ctx context.Context, orderID string, userID uint) (publicMarketOrder, bool) {

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	applog "backend-gin/logger"
 	"go.uber.org/zap"
 )
 
@@ -110,7 +111,9 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	})
 	supplierBalance := h.checkSupplierBalance(ctx, orderSnapshot.SourcePrice)
 	if supplierBalance.State == supplierBalanceStateInsufficient {
-		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Saldo sumber belum mencukupi")
+		if _, err := h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Saldo sumber belum mencukupi"); err != nil {
+			applog.Error("failed to release wallet after insufficient balance", zap.String("order_id", orderID), zap.Error(err))
+		}
 		h.markOrderFailed(ctx, orderID, "PLATFORM_READINESS_NOT_ENOUGH", "Akun belum siap untuk dijual saat ini.")
 		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "PLATFORM_READINESS_CHECK",
@@ -123,7 +126,9 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	}
 	if supplierBalance.State == supplierBalanceStateUnknown && isProviderIntegrationFailureReason(supplierBalance.Reason) {
 		userFailureReason := "Layanan pembelian sedang mengalami gangguan sementara. Silakan coba lagi."
-		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
+		if _, err := h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason); err != nil {
+			applog.Error("failed to release wallet on readiness check failure", zap.String("order_id", orderID), zap.Error(err))
+		}
 		h.markOrderFailed(ctx, orderID, "PLATFORM_READINESS_CHECK_FAILED", userFailureReason)
 		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "PLATFORM_READINESS_CHECK",
@@ -166,7 +171,9 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 	itemReadiness, itemReadinessErr := h.getProviderItemReadiness(ctx, itemID)
 	if itemReadinessErr != nil {
 		userFailureReason := normalizeCheckerErrorMessage(itemReadinessErr)
-		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
+		if _, err := h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason); err != nil {
+			applog.Error("failed to release wallet on availability check failure", zap.String("order_id", orderID), zap.Error(err))
+		}
 		h.markOrderFailed(ctx, orderID, "ITEM_AVAILABILITY_CHECK_FAILED", userFailureReason)
 		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "ITEM_AVAILABILITY_CHECK",
@@ -188,7 +195,9 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		if strings.TrimSpace(userFailureReason) == "" {
 			userFailureReason = "Akun belum siap untuk dijual saat ini."
 		}
-		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
+		if _, err := h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason); err != nil {
+			applog.Error("failed to release wallet on item unavailable", zap.String("order_id", orderID), zap.Error(err))
+		}
 		h.markOrderFailed(ctx, orderID, "ITEM_UNAVAILABLE", userFailureReason)
 		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "ITEM_AVAILABILITY_CHECK",
@@ -221,7 +230,9 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 			zap.String("item_id", itemID),
 			zap.Error(buyErr),
 		)
-		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Provider transport error")
+		if _, err := h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Provider transport error"); err != nil {
+			applog.Error("failed to release wallet after transport error", zap.String("order_id", orderID), zap.Error(err))
+		}
 		h.markOrderFailed(ctx, orderID, "CHECKER_ERROR", "Checker sedang error. Coba lagi sebentar.")
 		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "PURCHASE_EXECUTION",
@@ -252,7 +263,9 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 			zap.String("user_reason", userFailureReason),
 			zap.Strings("provider_errors", extractProviderErrors(resp)),
 		)
-		_, _ = h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason)
+		if _, err := h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, userFailureReason); err != nil {
+			applog.Error("failed to release wallet on purchase failure", zap.String("order_id", orderID), zap.Error(err))
+		}
 		h.markOrderFailed(ctx, orderID, "PURCHASE_FAILED", userFailureReason)
 		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "PURCHASE_EXECUTION",

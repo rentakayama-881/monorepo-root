@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	applog "backend-gin/logger"
+
 	"backend-gin/database"
 	"backend-gin/ent/marketpurchaseorder"
 	"backend-gin/ent/marketpurchaseorderstep"
@@ -75,7 +77,9 @@ func (h *LZTMarketHandler) applyOrderItemSnapshot(ctx context.Context, orderID s
 	if priceIDR > 0 {
 		upd = upd.SetPriceDisplay(formatIDR(priceIDR))
 	}
-	_, _ = upd.Save(ctx)
+	if _, err := upd.Save(ctx); err != nil {
+		applog.Warn("failed to apply order item snapshot", zap.Error(err))
+	}
 }
 
 // CreatePublicChatGPTOrder creates and executes a direct buy using backend LZT token.
