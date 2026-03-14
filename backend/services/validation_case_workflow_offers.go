@@ -12,6 +12,8 @@ import (
 	"backend-gin/ent/user"
 	"backend-gin/ent/validationcase"
 	apperrors "backend-gin/errors"
+	"backend-gin/logger"
+	"go.uber.org/zap"
 )
 
 func finalOfferSubmissionKey(validationCaseID int, validatorUserID uint, workflowCycle int) string {
@@ -232,6 +234,7 @@ func (s *EntValidationCaseWorkflowService) AcceptFinalOffer(ctx context.Context,
 	}
 	defer func() {
 		if v := recover(); v != nil {
+			logger.Error("transaction panic recovered in offer acceptance", zap.Any("panic", v), zap.Stack("stack"))
 			_ = tx.Rollback()
 			panic(v)
 		}

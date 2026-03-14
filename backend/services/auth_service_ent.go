@@ -6,6 +6,8 @@ import (
 
 	"backend-gin/database"
 	"backend-gin/ent"
+	"backend-gin/logger"
+	"go.uber.org/zap"
 )
 
 type EntAuthService struct {
@@ -41,6 +43,7 @@ func WithTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) 
 	}
 	defer func() {
 		if v := recover(); v != nil {
+			logger.Error("transaction panic recovered in auth service", zap.Any("panic", v), zap.Stack("stack"))
 			_ = tx.Rollback()
 			panic(v)
 		}

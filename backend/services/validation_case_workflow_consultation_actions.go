@@ -8,6 +8,8 @@ import (
 	"backend-gin/ent"
 	"backend-gin/ent/consultationrequest"
 	apperrors "backend-gin/errors"
+	"backend-gin/logger"
+	"go.uber.org/zap"
 )
 
 func (s *EntValidationCaseWorkflowService) ApproveConsultationRequest(ctx context.Context, validationCaseID uint, ownerUserID uint, requestID uint) error {
@@ -52,6 +54,7 @@ func (s *EntValidationCaseWorkflowService) ApproveConsultationRequest(ctx contex
 	}
 	defer func() {
 		if v := recover(); v != nil {
+			logger.Error("transaction panic recovered in consultation approval", zap.Any("panic", v), zap.Stack("stack"))
 			_ = tx.Rollback()
 			panic(v)
 		}
