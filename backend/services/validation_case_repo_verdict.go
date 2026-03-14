@@ -1,13 +1,13 @@
 package services
 
 import (
-"context"
-"fmt"
-"sort"
-"strings"
-"time"
+	"context"
+	"fmt"
+	"sort"
+	"strings"
+	"time"
 
-apperrors "backend-gin/errors"
+	apperrors "backend-gin/errors"
 )
 
 func latestVerdictsByValidator(verdicts []RepoVerdictItem, activeAssignments []RepoAssignmentItem) map[uint]RepoVerdictItem {

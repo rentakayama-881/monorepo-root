@@ -1,11 +1,12 @@
 package services
 
 import (
-"context"
-"fmt"
-"strings"
+	"context"
+	"fmt"
+	"strings"
 
-apperrors "backend-gin/errors"
+	"backend-gin/ent"
+	apperrors "backend-gin/errors"
 )
 
 func (s *EntValidationCaseRepoWorkflowService) PublishRepoCase(
