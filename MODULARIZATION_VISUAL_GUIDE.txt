@@ -1,0 +1,459 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║         MODULARIZATION VISUAL ARCHITECTURE & REFACTORING ROADMAP             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+CURRENT ARCHITECTURE (Problem Areas Highlighted)
+═════════════════════════════════════════════════════════════════════════════
+
+                            ┌─────────────────────┐
+                            │  Controllers (16)   │
+                            │  • Finance/*        │
+                            │  • Admin/*          │
+                            │  • Document         │
+                            │  • Report           │
+                            └──────────┬──────────┘
+                                       │
+                    ┌──────────────────┼──────────────────┐
+                    │                  │                  │
+                    ↓                  ↓                  ↓
+            ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+            │   Services   │    │   Services   │    │   Services   │
+            │   (20 total) │    │  (20 total)  │    │  (20 total)  │
+            └──────────────┘    └──────────────┘    └──────────────┘
+
+         🔴 MONOLITHS (CRITICAL)
+         ┌────────────────────────────────────────────────────────┐
+         │                                                        │
+         │  DisputeService      WalletService    SoftKeyMgmt     │
+         │  ┌──────────────┐    ┌──────────────┐ ┌────────────┐ │
+         │  │ 962 lines    │    │ 825 lines    │ │ 718 lines  │ │
+         │  │ 12 methods   │    │ 9 methods    │ │ 6 methods  │ │
+         │  │ 7 concerns   │    │ 5 concerns   │ │ 6 concerns │ │
+         │  │ NO TESTS ❌  │    │ NO TESTS ❌  │ │ CRITICAL🔐 │ │
+         │  └──────────────┘    └──────────────┘ └────────────┘ │
+         │                                                        │
+         │  Large Services (500-700 lines)                       │
+         │  ┌──────────────┐ ┌─────────────────┐ ┌────────────┐ │
+         │  │Transfer(616) │ │Secure Transfer  │ │MarketPurch │ │
+         │  │ SPLIT BADLY  │ │(609) - Decorator│ │(504)       │ │
+         │  └──────────────┘ └─────────────────┘ └────────────┘ │
+         │                                                        │
+         └────────────────────────────────────────────────────────┘
+                    ↓
+         🟡 CODE DUPLICATION DETECTED
+         ┌────────────────────────────────────────────────────────┐
+         │                                                        │
+         │  • Balance Operations (8 services, 8 duplicates)      │
+         │  • State Machines (4 services, 4 implementations)    │
+         │  • DTO Mappings (10+ services, 20+ MapToDto)        │
+         │  • Exception Handlers (8+ services, 15+ handlers)    │
+         │  • Case Lock Logic (2 services, 2 implementations)   │
+         │                                                        │
+         └────────────────────────────────────────────────────────┘
+                    ↓
+                ┌──────────────────────────────────┐
+                │  Infrastructure Layer (GOOD)     │
+                │  ✓ MongoDB abstraction           │
+                │  ✓ Redis (caching, idempotency) │
+                │  ✓ Security (PQC, crypto)       │
+                │  ✓ Auth & audit trail           │
+                └──────────────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════
+
+REFACTORING ROADMAP - TIMELINE & DEPENDENCIES
+═════════════════════════════════════════════════════════════════════════════
+
+PHASE 1: QUICK WINS (Days 1-10) - Foundation Work
+─────────────────────────────────────────────────
+
+Week 1, Days 1-2: Extract BalanceOperationHelper
+┌─ Consolidates 8 duplicate wallet deduction patterns
+├─ Creates: BalanceOperationHelper.cs (~80 lines)
+├─ Modifies: 8 services (TransferService, DisputeService, etc.)
+└─ Benefit: Immediate reduction of duplication
+
+Week 1, Days 3-4: Extract ValidationCaseLockManager
+┌─ Unifies case lock logic
+├─ Creates: ValidationCaseLockManager.cs (~60 lines)
+├─ Modifies: TransferService, DisputeService
+└─ Benefit: Single source of truth
+
+Week 1, Days 5-7: Extract PinSecurityService
+┌─ Isolates security-critical PIN code from WalletService
+├─ Creates: PinSecurityService.cs (~200 lines)
+├─ Modifies: WalletService
+└─ Benefit: Testable PIN security, reusable across app
+
+Week 2, Days 8-10: Refactor Program.cs
+┌─ Create extension methods for each infrastructure module
+├─ Creates: 5 extension classes
+├─ Modifies: Program.cs (647 → ~100 lines)
+└─ Benefit: Cleaner configuration, easier to maintain
+
+═════════════════════════════════════════════════════════════════════════════
+
+PHASE 2: SERVICE SPLITS (Days 11-25) - Major Refactoring
+─────────────────────────────────────────────────────────
+
+Week 3-4: Split DisputeService (962 lines → 3 services)
+┌─ DisputeCreationService (250-280 lines)
+│   └─ CreateDisputeAsync, CancelDisputeAsync
+├─ DisputeResolutionService (250-280 lines)
+│   └─ ResolveDisputeAsync, ContinueTransactionAsync, MutualRefundAsync
+└─ DisputeMessageService (220-250 lines)
+    └─ AddMessageAsync, AddEvidenceAsync
+
+   ┌──────────────┐          ┌──────────────┐          ┌──────────────┐
+   │  Creation    │          │ Resolution   │          │ Messages     │
+   │  962 lines   │ SPLIT    │  250 lines   │          │  220 lines   │
+   │  UNTESTED ❌ │   ──→    │  ✓ Focused   │    +     │  ✓ Focused   │
+   │              │          │              │          │              │
+   └──────────────┘          └──────────────┘          └──────────────┘
+   
+   Creates: DisputeServiceTests (50+ tests)
+
+Week 4-5: Split WalletService (825 lines → 3 services)
+┌─ PinSecurityService (180-220 lines) - from Phase 1
+│   └─ SetPinAsync, VerifyPinAsync, GetPinStatusAsync
+├─ BalanceOperationService (220-250 lines)
+│   └─ DeductBalanceAsync, AddBalanceAsync, RecalculateBalanceAsync
+└─ TransactionLedgerService (150-200 lines)
+    └─ GetTransactionsAsync, GetTransactionCountAsync
+
+   ┌──────────────┐          ┌──────────────┐          ┌──────────────┐
+   │  Wallet      │          │ PIN Security │          │ Balance      │
+   │  825 lines   │ SPLIT    │  200 lines   │          │  240 lines   │
+   │  UNTESTED ❌ │   ──→    │  ✓ Secure🔐  │    +     │  ✓ Focused   │
+   │              │          │              │          │              │
+   └──────────────┘          └──────────────┘          └──────────────┘
+                                  │
+                             (with Ledger Service)
+   
+   Creates: WalletServiceTests (40+ tests), LedgerServiceTests
+
+Week 5: Create IStateTransitionService<T> Pattern
+┌─ Generic state machine implementation
+├─ Used by: TransferService, WithdrawalService, DepositService, MarketPurchase
+├─ Consolidates: 4+ duplicate state implementations
+└─ Benefit: DRY principle, consistency
+
+   Before:                        After:
+   ┌──────────────┐               ┌──────────────────────────┐
+   │Transfer      │ ─has state→   │IStateTransition<T>       │
+   │Withdrawal    │   logic       │• ValidateTransition()    │
+   │Deposit       │   (duplicated)│• UpdateStatusAsync()     │
+   │MarketPurch   │               │• GetValidNextStates()    │
+   └──────────────┘               └──────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════
+
+PHASE 3: REORGANIZATION (Days 26-35) - Structure Improvements
+──────────────────────────────────────────────────────────────
+
+Week 6: Reorganize TransferService Partials (616 lines)
+┌─ TransferService.cs (200 lines)
+│   └─ Core: CreateTransferAsync, GetTransfersAsync
+├─ TransferService.StateManagement.cs (200 lines)
+│   └─ Release, Cancel, Reject, Auto-release
+├─ TransferService.Validation.cs (150 lines)
+│   └─ Case locks, code generation, validation
+└─ TransferService.ExternalIntegration.cs (66 lines)
+    └─ User lookup, backend HTTP calls
+
+Week 6-7: Extract Payment Provider Layer
+┌─ WithdrawalPaymentProvider (OxaPay) (~150 lines)
+└─ DepositPaymentProvider (OxaPay) (~150 lines)
+
+   Enables:
+   • Easy switching between payment methods
+   • Testable payment logic
+   • Reusable across services
+
+Week 7: Consolidate DTO Mapping
+┌─ Create EntityMapperRegistry or use AutoMapper
+├─ Consolidate: 20+ MapToDto methods
+└─ Benefit: Single source of truth
+
+═════════════════════════════════════════════════════════════════════════════
+
+PHASE 4: TESTING & VALIDATION (Days 36-40) - Quality Assurance
+───────────────────────────────────────────────────────────────
+
+Week 8: Comprehensive Testing
+┌─ Implement DisputeServiceTests (50+ test cases)
+├─ Implement WalletServiceTests (40+ test cases)
+├─ Implement GuaranteeServiceTests (20+ test cases)
+├─ Implement AdminModerationServiceTests (25+ test cases)
+└─ Target: 80%+ coverage for critical services
+
+   Coverage Progress:
+   Before: 17 test files, 12.8% coverage
+   After:  40+ test files, 30%+ coverage
+   Critical: All financial services covered
+
+═════════════════════════════════════════════════════════════════════════════
+
+BEFORE & AFTER ARCHITECTURE
+═════════════════════════════════════════════════════════════════════════════
+
+BEFORE (Current Problems):
+────────────────────────
+
+         ┌─────────────────────────────────────┐
+         │      Controllers                    │
+         └────────────┬────────────────────────┘
+                      │
+    ┌─────────────────┼─────────────────┐
+    │                 │                 │
+    ↓                 ↓                 ↓
+  ┌─────┐    ┌──────────────┐    ┌─────────┐
+  │T-Svc│    │ DisputeService│   │ W-Svc   │
+  │616 L│    │    962 L      │   │ 825 L   │
+  │✗Test│    │    ✗ NO TEST │   │ ✗NO TEST│
+  │Solid│    │ 7 Concerns    │   │5 Concerns│
+  └─────┘    │ 12 Methods    │   │ 9 Methods│
+             └───────────────┘   └─────────┘
+
+  Issues:
+  • Large monolithic classes hard to test
+  • Duplicate patterns scattered across 8+ services
+  • Critical services (962L, 825L) untested
+  • High cognitive complexity
+
+
+AFTER (Refactored Solution):
+─────────────────────────
+
+         ┌──────────────────────────────────┐
+         │      Controllers                 │
+         └────────┬────────────────────────┘
+                  │
+    ┌─────────────┼────────────────┬──────────────┐
+    │             │                │              │
+    ↓             ↓                ↓              ↓
+  ┌─────┐    ┌──────┐    ┌──────┐    ┌──────┐   ┌───────┐
+  │Trans│    │Cre-  │    │Msg   │    │Bal   │   │PIN    │
+  │200L │    │ation │    │Svc   │    │Svc   │   │Svc    │
+  │✓Test│    │250L  │    │220L  │    │220L  │   │180L   │
+  │Solid│    │✓Test │    │✓Test │    │✓Test │   │✓Test🔐│
+  └─────┘    └──────┘    └──────┘    └──────┘   └───────┘
+
+  Improvements:
+  ✓ Each service <250 lines, single responsibility
+  ✓ All critical services covered with tests
+  ✓ Duplicate patterns extracted to helpers
+  ✓ Low cognitive complexity, easy to understand
+  ✓ Easy to test in isolation
+  ✓ Better code reuse (IStateTransitionService<T>)
+
+═════════════════════════════════════════════════════════════════════════════
+
+DEPENDENCY GRAPH - BEFORE → AFTER
+═════════════════════════════════════════════════════════════════════════════
+
+BEFORE (Tangled):
+Controllers
+    ↓
+Services (high interdependence, large)
+    ├─ DisputeService (962L)
+    │   ├─ Uses: Transfer, Wallet, HTTP
+    │   └─ Complex state management
+    ├─ WalletService (825L)
+    │   ├─ PIN + Balance + Ledger mixed
+    │   └─ Used by 8+ services
+    ├─ TransferService (616L)
+    │   ├─ Poorly split across 2 files
+    │   └─ Uses: Wallet, HTTP, Transfer
+    └─ ... (20 total services)
+    
+Infrastructure
+    ├─ MongoDB
+    ├─ Redis
+    └─ Security
+
+
+AFTER (Clear Layers):
+Controllers
+    ↓
+Domain Services
+    ├─ DisputeCreationService (250L) → Dispute lifecycle
+    ├─ DisputeResolutionService (250L) → Settlement
+    ├─ DisputeMessageService (220L) → Messages
+    │
+    ├─ TransferService (200L) → Core logic
+    ├─ TransferStateService (150L) → State management
+    ├─ TransferValidationService (150L) → Validation
+    │
+    ├─ PinSecurityService (180L) → Security
+    ├─ BalanceOperationService (220L) → Wallets
+    ├─ TransactionLedgerService (150L) → Ledger
+    │
+    └─ ... (others)
+    
+Helpers / Patterns
+    ├─ BalanceOperationHelper → Shared deduct logic
+    ├─ IStateTransitionService<T> → Generic state machines
+    ├─ ValidationCaseLockManager → Case locks
+    ├─ EntityMapperRegistry → DTO mapping
+    └─ MongoExceptionHandler → Error handling
+    
+Infrastructure
+    ├─ MongoDB abstraction
+    ├─ Redis (caching, idempotency)
+    ├─ PQC & Crypto services
+    └─ Audit & logging
+
+═════════════════════════════════════════════════════════════════════════════
+
+SIZE REDUCTION CHART
+═════════════════════════════════════════════════════════════════════════════
+
+DisputeService: 962 → 250 + 250 + 280 = 780 (more testable, split)
+  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 962 lines → ▓▓▓▓▓▓▓▓ 250 + 280 + 250
+
+WalletService: 825 → 180 + 220 + 150 = 550 (more testable, split)
+  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 825 lines → ▓▓▓▓ 180 + 220 + 150
+
+TransferService: 616 → 200 + 200 + 150 + 66 (reorganized)
+  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 616 lines → ▓▓▓▓▓▓▓ 200 + 200 + 150 + 66
+
+SoftKeyMgmt: 718 → 240 + 240 + 240 (split for clarity)
+  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 718 lines → ▓▓▓▓▓▓▓ 240 + 240 + 240
+
+Program.cs: 647 → 100 + extensions (cleaner)
+  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 647 lines → ▓ 100 + modular extensions
+
+═════════════════════════════════════════════════════════════════════════════
+
+TEST COVERAGE PROJECTION
+═════════════════════════════════════════════════════════════════════════════
+
+Current:
+  Files: 17 test files
+  Coverage: 12.8% (17 / 133)
+  Untested Services: DisputeService, WalletService, GuaranteeService, etc.
+  
+  ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 12.8%
+
+
+Target (After Refactoring):
+  Files: 40+ test files
+  Coverage: 30%+ (40+ / 133)
+  All critical services covered
+  
+  ████████████████████████████████░░░░░░░░░░░░░░ 30%+
+
+New Tests to Add:
+  ✓ DisputeServiceTests (50+ cases)
+  ✓ WalletServiceTests (40+ cases)
+  ✓ GuaranteeServiceTests (20+ cases)
+  ✓ AdminModerationServiceTests (25+ cases)
+  ✓ DocumentServiceTests (20+ cases)
+  ✓ ReportServiceTests (15+ cases)
+  Total: ~170 new test cases
+
+═════════════════════════════════════════════════════════════════════════════
+
+CRITICAL PATH - 8-WEEK EXECUTION PLAN
+═════════════════════════════════════════════════════════════════════════════
+
+Week 1-2: FOUNDATION (Days 1-10)
+┌─────────┬────────────────────────────────────────────────┬──────────┐
+│ Day 1-2 │ Extract BalanceOperationHelper                │ Complete │
+├─────────┼────────────────────────────────────────────────┼──────────┤
+│ Day 3-4 │ Extract ValidationCaseLockManager              │ Complete │
+├─────────┼────────────────────────────────────────────────┼──────────┤
+│ Day 5-7 │ Extract PinSecurityService                     │ Complete │
+├─────────┼────────────────────────────────────────────────┼──────────┤
+│ Day 8-10│ Refactor Program.cs                            │ Complete │
+└─────────┴────────────────────────────────────────────────┴──────────┘
+
+Week 3-5: MAJOR SPLITS (Days 11-25)
+┌─────────┬────────────────────────────────────────────────┬──────────┐
+│ Day 11- │ Split DisputeService (962 → 3 services)       │ Complete │
+│ Day 17  │ + DisputeServiceTests (50 tests)              │          │
+├─────────┼────────────────────────────────────────────────┼──────────┤
+│ Day 18- │ Split WalletService (825 → 3 services)        │ Complete │
+│ Day 24  │ + WalletServiceTests (40 tests)               │          │
+├─────────┼────────────────────────────────────────────────┼──────────┤
+│ Day 25  │ Create IStateTransitionService<T>             │ Complete │
+└─────────┴────────────────────────────────────────────────┴──────────┘
+
+Week 6-7: REORGANIZATION (Days 26-35)
+┌─────────┬────────────────────────────────────────────────┬──────────┐
+│ Day 26- │ Reorganize TransferService partials            │ Complete │
+│ Day 29  │ (4-way split, clearer organization)           │          │
+├─────────┼────────────────────────────────────────────────┼──────────┤
+│ Day 30- │ Extract Payment Provider Layer                 │ Complete │
+│ Day 32  │ (WithdrawalPaymentProvider, DepositPaymentProv│          │
+├─────────┼────────────────────────────────────────────────┼──────────┤
+│ Day 33- │ Consolidate DTO Mapping                        │ Complete │
+│ Day 35  │ (EntityMapperRegistry)                         │          │
+└─────────┴────────────────────────────────────────────────┴──────────┘
+
+Week 8: TESTING & VALIDATION (Days 36-40)
+┌─────────┬────────────────────────────────────────────────┬──────────┐
+│ Day 36- │ GuaranteeServiceTests (20 tests)              │ Complete │
+│ Day 37  │ AdminModerationServiceTests (25 tests)        │          │
+├─────────┼────────────────────────────────────────────────┼──────────┤
+│ Day 38- │ DocumentServiceTests (20 tests)               │ Complete │
+│ Day 39  │ ReportServiceTests (15 tests)                 │          │
+├─────────┼────────────────────────────────────────────────┼──────────┤
+│ Day 40  │ Final validation, code review                 │ Complete │
+└─────────┴────────────────────────────────────────────────┴──────────┘
+
+═════════════════════════════════════════════════════════════════════════════
+
+METRICS TO TRACK
+═════════════════════════════════════════════════════════════════════════════
+
+Metric                    │ Current  │ Target  │ Status
+──────────────────────────┼──────────┼─────────┼────────
+Max Service Size          │ 962 L    │ 300-400 │ 🔴
+Test Coverage             │ 12.8%    │ 30%+    │ 🔴
+Code Duplication          │ High     │ <5%     │ 🔴
+Avg Methods per Service   │ 7        │ 3-5     │ 🟠
+Services Untested         │ 5+       │ 0       │ 🔴
+Helper Services           │ 0        │ 5-8     │ 🟡
+Cyclomatic Complexity     │ High     │ <10     │ 🟠
+Partial Classes (messy)   │ 2        │ 0       │ 🟡
+
+═════════════════════════════════════════════════════════════════════════════
+
+KEY SUCCESS CRITERIA
+═════════════════════════════════════════════════════════════════════════════
+
+✓ All services < 400 lines (most < 300)
+✓ Critical services have >80% test coverage
+✓ Code duplication < 5%
+✓ Each service has clear single responsibility
+✓ Cyclomatic complexity < 10 per method
+✓ Helper services eliminate 5+ duplicate patterns
+✓ New services follow dependency injection pattern
+✓ All refactoring is backward compatible (facades if needed)
+✓ Build succeeds, all tests pass
+✓ Code review approved by team
+
+═════════════════════════════════════════════════════════════════════════════
+
+FINAL NOTES
+═════════════════════════════════════════════════════════════════════════════
+
+This refactoring is ESSENTIAL for:
+  • Maintainability: Smaller services easier to understand
+  • Testability: Critical untested services will be covered
+  • Scalability: Clear boundaries enable parallel development
+  • Reliability: Focused services have fewer bugs
+  • Reusability: Extracted helpers prevent duplication
+
+The 8-week timeline is achievable with:
+  • 2 developers (10 hours/week commitment)
+  • Or 1 developer (20 hours/week, slower)
+  • Incremental rollout in phases
+  • Backward compatibility maintained throughout
+  • Tests provide safety net for refactoring
+
+BEGIN WITH PHASE 1 (Days 1-10) for immediate improvements!
+
+═════════════════════════════════════════════════════════════════════════════
