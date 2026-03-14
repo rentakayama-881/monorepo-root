@@ -242,8 +242,8 @@ func (s *EntTOTPService) generateBackupCodesInternal(ctx context.Context, userID
 	return codes, nil
 }
 
-// GenerateBackupCodes is DEPRECATED - backup codes are now only generated during TOTP enable
-// This function is kept for backward compatibility but returns an error
+// GenerateBackupCodes returns an error — backup codes are only generated during TOTP enable.
+// This function is kept for backward compatibility but returns an error.
 func (s *EntTOTPService) GenerateBackupCodes(ctx context.Context, userID int) ([]string, error) {
 	return nil, errors.NewAppError("BACKUP_CODES_NOT_REGENERATABLE", "Backup codes hanya dibuat saat mengaktifkan 2FA. Untuk mendapatkan backup codes baru, nonaktifkan dan aktifkan kembali 2FA.", 400)
 }

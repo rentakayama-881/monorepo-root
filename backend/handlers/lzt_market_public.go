@@ -63,6 +63,6 @@ func (h *LZTMarketHandler) GetPublicChatGPTCheckout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"item_id":      itemID,
 		"checkout_url": buildLZTItemURL(itemID),
-		"note":         "Deprecated: gunakan endpoint POST /api/market/chatgpt/orders untuk checkout internal.",
+		"note":         "Gunakan endpoint POST /api/market/chatgpt/orders untuk checkout internal.",
 	})
 }
