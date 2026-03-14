@@ -54,9 +54,9 @@ export default function usePasskeySettings() {
     }
   }, [API]);
 
-  function initWebAuthnCheck() {
+  const initWebAuthnCheck = useCallback(() => {
     setWebAuthnSupported(isWebAuthnSupported());
-  }
+  }, []);
 
   async function registerPasskey() {
     if (registering) return;
