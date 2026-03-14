@@ -285,7 +285,11 @@ public static class ServiceRegistration
                                         context.Success();
                                     }
                                 }
-                                catch { /* Ignore if admin token validation also fails */ }
+                                catch (Exception ex)
+                                {
+                                    var logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerHandler>>();
+                                    logger?.LogDebug(ex, "Admin token validation fallback failed");
+                                }
                             }
                         }
                         return Task.CompletedTask;

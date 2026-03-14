@@ -280,7 +280,7 @@ public class DocumentService : IDocumentService
 
         var usedBytes = documents.Sum(d => d.FileSize);
         var maxBytes = DocumentFileType.MaxUserStorageBytes;
-        var usedPercentage = (double)usedBytes / maxBytes * 100;
+        var usedPercentage = (decimal)usedBytes / maxBytes * 100m;
 
         return new StorageQuotaDto(usedBytes, maxBytes, documents.Count, Math.Round(usedPercentage, 2));
     }

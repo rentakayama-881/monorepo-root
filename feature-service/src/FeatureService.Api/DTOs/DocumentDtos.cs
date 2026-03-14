@@ -104,7 +104,7 @@ public record StorageQuotaDto(
     long UsedBytes,
     long MaxBytes,
     int DocumentCount,
-    double UsedPercentage
+    decimal UsedPercentage
 );
 
 /// <summary>

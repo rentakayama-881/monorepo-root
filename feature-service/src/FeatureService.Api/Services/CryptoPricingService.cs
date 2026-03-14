@@ -161,8 +161,8 @@ public class CryptoPricingService : ICryptoPricingService
 
             await Task.WhenAll(usdtPriceTask, idrRateTask);
 
-            var usdtPrice = usdtPriceTask.Result;
-            var idrRate = idrRateTask.Result;
+            var usdtPrice = await usdtPriceTask;
+            var idrRate = await idrRateTask;
 
             if (usdtPrice != null && idrRate != null)
                 return usdtPrice.Value * idrRate.Value;
