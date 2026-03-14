@@ -1,27 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { requireValidTokenOrThrow, readJsonSafe, throwApiError } from "@/lib/authRequest";
-import { getApiBase } from "@/lib/api";
-import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
-import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn";
+import { useEffect } from "react";
+import usePasskeySettings from "./usePasskeySettings";
 import PasskeyList from "./PasskeyList";
+import PasskeyPinModal from "./PasskeyPinModal";
 import { SectionLoadingBlock } from "./ui/LoadingState";
-
-function isWebAuthnSupported() {
-  return (
-    typeof window !== "undefined" &&
-    !!(window.PublicKeyCredential && typeof window.PublicKeyCredential === "function")
-  );
-}
-
-function normalizePinStatus(payload) {
-  const data = unwrapFeatureData(payload) || {};
-  const pinSetRaw =
-    data.pinSet ?? data.PinSet ?? data.pin_set ?? data.hasPin ?? data.has_pin ?? false;
-  return Boolean(pinSetRaw);
-}
 
 const PasskeyIcon = (
   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -50,247 +33,31 @@ const PlusIcon = (
 );
 
 export default function PasskeySettings() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [passkeys, setPasskeys] = useState([]);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [registering, setRegistering] = useState(false);
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [pin, setPin] = useState("");
-  const [pinError, setPinError] = useState("");
-  const [deleting, setDeleting] = useState(null);
-  const [webAuthnSupported, setWebAuthnSupported] = useState(true);
-
-  const API = `${getApiBase()}/api/auth/passkeys`;
-
-  const fetchPasskeys = useCallback(async () => {
-    setLoading(true);
-    try {
-      const token = await requireValidTokenOrThrow();
-      const res = await fetch(API, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        await throwApiError(res, "Failed to load passkeys.");
-      }
-
-      const data = await readJsonSafe(res);
-      setPasskeys(data?.passkeys || []);
-    } catch (err) {
-      setError(err?.message || "Failed to load passkeys.");
-    } finally {
-      setLoading(false);
-    }
-  }, [API]);
+  const {
+    loading,
+    passkeys,
+    error,
+    success,
+    registering,
+    showPinModal,
+    pin,
+    setPin,
+    pinError,
+    deleting,
+    webAuthnSupported,
+    fetchPasskeys,
+    initWebAuthnCheck,
+    registerPasskey,
+    confirmRegisterPasskey,
+    deletePasskey,
+    renamePasskey,
+    closePinModal,
+  } = usePasskeySettings();
 
   useEffect(() => {
-    setWebAuthnSupported(isWebAuthnSupported());
+    initWebAuthnCheck();
     fetchPasskeys();
-  }, [fetchPasskeys]);
-
-  async function registerPasskey() {
-    if (registering) return;
-
-    if (!isWebAuthnSupported()) {
-      setError("Your browser does not support Passkey/WebAuthn");
-      return;
-    }
-
-    setError("");
-    setSuccess("");
-    setPin("");
-    setPinError("");
-
-    try {
-      const pinStatus = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.PIN_STATUS);
-      const hasPin = normalizePinStatus(pinStatus);
-      if (!hasPin) {
-        router.push("/account/wallet/set-pin?redirect=passkey");
-        return;
-      }
-
-      setShowPinModal(true);
-    } catch (err) {
-      if (err?.code === "TWO_FACTOR_REQUIRED") {
-        router.push(
-          "/account/security?setup2fa=true&redirect=" +
-            encodeURIComponent("/account/wallet/set-pin?redirect=passkey")
-        );
-        return;
-      }
-
-      if (err?.code === "PIN_REQUIRED") {
-        router.push("/account/wallet/set-pin?redirect=passkey");
-        return;
-      }
-
-      setError(err?.message || "Failed to prepare passkey registration.");
-    }
-  }
-
-  async function confirmRegisterPasskey() {
-    if (registering) return;
-
-    const normalizedPin = String(pin || "").replace(/\D/g, "");
-    if (normalizedPin.length !== 6) {
-      setPinError("PIN harus 6 digit.");
-      return;
-    }
-
-    setRegistering(true);
-    setPinError("");
-    setError("");
-
-    try {
-      const token = await requireValidTokenOrThrow();
-
-      const beginRes = await fetch(`${API}/register/begin`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ pin: normalizedPin }),
-      });
-      if (!beginRes.ok) {
-        await throwApiError(beginRes, "Failed to start registration.");
-      }
-
-      const beginData = await readJsonSafe(beginRes);
-      const options = beginData?.options;
-      const sessionId = beginData?.session_id;
-      const publicKeyOptions = options?.publicKey;
-
-      if (!publicKeyOptions || !sessionId) {
-        throw new Error("Failed to start registration.");
-      }
-      publicKeyOptions.challenge = base64URLToBuffer(publicKeyOptions.challenge);
-      publicKeyOptions.user.id = base64URLToBuffer(publicKeyOptions.user.id);
-
-      if (publicKeyOptions.excludeCredentials) {
-        publicKeyOptions.excludeCredentials = publicKeyOptions.excludeCredentials.map((cred) => ({
-          ...cred,
-          id: base64URLToBuffer(cred.id),
-        }));
-      }
-
-      setShowPinModal(false);
-
-      const credential = await navigator.credentials.create({
-        publicKey: publicKeyOptions,
-      });
-
-      if (!credential) {
-        throw new Error("Registration was canceled");
-      }
-
-      const credentialForServer = serializePublicKeyCredential(credential);
-      const passkeyName = prompt("Beri nama untuk passkey ini:", "Passkey") || "Passkey";
-
-      const finishRes = await fetch(`${API}/register/finish`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: passkeyName,
-          session_id: sessionId,
-          credential: credentialForServer,
-        }),
-      });
-
-      if (!finishRes.ok) {
-        await throwApiError(finishRes, "Failed to complete registration.");
-      }
-
-      setPin("");
-      setSuccess("Passkey registered successfully!");
-      await fetchPasskeys();
-    } catch (err) {
-      if (err?.code === "TWO_FACTOR_REQUIRED") {
-        setShowPinModal(false);
-        router.push(
-          "/account/security?setup2fa=true&redirect=" +
-            encodeURIComponent("/account/wallet/set-pin?redirect=passkey")
-        );
-        return;
-      }
-
-      if (err?.code === "PIN_REQUIRED") {
-        setShowPinModal(false);
-        router.push("/account/wallet/set-pin?redirect=passkey");
-        return;
-      }
-
-      if (err?.code === "INVALID_PIN") {
-        setPinError(err?.message || "PIN transaksi tidak valid.");
-        return;
-      }
-
-      if (err.name === "NotAllowedError") {
-        setError("Registration was canceled atau tidak diizinkan");
-      } else if (err.name === "InvalidStateError") {
-        setError("Passkey ini sudah terdaftar");
-      } else {
-        setError(err?.message || "Failed to register passkey.");
-      }
-    } finally {
-      setRegistering(false);
-    }
-  }
-
-  async function deletePasskey(id) {
-    if (!confirm("Delete this passkey? You will no longer be able to sign in with it.")) {
-      return;
-    }
-
-    setDeleting(id);
-    setError("");
-    setSuccess("");
-
-    try {
-      const token = await requireValidTokenOrThrow();
-      const res = await fetch(`${API}/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        await throwApiError(res, "Failed to delete passkey.");
-      }
-      setSuccess("Passkey removed successfully.");
-      await fetchPasskeys();
-    } catch (err) {
-      setError(err?.message || "Failed to delete passkey.");
-    } finally {
-      setDeleting(null);
-    }
-  }
-
-  async function renamePasskey(id, name) {
-    setError("");
-    setSuccess("");
-
-    try {
-      const token = await requireValidTokenOrThrow();
-      const res = await fetch(`${API}/${id}/name`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name }),
-      });
-      if (!res.ok) {
-        await throwApiError(res, "Failed to update name.");
-      }
-      setSuccess("Passkey name updated successfully.");
-      await fetchPasskeys();
-    } catch (err) {
-      setError(err?.message || "Failed to update name.");
-    }
-  }
+  }, [fetchPasskeys, initWebAuthnCheck]);
 
   if (!webAuthnSupported) {
     return (
@@ -383,54 +150,14 @@ export default function PasskeySettings() {
       </section>
 
       {showPinModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6">
-            <h3 className="text-lg font-bold text-foreground">Konfirmasi PIN</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Masukkan PIN transaksi untuk melanjutkan pendaftaran passkey.
-            </p>
-
-            <div className="mt-4">
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                value={pin}
-                onChange={(e) => {
-                  setPin(e.target.value.replace(/\D/g, "").slice(0, 6));
-                  setPinError("");
-                }}
-                placeholder="••••••"
-                className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:border-primary"
-                autoFocus
-              />
-            </div>
-
-            {pinError && <p className="mt-2 text-sm text-destructive">{pinError}</p>}
-
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => {
-                  if (registering) return;
-                  setShowPinModal(false);
-                  setPin("");
-                  setPinError("");
-                }}
-                disabled={registering}
-                className="flex-1 rounded-md border border-border py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
-              >
-                Batal
-              </button>
-              <button
-                onClick={confirmRegisterPasskey}
-                disabled={registering || pin.length !== 6}
-                className="flex-1 rounded-md bg-primary py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-              >
-                {registering ? "Memverifikasi..." : "Verifikasi PIN"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <PasskeyPinModal
+          pin={pin}
+          onPinChange={setPin}
+          pinError={pinError}
+          registering={registering}
+          onConfirm={confirmRegisterPasskey}
+          onClose={closePinModal}
+        />
       )}
     </>
   );
