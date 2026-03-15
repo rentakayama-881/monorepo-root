@@ -1,11 +1,7 @@
 import { cn } from "@/lib/utils";
 import Skeleton from "./Skeleton";
 
-export function CenteredSpinner({
-  className = "",
-  sizeClass = "h-7 w-7",
-  srLabel = "Loading",
-}) {
+export function CenteredSpinner({ className = "", sizeClass = "h-7 w-7", srLabel = "Loading" }) {
   return (
     <div
       className={cn("flex items-center justify-center", className)}
@@ -66,10 +62,7 @@ export function PageLoadingBlock({
   return (
     <div className={cn("min-h-[50vh] p-4", className)}>
       <div className={cn("mx-auto w-full", maxWidthClass)}>
-        <div className="space-y-4">
-          <CenteredSpinner srLabel={srLabel} />
-          <SectionLoadingBlock lines={lines} srLabel={srLabel} />
-        </div>
+        <SectionLoadingBlock lines={lines} srLabel={srLabel} />
       </div>
     </div>
   );

@@ -1,9 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import Alert from "@/components/ui/Alert";
-import { CenteredSpinner } from "@/components/ui/LoadingState";
 import { useAccountPage } from "./components/useAccountPage";
 import Setup2faBanner from "./components/Setup2faBanner";
 import ProfileIdentitySection from "./components/ProfileIdentitySection";
@@ -12,7 +10,12 @@ import IntegrationsSection from "./components/IntegrationsSection";
 import SecuritySection from "./components/SecuritySection";
 
 const DeleteAccountSection = dynamic(() => import("@/components/account/DeleteAccountSection"), {
-  loading: () => <div className="h-16 animate-pulse bg-border/30 rounded-lg" />,
+  loading: () => (
+    <div className="rounded-[var(--radius)] border border-border bg-card p-6 animate-pulse">
+      <div className="h-5 w-32 bg-border rounded mb-3" />
+      <div className="h-4 w-48 bg-border rounded" />
+    </div>
+  ),
 });
 
 function AccountPageContent() {
@@ -89,8 +92,36 @@ function AccountPageContent() {
       </div>
 
       {loading ? (
-        <div className="rounded-[var(--radius)] border border-border bg-card p-4">
-          <CenteredSpinner className="justify-start" sizeClass="h-5 w-5" />
+        <div className="space-y-10">
+          {/* Profile section skeleton */}
+          <div className="rounded-[var(--radius)] border border-border bg-card p-6 animate-pulse">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="h-16 w-16 rounded-full bg-border" />
+              <div className="flex-1 space-y-2">
+                <div className="h-5 w-32 bg-border rounded" />
+                <div className="h-4 w-48 bg-border rounded" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="h-10 bg-border rounded" />
+              <div className="h-10 bg-border rounded" />
+            </div>
+          </div>
+          {/* Finance section skeleton */}
+          <div className="rounded-[var(--radius)] border border-border bg-card p-6 animate-pulse">
+            <div className="h-5 w-24 bg-border rounded mb-4" />
+            <div className="space-y-3">
+              <div className="h-10 bg-border rounded" />
+              <div className="h-10 bg-border rounded" />
+            </div>
+          </div>
+          {/* Security section skeleton */}
+          <div className="rounded-[var(--radius)] border border-border bg-card p-6 animate-pulse">
+            <div className="h-5 w-28 bg-border rounded mb-4" />
+            <div className="space-y-3">
+              <div className="h-10 bg-border rounded" />
+            </div>
+          </div>
         </div>
       ) : (
         <div className="space-y-10">
@@ -157,17 +188,5 @@ function AccountPageContent() {
 }
 
 export default function AccountPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="rounded-[var(--radius)] border border-border bg-card p-4">
-            <CenteredSpinner className="justify-start" sizeClass="h-5 w-5" />
-          </div>
-        </main>
-      }
-    >
-      <AccountPageContent />
-    </Suspense>
-  );
+  return <AccountPageContent />;
 }

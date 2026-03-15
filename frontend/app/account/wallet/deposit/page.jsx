@@ -1,5 +1,4 @@
 "use client";
-import { PageLoadingBlock } from "@/components/ui/LoadingState";
 import PaymentWaiting from "@/components/wallet/PaymentWaiting";
 import { ChevronLeft } from "lucide-react";
 import useDeposit from "./useDeposit";
@@ -42,7 +41,26 @@ export default function DepositPage() {
 
   if (loading) {
     return (
-      <PageLoadingBlock className="min-h-screen bg-background" maxWidthClass="max-w-md" lines={4} />
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-md px-4 py-6">
+          <div className="animate-pulse space-y-6">
+            <div className="h-5 w-20 bg-border rounded" />
+            <div>
+              <div className="h-7 w-40 bg-border rounded mb-2" />
+              <div className="h-4 w-56 bg-border rounded" />
+            </div>
+            <div className="rounded-[var(--radius)] border border-border bg-card p-6">
+              <div className="h-4 w-24 bg-border rounded mb-2" />
+              <div className="h-8 w-48 bg-border rounded" />
+            </div>
+            <div className="space-y-4">
+              <div className="h-12 bg-border rounded" />
+              <div className="h-12 bg-border rounded" />
+              <div className="h-10 bg-border rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
