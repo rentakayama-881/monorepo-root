@@ -51,12 +51,6 @@ const (
 	SLAWorkerReleaseTimeout = 5 * time.Second
 )
 
-// Redis operation timeouts
-const (
-	RedisPingTimeout    = 5 * time.Second
-	RedisContextTimeout = 2 * time.Second
-)
-
 // Circuit breaker
 const (
 	CircuitBreakerResetTimeout = 30 * time.Second

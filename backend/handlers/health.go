@@ -9,7 +9,6 @@ import (
 
 	"backend-gin/buildinfo"
 	"backend-gin/database"
-	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -101,14 +100,6 @@ func ReadinessHandler(c *gin.Context) {
 	} else {
 		checks["database"] = "unhealthy"
 		allHealthy = false
-	}
-
-	// Check Redis (optional)
-	if services.IsRedisAvailable() {
-		checks["redis"] = "healthy"
-	} else {
-		checks["redis"] = "not_configured"
-		// Redis is optional, so don't mark as unhealthy
 	}
 
 	status := http.StatusOK

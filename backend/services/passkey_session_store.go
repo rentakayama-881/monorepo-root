@@ -1,16 +1,12 @@
 package services
 
 import (
-	"context"
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/go-webauthn/webauthn/webauthn"
-	"github.com/redis/go-redis/v9"
-	"go.uber.org/zap"
 )
 
 type inMemoryWebAuthnSessionStore struct {
@@ -88,48 +84,19 @@ func (s *inMemoryWebAuthnSessionStore) getAndDelete(key string) (*webauthn.Sessi
 	return &session, true
 }
 
-// storeSession stores a WebAuthn session
+// storeSession stores a WebAuthn session in-memory.
 func (s *EntPasskeyService) storeSession(key string, session *webauthn.SessionData) {
 	if key == "" || session == nil {
 		return
 	}
 
-	// Redis is optional in this repo (dev / single-instance). When it's not
-	// available we still need to persist WebAuthn ceremony state, otherwise
-	// passkey registration/login will always fail at the "finish" step.
-	if RedisClient != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-
-		if err := CacheSet(ctx, key, session, s.sessionTTL); err == nil {
-			return
-		} else {
-			s.logger.Error("Failed to store WebAuthn session (falling back to in-memory)", zap.String("key", key), zap.Error(err))
-		}
-	}
-
 	s.memSessions.set(key, session, s.sessionTTL)
 }
 
-// getSession retrieves and deletes a WebAuthn session
+// getSession retrieves and deletes a WebAuthn session from in-memory store.
 func (s *EntPasskeyService) getSession(key string) (*webauthn.SessionData, bool) {
 	if key == "" {
 		return nil, false
-	}
-
-	if RedisClient != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-
-		var session webauthn.SessionData
-		if err := CacheGet(ctx, key, &session); err == nil {
-			if err := CacheDelete(ctx, key); err != nil {
-				s.logger.Warn("Failed to delete WebAuthn session", zap.String("key", key), zap.Error(err))
-			}
-			return &session, true
-		} else if !errors.Is(err, redis.Nil) {
-			s.logger.Error("Failed to retrieve WebAuthn session (falling back to in-memory)", zap.String("key", key), zap.Error(err))
-		}
 	}
 
 	return s.memSessions.getAndDelete(key)

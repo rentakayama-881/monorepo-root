@@ -62,22 +62,6 @@ func main() {
 	database.InitEntDB()
 	defer database.CloseEntDB()
 
-	// Initialize Redis
-	if err := services.InitRedis(); err != nil {
-		env := strings.ToLower(strings.TrimSpace(os.Getenv("APP_ENV")))
-		if env == "production" || env == "staging" {
-			logger.Fatal("Redis is required in production/staging for distributed rate limiting",
-				zap.Error(err),
-				zap.String("env", env),
-			)
-		}
-		logger.Info("Redis not available - using in-memory rate limiting",
-			zap.String("note", "This is acceptable for development only"),
-		)
-	} else {
-		defer services.CloseRedis()
-	}
-
 	config.InitConfig()
 
 	// Initialize device tracker (must be before auth service)
@@ -199,10 +183,6 @@ func main() {
 
 	rateLimitConfig := buildRateLimitConfig()
 	enhancedRateLimiter := middleware.NewEnhancedRateLimiter(rateLimitConfig)
-	// Inject shared Redis client into limiters without creating package import cycles.
-	// Kept in main so middleware package stays independent from services package.
-	enhancedRateLimiter.SetRedisClient(services.RedisClient)
-	deleteAccountLimiter.SetRedisClient(services.RedisClient)
 	logger.Info("Enhanced rate limiter configured",
 		zap.Int("requests_per_minute", rateLimitConfig.RequestsPerMinute),
 		zap.Int("requests_per_hour", rateLimitConfig.RequestsPerHour),
@@ -212,7 +192,6 @@ func main() {
 		zap.Bool("enable_user_limit", rateLimitConfig.EnableUserLimit),
 		zap.Strings("whitelist_ips", rateLimitConfig.WhitelistIPs),
 		zap.Strings("blacklist_ips", rateLimitConfig.BlacklistIPs),
-		zap.Bool("redis_rate_limit_enabled", services.RedisClient != nil),
 	)
 
 	// Health endpoints are kept outside request rate limits.
