@@ -143,6 +143,7 @@ func main() {
 	sudoValidator := services.NewSudoValidatorAdapter(sudoEntService)
 	lztMarketClient := services.NewLZTMarketClientFromEnv()
 	lztMarketHandler := handlers.NewLZTMarketHandler(lztMarketClient)
+	lztMarketHandler.StartBackgroundRefresh()
 	// Financial features are handled by the ASP.NET service; keep Go focused on core identity/content.
 
 	// Verify all handlers are properly initialized

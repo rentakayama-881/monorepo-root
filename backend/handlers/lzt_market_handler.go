@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"errors"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -24,6 +26,8 @@ type LZTMarketHandler struct {
 
 	listingFlightMu sync.Mutex
 	listingFlights  map[string]*chatGPTListingFlight
+
+	bgRefreshStop chan struct{}
 }
 
 func NewLZTMarketHandler(client *services.LZTMarketClient) *LZTMarketHandler {
@@ -34,7 +38,40 @@ func NewLZTMarketHandler(client *services.LZTMarketClient) *LZTMarketHandler {
 		fxRates:        services.NewFXRateServiceFromEnv(),
 		cacheTTL:       time.Duration(cacheSeconds) * time.Second,
 		listingFlights: make(map[string]*chatGPTListingFlight),
+		bgRefreshStop:  make(chan struct{}),
 	}
+}
+
+// StartBackgroundRefresh launches a goroutine that continuously keeps the
+// listing cache fresh. Call this from main after constructing the handler.
+func (h *LZTMarketHandler) StartBackgroundRefresh() {
+	if h == nil || h.client == nil || !h.client.IsEnabled() {
+		return
+	}
+	cooldown := h.cacheTTL
+	if cooldown < 30*time.Second {
+		cooldown = 30 * time.Second
+	}
+	go func() {
+		for {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+			resp, err := h.fetchAggregatedChatGPTListing(ctx, "en-US")
+			cancel()
+			if err == nil && resp != nil {
+				h.setCachedChatGPT("en-US", resp)
+				if root, ok := resp.JSON.(map[string]interface{}); ok {
+					if loaded, lok := root["loaded_items"]; lok {
+						log.Printf("[market-bg-refresh] cache updated: %v items loaded", loaded)
+					}
+				}
+			}
+			select {
+			case <-h.bgRefreshStop:
+				return
+			case <-time.After(cooldown):
+			}
+		}
+	}()
 }
 
 func (h *LZTMarketHandler) GetConfig(c *gin.Context) {
