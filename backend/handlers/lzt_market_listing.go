@@ -151,31 +151,19 @@ func (h *LZTMarketHandler) fetchAggregatedChatGPTListing(ctx context.Context, i1
 	firstPageCount := len(firstItems)
 	_ = addItems(firstItems, 1)
 	fetchedPages := 1
-	consecutiveFailures := 0
-	const maxConsecutiveFailures = 3
-
 	for page := 2; page <= maxPages; page++ {
 		if hasHasNextPage && !hasNextPage {
 			break
 		}
 
-		resp, pageErr := h.fetchChatGPTPageWithRetry(ctx, i18n, page)
+		resp, pageErr := h.fetchChatGPTListingPage(ctx, i18n, page)
 		if pageErr != nil || resp == nil {
-			consecutiveFailures++
-			if consecutiveFailures >= maxConsecutiveFailures {
-				break
-			}
-			continue
+			break
 		}
 		items := extractListMaps(resp.JSON)
 		if len(items) == 0 {
-			consecutiveFailures++
-			if consecutiveFailures >= maxConsecutiveFailures {
-				break
-			}
-			continue
+			break
 		}
-		consecutiveFailures = 0
 		added := addItems(items, page)
 		if added == 0 {
 			break
@@ -229,29 +217,6 @@ func (h *LZTMarketHandler) fetchAggregatedChatGPTListing(ctx context.Context, i1
 	}
 	firstResp.JSON = merged
 	return firstResp, nil
-}
-
-func (h *LZTMarketHandler) fetchChatGPTPageWithRetry(ctx context.Context, i18n string, page int) (*services.LZTMarketResponse, error) {
-	resp, err := h.fetchChatGPTListingPage(ctx, i18n, page)
-	if err != nil {
-		// Retry once after a short delay
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(2 * time.Second):
-		}
-		return h.fetchChatGPTListingPage(ctx, i18n, page)
-	}
-	// Retry on non-200 status codes (429, 5xx)
-	if resp != nil && (resp.StatusCode == 429 || resp.StatusCode >= 500) {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(3 * time.Second):
-		}
-		return h.fetchChatGPTListingPage(ctx, i18n, page)
-	}
-	return resp, nil
 }
 
 func (h *LZTMarketHandler) fetchChatGPTListingPage(ctx context.Context, i18n string, page int) (*services.LZTMarketResponse, error) {
