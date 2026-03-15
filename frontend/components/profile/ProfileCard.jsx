@@ -12,12 +12,16 @@ export default function ProfileCard({ user, displayName, onClose }) {
             <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-success ring-2 ring-card" />
           </div>
           <div className="min-w-0">
-            <div className="truncate text-xs font-semibold text-foreground">{displayName}</div>
+            <div className="truncate text-xs font-semibold text-foreground" title={displayName}>
+              {displayName}
+            </div>
             {user.email && (
-              <div className="text-[11px] text-muted-foreground">{maskEmail(user.email)}</div>
+              <div className="truncate text-xs text-muted-foreground" title={maskEmail(user.email)}>
+                {maskEmail(user.email)}
+              </div>
             )}
-            <div className="text-[11px] text-muted-foreground">
-              Manage your activity and profile settings
+            <div className="truncate text-xs text-muted-foreground">
+              Kelola aktivitas dan pengaturan profil
             </div>
           </div>
         </div>

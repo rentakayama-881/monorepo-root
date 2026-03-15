@@ -8,7 +8,7 @@ import useProfileSidebar from "@/components/profile/useProfileSidebar";
 
 const overlayClassName = "fixed inset-0 z-[100] bg-black/50 transition-opacity duration-300";
 const panelBaseClassName =
-  "fixed right-2 top-[calc(var(--header-height)+0.375rem)] z-[110] w-[16.5rem] max-w-[calc(100vw-0.75rem)] rounded-2xl border border-border/75 bg-card/95 shadow-[0_14px_28px_rgba(0,0,0,0.18)] backdrop-blur-md flex flex-col max-h-[calc(100dvh-var(--header-height)-1rem)] animate-slide-in-from-right";
+  "fixed right-2 top-[calc(var(--header-height)+0.375rem)] z-[110] w-[calc(100vw-1rem)] sm:w-80 md:w-[22rem] max-w-[calc(100vw-0.75rem)] rounded-2xl border border-border/75 bg-card/95 shadow-[0_14px_28px_rgba(0,0,0,0.18)] backdrop-blur-md flex flex-col max-h-[calc(100dvh-var(--header-height)-1rem)] animate-slide-in-from-right";
 const panelPaddedClassName = `${panelBaseClassName} p-3`;
 
 export default function ProfileSidebar({ onClose, triggerRef }) {

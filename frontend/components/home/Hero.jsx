@@ -1,23 +1,6 @@
 import Button from "../ui/Button";
 import { ArrowRight } from "lucide-react";
-
-const STEPS = [
-  {
-    num: "01",
-    title: "Buat Case & Bounty",
-    desc: "Owner susun case, tetapkan bounty. Saldo otomatis terpotong sebagai jaminan.",
-  },
-  {
-    num: "02",
-    title: "Validator Mengerjakan",
-    desc: "Validator ajukan request, disetujui owner, lalu kerjakan. Maks 3 validator per case.",
-  },
-  {
-    num: "03",
-    title: "Confidence & Payout",
-    desc: "Validator terbaik berdasarkan confidence mendapat bounty. Imbang? Dibagi rata.",
-  },
-];
+import { STEPS } from "./homeConstants";
 
 export default function Hero() {
   return (
@@ -37,7 +20,7 @@ export default function Hero() {
       <div className="container relative z-10 py-16 md:py-24">
         <div className="mx-auto max-w-4xl">
           {/* Badge */}
-          <div className="flex justify-center hero-animated animate-slide-up">
+          <div className="flex justify-center hero-animated animate-slide-up will-change-transform">
             <span className="rainbow-border inline-flex items-center gap-2 rounded-sm px-4 py-1.5 text-xs font-medium text-foreground">
               Platform Validasi AI oleh Ahli Manusia
             </span>
@@ -45,34 +28,32 @@ export default function Hero() {
 
           {/* Heading */}
           <h1
-            className="mt-8 text-center text-balance hero-animated animate-slide-up text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl"
+            className="mt-8 text-center text-balance hero-animated animate-slide-up will-change-transform text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl"
             style={{ animationDelay: "0.08s" }}
           >
             Validasi Karya AI oleh Ahli Manusia,
             <br />
-            <span className="rainbow-text">
-              Raih Penghasilan, Pastikan Kualitas
-            </span>
+            <span className="rainbow-text">Raih Penghasilan, Pastikan Kualitas</span>
           </h1>
 
           {/* Rainbow divider */}
           <div
-            className="mx-auto mt-6 rainbow-line-h w-24 rounded-full hero-animated animate-slide-up"
+            className="mx-auto mt-6 rainbow-line-h w-24 rounded-full hero-animated animate-slide-up will-change-transform"
             style={{ animationDelay: "0.14s" }}
           />
 
           {/* Description */}
           <p
-            className="mx-auto mt-6 max-w-2xl text-center text-balance text-base text-muted-foreground sm:text-lg hero-animated animate-slide-up"
+            className="mx-auto mt-6 max-w-2xl text-center text-balance text-base text-muted-foreground sm:text-lg hero-animated animate-slide-up will-change-transform"
             style={{ animationDelay: "0.18s" }}
           >
-            Pemilik case menetapkan bounty dan validator ahli mengerjakan validasi.
-            Validator dengan confidence tertinggi memperoleh bounty secara otomatis.
+            Pemilik case menetapkan bounty dan validator ahli mengerjakan validasi. Validator dengan
+            confidence tertinggi memperoleh bounty secara otomatis.
           </p>
 
           {/* CTA */}
           <div
-            className="mt-10 flex justify-center hero-animated animate-slide-up"
+            className="mt-10 flex justify-center hero-animated animate-slide-up will-change-transform"
             style={{ animationDelay: "0.22s" }}
           >
             <Button
@@ -88,7 +69,7 @@ export default function Hero() {
 
           {/* Flow Steps — numbered circles connected by rainbow line */}
           <div
-            className="mt-16 hero-animated animate-slide-up"
+            className="mt-16 hero-animated animate-slide-up will-change-transform"
             style={{ animationDelay: "0.3s", animationDuration: "0.8s" }}
           >
             <div className="relative">
@@ -98,7 +79,10 @@ export default function Hero() {
               <div className="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
                 {STEPS.map((step) => (
                   <div key={step.num} className="relative text-center">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full rainbow-border bg-card font-mono text-sm font-bold text-foreground rainbow-glow">
+                    <div
+                      className="mx-auto flex h-12 w-12 items-center justify-center rounded-full rainbow-border bg-card font-mono text-sm font-bold text-foreground rainbow-glow"
+                      aria-label={`Langkah ${step.num}: ${step.title}`}
+                    >
                       {step.num}
                     </div>
                     <h3 className="mt-4 font-semibold text-foreground">{step.title}</h3>

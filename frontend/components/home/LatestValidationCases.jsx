@@ -9,11 +9,14 @@ async function getLatestValidationCases() {
     const res = await fetch(`${API}/api/validation-cases/latest?limit=6`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return [];
+    if (!res.ok) return { cases: [], error: true };
     const data = await res.json();
-    return Array.isArray(data.validation_cases) ? data.validation_cases : [];
+    return {
+      cases: Array.isArray(data.validation_cases) ? data.validation_cases : [],
+      error: false,
+    };
   } catch (err) {
-    return [];
+    return { cases: [], error: true };
   }
 }
 
@@ -30,13 +33,16 @@ const STATUS_STYLES = {
 };
 
 export default async function LatestValidationCases() {
-  const cases = await getLatestValidationCases();
+  const { cases, error } = await getLatestValidationCases();
 
   return (
-    <section className="mb-12">
+    <section
+      className="mb-12"
+      style={{ contentVisibility: "auto", containIntrinsicSize: "auto 400px" }}
+    >
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <Clock className="size-5 text-primary" />
+          <Clock className="size-5 text-primary" aria-hidden="true" />
           Case Validasi Terbaru
         </h2>
         <Link
@@ -45,9 +51,15 @@ export default async function LatestValidationCases() {
           className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline transition-all hover:gap-2"
         >
           Lihat Semua
-          <ArrowRight className="size-4" />
+          <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
       </div>
+
+      {error && cases.length === 0 && (
+        <p className="mb-3 text-xs text-muted-foreground" role="status">
+          Tidak dapat memuat case terbaru.
+        </p>
+      )}
 
       {cases.length > 0 ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -103,7 +115,10 @@ export default async function LatestValidationCases() {
         </div>
       ) : (
         <div className="rounded-[var(--radius)] border border-dashed bg-background py-12 text-center">
-          <MessageCircle className="mx-auto size-12 text-muted-foreground opacity-50" />
+          <MessageCircle
+            className="mx-auto size-12 text-muted-foreground opacity-50"
+            aria-hidden="true"
+          />
           <p className="mt-3 text-sm text-muted-foreground font-medium">
             Belum ada Validation Case terbaru.
           </p>

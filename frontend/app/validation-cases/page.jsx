@@ -20,7 +20,7 @@ function CaseListSkeleton() {
 
 async function CaseList() {
   const params = new URLSearchParams();
-  params.set("limit", "50");
+  params.set("limit", "200");
 
   let cases = [];
   let fetchError = "";

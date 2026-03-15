@@ -28,20 +28,27 @@ function MenuItemLink({ href, label, Icon, isActive }) {
     ? "group flex items-center justify-between rounded-lg border border-foreground/20 bg-accent px-3 py-2 transition-colors"
     : "group flex items-center justify-between rounded-lg border border-border/70 bg-background/60 px-3 py-2 transition-colors hover:border-border hover:bg-accent/60";
 
-  const iconClassName = isActive ? "h-4 w-4 text-foreground" : "h-4 w-4 text-muted-foreground";
+  const iconClassName = isActive
+    ? "h-4 w-4 shrink-0 text-foreground"
+    : "h-4 w-4 shrink-0 text-muted-foreground";
 
   const labelClassName = isActive
-    ? "flex items-center gap-2.5 text-sm font-semibold text-foreground"
-    : "flex items-center gap-2.5 text-sm font-medium text-foreground";
+    ? "flex min-w-0 items-center gap-2.5 text-sm font-semibold text-foreground"
+    : "flex min-w-0 items-center gap-2.5 text-sm font-medium text-foreground";
 
   return (
-    <Link href={href} className={itemClassName} aria-current={isActive ? "page" : undefined}>
+    <Link
+      href={href}
+      className={itemClassName}
+      aria-current={isActive ? "page" : undefined}
+      title={label}
+    >
       <span className={labelClassName}>
         <Icon className={iconClassName} strokeWidth={1.9} />
-        {label}
+        <span className="truncate">{label}</span>
       </span>
       <ChevronRight
-        className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+        className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
         strokeWidth={1.9}
       />
     </Link>
@@ -58,7 +65,7 @@ export default function ProfileNav({ pathname }) {
   return (
     <nav className="mt-3 flex flex-col gap-1.5 text-sm text-foreground">
       {/* Wallet Section */}
-      <div className="px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+      <div className="px-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         Wallet
       </div>
       {walletLinks.map((item) => (
@@ -72,7 +79,7 @@ export default function ProfileNav({ pathname }) {
       ))}
 
       {/* Account Section */}
-      <div className="mt-2 px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+      <div className="mt-2 px-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         Account
       </div>
       {accountLinks.map((item) => (

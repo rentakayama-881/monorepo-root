@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import NativeSelect from "@/components/ui/NativeSelect";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
@@ -10,6 +11,8 @@ import EmptyState from "@/components/ui/EmptyState";
 import { formatIDR } from "@/lib/format";
 import { formatDate } from "@/lib/format";
 import { DATE_FORMATS } from "@/lib/constants";
+
+const PAGE_SIZE = 24;
 
 function norm(s) {
   return String(s || "")
@@ -97,6 +100,9 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
   const [status, setStatus] = useState("");
   const [tag, setTag] = useState("");
   const [minBounty, setMinBounty] = useState("");
+  const [loadMoreClicks, setLoadMoreClicks] = useState(0);
+
+  const gridRef = useRef(null);
 
   const statusOptions = useMemo(() => {
     const set = new Set();
@@ -143,6 +149,17 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
       return tags.some((t) => norm(t?.slug).includes(qn) || norm(t?.name).includes(qn));
     });
   }, [items, q, status, tag, minBounty]);
+
+  // visibleCount derives from loadMoreClicks — resets automatically when filters change
+  // because loadMoreClicks is reset in the "Reset" button handler
+  const visibleCount = PAGE_SIZE * (loadMoreClicks + 1);
+
+  const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMore = visibleCount < filtered.length;
+
+  const handleLoadMore = useCallback(() => {
+    setLoadMoreClicks((prev) => prev + 1);
+  }, []);
 
   const fieldLabel = "text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground";
 
@@ -219,6 +236,7 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
               setStatus("");
               setTag("");
               setMinBounty("");
+              setLoadMoreClicks(0);
             }}
             className="w-full rounded-[var(--radius)] border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary/60"
           >
@@ -227,101 +245,118 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
         </div>
       </section>
 
-      <div className="text-xs text-muted-foreground">
-        Showing <span className="font-semibold text-foreground">{filtered.length}</span> of{" "}
-        <span className="font-semibold text-foreground">{items.length}</span> cases.
+      <div className="text-xs text-muted-foreground" role="status" aria-live="polite">
+        Menampilkan <span className="font-semibold text-foreground">{visible.length}</span> dari{" "}
+        <span className="font-semibold text-foreground">{filtered.length}</span> case
+        {filtered.length !== items.length ? <span> (total {items.length})</span> : null}
       </div>
 
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((vc) => {
-            const owner = vc?.owner || vc?.user || {};
-            const ownerBadge = owner?.primary_badge || owner?.primaryBadge || null;
-            const ownerProfileHref = owner?.username
-              ? `/user/${encodeURIComponent(owner.username)}`
-              : "";
-            return (
-              <Link
-                key={String(vc.id)}
-                href={`/validation-cases/${encodeURIComponent(String(vc.id))}`}
-                prefetch={false}
-                className="group block rounded-none border border-border/60 bg-background p-4 transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="font-mono text-[11px] text-muted-foreground">
-                      Case #{String(vc.id)}
-                    </div>
-                    <span className="mt-1 block text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                      {vc.title || "(untitled)"}
-                    </span>
-                  </div>
-                  <StatusPill status={vc.status} />
-                </div>
-
-                {vc.summary ? (
-                  <div className="mt-2 text-xs text-muted-foreground line-clamp-2">
-                    {vc.summary}
-                  </div>
-                ) : null}
-
-                {Array.isArray(vc.tags) && vc.tags.length > 0 ? (
-                  <div className="mt-2">
-                    <TagList tags={vc.tags} size="xs" />
-                  </div>
-                ) : null}
-
-                <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <dt className="text-muted-foreground">Bounty</dt>
-                    <dd className="mt-0.5 font-semibold text-foreground">
-                      {formatIDR(vc.bounty_amount)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Filed</dt>
-                    <dd className="mt-0.5 font-mono text-muted-foreground">
-                      {formatDate(vc.created_at, DATE_FORMATS.SHORT)}
-                    </dd>
-                  </div>
-                  <div className="col-span-2">
-                    <dt className="text-muted-foreground">Sensitivity</dt>
-                    <dd className="mt-0.5 font-mono text-foreground">
-                      {sensitivityText(vc.sensitivity_level)}
-                    </dd>
-                  </div>
-                </dl>
-
-                {owner.username ? (
-                  <div className="mt-3 flex items-center gap-2 border-t border-border/40 pt-2">
-                    <Avatar
-                      src={owner.avatar_url || owner.avatarUrl}
-                      name={owner.username || owner.full_name}
-                      size="xs"
-                    />
+        <>
+          <div ref={gridRef} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {visible.map((vc) => {
+              const owner = vc?.owner || vc?.user || {};
+              const ownerBadge = owner?.primary_badge || owner?.primaryBadge || null;
+              const ownerProfileHref = owner?.username
+                ? `/user/${encodeURIComponent(owner.username)}`
+                : "";
+              return (
+                <Link
+                  key={String(vc.id)}
+                  href={`/validation-cases/${encodeURIComponent(String(vc.id))}`}
+                  prefetch={false}
+                  className="group block rounded-none border border-border/60 bg-background p-4 transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <Link
-                          href={`/user/${owner.username}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="truncate text-xs font-semibold text-foreground hover:text-primary hover:underline"
-                        >
-                          @{owner.username}
-                        </Link>
-                        {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
+                      <div className="font-mono text-[11px] text-muted-foreground">
+                        Case #{String(vc.id)}
                       </div>
-                      {Number(owner.guarantee_amount || owner.guaranteeAmount || 0) > 0 ? (
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">
-                          Stake: {formatIDR(owner.guarantee_amount || owner.guaranteeAmount)}
-                        </div>
-                      ) : null}
+                      <span className="mt-1 block text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                        {vc.title || "(untitled)"}
+                      </span>
                     </div>
+                    <StatusPill status={vc.status} />
                   </div>
-                ) : null}
-              </Link>
-            );
-          })}
-        </div>
+
+                  {vc.summary ? (
+                    <div className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                      {vc.summary}
+                    </div>
+                  ) : null}
+
+                  {Array.isArray(vc.tags) && vc.tags.length > 0 ? (
+                    <div className="mt-2">
+                      <TagList tags={vc.tags} size="xs" />
+                    </div>
+                  ) : null}
+
+                  <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <dt className="text-muted-foreground">Bounty</dt>
+                      <dd className="mt-0.5 font-semibold text-foreground">
+                        {formatIDR(vc.bounty_amount)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Filed</dt>
+                      <dd className="mt-0.5 font-mono text-muted-foreground">
+                        {formatDate(vc.created_at, DATE_FORMATS.SHORT)}
+                      </dd>
+                    </div>
+                    <div className="col-span-2">
+                      <dt className="text-muted-foreground">Sensitivity</dt>
+                      <dd className="mt-0.5 font-mono text-foreground">
+                        {sensitivityText(vc.sensitivity_level)}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  {owner.username ? (
+                    <div className="mt-3 flex items-center gap-2 border-t border-border/40 pt-2">
+                      <Avatar
+                        src={owner.avatar_url || owner.avatarUrl}
+                        name={owner.username || owner.full_name}
+                        size="xs"
+                      />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <Link
+                            href={`/user/${owner.username}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="truncate text-xs font-semibold text-foreground hover:text-primary hover:underline"
+                          >
+                            @{owner.username}
+                          </Link>
+                          {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
+                        </div>
+                        {Number(owner.guarantee_amount || owner.guaranteeAmount || 0) > 0 ? (
+                          <div className="mt-0.5 text-[11px] text-muted-foreground">
+                            Stake: {formatIDR(owner.guarantee_amount || owner.guaranteeAmount)}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </div>
+
+          {hasMore ? (
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={handleLoadMore}
+                className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-border bg-secondary px-5 py-2.5 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-secondary/80 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                aria-label={`Muat ${PAGE_SIZE} case berikutnya`}
+              >
+                <ChevronDown className="size-4" aria-hidden="true" />
+                Muat lebih banyak
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : (
         <EmptyState
           title="Tidak ada case ditemukan"

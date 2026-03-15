@@ -1,23 +1,8 @@
-const STEPS = [
-  {
-    title: "Buat Case",
-    description:
-      "Owner susun case, tetapkan bounty — saldo otomatis terpotong. Klasifikasi menggunakan tags untuk audit.",
-  },
-  {
-    title: "Validator Mengerjakan",
-    description:
-      "Validator ajukan request, disetujui owner, lalu kerjakan. Maks 3 validator per case.",
-  },
-  {
-    title: "Penilaian & Payout",
-    description: "Owner finalisasi. Confidence tertinggi dapat bounty. Imbang = dibagi rata.",
-  },
-];
+import { STEPS } from "./homeConstants";
 
 export default function HowItWorks() {
   return (
-    <section>
+    <section style={{ contentVisibility: "auto", containIntrinsicSize: "auto 500px" }}>
       <div className="mb-8 flex flex-col gap-1">
         <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
           Cara kerja
@@ -34,15 +19,18 @@ export default function HowItWorks() {
 
         <div className="space-y-8">
           {STEPS.map((step, i) => (
-            <div key={step.title} className="flex items-start gap-4 md:gap-5">
+            <div key={step.fullTitle} className="flex items-start gap-4 md:gap-5">
               {/* Number circle */}
-              <div className="relative z-10 flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full rainbow-border bg-card font-mono text-xs md:text-sm font-bold text-foreground">
+              <div
+                className="relative z-10 flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full rainbow-border bg-card font-mono text-xs md:text-sm font-bold text-foreground"
+                aria-label={`Langkah ${i + 1}: ${step.fullTitle}`}
+              >
                 {i + 1}
               </div>
 
               {/* Content */}
               <div className="pt-0.5 md:pt-1.5">
-                <h3 className="font-semibold text-foreground">{step.title}</h3>
+                <h3 className="font-semibold text-foreground">{step.fullTitle}</h3>
                 <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
                   {step.description}
                 </p>
