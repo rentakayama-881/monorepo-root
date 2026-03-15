@@ -75,6 +75,8 @@ function StatusPill({ status }) {
   return (
     <span
       className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${statusStyle(status)}`}
+      role="status"
+      aria-label={`Status: ${statusLabel(status)}`}
     >
       {statusLabel(status)}
     </span>
@@ -109,6 +111,7 @@ export default function ValidationCaseTable({
               <article
                 key={String(id)}
                 className="rounded-none border border-border bg-background px-4 py-3"
+                aria-label={`Case #${id}: ${vc?.title || "untitled"}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -118,7 +121,7 @@ export default function ValidationCaseTable({
                     <Link
                       href={href}
                       prefetch={false}
-                      className="mt-1 block text-sm font-semibold leading-5 text-foreground hover:underline"
+                      className="mt-1 block text-sm font-semibold leading-5 text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
                     >
                       {vc?.title || "(untitled)"}
                     </Link>
@@ -207,30 +210,54 @@ export default function ValidationCaseTable({
           <table className="w-full min-w-[980px] text-sm">
             <thead className="bg-secondary/60 text-muted-foreground [&_th]:whitespace-nowrap">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Case
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Title
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Status
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Sensitivity
                 </th>
                 {showCategory && (
-                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  >
                     Type
                   </th>
                 )}
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Bounty
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Owner
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Filed
                 </th>
               </tr>

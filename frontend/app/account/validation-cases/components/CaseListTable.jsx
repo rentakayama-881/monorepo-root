@@ -108,14 +108,17 @@ function MobileCard({ vc, deletingId, onDeleteClick }) {
   const ownerHref = owner?.username ? `/user/${encodeURIComponent(owner.username)}` : "";
 
   return (
-    <article className="rounded-none border border-border bg-background px-4 py-3">
+    <article
+      className="rounded-none border border-border bg-background px-4 py-3"
+      aria-label={`Case #${id}: ${vc?.title || "untitled"}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="font-mono text-[11px] text-muted-foreground">Case #{String(id)}</div>
           <Link
             href={href}
             prefetch={false}
-            className="mt-1 block text-sm font-semibold leading-5 text-foreground hover:underline"
+            className="mt-1 block text-sm font-semibold leading-5 text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
           >
             {vc?.title || "(untitled)"}
           </Link>
@@ -302,25 +305,46 @@ export default function CaseListTable({ items, deletingId, onDeleteClick }) {
           <table className="w-full min-w-[980px] text-sm">
             <thead className="bg-secondary/60 text-muted-foreground [&_th]:whitespace-nowrap">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Case
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Title
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Status
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Sensitivity
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Bounty
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Filed
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                >
                   Action
                 </th>
               </tr>
