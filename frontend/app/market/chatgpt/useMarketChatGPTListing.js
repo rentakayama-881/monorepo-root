@@ -100,6 +100,12 @@ export default function useMarketChatGPTListing() {
     );
   }, [accounts, deferredQuery]);
 
+  const providerTotalItems = useMemo(() => {
+    const json = response?.json;
+    if (!json || typeof json !== "object") return 0;
+    return json.provider_total_items || json.totalItems || json.total_items || 0;
+  }, [response]);
+
   const refreshListings = useCallback(async () => {
     const result = await loadListings({ initial: false, silent: false });
     return result;
@@ -114,6 +120,8 @@ export default function useMarketChatGPTListing() {
     response,
     items: filtered,
     totalItems: filtered.length,
+    allItemsCount: accounts.length,
+    providerTotalItems,
     refreshListings,
     lastFetchedAt,
   };

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, RefreshCw } from "lucide-react";
+import { Search, RefreshCw, ChevronDown } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import Portal from "@/components/ui/Portal";
 import { fetchJsonAuth } from "@/lib/api";
@@ -11,6 +11,8 @@ import { getCheckoutConfirmSeconds, toCheckoutFeedback } from "./marketChatGPTUt
 import useMarketChatGPTListing from "./useMarketChatGPTListing";
 import { MarketAccountCard, MarketAccountCardSkeleton, SpecDrawer } from "./MarketAccountCard";
 import { CheckoutConfirmModal, CheckoutBlockingModal, CheckoutFeedbackModal } from "./MarketModals";
+
+const ITEMS_PER_BATCH = 40;
 
 function usePageScrollLock(locked) {
   useEffect(() => {
@@ -47,6 +49,7 @@ export default function MarketChatGPTClient() {
   const [confirmCountdown, setConfirmCountdown] = useState(getCheckoutConfirmSeconds());
   const [blockingMessage, setBlockingMessage] = useState("");
   const [lastUpdatedLabel, setLastUpdatedLabel] = useState("");
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_BATCH);
   const {
     loading,
     listingError,
@@ -56,9 +59,15 @@ export default function MarketChatGPTClient() {
     response,
     items,
     totalItems,
+    allItemsCount,
+    providerTotalItems,
     refreshListings,
     lastFetchedAt,
   } = useMarketChatGPTListing();
+
+  const isSearching = query.trim().length > 0;
+  const visibleItems = isSearching ? items : items.slice(0, visibleCount);
+  const hasMore = !isSearching && visibleCount < totalItems;
 
   const confirmSeconds = getCheckoutConfirmSeconds();
 
@@ -191,7 +200,11 @@ export default function MarketChatGPTClient() {
       {!loading ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>
-            {totalItems > 0 ? `${totalItems} akun tersedia` : "Belum ada akun untuk ditampilkan"}
+            {totalItems > 0
+              ? isSearching
+                ? `${totalItems} hasil pencarian dari ${allItemsCount} akun`
+                : `Menampilkan ${Math.min(visibleCount, totalItems)} dari ${allItemsCount} akun`
+              : "Belum ada akun untuk ditampilkan"}
           </span>
           {lastUpdatedLabel && !refreshingListings ? (
             <span className="opacity-60">· {lastUpdatedLabel}</span>
@@ -241,17 +254,35 @@ export default function MarketChatGPTClient() {
           }
         />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => (
-            <MarketAccountCard
-              key={item.id}
-              item={item}
-              checkingOut={checkingOut}
-              onDetail={() => setDrawerItem(item)}
-              onBuy={() => setConfirmItem(item)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleItems.map((item) => (
+              <MarketAccountCard
+                key={item.id}
+                item={item}
+                checkingOut={checkingOut}
+                onDetail={() => setDrawerItem(item)}
+                onBuy={() => setConfirmItem(item)}
+              />
+            ))}
+          </div>
+
+          {hasMore ? (
+            <div className="flex flex-col items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((c) => c + ITEMS_PER_BATCH)}
+                className="inline-flex items-center gap-1.5 rounded-[var(--radius)] bg-muted/60 px-5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <ChevronDown className="size-3.5" />
+                Tampilkan {Math.min(ITEMS_PER_BATCH, totalItems - visibleCount)} akun lagi
+              </button>
+              <span className="text-[10px] text-muted-foreground">
+                {visibleCount} dari {totalItems}
+              </span>
+            </div>
+          ) : null}
+        </>
       )}
 
       <Portal>

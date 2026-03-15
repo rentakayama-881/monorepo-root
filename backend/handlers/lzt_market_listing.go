@@ -94,19 +94,6 @@ func (h *LZTMarketHandler) fetchAggregatedChatGPTListing(ctx context.Context, i1
 		return nil, fmt.Errorf("%w: LZT client not initialized", services.ErrLZTRequestInvalid)
 	}
 
-	// Keep provider usage conservative because /chatgpt is a category search endpoint.
-	maxPages := readPositiveIntEnvLocal("MARKET_CHATGPT_MAX_PAGES", 3)
-	hardCapPages := readPositiveIntEnvLocal("MARKET_CHATGPT_HARD_CAP_PAGES", 6)
-	if hardCapPages < 1 {
-		hardCapPages = 6
-	}
-	if maxPages < 1 {
-		maxPages = 1
-	}
-	if maxPages > hardCapPages {
-		maxPages = hardCapPages
-	}
-
 	firstResp, err := h.fetchChatGPTListingPage(ctx, i18n, 1)
 	if err != nil {
 		return nil, err
@@ -123,22 +110,20 @@ func (h *LZTMarketHandler) fetchAggregatedChatGPTListing(ctx context.Context, i1
 	totalItems, hasTotalItems := extractPositiveIntFromMap(root, "totalItems", "total_items")
 	perPage, hasPerPage := extractPositiveIntFromMap(root, "perPage", "per_page")
 	hasNextPage, hasHasNextPage := extractBoolFromMap(root, "hasNextPage", "has_next_page")
+
+	// Calculate expected pages dynamically — no hardcoded caps.
+	// The loop below stops naturally when: hasNextPage=false, empty items, or all duplicates.
+	maxPages := 200
 	if hasTotalItems && hasPerPage && perPage > 0 {
-		expectedPages := int(math.Ceil(float64(totalItems) / float64(perPage)))
-		if expectedPages > maxPages {
-			if expectedPages > hardCapPages {
-				maxPages = hardCapPages
-			} else {
-				maxPages = expectedPages
-			}
-		}
+		maxPages = int(math.Ceil(float64(totalItems) / float64(perPage)))
 	}
 
 	firstItems := extractListMaps(root)
-	if len(firstItems) == 0 || maxPages == 1 {
+	if len(firstItems) == 0 {
 		merged := cloneStringAnyMap(root)
 		merged["total_items"] = len(firstItems)
 		merged["loaded_items"] = len(firstItems)
+		merged["provider_total_items"] = totalItems
 		merged["aggregated_pages"] = 1
 		firstResp.JSON = merged
 		return firstResp, nil
@@ -181,7 +166,6 @@ func (h *LZTMarketHandler) fetchAggregatedChatGPTListing(ctx context.Context, i1
 		}
 		added := addItems(items, page)
 		if added == 0 {
-			// The provider likely ignores page params or repeated the same rows.
 			break
 		}
 		fetchedPages = page
@@ -220,6 +204,7 @@ func (h *LZTMarketHandler) fetchAggregatedChatGPTListing(ctx context.Context, i1
 	merged["items"] = aggregatedItems
 	merged["total_items"] = len(aggregatedItems)
 	merged["loaded_items"] = len(aggregatedItems)
+	merged["provider_total_items"] = totalItems
 	merged["aggregated_pages"] = fetchedPages
 	if hasTotalItems {
 		merged["totalItems"] = totalItems
@@ -228,7 +213,7 @@ func (h *LZTMarketHandler) fetchAggregatedChatGPTListing(ctx context.Context, i1
 		merged["perPage"] = perPage
 	}
 	if hasHasNextPage {
-		merged["hasNextPage"] = hasNextPage && fetchedPages < maxPages
+		merged["hasNextPage"] = false
 	}
 	firstResp.JSON = merged
 	return firstResp, nil

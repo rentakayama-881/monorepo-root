@@ -292,7 +292,6 @@ func TestFetchChatGPTListing_AggregatesProviderPages(t *testing.T) {
 	t.Setenv("LZT_MARKET_TOKEN", "test-token")
 	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
 	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
-	t.Setenv("MARKET_CHATGPT_MAX_PAGES", "6")
 
 	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
 
@@ -362,7 +361,6 @@ func TestFetchChatGPTListing_StopsWhenProviderRepeatsSamePage(t *testing.T) {
 	t.Setenv("LZT_MARKET_TOKEN", "test-token")
 	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
 	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
-	t.Setenv("MARKET_CHATGPT_MAX_PAGES", "9")
 
 	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
 
@@ -460,7 +458,6 @@ func TestLoadChatGPTListing_UsesSingleFlightForConcurrentRefresh(t *testing.T) {
 	t.Setenv("LZT_MARKET_TIMEOUT_SECONDS", "5")
 	t.Setenv("LZT_MARKET_MIN_INTERVAL_MS", "1")
 	t.Setenv("LZT_MARKET_SEARCH_MIN_INTERVAL_MS", "1")
-	t.Setenv("MARKET_CHATGPT_MAX_PAGES", "3")
 
 	handler := NewLZTMarketHandler(services.NewLZTMarketClientFromEnv())
 
