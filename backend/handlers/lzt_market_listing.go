@@ -27,17 +27,18 @@ func (h *LZTMarketHandler) loadChatGPTListing(ctx context.Context, i18n string, 
 		}
 	}
 
+	// Serve stale cache instead of blocking on a slow provider fetch.
+	// Background refresh goroutine will update the cache asynchronously.
+	if cached, ok := h.getAnyCachedChatGPT(); ok {
+		return cached, true, true, nil
+	}
+
+	// No cache at all (cold start) — must fetch synchronously.
 	resp, err := h.refreshChatGPTListing(ctx, i18n)
 	if err == nil {
 		return resp, false, false, nil
 	}
 
-	if cached, ok := h.getCachedChatGPT(i18n); ok {
-		return cached, true, true, nil
-	}
-	if cached, ok := h.getAnyCachedChatGPT(); ok {
-		return cached, true, true, nil
-	}
 	return nil, false, false, err
 }
 

@@ -31,7 +31,7 @@ type LZTMarketHandler struct {
 }
 
 func NewLZTMarketHandler(client *services.LZTMarketClient) *LZTMarketHandler {
-	cacheSeconds := readPositiveIntEnvLocal("MARKET_CHATGPT_CACHE_SECONDS", 60)
+	cacheSeconds := readPositiveIntEnvLocal("MARKET_CHATGPT_CACHE_SECONDS", 300)
 	return &LZTMarketHandler{
 		client:         client,
 		featureWallet:  services.NewFeatureWalletClientFromConfig(),
@@ -48,10 +48,9 @@ func (h *LZTMarketHandler) StartBackgroundRefresh() {
 	if h == nil || h.client == nil || !h.client.IsEnabled() {
 		return
 	}
-	cooldown := h.cacheTTL
-	if cooldown < 30*time.Second {
-		cooldown = 30 * time.Second
-	}
+	// Cooldown between refresh cycles. Fetching all pages takes ~90 seconds
+	// with 3-sec rate limit, so a 2-minute cooldown avoids back-to-back fetching.
+	const refreshCooldown = 2 * time.Minute
 	go func() {
 		for {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -68,7 +67,7 @@ func (h *LZTMarketHandler) StartBackgroundRefresh() {
 			select {
 			case <-h.bgRefreshStop:
 				return
-			case <-time.After(cooldown):
+			case <-time.After(refreshCooldown):
 			}
 		}
 	}()
