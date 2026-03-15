@@ -14,7 +14,7 @@ export default function ProfileFooter({ isSigningOut, onLogout }) {
       ) : (
         <LogOut className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
       )}
-      <span className="truncate">{isSigningOut ? "Keluar..." : "Keluar"}</span>
+      <span className="truncate">{isSigningOut ? "Signing out..." : "Sign Out"}</span>
     </button>
   );
 }

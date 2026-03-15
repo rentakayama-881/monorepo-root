@@ -2259,10 +2259,9 @@ html {
 .rainbow-card-glass {
   position: relative;
   border-radius: 0.5rem;
-  background-color: oklch(from var(--card) l c h / 0.85);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border: 1px solid transparent;
+  background-color: oklch(from var(--card) l c h / 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   transition:
     background-color 0.15s ease,
     box-shadow 0.15s ease;
@@ -2271,9 +2270,9 @@ html {
 .rainbow-card-glass::before {
   content: "";
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
+  inset: -1.5px;
+  border-radius: calc(0.5rem + 1.5px);
+  padding: 1.5px;
   background: linear-gradient(
     135deg,
     oklch(0.65 0.22 10) 0%,
@@ -2290,18 +2289,19 @@ html {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+  z-index: -1;
 }
 
 .rainbow-card-glass:hover {
-  background-color: oklch(from var(--accent) l c h / 0.9);
+  background-color: oklch(from var(--accent) l c h / 0.75);
   box-shadow: 0 2px 8px oklch(0.55 0.15 280 / 8%);
 }
 
 .dark .rainbow-card-glass {
-  background-color: oklch(from var(--card) l c h / 0.8);
+  background-color: oklch(from var(--card) l c h / 0.7);
 }
 
 .dark .rainbow-card-glass:hover {
-  background-color: oklch(from var(--accent) l c h / 0.85);
+  background-color: oklch(from var(--accent) l c h / 0.8);
   box-shadow: 0 2px 12px oklch(0.55 0.15 280 / 15%);
 }

@@ -30,7 +30,7 @@ export default function ProfileCard({ user, displayName, onClose }) {
           className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-secondary/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-foreground"
           type="button"
         >
-          <span className="sr-only">Tutup menu profil</span>
+          <span className="sr-only">Close profile menu</span>
           <X className="h-3.5 w-3.5" strokeWidth={2.5} />
         </button>
       </div>

@@ -11,15 +11,15 @@ import {
 
 const walletLinks = [
   { href: "/account/wallet/send", label: "Send Funds", Icon: Send },
-  { href: "/account/wallet/transactions", label: "Transaksi", Icon: ClipboardList },
-  { href: "/account/wallet/disputes", label: "Dispute", Icon: ShieldAlert },
+  { href: "/account/wallet/transactions", label: "Transactions", Icon: ClipboardList },
+  { href: "/account/wallet/disputes", label: "Dispute Center", Icon: ShieldAlert },
   { href: "/account/wallet/withdraw", label: "Withdraw", Icon: Landmark },
 ];
 
 const accountLinks = [
-  { href: "/account", label: "Akun", Icon: User },
-  { href: "/account/my-purchases", label: "Pembelian", Icon: ShoppingBag },
-  { href: "/account/validation-cases", label: "Validasi Case", Icon: FileCheck2 },
+  { href: "/account", label: "Account", Icon: User },
+  { href: "/account/my-purchases", label: "My Purchase", Icon: ShoppingBag },
+  { href: "/account/validation-cases", label: "My Validation Cases", Icon: FileCheck2 },
 ];
 
 function TreeMenuItem({ href, label, Icon, isActive }) {

@@ -61,14 +61,14 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
                     onClick={handleRetry}
                     className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                   >
-                    Coba Lagi
+                    Try Again
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
                     className="rounded-md border px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary"
                   >
-                    Tutup
+                    Close
                   </button>
                 </div>
               </div>
@@ -96,7 +96,13 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
           aria-label="Account panel"
           tabIndex={-1}
         >
-          <div className="tree-sidebar" aria-busy="true" aria-live="polite">
+          <div
+            className="tree-sidebar flex-1 overflow-y-auto scrollbar-thin"
+            style={{ overscrollBehavior: "contain" }}
+            aria-busy="true"
+            aria-live="polite"
+          >
+            {/* Profile card skeleton */}
             <div className="tree-node">
               <div className="rainbow-card-glass px-2.5 py-2">
                 <div className="flex items-center gap-2">
@@ -118,13 +124,29 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
                 </div>
               </div>
             </div>
-            <TreeSkeletonNode />
-            <TreeSkeletonNode />
-            <TreeSkeletonNode />
-            <TreeSkeletonNode />
-            <div className="tree-node">
-              <Skeleton className="h-7 w-full rounded-lg bg-muted-foreground/15 dark:bg-secondary" />
+            {/* Wallet group skeleton */}
+            <div className="tree-group">
+              <div className="tree-group-label">
+                <Skeleton className="h-2 w-10 rounded bg-muted-foreground/15 dark:bg-secondary" />
+              </div>
+              <div className="tree-subtree">
+                <TreeSkeletonNode />
+                <TreeSkeletonNode />
+                <TreeSkeletonNode />
+              </div>
             </div>
+            {/* Account group skeleton */}
+            <div className="tree-group">
+              <div className="tree-group-label">
+                <Skeleton className="h-2 w-8 rounded bg-muted-foreground/15 dark:bg-secondary" />
+              </div>
+              <div className="tree-subtree">
+                <TreeSkeletonNode />
+                <TreeSkeletonNode />
+              </div>
+            </div>
+            {/* Sign out skeleton */}
+            <TreeSkeletonNode />
           </div>
         </div>
       </>
