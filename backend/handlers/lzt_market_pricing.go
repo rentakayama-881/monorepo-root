@@ -4,12 +4,50 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"backend-gin/services"
 )
+
+// computePmaxForProvider calculates the provider-side max price (in provider
+// currency, typically RUB) that corresponds to the configured max display price
+// in IDR. This allows the provider API to pre-filter expensive accounts.
+//
+// Formula: pmax = floor(maxDisplayIDR × priceFactor / fxRate)
+func (h *LZTMarketHandler) computePmaxForProvider() (int, error) {
+	if h.fxRates == nil {
+		return 0, fmt.Errorf("fx service not configured")
+	}
+
+	maxDisplayIDR := readPositiveIntEnvLocal("MARKET_MAX_DISPLAY_PRICE_IDR", 50000)
+
+	priceFactor := 0.80
+	if raw := strings.TrimSpace(os.Getenv("MARKET_PRICE_FACTOR")); raw != "" {
+		if parsed, err := strconv.ParseFloat(raw, 64); err == nil && parsed > 0 {
+			priceFactor = parsed
+		}
+	}
+
+	// Get current FX rate (provider currency → IDR). Default source = RUB.
+	_, fxRate, err := h.fxRates.ConvertToIDR(1, "RUB")
+	if err != nil {
+		return 0, fmt.Errorf("fx rate unavailable: %w", err)
+	}
+	if fxRate <= 0 {
+		return 0, fmt.Errorf("invalid fx rate: %f", fxRate)
+	}
+
+	pmax := int(math.Floor(float64(maxDisplayIDR) * priceFactor / fxRate))
+	if pmax <= 0 {
+		return 0, fmt.Errorf("computed pmax is zero (display=%d, factor=%.2f, fx=%.2f)", maxDisplayIDR, priceFactor, fxRate)
+	}
+
+	return pmax, nil
+}
 
 func (h *LZTMarketHandler) extractSourcePriceAndCurrency(item map[string]interface{}) (float64, string, string) {
 	price := extractNumericPrice(item)

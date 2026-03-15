@@ -95,7 +95,14 @@ func (h *LZTMarketHandler) fetchAggregatedChatGPTListing(ctx context.Context, i1
 		return nil, fmt.Errorf("%w: LZT client not initialized", services.ErrLZTRequestInvalid)
 	}
 
-	firstResp, err := h.fetchChatGPTListingPage(ctx, i18n, 1)
+	// Compute pmax to filter expensive accounts at the provider level.
+	pmax, pmaxErr := h.computePmaxForProvider()
+	if pmaxErr != nil {
+		// Non-fatal: fetch without price filter if FX rate unavailable.
+		pmax = 0
+	}
+
+	firstResp, err := h.fetchChatGPTListingPage(ctx, i18n, 1, pmax)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +167,7 @@ func (h *LZTMarketHandler) fetchAggregatedChatGPTListing(ctx context.Context, i1
 			break
 		}
 
-		resp, pageErr := h.fetchChatGPTPageWithRetry(ctx, i18n, page)
+		resp, pageErr := h.fetchChatGPTPageWithRetry(ctx, i18n, page, pmax)
 		if pageErr != nil || resp == nil {
 			consecutiveFailures++
 			if consecutiveFailures >= maxConsecutiveFailures {
@@ -242,8 +249,8 @@ func (h *LZTMarketHandler) fetchAggregatedChatGPTListing(ctx context.Context, i1
 	return firstResp, nil
 }
 
-func (h *LZTMarketHandler) fetchChatGPTPageWithRetry(ctx context.Context, i18n string, page int) (*services.LZTMarketResponse, error) {
-	resp, err := h.fetchChatGPTListingPage(ctx, i18n, page)
+func (h *LZTMarketHandler) fetchChatGPTPageWithRetry(ctx context.Context, i18n string, page int, pmax int) (*services.LZTMarketResponse, error) {
+	resp, err := h.fetchChatGPTListingPage(ctx, i18n, page, pmax)
 	if err == nil && resp != nil && resp.StatusCode < 400 {
 		return resp, nil
 	}
@@ -253,16 +260,19 @@ func (h *LZTMarketHandler) fetchChatGPTPageWithRetry(ctx context.Context, i18n s
 		return nil, ctx.Err()
 	case <-time.After(3 * time.Second):
 	}
-	return h.fetchChatGPTListingPage(ctx, i18n, page)
+	return h.fetchChatGPTListingPage(ctx, i18n, page, pmax)
 }
 
-func (h *LZTMarketHandler) fetchChatGPTListingPage(ctx context.Context, i18n string, page int) (*services.LZTMarketResponse, error) {
+func (h *LZTMarketHandler) fetchChatGPTListingPage(ctx context.Context, i18n string, page int, pmax int) (*services.LZTMarketResponse, error) {
 	if page < 1 {
 		page = 1
 	}
 	query := map[string]string{
 		"i18n": i18n,
 		"page": strconv.Itoa(page),
+	}
+	if pmax > 0 {
+		query["pmax"] = strconv.Itoa(pmax)
 	}
 	return h.client.Do(ctx, services.LZTMarketRequest{
 		Method:         http.MethodGet,
