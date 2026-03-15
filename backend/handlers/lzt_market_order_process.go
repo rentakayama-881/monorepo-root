@@ -114,12 +114,12 @@ func (h *LZTMarketHandler) processOrderAsync(orderID string, userID uint, itemID
 		if _, err := h.featureWallet.ReleaseMarketPurchase(ctx, authHeader, orderID, "Saldo sumber belum mencukupi"); err != nil {
 			applog.Error("failed to release wallet after insufficient balance", zap.String("order_id", orderID), zap.Error(err))
 		}
-		h.markOrderFailed(ctx, orderID, "PLATFORM_READINESS_NOT_ENOUGH", "Akun belum siap untuk dijual saat ini.")
+		h.markOrderFailed(ctx, orderID, "PLATFORM_READINESS_NOT_ENOUGH", "Akun saat ini tidak tersedia untuk dibeli.")
 		h.appendOrderStep(ctx, orderID, publicOrderStep{
 			Code:    "PLATFORM_READINESS_CHECK",
 			Label:   "Kesiapan sistem belum mencukupi",
 			Status:  "failed",
-			Message: "Akun belum siap untuk dijual saat ini.",
+			Message: "Akun saat ini tidak tersedia untuk dibeli.",
 			At:      time.Now().UTC(),
 		})
 		return

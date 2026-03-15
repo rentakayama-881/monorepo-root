@@ -727,7 +727,7 @@ func TestManualScenario_FastBuyUnavailableMapsToUserMessage(t *testing.T) {
 		t.Fatalf("unexpected provider reason: %q", reason)
 	}
 	userReason := normalizeUserFacingFailureReason(reason)
-	if userReason != "Akun belum siap untuk dijual saat ini." {
+	if userReason != "Akun sedang tidak tersedia untuk saat ini." {
 		t.Fatalf("unexpected user reason: got %q", userReason)
 	}
 }
@@ -761,7 +761,7 @@ func TestManualScenario_FastBuyValidationErrorMapsToUserMessage(t *testing.T) {
 		t.Fatalf("unexpected provider reason: %q", reason)
 	}
 	userReason := normalizeUserFacingFailureReason(reason)
-	if userReason != "Akun belum siap untuk dijual saat ini." {
+	if userReason != "Akun tidak dapat dibeli karena gagal verifikasi." {
 		t.Fatalf("unexpected user reason: got %q", userReason)
 	}
 }

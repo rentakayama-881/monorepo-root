@@ -41,19 +41,15 @@ export function normalizeFailure(message) {
   ) {
     return "Saldo wallet Anda belum mencukupi.";
   }
-  if (
-    lower.includes("akun belum siap") ||
-    lower.includes("item not found") ||
-    lower.includes("current listing") ||
-    lower.includes("sold") ||
-    lower.includes("removed by the site administration") ||
-    lower.includes("currently unavailable") ||
-    lower.includes("account validation")
-  ) {
-    return "Akun saat ini belum tersedia untuk dibeli.";
+  // Backend returns specific Indonesian messages — pass through.
+  if (raw && lower.startsWith("akun ")) {
+    return raw;
   }
   if (lower.includes("checker") || lower.includes("retry_request")) {
     return "Sistem verifikasi sedang sibuk. Silakan coba lagi dalam beberapa saat.";
+  }
+  if (lower.includes("layanan") || lower.includes("kendala")) {
+    return raw;
   }
   return "Terjadi kendala sementara pada proses pembelian.";
 }

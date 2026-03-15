@@ -102,7 +102,7 @@ export default function MarketChatGPTClient() {
     if (!item?.canBuy) {
       setCheckoutFeedback(
         toCheckoutFeedback(
-          "Akun saat ini belum tersedia untuk dibeli. Silakan muat ulang daftar akun."
+          "Akun sedang tidak tersedia untuk saat ini. Silakan muat ulang daftar akun."
         )
       );
       return;

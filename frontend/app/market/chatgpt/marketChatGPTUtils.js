@@ -148,6 +148,7 @@ export async function parseApiResponseSafe(res) {
 function normalizeCheckoutErrorMessage(message) {
   const raw = String(message || "").trim();
   const lower = raw.toLowerCase();
+  // Network/timeout errors — frontend concern, normalize here.
   if (
     lower.includes("timed out") ||
     lower.includes("timeout") ||
@@ -155,6 +156,7 @@ function normalizeCheckoutErrorMessage(message) {
   ) {
     return "Permintaan melebihi batas waktu. Silakan coba lagi.";
   }
+  // Wallet balance errors — frontend concern, normalize here.
   if (
     lower.includes("saldo kamu tidak mencukupi") ||
     lower.includes("saldo kamu belum mencukupi") ||
@@ -165,16 +167,12 @@ function normalizeCheckoutErrorMessage(message) {
   ) {
     return "Saldo wallet Anda belum mencukupi untuk melanjutkan pembelian.";
   }
-  if (
-    lower.includes("item not found in current listing") ||
-    lower.includes("item not found") ||
-    lower.includes("ad not found") ||
-    lower.includes("sold") ||
-    lower.includes("currently unavailable") ||
-    lower.includes("akun belum siap") ||
-    lower.includes("account validation")
-  ) {
-    return "Akun saat ini belum tersedia untuk dibeli.";
+  // Backend already returns specific Indonesian messages — pass through.
+  if (raw && lower.startsWith("akun ")) {
+    return raw;
+  }
+  if (lower.includes("checker") || lower.includes("layanan") || lower.includes("kendala")) {
+    return raw;
   }
   return "Pembelian belum dapat diproses saat ini.";
 }
@@ -182,7 +180,14 @@ function normalizeCheckoutErrorMessage(message) {
 export function toCheckoutFeedback(message) {
   const normalized = normalizeCheckoutErrorMessage(message);
   const lower = normalized.toLowerCase();
-  const isUnavailable = lower.includes("belum tersedia") || lower.includes("tidak tersedia");
+  const isUnavailable =
+    lower.includes("terjual") ||
+    lower.includes("tidak tersedia") ||
+    lower.includes("tidak ditemukan") ||
+    lower.includes("ditarik") ||
+    lower.includes("tidak memenuhi") ||
+    lower.includes("gagal verifikasi") ||
+    lower.includes("belum siap");
 
   return {
     message: normalized,

@@ -168,30 +168,30 @@ func normalizeUserFacingFailureReason(reason string) string {
 	}
 	lower := strings.ToLower(msg)
 	if strings.Contains(lower, "current listing") {
-		return "Akun belum siap untuk dijual saat ini."
+		return "Akun tidak tersedia dalam daftar saat ini."
 	}
 	if strings.Contains(lower, "currently unavailable") {
-		return "Akun belum siap untuk dijual saat ini."
+		return "Akun sedang tidak tersedia untuk saat ini."
 	}
 	if strings.Contains(lower, "ad not found") || strings.Contains(lower, "item not found") || strings.Contains(lower, "not found") {
-		return "Akun belum siap untuk dijual saat ini."
+		return "Akun tidak ditemukan."
 	}
 	if strings.Contains(lower, "removed by the site administration") {
-		return "Akun belum siap untuk dijual saat ini."
+		return "Akun sudah ditarik dari penjualan."
 	}
 	if strings.Contains(lower, "this item is sold") || strings.Contains(lower, "sold") {
-		return "Akun belum siap untuk dijual saat ini."
+		return "Akun ini sudah terjual."
 	}
 	if strings.Contains(lower, "secret answer") ||
 		strings.Contains(lower, "secret question") ||
 		strings.Contains(lower, "security answer") ||
 		strings.Contains(lower, "security question") ||
 		strings.Contains(lower, "payment password") {
-		return "Akun belum siap untuk dijual saat ini."
+		return "Akun tidak memenuhi syarat untuk dibeli."
 	}
 	if strings.Contains(lower, "more than 20 errors occurred during account validation") ||
 		strings.Contains(lower, "account validation") {
-		return "Akun belum siap untuk dijual saat ini."
+		return "Akun tidak dapat dibeli karena gagal verifikasi."
 	}
 	if strings.Contains(lower, "retry_request") {
 		return "Checker sedang error. Coba lagi sebentar."
@@ -209,25 +209,29 @@ func normalizeCheckerErrorMessage(err error) string {
 	}
 	lower := strings.ToLower(msg)
 	if strings.Contains(lower, "currently unavailable") {
-		return "Akun belum siap untuk dijual saat ini."
+		return "Akun sedang tidak tersedia untuk saat ini."
 	}
-	if strings.Contains(lower, "sold") ||
-		strings.Contains(lower, "not found") ||
+	if strings.Contains(lower, "sold") {
+		return "Akun ini sudah terjual."
+	}
+	if strings.Contains(lower, "not found") ||
 		strings.Contains(lower, "ad not found") ||
-		strings.Contains(lower, "item not found") ||
-		strings.Contains(lower, "removed by the site administration") {
-		return "Akun belum siap untuk dijual saat ini."
+		strings.Contains(lower, "item not found") {
+		return "Akun tidak ditemukan."
+	}
+	if strings.Contains(lower, "removed by the site administration") {
+		return "Akun sudah ditarik dari penjualan."
 	}
 	if strings.Contains(lower, "secret answer") ||
 		strings.Contains(lower, "secret question") ||
 		strings.Contains(lower, "security answer") ||
 		strings.Contains(lower, "security question") ||
 		strings.Contains(lower, "payment password") {
-		return "Akun belum siap untuk dijual saat ini."
+		return "Akun tidak memenuhi syarat untuk dibeli."
 	}
 	if strings.Contains(lower, "more than 20 errors occurred during account validation") ||
 		strings.Contains(lower, "account validation") {
-		return "Akun belum siap untuk dijual saat ini."
+		return "Akun tidak dapat dibeli karena gagal verifikasi."
 	}
 	return "Checker sedang error. Coba lagi sebentar."
 }

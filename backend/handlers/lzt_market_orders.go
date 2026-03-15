@@ -144,7 +144,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 			zap.String("resolve_source", resolveSource),
 			zap.Error(listingErr),
 		)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun tidak ditemukan."})
 		return
 	}
 	resolvedItemID := normalizeItemID(listingItem)
@@ -197,7 +197,7 @@ func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 			zap.Float64("source_price", sourcePrice),
 			zap.String("source_currency", sourceCurrency),
 		)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun belum siap untuk dijual saat ini."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Akun saat ini tidak tersedia untuk dibeli."})
 		return
 	}
 	if supplierBalance.State == supplierBalanceStateUnknown && isProviderIntegrationFailureReason(supplierBalance.Reason) {
