@@ -13,7 +13,7 @@ const panelClassName =
 function TreeSkeletonNode() {
   return (
     <div className="tree-node">
-      <Skeleton className="h-7 w-full rounded-lg bg-muted-foreground/15 dark:bg-secondary" />
+      <Skeleton className="h-7 w-full rounded-lg bg-white/80 dark:bg-secondary" />
     </div>
   );
 }
@@ -106,19 +106,13 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
             <div className="tree-node">
               <div className="rainbow-card-glass px-2.5 py-2">
                 <div className="flex items-center gap-2">
-                  <SkeletonCircle
-                    size="h-7 w-7"
-                    className="bg-muted-foreground/15 dark:bg-secondary"
-                  />
+                  <SkeletonCircle size="h-7 w-7" className="bg-white/80 dark:bg-secondary" />
                   <div className="min-w-0 flex-1 space-y-1.5">
-                    <SkeletonText
-                      width="w-20"
-                      className="bg-muted-foreground/15 dark:bg-secondary"
-                    />
+                    <SkeletonText width="w-20" className="bg-white/80 dark:bg-secondary" />
                     <SkeletonText
                       width="w-28"
                       height="h-2.5"
-                      className="bg-muted-foreground/15 dark:bg-secondary"
+                      className="bg-white/80 dark:bg-secondary"
                     />
                   </div>
                 </div>
@@ -127,7 +121,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
             {/* Wallet group skeleton */}
             <div className="tree-group">
               <div className="tree-group-label">
-                <Skeleton className="h-2 w-10 rounded bg-muted-foreground/15 dark:bg-secondary" />
+                <Skeleton className="h-2 w-10 rounded bg-white/80 dark:bg-secondary" />
               </div>
               <div className="tree-subtree">
                 <TreeSkeletonNode />
@@ -138,7 +132,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
             {/* Account group skeleton */}
             <div className="tree-group">
               <div className="tree-group-label">
-                <Skeleton className="h-2 w-8 rounded bg-muted-foreground/15 dark:bg-secondary" />
+                <Skeleton className="h-2 w-8 rounded bg-white/80 dark:bg-secondary" />
               </div>
               <div className="tree-subtree">
                 <TreeSkeletonNode />
