@@ -8,7 +8,7 @@ import useProfileSidebar from "@/components/profile/useProfileSidebar";
 
 const overlayClassName = "fixed inset-0 z-[100] bg-black/50 transition-opacity duration-300";
 const panelClassName =
-  "fixed right-1.5 top-[calc(var(--header-height)+0.25rem)] z-[110] w-64 max-w-[calc(100vw-0.75rem)] overflow-hidden rounded-xl border border-border/60 bg-card shadow-lg flex flex-col max-h-[calc(100dvh-var(--header-height)-0.75rem)] animate-slide-in-from-right";
+  "fixed right-1.5 top-[calc(var(--header-height)+0.25rem)] z-[110] w-64 max-w-[calc(100vw-0.75rem)] overflow-hidden rounded-xl border-x border-b border-border/60 bg-card shadow-lg flex flex-col max-h-[calc(100dvh-var(--header-height)-0.75rem)] animate-slide-in-from-right";
 
 function SkeletonItem() {
   return <Skeleton className="mx-2 h-7 rounded-md bg-secondary" />;
