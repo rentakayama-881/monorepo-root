@@ -22,30 +22,22 @@ const accountLinks = [
   { href: "/account/validation-cases", label: "My Validation Cases", Icon: FileCheck2 },
 ];
 
-function TreeMenuItem({ href, label, Icon, isActive }) {
+function MenuItem({ href, label, Icon, isActive }) {
   return (
-    <div className="tree-node">
-      <Link
-        href={href}
-        className={`rainbow-card-glass flex items-center gap-2 px-2.5 py-1.5 transition-colors ${
-          isActive ? "ring-1 ring-foreground/20" : ""
-        }`}
-        aria-current={isActive ? "page" : undefined}
-        title={label}
-      >
-        <Icon
-          className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-foreground" : "text-muted-foreground"}`}
-          strokeWidth={1.9}
-        />
-        <span
-          className={`truncate text-xs ${
-            isActive ? "font-semibold text-foreground" : "font-medium text-foreground"
-          }`}
-        >
-          {label}
-        </span>
-      </Link>
-    </div>
+    <Link
+      href={href}
+      className={`flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${
+        isActive ? "bg-accent font-semibold text-foreground" : "text-foreground hover:bg-accent/60"
+      }`}
+      aria-current={isActive ? "page" : undefined}
+      title={label}
+    >
+      <Icon
+        className={`h-4 w-4 shrink-0 ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+        strokeWidth={1.8}
+      />
+      <span className="truncate">{label}</span>
+    </Link>
   );
 }
 
@@ -59,9 +51,9 @@ export default function ProfileNav({ pathname, section }) {
   const links = section === "wallet" ? walletLinks : accountLinks;
 
   return (
-    <>
-      {links.map((item, idx) => (
-        <TreeMenuItem
+    <nav className="flex flex-col gap-0.5">
+      {links.map((item) => (
+        <MenuItem
           key={item.href}
           href={item.href}
           label={item.label}
@@ -69,6 +61,6 @@ export default function ProfileNav({ pathname, section }) {
           isActive={isLinkActive(item.href)}
         />
       ))}
-    </>
+    </nav>
   );
 }

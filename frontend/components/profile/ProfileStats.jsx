@@ -7,12 +7,14 @@ export default function ProfileStats({ wallet, guarantee }) {
   const guaranteeText = formatCurrency(guarantee.amount);
 
   return (
-    <div className="rainbow-card-glass px-2.5 py-1.5">
-      <div className="flex items-center justify-between gap-1.5">
+    <div className="rounded-lg bg-secondary/50 px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-medium text-muted-foreground">Saldo</div>
+          <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Saldo
+          </div>
           <div
-            className="truncate text-sm font-semibold tracking-tight text-foreground"
+            className="truncate text-base font-bold tracking-tight text-foreground"
             title={balanceText}
             aria-label={`Saldo ${balanceText}`}
           >
@@ -29,7 +31,7 @@ export default function ProfileStats({ wallet, guarantee }) {
         </div>
         <Link
           href="/account/wallet/deposit"
-          className="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+          className="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
         >
           <ArrowDownToLine className="h-3 w-3" strokeWidth={2.5} />
           Deposit
