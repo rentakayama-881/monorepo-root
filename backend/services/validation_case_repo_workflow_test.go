@@ -203,10 +203,10 @@ func TestLoadRepoMetaState_Nil(t *testing.T) {
 
 func TestLoadRepoMetaState_WithValues(t *testing.T) {
 	meta := map[string]interface{}{
-		"WorkflowFamily":  workspaceWorkflowFamily,
-		"ProtocolMode":    repoProtocolModeV2,
-		"ConsensusStatus": repoConsensusFinalized,
-		"RepoStage":       repoStageInReview,
+		"workflow_family":  workspaceWorkflowFamily,
+		"protocol_mode":   repoProtocolModeV2,
+		"consensus_status": repoConsensusFinalized,
+		"repo_stage":       repoStageInReview,
 	}
 	state := loadRepoMetaState(meta)
 	if state.WorkflowFamily != workspaceWorkflowFamily {
@@ -276,7 +276,7 @@ func TestIsWorkspaceCaseMeta(t *testing.T) {
 	})
 	t.Run("workspace meta", func(t *testing.T) {
 		meta := map[string]interface{}{
-			"WorkflowFamily": workspaceWorkflowFamily,
+			"workflow_family": workspaceWorkflowFamily,
 		}
 		got := isWorkspaceCaseMeta(meta)
 		if !got {
@@ -285,8 +285,8 @@ func TestIsWorkspaceCaseMeta(t *testing.T) {
 	})
 	t.Run("other meta", func(t *testing.T) {
 		meta := map[string]interface{}{
-			"WorkflowFamily": "other_workflow",
-			"ProtocolMode":   "other_mode",
+			"workflow_family": "other_workflow",
+			"protocol_mode":  "other_mode",
 		}
 		got := isWorkspaceCaseMeta(meta)
 		if got {
