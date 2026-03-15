@@ -17,7 +17,7 @@ Service ini **bukan** forum dan **tidak** menyediakan replies/reactions/likes/st
 ```
 Frontend (Next.js / Vercel)
   ├── Core API (Go/Gin)          → identity + validation cases (Postgres)
-  └── Feature Service (.NET 8)   → wallet/escrow/dispute/docs/admin (MongoDB + Redis)
+  └── Feature Service (.NET 8)   → wallet/escrow/dispute/docs/admin (MongoDB)
 ```
 
 ## Local Development
@@ -25,7 +25,6 @@ Frontend (Next.js / Vercel)
 ### Prerequisites
 - .NET 8 SDK
 - MongoDB 7+
-- Redis (recommended)
 - Production/Staging wajib MongoDB replica set (transactions enabled). Standalone MongoDB hanya untuk fallback development/testing.
 
 ### Run
@@ -89,7 +88,6 @@ Nama env mengikuti ASP.NET configuration binding (gunakan `__` untuk nesting):
 - `JWT__SECRET` (required)
 - `JWT__ISSUER`
 - `JWT__AUDIENCE`
-- `REDIS__CONNECTIONSTRING` (recommended)
 - `CORS__ALLOWEDORIGINS__0`
 - `ASPNETCORE_URLS` (default: `http://127.0.0.1:5000`)
 - `GOBACKEND__BASEURL`

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
-using StackExchange.Redis;
 using FeatureService.Api.Infrastructure.MongoDB;
 using System.Reflection;
 
@@ -15,16 +14,13 @@ namespace FeatureService.Api.Controllers;
 public class HealthController : ControllerBase
 {
     private readonly MongoDbContext _mongoDbContext;
-    private readonly IConnectionMultiplexer _redis;
     private readonly ILogger<HealthController> _logger;
 
     public HealthController(
         MongoDbContext mongoDbContext,
-        IConnectionMultiplexer redis,
         ILogger<HealthController> logger)
     {
         _mongoDbContext = mongoDbContext;
-        _redis = redis;
         _logger = logger;
     }
 
@@ -79,20 +75,18 @@ public class HealthController : ControllerBase
     public async Task<IActionResult> GetReadiness()
     {
         var mongoHealthy = await CheckMongoAsync();
-        var redisHealthy = await CheckRedisAsync();
 
-        var status = mongoHealthy && redisHealthy ? "ready" : "not_ready";
+        var status = mongoHealthy ? "ready" : "not_ready";
         var response = new
         {
             status,
             checks = new
             {
-                mongodb = mongoHealthy ? "healthy" : "unhealthy",
-                redis = redisHealthy ? "healthy" : "unhealthy"
+                mongodb = mongoHealthy ? "healthy" : "unhealthy"
             }
         };
 
-        if (mongoHealthy && redisHealthy)
+        if (mongoHealthy)
         {
             return Ok(response);
         }
@@ -112,20 +106,6 @@ public class HealthController : ControllerBase
         {
             _logger.LogError(ex, "MongoDB readiness check failed");
             return false;
-        }
-    }
-
-    private Task<bool> CheckRedisAsync()
-    {
-        try
-        {
-            _redis.GetDatabase().Ping();
-            return Task.FromResult(true);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Redis readiness check failed");
-            return Task.FromResult(false);
         }
     }
 

@@ -209,7 +209,7 @@ public partial class PqcSignatureMiddleware
             return false;
         }
 
-        // Keep Redis and logs safe; also enforces minimum entropy for replay protection.
+        // Enforces minimum entropy for replay protection.
         if (idempotencyKey.Length is < 8 or > 128)
         {
             return false;

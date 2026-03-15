@@ -90,18 +90,6 @@ func TestSLAWorkerTimeoutsArePositive(t *testing.T) {
 	}
 }
 
-func TestRedisTimeoutsArePositive(t *testing.T) {
-	timeouts := map[string]time.Duration{
-		"RedisPingTimeout":    RedisPingTimeout,
-		"RedisContextTimeout": RedisContextTimeout,
-	}
-	for name, d := range timeouts {
-		if d <= 0 {
-			t.Errorf("%s should be positive, got %v", name, d)
-		}
-	}
-}
-
 func TestAuthTokenTimeoutsArePositive(t *testing.T) {
 	timeouts := map[string]time.Duration{
 		"AdminTokenExpiry":       AdminTokenExpiry,

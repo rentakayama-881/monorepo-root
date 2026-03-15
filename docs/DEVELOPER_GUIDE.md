@@ -761,9 +761,6 @@ SMTP_PORT=587
 SMTP_USER=noreply@aivalid.id
 SMTP_PASS=your-password
 
-# Redis
-REDIS_URL=redis://localhost:6379
-
 # WebAuthn
 WEBAUTHN_RP_ID=aivalid.id
 WEBAUTHN_RP_ORIGINS=https://aivalid.id
@@ -836,8 +833,7 @@ sudo systemctl status <feature-service-name>
 Cause: Token refresh failing
 Solution:
 1. Check JWT_SECRET sama di backend dan feature service
-2. Check Redis connection
-3. Clear browser localStorage
+2. Clear browser localStorage
 ```
 
 **Issue: CORS error**

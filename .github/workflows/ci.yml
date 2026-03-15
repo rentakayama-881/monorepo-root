@@ -447,21 +447,11 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     defaults:
       run:
         working-directory: backend
     env:
       DATABASE_URL: postgres://test:test@localhost:5432/aivalid_test?sslmode=disable
-      REDIS_URL: redis://localhost:6379
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -551,16 +541,11 @@ jobs:
         image: mongo:7
         ports:
           - 27017:27017
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
     defaults:
       run:
         working-directory: feature-service
     env:
       MONGODB_CONNECTION_STRING: mongodb://localhost:27017/aivalid_test
-      REDIS_CONNECTION_STRING: localhost:6379
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

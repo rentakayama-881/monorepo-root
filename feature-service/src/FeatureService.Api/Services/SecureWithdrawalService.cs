@@ -11,7 +11,7 @@ namespace FeatureService.Api.Services;
 
 /// <summary>
 /// Enhanced secure withdrawal service dengan idempotency dan audit trail.
-/// Menggunakan Redis Sentinel untuk idempotency dan MongoDB untuk immutable audit log.
+/// Menggunakan in-memory idempotency dan MongoDB untuk immutable audit log.
 /// </summary>
 public interface ISecureWithdrawalService
 {

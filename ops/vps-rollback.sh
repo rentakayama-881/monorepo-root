@@ -10,8 +10,8 @@ ensure_command curl
 
 BACKUP_DIR=""
 DEPLOY_ENV="prod"
-BACKEND_BINARY_PATH="${BACKEND_BINARY_PATH:-/opt/aivalid/backend/app}"
-FEATURE_DEPLOY_DIR="${FEATURE_DEPLOY_DIR:-/opt/aivalid/feature-service}"
+BACKEND_BINARY_PATH="${BACKEND_BINARY_PATH:-/opt/alephdraad/backend/app}"
+FEATURE_DEPLOY_DIR="${FEATURE_DEPLOY_DIR:-/opt/alephdraad/feature-service}"
 BACKEND_SYSTEMD_UNITS="${BACKEND_SYSTEMD_UNITS:-alephdraad-backend.service backend.service aivalid-backend}"
 FEATURE_SYSTEMD_UNITS="${FEATURE_SYSTEMD_UNITS:-feature-service.service featureservice.service feature-service}"
 

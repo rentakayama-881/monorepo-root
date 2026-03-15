@@ -41,15 +41,6 @@ This document lists all required and optional environment variables for the AIVa
 | `CORS_ALLOWED_ORIGINS` | Comma-separated CORS origins | Same as FRONTEND_BASE_URL |
 | `TRUSTED_PROXIES` | Comma-separated proxy IPs/CIDRs to trust for `X-Forwarded-For` (set to `127.0.0.1,::1` behind local Nginx; set to `none` to disable) | `127.0.0.1,::1` |
 
-### Redis (Optional - graceful degradation)
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `REDIS_URL` | Full Redis connection URL | - |
-| `REDIS_HOST` | Redis host | `localhost` |
-| `REDIS_PORT` | Redis port | `6379` |
-| `REDIS_PASSWORD` | Redis password | - |
-
 ### WebAuthn / Passkeys
 
 | Variable | Description | Default |
@@ -151,8 +142,6 @@ This document lists all required and optional environment variables for the AIVa
 | `MONGODB__DATABASENAME` | MongoDB database name | `feature_service_db` |
 | `JWT__SECRET` | JWT secret (must match Go backend) | - |
 | `ADMIN_JWT_SECRET` | Admin JWT secret (must match Go backend) | - |
-| `REDIS__CONNECTIONSTRING` | Redis connection string/URL (recommended: `rediss://...`) | - |
-| `REDIS__REQUIRETLS` | Require TLS for non-local Redis endpoints | `true` |
 | `SERVICE_TOKEN` | Token for validating incoming requests from Go Backend (checked via `X-Service-Token` header). Must match Go Backend's `SERVICE_TOKEN`. **Required in production.** | - |
 | `GOBACKEND__BASEURL` | Base URL of Go Backend for internal callbacks | `http://127.0.0.1:8080` |
 | `GOBACKEND__INTERNALAPIKEY` | Token sent as `X-Internal-Api-Key` header when making callbacks to Go Backend `/api/internal/*` endpoints. Must match Go Backend's `INTERNAL_API_KEY`. **Required in production.** | - |

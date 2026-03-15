@@ -195,13 +195,9 @@ linters:
           - wrapcheck
 
       # ==========================================================
-      # Auth/Redis services - internal error propagation
+      # Auth services - internal error propagation
       # ==========================================================
       - path: services/auth_service.*\.go
-        linters:
-          - wrapcheck
-
-      - path: services/redis_service\.go
         linters:
           - wrapcheck
 

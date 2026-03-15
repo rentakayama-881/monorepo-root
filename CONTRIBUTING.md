@@ -9,7 +9,6 @@ Thank you for your interest in contributing to AIValid! This document provides g
 - .NET 8.0 SDK
 - PostgreSQL 16+
 - MongoDB 7.0+
-- Redis 7+
 
 ## Code of Conduct
 

@@ -85,7 +85,6 @@ Jangan menambahkan dependency baru tanpa alasan kuat.
 Jangan menyarankan solusi yang membutuhkan biaya tambahan.
 
 Hindari pembahasan tentang:
-- Redis berbayar
 - layanan cloud berbayar
 - layanan API berbayar
 

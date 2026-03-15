@@ -9,10 +9,6 @@ import (
 )
 
 func TestEntPasskeyService_SessionFallback_InMemory(t *testing.T) {
-	previousRedisClient := RedisClient
-	RedisClient = nil
-	t.Cleanup(func() { RedisClient = previousRedisClient })
-
 	svc, err := NewEntPasskeyService(zap.NewNop(), "example.com", []string{"https://example.com"}, "Example")
 	if err != nil {
 		t.Fatalf("NewEntPasskeyService() error: %v", err)

@@ -2,7 +2,7 @@ namespace FeatureService.Api.Infrastructure.Idempotency;
 
 /// <summary>
 /// Service untuk memastikan transaksi tidak dieksekusi dua kali.
-/// Menggunakan Redis untuk distributed locking.
+/// Menggunakan in-memory storage untuk locking.
 /// </summary>
 public interface IIdempotencyService
 {

@@ -15,8 +15,9 @@
 ### Feature Service (`feature-service/`)
 - **Domain:** Finance (wallets, deposits, withdrawals, transfers, escrow/guarantees, disputes), documents, reports, PQC keys, moderation
 - **Database:** MongoDB Atlas
-- **Cache:** Redis
 - **Pattern:** Controller → Service → MongoDB
+- **Validation:** FluentValidation (auto-discovery) + DataAnnotations (belt and suspenders)
+- **Idempotency:** In-memory ConcurrentDictionary with TTL (single instance)
 - **Deployment:** VPS via systemd, nginx reverse proxy to :5000
 
 ### Frontend (`frontend/`)

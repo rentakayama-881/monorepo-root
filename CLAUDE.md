@@ -90,7 +90,7 @@ Never trust hardcoded numbers — always discover state dynamically.
 | Service | Stack | Domain | Deploy |
 |---------|-------|--------|--------|
 | Go Backend (`backend/`) | Gin + Ent ORM + PostgreSQL | Auth, users, cases, workflow, market proxy | VPS systemd → :8080 |
-| Feature Service (`feature-service/`) | .NET 8 + MongoDB + Redis | Finance (wallets, escrow, disputes), PQC keys | VPS systemd → :5000 |
+| Feature Service (`feature-service/`) | .NET 8 + MongoDB | Finance (wallets, escrow, disputes), PQC keys, FluentValidation | VPS systemd → :5000 |
 | Frontend (`frontend/`) | Next.js App Router + React + SWR + Tailwind v4 | All user-facing UI | Vercel auto-deploy |
 
 ### Domains
@@ -112,7 +112,7 @@ Feature Service ── callback ──→ Go Backend (/api/internal/* with INTER
 | Layer | Pattern | Notes |
 |-------|---------|-------|
 | Go Backend | Handler → Service → Ent ORM | Never raw SQL. Edit `ent/schema/` only. |
-| Feature Service | Controller → Service → MongoDB | Integers only for money. Idempotency keys. |
+| Feature Service | Controller → Service → MongoDB | Integers only for money. Idempotency keys (in-memory). FluentValidation for DTOs. |
 | Frontend | Page → Client Component → SWR + API | `.jsx` extension. `cn()` for class merging. |
 | Auth | JWT in localStorage + presence cookies | `has_session=1`, `has_admin=1` cookies for middleware |
 | Market handler | 5 files in `handlers/` package | types, helpers, listing, orders, handler |
@@ -140,7 +140,7 @@ Read these for full context on specific topics:
 1. `.ai/RULES.md` — Coding conventions, commit format, design tokens, invariants
 2. `.ai/ARCHITECTURE.md` — Service boundaries, domain model, financial rules, middleware
 3. `.ai/QUALITY.md` — 9-dimension quality scoring, coverage floors, merge rules
-4. `.ai/SECURITY.md` — 12-category defensive security checklist
+4. `.ai/SECURITY.md` — 14-category defensive security checklist
 
 ## Workflow Prompts
 

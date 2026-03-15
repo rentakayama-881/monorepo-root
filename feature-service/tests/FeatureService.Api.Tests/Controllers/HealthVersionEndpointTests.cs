@@ -20,7 +20,6 @@ public class HealthVersionEndpointTests
             var logger = new Mock<ILogger<HealthController>>(MockBehavior.Loose);
             var controller = new HealthController(
                 mongoDbContext: null!,
-                redis: null!,
                 logger: logger.Object);
 
             var result = controller.GetVersion();

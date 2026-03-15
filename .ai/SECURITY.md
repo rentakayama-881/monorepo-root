@@ -34,6 +34,7 @@
 ## 6. SQL / NoSQL Injection (P0)
 - Ent ORM parameterizes queries (Go)
 - MongoDB.Driver parameterizes queries (.NET)
+- FluentValidation validators on all financial DTOs (Feature Service)
 - Check: no raw query string concatenation
 
 ## 7. Rate Limiting

@@ -44,7 +44,7 @@ public class TransfersController : ApiControllerBase
     /// - Two-Factor Authentication (2FA) MUST be enabled
     /// - PIN verification required for each transfer
     /// - Post-Quantum Cryptography (PQC) digital signature required
-    /// - Idempotency via Redis Sentinel to prevent duplicate transactions
+    /// - Idempotency to prevent duplicate transactions
     /// - Immutable audit trail for compliance
     /// - Dana ditahan selama hold period (default 7 hari, maksimal 30 hari)
     /// - Penerima bisa meng-klaim dana setelah hold period selesai

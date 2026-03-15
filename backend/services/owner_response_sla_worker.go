@@ -17,7 +17,7 @@ const slaWorkerLockKey = "sla_worker_lock"
 const slaWorkerLockTTL = 60 * time.Second
 
 // OwnerResponseSLAWorker periodically enforces owner-response SLA reminders and timeout freeze.
-// Uses Redis distributed lock to prevent duplicate processing across multiple instances.
+// Uses local mutex to prevent duplicate processing (single-instance mode).
 type OwnerResponseSLAWorker struct {
 	workflow   *EntValidationCaseWorkflowService
 	ticker     *time.Ticker

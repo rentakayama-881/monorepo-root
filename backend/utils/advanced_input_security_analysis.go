@@ -116,7 +116,6 @@ func (v *AdvancedSecurityValidator) DetectReplayAttack(
 	v.usedNonces[nonce] = time.Now()
 
 	// Clean up old nonces (simple implementation)
-	// In production, use Redis with TTL or similar
 	v.cleanupOldNonces(time.Duration(windowSeconds*2) * time.Second)
 
 	return result
