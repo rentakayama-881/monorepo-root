@@ -7,83 +7,61 @@ import {
   User,
   ShoppingBag,
   FileCheck2,
-  ChevronRight,
 } from "lucide-react";
 
 const walletLinks = [
   { href: "/account/wallet/send", label: "Send Funds", Icon: Send },
-  { href: "/account/wallet/transactions", label: "Transactions", Icon: ClipboardList },
-  { href: "/account/wallet/disputes", label: "Dispute Center", Icon: ShieldAlert },
+  { href: "/account/wallet/transactions", label: "Transaksi", Icon: ClipboardList },
+  { href: "/account/wallet/disputes", label: "Dispute", Icon: ShieldAlert },
   { href: "/account/wallet/withdraw", label: "Withdraw", Icon: Landmark },
 ];
 
 const accountLinks = [
-  { href: "/account", label: "Account", Icon: User },
-  { href: "/account/my-purchases", label: "My Purchase", Icon: ShoppingBag },
-  { href: "/account/validation-cases", label: "My Validation Cases", Icon: FileCheck2 },
+  { href: "/account", label: "Akun", Icon: User },
+  { href: "/account/my-purchases", label: "Pembelian", Icon: ShoppingBag },
+  { href: "/account/validation-cases", label: "Validasi Case", Icon: FileCheck2 },
 ];
 
-function MenuItemLink({ href, label, Icon, isActive }) {
-  const itemClassName = isActive
-    ? "group flex items-center justify-between rounded-lg border border-foreground/20 bg-accent px-3 py-2 transition-colors"
-    : "group flex items-center justify-between rounded-lg border border-border/70 bg-background/60 px-3 py-2 transition-colors hover:border-border hover:bg-accent/60";
-
-  const iconClassName = isActive
-    ? "h-4 w-4 shrink-0 text-foreground"
-    : "h-4 w-4 shrink-0 text-muted-foreground";
-
-  const labelClassName = isActive
-    ? "flex min-w-0 items-center gap-2.5 text-sm font-semibold text-foreground"
-    : "flex min-w-0 items-center gap-2.5 text-sm font-medium text-foreground";
-
+function TreeMenuItem({ href, label, Icon, isActive }) {
   return (
-    <Link
-      href={href}
-      className={itemClassName}
-      aria-current={isActive ? "page" : undefined}
-      title={label}
-    >
-      <span className={labelClassName}>
-        <Icon className={iconClassName} strokeWidth={1.9} />
-        <span className="truncate">{label}</span>
-      </span>
-      <ChevronRight
-        className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-        strokeWidth={1.9}
-      />
-    </Link>
+    <div className="tree-node">
+      <Link
+        href={href}
+        className={`rainbow-card-glass flex items-center gap-2 px-2.5 py-1.5 transition-colors ${
+          isActive ? "ring-1 ring-foreground/20" : ""
+        }`}
+        aria-current={isActive ? "page" : undefined}
+        title={label}
+      >
+        <Icon
+          className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+          strokeWidth={1.9}
+        />
+        <span
+          className={`truncate text-xs ${
+            isActive ? "font-semibold text-foreground" : "font-medium text-foreground"
+          }`}
+        >
+          {label}
+        </span>
+      </Link>
+    </div>
   );
 }
 
-export default function ProfileNav({ pathname }) {
+export default function ProfileNav({ pathname, section }) {
   const isLinkActive = (href) => {
     if (!pathname) return false;
     if (href === "/account") return pathname === "/account";
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
-  return (
-    <nav className="mt-3 flex flex-col gap-1.5 text-sm text-foreground">
-      {/* Wallet Section */}
-      <div className="px-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        Wallet
-      </div>
-      {walletLinks.map((item) => (
-        <MenuItemLink
-          key={item.href}
-          href={item.href}
-          label={item.label}
-          Icon={item.Icon}
-          isActive={isLinkActive(item.href)}
-        />
-      ))}
+  const links = section === "wallet" ? walletLinks : accountLinks;
 
-      {/* Account Section */}
-      <div className="mt-2 px-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        Account
-      </div>
-      {accountLinks.map((item) => (
-        <MenuItemLink
+  return (
+    <>
+      {links.map((item, idx) => (
+        <TreeMenuItem
           key={item.href}
           href={item.href}
           label={item.label}
@@ -91,6 +69,6 @@ export default function ProfileNav({ pathname }) {
           isActive={isLinkActive(item.href)}
         />
       ))}
-    </nav>
+    </>
   );
 }

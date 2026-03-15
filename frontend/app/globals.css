@@ -2175,3 +2175,133 @@ html {
     background: radial-gradient(ellipse at 50% 0%, oklch(0.45 0.1 250 / 0.15) 0%, transparent 70%);
   }
 }
+
+/* ===== Profile Sidebar Tree Structure ===== */
+
+.tree-sidebar {
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.tree-sidebar::before {
+  content: "";
+  position: absolute;
+  left: 0.375rem;
+  top: 0;
+  bottom: 1rem;
+  width: 1px;
+  background-color: var(--foreground);
+  opacity: 0.35;
+}
+
+.tree-node {
+  position: relative;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+.tree-node::before {
+  content: "";
+  position: absolute;
+  left: -0.875rem;
+  top: 50%;
+  width: 0.75rem;
+  height: 1px;
+  background-color: var(--foreground);
+  opacity: 0.35;
+}
+
+.tree-group {
+  position: relative;
+  margin-top: 0.25rem;
+}
+
+.tree-group-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0.125rem 0;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.tree-group-label::before {
+  content: "";
+  position: absolute;
+  left: -0.875rem;
+  top: 50%;
+  width: 0.75rem;
+  height: 1px;
+  background-color: var(--foreground);
+  opacity: 0.35;
+}
+
+.tree-subtree {
+  position: relative;
+  padding-left: 0.75rem;
+  margin-left: 0;
+}
+
+.tree-subtree::before {
+  content: "";
+  position: absolute;
+  left: -0.125rem;
+  top: 0;
+  bottom: 0.375rem;
+  width: 1px;
+  background-color: var(--foreground);
+  opacity: 0.35;
+}
+
+.rainbow-card-glass {
+  position: relative;
+  border-radius: 0.5rem;
+  background-color: oklch(from var(--card) l c h / 0.85);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid transparent;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.rainbow-card-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    oklch(0.65 0.22 10) 0%,
+    oklch(0.72 0.17 55) 17%,
+    oklch(0.8 0.14 95) 33%,
+    oklch(0.68 0.19 145) 50%,
+    oklch(0.62 0.17 235) 67%,
+    oklch(0.55 0.18 280) 83%,
+    oklch(0.62 0.2 330) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.rainbow-card-glass:hover {
+  background-color: oklch(from var(--accent) l c h / 0.9);
+  box-shadow: 0 2px 8px oklch(0.55 0.15 280 / 8%);
+}
+
+.dark .rainbow-card-glass {
+  background-color: oklch(from var(--card) l c h / 0.8);
+}
+
+.dark .rainbow-card-glass:hover {
+  background-color: oklch(from var(--accent) l c h / 0.85);
+  box-shadow: 0 2px 12px oklch(0.55 0.15 280 / 15%);
+}
