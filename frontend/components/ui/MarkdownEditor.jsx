@@ -179,16 +179,16 @@ export default function MarkdownEditor({
     }
 
     if (ta && !disabled) {
-      const nextFrame =
-        typeof requestAnimationFrame === "function"
-          ? requestAnimationFrame
-          : (cb) => setTimeout(cb, 0);
-      nextFrame(() => {
-        ta.focus({ preventScroll: true });
-        const pos = start + snippetText.length;
-        ta.setSelectionRange(pos, pos);
+      // Delay scroll to let React re-render and mobile keyboard settle.
+      // On mobile, focus() forces browser scroll — so scroll first, then focus.
+      setTimeout(() => {
         ta.scrollIntoView({ behavior: "smooth", block: "center" });
-      });
+        setTimeout(() => {
+          ta.focus({ preventScroll: true });
+          const pos = start + snippetText.length;
+          ta.setSelectionRange(pos, pos);
+        }, 350);
+      }, 50);
     }
   }, [disabled, insertSnippetSignal, onChange, onSnippetInserted, value]);
 
