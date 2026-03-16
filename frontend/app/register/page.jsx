@@ -103,6 +103,7 @@ export default function RegisterPage() {
                 data-testid="register-email-input"
                 type="email"
                 required
+                autoComplete="email"
                 value={form.email}
                 onChange={(event) => update("email", event.target.value)}
                 className={AUTH_INPUT_CLASS}
@@ -116,6 +117,7 @@ export default function RegisterPage() {
                 data-testid="register-password-input"
                 type="password"
                 required
+                autoComplete="new-password"
                 value={form.password}
                 minLength={8}
                 onChange={(event) => update("password", event.target.value)}
@@ -149,6 +151,7 @@ export default function RegisterPage() {
                 id="register-username"
                 type="text"
                 required
+                autoComplete="username"
                 value={form.username}
                 onChange={(event) => update("username", event.target.value)}
                 className={AUTH_INPUT_CLASS}
@@ -160,6 +163,7 @@ export default function RegisterPage() {
               <input
                 id="register-display-name"
                 type="text"
+                autoComplete="name"
                 value={form.full_name}
                 onChange={(event) => update("full_name", event.target.value)}
                 className={AUTH_INPUT_CLASS}

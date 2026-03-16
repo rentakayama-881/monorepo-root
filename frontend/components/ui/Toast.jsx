@@ -30,12 +30,6 @@ export function ToastProvider({ children, position = "bottom-right" }) {
 
       setToasts((prev) => [...prev, newToast]);
 
-      if (duration > 0) {
-        setTimeout(() => {
-          setToasts((prev) => prev.filter((t) => t.id !== id));
-        }, duration);
-      }
-
       return id;
     },
     []
@@ -174,6 +168,13 @@ function Toast({ title, description, variant, onClose, duration, action, index }
     setIsDismissing(true);
     setTimeout(onClose, 200);
   };
+
+  // Auto-dismiss with proper cleanup
+  useEffect(() => {
+    if (duration <= 0) return;
+    const timer = setTimeout(handleDismiss, duration);
+    return () => clearTimeout(timer);
+  }, [duration]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Swipe to dismiss
   const handleTouchStart = (e) => {

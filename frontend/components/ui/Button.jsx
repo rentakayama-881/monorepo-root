@@ -12,14 +12,18 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md",
         // Alias: some pages still use `primary`
         primary: "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-md",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-md",
         // Alias: some pages still use `danger`
-        danger: "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-md",
-        outline: "border bg-background hover:bg-accent hover:text-accent-foreground hover:border-accent-foreground/20",
+        danger:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-md",
+        outline:
+          "border bg-background hover:bg-accent hover:text-accent-foreground hover:border-accent-foreground/20",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:shadow-sm",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        gradient: "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:shadow-glow-subtle hover:scale-[1.02] active:scale-[0.98]",
+        gradient:
+          "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:shadow-glow-subtle hover:scale-[1.02] active:scale-[0.98]",
       },
       size: {
         default: "h-9 px-4 py-2",
@@ -55,10 +59,9 @@ export default function Button({
   const content = (
     <>
       {loading && (
-        <span 
-          className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" 
+        <span
+          className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
           aria-hidden="true"
-          aria-label="Loading"
         />
       )}
       {!loading && iconLeft && <span className="inline-flex shrink-0">{iconLeft}</span>}
@@ -68,12 +71,24 @@ export default function Button({
   );
 
   if (href) {
+    if (isDisabled) {
+      return (
+        <span
+          className={cn(
+            buttonVariants({ variant, size }),
+            "opacity-50 pointer-events-none",
+            className
+          )}
+          aria-disabled="true"
+          role="link"
+          {...props}
+        >
+          {content}
+        </span>
+      );
+    }
     return (
-      <Link
-        href={href}
-        className={cn(buttonVariants({ variant, size }), isDisabled && "opacity-50 pointer-events-none", className)}
-        {...props}
-      >
+      <Link href={href} className={cn(buttonVariants({ variant, size }), className)} {...props}>
         {content}
       </Link>
     );

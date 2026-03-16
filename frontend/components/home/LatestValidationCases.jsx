@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getApiBase } from "../../lib/api";
 import { formatIDR } from "@/lib/format";
 import { Clock, ArrowRight, MessageCircle } from "lucide-react";
+import logger from "@/lib/logger";
 
 async function getLatestValidationCases() {
   const API = getApiBase();
@@ -16,6 +17,7 @@ async function getLatestValidationCases() {
       error: false,
     };
   } catch (err) {
+    logger.error("Failed to fetch latest validation cases", err);
     return { cases: [], error: true };
   }
 }

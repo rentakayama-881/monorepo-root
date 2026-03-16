@@ -52,6 +52,7 @@ export default function LoginCredentialsForm({
               data-testid="login-email-input"
               type="email"
               required
+              autoComplete="email"
               value={email}
               onChange={(event) => onEmailChange(event.target.value)}
               className={AUTH_INPUT_CLASS}
@@ -65,6 +66,7 @@ export default function LoginCredentialsForm({
               data-testid="login-password-input"
               type="password"
               required
+              autoComplete="current-password"
               value={password}
               onChange={(event) => onPasswordChange(event.target.value)}
               className={AUTH_INPUT_CLASS}

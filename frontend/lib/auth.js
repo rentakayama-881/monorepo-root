@@ -1,3 +1,5 @@
+import logger from "./logger";
+
 export const TOKEN_KEY = "token";
 export const REFRESH_TOKEN_KEY = "refresh_token";
 export const TOKEN_EXPIRES_KEY = "token_expires";
@@ -48,7 +50,9 @@ export function setToken(token) {
   try {
     localStorage.setItem(TOKEN_KEY, token);
     document.cookie = "has_session=1; path=/; max-age=86400; SameSite=Lax";
-  } catch {}
+  } catch (err) {
+    logger.warn("Failed to store auth token", err);
+  }
   broadcastAuthChange();
 }
 
@@ -59,7 +63,9 @@ export function setRefreshToken(token) {
     // Keep this key cleared to avoid persisting sensitive tokens in JS-readable storage.
     void token;
     localStorage.removeItem(REFRESH_TOKEN_KEY);
-  } catch {}
+  } catch (err) {
+    logger.warn("Failed to clear refresh token", err);
+  }
 }
 
 export function setTokenExpiry(expiresIn) {
@@ -67,7 +73,9 @@ export function setTokenExpiry(expiresIn) {
   try {
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
     localStorage.setItem(TOKEN_EXPIRES_KEY, expiresAt.toISOString());
-  } catch {}
+  } catch (err) {
+    logger.warn("Failed to store token expiry", err);
+  }
 }
 
 export function setTokens(accessToken, refreshToken, expiresIn) {
@@ -85,6 +93,8 @@ export function clearToken() {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(TOKEN_EXPIRES_KEY);
     document.cookie = "has_session=; path=/; max-age=0; SameSite=Lax";
-  } catch {}
+  } catch (err) {
+    logger.warn("Failed to clear auth tokens", err);
+  }
   broadcastAuthChange();
 }

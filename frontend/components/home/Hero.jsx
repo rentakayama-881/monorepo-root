@@ -81,6 +81,7 @@ export default function Hero() {
                   <div key={step.num} className="relative text-center">
                     <div
                       className="mx-auto flex h-12 w-12 items-center justify-center rounded-full rainbow-border bg-card font-mono text-sm font-bold text-foreground rainbow-glow"
+                      role="img"
                       aria-label={`Langkah ${step.num}: ${step.title}`}
                     >
                       {step.num}
