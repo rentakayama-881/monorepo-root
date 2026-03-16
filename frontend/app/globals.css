@@ -933,7 +933,7 @@ p {
   transform: translateY(16px);
 }
 
-.hero-animated.animate-slide-up {
+.hero-animated.animate-hero-in {
   animation: slide-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
