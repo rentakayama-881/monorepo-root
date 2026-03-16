@@ -156,6 +156,12 @@ export default function MarkdownEditor({
     });
   }, [value, onChange]);
 
+  // Track current value in ref to avoid re-running snippet effect on every keystroke
+  const valueRef = useRef(value);
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
   // Insert snippet sent by parent component (for template/preset support)
   useEffect(() => {
     if (!insertSnippetSignal || typeof insertSnippetSignal !== "object") return;
@@ -167,7 +173,7 @@ export default function MarkdownEditor({
 
     lastSnippetIdRef.current = snippetId;
 
-    const currentValue = String(value || "");
+    const currentValue = String(valueRef.current || "");
     const ta = ref.current;
     const start = ta ? ta.selectionStart : currentValue.length;
     const end = ta ? ta.selectionEnd : currentValue.length;
@@ -179,18 +185,18 @@ export default function MarkdownEditor({
     }
 
     if (ta && !disabled) {
-      // Delay scroll to let React re-render and mobile keyboard settle.
-      // On mobile, focus() forces browser scroll — so scroll first, then focus.
-      setTimeout(() => {
-        ta.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => {
-          ta.focus({ preventScroll: true });
-          const pos = start + snippetText.length;
-          ta.setSelectionRange(pos, pos);
-        }, 350);
-      }, 50);
+      // Set cursor position for when user next taps the textarea.
+      // Do NOT call focus() or scrollIntoView() — on mobile these trigger
+      // keyboard open + viewport resize which causes scroll jumps.
+      const pos = start + snippetText.length;
+      try {
+        ta.setSelectionRange(pos, pos);
+      } catch {
+        // setSelectionRange may throw if textarea not focused — that's OK,
+        // cursor will be at end when user taps it next.
+      }
     }
-  }, [disabled, insertSnippetSignal, onChange, onSnippetInserted, value]);
+  }, [disabled, insertSnippetSignal, onChange, onSnippetInserted]);
 
   // Keyboard shortcuts
   useEffect(() => {
