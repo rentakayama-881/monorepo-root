@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   fetchFeatureAuth,
@@ -44,7 +44,7 @@ export default function useDeposit() {
   const totalCharge = parsedAmount + platformFee;
 
   const selectedCrypto = CRYPTO_OPTIONS.find((c) => c.value === payCurrency);
-  const availableNetworks = selectedCrypto?.networks || [];
+  const availableNetworks = useMemo(() => selectedCrypto?.networks || [], [selectedCrypto]);
 
   function resetDepositState() {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -199,6 +199,7 @@ export default function useDeposit() {
       if (pollRef.current) clearInterval(pollRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: loadData references stable refs/setters
   }, []);
 
   useEffect(() => {

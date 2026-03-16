@@ -194,7 +194,7 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
 
     return () => {
       cleanupTelegramWidgetArtifacts({
-        container: widgetContainerRef.current,
+        container,
         sectionRoot,
         botUsername,
       });

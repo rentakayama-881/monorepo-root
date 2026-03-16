@@ -94,7 +94,7 @@ function StatusPill({ status }) {
 }
 
 export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
-  const items = Array.isArray(cases) ? cases : [];
+  const items = useMemo(() => (Array.isArray(cases) ? cases : []), [cases]);
 
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");

@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 export default function Sidebar({ open, onClose }) {
-  const handleClose = () => onClose?.();
+  const handleClose = useCallback(() => onClose?.(), [onClose]);
 
   // Lock body scroll when sidebar is open (like prompts.chat Sheet)
   useEffect(() => {

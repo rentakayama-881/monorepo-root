@@ -49,19 +49,16 @@ export function useRepoWorkflow({ id, router }) {
   const files = Array.isArray(repoTree?.files) ? repoTree.files : [];
   const applicants = Array.isArray(repoTree?.applicants) ? repoTree.applicants : [];
   const assignments = Array.isArray(repoTree?.assignments) ? repoTree.assignments : [];
-  const confidenceScores = Array.isArray(repoTree?.confidence_scores)
-    ? repoTree.confidence_scores
-    : [];
-
   const confidenceByValidator = useMemo(() => {
+    const scores = Array.isArray(repoTree?.confidence_scores) ? repoTree.confidence_scores : [];
     const out = new Map();
-    for (const score of confidenceScores) {
+    for (const score of scores) {
       const key = Number(score?.validator?.id || 0);
       if (!key) continue;
       out.set(key, score);
     }
     return out;
-  }, [confidenceScores]);
+  }, [repoTree?.confidence_scores]);
 
   const canAttach = isOwner || isAssigned;
   const actionLocked = busy || uploadingDocument;

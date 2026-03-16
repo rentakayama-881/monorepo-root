@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
@@ -74,7 +74,7 @@ export default function useWithdraw() {
   const totalDeduction = parsedAmount + fee;
 
   const selectedCrypto = CRYPTO_CURRENCIES.find((c) => c.value === cryptoCurrency);
-  const availableNetworks = selectedCrypto?.networks || [];
+  const availableNetworks = useMemo(() => selectedCrypto?.networks || [], [selectedCrypto]);
 
   useEffect(() => {
     const token = getToken();
@@ -83,11 +83,12 @@ export default function useWithdraw() {
       return;
     }
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: loadData references stable setters
   }, []);
 
   useEffect(() => {
     setNetwork(availableNetworks.length === 1 ? availableNetworks[0] : "");
-  }, [cryptoCurrency]);
+  }, [availableNetworks]);
 
   async function loadData() {
     try {

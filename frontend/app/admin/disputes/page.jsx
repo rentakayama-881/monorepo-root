@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import logger from "@/lib/logger";
 import { getAdminToken } from "@/lib/adminAuth";
@@ -34,7 +34,7 @@ export default function AdminDisputesPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("Open");
 
-  const loadDisputes = async () => {
+  const loadDisputes = useCallback(async () => {
     setLoading(true);
     try {
       const token = getAdminToken();
@@ -61,11 +61,11 @@ export default function AdminDisputesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
 
   useEffect(() => {
     loadDisputes();
-  }, [filter]);
+  }, [loadDisputes]);
 
   // Format date
   const formatDate = (dateStr) => {

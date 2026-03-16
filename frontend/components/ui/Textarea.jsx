@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useId } from "react";
+import React, { useCallback, useEffect, useRef, useState, useId } from "react";
 import PropTypes from "prop-types";
 import clsx from "clsx";
 
@@ -43,7 +43,7 @@ export default function Textarea({
   const errorId = `${textareaId}-error`;
   const hintId = `${textareaId}-hint`;
   const textareaRef = useRef(null);
-  
+
   const [internalValue, setInternalValue] = useState(defaultValue || "");
   const value = controlledValue !== undefined ? controlledValue : internalValue;
 
@@ -61,36 +61,34 @@ export default function Textarea({
     }
   };
 
-  const adjustHeight = () => {
+  const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
-    // Reset height to auto to get the correct scrollHeight
     textarea.style.height = "auto";
-    
+
     const computedStyle = window.getComputedStyle(textarea);
     const lineHeightValue = computedStyle.lineHeight;
-    
-    // Handle 'normal' or other non-numeric lineHeight values
-    const lineHeight = lineHeightValue === 'normal' 
-      ? parseInt(computedStyle.fontSize) * 1.2 
-      : parseFloat(lineHeightValue);
-    
-    // Ensure we have a valid number
+
+    const lineHeight =
+      lineHeightValue === "normal"
+        ? parseInt(computedStyle.fontSize) * 1.2
+        : parseFloat(lineHeightValue);
+
     if (isNaN(lineHeight)) return;
-    
-    const minHeight = minRows * lineHeight;
-    const maxHeight = maxRows * lineHeight;
-    
-    const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight);
+
+    const minH = minRows * lineHeight;
+    const maxH = maxRows * lineHeight;
+
+    const newHeight = Math.min(Math.max(textarea.scrollHeight, minH), maxH);
     textarea.style.height = `${newHeight}px`;
-  };
+  }, [minRows, maxRows]);
 
   useEffect(() => {
     if (autoResize) {
       adjustHeight();
     }
-  }, [value, autoResize]);
+  }, [value, autoResize, adjustHeight]);
 
   const textareaStyles = clsx(
     "w-full rounded-md border bg-card px-3 py-2 text-sm text-foreground transition-all duration-200",
@@ -101,9 +99,11 @@ export default function Textarea({
     error
       ? "border-destructive focus-visible:outline-destructive focus-visible:ring-destructive/20"
       : success
-      ? "border-success focus-visible:outline-success focus-visible:ring-success/20"
-      : "border-border",
-    !error && !success && "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary focus-visible:shadow-[0_0_0_3px_var(--ring),0_0_15px_-3px_var(--primary)]",
+        ? "border-success focus-visible:outline-success focus-visible:ring-success/20"
+        : "border-border",
+    !error &&
+      !success &&
+      "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary focus-visible:shadow-[0_0_0_3px_var(--ring),0_0_15px_-3px_var(--primary)]",
     error && hasInteracted && "animate-shake",
     className
   );
@@ -117,12 +117,13 @@ export default function Textarea({
   return (
     <div className="mb-3">
       {label && (
-        <label
-          htmlFor={textareaId}
-          className="mb-1 block text-sm font-medium text-foreground"
-        >
+        <label htmlFor={textareaId} className="mb-1 block text-sm font-medium text-foreground">
           {label}
-          {required && <span className="text-destructive ml-1" aria-hidden="true">*</span>}
+          {required && (
+            <span className="text-destructive ml-1" aria-hidden="true">
+              *
+            </span>
+          )}
         </label>
       )}
 
@@ -146,7 +147,12 @@ export default function Textarea({
         {success && (
           <div className="absolute right-3 top-3 text-success pointer-events-none">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
         )}
@@ -167,12 +173,15 @@ export default function Textarea({
           )}
         </div>
         {showCharCounter && (
-          <p className={clsx(
-            "text-xs shrink-0 transition-colors",
-            isNearLimit ? "text-warning" : "text-muted-foreground",
-            charCount === maxLength && "text-destructive font-medium"
-          )}>
-            {charCount}{maxLength ? `/${maxLength}` : ""}
+          <p
+            className={clsx(
+              "text-xs shrink-0 transition-colors",
+              isNearLimit ? "text-warning" : "text-muted-foreground",
+              charCount === maxLength && "text-destructive font-medium"
+            )}
+          >
+            {charCount}
+            {maxLength ? `/${maxLength}` : ""}
           </p>
         )}
       </div>
