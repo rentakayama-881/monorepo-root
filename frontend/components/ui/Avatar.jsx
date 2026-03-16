@@ -1,8 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
 import { useState } from "react";
+
+const PIXEL_SIZES = { xxs: 20, xs: 24, sm: 32, md: 40, lg: 64, xl: 80, "2xl": 256 };
 
 function FallbackUserIcon({ className = "" }) {
   return (
@@ -84,9 +87,11 @@ export default function Avatar({
             className={cn("absolute inset-0 rounded-full bg-secondary animate-pulse", sizeClass)}
           />
         )}
-        <img
+        <Image
           src={avatarUrl}
           alt={name || "Avatar"}
+          width={PIXEL_SIZES[size] || 40}
+          height={PIXEL_SIZES[size] || 40}
           className={cn(
             "aspect-square rounded-full border bg-secondary object-cover",
             sizeClass,
@@ -98,6 +103,7 @@ export default function Avatar({
             setImageError(true);
             setIsLoading(false);
           }}
+          unoptimized
         />
       </div>
     ) : (

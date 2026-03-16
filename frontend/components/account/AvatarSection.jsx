@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -21,10 +22,13 @@ export default function AvatarSection({
       <div className="mt-3 flex items-start gap-4">
         <div className="shrink-0">
           {avatarPreview ? (
-            <img
+            <Image
               src={avatarPreview}
               alt="Preview"
+              width={64}
+              height={64}
               className="h-16 w-16 rounded-full border border-border bg-muted/50 object-cover"
+              unoptimized
             />
           ) : (
             <Avatar src={avatarUrl} name={displayName} size="lg" />

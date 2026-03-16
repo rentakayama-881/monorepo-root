@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { Copy, Check, AlertTriangle, ShieldCheck, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -79,10 +80,13 @@ export default function PaymentWaiting({
       {depositData.qrCode && (
         <section className="flex justify-center">
           <div className="rounded-2xl bg-white p-4 shadow-md ring-1 ring-border/50">
-            <img
+            <Image
               src={depositData.qrCode}
               alt="QR Code pembayaran"
+              width={192}
+              height={192}
               className="h-44 w-44 sm:h-48 sm:w-48"
+              unoptimized
             />
           </div>
         </section>

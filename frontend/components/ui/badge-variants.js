@@ -3,6 +3,7 @@
  */
 
 import clsx from "clsx";
+import Image from "next/image";
 
 // Badge icon components (outline style, GitHub-like)
 export const BadgeIcons = {
@@ -172,13 +173,15 @@ export function hexToRgba(hex, alpha) {
 export function renderBadgeIcon(config, iconClassName) {
   if (config.iconUrl) {
     return (
-      <img
+      <Image
         src={config.iconUrl}
         alt=""
         aria-hidden="true"
+        width={16}
+        height={16}
         className={clsx(iconClassName, "shrink-0 object-contain")}
         loading="lazy"
-        decoding="async"
+        unoptimized
       />
     );
   }

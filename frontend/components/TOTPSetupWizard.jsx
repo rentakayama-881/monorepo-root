@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Button from "./ui/Button";
 import Input from "./ui/Input";
 
@@ -20,12 +21,13 @@ export default function TOTPSetupWizard({
           1. Scan QR code berikut dengan aplikasi authenticator:
         </p>
         <div className="flex justify-center mb-4">
-          <img
+          <Image
             src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setupData.qr_code_url)}`}
             alt="QR code pengaturan TOTP"
             className="rounded-[var(--radius)] border"
             width={200}
             height={200}
+            unoptimized
           />
         </div>
         <p className="text-sm text-muted-foreground mb-2">Or enter this code manually:</p>

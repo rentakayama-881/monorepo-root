@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 
@@ -34,10 +35,13 @@ export default function UserListTable({
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center overflow-hidden flex-shrink-0">
                   {user.avatar_url ? (
-                    <img
+                    <Image
                       src={user.avatar_url}
                       alt={user.username || user.email || "User"}
+                      width={48}
+                      height={48}
                       className="w-full h-full object-cover"
+                      unoptimized
                     />
                   ) : (
                     <span className="text-xl text-muted-foreground">
@@ -60,7 +64,14 @@ export default function UserListTable({
                         }}
                       >
                         {user.primary_badge.icon_url && (
-                          <img src={user.primary_badge.icon_url} alt="" className="w-3 h-3" />
+                          <Image
+                            src={user.primary_badge.icon_url}
+                            alt=""
+                            width={12}
+                            height={12}
+                            className="w-3 h-3"
+                            unoptimized
+                          />
                         )}
                         {user.primary_badge.name}
                       </span>
@@ -76,7 +87,14 @@ export default function UserListTable({
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-muted/50 text-muted-foreground"
                         >
                           {badge.icon_url && (
-                            <img src={badge.icon_url} alt="" className="w-3 h-3" />
+                            <Image
+                              src={badge.icon_url}
+                              alt=""
+                              width={12}
+                              height={12}
+                              className="w-3 h-3"
+                              unoptimized
+                            />
                           )}
                           {badge.name}
                           <button

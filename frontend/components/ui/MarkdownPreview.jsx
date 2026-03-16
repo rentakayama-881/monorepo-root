@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -219,15 +220,21 @@ const markdownComponents = {
   td: ({ children }) => <td className="px-4 py-2 text-foreground">{children}</td>,
 
   // === MEDIA ===
-   
-  img: ({ src, alt }) => (
-    <img
-      src={src}
-      alt={alt || ""}
-      className="markdown-image max-w-full h-auto rounded-lg my-4 border border-border hover:shadow-lg transition-shadow"
-      loading="lazy"
-    />
-  ),
+
+  img: ({ src, alt }) =>
+    src ? (
+      <Image
+        src={src}
+        alt={alt || ""}
+        width={0}
+        height={0}
+        sizes="100vw"
+        style={{ width: "100%", height: "auto" }}
+        className="markdown-image rounded-lg my-4 border border-border hover:shadow-lg transition-shadow"
+        loading="lazy"
+        unoptimized
+      />
+    ) : null,
 
   // === DIVIDERS ===
   hr: () => <hr className="my-6 border-t border-border" />,
