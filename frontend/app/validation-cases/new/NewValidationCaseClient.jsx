@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import NativeSelect from "@/components/ui/NativeSelect";
@@ -22,6 +23,7 @@ const MarkdownPreview = dynamic(() => import("@/components/ui/MarkdownPreview"),
 });
 
 export default function NewValidationCaseClient() {
+  const editorRef = useRef(null);
   const {
     loadingCaseType,
     form,
@@ -165,26 +167,26 @@ export default function NewValidationCaseClient() {
       </section>
 
       <section className="rounded-[var(--radius)] border border-border bg-card shadow-sm">
-        <div className="border-b border-border px-4 py-3">
+        <div className="border-b border-border px-4 py-3 md:px-6">
           <div className="text-sm font-semibold text-foreground">Case Setup</div>
           <div className="mt-0.5 text-xs text-muted-foreground">
-            Tulis README case, set sensitivity + bounty, upload file yang relevan, lalu create. Case
-            langsung ready.
+            Tulis README case, set sensitivity + bounty, upload file yang relevan, lalu create.
           </div>
         </div>
 
-        <div className="space-y-6 md:space-y-8 px-4 py-5 md:px-6 md:py-6">
-          <div id="case-setup" className="space-y-3 md:space-y-4">
+        <div className="divide-y divide-border/50">
+          {/* ── Case Setup Fields ── */}
+          <div id="case-setup" className="px-4 py-5 md:px-6 md:py-6 space-y-3 md:space-y-4">
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Case Setup (Wajib)
             </div>
-            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
               <div className="md:col-span-2">
                 <label className="text-xs font-semibold text-muted-foreground">Title</label>
                 <input
                   value={form.title}
                   onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                  className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                  className="mt-1 w-full rounded-[var(--radius)] border border-input bg-background px-3 py-2 text-sm text-foreground"
                   placeholder="Contoh: Validasi draft skripsi Bab 3 hasil AI"
                   disabled={formDisabled}
                 />
@@ -214,7 +216,7 @@ export default function NewValidationCaseClient() {
                     const next = sanitizeNumericInput(e.target.value);
                     setForm((prev) => ({ ...prev, bounty_amount: next }));
                   }}
-                  className="mt-1 w-full rounded-[var(--radius)] border border-input bg-card px-3 py-2 text-sm text-foreground"
+                  className="mt-1 w-full rounded-[var(--radius)] border border-input bg-background px-3 py-2 text-sm text-foreground"
                   inputMode="numeric"
                   placeholder="10000"
                   maxLength={15}
@@ -228,17 +230,22 @@ export default function NewValidationCaseClient() {
             </div>
           </div>
 
-          <ReadmeTemplateGrid
-            activeReadmeTemplateId={activeReadmeTemplateId}
-            formDisabled={formDisabled}
-            onInsertTemplate={insertReadmeTemplate}
-          />
+          {/* ── README Templates ── */}
+          <div className="px-4 py-5 md:px-6 md:py-6">
+            <ReadmeTemplateGrid
+              activeReadmeTemplateId={activeReadmeTemplateId}
+              formDisabled={formDisabled}
+              onInsertTemplate={insertReadmeTemplate}
+              editorRef={editorRef}
+            />
+          </div>
 
-          <div>
+          {/* ── Case Record Editor ── */}
+          <div id="case-record-editor" ref={editorRef} className="px-4 py-5 md:px-6 md:py-6">
             <label className="text-xs font-semibold text-muted-foreground">
               Case Record (Free Text)
             </label>
-            <div className="mt-1">
+            <div className="mt-2">
               <MarkdownEditor
                 value={form.case_record_text}
                 onChange={(next) => setForm((prev) => ({ ...prev, case_record_text: next }))}
@@ -250,36 +257,42 @@ export default function NewValidationCaseClient() {
                 onSnippetInserted={handleSnippetInserted}
               />
             </div>
-            <div className="mt-2 text-[11px] text-muted-foreground">
-              Gunakan markdown secukupnya. Jangan masukkan kontak langsung (Telegram/WhatsApp) di
-              Case Record.
-            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Gunakan markdown secukupnya. Jangan masukkan kontak langsung di Case Record.
+            </p>
           </div>
 
-          <WorkspaceUploadSection
-            workspaceBootstrapFiles={workspaceBootstrapFiles}
-            workspaceUploadDraft={workspaceUploadDraft}
-            setWorkspaceUploadDraft={setWorkspaceUploadDraft}
-            workspaceFileInputKey={workspaceFileInputKey}
-            formDisabled={formDisabled}
-            processStatusText={processStatusText}
-            onFilePicked={onWorkspaceFilePicked}
-            onAddFile={addWorkspaceBootstrapFile}
-            onRemoveFile={removeWorkspaceBootstrapFile}
-          />
+          {/* ── Workspace Files ── */}
+          <div className="px-4 py-5 md:px-6 md:py-6">
+            <WorkspaceUploadSection
+              workspaceBootstrapFiles={workspaceBootstrapFiles}
+              workspaceUploadDraft={workspaceUploadDraft}
+              setWorkspaceUploadDraft={setWorkspaceUploadDraft}
+              workspaceFileInputKey={workspaceFileInputKey}
+              formDisabled={formDisabled}
+              processStatusText={processStatusText}
+              onFilePicked={onWorkspaceFilePicked}
+              onAddFile={addWorkspaceBootstrapFile}
+              onRemoveFile={removeWorkspaceBootstrapFile}
+            />
+          </div>
 
-          <QualityGateSection
-            checklist={form.checklist}
-            formDisabled={formDisabled}
-            onSetChecklist={setChecklist}
-            availableTags={availableTags}
-            selectedTags={selectedTags}
-            onTagsChange={setSelectedTags}
-            tagsAvailable={tagsAvailable}
-            tagsLoading={tagsLoading}
-          />
+          {/* ── Quality Gate ── */}
+          <div className="px-4 py-5 md:px-6 md:py-6">
+            <QualityGateSection
+              checklist={form.checklist}
+              formDisabled={formDisabled}
+              onSetChecklist={setChecklist}
+              availableTags={availableTags}
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              tagsAvailable={tagsAvailable}
+              tagsLoading={tagsLoading}
+            />
+          </div>
 
-          <div className="flex items-center justify-end gap-2">
+          {/* ── Actions ── */}
+          <div className="flex items-center justify-end gap-2 px-4 py-4 md:px-6">
             <Button href="/validation-cases" prefetch={false} variant="secondary" size="sm">
               Kembali
             </Button>

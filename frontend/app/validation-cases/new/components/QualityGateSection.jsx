@@ -13,20 +13,20 @@ export default function QualityGateSection({
   tagsLoading,
 }) {
   return (
-    <>
+    <div className="space-y-5">
       <div id="quality-gate">
-        <label className="text-xs font-semibold text-muted-foreground">
+        <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Checklist Protokol (Wajib)
-        </label>
-        <div className="mt-2 space-y-2 rounded-[var(--radius)] bg-secondary/10 p-2.5 md:p-3">
+        </div>
+        <div className="mt-3 space-y-2.5">
           {checklistItems.map((item) => (
-            <label key={item.key} className="flex items-start gap-2 text-sm text-foreground">
+            <label key={item.key} className="flex items-start gap-2.5 text-sm text-foreground">
               <input
                 type="checkbox"
                 checked={Boolean(checklist?.[item.key])}
                 onChange={(e) => onSetChecklist(item.key, e.target.checked)}
                 disabled={formDisabled}
-                className="mt-0.5"
+                className="mt-0.5 size-4 rounded border-border"
               />
               <span>{item.label}</span>
             </label>
@@ -34,27 +34,31 @@ export default function QualityGateSection({
         </div>
       </div>
 
-      <div className="mt-4 relative z-[120]">
-        <label className="text-xs font-semibold text-muted-foreground">Tags (Wajib)</label>
+      <div className="relative z-[120]">
+        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          Tags (Wajib)
+        </label>
         {tagsAvailable ? (
-          <TagSelector
-            availableTags={availableTags}
-            selectedTags={selectedTags}
-            onTagsChange={onTagsChange}
-            maxTags={4}
-            placeholder="Pilih minimal 2 tags..."
-            enableSearch={true}
-            singlePerGroup={true}
-            disabled={formDisabled}
-          />
+          <div className="mt-2">
+            <TagSelector
+              availableTags={availableTags}
+              selectedTags={selectedTags}
+              onTagsChange={onTagsChange}
+              maxTags={4}
+              placeholder="Pilih minimal 2 tags..."
+              enableSearch={true}
+              singlePerGroup={true}
+              disabled={formDisabled}
+            />
+          </div>
         ) : tagsLoading ? (
-          <div className="mt-1">
+          <div className="mt-2">
             <Skeleton className="h-[120px] w-full" />
           </div>
         ) : (
-          <div className="mt-1 text-sm text-muted-foreground">Tags tidak tersedia.</div>
+          <div className="mt-2 text-sm text-muted-foreground">Tags tidak tersedia.</div>
         )}
       </div>
-    </>
+    </div>
   );
 }

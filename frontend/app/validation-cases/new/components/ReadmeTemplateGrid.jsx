@@ -1,72 +1,98 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { VALIDATION_CASE_README_TEMPLATES } from "@/lib/validationCaseReadmeTemplates";
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+const COLLAPSED_COUNT = 3;
 
 export default function ReadmeTemplateGrid({
   activeReadmeTemplateId,
   formDisabled,
   onInsertTemplate,
+  editorRef,
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const visibleTemplates = expanded
+    ? VALIDATION_CASE_README_TEMPLATES
+    : VALIDATION_CASE_README_TEMPLATES.slice(0, COLLAPSED_COUNT);
+  const hasMore = VALIDATION_CASE_README_TEMPLATES.length > COLLAPSED_COUNT;
+
+  function handleInsert(template) {
+    onInsertTemplate(template);
+    // Scroll ke editor setelah insert
+    requestAnimationFrame(() => {
+      const target = editorRef?.current ?? document.getElementById("case-record-editor");
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+  }
+
   return (
     <div id="readme-design">
       <label className="text-xs font-semibold text-muted-foreground">README Design Templates</label>
-      <div className="mt-2 rounded-[var(--radius)] border border-border/60 gradient-subtle p-3 md:p-4">
-        <div className="text-sm font-semibold text-foreground">GitHub-style template siap edit</div>
-        <div className="mt-1 text-xs text-muted-foreground">
-          Pilih template visual, lalu klik insert. Isi tetap custom dari kamu sendiri. Tag protocol
-          tetap wajib.
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-2 md:gap-3 xl:grid-cols-3">
-          {VALIDATION_CASE_README_TEMPLATES.map((template) => {
-            const selected = activeReadmeTemplateId === template.id;
-            return (
-              <article
-                key={template.id}
+      <p className="mt-1 text-xs text-muted-foreground">
+        Pilih template, klik insert. Isi tetap custom dari kamu.
+      </p>
+      <div className="mt-2 space-y-1.5">
+        {visibleTemplates.map((template) => {
+          const selected = activeReadmeTemplateId === template.id;
+          return (
+            <div
+              key={template.id}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 transition",
+                "border border-transparent hover:bg-accent/50",
+                selected && "border-primary/30 bg-primary/5"
+              )}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-foreground">{template.name}</span>
+                  <span className="shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    {template.category}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                  {template.description}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleInsert(template)}
+                disabled={formDisabled}
                 className={cn(
-                  "rounded-[var(--radius)] border p-2.5 md:p-3 transition",
-                  template.palette?.tplClass,
-                  template.palette?.cardClass || "border-border bg-card",
-                  selected && "ring-2 ring-primary/60"
+                  "shrink-0 rounded-md px-3 py-1 text-xs font-medium transition",
+                  selected
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  "disabled:cursor-not-allowed disabled:opacity-60"
                 )}
               >
-                <div className="flex flex-wrap gap-1.5">
-                  {Array.isArray(template.previewBadges)
-                    ? template.previewBadges.map((badgeLabel) => (
-                        <span
-                          key={`${template.id}-${badgeLabel}`}
-                          className={cn(
-                            "rounded-sm border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
-                            template.palette?.badgeClass ||
-                              "border-border bg-secondary/40 text-foreground"
-                          )}
-                        >
-                          {badgeLabel}
-                        </span>
-                      ))
-                    : null}
-                </div>
-                <div className="mt-2 text-sm font-semibold text-foreground">{template.name}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{template.description}</div>
-                <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                  {template.category}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onInsertTemplate(template)}
-                  disabled={formDisabled}
-                  className={cn(
-                    "mt-3 inline-flex w-full items-center justify-center rounded-[var(--radius)] border px-3 py-1.5 text-xs font-semibold transition",
-                    template.palette?.buttonClass ||
-                      "border-border text-foreground hover:bg-secondary",
-                    "disabled:cursor-not-allowed disabled:opacity-60"
-                  )}
-                >
-                  Insert Template
-                </button>
-              </article>
-            );
-          })}
-        </div>
+                {selected ? "Inserted ✓" : "Insert"}
+              </button>
+            </div>
+          );
+        })}
       </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1 flex w-full items-center justify-center gap-1 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition"
+        >
+          {expanded ? (
+            <>
+              Sembunyikan <ChevronUp className="size-3.5" />
+            </>
+          ) : (
+            <>
+              {VALIDATION_CASE_README_TEMPLATES.length - COLLAPSED_COUNT} template lainnya{" "}
+              <ChevronDown className="size-3.5" />
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
