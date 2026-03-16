@@ -37,12 +37,6 @@ export const VALIDATION_CASE_README_TEMPLATES = [
     category: "Academic",
     description:
       "Template review skripsi/tesis dengan fokus metodologi, sitasi, dan kesiapan submit.",
-    palette: {
-      tplClass: "tpl-academic",
-      cardClass: "tpl-card",
-      badgeClass: "tpl-badge",
-      buttonClass: "tpl-btn",
-    },
     previewBadges: ["Academic", "Methodology", "Citation"],
     snippet: `# [Judul Case Akademik]
 
@@ -69,12 +63,6 @@ ${readmeTemplateCoreSections}
     category: "Business",
     description:
       "Untuk deck presentasi klien, pitch, atau proposal bisnis dengan tolok ukur eksekutif.",
-    palette: {
-      tplClass: "tpl-business",
-      cardClass: "tpl-card",
-      badgeClass: "tpl-badge",
-      buttonClass: "tpl-btn",
-    },
     previewBadges: ["Business", "Pitch", "Executive"],
     snippet: `# [Judul Case Business Deck]
 
@@ -102,12 +90,6 @@ ${readmeTemplateCoreSections}
     category: "Product",
     description:
       "Template untuk PRD/spec produk agar requirement, flow, dan acceptance test lebih tajam.",
-    palette: {
-      tplClass: "tpl-product",
-      cardClass: "tpl-card",
-      badgeClass: "tpl-badge",
-      buttonClass: "tpl-btn",
-    },
     previewBadges: ["Product", "PRD", "UX Flow"],
     snippet: `# [Judul Case Product Spec]
 
@@ -134,12 +116,6 @@ ${readmeTemplateCoreSections}
     name: "Data Analysis QC",
     category: "Data",
     description: "Template quality check untuk analisis data, dashboard, atau model insight.",
-    palette: {
-      tplClass: "tpl-data",
-      cardClass: "tpl-card",
-      badgeClass: "tpl-badge",
-      buttonClass: "tpl-btn",
-    },
     previewBadges: ["Data", "QA", "Insights"],
     snippet: `# [Judul Case Data Analysis]
 
@@ -166,12 +142,6 @@ ${readmeTemplateCoreSections}
     name: "Design Critique Studio",
     category: "Design",
     description: "Kerangka review visual/UI untuk website, app screen, atau brand asset.",
-    palette: {
-      tplClass: "tpl-design",
-      cardClass: "tpl-card",
-      badgeClass: "tpl-badge",
-      buttonClass: "tpl-btn",
-    },
     previewBadges: ["Design", "UX", "Visual QA"],
     snippet: `# [Judul Case Design Review]
 
@@ -199,12 +169,6 @@ ${readmeTemplateCoreSections}
     category: "Technical",
     description:
       "Template audit teknis/code review agar validator fokus ke correctness dan risiko produksi.",
-    palette: {
-      tplClass: "tpl-engineering",
-      cardClass: "tpl-card",
-      badgeClass: "tpl-badge",
-      buttonClass: "tpl-btn",
-    },
     previewBadges: ["Technical", "Audit", "Reliability"],
     snippet: `# [Judul Case Engineering Audit]
 
@@ -231,12 +195,6 @@ ${readmeTemplateCoreSections}
     name: "Marketing Campaign Proof",
     category: "Marketing",
     description: "Template untuk cek materi campaign agar messaging konsisten dan siap publish.",
-    palette: {
-      tplClass: "tpl-marketing",
-      cardClass: "tpl-card",
-      badgeClass: "tpl-badge",
-      buttonClass: "tpl-btn",
-    },
     previewBadges: ["Marketing", "Campaign", "Messaging"],
     snippet: `# [Judul Case Marketing Campaign]
 
@@ -264,12 +222,6 @@ ${readmeTemplateCoreSections}
     category: "Compliance",
     description:
       "Template review dokumen yang sensitif terhadap aturan, disclaimer, dan jejak persetujuan.",
-    palette: {
-      tplClass: "tpl-compliance",
-      cardClass: "tpl-card",
-      badgeClass: "tpl-badge",
-      buttonClass: "tpl-btn",
-    },
     previewBadges: ["Compliance", "Legal", "Risk Control"],
     snippet: `# [Judul Case Compliance Review]
 
