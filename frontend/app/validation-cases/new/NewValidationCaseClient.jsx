@@ -166,149 +166,141 @@ export default function NewValidationCaseClient() {
         </div>
       </section>
 
-      <section className="rounded-[var(--radius)] border border-border bg-card shadow-sm">
-        <div className="border-b border-border px-4 py-3 md:px-6">
-          <div className="text-sm font-semibold text-foreground">Case Setup</div>
-          <div className="mt-0.5 text-xs text-muted-foreground">
-            Tulis README case, set sensitivity + bounty, upload file yang relevan, lalu create.
-          </div>
-        </div>
-
-        <div className="divide-y divide-border/50">
-          {/* ── Case Setup Fields ── */}
-          <div id="case-setup" className="px-4 py-5 md:px-6 md:py-6 space-y-3 md:space-y-4">
+      <div className="space-y-8 md:space-y-10">
+        {/* ── Case Setup Fields ── */}
+        <section id="case-setup" className="space-y-3 md:space-y-4">
+          <div>
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Case Setup (Wajib)
             </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
-              <div className="md:col-span-2">
-                <label className="text-xs font-semibold text-muted-foreground">Title</label>
-                <input
-                  value={form.title}
-                  onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                  className="mt-1 w-full rounded-[var(--radius)] border border-input bg-background px-3 py-2 text-sm text-foreground"
-                  placeholder="Contoh: Validasi draft skripsi Bab 3 hasil AI"
-                  disabled={formDisabled}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground">
-                  Tingkat kerahasiaan
-                </label>
-                <NativeSelect
-                  value={form.sensitivity || "S1"}
-                  onChange={(e) => setForm((prev) => ({ ...prev, sensitivity: e.target.value }))}
-                  options={[
-                    { value: "S0", label: "S0 - Public" },
-                    { value: "S1", label: "S1 - Restricted" },
-                    { value: "S2", label: "S2 - Confidential" },
-                    { value: "S3", label: "S3 - Critical" },
-                  ]}
-                  className="mt-1"
-                  disabled={formDisabled}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground">Bounty (IDR)</label>
-                <input
-                  value={form.bounty_amount}
-                  onChange={(e) => {
-                    const next = sanitizeNumericInput(e.target.value);
-                    setForm((prev) => ({ ...prev, bounty_amount: next }));
-                  }}
-                  className="mt-1 w-full rounded-[var(--radius)] border border-input bg-background px-3 py-2 text-sm text-foreground"
-                  inputMode="numeric"
-                  placeholder="10000"
-                  maxLength={15}
-                  disabled={formDisabled}
-                />
-                <div className="mt-1 text-[11px] text-muted-foreground">
-                  Minimal Rp 10.000. Estimasi saat ini:{" "}
-                  {form.bounty_amount ? `Rp ${formatIDR(form.bounty_amount)}` : "-"}.
-                </div>
-              </div>
-            </div>
           </div>
-
-          {/* ── README Templates ── */}
-          <div className="px-4 py-5 md:px-6 md:py-6">
-            <ReadmeTemplateGrid
-              activeReadmeTemplateId={activeReadmeTemplateId}
-              formDisabled={formDisabled}
-              onInsertTemplate={insertReadmeTemplate}
-              editorRef={editorRef}
-            />
-          </div>
-
-          {/* ── Case Record Editor ── */}
-          <div id="case-record-editor" ref={editorRef} className="px-4 py-5 md:px-6 md:py-6">
-            <label className="text-xs font-semibold text-muted-foreground">
-              Case Record (Free Text)
-            </label>
-            <div className="mt-2">
-              <MarkdownEditor
-                value={form.case_record_text}
-                onChange={(next) => setForm((prev) => ({ ...prev, case_record_text: next }))}
-                placeholder="Gunakan Markdown: poin, checklist, tabel kecil, dan acceptance criteria."
-                minHeight="280px"
-                preview={MarkdownPreview}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+            <div className="md:col-span-2">
+              <label className="text-xs font-semibold text-muted-foreground">Title</label>
+              <input
+                value={form.title}
+                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                className="mt-1 w-full rounded-[var(--radius)] border border-input bg-background px-3 py-2 text-sm text-foreground"
+                placeholder="Contoh: Validasi draft skripsi Bab 3 hasil AI"
                 disabled={formDisabled}
-                insertSnippetSignal={insertSnippetSignal}
-                onSnippetInserted={handleSnippetInserted}
               />
             </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Gunakan markdown secukupnya. Jangan masukkan kontak langsung di Case Record.
-            </p>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground">
+                Tingkat kerahasiaan
+              </label>
+              <NativeSelect
+                value={form.sensitivity || "S1"}
+                onChange={(e) => setForm((prev) => ({ ...prev, sensitivity: e.target.value }))}
+                options={[
+                  { value: "S0", label: "S0 - Public" },
+                  { value: "S1", label: "S1 - Restricted" },
+                  { value: "S2", label: "S2 - Confidential" },
+                  { value: "S3", label: "S3 - Critical" },
+                ]}
+                className="mt-1"
+                disabled={formDisabled}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground">Bounty (IDR)</label>
+              <input
+                value={form.bounty_amount}
+                onChange={(e) => {
+                  const next = sanitizeNumericInput(e.target.value);
+                  setForm((prev) => ({ ...prev, bounty_amount: next }));
+                }}
+                className="mt-1 w-full rounded-[var(--radius)] border border-input bg-background px-3 py-2 text-sm text-foreground"
+                inputMode="numeric"
+                placeholder="10000"
+                maxLength={15}
+                disabled={formDisabled}
+              />
+              <div className="mt-1 text-[11px] text-muted-foreground">
+                Minimal Rp 10.000. Estimasi saat ini:{" "}
+                {form.bounty_amount ? `Rp ${formatIDR(form.bounty_amount)}` : "-"}.
+              </div>
+            </div>
           </div>
+        </section>
 
-          {/* ── Workspace Files ── */}
-          <div className="px-4 py-5 md:px-6 md:py-6">
-            <WorkspaceUploadSection
-              workspaceBootstrapFiles={workspaceBootstrapFiles}
-              workspaceUploadDraft={workspaceUploadDraft}
-              setWorkspaceUploadDraft={setWorkspaceUploadDraft}
-              workspaceFileInputKey={workspaceFileInputKey}
-              formDisabled={formDisabled}
-              processStatusText={processStatusText}
-              onFilePicked={onWorkspaceFilePicked}
-              onAddFile={addWorkspaceBootstrapFile}
-              onRemoveFile={removeWorkspaceBootstrapFile}
-            />
-          </div>
+        {/* ── README Templates ── */}
+        <section>
+          <ReadmeTemplateGrid
+            activeReadmeTemplateId={activeReadmeTemplateId}
+            formDisabled={formDisabled}
+            onInsertTemplate={insertReadmeTemplate}
+          />
+        </section>
 
-          {/* ── Quality Gate ── */}
-          <div className="px-4 py-5 md:px-6 md:py-6">
-            <QualityGateSection
-              checklist={form.checklist}
-              formDisabled={formDisabled}
-              onSetChecklist={setChecklist}
-              availableTags={availableTags}
-              selectedTags={selectedTags}
-              onTagsChange={setSelectedTags}
-              tagsAvailable={tagsAvailable}
-              tagsLoading={tagsLoading}
-            />
-          </div>
-
-          {/* ── Actions ── */}
-          <div className="flex items-center justify-end gap-2 px-4 py-4 md:px-6">
-            <Button href="/validation-cases" prefetch={false} variant="secondary" size="sm">
-              Kembali
-            </Button>
-            <Button
-              onClick={submit}
+        {/* ── Case Record Editor ── */}
+        <section id="case-record-editor" ref={editorRef}>
+          <label className="text-xs font-semibold text-muted-foreground">
+            Case Record (Free Text)
+          </label>
+          <div className="mt-2">
+            <MarkdownEditor
+              value={form.case_record_text}
+              onChange={(next) => setForm((prev) => ({ ...prev, case_record_text: next }))}
+              placeholder="Gunakan Markdown: poin, checklist, tabel kecil, dan acceptance criteria."
+              minHeight="280px"
+              preview={MarkdownPreview}
               disabled={formDisabled}
-              loading={submitting}
-              size="sm"
-              className="min-w-[12.5rem]"
-              type="button"
-            >
-              {submitting ? "Submitting..." : "Create Validation Case"}
-            </Button>
+              insertSnippetSignal={insertSnippetSignal}
+              onSnippetInserted={handleSnippetInserted}
+            />
           </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Gunakan markdown secukupnya. Jangan masukkan kontak langsung di Case Record.
+          </p>
+        </section>
+
+        {/* ── Workspace Files ── */}
+        <section>
+          <WorkspaceUploadSection
+            workspaceBootstrapFiles={workspaceBootstrapFiles}
+            workspaceUploadDraft={workspaceUploadDraft}
+            setWorkspaceUploadDraft={setWorkspaceUploadDraft}
+            workspaceFileInputKey={workspaceFileInputKey}
+            formDisabled={formDisabled}
+            processStatusText={processStatusText}
+            onFilePicked={onWorkspaceFilePicked}
+            onAddFile={addWorkspaceBootstrapFile}
+            onRemoveFile={removeWorkspaceBootstrapFile}
+          />
+        </section>
+
+        {/* ── Quality Gate ── */}
+        <section>
+          <QualityGateSection
+            checklist={form.checklist}
+            formDisabled={formDisabled}
+            onSetChecklist={setChecklist}
+            availableTags={availableTags}
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+            tagsAvailable={tagsAvailable}
+            tagsLoading={tagsLoading}
+          />
+        </section>
+
+        {/* ── Actions ── */}
+        <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-5">
+          <Button href="/validation-cases" prefetch={false} variant="secondary" size="sm">
+            Kembali
+          </Button>
+          <Button
+            onClick={submit}
+            disabled={formDisabled}
+            loading={submitting}
+            size="sm"
+            className="min-w-[12.5rem]"
+            type="button"
+          >
+            {submitting ? "Submitting..." : "Create Validation Case"}
+          </Button>
         </div>
-      </section>
+      </div>
     </main>
   );
 }

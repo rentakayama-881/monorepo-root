@@ -9,24 +9,12 @@ export default function ReadmeTemplateGrid({
   activeReadmeTemplateId,
   formDisabled,
   onInsertTemplate,
-  editorRef,
 }) {
   const [expanded, setExpanded] = useState(false);
   const visibleTemplates = expanded
     ? VALIDATION_CASE_README_TEMPLATES
     : VALIDATION_CASE_README_TEMPLATES.slice(0, COLLAPSED_COUNT);
   const hasMore = VALIDATION_CASE_README_TEMPLATES.length > COLLAPSED_COUNT;
-
-  function handleInsert(template) {
-    onInsertTemplate(template);
-    // Scroll ke editor setelah insert
-    requestAnimationFrame(() => {
-      const target = editorRef?.current ?? document.getElementById("case-record-editor");
-      if (target) {
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    });
-  }
 
   return (
     <div id="readme-design">
@@ -59,7 +47,7 @@ export default function ReadmeTemplateGrid({
               </div>
               <button
                 type="button"
-                onClick={() => handleInsert(template)}
+                onClick={() => onInsertTemplate(template)}
                 disabled={formDisabled}
                 className={cn(
                   "shrink-0 rounded-md px-3 py-1 text-xs font-medium transition",

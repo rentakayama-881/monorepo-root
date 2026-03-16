@@ -184,9 +184,10 @@ export default function MarkdownEditor({
           ? requestAnimationFrame
           : (cb) => setTimeout(cb, 0);
       nextFrame(() => {
-        ta.focus();
+        ta.focus({ preventScroll: true });
         const pos = start + snippetText.length;
         ta.setSelectionRange(pos, pos);
+        ta.scrollIntoView({ behavior: "smooth", block: "center" });
       });
     }
   }, [disabled, insertSnippetSignal, onChange, onSnippetInserted, value]);
