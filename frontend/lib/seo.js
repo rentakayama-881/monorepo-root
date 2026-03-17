@@ -13,9 +13,7 @@ export function generateValidationCaseStructuredData(validationCase) {
 
   const createdAtUnix = validationCase?.created_at ?? validationCase?.createdAt;
   const createdAt =
-    typeof createdAtUnix === "number"
-      ? new Date(createdAtUnix * 1000).toISOString()
-      : undefined;
+    typeof createdAtUnix === "number" ? new Date(createdAtUnix * 1000).toISOString() : undefined;
 
   return {
     "@context": "https://schema.org",
@@ -40,7 +38,8 @@ export function generateOrganizationStructuredData() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "AIvalid",
-    description: "Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.",
+    description:
+      "Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.",
     url: process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id",
     logo: {
       "@type": "ImageObject",
@@ -111,27 +110,32 @@ export function generateOpenGraphMetadata({
   title,
   description,
   type = "website",
-  image = "/images/og-image.png",
+  image,
   url = "",
 }) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id";
-  
-  return {
+
+  const metadata = {
     title,
     description,
     type,
     url: `${siteUrl}${url}`,
-    siteName: "AIvalid",
+    siteName: "AIValid",
     locale: "id_ID",
-    images: [
+  };
+
+  if (image) {
+    metadata.images = [
       {
         url: image,
         width: 1200,
         height: 630,
         alt: title,
       },
-    ],
-  };
+    ];
+  }
+
+  return metadata;
 }
 
 /**
@@ -139,17 +143,18 @@ export function generateOpenGraphMetadata({
  * @param {Object} params - Page parameters
  * @returns {Object} - Twitter Card metadata
  */
-export function generateTwitterMetadata({
-  title,
-  description,
-  image = "/images/og-image.png",
-}) {
-  return {
+export function generateTwitterMetadata({ title, description, image }) {
+  const metadata = {
     card: "summary_large_image",
     title,
     description,
-    images: [image],
   };
+
+  if (image) {
+    metadata.images = [image];
+  }
+
+  return metadata;
 }
 
 /**

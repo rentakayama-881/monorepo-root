@@ -34,7 +34,7 @@ export async function generateMetadata({ params }) {
     user.bio || `Profil ${displayName} di AIValid — lihat riwayat validasi dan reputasi.`;
 
   return {
-    title: `${displayName} (@${user.username})`,
+    title: `${displayName} · ${user.username}`,
     description: description.slice(0, 160),
     alternates: {
       canonical: `https://aivalid.id/user/${user.username}`,

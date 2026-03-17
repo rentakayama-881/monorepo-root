@@ -167,9 +167,7 @@ export default function TransactionsContent() {
 
   const rows = useMemo(() => {
     let source;
-    if (activeTab === "wallet") {
-      source = walletTransactions;
-    } else if (activeTab === "transfer") {
+    if (activeTab === "transfer") {
       source = transfers;
     } else if (activeTab === "deposit") {
       source = walletTransactions.filter((t) => t.type.toLowerCase() === "deposit");
@@ -250,7 +248,6 @@ export default function TransactionsContent() {
             { key: "all", label: "Semua" },
             { key: "deposit", label: "Deposit" },
             { key: "withdraw", label: "Withdraw" },
-            { key: "wallet", label: "Wallet" },
             { key: "transfer", label: "Transfer" },
           ].map((tab) => (
             <button

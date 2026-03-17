@@ -70,7 +70,7 @@ export function useRepoWorkflow({ id, router }) {
 
   const attachKindOptions = useMemo(() => {
     if (isOwner) {
-      return ["task_input", "case_readme", "sensitive_context"];
+      return ["task_input", "sensitive_context"];
     }
     return ["validator_output"];
   }, [isOwner]);

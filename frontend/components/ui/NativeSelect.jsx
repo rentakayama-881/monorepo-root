@@ -14,9 +14,9 @@ export default function NativeSelect({
       <select
         {...props}
         className={cn(
-          "h-11 w-full appearance-none rounded-[var(--radius)] border border-input bg-card px-3 pr-10 text-sm text-foreground shadow-sm transition",
+          "h-11 w-full appearance-none rounded-[var(--radius)] border border-input bg-card px-3 pr-10 text-sm text-foreground transition",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60",
-          className,
+          className
         )}
       >
         {Array.isArray(options) && options.length > 0
@@ -30,7 +30,11 @@ export default function NativeSelect({
                 );
               }
               return (
-                <option key={String(option.value)} value={option.value} disabled={Boolean(option.disabled)}>
+                <option
+                  key={String(option.value)}
+                  value={option.value}
+                  disabled={Boolean(option.disabled)}
+                >
                   {option.label}
                 </option>
               );
@@ -39,7 +43,13 @@ export default function NativeSelect({
       </select>
       <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden="true">
-          <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="m6 9 6 6 6-6"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </span>
     </div>
