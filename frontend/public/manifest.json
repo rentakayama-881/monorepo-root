@@ -1,20 +1,13 @@
 {
-  "name": "AIvalid",
-  "short_name": "AIvalid",
+  "name": "AIValid",
+  "short_name": "AIValid",
   "description": "Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#10b981",
   "orientation": "portrait-primary",
-  "icons": [
-    {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ],
+  "icons": [],
   "categories": ["finance", "social"],
   "lang": "id",
   "dir": "ltr"

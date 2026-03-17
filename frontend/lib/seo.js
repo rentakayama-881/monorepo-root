@@ -37,14 +37,10 @@ export function generateOrganizationStructuredData() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "AIvalid",
+    name: "AIValid",
     description:
       "Platform validasi hasil kerja berbasis AI dengan bantuan validator manusia dari berbagai bidang.",
     url: process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id",
-    logo: {
-      "@type": "ImageObject",
-      url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://aivalid.id"}/favicon.svg`,
-    },
     sameAs: [],
   };
 }

@@ -1,13 +1,6 @@
 import { render } from "@testing-library/react";
 import { Logo } from "../Logo";
 
-jest.mock("next/image", () => {
-  return function MockImage({ src, alt, ...props }) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={alt} {...props} />;
-  };
-});
-
 jest.mock("next/link", () => {
   return function MockLink({ children, href, ...props }) {
     return (
@@ -18,19 +11,15 @@ jest.mock("next/link", () => {
   };
 });
 
-jest.mock("@/lib/ThemeContext", () => ({
-  useTheme: () => ({ resolvedTheme: "light" }),
-}));
-
 describe("Logo", () => {
   it("renders without crashing", () => {
     const { container } = render(<Logo />);
     expect(container.firstChild).toBeTruthy();
   });
 
-  it("renders icon variant", () => {
-    const { container } = render(<Logo variant="icon" />);
-    expect(container.firstChild).toBeTruthy();
+  it("renders text content", () => {
+    const { getByText } = render(<Logo text="aivalid.id" />);
+    expect(getByText("aivalid.id")).toBeTruthy();
   });
 
   it("accepts className prop", () => {

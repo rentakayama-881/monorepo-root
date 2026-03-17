@@ -52,22 +52,14 @@ export const metadata = {
     siteName: "AIValid",
     title: siteName,
     description: siteDescription,
-    images: [
-      {
-        url: "/logo/light-mode.png",
-        width: 1024,
-        height: 1024,
-        alt: "AIValid - Platform Validasi Hasil AI Indonesia",
-      },
-    ],
+    images: [],
   },
 
   // Twitter Card
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: siteName,
     description: siteDescription,
-    images: ["/logo/light-mode.png"],
   },
 
   // Robots
@@ -83,16 +75,8 @@ export const metadata = {
     },
   },
 
-  // Icons - AIvalid
-  icons: {
-    icon: [
-      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
-    shortcut: "/favicon-32.png",
-    apple: "/logo/light-mode.png",
-  },
+  // Icons — placeholder until new logo system is created
+  icons: {},
 
   // Manifest
   manifest: "/manifest.json",

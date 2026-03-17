@@ -162,8 +162,8 @@ export default function Header() {
           <Menu className="w-5 h-5 text-foreground" strokeWidth={2} />
         </button>
 
-        {/* Logo - AIvalid */}
-        <Logo variant="icon" size={36} priority className="shrink-0 -ml-1 md:ml-0" />
+        {/* Logo */}
+        <Logo size={36} className="shrink-0 -ml-1 md:ml-0" />
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-0.5 text-sm">

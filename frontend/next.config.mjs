@@ -15,14 +15,8 @@ const nextConfig = {
     root: repoRoot,
   },
 
-  async redirects() {
-    return [
-      {
-        source: "/favicon.ico",
-        destination: "/favicon.svg",
-        permanent: true,
-      },
-    ];
+  experimental: {
+    optimizePackageImports: ["@sentry/nextjs", "zod"],
   },
 
   async headers() {
