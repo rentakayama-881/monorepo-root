@@ -157,6 +157,31 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  /* Status semantic colors */
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-success-text: var(--status-success-text);
+  --color-status-danger-bg: var(--status-danger-bg);
+  --color-status-danger-border: var(--status-danger-border);
+  --color-status-danger-text: var(--status-danger-text);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-border: var(--status-warning-border);
+  --color-status-warning-text: var(--status-warning-text);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-border: var(--status-info-border);
+  --color-status-info-text: var(--status-info-text);
+  --color-status-amber-bg: var(--status-amber-bg);
+  --color-status-amber-border: var(--status-amber-border);
+  --color-status-amber-text: var(--status-amber-text);
+  --color-status-sky-bg: var(--status-sky-bg);
+  --color-status-sky-border: var(--status-sky-border);
+  --color-status-sky-text: var(--status-sky-text);
+  --color-status-violet-bg: var(--status-violet-bg);
+  --color-status-violet-border: var(--status-violet-border);
+  --color-status-violet-text: var(--status-violet-text);
+  --color-status-orange-bg: var(--status-orange-bg);
+  --color-status-orange-border: var(--status-orange-border);
+  --color-status-orange-text: var(--status-orange-text);
   --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
   --font-serif: "IBM Plex Sans", "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", monospace;
@@ -333,6 +358,32 @@
     --warning: oklch(0.8 0.14 85);
     --warning-foreground: oklch(0.22 0.015 280);
     --error: oklch(0.577 0.245 27.325);
+
+    /* Status tokens (validation case, disputes, etc.) */
+    --status-success-bg: oklch(0.96 0.03 145);
+    --status-success-border: oklch(0.87 0.08 145);
+    --status-success-text: oklch(0.3 0.06 145);
+    --status-danger-bg: oklch(0.96 0.02 25);
+    --status-danger-border: oklch(0.87 0.06 25);
+    --status-danger-text: oklch(0.35 0.08 25);
+    --status-warning-bg: oklch(0.96 0.04 85);
+    --status-warning-border: oklch(0.87 0.08 85);
+    --status-warning-text: oklch(0.35 0.06 60);
+    --status-info-bg: oklch(0.96 0.02 250);
+    --status-info-border: oklch(0.87 0.06 250);
+    --status-info-text: oklch(0.35 0.06 250);
+    --status-amber-bg: oklch(0.96 0.04 75);
+    --status-amber-border: oklch(0.87 0.08 75);
+    --status-amber-text: oklch(0.35 0.06 75);
+    --status-sky-bg: oklch(0.96 0.02 230);
+    --status-sky-border: oklch(0.87 0.06 230);
+    --status-sky-text: oklch(0.35 0.06 230);
+    --status-violet-bg: oklch(0.96 0.02 290);
+    --status-violet-border: oklch(0.87 0.06 290);
+    --status-violet-text: oklch(0.25 0.06 290);
+    --status-orange-bg: oklch(0.96 0.04 55);
+    --status-orange-border: oklch(0.87 0.08 55);
+    --status-orange-text: oklch(0.35 0.06 55);
   }
 
   /* Default scheme LIGHT */
@@ -379,6 +430,32 @@
     --warning-foreground: oklch(0.155 0.004 280);
     --error: oklch(0.704 0.191 22.216);
 
+    /* Status tokens (dark) */
+    --status-success-bg: oklch(0.25 0.04 145);
+    --status-success-border: oklch(0.38 0.06 145);
+    --status-success-text: oklch(0.82 0.1 145);
+    --status-danger-bg: oklch(0.25 0.04 25);
+    --status-danger-border: oklch(0.38 0.06 25);
+    --status-danger-text: oklch(0.82 0.1 25);
+    --status-warning-bg: oklch(0.25 0.04 85);
+    --status-warning-border: oklch(0.38 0.06 85);
+    --status-warning-text: oklch(0.82 0.1 60);
+    --status-info-bg: oklch(0.25 0.03 250);
+    --status-info-border: oklch(0.38 0.05 250);
+    --status-info-text: oklch(0.82 0.08 250);
+    --status-amber-bg: oklch(0.25 0.04 75);
+    --status-amber-border: oklch(0.38 0.06 75);
+    --status-amber-text: oklch(0.82 0.1 75);
+    --status-sky-bg: oklch(0.25 0.03 230);
+    --status-sky-border: oklch(0.38 0.05 230);
+    --status-sky-text: oklch(0.82 0.08 230);
+    --status-violet-bg: oklch(0.25 0.03 290);
+    --status-violet-border: oklch(0.38 0.05 290);
+    --status-violet-text: oklch(0.82 0.08 290);
+    --status-orange-bg: oklch(0.25 0.04 55);
+    --status-orange-border: oklch(0.38 0.06 55);
+    --status-orange-text: oklch(0.82 0.1 55);
+
     color-scheme: dark;
   }
 
@@ -421,6 +498,32 @@
       --warning: oklch(0.82 0.13 85);
       --warning-foreground: oklch(0.155 0.004 280);
       --error: oklch(0.704 0.191 22.216);
+
+      /* Status tokens (dark — system preference) */
+      --status-success-bg: oklch(0.25 0.04 145);
+      --status-success-border: oklch(0.38 0.06 145);
+      --status-success-text: oklch(0.82 0.1 145);
+      --status-danger-bg: oklch(0.25 0.04 25);
+      --status-danger-border: oklch(0.38 0.06 25);
+      --status-danger-text: oklch(0.82 0.1 25);
+      --status-warning-bg: oklch(0.25 0.04 85);
+      --status-warning-border: oklch(0.38 0.06 85);
+      --status-warning-text: oklch(0.82 0.1 60);
+      --status-info-bg: oklch(0.25 0.03 250);
+      --status-info-border: oklch(0.38 0.05 250);
+      --status-info-text: oklch(0.82 0.08 250);
+      --status-amber-bg: oklch(0.25 0.04 75);
+      --status-amber-border: oklch(0.38 0.06 75);
+      --status-amber-text: oklch(0.82 0.1 75);
+      --status-sky-bg: oklch(0.25 0.03 230);
+      --status-sky-border: oklch(0.38 0.05 230);
+      --status-sky-text: oklch(0.82 0.08 230);
+      --status-violet-bg: oklch(0.25 0.03 290);
+      --status-violet-border: oklch(0.38 0.05 290);
+      --status-violet-text: oklch(0.82 0.08 290);
+      --status-orange-bg: oklch(0.25 0.04 55);
+      --status-orange-border: oklch(0.38 0.06 55);
+      --status-orange-text: oklch(0.82 0.1 55);
 
       color-scheme: dark;
     }

@@ -228,7 +228,9 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="text-sm font-semibold text-foreground">Status</div>
-            <div className={`text-sm ${connected ? "text-emerald-700" : "text-amber-700"}`}>
+            <div
+              className={`text-sm ${connected ? "text-status-success-text" : "text-status-amber-text"}`}
+            >
               {connected ? "Connected (Verified)" : "Belum terhubung"}
             </div>
           </div>

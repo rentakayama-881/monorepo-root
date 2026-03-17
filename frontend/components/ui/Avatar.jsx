@@ -109,7 +109,7 @@ export default function Avatar({
     ) : (
       <div
         className={cn(
-          "flex shrink-0 items-center justify-center rounded-full border border-border font-semibold text-white select-none aspect-square",
+          "flex shrink-0 items-center justify-center rounded-full border border-border font-semibold text-primary-foreground select-none aspect-square",
           sizeClass,
           className
         )}
