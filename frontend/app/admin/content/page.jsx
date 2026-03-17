@@ -2,11 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
-import { getAdminToken } from "@/lib/adminAuth";
-import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
+import { useAsyncAction } from "@/hooks/useAsyncAction";
+import { fetchAdminFeature, fetchAdminFeatureList } from "@/lib/adminApi";
 import { formatDateTime } from "@/lib/format";
-
-const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
 
 function normalizeHiddenContent(item) {
   return {
@@ -24,7 +22,6 @@ export default function HiddenContentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showHideModal, setShowHideModal] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
   const [form, setForm] = useState({
     contentType: "validation_case",
     contentId: "",
@@ -35,25 +32,10 @@ export default function HiddenContentPage() {
     setLoading(true);
     setError("");
     try {
-      const token = getAdminToken();
-      if (!token) {
-        setContents([]);
-        setError("Sesi admin berakhir. Silakan login ulang.");
-        return;
-      }
-      const res = await fetch(
-        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/content/hidden?page=1&pageSize=50`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+      const items = await fetchAdminFeatureList(
+        "/api/v1/admin/moderation/content/hidden?page=1&pageSize=50",
+        normalizeHiddenContent
       );
-      if (!res.ok) throw new Error("Gagal memuat hidden content");
-      const data = await res.json();
-      const payload = unwrapFeatureData(data);
-      const items = extractFeatureItems(payload).map(normalizeHiddenContent);
       setContents(items);
     } catch (e) {
       setError(e.message);
@@ -66,58 +48,29 @@ export default function HiddenContentPage() {
     fetchContents();
   }, [fetchContents]);
 
-  const handleHide = async (e) => {
-    e.preventDefault();
-    setActionLoading(true);
-    try {
-      const token = getAdminToken();
-      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
-      const res = await fetch(
-        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/content/hide`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(form),
-        }
-      );
-      if (!res.ok) throw new Error("Gagal menyembunyikan konten");
+  const hideAction = useAsyncAction(
+    async (e) => {
+      e.preventDefault();
+      await fetchAdminFeature("/api/v1/admin/moderation/content/hide", {
+        method: "POST",
+        body: JSON.stringify(form),
+      });
       setShowHideModal(false);
       setForm({ contentType: "validation_case", contentId: "", reason: "" });
       fetchContents();
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setActionLoading(false);
-    }
-  };
+    },
+    { onError: (e) => alert(e.message) }
+  );
 
-  const handleUnhide = async (hiddenContentId) => {
-    if (!confirm("Yakin ingin menampilkan kembali konten ini?")) return;
-    setActionLoading(true);
-    try {
-      const token = getAdminToken();
-      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
-      const res = await fetch(
-        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/content/unhide/${hiddenContentId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (!res.ok) throw new Error("Gagal menampilkan konten");
+  const unhideAction = useAsyncAction(
+    async (hiddenContentId) => {
+      await fetchAdminFeature(`/api/v1/admin/moderation/content/unhide/${hiddenContentId}`, {
+        method: "POST",
+      });
       fetchContents();
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setActionLoading(false);
-    }
-  };
+    },
+    { onError: (e) => alert(e.message) }
+  );
 
   const getContentTypeLabel = (type) => {
     const normalized = String(type || "").toLowerCase();
@@ -131,9 +84,7 @@ export default function HiddenContentPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">Hidden Records</h1>
-        <Button onClick={() => setShowHideModal(true)}>
-          + Hide Record
-        </Button>
+        <Button onClick={() => setShowHideModal(true)}>+ Hide Record</Button>
       </div>
 
       {error && (
@@ -147,16 +98,16 @@ export default function HiddenContentPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : contents.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Tidak ada record tersembunyi
-        </div>
+        <div className="text-center py-12 text-muted-foreground">Tidak ada record tersembunyi</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Content ID</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Content ID
+                </th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Reason</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Hidden By</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Hidden At</th>
@@ -181,8 +132,12 @@ export default function HiddenContentPage() {
                     <Button
                       size="sm"
                       variant="secondary"
-                      onClick={() => handleUnhide(content.id)}
-                      disabled={actionLoading}
+                      onClick={() => {
+                        if (confirm("Yakin ingin menampilkan kembali konten ini?")) {
+                          unhideAction.execute(content.id);
+                        }
+                      }}
+                      disabled={unhideAction.loading}
                     >
                       Unhide
                     </Button>
@@ -202,7 +157,7 @@ export default function HiddenContentPage() {
               <h2 className="text-xl font-semibold text-foreground">Hide Record</h2>
             </div>
 
-            <form onSubmit={handleHide} className="p-6 space-y-4">
+            <form onSubmit={hideAction.execute} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Content Type *
@@ -230,9 +185,7 @@ export default function HiddenContentPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Reason *
-                </label>
+                <label className="block text-sm font-medium text-foreground mb-1">Reason *</label>
                 <textarea
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
@@ -243,15 +196,11 @@ export default function HiddenContentPage() {
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowHideModal(false)}
-                >
+                <Button type="button" variant="secondary" onClick={() => setShowHideModal(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={actionLoading}>
-                  {actionLoading ? "Hiding..." : "Hide Record"}
+                <Button type="submit" disabled={hideAction.loading}>
+                  {hideAction.loading ? "Hiding..." : "Hide Record"}
                 </Button>
               </div>
             </form>

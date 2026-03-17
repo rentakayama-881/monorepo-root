@@ -2,11 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
-import { getAdminToken } from "@/lib/adminAuth";
-import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
+import { useAsyncAction } from "@/hooks/useAsyncAction";
+import { fetchAdminFeatureList, fetchAdminFeature } from "@/lib/adminApi";
 import { formatDateTime } from "@/lib/format";
-
-const FEATURE_SERVICE_URL = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "";
 
 function normalizeWarning(item) {
   return {
@@ -28,7 +26,6 @@ export default function WarningsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createLoading, setCreateLoading] = useState(false);
   const [searchUserId, setSearchUserId] = useState("");
   const [form, setForm] = useState({
     userId: "",
@@ -42,26 +39,11 @@ export default function WarningsPage() {
     setLoading(true);
     setError("");
     try {
-      const token = getAdminToken();
-      if (!token) {
-        setWarnings([]);
-        setError("Sesi admin berakhir. Silakan login ulang.");
-        return;
-      }
-      let url = `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/warnings?page=1&pageSize=50`;
+      let url = "/api/v1/admin/moderation/warnings?page=1&pageSize=50";
       if (searchUserId) {
         url += `&userId=${searchUserId}`;
       }
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      if (!res.ok) throw new Error("Gagal memuat warnings");
-      const data = await res.json();
-      const payload = unwrapFeatureData(data);
-      const items = extractFeatureItems(payload).map(normalizeWarning);
+      const items = await fetchAdminFeatureList(url, normalizeWarning);
       setWarnings(items);
     } catch (e) {
       setError(e.message);
@@ -74,12 +56,9 @@ export default function WarningsPage() {
     fetchWarnings();
   }, [fetchWarnings]);
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    setCreateLoading(true);
-    try {
-      const token = getAdminToken();
-      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
+  const createAction = useAsyncAction(
+    async (e) => {
+      e.preventDefault();
       const userId = parseInt(form.userId, 10);
       if (!Number.isFinite(userId) || userId <= 0) {
         throw new Error("User ID tidak valid");
@@ -92,27 +71,16 @@ export default function WarningsPage() {
       if (form.contentType) body.contentType = form.contentType;
       if (form.contentId) body.contentId = form.contentId;
 
-      const res = await fetch(
-        `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/warnings`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        }
-      );
-      if (!res.ok) throw new Error("Gagal membuat warning");
+      await fetchAdminFeature("/api/v1/admin/moderation/warnings", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
       setShowCreateModal(false);
       setForm({ userId: "", reason: "", severity: "moderate", contentType: "", contentId: "" });
       fetchWarnings();
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setCreateLoading(false);
-    }
-  };
+    },
+    { onError: (e) => alert(e.message) }
+  );
 
   const getSeverityBadge = (severity) => {
     const normalized = String(severity || "moderate").toLowerCase();
@@ -136,9 +104,7 @@ export default function WarningsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">User Warnings</h1>
-        <Button onClick={() => setShowCreateModal(true)}>
-          + Issue Warning
-        </Button>
+        <Button onClick={() => setShowCreateModal(true)}>+ Issue Warning</Button>
       </div>
 
       {/* Search */}
@@ -166,16 +132,11 @@ export default function WarningsPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : warnings.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Tidak ada warnings
-        </div>
+        <div className="text-center py-12 text-muted-foreground">Tidak ada warnings</div>
       ) : (
         <div className="space-y-3">
           {warnings.map((warning) => (
-            <div
-              key={warning.id}
-              className="p-4 rounded-lg border border-border bg-card"
-            >
+            <div key={warning.id} className="p-4 rounded-lg border border-border bg-card">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -213,11 +174,9 @@ export default function WarningsPage() {
               <h2 className="text-xl font-semibold text-foreground">Issue Warning</h2>
             </div>
 
-            <form onSubmit={handleCreate} className="p-6 space-y-4">
+            <form onSubmit={createAction.execute} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  User ID *
-                </label>
+                <label className="block text-sm font-medium text-foreground mb-1">User ID *</label>
                 <input
                   type="number"
                   value={form.userId}
@@ -228,9 +187,7 @@ export default function WarningsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Severity *
-                </label>
+                <label className="block text-sm font-medium text-foreground mb-1">Severity *</label>
                 <select
                   value={form.severity}
                   onChange={(e) => setForm({ ...form, severity: e.target.value })}
@@ -243,9 +200,7 @@ export default function WarningsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Reason *
-                </label>
+                <label className="block text-sm font-medium text-foreground mb-1">Reason *</label>
                 <textarea
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
@@ -283,15 +238,11 @@ export default function WarningsPage() {
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowCreateModal(false)}
-                >
+                <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createLoading}>
-                  {createLoading ? "Issuing..." : "Issue Warning"}
+                <Button type="submit" disabled={createAction.loading}>
+                  {createAction.loading ? "Issuing..." : "Issue Warning"}
                 </Button>
               </div>
             </form>

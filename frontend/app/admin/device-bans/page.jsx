@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Button from "@/components/ui/Button";
-import { getAdminToken } from "@/lib/adminAuth";
-import { getFeatureApiBase, unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
+import { useAsyncAction } from "@/hooks/useAsyncAction";
+import { fetchAdminFeatureList, fetchAdminFeature } from "@/lib/adminApi";
 import { formatDateTime } from "@/lib/format";
 
 function normalizeDeviceBan(item) {
@@ -25,7 +25,6 @@ export default function DeviceBansPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createLoading, setCreateLoading] = useState(false);
   const [form, setForm] = useState({
     deviceFingerprint: "",
     userId: "",
@@ -38,34 +37,10 @@ export default function DeviceBansPage() {
     setLoading(true);
     setError("");
     try {
-      const token = getAdminToken();
-      if (!token) {
-        setBans([]);
-        setError("Sesi admin berakhir. Silakan login ulang.");
-        return;
-      }
-      const res = await fetch(
-        `${getFeatureApiBase()}/api/v1/admin/moderation/device-bans?page=1&pageSize=50`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+      const items = await fetchAdminFeatureList(
+        "/api/v1/admin/moderation/device-bans?page=1&pageSize=50",
+        normalizeDeviceBan
       );
-      if (!res.ok) {
-        let msg = `Gagal memuat device bans (${res.status})`;
-        try {
-          const body = await res.json();
-          if (body?.error?.message) msg = body.error.message;
-          else if (body?.error) msg = typeof body.error === "string" ? body.error : msg;
-          else if (body?.message) msg = body.message;
-        } catch {}
-        throw new Error(msg);
-      }
-      const data = await res.json();
-      const payload = unwrapFeatureData(data);
-      const items = extractFeatureItems(payload).map(normalizeDeviceBan);
       setBans(items);
     } catch (e) {
       setError(e.message);
@@ -78,12 +53,9 @@ export default function DeviceBansPage() {
     fetchBans();
   }, [fetchBans]);
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    setCreateLoading(true);
-    try {
-      const token = getAdminToken();
-      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
+  const createAction = useAsyncAction(
+    async (e) => {
+      e.preventDefault();
       const body = {
         deviceFingerprint: form.deviceFingerprint,
         userId: form.userId ? parseInt(form.userId, 10) : null,
@@ -93,64 +65,26 @@ export default function DeviceBansPage() {
       if (!form.isPermanent && form.expiresAt) {
         body.expiresAt = new Date(form.expiresAt).toISOString();
       }
-
-      const res = await fetch(`${getFeatureApiBase()}/api/v1/admin/moderation/device-bans`, {
+      await fetchAdminFeature("/api/v1/admin/moderation/device-bans", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        let msg = `Gagal membuat device ban (${res.status})`;
-        try {
-          const body = await res.json();
-          if (body?.error?.message) msg = body.error.message;
-          else if (body?.error) msg = typeof body.error === "string" ? body.error : msg;
-          else if (body?.message) msg = body.message;
-        } catch {}
-        throw new Error(msg);
-      }
       setShowCreateModal(false);
       setForm({ deviceFingerprint: "", userId: "", reason: "", isPermanent: false, expiresAt: "" });
       fetchBans();
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setCreateLoading(false);
-    }
-  };
+    },
+    { onError: (e) => alert(e.message) }
+  );
 
-  const handleUnban = async (banId) => {
-    if (!confirm("Yakin ingin menghapus ban ini?")) return;
-    try {
-      const token = getAdminToken();
-      if (!token) throw new Error("Sesi admin berakhir. Silakan login ulang.");
-      const res = await fetch(
-        `${getFeatureApiBase()}/api/v1/admin/moderation/device-bans/${banId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!res.ok) {
-        let msg = `Gagal menghapus ban (${res.status})`;
-        try {
-          const body = await res.json();
-          if (body?.error?.message) msg = body.error.message;
-          else if (body?.error) msg = typeof body.error === "string" ? body.error : msg;
-          else if (body?.message) msg = body.message;
-        } catch {}
-        throw new Error(msg);
-      }
+  const unbanAction = useAsyncAction(
+    async (banId) => {
+      await fetchAdminFeature(`/api/v1/admin/moderation/device-bans/${banId}`, {
+        method: "DELETE",
+      });
       fetchBans();
-    } catch (e) {
-      alert(e.message);
-    }
-  };
+    },
+    { onError: (e) => alert(e.message) }
+  );
 
   const getBanStatus = (ban) => {
     if (ban.isPermanent) {
@@ -238,7 +172,16 @@ export default function DeviceBansPage() {
                       {ban.isPermanent ? "-" : formatDateTime(ban.expiresAt)}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <Button size="sm" variant="danger" onClick={() => handleUnban(ban.id)}>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        disabled={unbanAction.loading}
+                        onClick={() => {
+                          if (confirm("Yakin ingin menghapus ban ini?")) {
+                            unbanAction.execute(ban.id);
+                          }
+                        }}
+                      >
                         Unban
                       </Button>
                     </td>
@@ -258,7 +201,7 @@ export default function DeviceBansPage() {
               <h2 className="text-xl font-semibold text-foreground">Create Device Ban</h2>
             </div>
 
-            <form onSubmit={handleCreate} className="p-6 space-y-4">
+            <form onSubmit={createAction.execute} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Device Fingerprint *
@@ -330,8 +273,8 @@ export default function DeviceBansPage() {
                 <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createLoading}>
-                  {createLoading ? "Creating..." : "Create Ban"}
+                <Button type="submit" disabled={createAction.loading}>
+                  {createAction.loading ? "Creating..." : "Create Ban"}
                 </Button>
               </div>
             </form>
