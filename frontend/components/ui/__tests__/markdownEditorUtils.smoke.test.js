@@ -1,6 +1,6 @@
-import * as Module from "../markdown-editor-utils";
+import * as Module from "../markdownEditorUtils";
 
-describe("markdown-editor-utils smoke", () => {
+describe("markdownEditorUtils smoke", () => {
   it("exports the module", () => {
     expect(Module).toBeDefined();
   });

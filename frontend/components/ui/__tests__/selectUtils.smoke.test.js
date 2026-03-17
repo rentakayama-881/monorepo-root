@@ -1,6 +1,6 @@
-import * as Module from "../select-utils";
+import * as Module from "../selectUtils";
 
-describe("select-utils smoke", () => {
+describe("selectUtils smoke", () => {
   it("exports the module", () => {
     expect(Module).toBeDefined();
   });

@@ -4,7 +4,7 @@
 
 import clsx from "clsx";
 import Link from "next/link";
-import { sizeConfig, renderBadgeIcon, getBadgeTone, getBadgeConfig } from "./badge-variants";
+import { sizeConfig, renderBadgeIcon, getBadgeTone, getBadgeConfig } from "./badgeVariants";
 
 /**
  * Badge Component - Main badge display

@@ -156,6 +156,13 @@ export const DATE_FORMATS = {
     month: "short",
     year: "numeric",
   },
+  SHORT_WITH_TIME: {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  },
 };
 
 // Local Storage Keys

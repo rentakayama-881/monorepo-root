@@ -33,11 +33,7 @@ function normalizeSearchUser(payload) {
   };
 }
 
-export function formatCurrency(value) {
-  const num = parseInt(value.replace(/\D/g, ""), 10);
-  if (isNaN(num)) return "";
-  return num.toLocaleString("id-ID");
-}
+export { formatCurrencyInput as formatCurrency } from "@/lib/format";
 
 export default function useSendTransfer() {
   const router = useRouter();

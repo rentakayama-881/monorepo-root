@@ -8,7 +8,7 @@ import {
   filterOptions,
   getDisplayText,
   selectPropTypes,
-} from "./select-utils";
+} from "./selectUtils";
 
 /**
  * Enhanced select component with search, multi-select, and premium features

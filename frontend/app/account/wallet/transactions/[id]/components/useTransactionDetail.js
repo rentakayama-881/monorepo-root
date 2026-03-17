@@ -49,16 +49,7 @@ export function normalizeStatus(status) {
   return statusMap[status] || status?.toLowerCase() || "held";
 }
 
-export function formatDate(dateStr) {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+export { formatDateTime as formatDate } from "@/lib/format";
 
 export default function useTransactionDetail() {
   const router = useRouter();

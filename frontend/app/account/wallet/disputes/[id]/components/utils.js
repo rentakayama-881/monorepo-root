@@ -1,3 +1,7 @@
+import { formatDateShortTime } from "@/lib/format";
+
+export { formatDateShortTime as formatDate };
+
 export function getPhaseInfo(phase) {
   const info = {
     negotiation: {
@@ -32,16 +36,4 @@ export function getResolutionLabel(resolution) {
   if (value.includes("release")) return "Release to Recipient";
   if (value.includes("noaction")) return "No Action";
   return resolution;
-}
-
-export function formatDate(dateStr) {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }

@@ -3,7 +3,7 @@
 import { useState, useCallback, createContext, useContext } from "react";
 import { requireValidTokenOrThrow, readJsonSafe } from "@/lib/authRequest";
 import { getApiBase } from "@/lib/api";
-import { loadStoredSudoState, saveSudoToken, clearSudoStorage } from "./sudo/sudo-storage";
+import { loadStoredSudoState, saveSudoToken, clearSudoStorage } from "./sudo/sudoStorage";
 import SudoVerifyForm from "./sudo/SudoVerifyForm";
 
 // Sudo Context for global state management

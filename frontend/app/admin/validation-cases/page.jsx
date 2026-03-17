@@ -37,13 +37,13 @@ function normalizeUser(item) {
 
 function normalizeMoveResult(item) {
   return {
-    validationCaseId: item?.validation_case_id ?? item?.validationCaseId ?? item?.ValidationCaseID ?? null,
-    oldOwnerId: item?.old_owner?.id ?? item?.OldOwner?.ID ?? item?.oldOwner?.id ?? item?.OldOwner?.Id ?? null,
-    newOwnerId: item?.new_owner?.id ?? item?.NewOwner?.ID ?? item?.newOwner?.id ?? item?.NewOwner?.Id ?? null,
-    oldCategoryId: item?.old_category?.id ?? item?.OldCategory?.ID ?? item?.oldCategory?.id ?? item?.OldCategory?.Id ?? null,
-    newCategoryId: item?.new_category?.id ?? item?.NewCategory?.ID ?? item?.newCategory?.id ?? item?.NewCategory?.Id ?? null,
-    requestId: item?.request_id ?? item?.requestId ?? item?.RequestID ?? null,
-    dryRun: Boolean(item?.dry_run ?? item?.dryRun ?? item?.DryRun),
+    validationCaseId: item?.validation_case_id ?? null,
+    oldOwnerId: item?.old_owner?.id ?? null,
+    newOwnerId: item?.new_owner?.id ?? null,
+    oldCategoryId: item?.old_category?.id ?? null,
+    newCategoryId: item?.new_category?.id ?? null,
+    requestId: item?.request_id ?? null,
+    dryRun: Boolean(item?.dry_run),
   };
 }
 
@@ -229,7 +229,9 @@ export default function ValidationCaseManagementPage() {
 
         <form onSubmit={handleMove} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Validation Case ID *</label>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Validation Case ID *
+            </label>
             <input
               type="number"
               value={moveForm.validationCaseId}
@@ -238,11 +240,15 @@ export default function ValidationCaseManagementPage() {
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
               required
             />
-            <div className="mt-1 text-xs text-muted-foreground">Contoh URL: /validation-cases/123</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Contoh URL: /validation-cases/123
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">New Owner User ID *</label>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              New Owner User ID *
+            </label>
             <input
               type="number"
               value={moveForm.newOwnerId}
@@ -268,12 +274,19 @@ export default function ValidationCaseManagementPage() {
                 placeholder="Cari user (email/username)..."
                 className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground"
               />
-              <Button type="button" variant="secondary" disabled={userSearch.loading} onClick={handleUserSearch}>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={userSearch.loading}
+                onClick={handleUserSearch}
+              >
                 {userSearch.loading ? "Searching..." : "Search"}
               </Button>
             </div>
 
-            {userSearch.error ? <p className="mt-2 text-xs text-destructive">{userSearch.error}</p> : null}
+            {userSearch.error ? (
+              <p className="mt-2 text-xs text-destructive">{userSearch.error}</p>
+            ) : null}
 
             {userSearch.results.length > 0 ? (
               <div className="mt-2 max-h-40 overflow-auto rounded-md border border-border bg-background">
@@ -289,7 +302,9 @@ export default function ValidationCaseManagementPage() {
                   >
                     <span className="font-mono text-xs text-muted-foreground">{u.id}</span>{" "}
                     <span className="text-foreground">{u.username || u.email}</span>
-                    <span className="text-xs text-muted-foreground">{u.username && u.email ? ` • ${u.email}` : ""}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {u.username && u.email ? ` • ${u.email}` : ""}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -297,7 +312,9 @@ export default function ValidationCaseManagementPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">New Type (optional)</label>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              New Type (optional)
+            </label>
             <select
               value={moveForm.newCategoryId}
               onChange={(e) => setMoveForm({ ...moveForm, newCategoryId: e.target.value })}
@@ -311,7 +328,9 @@ export default function ValidationCaseManagementPage() {
                 </option>
               ))}
             </select>
-            {categoryError ? <p className="mt-1 text-xs text-destructive">{categoryError}</p> : null}
+            {categoryError ? (
+              <p className="mt-1 text-xs text-destructive">{categoryError}</p>
+            ) : null}
           </div>
 
           <div>
@@ -364,4 +383,3 @@ export default function ValidationCaseManagementPage() {
     </div>
   );
 }
-

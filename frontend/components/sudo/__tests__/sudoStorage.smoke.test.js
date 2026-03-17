@@ -1,6 +1,6 @@
-import * as Module from "../sudo-storage";
+import * as Module from "../sudoStorage";
 
-describe("sudo-storage smoke", () => {
+describe("sudoStorage smoke", () => {
   it("exports the module", () => {
     expect(Module).toBeDefined();
   });

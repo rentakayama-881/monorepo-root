@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { ToolbarBtn, Sep, I, MarkdownEditorPreview } from "./markdown-editor-utils";
+import { ToolbarBtn, Sep, I, MarkdownEditorPreview } from "./markdownEditorUtils";
 
 export default function MarkdownEditor({
   value = "",

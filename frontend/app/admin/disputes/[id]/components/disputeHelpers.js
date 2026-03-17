@@ -3,22 +3,9 @@
  * No side-effects, no React imports — safe to import from any file.
  */
 
-export function formatDate(dateStr) {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { formatDateShortTime, formatCurrency } from "@/lib/format";
 
-export function formatAmount(amount) {
-  return new Intl.NumberFormat("id-ID").format(amount);
-}
+export { formatDateShortTime as formatDate, formatCurrency as formatAmount };
 
 export function normalizeStatus(status) {
   return String(status || "")

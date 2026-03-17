@@ -84,6 +84,15 @@ export function formatDateTime(date) {
 }
 
 /**
+ * Format date with short month + time (e.g., "5 Mar 2026, 14:30")
+ * @param {string|Date} date - The date to format
+ * @returns {string}
+ */
+export function formatDateShortTime(date) {
+  return formatDate(date, DATE_FORMATS.SHORT_WITH_TIME);
+}
+
+/**
  * Format relative time (e.g., "2 jam yang lalu")
  * @param {string|Date} date - The date to format
  * @returns {string}
