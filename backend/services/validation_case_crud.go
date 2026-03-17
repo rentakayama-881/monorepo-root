@@ -153,8 +153,11 @@ func (s *EntValidationCaseService) CreateValidationCase(ctx context.Context, own
 		input.BountyAmount,
 	); reserveErr != nil {
 		_ = s.DeleteValidationCase(ctx, ownerUserID, uint(vc.ID))
+		logger.Warn("bounty reserve failed",
+			zap.Uint("owner_user_id", ownerUserID),
+			zap.Error(reserveErr))
 		return nil, apperrors.ErrInvalidInput.WithDetails(
-			fmt.Sprintf("Saldo wallet tidak cukup atau reserve bounty gagal: %s", reserveErr.Error()),
+			"Saldo wallet tidak cukup atau reserve bounty gagal. Silakan coba lagi.",
 		)
 	}
 

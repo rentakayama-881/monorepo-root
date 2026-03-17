@@ -128,7 +128,7 @@ func DeleteAccountHandler(c *gin.Context) {
 		if strings.Contains(cleanupErr.Error(), "saldo") ||
 			strings.Contains(cleanupErr.Error(), "transfer") ||
 			strings.Contains(cleanupErr.Error(), "dispute") {
-			c.JSON(http.StatusBadRequest, gin.H{"error": cleanupErr.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Akun tidak dapat dihapus karena masih ada saldo, transfer, atau dispute aktif."})
 			return
 		}
 		// For other errors (network, etc.), log but continue with PostgreSQL deletion

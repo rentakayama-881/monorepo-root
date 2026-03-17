@@ -25,7 +25,11 @@ public partial class AdminModerationController
             return Unauthorized(new { error = "Service token not configured" });
         }
 
-        var hasValidServiceToken = !string.IsNullOrEmpty(serviceToken) && serviceToken == configServiceToken;
+        var hasValidServiceToken = !string.IsNullOrEmpty(serviceToken)
+            && !string.IsNullOrEmpty(configServiceToken)
+            && System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+                System.Text.Encoding.UTF8.GetBytes(serviceToken!),
+                System.Text.Encoding.UTF8.GetBytes(configServiceToken));
         var isAuthenticatedAdmin = User.Identity?.IsAuthenticated == true && User.IsInRole("admin");
 
         if (!hasValidServiceToken && !isAuthenticatedAdmin)

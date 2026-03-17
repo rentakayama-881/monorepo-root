@@ -3,14 +3,15 @@ package handlers
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"sync"
 	"time"
 
+	"backend-gin/logger"
 	"backend-gin/services"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type LZTMarketHandler struct {
@@ -48,26 +49,36 @@ func (h *LZTMarketHandler) StartBackgroundRefresh() {
 	if h == nil || h.client == nil || !h.client.IsEnabled() {
 		return
 	}
-	// Cooldown between refresh cycles. Fetching all pages takes ~90 seconds
-	// with 3-sec rate limit, so a 2-minute cooldown avoids back-to-back fetching.
-	const refreshCooldown = 2 * time.Minute
+	const (
+		baseInterval = 2 * time.Minute
+		maxInterval  = 15 * time.Minute
+	)
 	go func() {
+		interval := baseInterval
 		for {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 			resp, err := h.fetchAggregatedChatGPTListing(ctx, "en-US")
 			cancel()
 			if err == nil && resp != nil {
 				h.setCachedChatGPT("en-US", resp)
+				interval = baseInterval // reset on success
 				if root, ok := resp.JSON.(map[string]interface{}); ok {
 					if loaded, lok := root["loaded_items"]; lok {
-						log.Printf("[market-bg-refresh] cache updated: %v items loaded", loaded)
+						logger.Info("market bg refresh: cache updated",
+							zap.Any("items_loaded", loaded))
 					}
 				}
+			} else if err != nil {
+				// Exponential backoff with cap on consecutive failures
+				interval = min(interval*2, maxInterval)
+				logger.Warn("market bg refresh failed, backing off",
+					zap.Duration("next_interval", interval),
+					zap.Error(err))
 			}
 			select {
 			case <-h.bgRefreshStop:
 				return
-			case <-time.After(refreshCooldown):
+			case <-time.After(interval):
 			}
 		}
 	}()
@@ -117,11 +128,16 @@ func (h *LZTMarketHandler) ProxyRequest(c *gin.Context) {
 	})
 	if err != nil {
 		status := http.StatusBadGateway
+		msg := "Layanan market sedang tidak tersedia. Silakan coba lagi."
 		if errors.Is(err, services.ErrLZTRequestInvalid) {
 			status = http.StatusBadRequest
+			msg = "Permintaan tidak valid."
 		}
+		logger.Warn("market proxy request failed",
+			zap.String("path", req.Path),
+			zap.Error(err))
 		c.JSON(status, gin.H{
-			"error": err.Error(),
+			"error": msg,
 		})
 		return
 	}
@@ -151,11 +167,14 @@ func (h *LZTMarketHandler) GetChatGPTAccounts(c *gin.Context) {
 	})
 	if err != nil {
 		status := http.StatusBadGateway
+		msg := "Layanan market sedang tidak tersedia. Silakan coba lagi."
 		if errors.Is(err, services.ErrLZTRequestInvalid) {
 			status = http.StatusBadRequest
+			msg = "Permintaan tidak valid."
 		}
+		logger.Warn("market chatgpt fetch failed", zap.Error(err))
 		c.JSON(status, gin.H{
-			"error": err.Error(),
+			"error": msg,
 		})
 		return
 	}
