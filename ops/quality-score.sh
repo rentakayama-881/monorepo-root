@@ -206,9 +206,9 @@ score_tests() {
   # --- Backend test ratio (target: 30%) ---
   local be_src_count=0 be_test_count=0
   be_src_count=$(find "$OPS_ROOT/backend" \
-    -type f -name '*.go' ! -name '*_test.go' ! -path '*/vendor/*' 2>/dev/null | wc -l || true)
+    -type f -name '*.go' ! -name '*_test.go' ! -path '*/vendor/*' ! -path '*/ent/*' 2>/dev/null | wc -l || true)
   be_test_count=$(find "$OPS_ROOT/backend" \
-    -type f -name '*_test.go' ! -path '*/vendor/*' 2>/dev/null | wc -l || true)
+    -type f -name '*_test.go' ! -path '*/vendor/*' ! -path '*/ent/*' 2>/dev/null | wc -l || true)
 
   local be_ratio=0
   if (( be_src_count > 0 )); then
