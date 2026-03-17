@@ -1487,8 +1487,8 @@ html {
 
 /* Login/Register page background */
 .auth-page-bg {
-  @apply flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 px-4 py-8;
-  min-height: calc(100vh - var(--header-height));
+  @apply flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 px-4 py-6;
+  min-height: calc(100dvh - var(--header-height));
 }
 
 /* Divider with text */

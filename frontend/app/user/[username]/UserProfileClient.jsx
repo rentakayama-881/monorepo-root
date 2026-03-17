@@ -180,8 +180,8 @@ export default function UserProfilePage() {
       {/* Profile Header */}
       <div className="flex flex-col gap-4 mb-8">
         {/* Avatar + Name row */}
-        <div className="flex items-start gap-4">
-          <Avatar src={profile.avatar_url} name={displayName} size="xl" className="shrink-0" />
+        <div className="flex items-start gap-3">
+          <Avatar src={profile.avatar_url} name={displayName} size="lg" className="shrink-0" />
           <div className="min-w-0 flex-1 pt-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold text-foreground">{displayName || "(No Name)"}</h1>
