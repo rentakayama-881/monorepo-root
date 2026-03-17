@@ -54,6 +54,11 @@ export const FEATURE_ENDPOINTS = {
     CURRENCIES: "/api/v1/wallets/withdrawals/currencies",
   },
 
+  // Market Purchases
+  MARKET_PURCHASES: {
+    HISTORY: "/api/v1/wallets/market-purchases/history",
+  },
+
   // Disputes
   DISPUTES: {
     LIST: "/api/v1/disputes",
