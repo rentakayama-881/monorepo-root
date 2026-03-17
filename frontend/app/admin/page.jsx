@@ -34,55 +34,44 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const fetchStats = async () => {
       const token = getAdminToken();
+      const headers = { Authorization: `Bearer ${token}` };
 
       try {
-        // Fetch badges count from Go backend
-        const badgesRes = await fetch(`${getApiBase()}/admin/badges`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (badgesRes.ok) {
-          const data = await badgesRes.json();
-          setStats((prev) => ({
-            ...prev,
-            totalBadges: data.badges?.length || 0,
-          }));
+        const [badgesRes, usersRes, modStatsRes] = await Promise.allSettled([
+          fetch(`${getApiBase()}/admin/badges`, { headers }),
+          fetch(`${getApiBase()}/admin/users?limit=1`, { headers }),
+          FEATURE_SERVICE_URL
+            ? fetch(`${FEATURE_SERVICE_URL}/api/v1/admin/moderation/dashboard`, {
+                cache: "no-store",
+                headers: { ...headers, Accept: "application/json" },
+              })
+            : Promise.resolve(null),
+        ]);
+
+        const next = {};
+
+        if (badgesRes.status === "fulfilled" && badgesRes.value?.ok) {
+          const data = await badgesRes.value.json();
+          next.totalBadges = data.badges?.length || 0;
         }
 
-        // Fetch users count from Go backend
-        const usersRes = await fetch(`${getApiBase()}/admin/users?limit=1`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (usersRes.ok) {
-          const data = await usersRes.json();
-          setStats((prev) => ({ ...prev, totalUsers: data.total || 0 }));
+        if (usersRes.status === "fulfilled" && usersRes.value?.ok) {
+          const data = await usersRes.value.json();
+          next.totalUsers = data.total || 0;
         }
 
-        // Fetch moderation stats from Feature Service
-        if (FEATURE_SERVICE_URL) {
-          const modStatsRes = await fetch(
-            `${FEATURE_SERVICE_URL}/api/v1/admin/moderation/dashboard`,
-            {
-              cache: "no-store",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: "application/json",
-              },
-            }
-          );
-          if (modStatsRes.ok) {
-            const modPayload = await modStatsRes.json().catch(() => null);
-            const modData = unwrapApiData(modPayload) || {};
-            setStats((prev) => ({
-              ...prev,
-              activeDeviceBans:
-                Number(modData.activeDeviceBans ?? modData.ActiveDeviceBans ?? 0) || 0,
-              warningsToday:
-                Number(modData.warningsIssuedToday ?? modData.WarningsIssuedToday ?? 0) || 0,
-              hiddenContent:
-                Number(modData.hiddenContentCount ?? modData.HiddenContentCount ?? 0) || 0,
-            }));
-          }
+        if (modStatsRes.status === "fulfilled" && modStatsRes.value?.ok) {
+          const modPayload = await modStatsRes.value.json().catch(() => null);
+          const modData = unwrapApiData(modPayload) || {};
+          next.activeDeviceBans =
+            Number(modData.activeDeviceBans ?? modData.ActiveDeviceBans ?? 0) || 0;
+          next.warningsToday =
+            Number(modData.warningsIssuedToday ?? modData.WarningsIssuedToday ?? 0) || 0;
+          next.hiddenContent =
+            Number(modData.hiddenContentCount ?? modData.HiddenContentCount ?? 0) || 0;
         }
+
+        setStats((prev) => ({ ...prev, ...next }));
       } catch (err) {
         logger.error("Failed to fetch stats:", err);
       }

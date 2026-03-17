@@ -17,7 +17,9 @@ export default function Footer() {
   return (
     <footer className="shrink-0 border-t">
       <div className="container flex flex-col items-center gap-2 py-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:py-3">
-        <span className="flex items-center gap-1.5">&copy; {new Date().getFullYear()} AIValid</span>
+        <span className="flex items-center gap-1.5" suppressHydrationWarning>
+          &copy; {new Date().getFullYear()} AIValid
+        </span>
 
         <div className="flex flex-col items-center gap-1 sm:items-end">
           <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-end">

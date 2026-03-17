@@ -107,7 +107,7 @@ export default function useOrderDetail() {
       }
       try {
         const data = await fetchJsonAuth(
-          `/api/market/chatgpt/orders/${encodeURIComponent(orderID)}?ts=${Date.now()}`,
+          `/api/market/chatgpt/orders/${encodeURIComponent(orderID)}`,
           {
             method: "GET",
             timeout: 20000,
