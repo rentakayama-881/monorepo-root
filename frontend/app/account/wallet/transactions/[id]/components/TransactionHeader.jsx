@@ -1,5 +1,5 @@
 import StatusBadge from "./StatusBadge";
-import { formatDate } from "./useTransactionDetail";
+import { formatDateTime as formatDate } from "@/lib/format";
 
 export default function TransactionHeader({ transfer, isSender, status, holdInfo }) {
   return (

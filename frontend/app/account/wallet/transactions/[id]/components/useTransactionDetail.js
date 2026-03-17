@@ -49,8 +49,6 @@ export function normalizeStatus(status) {
   return statusMap[status] || status?.toLowerCase() || "held";
 }
 
-export { formatDateTime as formatDate } from "@/lib/format";
-
 export default function useTransactionDetail() {
   const router = useRouter();
   const params = useParams();

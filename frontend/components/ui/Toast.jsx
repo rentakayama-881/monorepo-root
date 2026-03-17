@@ -164,17 +164,17 @@ function Toast({ title, description, variant, onClose, duration, action, index }
     info: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   };
 
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     setIsDismissing(true);
     setTimeout(onClose, 200);
-  };
+  }, [onClose]);
 
   // Auto-dismiss with proper cleanup
   useEffect(() => {
     if (duration <= 0) return;
     const timer = setTimeout(handleDismiss, duration);
     return () => clearTimeout(timer);
-  }, [duration]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [duration, handleDismiss]);
 
   // Swipe to dismiss
   const handleTouchStart = (e) => {

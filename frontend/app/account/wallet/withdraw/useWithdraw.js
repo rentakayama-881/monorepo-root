@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { fetchFeatureAuth, FEATURE_ENDPOINTS, unwrapFeatureData } from "@/lib/featureApi";
 import { getToken } from "@/lib/auth";
@@ -76,42 +76,44 @@ export default function useWithdraw() {
   const selectedCrypto = CRYPTO_CURRENCIES.find((c) => c.value === cryptoCurrency);
   const availableNetworks = useMemo(() => selectedCrypto?.networks || [], [selectedCrypto]);
 
+  const loadDataRef = useRef(false);
+
   useEffect(() => {
+    if (loadDataRef.current) return;
+    loadDataRef.current = true;
     const token = getToken();
     if (!token) {
       router.push("/login");
       return;
     }
+    async function loadData() {
+      try {
+        const walletRes = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
+        const w = normalizeWallet(walletRes);
+        setWallet(w);
+        if (!w.has_pin) {
+          router.push("/account/wallet/set-pin?redirect=withdraw");
+          return;
+        }
+      } catch (e) {
+        logger.error("Failed to load wallet data", e);
+        if (e.code === "TWO_FACTOR_REQUIRED") {
+          router.push(
+            `/account/security?setup2fa=true&redirect=${encodeURIComponent("/account/wallet/withdraw")}`
+          );
+          return;
+        }
+        setError(getErrorMessage(e, "Gagal memuat data"));
+      } finally {
+        setLoading(false);
+      }
+    }
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: loadData references stable setters
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     setNetwork(availableNetworks.length === 1 ? availableNetworks[0] : "");
   }, [availableNetworks]);
-
-  async function loadData() {
-    try {
-      const walletRes = await fetchFeatureAuth(FEATURE_ENDPOINTS.WALLETS.ME);
-      const w = normalizeWallet(walletRes);
-      setWallet(w);
-      if (!w.has_pin) {
-        router.push("/account/wallet/set-pin?redirect=withdraw");
-        return;
-      }
-    } catch (e) {
-      logger.error("Failed to load wallet data", e);
-      if (e.code === "TWO_FACTOR_REQUIRED") {
-        router.push(
-          `/account/security?setup2fa=true&redirect=${encodeURIComponent("/account/wallet/withdraw")}`
-        );
-        return;
-      }
-      setError(getErrorMessage(e, "Gagal memuat data"));
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleWithdraw() {
     setProcessing(true);

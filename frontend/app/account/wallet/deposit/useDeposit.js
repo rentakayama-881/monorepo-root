@@ -143,7 +143,7 @@ export default function useDeposit() {
         setDepositHistory(items.map(normalizeDeposit));
       }
 
-      if (pendingRes.status === "fulfilled" && step === 1) {
+      if (pendingRes.status === "fulfilled") {
         const pendingData = unwrapFeatureData(pendingRes.value) || pendingRes.value;
         const pendingId =
           pendingData?.id ??
@@ -158,7 +158,7 @@ export default function useDeposit() {
             address: pendingData.address ?? pendingData.Address ?? "",
             qrCode: pendingData.qrCode ?? pendingData.QrCode ?? "",
             payAmount: pendingData.payAmount ?? pendingData.PayAmount ?? "",
-            payCurrency: pendingData.payCurrency ?? pendingData.PayCurrency ?? payCurrency,
+            payCurrency: pendingData.payCurrency ?? pendingData.PayCurrency ?? "USDT",
             network: normalizeNetworkName(pendingData.network ?? pendingData.Network ?? ""),
             rate: pendingData.rate ?? pendingData.Rate ?? "",
             expiredAt: Number(pendingData.expiredAt ?? pendingData.ExpiredAt ?? 0),
@@ -188,7 +188,11 @@ export default function useDeposit() {
     }
   }
 
+  const loadDataRef = useRef(false);
+
   useEffect(() => {
+    if (loadDataRef.current) return;
+    loadDataRef.current = true;
     const token = getToken();
     if (!token) {
       router.push("/login");
@@ -199,8 +203,7 @@ export default function useDeposit() {
       if (pollRef.current) clearInterval(pollRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: loadData references stable refs/setters
-  }, []);
+  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only: loadData↔startPolling circular dep
 
   useEffect(() => {
     if (availableNetworks.length === 1) {
