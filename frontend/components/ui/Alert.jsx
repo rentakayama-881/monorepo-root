@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import PropTypes from "prop-types";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 
 /**
  * Enhanced Alert component with variants and features:
@@ -42,8 +42,7 @@ export default function Alert({
     info: {
       container: "border-border bg-muted/50 text-foreground",
       icon: "text-primary",
-      iconPath:
-        "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+      iconPath: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
     },
     success: {
       container: "border-success/30 bg-success/10 text-success dark:text-success",
@@ -59,8 +58,7 @@ export default function Alert({
     error: {
       container: "border-destructive/30 bg-destructive/10 text-destructive",
       icon: "text-destructive",
-      iconPath:
-        "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
+      iconPath: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
     },
   };
 
@@ -68,7 +66,7 @@ export default function Alert({
 
   return (
     <div
-      className={clsx(
+      className={cn(
         "rounded-md border transition-all duration-200 animate-fade-in",
         compact ? "px-2 py-1.5" : "px-3 py-2",
         styles.container,
@@ -81,11 +79,7 @@ export default function Alert({
         {/* Icon */}
         {showIcon && (
           <svg
-            className={clsx(
-              "flex-shrink-0 mt-0.5",
-              compact ? "w-4 h-4" : "w-5 h-5",
-              styles.icon
-            )}
+            className={cn("flex-shrink-0 mt-0.5", compact ? "w-4 h-4" : "w-5 h-5", styles.icon)}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -102,17 +96,10 @@ export default function Alert({
         {/* Content */}
         <div className="flex-1 min-w-0">
           {title && (
-            <div className={clsx("font-semibold", compact ? "text-xs" : "text-sm")}>
-              {title}
-            </div>
+            <div className={cn("font-semibold", compact ? "text-xs" : "text-sm")}>{title}</div>
           )}
           {message && (
-            <div
-              className={clsx(
-                compact ? "text-xs" : "text-sm",
-                title && "mt-0.5 opacity-90"
-              )}
-            >
+            <div className={cn(compact ? "text-xs" : "text-sm", title && "mt-0.5 opacity-90")}>
               {message}
             </div>
           )}
@@ -123,7 +110,7 @@ export default function Alert({
             <button
               type="button"
               onClick={action.onClick}
-              className={clsx(
+              className={cn(
                 "mt-2 font-medium underline-offset-2 hover:underline transition-colors",
                 compact ? "text-xs" : "text-sm"
               )}

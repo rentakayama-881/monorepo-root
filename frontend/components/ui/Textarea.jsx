@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState, useId } from "react";
 import PropTypes from "prop-types";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 
 /**
  * Enhanced textarea component with auto-resize and premium features
@@ -90,7 +90,7 @@ export default function Textarea({
     }
   }, [value, autoResize, adjustHeight]);
 
-  const textareaStyles = clsx(
+  const textareaStyles = cn(
     "w-full rounded-md border bg-card px-3 py-2 text-sm text-foreground transition-all duration-200",
     "placeholder:text-muted-foreground",
     "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -174,7 +174,7 @@ export default function Textarea({
         </div>
         {showCharCounter && (
           <p
-            className={clsx(
+            className={cn(
               "text-xs shrink-0 transition-colors",
               isNearLimit ? "text-warning" : "text-muted-foreground",
               charCount === maxLength && "text-destructive font-medium"

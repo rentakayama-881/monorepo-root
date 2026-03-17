@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import clsx from 'clsx';
-import { TagPill } from './TagPill';
-import { TagIcon } from './TagIcons';
+import { useState, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { TagPill } from "./TagPill";
+import { TagIcon } from "./TagIcons";
 
 /**
  * GitHub-style Tag Selector Component
  * Multi-select dropdown untuk memilih tags pada Validation Case
  */
-export default function TagSelector({ 
-  selectedTags = [], 
+export default function TagSelector({
+  selectedTags = [],
   onTagsChange,
   availableTags = [],
   disabled = false,
@@ -21,7 +21,7 @@ export default function TagSelector({
   singlePerGroup = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -33,16 +33,17 @@ export default function TagSelector({
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Filter tags based on search query
-  const filteredTags = availableTags.filter(tag => {
+  const filteredTags = availableTags.filter((tag) => {
     const query = enableSearch ? searchQuery : "";
-    const matchesSearch = tag.name.toLowerCase().includes(query.toLowerCase()) ||
-                         tag.slug.toLowerCase().includes(query.toLowerCase());
-    const notSelected = !selectedTags.find(t => t.slug === tag.slug);
+    const matchesSearch =
+      tag.name.toLowerCase().includes(query.toLowerCase()) ||
+      tag.slug.toLowerCase().includes(query.toLowerCase());
+    const notSelected = !selectedTags.find((t) => t.slug === tag.slug);
     return matchesSearch && notSelected;
   });
 
@@ -67,9 +68,9 @@ export default function TagSelector({
   // Toggle tag selection
   const toggleTag = (tag) => {
     if (disabled) return;
-    if (selectedTags.find(t => t.slug === tag.slug)) {
+    if (selectedTags.find((t) => t.slug === tag.slug)) {
       // Remove tag
-      onTagsChange(selectedTags.filter(t => t.slug !== tag.slug));
+      onTagsChange(selectedTags.filter((t) => t.slug !== tag.slug));
     } else {
       // Add / replace tag
       let base = selectedTags;
@@ -83,7 +84,7 @@ export default function TagSelector({
       onTagsChange([...base, tag]);
     }
     if (enableSearch) {
-      setSearchQuery('');
+      setSearchQuery("");
     } else {
       setIsOpen(false);
     }
@@ -92,20 +93,15 @@ export default function TagSelector({
   // Remove tag
   const removeTag = (tagSlug) => {
     if (disabled) return;
-    onTagsChange(selectedTags.filter(t => t.slug !== tagSlug));
+    onTagsChange(selectedTags.filter((t) => t.slug !== tagSlug));
   };
 
   return (
-    <div className={clsx("relative isolate z-[80]", className)} ref={dropdownRef}>
+    <div className={cn("relative isolate z-[80]", className)} ref={dropdownRef}>
       {/* Selected tags display */}
       <div className="flex flex-wrap gap-2 mb-2">
         {selectedTags.map((tag) => (
-          <TagPill
-            key={tag.slug}
-            tag={tag}
-            size="sm"
-            onRemove={disabled ? null : removeTag}
-          />
+          <TagPill key={tag.slug} tag={tag} size="sm" onRemove={disabled ? null : removeTag} />
         ))}
       </div>
 
@@ -123,7 +119,7 @@ export default function TagSelector({
             onFocus={() => setIsOpen(true)}
             placeholder={selectedTags.length >= maxTags ? `Maks ${maxTags} tags` : placeholder}
             disabled={disabled || selectedTags.length >= maxTags}
-            className={clsx(
+            className={cn(
               "w-full px-3 py-2 text-sm border rounded-[var(--radius)]",
               "bg-card border-border",
               "text-foreground placeholder:text-muted-foreground",
@@ -138,7 +134,7 @@ export default function TagSelector({
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
             disabled={disabled || selectedTags.length >= maxTags}
-            className={clsx(
+            className={cn(
               "w-full px-3 py-2 text-left text-sm border rounded-[var(--radius)]",
               "bg-card border-border",
               "text-foreground placeholder:text-muted-foreground",
@@ -149,28 +145,30 @@ export default function TagSelector({
             aria-haspopup="listbox"
             aria-expanded={isOpen}
           >
-            <span className={clsx(
-              selectedTags.length >= maxTags ? "text-muted-foreground" : "text-muted-foreground"
-            )}>
+            <span
+              className={cn(
+                selectedTags.length >= maxTags ? "text-muted-foreground" : "text-muted-foreground"
+              )}
+            >
               {selectedTags.length >= maxTags ? `Maks ${maxTags} tags` : placeholder}
             </span>
           </button>
         )}
-        
+
         {/* Dropdown indicator */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-          <svg 
-            width="12" 
-            height="12" 
-            viewBox="0 0 12 12" 
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
             fill="none"
             className="text-muted-foreground"
           >
-            <path 
-              d="M3 4.5L6 7.5L9 4.5" 
-              stroke="currentColor" 
-              strokeWidth="1.5" 
-              strokeLinecap="round" 
+            <path
+              d="M3 4.5L6 7.5L9 4.5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
@@ -179,11 +177,13 @@ export default function TagSelector({
 
       {/* Dropdown menu */}
       {isOpen && filteredTags.length > 0 && (
-        <div className={clsx(
-          "absolute left-0 z-[120] w-full mt-1 py-1 rounded-[var(--radius)] shadow-xl border",
-          "bg-card border-border",
-          "max-h-60 overflow-y-auto"
-        )}>
+        <div
+          className={cn(
+            "absolute left-0 z-[120] w-full mt-1 py-1 rounded-[var(--radius)] shadow-xl border",
+            "bg-card border-border",
+            "max-h-60 overflow-y-auto"
+          )}
+        >
           {[
             { key: "artifact", label: "Artifact" },
             { key: "stage", label: "Stage" },
@@ -204,7 +204,7 @@ export default function TagSelector({
                     type="button"
                     onClick={() => toggleTag(tag)}
                     disabled={disabled}
-                    className={clsx(
+                    className={cn(
                       "w-full px-3 py-2 text-left text-sm flex items-start gap-2",
                       "hover:bg-accent transition-colors",
                       disabled && "opacity-60 cursor-not-allowed"
@@ -214,9 +214,7 @@ export default function TagSelector({
                       <TagIcon name={tag.icon || "tag"} className="h-4 w-4" />
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-foreground">
-                        {tag.name}
-                      </div>
+                      <div className="font-medium text-foreground">{tag.name}</div>
                       {tag.description && (
                         <div className="text-xs text-muted-foreground line-clamp-2">
                           {tag.description}
@@ -233,11 +231,13 @@ export default function TagSelector({
 
       {/* Empty state when searching */}
       {isOpen && (enableSearch ? searchQuery : true) && filteredTags.length === 0 && (
-        <div className={clsx(
-          "absolute left-0 z-[120] w-full mt-1 py-3 px-3 rounded-[var(--radius)] shadow-xl border",
-          "bg-card border-border",
-          "text-sm text-muted-foreground text-center"
-        )}>
+        <div
+          className={cn(
+            "absolute left-0 z-[120] w-full mt-1 py-3 px-3 rounded-[var(--radius)] shadow-xl border",
+            "bg-card border-border",
+            "text-sm text-muted-foreground text-center"
+          )}
+        >
           Tags tidak ditemukan
         </div>
       )}

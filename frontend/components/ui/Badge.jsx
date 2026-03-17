@@ -2,7 +2,7 @@
  * Badge System - Styled like prompts.chat verified badges
  */
 
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { sizeConfig, renderBadgeIcon, getBadgeTone, getBadgeConfig } from "./badgeVariants";
 
@@ -26,7 +26,7 @@ export function Badge({
   if (variant === "pulse") {
     return (
       <span
-        className={clsx(
+        className={cn(
           "inline-flex items-center rounded-sm border font-medium animate-pulse-subtle",
           sizes.gap,
           sizes.text,
@@ -61,7 +61,7 @@ export function Badge({
   if (variant === "icon") {
     return (
       <span
-        className={clsx("inline-flex items-center shrink-0", className)}
+        className={cn("inline-flex items-center shrink-0", className)}
         style={{ color: tone.color }}
         title={config.label}
         {...props}
@@ -75,7 +75,7 @@ export function Badge({
   if (variant === "inline") {
     return (
       <span
-        className={clsx("inline-flex items-center font-medium", sizes.gap, sizes.text, className)}
+        className={cn("inline-flex items-center font-medium", sizes.gap, sizes.text, className)}
         style={{ color: tone.color }}
         title={config.label}
         {...props}
@@ -89,7 +89,7 @@ export function Badge({
   // Chip variant (with background)
   return (
     <span
-      className={clsx(
+      className={cn(
         "inline-flex items-center justify-center rounded-[var(--radius)] border font-medium w-fit whitespace-nowrap shrink-0 overflow-hidden",
         sizes.gap,
         sizes.text,
@@ -122,7 +122,7 @@ export function BadgeChip({ badge, onRemove, size = "sm", className = "" }) {
 
   return (
     <span
-      className={clsx(
+      className={cn(
         "inline-flex items-center rounded-[var(--radius)] border font-medium transition-all w-fit whitespace-nowrap shrink-0 overflow-hidden",
         "border hover:shadow-sm",
         sizes.gap,
@@ -165,7 +165,7 @@ export function BadgeList({ badges = [], maxDisplay = 5, size = "sm", className 
   const remaining = badges.length - maxDisplay;
 
   return (
-    <div className={clsx("flex flex-wrap items-center gap-1.5", className)}>
+    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
       {displayBadges.map((badge, i) => (
         <BadgeChip key={badge.id || badge.ID || i} badge={badge} size={size} />
       ))}
@@ -192,8 +192,8 @@ export function UsernameWithBadge({
   usernameClassName = "",
 }) {
   const content = (
-    <span className={clsx("inline-flex items-center gap-1", className)}>
-      <span className={clsx("font-medium", usernameClassName)}>@{username}</span>
+    <span className={cn("inline-flex items-center gap-1", className)}>
+      <span className={cn("font-medium", usernameClassName)}>@{username}</span>
       {verified && <Badge type="verified" size={size} />}
       {isAdmin && <Badge type="admin" size={size} />}
       {primaryBadge && !verified && !isAdmin && <Badge badge={primaryBadge} size={size} />}

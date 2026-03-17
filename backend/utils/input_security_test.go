@@ -258,6 +258,33 @@ func TestInputSecurityValidator_Password(t *testing.T) {
 	}
 }
 
+func TestInputSecurityValidator_LDAPInjection(t *testing.T) {
+	v := NewInputSecurityValidator()
+
+	tests := []struct {
+		name     string
+		input    string
+		wantSafe bool
+	}{
+		{"Normal text", "John Doe", true},
+		{"Normal email-like", "user@example.com", true},
+		{"LDAP OR injection", ")(|", false},
+		{"LDAP AND injection", ")(&", false},
+		{"Wildcard injection", "*)", false},
+		{"Wildcard filter", "(*)", false},
+		{"Hex escape", `\2a`, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotSafe := v.IsSafeFromLDAPInjection(tt.input)
+			if gotSafe != tt.wantSafe {
+				t.Errorf("IsSafeFromLDAPInjection(%q) = %v, want %v", tt.input, gotSafe, tt.wantSafe)
+			}
+		})
+	}
+}
+
 func TestInputSecurityValidator_ValidateInput(t *testing.T) {
 	v := NewInputSecurityValidator()
 

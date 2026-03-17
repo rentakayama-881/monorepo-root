@@ -2,7 +2,7 @@
 
 import React, { useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 
 export default function Modal({
   open = false,
@@ -92,13 +92,11 @@ export default function Modal({
 
   const shouldSlideUp = variant === "slide-up";
 
-  const modalStyles = clsx(
+  const modalStyles = cn(
     "relative w-full bg-card shadow-xl",
     size === "full" ? "h-full" : "rounded-lg border",
     sizeClasses[size],
-    shouldSlideUp
-      ? "animate-slide-up"
-      : "animate-in fade-in zoom-in-95 duration-200",
+    shouldSlideUp ? "animate-slide-up" : "animate-in fade-in zoom-in-95 duration-200",
     className
   );
 
@@ -110,7 +108,7 @@ export default function Modal({
 
   return (
     <div
-      className={clsx(
+      className={cn(
         "fixed inset-0 z-50 flex justify-center",
         shouldSlideUp ? "items-end sm:items-center" : "items-center",
         size === "full" ? "p-0" : "p-4",
@@ -149,7 +147,12 @@ export default function Modal({
                 aria-label="Close modal"
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             )}
@@ -157,7 +160,7 @@ export default function Modal({
         )}
 
         {/* Body */}
-        <div className={clsx("p-4", size === "full" && "h-full overflow-auto")}>
+        <div className={cn("p-4", size === "full" && "h-full overflow-auto")}>
           {/* Close button if no header */}
           {!title && !showCloseButton && onClose && (
             <button
@@ -166,7 +169,12 @@ export default function Modal({
               aria-label="Close modal"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           )}
@@ -191,11 +199,7 @@ Modal.propTypes = {
 };
 
 export function ModalHeader({ children, className = "" }) {
-  return (
-    <div className={clsx("border-b px-4 py-3", className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn("border-b px-4 py-3", className)}>{children}</div>;
 }
 
 ModalHeader.propTypes = {
@@ -204,11 +208,7 @@ ModalHeader.propTypes = {
 };
 
 export function ModalBody({ children, className = "" }) {
-  return (
-    <div className={clsx("p-4", className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn("p-4", className)}>{children}</div>;
 }
 
 ModalBody.propTypes = {
@@ -218,7 +218,7 @@ ModalBody.propTypes = {
 
 export function ModalFooter({ children, className = "" }) {
   return (
-    <div className={clsx("border-t px-4 py-3 flex items-center justify-end gap-2", className)}>
+    <div className={cn("border-t px-4 py-3 flex items-center justify-end gap-2", className)}>
       {children}
     </div>
   );

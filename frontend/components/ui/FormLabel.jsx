@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 
 /**
  * FormLabel component for form elements with enhanced features
@@ -27,7 +27,7 @@ export default function FormLabel({
     <div className="flex items-center gap-1.5 mb-1">
       <label
         htmlFor={htmlFor}
-        className={clsx(
+        className={cn(
           "text-sm font-medium transition-colors",
           error ? "text-destructive" : "text-foreground",
           className

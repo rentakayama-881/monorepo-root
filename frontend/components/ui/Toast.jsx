@@ -10,7 +10,7 @@ import React, {
   useRef,
 } from "react";
 import PropTypes from "prop-types";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 
 const ToastContext = createContext(null);
 
@@ -120,7 +120,7 @@ function ToastContainer({ toasts, onRemove, position }) {
 
   return (
     <div
-      className={clsx(
+      className={cn(
         "fixed z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none",
         positionClasses[position]
       )}
@@ -208,7 +208,7 @@ function Toast({ title, description, variant, onClose, duration, action, index }
   return (
     <div
       ref={toastRef}
-      className={clsx(
+      className={cn(
         "rounded-lg border shadow-lg transition-all duration-200 pointer-events-auto",
         "animate-slide-in-from-right",
         variantStyles[variant],

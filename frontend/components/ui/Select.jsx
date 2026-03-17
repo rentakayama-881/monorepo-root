@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useId } from "react";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import {
   normalizeOptions,
   groupOptions,
@@ -124,7 +124,7 @@ export default function Select({
 
   // Native select for simple cases
   if (useNativeSelect) {
-    const selectStyles = clsx(
+    const selectStyles = cn(
       "w-full rounded-lg border bg-card px-3 py-2 text-sm text-foreground transition-all duration-200",
       "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring appearance-none cursor-pointer",
       error ? "border-destructive" : "border-border",
@@ -188,7 +188,7 @@ export default function Select({
   }
 
   // Custom select with search and multi-select
-  const triggerStyles = clsx(
+  const triggerStyles = cn(
     "w-full rounded-lg border bg-card px-3 py-2 text-sm text-foreground transition-all duration-200",
     "flex items-center justify-between gap-2 cursor-pointer",
     error
@@ -274,7 +274,7 @@ export default function Select({
             )}
           </div>
           <svg
-            className={clsx(
+            className={cn(
               "h-4 w-4 text-muted-foreground transition-transform shrink-0",
               isOpen && "rotate-180"
             )}
@@ -334,7 +334,7 @@ export default function Select({
                           <button
                             key={opt.value}
                             type="button"
-                            className={clsx(
+                            className={cn(
                               "w-full px-3 py-2 text-left text-sm rounded transition-colors flex items-center justify-between gap-2",
                               "hover:bg-accent hover:text-accent-foreground",
                               isSelected && "bg-accent/50 font-medium"

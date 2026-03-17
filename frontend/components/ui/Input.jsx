@@ -2,7 +2,7 @@
 
 import React, { useId, useState, useRef } from "react";
 import PropTypes from "prop-types";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 
 /**
  * Enhanced accessible input component with premium UX features
@@ -48,10 +48,10 @@ export default function Input({
   const errorId = `${inputId}-error`;
   const hintId = `${inputId}-hint`;
   const inputRef = useRef(null);
-  
+
   const [internalValue, setInternalValue] = useState(defaultValue || "");
   const value = controlledValue !== undefined ? controlledValue : internalValue;
-  
+
   const [hasInteracted, setHasInteracted] = useState(false);
 
   const handleChange = (e) => {
@@ -89,7 +89,7 @@ export default function Input({
     lg: { left: iconLeft ? "pl-10" : "", right: iconRight || clearable ? "pr-10" : "" },
   };
 
-  const inputStyles = clsx(
+  const inputStyles = cn(
     "w-full rounded-md border bg-card text-foreground transition-all duration-200",
     "placeholder:text-muted-foreground",
     "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -99,9 +99,11 @@ export default function Input({
     error
       ? "border-destructive focus-visible:outline-destructive focus-visible:ring-destructive/20"
       : success
-      ? "border-success focus-visible:outline-success focus-visible:ring-success/20"
-      : "border-border",
-    !error && !success && "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary focus-visible:shadow-[0_0_0_3px_var(--ring),0_0_15px_-3px_var(--primary)]",
+        ? "border-success focus-visible:outline-success focus-visible:ring-success/20"
+        : "border-border",
+    !error &&
+      !success &&
+      "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary focus-visible:shadow-[0_0_0_3px_var(--ring),0_0_15px_-3px_var(--primary)]",
     error && hasInteracted && "animate-shake",
     className
   );
@@ -116,10 +118,12 @@ export default function Input({
     <div className="relative">
       {/* Left Icon */}
       {iconLeft && (
-        <div className={clsx(
-          "absolute left-0 top-0 h-full flex items-center justify-center text-muted-foreground pointer-events-none",
-          size === "sm" ? "w-8" : size === "lg" ? "w-10" : "w-9"
-        )}>
+        <div
+          className={cn(
+            "absolute left-0 top-0 h-full flex items-center justify-center text-muted-foreground pointer-events-none",
+            size === "sm" ? "w-8" : size === "lg" ? "w-10" : "w-9"
+          )}
+        >
           {iconLeft}
         </div>
       )}
@@ -142,10 +146,7 @@ export default function Input({
 
       {/* Floating Label */}
       {floatingLabel && label && (
-        <label
-          htmlFor={inputId}
-          className="floating-label"
-        >
+        <label htmlFor={inputId} className="floating-label">
           {label}
           {required && <span className="text-destructive ml-0.5">*</span>}
         </label>
@@ -153,10 +154,12 @@ export default function Input({
 
       {/* Right Icon or Clear Button */}
       {(iconRight || (clearable && value)) && (
-        <div className={clsx(
-          "absolute right-0 top-0 h-full flex items-center justify-center",
-          size === "sm" ? "w-8" : size === "lg" ? "w-10" : "w-9"
-        )}>
+        <div
+          className={cn(
+            "absolute right-0 top-0 h-full flex items-center justify-center",
+            size === "sm" ? "w-8" : size === "lg" ? "w-10" : "w-9"
+          )}
+        >
           {clearable && value ? (
             <button
               type="button"
@@ -166,23 +169,28 @@ export default function Input({
               tabIndex={-1}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           ) : iconRight ? (
-            <div className="text-muted-foreground pointer-events-none">
-              {iconRight}
-            </div>
+            <div className="text-muted-foreground pointer-events-none">{iconRight}</div>
           ) : null}
         </div>
       )}
 
       {/* Success Icon */}
       {success && !iconRight && !clearable && (
-        <div className={clsx(
-          "absolute right-0 top-0 h-full flex items-center justify-center text-success pointer-events-none",
-          size === "sm" ? "w-8" : size === "lg" ? "w-10" : "w-9"
-        )}>
+        <div
+          className={cn(
+            "absolute right-0 top-0 h-full flex items-center justify-center text-success pointer-events-none",
+            size === "sm" ? "w-8" : size === "lg" ? "w-10" : "w-9"
+          )}
+        >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
@@ -197,7 +205,11 @@ export default function Input({
       {label && !floatingLabel && (
         <label htmlFor={inputId} className="mb-1 block text-sm font-medium text-foreground">
           {label}
-          {required && <span className="text-destructive ml-1" aria-hidden="true">*</span>}
+          {required && (
+            <span className="text-destructive ml-1" aria-hidden="true">
+              *
+            </span>
+          )}
         </label>
       )}
 
@@ -223,12 +235,15 @@ export default function Input({
           )}
         </div>
         {showCharCounter && (
-          <p className={clsx(
-            "text-xs shrink-0 transition-colors",
-            isNearLimit ? "text-warning" : "text-muted-foreground",
-            charCount === maxLength && "text-destructive font-medium"
-          )}>
-            {charCount}{maxLength ? `/${maxLength}` : ""}
+          <p
+            className={cn(
+              "text-xs shrink-0 transition-colors",
+              isNearLimit ? "text-warning" : "text-muted-foreground",
+              charCount === maxLength && "text-destructive font-medium"
+            )}
+          >
+            {charCount}
+            {maxLength ? `/${maxLength}` : ""}
           </p>
         )}
       </div>
