@@ -285,9 +285,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=aivalid
-WorkingDirectory=/opt/aivalid/backend
-ExecStart=/opt/aivalid/backend/app
+User=alephdraad
+WorkingDirectory=/opt/alephdraad/backend
+ExecStart=/opt/alephdraad/backend/app
 Restart=always
 RestartSec=5
 Environment=GIN_MODE=release
