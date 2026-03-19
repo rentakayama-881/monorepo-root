@@ -181,7 +181,7 @@ export default function UserProfilePage() {
       <div className="flex flex-col gap-4 mb-8">
         {/* Avatar + Name row */}
         <div className="flex items-start gap-3">
-          <Avatar src={profile.avatar_url} name={displayName} size="lg" className="shrink-0" />
+          <Avatar src={profile.avatar_url} name={displayName} size="md" className="shrink-0" />
           <div className="min-w-0 flex-1 pt-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold text-foreground">
@@ -202,7 +202,7 @@ export default function UserProfilePage() {
               </p>
             )}
 
-            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5 text-xs">
               <span className="inline-flex items-center rounded-sm border border-border bg-secondary/60 px-3 py-1 font-semibold text-foreground">
                 Case Validasi: {Number(profile.validation_case_count || 0)}
               </span>
