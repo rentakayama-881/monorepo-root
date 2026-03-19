@@ -75,7 +75,7 @@ export const metadata = {
     },
   },
 
-  // Icons — placeholder until new logo system is created
+  // Icons — TODO: ganti setelah logo system baru dibuat
   icons: {},
 
   // Manifest

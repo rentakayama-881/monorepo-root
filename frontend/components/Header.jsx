@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import CommandPaletteTrigger from "./CommandPaletteTrigger";
-import { Logo } from "./ui/Logo";
 import Avatar from "./ui/Avatar";
 import Portal from "./ui/Portal";
 import { useUserContext } from "@/lib/UserContext";
@@ -91,8 +90,14 @@ export default function Header() {
           <Menu className="w-5 h-5 text-foreground" strokeWidth={2} />
         </button>
 
-        {/* Logo */}
-        <Logo size={36} className="shrink-0 -ml-1 md:ml-0" />
+        {/* Logo placeholder — akan diganti dengan sistem logo baru */}
+        <Link
+          href="/"
+          data-testid="logo"
+          className="inline-flex items-center shrink-0 -ml-1 md:ml-0 rounded-lg focus:outline-none"
+        >
+          <span className="leading-none font-bold tracking-tight text-xl">aivalid.id</span>
+        </Link>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-0.5 text-sm" aria-label="Navigasi utama">
