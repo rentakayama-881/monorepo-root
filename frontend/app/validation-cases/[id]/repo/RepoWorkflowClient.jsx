@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import Skeleton from "@/components/ui/Skeleton";
+
+const MarkdownPreview = dynamic(() => import("@/components/ui/MarkdownPreview"), {
+  loading: () => <Skeleton className="h-24 w-full rounded-md" />,
+});
 import { formatIDR } from "@/lib/format";
 import WorkspaceWorkflowSkeleton from "../WorkspaceWorkflowSkeleton";
 import { useRepoWorkflow } from "./components/useRepoWorkflow";

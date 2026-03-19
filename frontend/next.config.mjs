@@ -1,6 +1,9 @@
 import { withSentryConfig } from "@sentry/nextjs";
+import bundleAnalyzer from "@next/bundle-analyzer";
 import path from "path";
 import { fileURLToPath } from "url";
+
+const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === "true" });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -94,6 +97,8 @@ const sentryWebpackPluginOptions = {
 };
 
 // Export with Sentry if DSN is configured, otherwise export plain config
-export default process.env.NEXT_PUBLIC_SENTRY_DSN
+const finalConfig = process.env.NEXT_PUBLIC_SENTRY_DSN
   ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
   : nextConfig;
+
+export default withBundleAnalyzer(finalConfig);

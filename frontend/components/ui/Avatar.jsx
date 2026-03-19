@@ -103,7 +103,6 @@ export default function Avatar({
             setImageError(true);
             setIsLoading(false);
           }}
-          unoptimized
         />
       </div>
     ) : (

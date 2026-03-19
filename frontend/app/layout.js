@@ -112,10 +112,10 @@ export default function RootLayout({ children }) {
         {/* Preconnect to API domains for faster first request */}
         <link rel="preconnect" href="https://api.aivalid.id" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://feature.aivalid.id" crossOrigin="anonymous" />
-        {/* Preload critical fonts to prevent FOUT (text size jump) */}
+        {/* Preload critical fonts — Regular + SemiBold cover most UI text */}
         <link
           rel="preload"
-          href="/fonts/ibm-plex/sans/IBMPlexSans-Bold.woff2"
+          href="/fonts/ibm-plex/sans/IBMPlexSans-Regular.woff2"
           as="font"
           type="font/woff2"
           crossOrigin="anonymous"
@@ -123,20 +123,6 @@ export default function RootLayout({ children }) {
         <link
           rel="preload"
           href="/fonts/ibm-plex/sans/IBMPlexSans-SemiBold.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="/fonts/ibm-plex/sans/IBMPlexSans-Medium.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="/fonts/ibm-plex/sans/IBMPlexSans-Regular.woff2"
           as="font"
           type="font/woff2"
           crossOrigin="anonymous"

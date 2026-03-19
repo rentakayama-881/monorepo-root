@@ -3,9 +3,13 @@
  * Extracted from ValidationCaseDetailClient.jsx.
  */
 
+import dynamic from "next/dynamic";
 import { isValidElement } from "react";
-import MarkdownPreview from "@/components/ui/MarkdownPreview";
 import { contentAsText, stripLeadingRecordLabel } from "./validationCaseDetailUtils";
+
+const MarkdownPreview = dynamic(() => import("@/components/ui/MarkdownPreview"), {
+  loading: () => <div className="h-6 w-full animate-pulse rounded bg-secondary" />,
+});
 
 function safeJson(value) {
   try {
