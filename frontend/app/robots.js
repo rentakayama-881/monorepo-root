@@ -17,7 +17,6 @@ export default function robots() {
           "/set-username/",
           "/login/",
           "/register/",
-          "/components-demo/",
           "/validation-cases/new",
         ],
       },

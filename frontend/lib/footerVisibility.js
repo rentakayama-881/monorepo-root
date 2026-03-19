@@ -7,7 +7,6 @@ const HIDE_FOOTER_EXACT = new Set([
   "/set-username",
   "/validation-cases/new",
   "/documents/upload",
-  "/components-demo",
   "/sync-token",
 ]);
 

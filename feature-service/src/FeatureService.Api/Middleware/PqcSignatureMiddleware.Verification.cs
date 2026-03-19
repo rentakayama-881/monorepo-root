@@ -251,7 +251,7 @@ public partial class PqcSignatureMiddleware
         {
             await auditService.RecordEventAsync(new AuditEventRequest
             {
-                TransactionId = $"sig_fail_{NUlid.Ulid.NewUlid()}",
+                TransactionId = $"sig_fail_{Ulid.NewUlid()}",
                 TransactionType = "SECURITY",
                 EventType = AuditEventType.SignatureFailed,
                 ActorUserId = userId,

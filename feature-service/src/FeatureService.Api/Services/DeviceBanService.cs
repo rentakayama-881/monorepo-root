@@ -2,7 +2,6 @@ using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
-using Ulid = NUlid.Ulid;
 
 namespace FeatureService.Api.Services;
 

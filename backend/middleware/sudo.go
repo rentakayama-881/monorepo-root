@@ -50,28 +50,3 @@ func RequireSudo(validator SudoValidator) gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-// OptionalSudo is a middleware that checks for sudo token but doesn't require it
-// Use this when an action is enhanced by sudo but not strictly required
-func OptionalSudo(validator SudoValidator) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userID := c.GetUint("user_id")
-		if userID == 0 {
-			c.Next()
-			return
-		}
-
-		sudoToken := c.GetHeader("X-Sudo-Token")
-		if sudoToken != "" {
-			valid, _ := validator.ValidateToken(userID, sudoToken)
-			c.Set("sudo_active", valid)
-			if valid {
-				c.Set("sudo_token", sudoToken)
-			}
-		} else {
-			c.Set("sudo_active", false)
-		}
-
-		c.Next()
-	}
-}

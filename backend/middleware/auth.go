@@ -181,14 +181,6 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-// truncateString truncates a string to max length
-func truncateString(s string, max int) string {
-	if len(s) > max {
-		return s[:max]
-	}
-	return s
-}
-
 func isRequestContextError(err error) bool {
 	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }

@@ -110,7 +110,7 @@ public class PqcKeysController : ApiControllerBase
 
         var pqcKey = new UserPqcKey
         {
-            Id = $"pqckey_{NUlid.Ulid.NewUlid()}",
+            Id = $"pqckey_{Ulid.NewUlid()}",
             UserId = userId,
             Username = GetUsername(),
             KeyId = keyId,

@@ -4,7 +4,6 @@ using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 using System.Net;
 using System.Text.Json;
-using Ulid = NUlid.Ulid;
 
 namespace FeatureService.Api.Services;
 

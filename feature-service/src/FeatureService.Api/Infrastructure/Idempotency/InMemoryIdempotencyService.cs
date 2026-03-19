@@ -89,7 +89,7 @@ public class InMemoryIdempotencyService : IIdempotencyService
     public string GenerateKey(string prefix)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(prefix);
-        var ulid = NUlid.Ulid.NewUlid();
+        var ulid = Ulid.NewUlid();
         return $"{prefix}_{ulid}";
     }
 

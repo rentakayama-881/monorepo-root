@@ -56,7 +56,7 @@ public class AuditTrailService : IAuditTrailService
             // Get previous entry hash and next sequence number
             var (previousHash, nextSequence) = await GetChainStateAsync(cancellationToken);
             
-            var auditId = $"aud_{NUlid.Ulid.NewUlid()}";
+            var auditId = $"aud_{Ulid.NewUlid()}";
             var now = DateTime.UtcNow;
             
             // Pre-compute entry hash by creating a temporary entry

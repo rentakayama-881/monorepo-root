@@ -313,23 +313,6 @@ func (r *EnhancedRateLimiter) SearchMiddleware() gin.HandlerFunc {
 	}
 }
 
-// Global enhanced rate limiter instance
-var enhancedRateLimiter *EnhancedRateLimiter
-var rateLimiterOnce sync.Once
-
-// GetEnhancedRateLimiter returns the global enhanced rate limiter
-func GetEnhancedRateLimiter() *EnhancedRateLimiter {
-	rateLimiterOnce.Do(func() {
-		enhancedRateLimiter = NewEnhancedRateLimiter(DefaultRateLimitConfig())
-	})
-	return enhancedRateLimiter
-}
-
-// SetEnhancedRateLimiter sets the global enhanced rate limiter (for testing)
-func SetEnhancedRateLimiter(r *EnhancedRateLimiter) {
-	enhancedRateLimiter = r
-}
-
 func parseIPRules(entries []string) (map[string]struct{}, []netip.Prefix) {
 	exact := make(map[string]struct{}, len(entries))
 	cidrs := make([]netip.Prefix, 0)

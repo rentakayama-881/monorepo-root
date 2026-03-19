@@ -3,7 +3,6 @@ using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Controllers;
-using Ulid = NUlid.Ulid;
 
 namespace FeatureService.Api.Services;
 

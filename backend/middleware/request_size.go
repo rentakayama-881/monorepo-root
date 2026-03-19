@@ -39,26 +39,8 @@ func RequestSizeLimitMiddleware(maxSize int64) gin.HandlerFunc {
 	}
 }
 
-// DefaultRequestSizeLimitMiddleware uses default size limit (1MB)
-func DefaultRequestSizeLimitMiddleware() gin.HandlerFunc {
-	limits := DefaultRequestSizeLimits()
-	return RequestSizeLimitMiddleware(limits.DefaultMaxSize)
-}
-
 // JSONRequestSizeLimitMiddleware for JSON API endpoints (5MB)
 func JSONRequestSizeLimitMiddleware() gin.HandlerFunc {
 	limits := DefaultRequestSizeLimits()
 	return RequestSizeLimitMiddleware(limits.JSONMaxSize)
-}
-
-// FileUploadSizeLimitMiddleware for file upload endpoints (50MB)
-func FileUploadSizeLimitMiddleware() gin.HandlerFunc {
-	limits := DefaultRequestSizeLimits()
-	return RequestSizeLimitMiddleware(limits.FileUploadMaxSize)
-}
-
-// AvatarUploadSizeLimitMiddleware for avatar uploads (2MB)
-func AvatarUploadSizeLimitMiddleware() gin.HandlerFunc {
-	limits := DefaultRequestSizeLimits()
-	return RequestSizeLimitMiddleware(limits.AvatarMaxSize)
 }
