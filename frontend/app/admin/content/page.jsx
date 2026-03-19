@@ -101,7 +101,7 @@ export default function HiddenContentPage() {
         <div className="text-center py-12 text-muted-foreground">Tidak ada data tersembunyi</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-label="Daftar konten tersembunyi">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Tipe</th>
@@ -161,10 +161,14 @@ export default function HiddenContentPage() {
 
             <form onSubmit={hideAction.execute} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label
+                  htmlFor="hide-content-type"
+                  className="block text-sm font-medium text-foreground mb-1"
+                >
                   Tipe Konten *
                 </label>
                 <select
+                  id="hide-content-type"
                   value={form.contentType}
                   onChange={(e) => setForm({ ...form, contentType: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
@@ -174,10 +178,14 @@ export default function HiddenContentPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label
+                  htmlFor="hide-content-id"
+                  className="block text-sm font-medium text-foreground mb-1"
+                >
                   ID Konten *
                 </label>
                 <input
+                  id="hide-content-id"
                   type="text"
                   value={form.contentId}
                   onChange={(e) => setForm({ ...form, contentId: e.target.value })}
@@ -187,8 +195,14 @@ export default function HiddenContentPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Alasan *</label>
+                <label
+                  htmlFor="hide-reason"
+                  className="block text-sm font-medium text-foreground mb-1"
+                >
+                  Alasan *
+                </label>
                 <textarea
+                  id="hide-reason"
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"

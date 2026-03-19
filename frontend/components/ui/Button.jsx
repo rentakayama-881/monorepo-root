@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { cva } from "class-variance-authority";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -41,7 +42,7 @@ const buttonVariants = cva(
   }
 );
 
-export default function Button({
+const Button = memo(function Button({
   variant = "default",
   size = "default",
   loading = false,
@@ -104,6 +105,7 @@ export default function Button({
       {content}
     </button>
   );
-}
+});
 
+export default Button;
 export { buttonVariants };

@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 /**
  * Reusable empty state component for lists, tables, and pages.
  * @param {Object} props
@@ -9,7 +11,7 @@
  * @param {React.ReactNode} [props.action] - Optional action button/link
  * @param {boolean} [props.compact] - Compact mode with less padding
  */
-export default function EmptyState({ icon, title, description, action, compact = false }) {
+const EmptyState = memo(function EmptyState({ icon, title, description, action, compact = false }) {
   return (
     <div
       className={`flex flex-col items-center justify-center text-center ${
@@ -47,4 +49,6 @@ export default function EmptyState({ icon, title, description, action, compact =
       ) : null}
     </div>
   );
-}
+});
+
+export default EmptyState;

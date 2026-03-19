@@ -2,6 +2,7 @@
  * Badge System - Styled like prompts.chat verified badges
  */
 
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { sizeConfig, renderBadgeIcon, getBadgeTone, getBadgeConfig } from "./badgeVariants";
@@ -9,7 +10,7 @@ import { sizeConfig, renderBadgeIcon, getBadgeTone, getBadgeConfig } from "./bad
 /**
  * Badge Component - Main badge display
  */
-export function Badge({
+export const Badge = memo(function Badge({
   badge,
   type,
   size = "sm",
@@ -108,12 +109,12 @@ export function Badge({
       {(showLabel || variant === "chip") && <span>{config.label}</span>}
     </span>
   );
-}
+});
 
 /**
  * BadgeChip - Badge displayed as a chip (for lists)
  */
-export function BadgeChip({ badge, onRemove, size = "sm", className = "" }) {
+export const BadgeChip = memo(function BadgeChip({ badge, onRemove, size = "sm", className = "" }) {
   if (!badge) return null;
 
   const config = getBadgeConfig(badge);
@@ -153,12 +154,17 @@ export function BadgeChip({ badge, onRemove, size = "sm", className = "" }) {
       )}
     </span>
   );
-}
+});
 
 /**
  * BadgeList - Display multiple badges
  */
-export function BadgeList({ badges = [], maxDisplay = 5, size = "sm", className = "" }) {
+export const BadgeList = memo(function BadgeList({
+  badges = [],
+  maxDisplay = 5,
+  size = "sm",
+  className = "",
+}) {
   if (!badges || badges.length === 0) return null;
 
   const displayBadges = badges.slice(0, maxDisplay);
@@ -176,12 +182,12 @@ export function BadgeList({ badges = [], maxDisplay = 5, size = "sm", className 
       )}
     </div>
   );
-}
+});
 
 /**
  * UsernameWithBadge - Display username with primary badge (prompts.chat style)
  */
-export function UsernameWithBadge({
+export const UsernameWithBadge = memo(function UsernameWithBadge({
   username,
   primaryBadge,
   verified = false,
@@ -209,20 +215,20 @@ export function UsernameWithBadge({
   }
 
   return content;
-}
+});
 
 /**
  * VerifiedBadge - Quick verified badge (prompts.chat style)
  */
-export function VerifiedBadge({ size = "sm", className = "" }) {
+export const VerifiedBadge = memo(function VerifiedBadge({ size = "sm", className = "" }) {
   return <Badge type="verified" size={size} className={className} />;
-}
+});
 
 /**
  * AdminBadge - Quick admin badge
  */
-export function AdminBadge({ size = "sm", className = "" }) {
+export const AdminBadge = memo(function AdminBadge({ size = "sm", className = "" }) {
   return <Badge type="admin" size={size} className={className} />;
-}
+});
 
 export default Badge;

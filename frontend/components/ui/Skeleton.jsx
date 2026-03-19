@@ -1,56 +1,50 @@
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { cva } from "class-variance-authority";
 
-const skeletonVariants = cva(
-  "rounded-[var(--radius)] bg-secondary relative overflow-hidden",
-  {
-    variants: {
-      variant: {
-        default: "animate-pulse",
-        shimmer: "before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent",
-      },
-      shape: {
-        default: "",
-        circle: "rounded-full",
-        text: "h-4",
-        card: "h-32",
-      },
+const skeletonVariants = cva("rounded-[var(--radius)] bg-secondary relative overflow-hidden", {
+  variants: {
+    variant: {
+      default: "animate-pulse",
+      shimmer:
+        "before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent",
     },
-    defaultVariants: {
-      variant: "shimmer",
-      shape: "default",
+    shape: {
+      default: "",
+      circle: "rounded-full",
+      text: "h-4",
+      card: "h-32",
     },
-  }
-);
+  },
+  defaultVariants: {
+    variant: "shimmer",
+    shape: "default",
+  },
+});
 
-export default function Skeleton({ className, variant, shape, ...props }) {
-  return (
-    <div
-      className={cn(skeletonVariants({ variant, shape }), className)}
-      {...props}
-    />
-  );
-}
+const Skeleton = memo(function Skeleton({ className, variant, shape, ...props }) {
+  return <div className={cn(skeletonVariants({ variant, shape }), className)} {...props} />;
+});
 
-export function SkeletonText({ width = "w-full", height = "h-4", className = "" }) {
-  return (
-    <Skeleton shape="text" className={cn(width, height, className)} />
-  );
-}
+export default Skeleton;
 
-export function SkeletonCircle({ size = "h-10 w-10", className = "" }) {
-  return (
-    <Skeleton shape="circle" className={cn(size, className)} />
-  );
-}
+export const SkeletonText = memo(function SkeletonText({
+  width = "w-full",
+  height = "h-4",
+  className = "",
+}) {
+  return <Skeleton shape="text" className={cn(width, height, className)} />;
+});
 
-export function SkeletonCard({ className = "" }) {
-  return (
-    <Skeleton shape="card" className={cn("w-full", className)} />
-  );
-}
+export const SkeletonCircle = memo(function SkeletonCircle({ size = "h-10 w-10", className = "" }) {
+  return <Skeleton shape="circle" className={cn(size, className)} />;
+});
 
-export function SkeletonListItem() {
+export const SkeletonCard = memo(function SkeletonCard({ className = "" }) {
+  return <Skeleton shape="card" className={cn("w-full", className)} />;
+});
+
+export const SkeletonListItem = memo(function SkeletonListItem() {
   return (
     <div className="flex items-center gap-3 p-3 border-b last:border-b-0 animate-pulse">
       <SkeletonCircle />
@@ -61,9 +55,9 @@ export function SkeletonListItem() {
       <SkeletonText width="w-20" />
     </div>
   );
-}
+});
 
-export function SkeletonTransactionList({ count = 3 }) {
+export const SkeletonTransactionList = memo(function SkeletonTransactionList({ count = 3 }) {
   return (
     <div className="rounded-[var(--radius)] border bg-card divide-y">
       {Array.from({ length: count }).map((_, i) => (
@@ -71,9 +65,9 @@ export function SkeletonTransactionList({ count = 3 }) {
       ))}
     </div>
   );
-}
+});
 
-export function SkeletonBalanceCard() {
+export const SkeletonBalanceCard = memo(function SkeletonBalanceCard() {
   return (
     <div className="rounded-[var(--radius)] border bg-card p-6 animate-pulse">
       <SkeletonText width="w-24" height="h-4" />
@@ -84,9 +78,9 @@ export function SkeletonBalanceCard() {
       </div>
     </div>
   );
-}
+});
 
-export function SkeletonPage() {
+export const SkeletonPage = memo(function SkeletonPage() {
   return (
     <main className="min-h-screen bg-background pt-16">
       <div className="mx-auto max-w-2xl px-4 py-8 animate-pulse">
@@ -101,4 +95,4 @@ export function SkeletonPage() {
       </div>
     </main>
   );
-}
+});

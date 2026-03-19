@@ -9,9 +9,7 @@ import CommandPaletteTrigger from "./CommandPaletteTrigger";
 import { Logo } from "./ui/Logo";
 import Avatar from "./ui/Avatar";
 import Portal from "./ui/Portal";
-import { AUTH_CHANGED_EVENT, getToken, TOKEN_KEY } from "@/lib/auth";
-import { getApiBase } from "@/lib/api";
-import { fetchWithAuth } from "@/lib/tokenRefresh";
+import { useUserContext } from "@/lib/UserContext";
 import { Menu, Plus } from "lucide-react";
 
 const Sidebar = dynamic(() => import("./Sidebar"), { ssr: false });
@@ -19,11 +17,8 @@ const ProfileSidebar = dynamic(() => import("./ProfileSidebar"), { ssr: false })
 
 export default function Header() {
   const pathname = usePathname();
-  const [authChecked, setAuthChecked] = useState(false);
-  const [isAuthed, setIsAuthed] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState(null);
-  const [userName, setUserName] = useState("");
-  const [profileLoading, setProfileLoading] = useState(false);
+  const { user, isLoggedIn, isLoading: profileLoading, avatarUrl } = useUserContext();
+  const userName = user?.username || user?.full_name || user?.email || "";
   const [sidebarMounted, setSidebarMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -33,38 +28,11 @@ export default function Header() {
   const profileTriggerRef = useRef(null);
 
   useEffect(() => {
-    const sync = () => {
-      try {
-        const token = getToken();
-        setIsAuthed(!!token);
-        if (!token) {
-          setAvatarUrl(null);
-          setUserName("");
-          setProfileLoading(false);
-          setProfileOpen(false);
-          setSidebarOpen(false);
-        }
-      } catch (_) {
-        setIsAuthed(false);
-      } finally {
-        setAuthChecked(true);
-      }
-    };
-
-    sync();
-
-    const onStorage = (e) => {
-      if (e && e.key === TOKEN_KEY) sync();
-    };
-
-    window.addEventListener(AUTH_CHANGED_EVENT, sync);
-    window.addEventListener("storage", onStorage);
-
-    return () => {
-      window.removeEventListener(AUTH_CHANGED_EVENT, sync);
-      window.removeEventListener("storage", onStorage);
-    };
-  }, []);
+    if (!isLoggedIn) {
+      setProfileOpen(false);
+      setSidebarOpen(false);
+    }
+  }, [isLoggedIn]);
 
   const prefetchSidebar = () => {
     if (sidebarPrefetchedRef.current) return;
@@ -77,45 +45,6 @@ export default function Header() {
     profilePrefetchedRef.current = true;
     import("./ProfileSidebar");
   };
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadProfile() {
-      const token = getToken();
-      if (!token) {
-        setAvatarUrl(null);
-        setUserName("");
-        setProfileLoading(false);
-        return;
-      }
-      setProfileLoading(true);
-      try {
-        // Use fetchWithAuth for auto token refresh
-        const res = await fetchWithAuth(`${getApiBase()}/api/user/me`);
-        if (!res || !res.ok) {
-          setAvatarUrl(null);
-          setUserName("");
-          return;
-        }
-        const data = await res.json();
-        if (!cancelled) {
-          setAvatarUrl(data.avatar_url || null);
-          setUserName(data.username || data.full_name || data.email || "");
-        }
-      } catch {
-        if (!cancelled) setAvatarUrl(null);
-      } finally {
-        if (!cancelled) setProfileLoading(false);
-      }
-    }
-
-    loadProfile();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthed]);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -166,7 +95,7 @@ export default function Header() {
         <Logo size={36} className="shrink-0 -ml-1 md:ml-0" />
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-0.5 text-sm">
+        <nav className="hidden md:flex items-center gap-0.5 text-sm" aria-label="Navigasi utama">
           <Link href="/" className={navItem}>
             Beranda
           </Link>
@@ -199,7 +128,7 @@ export default function Header() {
           {/* Theme toggle */}
           <ThemeToggle />
 
-          {!authChecked ? (
+          {profileLoading ? (
             <div
               className="inline-flex items-center gap-2 rounded-[var(--radius)] px-2 py-1"
               aria-hidden="true"
@@ -207,7 +136,7 @@ export default function Header() {
               <span className="h-6 w-6 rounded-full bg-secondary animate-pulse" />
               <span className="hidden sm:inline h-4 w-24 rounded bg-secondary animate-pulse" />
             </div>
-          ) : isAuthed ? (
+          ) : isLoggedIn ? (
             <div className="relative">
               <button
                 ref={profileTriggerRef}

@@ -153,7 +153,7 @@ export default function AdminDisputesPage() {
         </div>
       ) : (
         <div className="bg-card rounded-lg border border-border overflow-hidden">
-          <table className="w-full">
+          <table className="w-full" aria-label="Daftar sengketa">
             <thead className="bg-muted/30 border-b border-border">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
@@ -219,7 +219,7 @@ export default function AdminDisputesPage() {
                   <td className="px-4 py-3 text-center">
                     <Link
                       href={`/admin/disputes/${dispute.id}`}
-                      className="px-3 py-1 rounded bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition"
+                      className="inline-flex items-center px-3 py-2 rounded bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition min-h-[44px]"
                     >
                       Lihat
                     </Link>

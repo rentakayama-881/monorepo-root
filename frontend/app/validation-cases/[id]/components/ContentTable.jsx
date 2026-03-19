@@ -335,7 +335,10 @@ export default function ContentTable({ content }) {
       </div>
 
       <div className="relative w-full overflow-x-auto">
-        <table className="w-full min-w-[980px] table-fixed border-collapse text-sm">
+        <table
+          className="w-full min-w-[980px] table-fixed border-collapse text-sm"
+          aria-label="Detail kasus validasi"
+        >
           <thead className="bg-secondary/55 [&_th]:whitespace-nowrap">
             <tr>
               {columns.map((col) => (

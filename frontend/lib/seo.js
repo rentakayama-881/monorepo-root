@@ -98,6 +98,26 @@ export function generateWebApplicationStructuredData() {
 }
 
 /**
+ * Generate JSON-LD structured data for breadcrumb navigation
+ * @param {Array<{name: string, url: string}>} items - Breadcrumb items in order
+ * @returns {Object} - JSON-LD BreadcrumbList object
+ */
+export function generateBreadcrumbStructuredData(items) {
+  if (!items || !items.length) return null;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  };
+}
+
+/**
  * Generate Open Graph metadata
  * @param {Object} params - Page parameters
  * @returns {Object} - Open Graph metadata

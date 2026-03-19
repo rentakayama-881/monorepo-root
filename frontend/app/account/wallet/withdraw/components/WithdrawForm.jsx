@@ -160,7 +160,7 @@ export default function WithdrawForm({
                 key={val}
                 type="button"
                 onClick={() => handleQuickAmount(val)}
-                className="rounded-sm border border-input px-3 py-1 text-xs hover:bg-accent transition-colors"
+                className="rounded-sm border border-input px-3 py-2 text-xs hover:bg-accent transition-colors min-h-[44px]"
               >
                 {(val / 1000).toLocaleString("id-ID")}rb
               </button>
@@ -171,7 +171,7 @@ export default function WithdrawForm({
                 const maxAmount = Math.floor(wallet.balance / (1 + feePercent));
                 if (maxAmount > 0) handleQuickAmount(maxAmount);
               }}
-              className="rounded-sm border border-primary/30 bg-primary/5 px-3 py-1 text-xs text-primary hover:bg-primary/10 transition-colors"
+              className="rounded-sm border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary hover:bg-primary/10 transition-colors min-h-[44px]"
             >
               Maks
             </button>

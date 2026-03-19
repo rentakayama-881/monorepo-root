@@ -78,8 +78,10 @@ export function ToastProvider({ children, position = "bottom-right" }) {
     [addToast, removeToast]
   );
 
+  const contextValue = useMemo(() => ({ toast, removeToast }), [toast, removeToast]);
+
   return (
-    <ToastContext.Provider value={{ toast, removeToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <ToastContainer toasts={toasts} onRemove={removeToast} position={position} />
     </ToastContext.Provider>

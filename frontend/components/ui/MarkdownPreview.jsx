@@ -201,7 +201,9 @@ const markdownComponents = {
   // === TABLES ===
   table: ({ children }) => (
     <div className="my-4 overflow-x-auto rounded-lg border border-border">
-      <table className="min-w-full border-collapse">{children}</table>
+      <table className="min-w-full border-collapse" aria-label="Tabel konten">
+        {children}
+      </table>
     </div>
   ),
 
@@ -223,17 +225,20 @@ const markdownComponents = {
 
   img: ({ src, alt }) =>
     src ? (
-      <Image
-        src={src}
-        alt={alt || ""}
-        width={0}
-        height={0}
-        sizes="100vw"
-        style={{ width: "100%", height: "auto" }}
-        className="markdown-image rounded-lg my-4 border border-border hover:shadow-lg transition-shadow"
-        loading="lazy"
-        unoptimized
-      />
+      <span
+        className="relative block w-full my-4 overflow-hidden rounded-lg border border-border hover:shadow-lg transition-shadow"
+        style={{ aspectRatio: "16/9" }}
+      >
+        <Image
+          src={src}
+          alt={alt || ""}
+          fill
+          sizes="(max-width: 768px) 100vw, 768px"
+          className="markdown-image rounded-lg object-contain"
+          loading="lazy"
+          unoptimized
+        />
+      </span>
     ) : null,
 
   // === DIVIDERS ===

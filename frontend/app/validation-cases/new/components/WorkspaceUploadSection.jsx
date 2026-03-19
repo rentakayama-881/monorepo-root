@@ -101,7 +101,7 @@ export default function WorkspaceUploadSection({
         <>
           {/* Desktop: table */}
           <div className="hidden md:block overflow-x-auto rounded-[var(--radius)] border border-border">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label="Daftar file workspace">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-[0.08em] text-muted-foreground">
                   <th className="px-3 py-2">Kind</th>

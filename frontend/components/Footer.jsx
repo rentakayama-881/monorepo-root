@@ -22,7 +22,10 @@ export default function Footer() {
         </span>
 
         <div className="flex flex-col items-center gap-1 sm:items-end">
-          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-end">
+          <nav
+            aria-label="Menu utama"
+            className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-end"
+          >
             {primaryLinks.map((link) => (
               <Link key={link.href} href={link.href} className="hover:text-foreground">
                 {link.label}
@@ -30,7 +33,10 @@ export default function Footer() {
             ))}
           </nav>
 
-          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-end">
+          <nav
+            aria-label="Menu legal dan kebijakan"
+            className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-end"
+          >
             {secondaryLinks.map((link) => (
               <Link key={link.href} href={link.href} className="hover:text-foreground">
                 {link.label}
@@ -41,7 +47,10 @@ export default function Footer() {
             </a>
           </nav>
 
-          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-end">
+          <nav
+            aria-label="Menu komunitas"
+            className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-end"
+          >
             <span className="text-muted-foreground font-medium">Komunitas:</span>
             <a
               href="https://t.me/aivalidid"

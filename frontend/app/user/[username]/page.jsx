@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import UserProfileClient from "./UserProfileClient";
 import UserProfileSkeleton from "./UserProfileSkeleton";
-import { generateProfilePageStructuredData } from "@/lib/seo";
+import { generateProfilePageStructuredData, generateBreadcrumbStructuredData } from "@/lib/seo";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.aivalid.id";
 
@@ -54,6 +54,10 @@ export default async function UserProfilePage({ params }) {
   const user = data?.user || data;
 
   const jsonLd = user?.username ? generateProfilePageStructuredData(user) : null;
+  const breadcrumbJsonLd = generateBreadcrumbStructuredData([
+    { name: "Beranda", url: "https://aivalid.id" },
+    { name: user?.display_name || username, url: `https://aivalid.id/user/${username}` },
+  ]);
 
   return (
     <>
@@ -61,6 +65,12 @@ export default async function UserProfilePage({ params }) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      {breadcrumbJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
         />
       )}
       <Suspense fallback={<UserProfileSkeleton />}>

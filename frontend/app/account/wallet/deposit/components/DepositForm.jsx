@@ -67,12 +67,18 @@ export default function DepositForm({
 
       {/* Amount Input */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-foreground">Jumlah Deposit</label>
+        <label
+          htmlFor="deposit-amount"
+          className="mb-1.5 block text-sm font-medium text-foreground"
+        >
+          Jumlah Deposit
+        </label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
             Rp
           </span>
           <input
+            id="deposit-amount"
             type="text"
             inputMode="numeric"
             value={amount}

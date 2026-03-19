@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 
 // Lazy load CommandPalette for better initial performance
@@ -31,19 +31,15 @@ export function CommandPaletteProvider({ children }) {
     setIsOpen((prev) => !prev);
   }, []);
 
+  const contextValue = useMemo(
+    () => ({ isOpen, openCommandPalette, closeCommandPalette, toggleCommandPalette }),
+    [isOpen, openCommandPalette, closeCommandPalette, toggleCommandPalette]
+  );
+
   return (
-    <CommandPaletteContext.Provider
-      value={{
-        isOpen,
-        openCommandPalette,
-        closeCommandPalette,
-        toggleCommandPalette,
-      }}
-    >
+    <CommandPaletteContext.Provider value={contextValue}>
       {children}
-      {isOpen ? (
-        <CommandPalette isOpen={isOpen} onClose={closeCommandPalette} />
-      ) : null}
+      {isOpen ? <CommandPalette isOpen={isOpen} onClose={closeCommandPalette} /> : null}
     </CommandPaletteContext.Provider>
   );
 }

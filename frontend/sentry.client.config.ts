@@ -12,12 +12,17 @@ Sentry.init({
   replaysOnErrorSampleRate: 0.5,
   replaysSessionSampleRate: 0.1,
 
-  // You can remove this option if you're not planning to use the Sentry Session Replay feature:
-  integrations: [
-    Sentry.replayIntegration({
-      // Additional Replay configuration goes in here, for example:
-      maskAllText: true,
-      blockAllMedia: true,
-    }),
-  ],
+  integrations: [],
 });
+
+// Lazy-load Replay integration — only loads the ~50KB+ bundle when actually needed
+if (typeof window !== "undefined") {
+  Sentry.lazyLoadIntegration("replayIntegration").then((replay) => {
+    Sentry.addIntegration(
+      replay({
+        maskAllText: true,
+        blockAllMedia: true,
+      })
+    );
+  });
+}

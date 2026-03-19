@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useCallback } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo } from "react";
 import { useUser, useWallet, invalidateUserData } from "./swr";
 import { getToken, getTokenExpiry, clearToken, setTokens, AUTH_CHANGED_EVENT } from "./auth";
 import { getApiBase } from "./api";
@@ -147,31 +147,46 @@ export function UserProvider({ children }) {
     }
   }, []);
 
-  const value = {
-    // User data
-    user,
-    isLoggedIn,
-    isLoading: userLoading,
-    error: userError,
+  const value = useMemo(
+    () => ({
+      // User data
+      user,
+      isLoggedIn,
+      isLoading: userLoading,
+      error: userError,
 
-    // Wallet data
-    wallet,
-    walletLoading,
+      // Wallet data
+      wallet,
+      walletLoading,
 
-    // Actions
-    refreshUser,
-    mutateUser,
-    mutateWallet,
-    logout,
-    onLoginSuccess,
+      // Actions
+      refreshUser,
+      mutateUser,
+      mutateWallet,
+      logout,
+      onLoginSuccess,
 
-    // Computed values
-    username: user?.username || null,
-    email: user?.email || null,
-    avatarUrl: user?.avatar_url || null,
-    walletBalance: wallet?.balance || 0,
-    hasPinSet: wallet?.pin_set || false,
-  };
+      // Computed values
+      username: user?.username || null,
+      email: user?.email || null,
+      avatarUrl: user?.avatar_url || null,
+      walletBalance: wallet?.balance || 0,
+      hasPinSet: wallet?.pin_set || false,
+    }),
+    [
+      user,
+      isLoggedIn,
+      userLoading,
+      userError,
+      wallet,
+      walletLoading,
+      refreshUser,
+      mutateUser,
+      mutateWallet,
+      logout,
+      onLoginSuccess,
+    ]
+  );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }

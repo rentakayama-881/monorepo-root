@@ -76,6 +76,7 @@ export default function MediationChat({
               value={message}
               onChange={(e) => onMessageChange(e.target.value)}
               placeholder="Kirim pesan sebagai admin..."
+              aria-label="Tulis pesan mediasi"
               className="flex-1 rounded-lg border border-border bg-background px-4 py-2 text-foreground focus:outline-none focus:border-primary"
               disabled={sending}
             />

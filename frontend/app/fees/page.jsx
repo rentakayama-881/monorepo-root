@@ -1,4 +1,4 @@
-import { generateFAQStructuredData } from "@/lib/seo";
+import { generateFAQStructuredData, generateBreadcrumbStructuredData } from "@/lib/seo";
 import { CheckIcon, CreditCardIcon, InfoIcon } from "@/components/ui/LegalIcons";
 
 export const dynamic = "force-static";
@@ -68,10 +68,10 @@ const settlementRows = [
   { method: "Kartu Kredit/Debit", time: "H+3 hari kerja" },
 ];
 
-function Table({ headers, rows, alignRight = [] }) {
+function Table({ headers, rows, alignRight = [], ariaLabel }) {
   return (
     <div className="overflow-hidden rounded-lg border">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm" aria-label={ariaLabel}>
         <thead>
           <tr className="border-b bg-muted/40">
             {headers.map((header, index) => (
@@ -109,6 +109,10 @@ function Table({ headers, rows, alignRight = [] }) {
 
 export default function FeesPage() {
   const faqJsonLd = generateFAQStructuredData(feesFaqData);
+  const breadcrumbJsonLd = generateBreadcrumbStructuredData([
+    { name: "Beranda", url: "https://aivalid.id" },
+    { name: "Biaya Layanan", url: "https://aivalid.id/fees" },
+  ]);
 
   return (
     <>
@@ -116,6 +120,12 @@ export default function FeesPage() {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
+      {breadcrumbJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
         />
       )}
 
@@ -136,6 +146,7 @@ export default function FeesPage() {
           </h2>
           <article className="rounded-lg border bg-card p-4">
             <Table
+              ariaLabel="Tabel biaya layanan"
               headers={["Layanan", "Biaya", "Keterangan"]}
               rows={feeRows.map((item) => [item.type, item.fee, item.notes])}
             />
@@ -146,6 +157,7 @@ export default function FeesPage() {
           <h2 className="text-lg font-semibold">Minimum Penarikan</h2>
           <article className="rounded-lg border bg-card p-4">
             <Table
+              ariaLabel="Tabel minimum penarikan"
               headers={["Tier", "Kriteria", "Min. Penarikan"]}
               rows={withdrawalTiers.map((item) => [item.tier, item.criteria, item.min])}
               alignRight={[2]}
@@ -161,6 +173,7 @@ export default function FeesPage() {
           <h2 className="text-lg font-semibold">Waktu Settlement</h2>
           <article className="rounded-lg border bg-card p-4">
             <Table
+              ariaLabel="Tabel waktu settlement"
               headers={["Metode Pembayaran", "Waktu Settlement"]}
               rows={settlementRows.map((item) => [item.method, item.time])}
               alignRight={[1]}

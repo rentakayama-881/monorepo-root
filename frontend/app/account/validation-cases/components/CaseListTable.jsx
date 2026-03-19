@@ -302,7 +302,7 @@ export default function CaseListTable({ items, deletingId, onDeleteClick }) {
       {/* Desktop table */}
       <div className="hidden sm:block overflow-hidden rounded-none border border-border bg-background">
         <div className="w-full overflow-x-auto">
-          <table className="w-full min-w-[980px] text-sm">
+          <table className="w-full min-w-[980px] text-sm" aria-label="Daftar kasus validasi saya">
             <thead className="bg-secondary/60 text-muted-foreground [&_th]:whitespace-nowrap">
               <tr>
                 <th

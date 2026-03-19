@@ -71,6 +71,7 @@ export default function DisputeMessages({
               value={message}
               onChange={(e) => onMessageChange(e.target.value)}
               placeholder="Write a message..."
+              aria-label="Tulis pesan"
               className="flex-1 rounded-lg border border-border bg-transparent px-4 py-2 focus:outline-none focus:border-primary"
             />
             <button

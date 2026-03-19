@@ -16,7 +16,7 @@ const nextConfig = {
   },
 
   experimental: {
-    optimizePackageImports: ["@sentry/nextjs", "zod"],
+    optimizePackageImports: ["@sentry/nextjs", "lucide-react"],
   },
 
   async headers() {

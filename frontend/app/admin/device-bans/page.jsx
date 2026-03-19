@@ -139,7 +139,7 @@ export default function DeviceBansPage() {
         <div className="text-center py-12 text-muted-foreground">Tidak ada device ban aktif</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-label="Daftar blokir perangkat">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">

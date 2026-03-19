@@ -43,7 +43,7 @@ export default function ThemeToggle() {
     <div ref={wrapRef} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-accent transition-colors press-effect"
+        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-accent transition-colors press-effect"
         aria-label={`Theme: ${theme}`}
         aria-haspopup="menu"
         aria-expanded={open}

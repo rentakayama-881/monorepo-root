@@ -19,7 +19,7 @@ export default function RepoFileTable({
 
   return (
     <div className="overflow-auto">
-      <table className="min-w-full text-sm">
+      <table className="min-w-full text-sm" aria-label="Daftar file repositori">
         <thead>
           <tr className="text-left text-muted-foreground">
             <th className="py-2 pr-3">Jenis</th>

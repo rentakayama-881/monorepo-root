@@ -1,5 +1,4 @@
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
-import logger from './logger';
+import logger from "./logger";
 
 let fpPromise = null;
 
@@ -10,7 +9,7 @@ let fpPromise = null;
  */
 export async function getDeviceFingerprint() {
   if (!fpPromise) {
-    fpPromise = FingerprintJS.load();
+    fpPromise = import("@fingerprintjs/fingerprintjs").then((mod) => mod.default.load());
   }
   const fp = await fpPromise;
   const result = await fp.get();
@@ -26,11 +25,11 @@ export async function getDeviceFingerprint() {
 export async function getDeviceFingerprintWithTimeout(timeoutMs = 3000) {
   try {
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Fingerprint timeout')), timeoutMs)
+      setTimeout(() => reject(new Error("Fingerprint timeout")), timeoutMs)
     );
     return await Promise.race([getDeviceFingerprint(), timeoutPromise]);
   } catch (error) {
-    logger.warn('Failed to get device fingerprint:', error);
-    return '';
+    logger.warn("Failed to get device fingerprint:", error);
+    return "";
   }
 }

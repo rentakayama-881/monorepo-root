@@ -35,7 +35,7 @@ export default function EscrowPanel({
               <div>
                 <div className="text-sm font-semibold text-foreground">Escrow Draft</div>
                 <div className="mt-3 overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm" aria-label="Detail eskro">
                     <tbody className="divide-y divide-border">
                       <tr>
                         <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">

@@ -182,7 +182,10 @@ export default function ConsultationPanel({
             <div className="text-sm text-muted-foreground">Belum ada Request Consultation.</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-[920px] w-full text-sm">
+              <table
+                className="min-w-[920px] w-full text-sm"
+                aria-label="Daftar permintaan konsultasi"
+              >
                 <thead className="bg-secondary/60 text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">

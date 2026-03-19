@@ -1,6 +1,6 @@
 import ValidationCaseDetailClient from "./ValidationCaseDetailClient";
 import { fetchCasePublic, unwrapValidationCase } from "./casePublicData";
-import { generateValidationCaseStructuredData } from "@/lib/seo";
+import { generateValidationCaseStructuredData, generateBreadcrumbStructuredData } from "@/lib/seo";
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
@@ -39,6 +39,11 @@ export default async function ValidationCaseDetailPage({ params }) {
   const vc = unwrapValidationCase(data);
 
   const jsonLd = vc?.title ? generateValidationCaseStructuredData(vc) : null;
+  const breadcrumbJsonLd = generateBreadcrumbStructuredData([
+    { name: "Beranda", url: "https://aivalid.id" },
+    { name: "Kasus Validasi", url: "https://aivalid.id/validation-cases" },
+    { name: vc?.title || "Detail Kasus", url: `https://aivalid.id/validation-cases/${id}` },
+  ]);
 
   return (
     <>
@@ -46,6 +51,12 @@ export default async function ValidationCaseDetailPage({ params }) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      {breadcrumbJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
         />
       )}
       <ValidationCaseDetailClient initialCaseData={data || null} />

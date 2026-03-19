@@ -109,6 +109,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
+        {/* Preconnect to API domains for faster first request */}
+        <link rel="preconnect" href="https://api.aivalid.id" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://feature.aivalid.id" crossOrigin="anonymous" />
         {/* Preload critical fonts to prevent FOUT (text size jump) */}
         <link
           rel="preload"
@@ -120,6 +123,13 @@ export default function RootLayout({ children }) {
         <link
           rel="preload"
           href="/fonts/ibm-plex/sans/IBMPlexSans-SemiBold.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/ibm-plex/sans/IBMPlexSans-Medium.woff2"
           as="font"
           type="font/woff2"
           crossOrigin="anonymous"
@@ -156,14 +166,13 @@ export default function RootLayout({ children }) {
                   <Header />
                   <ApiStatusBanner />
 
-                  <div
+                  <main
                     id="main-content"
-                    role="main"
                     tabIndex={-1}
                     className="flex-1 pt-[var(--header-height)]"
                   >
                     {children}
-                  </div>
+                  </main>
 
                   <FooterGate />
                   <CookieConsentBanner />

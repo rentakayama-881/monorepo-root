@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { TagIcon } from "./TagIcons";
 
@@ -7,7 +8,7 @@ import { TagIcon } from "./TagIcons";
  * GitHub-style Tag Pill Component
  * Displays a single tag with icon and color
  */
-export function TagPill({
+export const TagPill = memo(function TagPill({
   tag,
   size = "sm",
   className = "",
@@ -65,13 +66,18 @@ export function TagPill({
       )}
     </Component>
   );
-}
+});
 
 /**
  * Tag List Component
  * Displays multiple tags in a horizontal list
  */
-export function TagList({ tags, size = "sm", maxDisplay = null, className = "" }) {
+export const TagList = memo(function TagList({
+  tags,
+  size = "sm",
+  maxDisplay = null,
+  className = "",
+}) {
   const displayTags = maxDisplay ? tags.slice(0, maxDisplay) : tags;
   const remainingCount = maxDisplay && tags.length > maxDisplay ? tags.length - maxDisplay : 0;
 
@@ -85,6 +91,6 @@ export function TagList({ tags, size = "sm", maxDisplay = null, className = "" }
       )}
     </div>
   );
-}
+});
 
 export default TagPill;

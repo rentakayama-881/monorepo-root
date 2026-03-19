@@ -325,7 +325,7 @@ export default function AdminLZTIntegrationPage() {
 
             {chatgptAccounts.length > 0 ? (
               <div className="overflow-auto rounded-md border border-border">
-                <table className="min-w-full text-sm">
+                <table className="min-w-full text-sm" aria-label="Daftar akun marketplace">
                   <thead className="bg-muted/40">
                     <tr>
                       <th className="px-3 py-2 text-left font-medium">#</th>

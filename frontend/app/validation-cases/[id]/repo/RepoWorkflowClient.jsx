@@ -195,7 +195,7 @@ export default function RepoWorkflowClient({
             Total bounty: {formatIDR(payout?.bounty_amount || 0)}
           </div>
           <div className="overflow-auto">
-            <table className="min-w-full text-sm">
+            <table className="min-w-full text-sm" aria-label="Daftar hasil pembayaran">
               <thead>
                 <tr className="text-left text-muted-foreground">
                   <th className="py-2 pr-3">Validator</th>

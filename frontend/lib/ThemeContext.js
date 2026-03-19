@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { STORAGE_KEYS } from "./constants";
 import logger from "./logger";
 
@@ -16,7 +16,8 @@ function writeThemeCookie(theme) {
 
   // Keep it JS-writeable (not HttpOnly) so the client can update it immediately.
   // SSR uses this to set the initial <html> class and avoid theme flash on refresh.
-  const secure = typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
+  const secure =
+    typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
   document.cookie = `theme=${encodeURIComponent(theme)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
 }
 
@@ -70,7 +71,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const updateResolvedTheme = () => {
       let resolved = theme;
-      
+
       if (theme === "system") {
         resolved = resolveThemeValue("system");
       }
@@ -101,14 +102,14 @@ export function ThemeProvider({ children }) {
     } catch (_) {}
   }, [theme]);
 
-  const setTheme = (newTheme) => {
+  const setTheme = useCallback((newTheme) => {
     const resolved = resolveThemeValue(newTheme);
 
     // Apply immediately for responsive UI
     applyResolvedTheme(resolved, true);
     setResolvedTheme(resolved);
     setThemeState(newTheme);
-    
+
     try {
       localStorage.setItem(STORAGE_KEYS.THEME, newTheme);
       writeThemeCookie(newTheme);
@@ -116,13 +117,14 @@ export function ThemeProvider({ children }) {
       // localStorage unavailable (e.g., private browsing, quota exceeded)
       logger.warn("Failed to save theme to localStorage:", error);
     }
-  };
+  }, []);
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
-      {children}
-    </ThemeContext.Provider>
+  const contextValue = useMemo(
+    () => ({ theme, setTheme, resolvedTheme }),
+    [theme, setTheme, resolvedTheme]
   );
+
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {
