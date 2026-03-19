@@ -3,7 +3,7 @@ import { ClockIcon, InfoIcon } from "@/components/ui/LegalIcons";
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Catatan Perubahan - AIValid",
+  title: "Catatan Perubahan",
   description: "Riwayat rilis, pembaruan fitur, dan perbaikan platform AIValid.",
   alternates: {
     canonical: "https://aivalid.id/changelog",

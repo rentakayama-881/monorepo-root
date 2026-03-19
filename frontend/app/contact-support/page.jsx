@@ -63,7 +63,7 @@ const quickGuides = [
 ];
 
 export const metadata = {
-  title: "Pusat Bantuan - AIValid",
+  title: "Pusat Bantuan",
   description:
     "Temukan jawaban pertanyaan umum, panduan penggunaan platform, dan kanal dukungan resmi AIValid.",
   alternates: {

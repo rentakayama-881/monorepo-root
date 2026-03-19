@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Daftar Akun AIValid - Gratis",
+  title: "Daftar Akun Gratis",
   description:
     "Buat akun AIValid gratis dan mulai validasi hasil kerja AI Anda. Kirim kode, riset, tugas, atau dokumen buatan AI untuk direview oleh ahli.",
   alternates: {

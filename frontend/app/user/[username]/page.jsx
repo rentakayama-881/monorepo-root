@@ -40,7 +40,7 @@ export async function generateMetadata({ params }) {
       canonical: `https://aivalid.id/user/${user.username}`,
     },
     openGraph: {
-      title: `${displayName} — Profil AIValid`,
+      title: `${displayName} · Profil`,
       description: description.slice(0, 160),
       type: "profile",
       url: `https://aivalid.id/user/${user.username}`,

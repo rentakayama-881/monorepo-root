@@ -3,7 +3,7 @@ import { CheckIcon, ShieldIcon, TargetIcon, UsersIcon } from "@/components/ui/Le
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Tentang AIValid",
+  title: "Tentang Kami",
   description:
     "Kisah di balik AIValid.id, platform validasi keluaran AI untuk pekerjaan berskala besar yang menuntut akurasi dan dapat dipertanggungjawabkan.",
   alternates: {

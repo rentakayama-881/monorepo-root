@@ -13,7 +13,7 @@ export const metadata = {
     canonical: "https://aivalid.id",
   },
   openGraph: {
-    title: "AIValid - Validasi Hasil AI oleh Ahli Manusia",
+    title: "Validasi Hasil AI oleh Ahli Manusia",
     description:
       "Kirim hasil kerja AI untuk divalidasi oleh ahli. Tersedia untuk kode program, riset, tugas kuliah, dokumen, dan lainnya.",
   },

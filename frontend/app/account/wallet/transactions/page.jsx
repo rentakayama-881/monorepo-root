@@ -1,6 +1,12 @@
 import { Suspense } from "react";
 import TransactionsContent from "./TransactionsContent";
 
+export const metadata = {
+  title: "Riwayat Transaksi",
+  description: "Lihat riwayat transaksi dompet AIValid Anda.",
+  robots: { index: false },
+};
+
 function TransactionsSkeleton() {
   return (
     <div className="min-h-screen bg-background">

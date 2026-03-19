@@ -10,7 +10,7 @@ import {
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Pedoman Komunitas - AIValid",
+  title: "Pedoman Komunitas",
   description:
     "Pedoman komunitas AIValid untuk menjaga ruang diskusi yang aman, inklusif, dan produktif.",
   alternates: {

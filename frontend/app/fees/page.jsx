@@ -27,7 +27,7 @@ const feesFaqData = [
 ];
 
 export const metadata = {
-  title: "Biaya Layanan - AIValid",
+  title: "Biaya Layanan",
   description:
     "Informasi biaya layanan AIValid, termasuk transaksi, penarikan, dan ketentuan dasar penggunaan dana.",
   alternates: {

@@ -1,6 +1,6 @@
 export const metadata = {
-  title: "My Account - AIValid",
-  description: "Manage your AIValid account",
+  title: "Akun Saya",
+  description: "Kelola profil, keamanan, dan pengaturan akun AIValid Anda.",
 };
 
 export default function AccountLayout({ children }) {

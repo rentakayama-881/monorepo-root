@@ -12,7 +12,7 @@ import {
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Kebijakan Privasi - AIValid",
+  title: "Kebijakan Privasi",
   description: "Kebijakan privasi dan perlindungan data pribadi pengguna AIValid.",
   alternates: {
     canonical: "https://aivalid.id/privacy",

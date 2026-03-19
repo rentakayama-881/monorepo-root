@@ -11,7 +11,7 @@ import {
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Syarat dan Ketentuan - AIValid",
+  title: "Syarat dan Ketentuan",
   description: "Syarat dan ketentuan penggunaan platform AIValid.",
   alternates: {
     canonical: "https://aivalid.id/rules-content",
