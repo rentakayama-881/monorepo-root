@@ -26,7 +26,9 @@ export default function MyPurchasesPage() {
         const nextOrders = Array.isArray(data?.orders) ? data.orders : [];
         setOrders(nextOrders);
 
-        const stillProcessing = nextOrders.some((order) => !FINAL_STATUSES.has(String(order?.status || "").toLowerCase()));
+        const stillProcessing = nextOrders.some(
+          (order) => !FINAL_STATUSES.has(String(order?.status || "").toLowerCase())
+        );
         if (stillProcessing) {
           timer = setTimeout(() => load(false), 2200);
         }
@@ -50,9 +52,13 @@ export default function MyPurchasesPage() {
   return (
     <main className="container py-8 space-y-4">
       <header className="space-y-1">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Account</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          Account
+        </div>
         <h1 className="text-2xl font-semibold text-foreground">Riwayat Pembelian</h1>
-        <p className="text-sm text-muted-foreground">Halaman ini menampilkan akun yang pembeliannya sudah berhasil.</p>
+        <p className="text-sm text-muted-foreground">
+          Halaman ini menampilkan akun yang pembeliannya sudah berhasil.
+        </p>
       </header>
 
       <section className="rounded-xl border border-border bg-card p-3">
@@ -67,7 +73,10 @@ export default function MyPurchasesPage() {
         {!loading && !error && !hasOrders ? (
           <div className="space-y-3 py-6 text-center">
             <p className="text-sm text-muted-foreground">Belum ada pembelian yang selesai.</p>
-            <Link href="/market/chatgpt" className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40">
+            <Link
+              href="/market/chatgpt"
+              className="inline-flex rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40"
+            >
               Buka Marketplace
             </Link>
           </div>
@@ -89,16 +98,26 @@ export default function MyPurchasesPage() {
                 {orders.map((order) => (
                   <tr key={order?.id} className="border-t border-border">
                     <td className="px-2.5 py-2">
-                      <div className="max-w-[360px] truncate font-medium">{order?.title || "ChatGPT Account"}</div>
-                      {String(order?.pricing_note || "").toLowerCase().includes("dipulihkan") ? (
-                        <div className="mt-1 text-[11px] text-muted-foreground">Riwayat lama (detail terbatas)</div>
+                      <div className="max-w-[360px] truncate font-medium">
+                        {order?.title || "ChatGPT Account"}
+                      </div>
+                      {String(order?.pricing_note || "")
+                        .toLowerCase()
+                        .includes("dipulihkan") ? (
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                          Riwayat lama (detail terbatas)
+                        </div>
                       ) : null}
                     </td>
-                    <td className="px-2.5 py-2 font-medium">{order?.price_display || order?.price || "-"}</td>
+                    <td className="px-2.5 py-2 font-medium">
+                      {order?.price_display || order?.price || "-"}
+                    </td>
                     <td className="px-2.5 py-2">
                       <StatusBadge status={order?.status} />
                     </td>
-                    <td className="px-2.5 py-2 text-muted-foreground">{formatDateTime(order?.created_at)}</td>
+                    <td className="px-2.5 py-2 text-muted-foreground">
+                      {formatDateTime(order?.created_at)}
+                    </td>
                     <td className="px-2.5 py-2">
                       <Link
                         href={`/market/chatgpt/orders/${encodeURIComponent(order?.id || "")}`}
@@ -121,10 +140,22 @@ export default function MyPurchasesPage() {
 function StatusBadge({ status }) {
   const normalized = String(status || "").toLowerCase();
   if (normalized === "fulfilled") {
-    return <span className="rounded-sm border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">Selesai</span>;
+    return (
+      <span className="rounded-sm border border-status-success-border bg-status-success-bg px-2 py-0.5 text-[11px] text-status-success-text">
+        Selesai
+      </span>
+    );
   }
   if (normalized === "failed") {
-    return <span className="rounded-sm border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">Gagal</span>;
+    return (
+      <span className="rounded-sm border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">
+        Gagal
+      </span>
+    );
   }
-  return <span className="rounded-sm border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700">Diproses</span>;
+  return (
+    <span className="rounded-sm border border-status-amber-border bg-status-amber-bg px-2 py-0.5 text-[11px] text-status-amber-text">
+      Diproses
+    </span>
+  );
 }

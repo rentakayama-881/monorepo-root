@@ -5,13 +5,17 @@ import Modal from "@/components/ui/Modal";
 import { BadgeIconPreview } from "./BadgeList";
 
 const ICON_TYPES = [
-  { value: "verified", label: "Verified", description: "Centang biru (seperti prompts.chat)" },
-  { value: "admin", label: "Admin", description: "Shield icon untuk admin" },
-  { value: "moderator", label: "Moderator", description: "Bintang untuk moderator" },
-  { value: "contributor", label: "Contributor", description: "Code icon untuk kontributor" },
-  { value: "premium", label: "Premium", description: "Crown untuk member premium" },
-  { value: "trusted", label: "Trusted", description: "Shield + check untuk trusted user" },
-  { value: "checkmark", label: "Checkmark", description: "Badge dengan centang" },
+  { value: "verified", label: "Terverifikasi", description: "Centang biru untuk badge verifikasi" },
+  { value: "admin", label: "Admin", description: "Ikon perisai untuk admin" },
+  { value: "moderator", label: "Moderator", description: "Ikon bintang untuk moderator" },
+  { value: "contributor", label: "Kontributor", description: "Ikon kode untuk kontributor" },
+  { value: "premium", label: "Premium", description: "Ikon mahkota untuk member premium" },
+  {
+    value: "trusted",
+    label: "Tepercaya",
+    description: "Perisai dan centang untuk pengguna tepercaya",
+  },
+  { value: "checkmark", label: "Centang", description: "Badge dengan ikon centang" },
 ];
 
 export default function BadgeForm({
@@ -28,7 +32,7 @@ export default function BadgeForm({
     <Modal
       open={showModal}
       onClose={onClose}
-      title={editingBadge ? "Edit Badge" : "Buat Badge Baru"}
+      title={editingBadge ? "Ubah Badge" : "Buat Badge Baru"}
     >
       <form onSubmit={onSubmit} className="space-y-4">
         {error && (
@@ -39,7 +43,7 @@ export default function BadgeForm({
 
         <Input
           label="Nama Badge"
-          placeholder="Verified Seller"
+          placeholder="Penjual Terverifikasi"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           required
@@ -106,7 +110,7 @@ export default function BadgeForm({
 
         {/* Preview */}
         <div className="rounded-md bg-muted/50 p-4">
-          <p className="text-xs text-muted-foreground mb-3">Preview:</p>
+          <p className="text-xs text-muted-foreground mb-3">Pratinjau:</p>
           <div className="flex items-center gap-3">
             {/* Icon only (next to username) */}
             <div className="flex items-center gap-1.5">
@@ -127,7 +131,7 @@ export default function BadgeForm({
                 color={formData.color}
                 size="h-3.5 w-3.5"
               />
-              {formData.name || "Badge Name"}
+              {formData.name || "Nama Badge"}
             </span>
           </div>
         </div>
@@ -137,7 +141,7 @@ export default function BadgeForm({
             Batal
           </Button>
           <Button type="submit" variant="primary" disabled={saving}>
-            {saving ? "Menyimpan..." : editingBadge ? "Update" : "Buat"}
+            {saving ? "Menyimpan..." : editingBadge ? "Simpan Perubahan" : "Buat"}
           </Button>
         </div>
       </form>

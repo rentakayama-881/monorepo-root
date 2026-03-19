@@ -24,7 +24,7 @@ function SecurityContent() {
 
 export default function SecurityPage() {
   return (
-    <Suspense fallback={<AuthPageLoading message="Loading..." />}>
+    <Suspense fallback={<AuthPageLoading message="Memuat..." />}>
       <SecurityContent />
     </Suspense>
   );

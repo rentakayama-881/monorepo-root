@@ -72,27 +72,27 @@ function getTypeBadge(type, kind) {
   if (t === "deposit")
     return {
       label: "Deposit",
-      cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+      cls: "bg-status-success-bg text-status-success-text",
     };
   if (t === "withdrawal")
     return {
       label: "Withdraw",
-      cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+      cls: "bg-status-info-bg text-status-info-text",
     };
   if (t === "fee")
     return {
       label: "Fee",
-      cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      cls: "bg-status-amber-bg text-status-amber-text",
     };
   if (kind === "transfer")
     return {
       label: "Transfer",
-      cls: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+      cls: "bg-status-violet-bg text-status-violet-text",
     };
   if (t.includes("market"))
     return {
       label: "Market",
-      cls: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+      cls: "bg-secondary text-foreground",
     };
   return { label: "Wallet", cls: "bg-muted text-muted-foreground" };
 }
@@ -207,13 +207,13 @@ export default function TransactionsContent() {
           <div className="mt-4 flex gap-2">
             <Link
               href="/account/wallet/deposit"
-              className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-emerald-700"
+              className="flex-1 rounded-lg bg-primary px-3 py-2 text-center text-xs font-semibold text-primary-foreground transition hover:bg-primary/90"
             >
               ↓ Deposit
             </Link>
             <Link
               href="/account/wallet/withdraw"
-              className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-blue-700"
+              className="flex-1 rounded-lg bg-secondary px-3 py-2 text-center text-xs font-semibold text-secondary-foreground border border-border transition hover:bg-secondary/80"
             >
               ↑ Withdraw
             </Link>
@@ -278,7 +278,7 @@ export default function TransactionsContent() {
           <div className="space-y-3">
             {rows.map((row) => {
               const isDebit = Number(row.amount) < 0;
-              const amountClass = isDebit ? "text-destructive" : "text-emerald-600";
+              const amountClass = isDebit ? "text-destructive" : "text-status-success-text";
               const title =
                 row.kind === "wallet"
                   ? mapWalletTypeLabel(row.type, row.description)

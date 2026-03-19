@@ -6,7 +6,7 @@ function StepBadge({ status }) {
   const normalized = String(status || "").toLowerCase();
   if (normalized === "done") {
     return (
-      <span className="rounded-sm border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-600">
+      <span className="rounded-sm border border-status-success-border bg-status-success-bg px-2 py-0.5 text-[11px] text-status-success-text">
         Selesai
       </span>
     );
@@ -19,7 +19,7 @@ function StepBadge({ status }) {
     );
   }
   return (
-    <span className="rounded-sm border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700">
+    <span className="rounded-sm border border-status-amber-border bg-status-amber-bg px-2 py-0.5 text-[11px] text-status-amber-text">
       Diproses
     </span>
   );
@@ -71,7 +71,7 @@ export default function OrderTimeline({ open, lock, order, onClose }) {
           </div>
 
           {lock ? (
-            <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
+            <div className="mt-3 rounded-md border border-status-amber-border bg-status-amber-bg px-3 py-2 text-xs text-status-amber-text">
               Proses masih berjalan. Mohon jangan menutup atau me-refresh halaman.
             </div>
           ) : null}

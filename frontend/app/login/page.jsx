@@ -13,15 +13,23 @@ import useAuthRedirectGuard from "@/lib/useAuthRedirectGuard";
 import { base64URLToBuffer, serializePublicKeyCredential } from "@/lib/webauthn";
 
 function isWebAuthnSupported() {
-  return typeof window !== "undefined" && !!(
-    window.PublicKeyCredential &&
-    typeof window.PublicKeyCredential === "function"
+  return (
+    typeof window !== "undefined" &&
+    !!(window.PublicKeyCredential && typeof window.PublicKeyCredential === "function")
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<AuthPageLoading fullPage={false} className="auth-page-bg" message="Loading sign-in form" />}>
+    <Suspense
+      fallback={
+        <AuthPageLoading
+          fullPage={false}
+          className="auth-page-bg"
+          message="Memuat formulir masuk"
+        />
+      }
+    >
       <div className="auth-page-bg">
         <LoginContent />
       </div>
@@ -62,7 +70,7 @@ function LoginContent() {
 
   async function onPasskeyLogin() {
     if (!isWebAuthnSupported()) {
-      setError(new Error("This browser does not support passkeys."));
+      setError(new Error("Browser ini belum mendukung passkey."));
       return;
     }
 
@@ -81,7 +89,7 @@ function LoginContent() {
       });
 
       if (!beginRes.ok) {
-        await throwApiError(beginRes, "Failed to initiate passkey authentication");
+        await throwApiError(beginRes, "Gagal memulai autentikasi passkey.");
       }
 
       const beginData = await readJsonSafe(beginRes);
@@ -89,7 +97,7 @@ function LoginContent() {
       const sessionId = beginData?.session_id;
 
       if (!publicKeyOptions || !sessionId) {
-        throw new Error("Failed to initiate passkey authentication");
+        throw new Error("Gagal memulai autentikasi passkey.");
       }
 
       publicKeyOptions.challenge = base64URLToBuffer(publicKeyOptions.challenge);
@@ -104,7 +112,7 @@ function LoginContent() {
       const credential = await navigator.credentials.get({ publicKey: publicKeyOptions });
 
       if (!credential) {
-        throw new Error("Passkey sign-in was cancelled.");
+        throw new Error("Login passkey dibatalkan.");
       }
 
       const finishRes = await fetch(`${API}/api/auth/passkeys/login/finish`, {
@@ -119,18 +127,18 @@ function LoginContent() {
       });
 
       if (!finishRes.ok) {
-        await throwApiError(finishRes, "Failed to complete authentication");
+        await throwApiError(finishRes, "Gagal menyelesaikan autentikasi.");
       }
 
       const data = await readJsonSafe(finishRes);
       if (!data) {
-        throw new Error("Failed to complete authentication");
+        throw new Error("Gagal menyelesaikan autentikasi.");
       }
 
       finishAuthentication(data);
     } catch (err) {
       if (err?.name === "NotAllowedError") {
-        setError(new Error("Passkey sign-in was cancelled or denied."));
+        setError(new Error("Login passkey dibatalkan atau ditolak."));
       } else {
         setError(err);
       }
@@ -192,12 +200,12 @@ function LoginContent() {
       });
 
       if (!response.ok) {
-        await throwApiError(response, "Invalid verification code.");
+        await throwApiError(response, "Kode verifikasi tidak valid.");
       }
 
       const data = await readJsonSafe(response);
       if (!data) {
-        throw new Error("Invalid verification code.");
+        throw new Error("Kode verifikasi tidak valid.");
       }
 
       finishAuthentication(data);

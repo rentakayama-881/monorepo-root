@@ -52,7 +52,7 @@ export default function useProfileSidebar({ onClose, triggerRef }) {
         }
         if (!res.ok) {
           if (!signal.aborted) {
-            setLoadError("Your profile could not be loaded at this time. Please try again.");
+            setLoadError("Profil Anda belum bisa dimuat saat ini. Silakan coba lagi.");
             setIsLoading(false);
           }
           return;
@@ -112,7 +112,7 @@ export default function useProfileSidebar({ onClose, triggerRef }) {
             return;
           }
 
-          setLoadError("A temporary network issue occurred. Please try again in a moment.");
+          setLoadError("Terjadi gangguan jaringan sementara. Silakan coba lagi sebentar lagi.");
           setIsLoading(false);
         }
       }

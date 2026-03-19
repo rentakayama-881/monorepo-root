@@ -48,7 +48,7 @@ describe("seo.js", () => {
     it("should return valid organization schema", () => {
       const result = generateOrganizationStructuredData();
       expect(result["@type"]).toBe("Organization");
-      expect(result.name).toBe("AIvalid");
+      expect(result.name).toBe("AIValid");
       expect(result.url).toBe("https://aivalid.id");
     });
   });
@@ -57,7 +57,7 @@ describe("seo.js", () => {
     it("should return valid website schema", () => {
       const result = generateWebsiteStructuredData();
       expect(result["@type"]).toBe("WebSite");
-      expect(result.name).toBe("AIvalid");
+      expect(result.name).toBe("AIValid");
       expect(result.potentialAction["@type"]).toBe("SearchAction");
     });
   });
@@ -79,7 +79,7 @@ describe("seo.js", () => {
       expect(result.title).toBe("Test");
       expect(result.type).toBe("website");
       expect(result.locale).toBe("id_ID");
-      expect(result.siteName).toBe("AIvalid");
+      expect(result.siteName).toBe("AIValid");
     });
 
     it("should use custom type and url", () => {

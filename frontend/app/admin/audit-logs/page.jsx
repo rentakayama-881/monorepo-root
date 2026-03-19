@@ -69,7 +69,7 @@ export default function AuditLogsPage() {
           "Content-Type": "application/json",
         },
       });
-      if (!res.ok) throw new Error("Gagal memuat audit logs");
+      if (!res.ok) throw new Error("Gagal memuat log audit");
       const data = await res.json();
       const payload = unwrapFeatureData(data);
       const logsPayload = payload?.logs ?? payload?.Logs ?? payload;
@@ -104,16 +104,16 @@ export default function AuditLogsPage() {
     };
 
     const labels = {
-      report_action: "Report Action",
-      device_ban: "Device Ban",
-      device_unban: "Device Unban",
-      warning_issued: "Warning Issued",
-      content_hidden: "Record Hidden",
-      content_unhidden: "Record Unhidden",
-      validation_case_move: "Validation Case Moved",
+      report_action: "Tindakan Laporan",
+      device_ban: "Ban Perangkat",
+      device_unban: "Cabut Ban Perangkat",
+      warning_issued: "Peringatan Diterbitkan",
+      content_hidden: "Data Disembunyikan",
+      content_unhidden: "Data Ditampilkan",
+      validation_case_move: "Case Validasi Dipindahkan",
       // Legacy (deprecated)
-      thread_transferred: "Validation Case Moved (legacy)",
-      thread_deleted: "Record Deleted (legacy)",
+      thread_transferred: "Case Validasi Dipindahkan (lama)",
+      thread_deleted: "Data Dihapus (lama)",
     };
     return (
       <span
@@ -127,19 +127,19 @@ export default function AuditLogsPage() {
   };
 
   const actionTypes = [
-    { value: "", label: "All Actions" },
-    { value: "report_action", label: "Report Action" },
-    { value: "device_ban", label: "Device Ban" },
-    { value: "device_unban", label: "Device Unban" },
-    { value: "warning_issued", label: "Warning Issued" },
-    { value: "content_hidden", label: "Content Hidden" },
-    { value: "content_unhidden", label: "Content Unhidden" },
-    { value: "validation_case_move", label: "Validation Case Moved" },
+    { value: "", label: "Semua Aksi" },
+    { value: "report_action", label: "Tindakan Laporan" },
+    { value: "device_ban", label: "Ban Perangkat" },
+    { value: "device_unban", label: "Cabut Ban Perangkat" },
+    { value: "warning_issued", label: "Peringatan Diterbitkan" },
+    { value: "content_hidden", label: "Data Disembunyikan" },
+    { value: "content_unhidden", label: "Data Ditampilkan" },
+    { value: "validation_case_move", label: "Case Validasi Dipindahkan" },
   ];
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-foreground mb-6">Audit Logs</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">Log Audit</h1>
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap gap-3">
@@ -150,7 +150,7 @@ export default function AuditLogsPage() {
             setPage(1);
           }}
           className="px-3 py-2 rounded-lg border border-border bg-background text-foreground"
-          aria-label="Filter by action type"
+          aria-label="Filter berdasarkan jenis aksi"
         >
           {actionTypes.map((type) => (
             <option key={type.value} value={type.value}>
@@ -161,8 +161,8 @@ export default function AuditLogsPage() {
 
         <input
           type="text"
-          placeholder="Filter by Admin ID..."
-          aria-label="Filter by Admin ID"
+          placeholder="Filter berdasarkan ID admin..."
+          aria-label="Filter berdasarkan ID admin"
           value={filter.adminId}
           onChange={(e) => {
             setFilter({ ...filter, adminId: e.target.value });
@@ -172,7 +172,7 @@ export default function AuditLogsPage() {
         />
 
         <Button onClick={fetchLogs} variant="secondary">
-          Apply Filters
+          Terapkan Filter
         </Button>
       </div>
 
@@ -187,20 +187,18 @@ export default function AuditLogsPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : logs.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">Tidak ada audit logs</div>
+        <div className="text-center py-12 text-muted-foreground">Tidak ada log audit</div>
       ) : (
         <>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                    Timestamp
-                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Waktu</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Admin</th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Action</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Aksi</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Target</th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Details</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Detail</th>
                 </tr>
               </thead>
               <tbody>
@@ -224,7 +222,7 @@ export default function AuditLogsPage() {
                       )}
                       {log.targetUserId && (
                         <div className="text-xs text-muted-foreground">
-                          User ID: {log.targetUserId}
+                          ID Pengguna: {log.targetUserId}
                         </div>
                       )}
                     </td>
@@ -235,7 +233,7 @@ export default function AuditLogsPage() {
                       {log.metadata && Object.keys(log.metadata).length > 0 && (
                         <details className="mt-1">
                           <summary className="text-xs text-primary cursor-pointer">
-                            View metadata
+                            Lihat metadata
                           </summary>
                           <pre className="mt-1 p-2 bg-muted/50 rounded text-xs overflow-auto max-w-xs">
                             {JSON.stringify(log.metadata, null, 2)}
@@ -252,7 +250,7 @@ export default function AuditLogsPage() {
           {/* Pagination */}
           <div className="mt-6 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              Page {page} of {totalPages}
+              Halaman {page} dari {totalPages}
             </div>
             <div className="flex gap-2">
               <Button
@@ -261,7 +259,7 @@ export default function AuditLogsPage() {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
-                Previous
+                Sebelumnya
               </Button>
               <Button
                 variant="secondary"
@@ -269,7 +267,7 @@ export default function AuditLogsPage() {
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
               >
-                Next
+                Berikutnya
               </Button>
             </div>
           </div>

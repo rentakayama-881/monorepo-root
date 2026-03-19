@@ -22,7 +22,7 @@ export default function Select({
   searchable = false,
   multiSelect = false,
   loading = false,
-  emptyMessage = "No options available",
+  emptyMessage = "Tidak ada opsi tersedia",
   className = "",
   children,
   required = false,
@@ -237,7 +237,7 @@ export default function Select({
                     <button
                       onClick={(e) => handleRemoveTag(val, e)}
                       className="hover:text-foreground"
-                      aria-label={`Remove ${opt?.label || val}`}
+                      aria-label={`Hapus ${opt?.label || val}`}
                     >
                       <svg
                         className="w-3 h-3"
@@ -269,7 +269,7 @@ export default function Select({
             )}
             {multiSelect && selectedValues.length > 3 && (
               <span className="text-xs text-muted-foreground">
-                +{selectedValues.length - 3} more
+                +{selectedValues.length - 3} lagi
               </span>
             )}
           </div>
@@ -294,7 +294,7 @@ export default function Select({
                   ref={searchInputRef}
                   type="text"
                   className="w-full px-3 py-1.5 text-sm bg-card border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Search..."
+                  placeholder="Cari..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
@@ -304,9 +304,7 @@ export default function Select({
 
             <div className="overflow-y-auto max-h-48 custom-scrollbar p-1">
               {loading ? (
-                <div className="px-3 py-2 text-sm text-muted-foreground text-center">
-                  Loading...
-                </div>
+                <div className="px-3 py-2 text-sm text-muted-foreground text-center">Memuat...</div>
               ) : filteredOpts.length === 0 ? (
                 <div className="px-3 py-2 text-sm text-muted-foreground text-center">
                   {emptyMessage}

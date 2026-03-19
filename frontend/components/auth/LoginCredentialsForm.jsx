@@ -28,20 +28,20 @@ export default function LoginCredentialsForm({
   return (
     <AuthContainer>
       <AuthHeader
-        title="Welcome back"
-        description="Sign in to continue to your AIvalid workspace."
+        title="Selamat datang kembali"
+        description="Masuk untuk melanjutkan ke workspace AIValid Anda."
       />
 
       <AuthCard>
         {sessionExpired ? (
           <AuthNotice variant="warning" className="mb-4">
-            Your session has expired. Please sign in again.
+            Sesi Anda telah berakhir. Silakan masuk kembali.
           </AuthNotice>
         ) : null}
 
         {registeredNotice ? (
           <AuthNotice variant="success" className="mb-4">
-            Registration successful. Check your inbox and verify your email before signing in.
+            Pendaftaran berhasil. Periksa inbox Anda dan verifikasi email sebelum masuk.
           </AuthNotice>
         ) : null}
 
@@ -79,7 +79,7 @@ export default function LoginCredentialsForm({
               href="/forgot-password"
               className="text-sm text-muted-foreground hover:text-foreground hover:underline"
             >
-              Forgot password?
+              Lupa kata sandi?
             </Link>
           </div>
 
@@ -91,7 +91,7 @@ export default function LoginCredentialsForm({
             disabled={loading}
             className={AUTH_PRIMARY_BUTTON_CLASS}
           >
-            {loading ? "Signing in..." : "Login"}
+            {loading ? "Masuk..." : "Masuk"}
           </button>
         </form>
 
@@ -102,7 +102,7 @@ export default function LoginCredentialsForm({
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">or</span>
+                <span className="bg-card px-2 text-muted-foreground">atau</span>
               </div>
             </div>
 
@@ -116,9 +116,9 @@ export default function LoginCredentialsForm({
       </AuthCard>
 
       <div className="text-center text-sm text-muted-foreground">
-        New to AIvalid?{" "}
+        Belum punya akun?{" "}
         <Link href="/register" className="font-medium text-foreground underline">
-          Create an account
+          Buat akun
         </Link>
       </div>
     </AuthContainer>

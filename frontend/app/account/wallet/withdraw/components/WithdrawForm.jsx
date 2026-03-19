@@ -28,9 +28,7 @@ export default function WithdrawForm({
       <div className="space-y-5">
         {/* Crypto Selector */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-foreground">
-            Pilih Mata Uang
-          </label>
+          <label className="mb-2 block text-sm font-medium text-foreground">Pilih Mata Uang</label>
           <div className="grid grid-cols-2 gap-3">
             {cryptoCurrencies.map((c) => (
               <button
@@ -56,9 +54,7 @@ export default function WithdrawForm({
         {/* Network Selector */}
         {availableNetworks.length > 1 && (
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">
-              Pilih Jaringan
-            </label>
+            <label className="mb-2 block text-sm font-medium text-foreground">Pilih Jaringan</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {availableNetworks.map((n) => (
                 <button
@@ -111,8 +107,8 @@ export default function WithdrawForm({
           </div>
         )}
 
-        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
-          <p className="text-xs text-yellow-800">
+        <div className="rounded-lg border border-status-amber-border bg-status-amber-bg p-3">
+          <p className="text-xs text-status-amber-text">
             ⚠️ Pastikan alamat dan jaringan sudah benar. Pengiriman ke alamat atau jaringan yang
             salah tidak dapat dikembalikan.
           </p>
@@ -205,15 +201,15 @@ export default function WithdrawForm({
         )}
 
         {parsedAmount > 0 && parsedAmount < quickAmounts[0] && (
-          <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-sm text-amber-700 dark:text-amber-400">
+          <div className="rounded-lg bg-status-amber-bg border border-status-amber-border p-3 text-sm text-status-amber-text">
             Minimal penarikan Rp{quickAmounts[0].toLocaleString("id-ID")}
           </div>
         )}
 
         {parsedAmount >= quickAmounts[0] && totalDeduction > wallet.balance && (
           <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-            Saldo tidak cukup. Diperlukan Rp{totalDeduction.toLocaleString("id-ID")} (termasuk
-            fee 2% Rp{fee.toLocaleString("id-ID")}). Saldo Anda: Rp
+            Saldo tidak cukup. Diperlukan Rp{totalDeduction.toLocaleString("id-ID")} (termasuk fee
+            2% Rp{fee.toLocaleString("id-ID")}). Saldo Anda: Rp
             {wallet.balance.toLocaleString("id-ID")}
           </div>
         )}

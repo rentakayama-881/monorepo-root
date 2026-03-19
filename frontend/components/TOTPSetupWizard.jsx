@@ -39,7 +39,7 @@ export default function TOTPSetupWizard({
       <form onSubmit={onVerify} className="space-y-3">
         <div>
           <label className="text-sm font-medium text-foreground block mb-1">
-            2. Enter the 6-digit code from your app:
+            2. Masukkan kode 6 digit dari aplikasi Anda:
           </label>
           <Input
             type="text"
@@ -54,10 +54,10 @@ export default function TOTPSetupWizard({
         </div>
         <div className="flex gap-2">
           <Button type="submit" disabled={setupLoading || setupCode.length !== 6}>
-            {setupLoading ? "Verifying..." : "Verify & Enable"}
+            {setupLoading ? "Memverifikasi..." : "Verifikasi & Aktifkan"}
           </Button>
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancel
+            Batal
           </Button>
         </div>
       </form>

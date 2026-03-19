@@ -22,11 +22,9 @@ function ComponentsDemoContent() {
       <div className="max-w-6xl mx-auto space-y-12">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-foreground">
-            Form Components Demo - Phase 2
-          </h1>
+          <h1 className="text-4xl font-bold text-foreground">Preview Komponen Internal</h1>
           <p className="text-muted-foreground">
-            Premium UI/UX enhancements for AIvalid
+            Sandbox internal untuk mengecek komponen form, modal, dan pola interaksi AIValid.
           </p>
         </div>
 

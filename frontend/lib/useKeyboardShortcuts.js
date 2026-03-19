@@ -26,17 +26,20 @@ export function useKeyboardShortcuts({
     }
   }, []);
 
-  const addToSequence = useCallback((key) => {
-    sequenceRef.current.push(key);
-    
-    // Reset sequence after 1 second of inactivity
-    if (sequenceTimeoutRef.current) {
-      clearTimeout(sequenceTimeoutRef.current);
-    }
-    sequenceTimeoutRef.current = setTimeout(resetSequence, 1000);
-    
-    return sequenceRef.current;
-  }, [resetSequence]);
+  const addToSequence = useCallback(
+    (key) => {
+      sequenceRef.current.push(key);
+
+      // Reset sequence after 1 second of inactivity
+      if (sequenceTimeoutRef.current) {
+        clearTimeout(sequenceTimeoutRef.current);
+      }
+      sequenceTimeoutRef.current = setTimeout(resetSequence, 1000);
+
+      return sequenceRef.current;
+    },
+    [resetSequence]
+  );
 
   useEffect(() => {
     if (!enabled) return;
@@ -44,10 +47,8 @@ export function useKeyboardShortcuts({
     const handleKeyDown = (e) => {
       // Don't trigger shortcuts when typing in inputs, textareas, or contenteditable elements
       const target = e.target;
-      const isInput = 
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable;
+      const isInput =
+        target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
 
       // Command Palette: ⌘K or Ctrl+K
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -89,13 +90,13 @@ export function useKeyboardShortcuts({
       // Vim-style navigation shortcuts
       if (e.key === "g" || e.key === "G") {
         const sequence = addToSequence("g");
-        
+
         // Check if this is the second "g" in sequence
         if (sequence.length === 2 && sequence[0] === "g") {
           e.preventDefault();
-          
+
           const secondKey = sequence[1];
-          
+
           // G then H - Go to Home
           if (secondKey === "h" || secondKey === "H") {
             router.push("/");
@@ -108,7 +109,7 @@ export function useKeyboardShortcuts({
           else if (secondKey === "s" || secondKey === "S") {
             router.push("/account");
           }
-          
+
           resetSequence();
         }
       } else if (sequenceRef.current.length > 0 && sequenceRef.current[0] === "g") {
@@ -123,8 +124,7 @@ export function useKeyboardShortcuts({
           onNewValidationCase();
         }
         resetSequence();
-      }
-      else {
+      } else {
         // Any other key resets the sequence
         resetSequence();
       }
@@ -138,7 +138,16 @@ export function useKeyboardShortcuts({
         clearTimeout(sequenceTimeoutRef.current);
       }
     };
-  }, [enabled, onCommandPalette, onSearch, onNewValidationCase, onShowShortcuts, router, resetSequence, addToSequence]);
+  }, [
+    enabled,
+    onCommandPalette,
+    onSearch,
+    onNewValidationCase,
+    onShowShortcuts,
+    router,
+    resetSequence,
+    addToSequence,
+  ]);
 
   return { resetSequence };
 }
@@ -149,21 +158,19 @@ export function useKeyboardShortcuts({
  */
 export const KEYBOARD_SHORTCUTS = {
   general: [
-    { keys: ["⌘", "K"], description: "Open command palette", mac: true },
-    { keys: ["Ctrl", "K"], description: "Open command palette", mac: false },
-    { keys: ["⌘", "/"], description: "Focus search", mac: true },
-    { keys: ["Ctrl", "/"], description: "Focus search", mac: false },
-    { keys: ["?"], description: "Show keyboard shortcuts" },
-    { keys: ["Esc"], description: "Close modal/dropdown" },
+    { keys: ["⌘", "K"], description: "Buka command palette", mac: true },
+    { keys: ["Ctrl", "K"], description: "Buka command palette", mac: false },
+    { keys: ["⌘", "/"], description: "Fokus ke pencarian", mac: true },
+    { keys: ["Ctrl", "/"], description: "Fokus ke pencarian", mac: false },
+    { keys: ["?"], description: "Tampilkan shortcut keyboard" },
+    { keys: ["Esc"], description: "Tutup modal/dropdown" },
   ],
   navigation: [
-    { keys: ["G", "H"], description: "Go to Home" },
-    { keys: ["G", "T"], description: "Go to Validation Case Index" },
-    { keys: ["G", "S"], description: "Go to Settings" },
+    { keys: ["G", "H"], description: "Ke Beranda" },
+    { keys: ["G", "T"], description: "Ke Daftar Case" },
+    { keys: ["G", "S"], description: "Ke Pengaturan" },
   ],
-  actions: [
-    { keys: ["N"], description: "New Validation Case (on index page)" },
-  ],
+  actions: [{ keys: ["N"], description: "Case validasi baru (di halaman indeks)" }],
 };
 
 /**

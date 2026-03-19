@@ -3,8 +3,8 @@ import { ClockIcon, InfoIcon } from "@/components/ui/LegalIcons";
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Catatan Perubahan - AIvalid",
-  description: "Riwayat rilis, pembaruan fitur, dan perbaikan platform AIvalid.",
+  title: "Catatan Perubahan - AIValid",
+  description: "Riwayat rilis, pembaruan fitur, dan perbaikan platform AIValid.",
   alternates: {
     canonical: "https://aivalid.id/changelog",
   },
@@ -16,7 +16,7 @@ const releases = [
     date: "2026-01-03",
     label: "Major",
     summary:
-      "Rilis publik pertama AIvalid dengan fondasi keamanan akun, alur transaksi, dan sistem validasi inti.",
+      "Rilis publik pertama AIValid dengan fondasi keamanan akun, alur transaksi, dan sistem validasi inti.",
     added: [
       "Autentikasi akun (email dan kata sandi).",
       "Autentikasi dua faktor (2FA) dan dukungan passkey.",
@@ -76,8 +76,8 @@ export default function ChangelogPage() {
   return (
     <main className="container max-w-3xl py-10">
       <header className="mb-8">
-        <p className="mb-2 text-sm text-muted-foreground">Changelog</p>
-        <h1 className="mb-2 text-2xl font-bold">Catatan perubahan AIvalid</h1>
+        <p className="mb-2 text-sm text-muted-foreground">Catatan Perubahan</p>
+        <h1 className="mb-2 text-2xl font-bold">Catatan perubahan AIValid</h1>
         <p className="text-muted-foreground">
           Riwayat pembaruan fitur dan perbaikan produk dari waktu ke waktu.
         </p>

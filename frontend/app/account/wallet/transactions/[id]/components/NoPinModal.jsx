@@ -10,15 +10,17 @@ export default function NoPinModal({ onClose }) {
             <Lock className="h-8 w-8 text-warning" />
           </div>
         </div>
-        <h3 className="text-lg font-bold text-foreground mb-2 text-center">PIN Not Configured</h3>
+        <h3 className="text-lg font-bold text-foreground mb-2 text-center">
+          PIN Belum Dikonfigurasi
+        </h3>
         <div className="text-sm text-muted-foreground mb-6 text-center space-y-2">
-          <p>To perform this action, you must set up a security PIN first.</p>
-          <p className="text-xs">Please set up a PIN by following:</p>
+          <p>Untuk melakukan aksi ini, Anda harus menyiapkan PIN keamanan terlebih dahulu.</p>
+          <p className="text-xs">Siapkan PIN dengan langkah berikut:</p>
           <ol className="text-xs text-left list-decimal list-inside space-y-1">
-            <li>Enable two-factor authentication (2FA) in account settings</li>
+            <li>Aktifkan autentikasi dua faktor (2FA) di pengaturan akun</li>
             <li>
-              Then click <strong>Send Funds</strong> or <strong>Withdraw Funds</strong> to configure
-              your PIN
+              Lalu klik <strong>Kirim Dana</strong> atau <strong>Tarik Dana</strong> untuk mengatur
+              PIN
             </li>
           </ol>
         </div>
@@ -28,13 +30,13 @@ export default function NoPinModal({ onClose }) {
             onClick={onClose}
             className="flex-1 rounded-lg border border-border py-2 font-medium transition hover:bg-card"
           >
-            Close
+            Tutup
           </button>
           <Link
             href="/account?setup2fa=true"
             className="flex-1 rounded-lg bg-primary py-2 font-semibold text-primary-foreground text-center transition hover:opacity-90"
           >
-            Security Settings
+            Pengaturan Keamanan
           </Link>
         </div>
       </div>

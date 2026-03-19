@@ -45,7 +45,7 @@ export default function HowItWorks() {
         <div>
           <div className="font-semibold text-foreground">Mulai sekarang</div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Buat Validation Case dengan bounty dan acceptance criteria. Validator akan mengajukan
+            Buat case validasi dengan bounty dan acceptance criteria. Validator akan mengajukan
             request.
           </p>
         </div>

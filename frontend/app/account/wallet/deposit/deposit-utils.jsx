@@ -65,19 +65,31 @@ export function getStatusLabel(status) {
   if (s === "waitingpayment" || s === "waiting_payment" || s === "0")
     return {
       label: "Menunggu Pembayaran",
-      color: "text-yellow-600 bg-yellow-50 border-yellow-200",
+      color: "text-status-amber-text bg-status-amber-bg border-status-amber-border",
     };
   if (s === "confirming" || s === "1")
-    return { label: "Mengonfirmasi", color: "text-blue-600 bg-blue-50 border-blue-200" };
+    return {
+      label: "Mengonfirmasi",
+      color: "text-status-info-text bg-status-info-bg border-status-info-border",
+    };
   if (s === "paid" || s === "2")
-    return { label: "Terbayar", color: "text-green-600 bg-green-50 border-green-200" };
+    return {
+      label: "Terbayar",
+      color: "text-status-success-text bg-status-success-bg border-status-success-border",
+    };
   if (s === "approved" || s === "3")
-    return { label: "Berhasil", color: "text-green-700 bg-green-100 border-green-300" };
+    return {
+      label: "Berhasil",
+      color: "text-status-success-text bg-status-success-bg border-status-success-border",
+    };
   if (s === "expired" || s === "4")
-    return { label: "Kedaluwarsa", color: "text-gray-500 bg-gray-50 border-gray-200" };
+    return { label: "Kedaluwarsa", color: "text-muted-foreground bg-muted border-border" };
   if (s === "failed" || s === "5")
-    return { label: "Gagal", color: "text-red-600 bg-red-50 border-red-200" };
+    return {
+      label: "Gagal",
+      color: "text-status-danger-text bg-status-danger-bg border-status-danger-border",
+    };
   if (s === "cancelled" || s === "6")
-    return { label: "Dibatalkan", color: "text-gray-500 bg-gray-50 border-gray-200" };
-  return { label: status, color: "text-gray-600 bg-gray-50 border-gray-200" };
+    return { label: "Dibatalkan", color: "text-muted-foreground bg-muted border-border" };
+  return { label: status, color: "text-muted-foreground bg-muted border-border" };
 }

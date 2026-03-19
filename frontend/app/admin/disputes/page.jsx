@@ -4,6 +4,14 @@ import Link from "next/link";
 import logger from "@/lib/logger";
 import { getAdminToken } from "@/lib/adminAuth";
 import { unwrapFeatureData, extractFeatureItems } from "@/lib/featureApi";
+import {
+  formatDate,
+  formatAmount,
+  normalizeStatus,
+  getStatusColor,
+  getStatusLabel,
+  getCategoryLabel,
+} from "@/lib/disputes/helpers";
 
 const API_BASE = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
 
@@ -19,13 +27,13 @@ function normalizeDispute(item) {
       item?.InitiatorUsername ??
       item?.senderUsername ??
       item?.SenderUsername ??
-      "Unknown",
+      "Tidak diketahui",
     respondentUsername:
       item?.respondentUsername ??
       item?.RespondentUsername ??
       item?.receiverUsername ??
       item?.ReceiverUsername ??
-      "Unknown",
+      "Tidak diketahui",
   };
 }
 
@@ -49,7 +57,7 @@ export default function AdminDisputesPage() {
           },
         });
 
-        if (!res.ok) throw new Error("Failed to fetch disputes");
+        if (!res.ok) throw new Error("Gagal memuat daftar sengketa");
 
         const data = await res.json();
         const payload = unwrapFeatureData(data);
@@ -67,109 +75,27 @@ export default function AdminDisputesPage() {
     loadDisputes();
   }, [loadDisputes]);
 
-  // Format date
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "-";
-    const date = new Date(dateStr);
-    if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  // Format amount
-  const formatAmount = (amount) => {
-    return new Intl.NumberFormat("id-ID").format(amount);
-  };
-
-  const normalizeStatus = (status) =>
-    String(status || "")
-      .replace(/\s+/g, "")
-      .toLowerCase();
-
-  // Get status color
-  const getStatusColor = (status) => {
-    switch (normalizeStatus(status)) {
-      case "open":
-        return "border-warning/20 bg-warning/10 text-warning";
-      case "underreview":
-        return "border-primary/20 bg-primary/10 text-primary";
-      case "waitingforevidence":
-        return "border-warning/20 bg-warning/10 text-warning";
-      case "resolved":
-        return "border-success/20 bg-success/10 text-success";
-      case "cancelled":
-        return "border-border bg-muted/60 text-muted-foreground";
-      default:
-        return "border-border bg-muted/60 text-muted-foreground";
-    }
-  };
-
-  // Get status label
-  const getStatusLabel = (status) => {
-    switch (normalizeStatus(status)) {
-      case "open":
-        return "Menunggu";
-      case "underreview":
-        return "Ditinjau";
-      case "waitingforevidence":
-        return "Butuh Bukti";
-      case "resolved":
-        return "Selesai";
-      case "cancelled":
-        return "Dibatalkan";
-      default:
-        return status;
-    }
-  };
-
-  // Get category label
-  const getCategoryLabel = (category) => {
-    switch (
-      String(category || "")
-        .replace(/\s+/g, "")
-        .toLowerCase()
-    ) {
-      case "itemnotreceived":
-        return "Barang Tidak Diterima";
-      case "itemnotasdescribed":
-        return "Tidak Sesuai Deskripsi";
-      case "fraud":
-        return "Dugaan Penipuan";
-      case "sellernotresponding":
-        return "Penjual Tidak Merespons";
-      case "other":
-        return "Lainnya";
-      default:
-        return category;
-    }
-  };
-
   return (
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">⚖️ Dispute Management</h1>
-        <p className="text-muted-foreground">Kelola dan selesaikan permasalahan transaksi</p>
+        <h1 className="text-2xl font-bold text-foreground">Kelola Sengketa</h1>
+        <p className="text-muted-foreground">Tinjau dan selesaikan sengketa transaksi</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
           {
-            label: "Menunggu",
+            label: getStatusLabel("Open"),
             value: disputes.filter((d) => normalizeStatus(d.status) === "open").length,
           },
           {
-            label: "Ditinjau",
+            label: getStatusLabel("UnderReview"),
             value: disputes.filter((d) => normalizeStatus(d.status) === "underreview").length,
           },
           {
-            label: "Butuh Bukti",
+            label: getStatusLabel("WaitingForEvidence"),
             value: disputes.filter((d) => normalizeStatus(d.status) === "waitingforevidence")
               .length,
           },
@@ -190,10 +116,10 @@ export default function AdminDisputesPage() {
       {/* Filter */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         {[
-          { value: "Open", label: "Menunggu" },
-          { value: "UnderReview", label: "Ditinjau" },
-          { value: "WaitingForEvidence", label: "Butuh Bukti" },
-          { value: "Resolved", label: "Selesai" },
+          { value: "Open", label: getStatusLabel("Open") },
+          { value: "UnderReview", label: getStatusLabel("UnderReview") },
+          { value: "WaitingForEvidence", label: getStatusLabel("WaitingForEvidence") },
+          { value: "Resolved", label: getStatusLabel("Resolved") },
           { value: "all", label: "Semua" },
         ].map((f) => (
           <button
@@ -218,11 +144,11 @@ export default function AdminDisputesPage() {
       ) : disputes.length === 0 ? (
         <div className="bg-card rounded-lg border border-border p-12 text-center">
           <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-xl font-bold text-foreground mb-2">Tidak Ada Dispute</h2>
+          <h2 className="text-xl font-bold text-foreground mb-2">Tidak Ada Sengketa</h2>
           <p className="text-muted-foreground">
             {filter === "all"
-              ? "Belum ada dispute yang dibuat."
-              : `Tidak ada dispute dengan status "${getStatusLabel(filter)}".`}
+              ? "Belum ada sengketa yang dibuat."
+              : `Tidak ada sengketa dengan status "${getStatusLabel(filter)}".`}
           </p>
         </div>
       ) : (
@@ -275,7 +201,7 @@ export default function AdminDisputesPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <span className="font-medium text-foreground">
-                      Rp {formatAmount(dispute.amount)}
+                      {formatAmount(dispute.amount)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">

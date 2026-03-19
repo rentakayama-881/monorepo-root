@@ -122,7 +122,7 @@ export default async function LatestValidationCases() {
             aria-hidden="true"
           />
           <p className="mt-3 text-sm text-muted-foreground font-medium">
-            Belum ada Validation Case terbaru.
+            Belum ada case validasi terbaru.
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             Kasus akan muncul di sini setelah intake.

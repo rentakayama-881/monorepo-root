@@ -24,10 +24,7 @@ export default function OrderStatus({
         <Row label="Langganan" value={normalizeSubscription(order)} />
         <Row label="Harga" value={order?.price_display || order?.price || "-"} />
         <Row label="Status" value={statusText} />
-        <Row
-          label="Penjual"
-          value={order?.seller || order?.delivery?.account?.seller || "-"}
-        />
+        <Row label="Penjual" value={order?.seller || order?.delivery?.account?.seller || "-"} />
       </div>
 
       {statusNormalized === "failed" && order?.failure_reason ? (
@@ -59,7 +56,7 @@ export default function OrderStatus({
         </div>
 
         {isProcessing ? (
-          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
+          <div className="rounded-md border border-status-amber-border bg-status-amber-bg px-3 py-2 text-xs text-status-amber-text">
             Selama proses berjalan, mohon jangan menutup atau me-refresh halaman ini.
           </div>
         ) : null}

@@ -70,7 +70,7 @@ export default function PasskeySettings() {
           <div className="flex items-start gap-2">
             <span className="text-warning">{WarningIcon}</span>
             <p className="text-sm text-warning">
-              Your browser does not support Passkey/WebAuthn. Gunakan browser modern seperti Chrome,
+              Browser Anda belum mendukung Passkey/WebAuthn. Gunakan browser modern seperti Chrome,
               Firefox, Safari, atau Edge versi terbaru.
             </p>
           </div>
@@ -92,7 +92,7 @@ export default function PasskeySettings() {
 
         <p className="mt-2 text-xs text-muted-foreground">
           Passkeys memungkinkan Anda login tanpa password menggunakan fingerprint, face ID, atau
-          security key.
+          kunci keamanan.
         </p>
 
         {error && (
@@ -109,7 +109,7 @@ export default function PasskeySettings() {
 
         {loading ? (
           <div className="mt-4">
-            <SectionLoadingBlock lines={2} compact srLabel="Loading passkeys" />
+            <SectionLoadingBlock lines={2} compact srLabel="Memuat passkey" />
           </div>
         ) : (
           <>

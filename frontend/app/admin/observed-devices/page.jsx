@@ -136,7 +136,7 @@ export default function ObservedDevicesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Observed Devices</h1>
+        <h1 className="text-2xl font-bold text-foreground">Perangkat Terpantau</h1>
       </div>
 
       {/* Search */}
@@ -145,12 +145,12 @@ export default function ObservedDevicesPage() {
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search by fingerprint hash or user ID..."
+          placeholder="Cari berdasarkan fingerprint hash atau user ID..."
           aria-label="Cari berdasarkan fingerprint hash atau user ID"
           className="flex-1 max-w-md px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm"
         />
         <Button type="submit" size="sm">
-          Search
+          Cari
         </Button>
         {search && (
           <Button
@@ -163,7 +163,7 @@ export default function ObservedDevicesPage() {
               setPage(1);
             }}
           >
-            Clear
+            Reset
           </Button>
         )}
       </form>
@@ -179,7 +179,7 @@ export default function ObservedDevicesPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : devices.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">Tidak ada observed devices</div>
+        <div className="text-center py-12 text-muted-foreground">Tidak ada perangkat terpantau</div>
       ) : (
         <>
           <div className="overflow-x-auto">
@@ -187,20 +187,20 @@ export default function ObservedDevicesPage() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                    Fingerprint Hash
+                    Hash Fingerprint
                   </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Akun</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                    Accounts
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                    Last Seen
+                    Terakhir Terlihat
                   </th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">IP</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                     User Agent
                   </th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Users</th>
-                  <th className="text-right py-3 px-4 font-medium text-muted-foreground">Action</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Pengguna
+                  </th>
+                  <th className="text-right py-3 px-4 font-medium text-muted-foreground">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,7 +216,7 @@ export default function ObservedDevicesPage() {
                       <span className="font-mono text-xs">{device.account_count}</span>
                       {device.blocked && (
                         <span className="ml-2 inline-flex items-center rounded-sm border border-destructive/20 bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
-                          Blocked
+                          Diblokir
                         </span>
                       )}
                     </td>
@@ -232,7 +232,7 @@ export default function ObservedDevicesPage() {
                     </td>
                     <td className="py-3 px-4 text-right">
                       <Button size="sm" variant="danger" onClick={() => openBanModal(device)}>
-                        Ban Device
+                        Ban Perangkat
                       </Button>
                     </td>
                   </tr>
@@ -243,7 +243,7 @@ export default function ObservedDevicesPage() {
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-            <span>Total: {total} devices</span>
+            <span>Total: {total} perangkat</span>
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -251,10 +251,10 @@ export default function ObservedDevicesPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
-                Prev
+                Sebelumnya
               </Button>
               <span>
-                Page {page} / {totalPages}
+                Halaman {page} / {totalPages}
               </span>
               <Button
                 size="sm"
@@ -262,7 +262,7 @@ export default function ObservedDevicesPage() {
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                Berikutnya
               </Button>
             </div>
           </div>
@@ -274,13 +274,13 @@ export default function ObservedDevicesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-card rounded-lg max-w-md w-full">
             <div className="p-6 border-b border-border">
-              <h2 className="text-xl font-semibold text-foreground">Ban Device</h2>
+              <h2 className="text-xl font-semibold text-foreground">Ban Perangkat</h2>
             </div>
 
             <form onSubmit={handleBan} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Fingerprint Hash
+                  Hash Fingerprint
                 </label>
                 <input
                   type="text"
@@ -291,7 +291,7 @@ export default function ObservedDevicesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Reason *</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Alasan *</label>
                 <textarea
                   value={banForm.reason}
                   onChange={(e) => setBanForm({ ...banForm, reason: e.target.value })}
@@ -310,14 +310,14 @@ export default function ObservedDevicesPage() {
                   className="rounded border-border"
                 />
                 <label htmlFor="banIsPermanent" className="text-sm text-foreground">
-                  Permanent Ban
+                  Ban Permanen
                 </label>
               </div>
 
               {!banForm.isPermanent && (
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
-                    Expires At
+                    Berakhir Pada
                   </label>
                   <input
                     type="datetime-local"
@@ -330,10 +330,10 @@ export default function ObservedDevicesPage() {
 
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="secondary" onClick={() => setBanModal(null)}>
-                  Cancel
+                  Batal
                 </Button>
                 <Button type="submit" variant="danger" disabled={banLoading}>
-                  {banLoading ? "Banning..." : "Ban Device"}
+                  {banLoading ? "Memproses..." : "Ban Perangkat"}
                 </Button>
               </div>
             </form>

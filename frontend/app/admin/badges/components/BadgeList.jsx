@@ -106,7 +106,7 @@ export default function BadgeList({ badges, onEdit, onDelete, onCreateClick }) {
           </div>
           <div className="mt-4 flex gap-2">
             <Button variant="secondary" size="sm" onClick={() => onEdit(badge)}>
-              Edit
+              Ubah
             </Button>
             <Button
               variant="secondary"

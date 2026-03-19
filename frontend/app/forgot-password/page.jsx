@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
               href="/login"
               className="block text-center text-sm font-medium text-primary hover:underline"
             >
-              Kembali ke Login
+              Kembali ke halaman masuk
             </Link>
           </div>
         ) : (
@@ -93,7 +93,7 @@ export default function ForgotPasswordPage() {
       <div className="text-center text-sm text-muted-foreground">
         Ingat password Anda?{" "}
         <Link href="/login" className="font-medium text-foreground underline">
-          Login
+          Masuk
         </Link>
       </div>
     </div>

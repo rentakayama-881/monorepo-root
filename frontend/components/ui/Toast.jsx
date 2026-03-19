@@ -267,7 +267,7 @@ function Toast({ title, description, variant, onClose, duration, action, index }
           <button
             onClick={handleDismiss}
             className="flex-shrink-0 rounded p-1 opacity-70 hover:opacity-100 transition-opacity"
-            aria-label="Close notification"
+            aria-label="Tutup notifikasi"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

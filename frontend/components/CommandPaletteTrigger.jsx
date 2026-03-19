@@ -15,7 +15,7 @@ export default function CommandPaletteTrigger() {
     <button
       onClick={openCommandPalette}
       className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-card hover:bg-accent transition-colors text-sm text-muted-foreground"
-      aria-label="Open command palette"
+      aria-label="Buka command palette"
       type="button"
     >
       <svg
@@ -31,7 +31,7 @@ export default function CommandPaletteTrigger() {
         <circle cx="11" cy="11" r="8" />
         <path d="m21 21-4.35-4.35" />
       </svg>
-      <span className="hidden lg:inline">Quick actions...</span>
+      <span className="hidden lg:inline">Aksi cepat...</span>
       <kbd className="hidden lg:inline px-1.5 py-0.5 text-xs rounded bg-muted font-mono border">
         {userIsMac ? "⌘" : "Ctrl"}K
       </kbd>

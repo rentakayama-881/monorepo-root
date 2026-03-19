@@ -67,7 +67,7 @@ export default function NewValidationCaseClient() {
     <main className="container py-5 md:py-10 [scrollbar-gutter:stable]">
       <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="hover:underline">
-          Home
+          Beranda
         </Link>
         <span>/</span>
         <Link href="/validation-cases" prefetch={false} className="hover:underline">
@@ -79,10 +79,10 @@ export default function NewValidationCaseClient() {
 
       <header className="mb-4 md:mb-6">
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          README-First Case Builder
+          Pembangun Case Berbasis README
         </div>
         <h1 className="mt-1.5 text-xl md:text-2xl font-semibold text-foreground">
-          Create Validation Case
+          Buat Case Validasi
         </h1>
         <p className="mt-1.5 max-w-3xl text-sm text-muted-foreground">
           Jelaskan kebutuhan validasi langsung di README case, lalu lampirkan file pendukung. Tidak
@@ -103,9 +103,9 @@ export default function NewValidationCaseClient() {
             <>
               Anda wajib menyambungkan akun Telegram terverifikasi di{" "}
               <Link href="/account" className="font-semibold underline">
-                Account Settings
+                Pengaturan Akun
               </Link>{" "}
-              sebelum mengisi Create Validation Case.
+              sebelum membuat Case Validasi.
             </>
           )}
         </div>
@@ -137,14 +137,14 @@ export default function NewValidationCaseClient() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Workspace Readiness
+              Kesiapan Workspace
             </div>
             <div className="mt-1 text-sm font-semibold text-foreground">
               {readinessDoneCount}/{requiredReadinessItems.length} syarat wajib selesai
             </div>
           </div>
           <div className="rounded-sm border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-            {readinessPercent}% ready
+            {readinessPercent}% siap
           </div>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-secondary">
@@ -171,12 +171,12 @@ export default function NewValidationCaseClient() {
         <section id="case-setup" className="space-y-3 md:space-y-4">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Case Setup (Wajib)
+              Pengaturan Case (Wajib)
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
             <div className="md:col-span-2">
-              <label className="text-xs font-semibold text-muted-foreground">Title</label>
+              <label className="text-xs font-semibold text-muted-foreground">Judul</label>
               <input
                 value={form.title}
                 onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
@@ -193,10 +193,10 @@ export default function NewValidationCaseClient() {
                 value={form.sensitivity || "S1"}
                 onChange={(e) => setForm((prev) => ({ ...prev, sensitivity: e.target.value }))}
                 options={[
-                  { value: "S0", label: "S0 - Public" },
-                  { value: "S1", label: "S1 - Restricted" },
-                  { value: "S2", label: "S2 - Confidential" },
-                  { value: "S3", label: "S3 - Critical" },
+                  { value: "S0", label: "S0 - Publik" },
+                  { value: "S1", label: "S1 - Terbatas" },
+                  { value: "S2", label: "S2 - Rahasia" },
+                  { value: "S3", label: "S3 - Kritis" },
                 ]}
                 className="mt-1"
                 disabled={formDisabled}
@@ -236,7 +236,7 @@ export default function NewValidationCaseClient() {
         {/* ── Case Record Editor ── */}
         <section id="case-record-editor" ref={editorRef}>
           <label className="text-xs font-semibold text-muted-foreground">
-            Case Record (Free Text)
+            Catatan Case (Teks Bebas)
           </label>
           <div className="mt-2">
             <MarkdownEditor
@@ -297,7 +297,7 @@ export default function NewValidationCaseClient() {
             className="min-w-[12.5rem]"
             type="button"
           >
-            {submitting ? "Submitting..." : "Create Validation Case"}
+            {submitting ? "Mengirim..." : "Buat Case Validasi"}
           </Button>
         </div>
       </div>

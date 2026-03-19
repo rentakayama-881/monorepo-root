@@ -109,7 +109,7 @@ export default function MyValidationCasesPage() {
               type="button"
               onClick={confirmDeleteCase}
               disabled={Boolean(deletingId)}
-              className="rounded-[var(--radius)] border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-900 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-[var(--radius)] border border-status-danger-border bg-status-danger-bg px-3 py-1.5 text-xs font-semibold text-status-danger-text hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {Boolean(deletingId) ? "Deleting..." : "Delete Permanently"}
             </button>

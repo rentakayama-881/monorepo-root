@@ -8,8 +8,8 @@ export default function DepositSuccess({
 }) {
   return (
     <div className="space-y-5 text-center">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-        <Check className="h-8 w-8 text-green-600" strokeWidth={2} />
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-status-success-bg">
+        <Check className="h-8 w-8 text-status-success-text" strokeWidth={2} />
       </div>
       <h2 className="text-lg font-bold text-foreground">Deposit Berhasil!</h2>
       <p className="text-sm text-muted-foreground">

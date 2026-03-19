@@ -13,13 +13,13 @@ export default function AdminActionsCard({ onAction }) {
           onClick={() => onAction("force-release")}
           className="w-full py-3 px-4 rounded-lg border border-success/25 bg-success/15 text-success font-medium hover:bg-success/20 transition"
         >
-          💰 Lepaskan ke Penjual
+          💰 Lepaskan Dana ke Penjual
         </button>
         <button
           onClick={() => onAction("refund")}
           className="w-full py-3 px-4 rounded-lg border border-warning/25 bg-warning/15 text-warning font-medium hover:bg-warning/20 transition"
         >
-          ↩️ Kembalikan ke Pembeli
+          ↩️ Kembalikan Dana ke Pembeli
         </button>
       </div>
       <p className="text-xs text-muted-foreground mt-4">

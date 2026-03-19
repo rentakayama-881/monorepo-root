@@ -168,13 +168,13 @@ export default function Header() {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-0.5 text-sm">
           <Link href="/" className={navItem}>
-            Home
+            Beranda
           </Link>
           <Link href="/market/chatgpt" prefetch={false} className={navItem}>
-            Market
+            Marketplace
           </Link>
           <Link href="/validation-cases" prefetch={false} className={navItem}>
-            Case Index
+            Daftar Case
           </Link>
         </nav>
 
@@ -190,8 +190,8 @@ export default function Header() {
             href="/validation-cases/new"
             prefetch={false}
             className={iconButton}
-            aria-label="Create Validation Case"
-            title="Create Validation Case"
+            aria-label="Buat case validasi"
+            title="Buat case validasi"
           >
             <Plus className="h-4 w-4 text-foreground" aria-hidden="true" />
           </Link>
@@ -246,7 +246,7 @@ export default function Header() {
               href="/login"
               className="inline-flex items-center justify-center rounded-[var(--radius)] border border-border px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:bg-accent transition-all duration-200"
             >
-              Login
+              Masuk
             </Link>
           )}
         </div>

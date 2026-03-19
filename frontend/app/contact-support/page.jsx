@@ -25,7 +25,7 @@ const faqData = [
   {
     question: "Bagaimana cara mengamankan akun?",
     answer:
-      "Gunakan kata sandi kuat, aktifkan autentikasi dua faktor, dan simpan backup code di tempat aman.",
+      "Gunakan kata sandi kuat, aktifkan autentikasi dua faktor, dan simpan kode cadangan di tempat aman.",
   },
   {
     question: "Bagaimana cara melaporkan konten bermasalah?",
@@ -53,7 +53,7 @@ const quickGuides = [
   {
     href: "/privacy",
     title: "Kebijakan Privasi",
-    description: "Pelajari cara AIvalid mengelola data pribadi pengguna.",
+    description: "Pelajari cara AIValid mengelola data pribadi pengguna.",
   },
   {
     href: "/community-guidelines",
@@ -63,9 +63,9 @@ const quickGuides = [
 ];
 
 export const metadata = {
-  title: "Pusat Bantuan - AIvalid",
+  title: "Pusat Bantuan - AIValid",
   description:
-    "Temukan jawaban pertanyaan umum, panduan penggunaan platform, dan kanal dukungan resmi AIvalid.",
+    "Temukan jawaban pertanyaan umum, panduan penggunaan platform, dan kanal dukungan resmi AIValid.",
   alternates: {
     canonical: "https://aivalid.id/contact-support",
   },
@@ -98,7 +98,7 @@ export default function HelpPage() {
       <main className="container max-w-3xl py-10">
         <header className="mb-8">
           <p className="mb-2 text-sm text-muted-foreground">Pusat Bantuan</p>
-          <h1 className="mb-2 text-2xl font-bold">Dukungan untuk pengguna AIvalid</h1>
+          <h1 className="mb-2 text-2xl font-bold">Dukungan untuk pengguna AIValid</h1>
           <p className="text-muted-foreground">
             Gunakan halaman ini untuk mendapatkan jawaban cepat, memahami alur penggunaan platform,
             dan menghubungi tim kami saat dibutuhkan.
@@ -112,7 +112,9 @@ export default function HelpPage() {
               <a href="mailto:help@aivalid.id" className="text-sm font-medium hover:underline">
                 help@aivalid.id
               </a>
-              <p className="mt-2 text-sm text-muted-foreground">Untuk pertanyaan umum dan kendala akun.</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Untuk pertanyaan umum dan kendala akun.
+              </p>
             </article>
             <article className="rounded-lg border bg-card p-4">
               <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold">
@@ -162,7 +164,7 @@ export default function HelpPage() {
           </p>
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <LockIcon className="h-4 w-4" />
-            Simpan backup code di lokasi aman dan jangan dibagikan.
+            Simpan kode cadangan di lokasi aman dan jangan dibagikan.
           </p>
         </section>
       </main>

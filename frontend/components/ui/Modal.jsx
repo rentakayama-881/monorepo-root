@@ -144,7 +144,7 @@ export default function Modal({
               <button
                 onClick={onClose}
                 className="ml-auto rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-                aria-label="Close modal"
+                aria-label="Tutup modal"
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -166,7 +166,7 @@ export default function Modal({
             <button
               onClick={onClose}
               className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors z-10"
-              aria-label="Close modal"
+              aria-label="Tutup modal"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path

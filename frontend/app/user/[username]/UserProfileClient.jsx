@@ -161,12 +161,12 @@ export default function UserProfilePage() {
             className="mx-auto mb-4 h-12 w-12 rounded-full border border-border bg-secondary/60"
             aria-hidden="true"
           />
-          <h2 className="text-xl font-semibold text-foreground mb-2">User Not Found</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Pengguna Tidak Ditemukan</h2>
           <p className="text-muted-foreground">
-            The user @{username} does not exist or has been removed.
+            Pengguna @{username} tidak ditemukan atau sudah dihapus.
           </p>
           <Link href="/" className="inline-block mt-4 text-primary hover:underline">
-            Return to Home
+            Kembali ke Beranda
           </Link>
         </div>
       </div>
@@ -184,7 +184,9 @@ export default function UserProfilePage() {
           <Avatar src={profile.avatar_url} name={displayName} size="lg" className="shrink-0" />
           <div className="min-w-0 flex-1 pt-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold text-foreground">{displayName || "(No Name)"}</h1>
+              <h1 className="text-2xl font-bold text-foreground">
+                {displayName || "(Tanpa Nama)"}
+              </h1>
               {profile.primary_badge && <Badge badge={profile.primary_badge} size="sm" />}
             </div>
             <p className="text-muted-foreground">@{profile.username}</p>
@@ -192,7 +194,7 @@ export default function UserProfilePage() {
             {/* Join date */}
             {profile.created_at && (
               <p className="text-sm text-muted-foreground mt-1">
-                Joined{" "}
+                Bergabung{" "}
                 {new Date(profile.created_at * 1000).toLocaleDateString("en-US", {
                   month: "long",
                   year: "numeric",
@@ -202,15 +204,15 @@ export default function UserProfilePage() {
 
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               <span className="inline-flex items-center rounded-sm border border-border bg-secondary/60 px-3 py-1 font-semibold text-foreground">
-                Validation Cases: {Number(profile.validation_case_count || 0)}
+                Case Validasi: {Number(profile.validation_case_count || 0)}
               </span>
               {Number(profile.guarantee_amount) > 0 ? (
                 <span className="inline-flex items-center rounded-sm border border-border bg-secondary/60 px-3 py-1 font-semibold text-foreground">
-                  Active Stake: Rp {Number(profile.guarantee_amount || 0).toLocaleString("id-ID")}
+                  Stake Aktif: Rp {Number(profile.guarantee_amount || 0).toLocaleString("id-ID")}
                 </span>
               ) : (
                 <span className="inline-flex items-center rounded-sm border border-border bg-secondary/60 px-3 py-1 font-semibold text-muted-foreground">
-                  Active Stake: Rp 0
+                  Stake Aktif: Rp 0
                 </span>
               )}
             </div>

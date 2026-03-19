@@ -93,9 +93,9 @@ export default function OrderCredentials({ order, statusNormalized }) {
             ]}
           />
 
-          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
-            Demi keamanan, segera ubah password akun utama dan email pemulihan setelah
-            pembelian selesai.
+          <div className="rounded-md border border-status-amber-border bg-status-amber-bg px-3 py-2 text-xs text-status-amber-text">
+            Demi keamanan, segera ubah password akun utama dan email pemulihan setelah pembelian
+            selesai.
           </div>
         </div>
       ) : (

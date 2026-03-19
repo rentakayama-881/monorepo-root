@@ -10,16 +10,16 @@ import {
 } from "lucide-react";
 
 const walletLinks = [
-  { href: "/account/wallet/send", label: "Send Funds", Icon: Send },
-  { href: "/account/wallet/transactions", label: "Transactions", Icon: ClipboardList },
-  { href: "/account/wallet/disputes", label: "Dispute Center", Icon: ShieldAlert },
-  { href: "/account/wallet/withdraw", label: "Withdraw", Icon: Landmark },
+  { href: "/account/wallet/send", label: "Kirim Dana", Icon: Send },
+  { href: "/account/wallet/transactions", label: "Transaksi", Icon: ClipboardList },
+  { href: "/account/wallet/disputes", label: "Pusat Sengketa", Icon: ShieldAlert },
+  { href: "/account/wallet/withdraw", label: "Tarik Dana", Icon: Landmark },
 ];
 
 const accountLinks = [
-  { href: "/account", label: "Account", Icon: User },
-  { href: "/account/my-purchases", label: "My Purchase", Icon: ShoppingBag },
-  { href: "/account/validation-cases", label: "My Validation Cases", Icon: FileCheck2 },
+  { href: "/account", label: "Akun", Icon: User },
+  { href: "/account/my-purchases", label: "Pembelian Saya", Icon: ShoppingBag },
+  { href: "/account/validation-cases", label: "Case Validasi Saya", Icon: FileCheck2 },
 ];
 
 function MenuItem({ href, label, Icon, isActive }) {

@@ -6,14 +6,14 @@ import Button from "@/components/ui/Button";
 export default function DemoCompleteForm() {
   return (
     <section className="space-y-6">
-      <h2 className="text-2xl font-semibold border-b pb-2">Complete Form Example</h2>
-      
+      <h2 className="text-2xl font-semibold border-b pb-2">Contoh Form Lengkap</h2>
+
       <form className="max-w-2xl space-y-6 p-6 border rounded-lg bg-card">
-        <h3 className="text-lg font-semibold">Create New Validation Case</h3>
-        
+        <h3 className="text-lg font-semibold">Buat Validation Case Baru</h3>
+
         <Input
-          label="Title"
-          placeholder="Enter case title"
+          label="Judul"
+          placeholder="Masukkan judul case"
           required
           maxLength={100}
           showCounter
@@ -21,32 +21,32 @@ export default function DemoCompleteForm() {
         />
 
         <Textarea
-          label="Content"
-          placeholder="Write the case record (scope, evidence, and acceptance criteria)..."
+          label="Konten"
+          placeholder="Tulis catatan case, ruang lingkup, bukti, dan kriteria penerimaan..."
           required
           autoResize
           minRows={5}
           maxRows={15}
           maxLength={5000}
           showCounter
-          hint="Markdown is supported"
+          hint="Markdown didukung"
         />
 
         <Select
-          label="Category"
-          placeholder="Select a category"
+          label="Kategori"
+          placeholder="Pilih kategori"
           required
           options={[
-            { value: "academic", label: "Academic Validation" },
-            { value: "legal", label: "Legal Review" },
-            { value: "financial", label: "Financial Review" },
-            { value: "technical", label: "Technical Review" },
+            { value: "academic", label: "Validasi Akademik" },
+            { value: "legal", label: "Tinjauan Hukum" },
+            { value: "financial", label: "Tinjauan Keuangan" },
+            { value: "technical", label: "Tinjauan Teknis" },
           ]}
         />
 
         <Select
-          label="Tags"
-          placeholder="Select tags"
+          label="Tag"
+          placeholder="Pilih tag"
           multiSelect
           searchable
           options={[
@@ -56,15 +56,15 @@ export default function DemoCompleteForm() {
             { value: "typescript", label: "TypeScript" },
             { value: "css", label: "CSS" },
           ]}
-          hint="You can select multiple tags"
+          hint="Anda dapat memilih beberapa tag"
         />
 
         <div className="flex gap-3 pt-4">
           <Button type="submit" variant="default">
-            Create Validation Case
+            Buat Case Validasi
           </Button>
           <Button type="button" variant="ghost">
-            Save Draft
+            Simpan Draft
           </Button>
         </div>
       </form>

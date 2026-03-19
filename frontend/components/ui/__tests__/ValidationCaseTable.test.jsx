@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import ValidationCaseTable from "../ValidationCaseTable";
 
 jest.mock("next/link", () => {
-  return function MockLink({ children, href, ...props }) {
+  return function MockLink({ children, href, prefetch: _prefetch, ...props }) {
     return (
       <a href={href} {...props}>
         {children}

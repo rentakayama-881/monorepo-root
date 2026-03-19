@@ -61,7 +61,7 @@ export default function WarningsPage() {
       e.preventDefault();
       const userId = parseInt(form.userId, 10);
       if (!Number.isFinite(userId) || userId <= 0) {
-        throw new Error("User ID tidak valid");
+        throw new Error("ID pengguna tidak valid");
       }
       const body = {
         userId,
@@ -89,35 +89,48 @@ export default function WarningsPage() {
       moderate: "border-warning/20 bg-warning/10 text-warning",
       severe: "border-destructive/20 bg-destructive/10 text-destructive",
     };
+    const labels = {
+      minor: "Ringan",
+      moderate: "Sedang",
+      severe: "Berat",
+    };
     return (
       <span
         className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-medium ${
           styles[normalized] || styles.moderate
         }`}
       >
-        {normalized.charAt(0).toUpperCase() + normalized.slice(1)}
+        {labels[normalized] || "Sedang"}
       </span>
     );
+  };
+
+  const getContentTypeLabel = (type) => {
+    const normalized = String(type || "").toLowerCase();
+    const labels = {
+      validation_case: "Case Validasi",
+    };
+    return labels[normalized] || type;
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">User Warnings</h1>
-        <Button onClick={() => setShowCreateModal(true)}>+ Issue Warning</Button>
+        <h1 className="text-2xl font-bold text-foreground">Peringatan Pengguna</h1>
+        <Button onClick={() => setShowCreateModal(true)}>+ Buat Peringatan</Button>
       </div>
 
       {/* Search */}
       <div className="mb-6 flex gap-3">
         <input
           type="text"
-          placeholder="Cari berdasarkan User ID..."
+          placeholder="Cari berdasarkan ID pengguna..."
           value={searchUserId}
           onChange={(e) => setSearchUserId(e.target.value)}
           className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground"
         />
         <Button onClick={fetchWarnings} variant="secondary">
-          Search
+          Cari
         </Button>
       </div>
 
@@ -132,7 +145,7 @@ export default function WarningsPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : warnings.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">Tidak ada warnings</div>
+        <div className="text-center py-12 text-muted-foreground">Tidak ada peringatan</div>
       ) : (
         <div className="space-y-3">
           {warnings.map((warning) => (
@@ -143,20 +156,20 @@ export default function WarningsPage() {
                     {getSeverityBadge(warning.severity)}
                     {warning.isAcknowledged && (
                       <span className="inline-flex items-center rounded-sm border border-success/20 bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
-                        Acknowledged
+                        Diakui
                       </span>
                     )}
                   </div>
                   <p className="text-sm text-foreground mb-2">{warning.reason}</p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span>User ID: {warning.userId}</span>
+                    <span>ID Pengguna: {warning.userId}</span>
                     {warning.username && <span>Username: {warning.username}</span>}
-                    <span>Issued by: Admin {warning.adminId}</span>
+                    <span>Diterbitkan oleh: Admin {warning.adminId}</span>
                     <span>{formatDateTime(warning.createdAt)}</span>
                   </div>
                   {warning.contentType && (
                     <div className="mt-2 text-xs text-muted-foreground">
-                      Related: {warning.contentType} - {warning.contentId}
+                      Terkait: {getContentTypeLabel(warning.contentType)} - {warning.contentId}
                     </div>
                   )}
                 </div>
@@ -171,12 +184,14 @@ export default function WarningsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-card rounded-lg max-w-md w-full">
             <div className="p-6 border-b border-border">
-              <h2 className="text-xl font-semibold text-foreground">Issue Warning</h2>
+              <h2 className="text-xl font-semibold text-foreground">Buat Peringatan</h2>
             </div>
 
             <form onSubmit={createAction.execute} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">User ID *</label>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  ID Pengguna *
+                </label>
                 <input
                   type="number"
                   value={form.userId}
@@ -187,20 +202,20 @@ export default function WarningsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Severity *</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Tingkat *</label>
                 <select
                   value={form.severity}
                   onChange={(e) => setForm({ ...form, severity: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 >
-                  <option value="minor">Minor</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="severe">Severe</option>
+                  <option value="minor">Ringan</option>
+                  <option value="moderate">Sedang</option>
+                  <option value="severe">Berat</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Reason *</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Alasan *</label>
                 <textarea
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
@@ -213,7 +228,7 @@ export default function WarningsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
-                    Content Type
+                    Tipe Konten
                   </label>
                   <select
                     value={form.contentType}
@@ -221,12 +236,12 @@ export default function WarningsPage() {
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   >
                     <option value="">-</option>
-                    <option value="validation_case">Validation Case</option>
+                    <option value="validation_case">Case Validasi</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
-                    Content ID
+                    ID Konten
                   </label>
                   <input
                     type="text"
@@ -239,10 +254,10 @@ export default function WarningsPage() {
 
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>
-                  Cancel
+                  Batal
                 </Button>
                 <Button type="submit" disabled={createAction.loading}>
-                  {createAction.loading ? "Issuing..." : "Issue Warning"}
+                  {createAction.loading ? "Menerbitkan..." : "Buat Peringatan"}
                 </Button>
               </div>
             </form>

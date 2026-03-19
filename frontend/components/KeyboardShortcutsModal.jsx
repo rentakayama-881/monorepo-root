@@ -40,9 +40,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
         <div className="mx-4 rounded-lg border bg-card shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between border-b px-6 py-4">
-            <h2 className="text-lg font-semibold text-foreground">
-              Keyboard Shortcuts
-            </h2>
+            <h2 className="text-lg font-semibold text-foreground">Keyboard Shortcuts</h2>
             <button
               onClick={onClose}
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-accent transition-colors"
@@ -70,7 +68,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
                 <h3 className="shortcuts-group-title mb-3">General</h3>
                 <div className="space-y-2">
                   {KEYBOARD_SHORTCUTS.general
-                    .filter(shortcut => {
+                    .filter((shortcut) => {
                       // Filter based on platform
                       if (shortcut.mac !== undefined) {
                         return shortcut.mac === userIsMac;
@@ -96,13 +94,11 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
 
               {/* Navigation Shortcuts */}
               <div className="shortcuts-group">
-                <h3 className="shortcuts-group-title mb-3">Navigation</h3>
+                <h3 className="shortcuts-group-title mb-3">Navigasi</h3>
                 <div className="space-y-2">
                   {KEYBOARD_SHORTCUTS.navigation.map((shortcut, index) => (
                     <div key={index} className="shortcut-item">
-                      <span className="text-sm text-muted-foreground">
-                        {shortcut.description}
-                      </span>
+                      <span className="text-sm text-muted-foreground">{shortcut.description}</span>
                       <div className="shortcut-keys">
                         {shortcut.keys.map((key, i) => (
                           <kbd key={i} className="shortcut-keys kbd">
@@ -117,13 +113,11 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
 
               {/* Action Shortcuts */}
               <div className="shortcuts-group">
-                <h3 className="shortcuts-group-title mb-3">Actions</h3>
+                <h3 className="shortcuts-group-title mb-3">Aksi</h3>
                 <div className="space-y-2">
                   {KEYBOARD_SHORTCUTS.actions.map((shortcut, index) => (
                     <div key={index} className="shortcut-item">
-                      <span className="text-sm text-muted-foreground">
-                        {shortcut.description}
-                      </span>
+                      <span className="text-sm text-muted-foreground">{shortcut.description}</span>
                       <div className="shortcut-keys">
                         {shortcut.keys.map((key, i) => (
                           <kbd key={i} className="shortcut-keys kbd">
@@ -141,7 +135,8 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
           {/* Footer */}
           <div className="border-t px-6 py-3 bg-muted/30">
             <p className="text-xs text-muted-foreground">
-              Press <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted font-mono">?</kbd> anytime to see these shortcuts
+              Press <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted font-mono">?</kbd>{" "}
+              anytime to see these shortcuts
             </p>
           </div>
         </div>

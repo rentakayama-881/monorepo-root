@@ -24,7 +24,7 @@ function normalizeResolution(payload) {
 function normalizeDisputeMessage(message) {
   return {
     id: message?.id ?? message?.Id ?? "",
-    senderUsername: message?.senderUsername ?? message?.SenderUsername ?? "User",
+    senderUsername: message?.senderUsername ?? message?.SenderUsername ?? "pengguna",
     isAdmin: Boolean(message?.isAdmin ?? message?.IsAdmin ?? false),
     content: message?.content ?? message?.Content ?? message?.message ?? "",
     sentAt:
@@ -60,13 +60,13 @@ function normalizeDispute(payload) {
     data?.SenderUsername ??
     data?.initiatorUsername ??
     data?.InitiatorUsername ??
-    "Unknown";
+    "tidak-diketahui";
   const receiverUsername =
     data?.receiverUsername ??
     data?.ReceiverUsername ??
     data?.respondentUsername ??
     data?.RespondentUsername ??
-    "Unknown";
+    "tidak-diketahui";
 
   return {
     id: data?.id ?? data?.Id ?? "",
@@ -126,7 +126,7 @@ export default function useAdminDisputeDetail() {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.error?.message || data.message || "Request failed");
+      throw new Error(data.error?.message || data.message || "Permintaan gagal");
     }
     if (res.status === 204) return null;
 
@@ -176,7 +176,7 @@ export default function useAdminDisputeDetail() {
       setError("");
     } catch (e) {
       logger.error("Failed to load dispute:", e);
-      setError("Dispute tidak ditemukan");
+      setError("Sengketa tidak ditemukan");
     }
   }, [disputeId, fetchWithAuth]);
 
@@ -199,7 +199,7 @@ export default function useAdminDisputeDetail() {
         }
       } catch (e) {
         logger.error("Failed to load dispute:", e);
-        if (!cancelled) setError("Dispute tidak ditemukan");
+        if (!cancelled) setError("Sengketa tidak ditemukan");
       }
       if (!cancelled) setLoading(false);
     };
@@ -287,7 +287,7 @@ export default function useAdminDisputeDetail() {
           ? "Dana berhasil dikembalikan ke pembeli"
           : pendingAction === "force-release"
             ? "Dana berhasil dilepaskan ke penjual"
-            : "Transaksi dilanjutkan mengikuti hold time"
+            : "Transaksi dilanjutkan mengikuti masa hold"
       );
       await loadDispute();
     } catch (e) {

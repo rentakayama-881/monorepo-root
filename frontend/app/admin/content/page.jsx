@@ -75,7 +75,7 @@ export default function HiddenContentPage() {
   const getContentTypeLabel = (type) => {
     const normalized = String(type || "").toLowerCase();
     const labels = {
-      validation_case: "Validation Case",
+      validation_case: "Case Validasi",
     };
     return labels[normalized] || type;
   };
@@ -83,8 +83,8 @@ export default function HiddenContentPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Hidden Records</h1>
-        <Button onClick={() => setShowHideModal(true)}>+ Hide Record</Button>
+        <h1 className="text-2xl font-bold text-foreground">Data Tersembunyi</h1>
+        <Button onClick={() => setShowHideModal(true)}>+ Sembunyikan Data</Button>
       </div>
 
       {error && (
@@ -98,20 +98,22 @@ export default function HiddenContentPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : contents.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">Tidak ada record tersembunyi</div>
+        <div className="text-center py-12 text-muted-foreground">Tidak ada data tersembunyi</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Tipe</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">ID Konten</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Alasan</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Content ID
+                  Disembunyikan Oleh
                 </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Reason</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Hidden By</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Hidden At</th>
-                <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Disembunyikan Pada
+                </th>
+                <th className="text-right py-3 px-4 font-medium text-muted-foreground">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -133,13 +135,13 @@ export default function HiddenContentPage() {
                       size="sm"
                       variant="secondary"
                       onClick={() => {
-                        if (confirm("Yakin ingin menampilkan kembali konten ini?")) {
+                        if (confirm("Yakin ingin menampilkan kembali data ini?")) {
                           unhideAction.execute(content.id);
                         }
                       }}
                       disabled={unhideAction.loading}
                     >
-                      Unhide
+                      Tampilkan
                     </Button>
                   </td>
                 </tr>
@@ -154,26 +156,26 @@ export default function HiddenContentPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-card rounded-lg max-w-md w-full">
             <div className="p-6 border-b border-border">
-              <h2 className="text-xl font-semibold text-foreground">Hide Record</h2>
+              <h2 className="text-xl font-semibold text-foreground">Sembunyikan Data</h2>
             </div>
 
             <form onSubmit={hideAction.execute} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Content Type *
+                  Tipe Konten *
                 </label>
                 <select
                   value={form.contentType}
                   onChange={(e) => setForm({ ...form, contentType: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                 >
-                  <option value="validation_case">Validation Case</option>
+                  <option value="validation_case">Case Validasi</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Content ID *
+                  ID Konten *
                 </label>
                 <input
                   type="text"
@@ -185,7 +187,7 @@ export default function HiddenContentPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Reason *</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Alasan *</label>
                 <textarea
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
@@ -197,10 +199,10 @@ export default function HiddenContentPage() {
 
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="secondary" onClick={() => setShowHideModal(false)}>
-                  Cancel
+                  Batal
                 </Button>
                 <Button type="submit" disabled={hideAction.loading}>
-                  {hideAction.loading ? "Hiding..." : "Hide Record"}
+                  {hideAction.loading ? "Menyembunyikan..." : "Sembunyikan Data"}
                 </Button>
               </div>
             </form>

@@ -4,7 +4,7 @@ import SearchInput from "../SearchInput";
 describe("SearchInput", () => {
   it("renders without crashing", () => {
     render(<SearchInput />);
-    expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Cari...")).toBeInTheDocument();
   });
 
   it("accepts custom placeholder", () => {

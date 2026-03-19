@@ -13,18 +13,18 @@ export default function ConfirmActionModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-lg bg-card p-6">
         <h3 className="text-lg font-bold text-foreground mb-4">
-          {pendingAction === "continue" && "🔄 Lanjutkan Transaksi"}
-          {pendingAction === "force-release" && "💰 Lepaskan ke Penjual"}
-          {pendingAction === "refund" && "↩️ Kembalikan ke Pembeli"}
+          {pendingAction === "continue" && "Lanjutkan Transaksi"}
+          {pendingAction === "force-release" && "Lepaskan Dana ke Penjual"}
+          {pendingAction === "refund" && "Kembalikan Dana ke Pembeli"}
         </h3>
 
         <p className="text-sm text-muted-foreground mb-4">
           {pendingAction === "continue" &&
-            "Transaksi akan dilanjutkan dan mengikuti hold time normal. Dispute akan ditutup."}
+            "Transaksi akan dilanjutkan dan mengikuti masa hold normal. Sengketa akan ditutup."}
           {pendingAction === "force-release" &&
-            `Dana Rp ${formatAmount(dispute.amount)} akan langsung dikirim ke penjual @${dispute.respondentUsername}.`}
+            `Dana ${formatAmount(dispute.amount)} akan langsung dikirim ke penjual @${dispute.respondentUsername}.`}
           {pendingAction === "refund" &&
-            `Dana Rp ${formatAmount(dispute.amount)} akan dikembalikan ke pembeli @${dispute.initiatorUsername}.`}
+            `Dana ${formatAmount(dispute.amount)} akan dikembalikan ke pembeli @${dispute.initiatorUsername}.`}
         </p>
 
         <div className="mb-4">

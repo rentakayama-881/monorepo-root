@@ -34,24 +34,18 @@ export default function AdminError({ error, reset }) {
           </svg>
         </div>
 
-        <h2 className="text-xl font-semibold text-foreground mb-2">
-          Error di Admin Panel
-        </h2>
+        <h2 className="text-xl font-semibold text-foreground mb-2">Error di Admin Panel</h2>
 
-        <p className="text-muted-foreground mb-4">
-          Terjadi kesalahan saat memuat halaman admin.
-        </p>
+        <p className="text-muted-foreground mb-4">Terjadi kesalahan saat memuat halaman admin.</p>
 
         {/* Show error details only in development - hide internal details in production */}
         {isDev ? (
           <div className="mb-6 p-4 rounded-lg bg-muted/50 text-left overflow-auto max-h-40">
             <p className="text-sm font-mono text-destructive break-all">
-              {error?.message || "Unknown error"}
+              {error?.message || "Kesalahan tidak diketahui"}
             </p>
             {error?.digest && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Digest: {error.digest}
-              </p>
+              <p className="text-xs text-muted-foreground mt-2">Digest: {error.digest}</p>
             )}
           </div>
         ) : (
@@ -60,9 +54,7 @@ export default function AdminError({ error, reset }) {
               Silakan coba lagi atau hubungi administrator jika masalah berlanjut.
             </p>
             {error?.digest && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Reference: {error.digest}
-              </p>
+              <p className="text-xs text-muted-foreground mt-2">Referensi: {error.digest}</p>
             )}
           </div>
         )}

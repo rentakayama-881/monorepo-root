@@ -121,7 +121,7 @@ export default function ValidationCaseManagementPage() {
 
       const data = await readPayload(res);
       if (!res.ok) {
-        throw new Error(readErrorMessage(data, "Gagal mencari user"));
+        throw new Error(readErrorMessage(data, "Gagal mencari pengguna"));
       }
 
       const items = Array.isArray(data?.users) ? data.users : [];
@@ -135,7 +135,7 @@ export default function ValidationCaseManagementPage() {
 
   async function handleMove(e) {
     e.preventDefault();
-    if (!confirm("Yakin ingin memindahkan Validation Case ini?")) return;
+    if (!confirm("Yakin ingin memindahkan case validasi ini?")) return;
 
     setLoading(true);
     setResult(null);
@@ -151,16 +151,16 @@ export default function ValidationCaseManagementPage() {
       const reason = moveForm.reason.trim();
 
       if (!Number.isFinite(validationCaseId) || validationCaseId <= 0) {
-        throw new Error("Validation Case ID tidak valid.");
+        throw new Error("ID case validasi tidak valid.");
       }
       if (!Number.isFinite(newOwnerId) || newOwnerId <= 0) {
-        throw new Error("New Owner User ID tidak valid.");
+        throw new Error("ID pengguna pemilik baru tidak valid.");
       }
       if (newCategoryId != null && (!Number.isFinite(newCategoryId) || newCategoryId <= 0)) {
-        throw new Error("New Category tidak valid.");
+        throw new Error("Tipe baru tidak valid.");
       }
       if (reason.length < 5) {
-        throw new Error("Reason minimal 5 karakter.");
+        throw new Error("Alasan minimal 5 karakter.");
       }
 
       const res = await fetch(`${getApiBase()}/admin/validation-cases/${validationCaseId}/move`, {
@@ -179,12 +179,12 @@ export default function ValidationCaseManagementPage() {
 
       const data = await readPayload(res);
       if (!res.ok) {
-        throw new Error(readErrorMessage(data, "Gagal memindahkan Validation Case"));
+        throw new Error(readErrorMessage(data, "Gagal memindahkan case validasi"));
       }
 
       setResult({
         type: "success",
-        message: data?.message || "Validation Case berhasil dipindahkan",
+        message: data?.message || "Case validasi berhasil dipindahkan",
         data: normalizeMoveResult(data?.data || data),
       });
 
@@ -207,7 +207,7 @@ export default function ValidationCaseManagementPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-foreground mb-6">Validation Case Management</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">Kelola Case Validasi</h1>
 
       {result ? (
         <div
@@ -222,15 +222,15 @@ export default function ValidationCaseManagementPage() {
       ) : null}
 
       <div className="p-6 rounded-lg border border-border bg-card">
-        <h2 className="text-lg font-semibold text-foreground mb-2">Move Validation Case</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-2">Pindahkan Case Validasi</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Transfer ownership dan/atau pindah tipe kasus. Wajib isi reason untuk audit.
+          Pindahkan kepemilikan dan/atau ubah tipe kasus. Wajib isi alasan untuk audit.
         </p>
 
         <form onSubmit={handleMove} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
-              Validation Case ID *
+              ID Case Validasi *
             </label>
             <input
               type="number"
@@ -247,7 +247,7 @@ export default function ValidationCaseManagementPage() {
 
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
-              New Owner User ID *
+              ID Pengguna Pemilik Baru *
             </label>
             <input
               type="number"
@@ -280,7 +280,7 @@ export default function ValidationCaseManagementPage() {
                 disabled={userSearch.loading}
                 onClick={handleUserSearch}
               >
-                {userSearch.loading ? "Searching..." : "Search"}
+                {userSearch.loading ? "Mencari..." : "Cari"}
               </Button>
             </div>
 
@@ -313,7 +313,7 @@ export default function ValidationCaseManagementPage() {
 
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
-              New Type (optional)
+              Tipe Baru (opsional)
             </label>
             <select
               value={moveForm.newCategoryId}
@@ -334,7 +334,7 @@ export default function ValidationCaseManagementPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Reason *</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Alasan *</label>
             <textarea
               value={moveForm.reason}
               onChange={(e) => setMoveForm({ ...moveForm, reason: e.target.value })}
@@ -351,29 +351,33 @@ export default function ValidationCaseManagementPage() {
               checked={moveForm.dryRun}
               onChange={(e) => setMoveForm({ ...moveForm, dryRun: e.target.checked })}
             />
-            Dry run (validasi tanpa commit)
+            Uji coba tanpa commit
           </label>
 
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Processing..." : moveForm.dryRun ? "Dry Run Move" : "Move Validation Case"}
+            {loading
+              ? "Memproses..."
+              : moveForm.dryRun
+                ? "Uji Coba Pemindahan"
+                : "Pindahkan Case Validasi"}
           </Button>
 
           {result?.type === "success" && result?.data ? (
             <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <div>
-                Validation Case: <span className="font-mono">{result.data.validationCaseId}</span>
+                Case Validasi: <span className="font-mono">{result.data.validationCaseId}</span>
               </div>
               <div>
-                Owner: <span className="font-mono">{result.data.oldOwnerId}</span> →{" "}
+                Pemilik: <span className="font-mono">{result.data.oldOwnerId}</span> →{" "}
                 <span className="font-mono">{result.data.newOwnerId}</span>
               </div>
               <div>
-                Type: <span className="font-mono">{result.data.oldCategoryId}</span> →{" "}
+                Tipe: <span className="font-mono">{result.data.oldCategoryId}</span> →{" "}
                 <span className="font-mono">{result.data.newCategoryId}</span>
               </div>
               {result.data.requestId ? (
                 <div>
-                  Request ID: <span className="font-mono">{result.data.requestId}</span>
+                  ID Request: <span className="font-mono">{result.data.requestId}</span>
                 </div>
               ) : null}
             </div>

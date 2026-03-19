@@ -8,8 +8,8 @@ export default function ResolutionCard({ resolution }) {
         <div>
           <span className="text-muted-foreground">Tipe:</span>
           <div className="font-medium text-foreground">
-            {resolution.type === "FullRefundToSender" && "Refund ke Pembeli"}
-            {resolution.type === "FullReleaseToReceiver" && "Release ke Penjual"}
+            {resolution.type === "FullRefundToSender" && "Pengembalian ke Pembeli"}
+            {resolution.type === "FullReleaseToReceiver" && "Pelepasan ke Penjual"}
             {resolution.type === "Split" && "Dibagi"}
             {resolution.type === "NoAction" && "Transaksi Dilanjutkan"}
           </div>
@@ -18,7 +18,7 @@ export default function ResolutionCard({ resolution }) {
           <div>
             <span className="text-muted-foreground">Ke Pembeli:</span>
             <div className="font-medium text-foreground">
-              Rp {formatAmount(resolution.refundToSender)}
+              {formatAmount(resolution.refundToSender)}
             </div>
           </div>
         )}
@@ -26,7 +26,7 @@ export default function ResolutionCard({ resolution }) {
           <div>
             <span className="text-muted-foreground">Ke Penjual:</span>
             <div className="font-medium text-foreground">
-              Rp {formatAmount(resolution.releaseToReceiver)}
+              {formatAmount(resolution.releaseToReceiver)}
             </div>
           </div>
         )}

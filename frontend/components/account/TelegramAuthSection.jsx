@@ -249,7 +249,7 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
         </div>
 
         <div className="text-sm text-muted-foreground">
-          Kontak Telegram untuk Validation Case diambil dari akun Telegram yang sudah diverifikasi.
+          Kontak Telegram untuk case validasi diambil dari akun Telegram yang sudah diverifikasi.
         </div>
 
         {connected ? (

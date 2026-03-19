@@ -65,7 +65,7 @@ function ResetPasswordForm() {
       }, 2000);
     } catch (err) {
       setStatus("error");
-      setMessage(err?.message || "Failed to reset password. The token may have expired.");
+      setMessage(err?.message || "Gagal mengatur ulang password. Token mungkin sudah kedaluwarsa.");
     } finally {
       setLoading(false);
     }
@@ -92,7 +92,7 @@ function ResetPasswordForm() {
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center space-y-1">
-        <h1 className="text-xl font-semibold text-foreground">Reset Password</h1>
+        <h1 className="text-xl font-semibold text-foreground">Atur Ulang Password</h1>
         <p className="text-sm text-muted-foreground">Masukkan password baru Anda.</p>
       </div>
 
@@ -102,7 +102,7 @@ function ResetPasswordForm() {
             <div className="rounded-lg border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
               {message}
             </div>
-            <p className="text-sm text-muted-foreground">Mengalihkan ke halaman login...</p>
+            <p className="text-sm text-muted-foreground">Mengalihkan ke halaman masuk...</p>
           </div>
         ) : (
           <form className="space-y-4" onSubmit={handleSubmit}>
@@ -147,7 +147,7 @@ function ResetPasswordForm() {
 
       <div className="text-center text-sm text-muted-foreground">
         <Link href="/login" className="font-medium text-foreground underline">
-          Kembali ke Login
+          Kembali ke halaman masuk
         </Link>
       </div>
     </div>

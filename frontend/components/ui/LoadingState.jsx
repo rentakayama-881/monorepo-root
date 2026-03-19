@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import Skeleton from "./Skeleton";
 
-export function CenteredSpinner({ className = "", sizeClass = "h-7 w-7", srLabel = "Loading" }) {
+export function CenteredSpinner({ className = "", sizeClass = "h-7 w-7", srLabel = "Memuat" }) {
   return (
     <div
       className={cn("flex items-center justify-center", className)}
@@ -24,7 +24,7 @@ export function SectionLoadingBlock({
   className = "",
   lines = 3,
   compact = false,
-  srLabel = "Loading",
+  srLabel = "Memuat",
 }) {
   const widthCycle = ["w-full", "w-11/12", "w-4/5", "w-3/5"];
   const safeLines = Math.max(1, Number(lines) || 1);
@@ -57,7 +57,7 @@ export function PageLoadingBlock({
   className = "",
   maxWidthClass = "max-w-xl",
   lines = 4,
-  srLabel = "Loading",
+  srLabel = "Memuat",
 }) {
   return (
     <div className={cn("min-h-[50vh] p-4", className)}>

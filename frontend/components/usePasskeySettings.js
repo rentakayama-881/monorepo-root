@@ -62,7 +62,7 @@ export default function usePasskeySettings() {
     if (registering) return;
 
     if (!isWebAuthnSupported()) {
-      setError("Your browser does not support Passkey/WebAuthn");
+      setError("Browser Anda belum mendukung Passkey/WebAuthn.");
       return;
     }
 
@@ -94,7 +94,7 @@ export default function usePasskeySettings() {
         return;
       }
 
-      setError(err?.message || "Failed to prepare passkey registration.");
+      setError(err?.message || "Gagal menyiapkan pendaftaran passkey.");
     }
   }
 
@@ -123,7 +123,7 @@ export default function usePasskeySettings() {
         body: JSON.stringify({ pin: normalizedPin }),
       });
       if (!beginRes.ok) {
-        await throwApiError(beginRes, "Failed to start registration.");
+        await throwApiError(beginRes, "Gagal memulai pendaftaran.");
       }
 
       const beginData = await readJsonSafe(beginRes);
@@ -132,7 +132,7 @@ export default function usePasskeySettings() {
       const publicKeyOptions = options?.publicKey;
 
       if (!publicKeyOptions || !sessionId) {
-        throw new Error("Failed to start registration.");
+        throw new Error("Gagal memulai pendaftaran.");
       }
       publicKeyOptions.challenge = base64URLToBuffer(publicKeyOptions.challenge);
       publicKeyOptions.user.id = base64URLToBuffer(publicKeyOptions.user.id);
@@ -151,11 +151,11 @@ export default function usePasskeySettings() {
       });
 
       if (!credential) {
-        throw new Error("Registration was canceled");
+        throw new Error("Pendaftaran dibatalkan.");
       }
 
       const credentialForServer = serializePublicKeyCredential(credential);
-      const passkeyName = prompt("Beri nama untuk passkey ini:", "Passkey") || "Passkey";
+      const passkeyName = prompt("Beri nama untuk passkey ini:", "Passkey Baru") || "Passkey Baru";
 
       const finishRes = await fetch(`${API}/register/finish`, {
         method: "POST",
@@ -171,11 +171,11 @@ export default function usePasskeySettings() {
       });
 
       if (!finishRes.ok) {
-        await throwApiError(finishRes, "Failed to complete registration.");
+        await throwApiError(finishRes, "Gagal menyelesaikan pendaftaran.");
       }
 
       setPin("");
-      setSuccess("Passkey registered successfully!");
+      setSuccess("Passkey berhasil didaftarkan.");
       await fetchPasskeys();
     } catch (err) {
       if (err?.code === "TWO_FACTOR_REQUIRED") {
@@ -199,11 +199,11 @@ export default function usePasskeySettings() {
       }
 
       if (err.name === "NotAllowedError") {
-        setError("Registration was canceled atau tidak diizinkan");
+        setError("Pendaftaran dibatalkan atau tidak diizinkan.");
       } else if (err.name === "InvalidStateError") {
-        setError("Passkey ini sudah terdaftar");
+        setError("Passkey ini sudah terdaftar.");
       } else {
-        setError(err?.message || "Failed to register passkey.");
+        setError(err?.message || "Gagal mendaftarkan passkey.");
       }
     } finally {
       setRegistering(false);
@@ -211,7 +211,7 @@ export default function usePasskeySettings() {
   }
 
   async function deletePasskey(id) {
-    if (!confirm("Delete this passkey? You will no longer be able to sign in with it.")) {
+    if (!confirm("Hapus passkey ini? Anda tidak akan bisa login lagi dengan passkey tersebut.")) {
       return;
     }
 
@@ -226,12 +226,12 @@ export default function usePasskeySettings() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        await throwApiError(res, "Failed to delete passkey.");
+        await throwApiError(res, "Gagal menghapus passkey.");
       }
-      setSuccess("Passkey removed successfully.");
+      setSuccess("Passkey berhasil dihapus.");
       await fetchPasskeys();
     } catch (err) {
-      setError(err?.message || "Failed to delete passkey.");
+      setError(err?.message || "Gagal menghapus passkey.");
     } finally {
       setDeleting(null);
     }
@@ -252,12 +252,12 @@ export default function usePasskeySettings() {
         body: JSON.stringify({ name }),
       });
       if (!res.ok) {
-        await throwApiError(res, "Failed to update name.");
+        await throwApiError(res, "Gagal memperbarui nama.");
       }
-      setSuccess("Passkey name updated successfully.");
+      setSuccess("Nama passkey berhasil diperbarui.");
       await fetchPasskeys();
     } catch (err) {
-      setError(err?.message || "Failed to update name.");
+      setError(err?.message || "Gagal memperbarui nama.");
     }
   }
 

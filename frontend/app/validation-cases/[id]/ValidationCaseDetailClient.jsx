@@ -198,7 +198,7 @@ export default function ValidationCaseRecordPage({ initialCaseData = null }) {
     <main className="container py-10">
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="hover:underline">
-          Home
+          Beranda
         </Link>
         <span>/</span>
         <Link href="/validation-cases" prefetch={false} className="hover:underline">

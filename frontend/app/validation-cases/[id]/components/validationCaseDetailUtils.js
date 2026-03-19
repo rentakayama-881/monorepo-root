@@ -34,19 +34,19 @@ export function statusBadgeClass(statusRaw) {
     case "open":
       return "border-border bg-card text-foreground";
     case "completed":
-      return "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
+      return "border-status-success-border bg-status-success-bg text-status-success-text";
     case "disputed":
       return "bg-destructive/10 text-destructive border-destructive/30";
     case "on_hold_owner_inactive":
-      return "border-orange-200 bg-orange-50 text-orange-900 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-400";
+      return "border-status-orange-border bg-status-orange-bg text-status-orange-text";
     case "waiting_owner_response":
-      return "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+      return "border-status-info-border bg-status-info-bg text-status-info-text";
     case "funds_locked":
-      return "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
+      return "border-status-amber-border bg-status-amber-bg text-status-amber-text";
     case "artifact_submitted":
-      return "border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-400";
+      return "border-status-sky-border bg-status-sky-bg text-status-sky-text";
     case "offer_accepted":
-      return "border-violet-200 bg-violet-50 text-violet-950 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-400";
+      return "border-status-violet-border bg-status-violet-bg text-status-violet-text";
     default:
       return "bg-secondary text-muted-foreground border-border";
   }

@@ -16,16 +16,16 @@ function statusLabel(statusRaw) {
   const s = String(statusRaw || "")
     .toLowerCase()
     .trim();
-  if (!s) return "Unknown";
+  if (!s) return "Tidak diketahui";
   const map = {
-    open: "Open",
-    waiting_owner_response: "Waiting Owner Response",
-    on_hold_owner_inactive: "On Hold (Owner Inactive)",
-    offer_accepted: "Offer Accepted",
-    funds_locked: "Funds Locked",
-    artifact_submitted: "Artifact Submitted",
-    completed: "Completed",
-    disputed: "Disputed",
+    open: "Terbuka",
+    waiting_owner_response: "Menunggu Respons Owner",
+    on_hold_owner_inactive: "Ditahan (Owner Tidak Aktif)",
+    offer_accepted: "Penawaran Diterima",
+    funds_locked: "Dana Dikunci",
+    artifact_submitted: "Artefak Dikirim",
+    completed: "Selesai",
+    disputed: "Disengketakan",
   };
   return map[s] || s.replace(/_/g, " ");
 }
@@ -61,10 +61,10 @@ function sensitivityText(levelRaw) {
       .toUpperCase()
       .trim() || "S1";
   const labels = {
-    S0: "Public",
-    S1: "Restricted",
-    S2: "Confidential",
-    S3: "Critical",
+    S0: "Publik",
+    S1: "Terbatas",
+    S2: "Rahasia",
+    S3: "Kritis",
   };
 
   if (labels[level]) return `${level} ${labels[level]}`;
@@ -95,7 +95,7 @@ export default function ValidationCaseTable({
       <div className="space-y-3 sm:hidden">
         {items.length === 0 ? (
           <div className="rounded-none border border-border bg-background px-4 py-9 text-center text-sm text-muted-foreground">
-            Tidak ada Validation Case pada indeks ini.
+            Tidak ada case validasi pada indeks ini.
           </div>
         ) : (
           items.map((vc) => {
@@ -123,7 +123,7 @@ export default function ValidationCaseTable({
                       prefetch={false}
                       className="mt-1 block text-sm font-semibold leading-5 text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
                     >
-                      {vc?.title || "(untitled)"}
+                      {vc?.title || "(tanpa judul)"}
                     </Link>
                   </div>
                   <StatusPill status={vc?.status} />
@@ -148,20 +148,20 @@ export default function ValidationCaseTable({
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Filed</dt>
+                    <dt className="text-muted-foreground">Dibuat</dt>
                     <dd className="mt-0.5 font-mono text-muted-foreground">
                       {formatDate(vc?.created_at)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Sensitivity</dt>
+                    <dt className="text-muted-foreground">Sensitivitas</dt>
                     <dd className="mt-0.5 font-mono text-foreground">
                       {sensitivityText(vc?.sensitivity_level)}
                     </dd>
                   </div>
                   {showCategory ? (
                     <div className="col-span-2">
-                      <dt className="text-muted-foreground">Type</dt>
+                      <dt className="text-muted-foreground">Jenis</dt>
                       <dd className="mt-0.5 text-foreground">
                         {vc?.category?.name || vc?.category?.slug || "-"}
                       </dd>
@@ -214,13 +214,13 @@ export default function ValidationCaseTable({
                   scope="col"
                   className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
                 >
-                  Case
+                  Kasus
                 </th>
                 <th
                   scope="col"
                   className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
                 >
-                  Title
+                  Judul
                 </th>
                 <th
                   scope="col"
@@ -232,14 +232,14 @@ export default function ValidationCaseTable({
                   scope="col"
                   className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
                 >
-                  Sensitivity
+                  Sensitivitas
                 </th>
                 {showCategory && (
                   <th
                     scope="col"
                     className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
                   >
-                    Type
+                    Jenis
                   </th>
                 )}
                 <th
@@ -258,7 +258,7 @@ export default function ValidationCaseTable({
                   scope="col"
                   className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
                 >
-                  Filed
+                  Dibuat
                 </th>
               </tr>
             </thead>
@@ -269,7 +269,7 @@ export default function ValidationCaseTable({
                     colSpan={showCategory ? 8 : 7}
                     className="px-4 py-10 text-center text-muted-foreground"
                   >
-                    Tidak ada Validation Case pada indeks ini.
+                    Tidak ada case validasi pada indeks ini.
                   </td>
                 </tr>
               ) : (
@@ -297,7 +297,7 @@ export default function ValidationCaseTable({
                             prefetch={false}
                             className="block font-semibold text-foreground hover:underline"
                           >
-                            {vc?.title || "(untitled)"}
+                            {vc?.title || "(tanpa judul)"}
                           </Link>
                           {vc?.summary ? (
                             <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">

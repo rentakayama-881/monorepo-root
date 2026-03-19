@@ -10,9 +10,9 @@ import {
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Pedoman Komunitas - AIvalid",
+  title: "Pedoman Komunitas - AIValid",
   description:
-    "Pedoman komunitas AIvalid untuk menjaga ruang diskusi yang aman, inklusif, dan produktif.",
+    "Pedoman komunitas AIValid untuk menjaga ruang diskusi yang aman, inklusif, dan produktif.",
   alternates: {
     canonical: "https://aivalid.id/community-guidelines",
   },
@@ -83,9 +83,9 @@ export default function CommunityGuidelinesPage() {
     <main className="container max-w-3xl py-10">
       <header className="mb-8">
         <p className="mb-2 text-sm text-muted-foreground">Pedoman Komunitas</p>
-        <h1 className="mb-2 text-2xl font-bold">Standar interaksi di AIvalid</h1>
+        <h1 className="mb-2 text-2xl font-bold">Standar interaksi di AIValid</h1>
         <p className="text-muted-foreground">
-          Pedoman ini membantu menjaga AIvalid sebagai ruang yang aman, adil, dan produktif untuk
+          Pedoman ini membantu menjaga AIValid sebagai ruang yang aman, adil, dan produktif untuk
           seluruh pengguna.
         </p>
       </header>
@@ -127,7 +127,10 @@ export default function CommunityGuidelinesPage() {
         </h2>
         <p className="text-sm text-muted-foreground">
           Untuk laporan pelanggaran atau pertanyaan terkait pedoman komunitas, hubungi
-          <a href="mailto:ops@aivalid.id" className="ml-1 font-medium text-foreground hover:underline">
+          <a
+            href="mailto:ops@aivalid.id"
+            className="ml-1 font-medium text-foreground hover:underline"
+          >
             ops@aivalid.id
           </a>
           .

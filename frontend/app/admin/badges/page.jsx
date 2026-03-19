@@ -46,9 +46,9 @@ export default function AdminBadgesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Badges</h1>
+          <h1 className="text-2xl font-bold text-foreground">Badge</h1>
           <p className="mt-1 text-muted-foreground">
-            Kelola badge yang dapat diberikan kepada user
+            Kelola badge yang dapat diberikan kepada pengguna
           </p>
         </div>
         <Button variant="primary" onClick={openCreateModal}>

@@ -57,7 +57,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     if (!form.username || form.username.trim() === "") {
-      setError("Username is required.");
+      setError("Username wajib diisi.");
       setLoading(false);
       return;
     }
@@ -77,11 +77,11 @@ export default function RegisterPage() {
         }),
       });
 
-      setInfo("Account created. Verify your email, then continue to login.");
+      setInfo("Akun berhasil dibuat. Verifikasi email Anda lalu lanjut masuk.");
       setForm({ email: "", password: "", username: "", full_name: "" });
       setTimeout(() => router.replace("/login?registered=1"), 600);
     } catch (submitError) {
-      setError(submitError?.message || "Something went wrong.");
+      setError(submitError?.message || "Terjadi kesalahan.");
     } finally {
       setLoading(false);
     }
@@ -91,8 +91,8 @@ export default function RegisterPage() {
     <div className="auth-page-bg">
       <AuthContainer>
         <AuthHeader
-          title="Create your account"
-          description="Register with email, choose a handle, and launch your first validation flow."
+          title="Buat akun"
+          description="Daftar dengan email, pilih username, dan mulai alur validasi pertama Anda."
         />
 
         <AuthCard>
@@ -122,7 +122,7 @@ export default function RegisterPage() {
                 minLength={8}
                 onChange={(event) => update("password", event.target.value)}
                 className={AUTH_INPUT_CLASS}
-                placeholder="At least 8 characters"
+                placeholder="Minimal 8 karakter"
               />
 
               {form.password ? (
@@ -155,11 +155,11 @@ export default function RegisterPage() {
                 value={form.username}
                 onChange={(event) => update("username", event.target.value)}
                 className={AUTH_INPUT_CLASS}
-                placeholder="your_handle"
+                placeholder="nama_pengguna"
               />
             </AuthField>
 
-            <AuthField label="Display name (optional)" htmlFor="register-display-name">
+            <AuthField label="Nama tampilan (opsional)" htmlFor="register-display-name">
               <input
                 id="register-display-name"
                 type="text"
@@ -167,7 +167,7 @@ export default function RegisterPage() {
                 value={form.full_name}
                 onChange={(event) => update("full_name", event.target.value)}
                 className={AUTH_INPUT_CLASS}
-                placeholder="Your name"
+                placeholder="Nama Anda"
               />
             </AuthField>
 
@@ -180,15 +180,15 @@ export default function RegisterPage() {
               disabled={loading}
               className={AUTH_PRIMARY_BUTTON_CLASS}
             >
-              {loading ? "Creating account..." : "Create account"}
+              {loading ? "Membuat akun..." : "Buat akun"}
             </button>
           </form>
         </AuthCard>
 
         <div className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
+          Sudah punya akun?{" "}
           <Link href="/login" className="font-medium text-foreground underline">
-            Login
+            Masuk
           </Link>
         </div>
       </AuthContainer>

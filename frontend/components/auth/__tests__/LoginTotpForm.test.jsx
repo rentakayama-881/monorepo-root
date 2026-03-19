@@ -22,7 +22,7 @@ describe("LoginTotpForm", () => {
   it("sanitizes non-digit input when using authenticator code", () => {
     const props = renderForm();
 
-    fireEvent.change(screen.getByLabelText("6-Digit Code"), {
+    fireEvent.change(screen.getByLabelText("Kode 6 Digit"), {
       target: { value: "12ab34" },
     });
 
@@ -32,7 +32,7 @@ describe("LoginTotpForm", () => {
   it("passes raw input in backup code mode", () => {
     const props = renderForm({ useBackupCode: true });
 
-    fireEvent.change(screen.getByLabelText("Backup Code"), {
+    fireEvent.change(screen.getByLabelText("Kode Cadangan"), {
       target: { value: "ABCD-1234" },
     });
 
@@ -42,6 +42,6 @@ describe("LoginTotpForm", () => {
   it("disables verify action when code length is incomplete", () => {
     renderForm({ totpCode: "123" });
 
-    expect(screen.getByRole("button", { name: "Verify" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Verifikasi" })).toBeDisabled();
   });
 });

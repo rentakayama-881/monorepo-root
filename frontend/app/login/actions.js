@@ -12,7 +12,7 @@ export async function loginAction(formData) {
   const password = formData.get("password")?.toString();
 
   if (!email || !password) {
-    return { success: false, error: "Email and password are required." };
+    return { success: false, error: "Email dan kata sandi wajib diisi." };
   }
 
   try {
@@ -32,13 +32,13 @@ export async function loginAction(formData) {
           success: false,
           requires2FA: true,
           tempToken: data?.temp_token,
-          error: data?.message || "Two-factor verification is required.",
+          error: data?.message || "Verifikasi dua faktor wajib diselesaikan.",
         };
       }
 
       return {
         success: false,
-        error: data?.message || data?.error || "Sign-in failed.",
+        error: data?.message || data?.error || "Gagal masuk.",
         code: data?.code,
       };
     }
@@ -54,7 +54,7 @@ export async function loginAction(formData) {
   } catch (err) {
     return {
       success: false,
-      error: "Unable to connect to the server. Please check your internet connection.",
+      error: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
     };
   }
 }
@@ -66,7 +66,7 @@ export async function registerAction(formData) {
   const fullName = formData.get("full_name")?.toString().trim();
 
   if (!email || !password || !username) {
-    return { success: false, error: "Email, password, and username are required." };
+    return { success: false, error: "Email, kata sandi, dan username wajib diisi." };
   }
 
   try {
@@ -87,7 +87,7 @@ export async function registerAction(formData) {
     if (!res.ok) {
       return {
         success: false,
-        error: data?.message || data?.error || "Registration failed.",
+        error: data?.message || data?.error || "Pendaftaran gagal.",
         code: data?.code,
         details: data?.details,
       };
@@ -95,13 +95,12 @@ export async function registerAction(formData) {
 
     return {
       success: true,
-      message:
-        data?.message || "Registration completed. Please verify your email before signing in.",
+      message: data?.message || "Pendaftaran selesai. Verifikasi email Anda sebelum masuk.",
     };
   } catch (err) {
     return {
       success: false,
-      error: "Unable to connect to the server. Please check your internet connection.",
+      error: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
     };
   }
 }

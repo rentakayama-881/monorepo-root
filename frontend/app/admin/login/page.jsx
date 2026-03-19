@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
 
       router.push("/admin");
     } catch (err) {
-      setError(err?.message || "Login gagal");
+      setError(err?.message || "Masuk gagal");
     } finally {
       setLoading(false);
     }
@@ -42,12 +42,8 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         <div className="rounded-lg border border-border bg-card p-6">
           <div className="mb-6 text-center">
-            <h1 className="text-xl font-semibold text-foreground">
-              Admin Login
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Masuk ke dashboard admin
-            </p>
+            <h1 className="text-xl font-semibold text-foreground">Masuk Admin</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Masuk ke dasbor admin</p>
           </div>
 
           {error && (
@@ -75,13 +71,8 @@ export default function AdminLoginPage() {
               required
             />
 
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? "Memproses..." : "Login"}
+            <Button type="submit" variant="primary" disabled={loading} className="w-full">
+              {loading ? "Memproses..." : "Masuk"}
             </Button>
           </form>
         </div>

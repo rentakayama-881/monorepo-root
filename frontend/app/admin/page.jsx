@@ -82,38 +82,38 @@ export default function AdminDashboardPage() {
 
   const statCards = [
     {
-      label: "Total Badges",
+      label: "Total Badge",
       value: stats.totalBadges,
       href: "/admin/badges",
       color: "text-warning",
     },
     {
-      label: "Total Users",
+      label: "Total Pengguna",
       value: stats.totalUsers,
       href: "/admin/users",
       color: "text-primary",
     },
     {
-      label: "Active Bans",
+      label: "Ban Aktif",
       value: stats.activeDeviceBans,
       href: "/admin/device-bans",
       color: "text-warning",
     },
     {
-      label: "Warnings Today",
+      label: "Peringatan Hari Ini",
       value: stats.warningsToday,
       href: "/admin/warnings",
       color: "text-warning",
     },
     {
-      label: "Hidden Records",
+      label: "Data Disembunyikan",
       value: stats.hiddenContent,
       href: "/admin/content",
       color: "text-muted-foreground",
     },
     {
       label: "LZT API",
-      value: "Ready",
+      value: "Siap",
       href: "/admin/integrations/lzt",
       color: "text-primary",
     },
@@ -122,8 +122,8 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Selamat datang di Admin Panel</p>
+        <h1 className="text-2xl font-bold text-foreground">Dasbor</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Selamat datang di panel admin</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -141,44 +141,46 @@ export default function AdminDashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Aksi Cepat</h2>
           <div className="space-y-2">
             <Link
               href="/admin/badges"
               className="block rounded-lg px-4 py-3 bg-muted/30 hover:bg-accent transition-colors"
             >
-              <span className="font-medium text-foreground">Manage Badges</span>
-              <p className="text-sm text-muted-foreground">Create, edit, or delete badges</p>
+              <span className="font-medium text-foreground">Kelola Badge</span>
+              <p className="text-sm text-muted-foreground">Buat, ubah, atau hapus badge</p>
             </Link>
             <Link
               href="/admin/users"
               className="block rounded-lg px-4 py-3 bg-muted/30 hover:bg-accent transition-colors"
             >
-              <span className="font-medium text-foreground">Manage Users</span>
-              <p className="text-sm text-muted-foreground">Assign or revoke badges from users</p>
+              <span className="font-medium text-foreground">Kelola Pengguna</span>
+              <p className="text-sm text-muted-foreground">
+                Berikan atau cabut badge dari pengguna
+              </p>
             </Link>
             <Link
               href="/admin/integrations/lzt"
               className="block rounded-lg px-4 py-3 bg-muted/30 hover:bg-accent transition-colors"
             >
-              <span className="font-medium text-foreground">LZT Integration</span>
+              <span className="font-medium text-foreground">Integrasi LZT</span>
               <p className="text-sm text-muted-foreground">
-                Test request Market API dari backend secara aman
+                Uji request Market API dari backend secara aman
               </p>
             </Link>
           </div>
         </Card>
 
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Info</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Informasi</h2>
           <div className="space-y-3 text-sm">
             <p className="text-muted-foreground">
-              Badge adalah bentuk apresiasi untuk user atas pencapaian mereka. Badge ditampilkan di
-              profil user dan satu badge dapat dipilih sebagai primary badge yang muncul di sebelah
-              username.
+              Badge adalah bentuk apresiasi untuk pengguna atas pencapaian mereka. Badge ditampilkan
+              di profil pengguna dan satu badge dapat dipilih sebagai badge utama yang muncul di
+              sebelah username.
             </p>
             <p className="text-muted-foreground">
-              Untuk memberikan badge, cari user di menu Users, lalu pilih badge yang ingin
+              Untuk memberikan badge, cari pengguna di menu Pengguna, lalu pilih badge yang ingin
               diberikan.
             </p>
           </div>

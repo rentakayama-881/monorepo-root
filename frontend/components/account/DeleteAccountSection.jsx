@@ -68,7 +68,7 @@ export default function DeleteAccountSection({ apiBase }) {
         Zona Berbahaya
       </h3>
       <p className="mt-2 text-xs text-destructive/80">
-        Menghapus akun akan menghapus semua data Anda secara permanen termasuk semua Validation Case
+        Menghapus akun akan menghapus semua data Anda secara permanen termasuk semua case validasi
         yang pernah dibuat. Aksi ini tidak dapat dibatalkan.
       </p>
 

@@ -50,9 +50,9 @@ export default function Error({ error, reset }) {
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 p-8 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-status-amber-bg">
         <svg
-          className="h-8 w-8 text-amber-500"
+          className="h-8 w-8 text-warning"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -81,7 +81,7 @@ export default function Error({ error, reset }) {
             href="/"
             className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors"
           >
-            Home
+            Beranda
           </Link>
         </div>
         {!hasAutoRetried && (

@@ -3,7 +3,7 @@ import { formatDate, formatAmount, getCategoryLabel } from "./disputeHelpers";
 export default function DisputeInfoCard({ dispute }) {
   return (
     <div className="bg-card rounded-lg border border-border p-6">
-      <h2 className="font-semibold text-foreground mb-4">Detail Dispute</h2>
+      <h2 className="font-semibold text-foreground mb-4">Detail Sengketa</h2>
 
       <div className="space-y-3 text-sm">
         <div>
@@ -12,7 +12,7 @@ export default function DisputeInfoCard({ dispute }) {
         </div>
         <div>
           <span className="text-muted-foreground">Jumlah:</span>
-          <div className="font-bold text-primary text-lg">Rp {formatAmount(dispute.amount)}</div>
+          <div className="font-bold text-primary text-lg">{formatAmount(dispute.amount)}</div>
         </div>
         <div>
           <span className="text-muted-foreground">Dibuat:</span>
@@ -40,7 +40,7 @@ export default function DisputeInfoCard({ dispute }) {
 
       <hr className="my-4 border-border" />
 
-      <h3 className="font-medium text-foreground mb-2">Alasan Dispute</h3>
+      <h3 className="font-medium text-foreground mb-2">Alasan Sengketa</h3>
       <p className="text-sm text-muted-foreground">{dispute.reason}</p>
     </div>
   );

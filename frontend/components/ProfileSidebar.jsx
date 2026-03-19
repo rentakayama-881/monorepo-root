@@ -57,14 +57,14 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
                 onClick={handleRetry}
                 className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
-                Try Again
+                Coba Lagi
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="rounded-md border px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary"
               >
-                Close
+                Tutup
               </button>
             </div>
           </div>

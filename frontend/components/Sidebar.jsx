@@ -79,14 +79,14 @@ export default function Sidebar({ open, onClose }) {
           style={{ overscrollBehavior: "contain" }}
         >
           <nav className="px-3 py-2 text-sm">
-            <div className={`${sectionHeading} mb-2 px-2`}>Navigation</div>
+            <div className={`${sectionHeading} mb-2 px-2`}>Navigasi</div>
 
             <Link
               href="/"
               className="block rounded-[var(--radius)] px-2.5 py-2 font-semibold text-foreground hover:bg-accent transition-colors"
               onClick={handleClose}
             >
-              Home
+              Beranda
             </Link>
             <Link
               href="/validation-cases"
@@ -94,7 +94,7 @@ export default function Sidebar({ open, onClose }) {
               className="block rounded-[var(--radius)] px-2.5 py-2 font-semibold text-foreground hover:bg-accent transition-colors"
               onClick={handleClose}
             >
-              Case Index
+              Daftar Case
             </Link>
             <Link
               href="/market/chatgpt"
@@ -102,7 +102,7 @@ export default function Sidebar({ open, onClose }) {
               className="block rounded-[var(--radius)] px-2.5 py-2 font-semibold text-foreground hover:bg-accent transition-colors"
               onClick={handleClose}
             >
-              Market
+              Marketplace
             </Link>
           </nav>
         </div>

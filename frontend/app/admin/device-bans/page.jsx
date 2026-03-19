@@ -104,11 +104,25 @@ export default function DeviceBansPage() {
     return "Active";
   };
 
+  const getBanStatusLabel = (status) => {
+    switch (status) {
+      case "Permanent":
+        return "Permanen";
+      case "Inactive":
+        return "Tidak Aktif";
+      case "Expired":
+        return "Kedaluwarsa";
+      case "Active":
+      default:
+        return "Aktif";
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Device Bans</h1>
-        <Button onClick={() => setShowCreateModal(true)}>+ New Device Ban</Button>
+        <h1 className="text-2xl font-bold text-foreground">Ban Perangkat</h1>
+        <Button onClick={() => setShowCreateModal(true)}>+ Buat Ban Perangkat</Button>
       </div>
 
       {error && (
@@ -129,14 +143,14 @@ export default function DeviceBansPage() {
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Device Fingerprint
+                  Fingerprint Perangkat
                 </th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">User ID</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Reason</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Alasan</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Created</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Expires</th>
-                <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Dibuat</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Berakhir</th>
+                <th className="text-right py-3 px-4 font-medium text-muted-foreground">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -162,7 +176,7 @@ export default function DeviceBansPage() {
                       <span
                         className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-medium ${statusColor}`}
                       >
-                        {status}
+                        {getBanStatusLabel(status)}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-xs text-muted-foreground">
@@ -182,7 +196,7 @@ export default function DeviceBansPage() {
                           }
                         }}
                       >
-                        Unban
+                        Cabut Ban
                       </Button>
                     </td>
                   </tr>
@@ -198,13 +212,13 @@ export default function DeviceBansPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-card rounded-lg max-w-md w-full">
             <div className="p-6 border-b border-border">
-              <h2 className="text-xl font-semibold text-foreground">Create Device Ban</h2>
+              <h2 className="text-xl font-semibold text-foreground">Buat Ban Perangkat</h2>
             </div>
 
             <form onSubmit={createAction.execute} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Device Fingerprint *
+                  Fingerprint Perangkat *
                 </label>
                 <input
                   type="text"
@@ -218,7 +232,7 @@ export default function DeviceBansPage() {
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  User ID (optional)
+                  User ID (opsional)
                 </label>
                 <input
                   type="number"
@@ -230,7 +244,7 @@ export default function DeviceBansPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Reason *</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Alasan *</label>
                 <textarea
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
@@ -250,14 +264,14 @@ export default function DeviceBansPage() {
                   className="rounded border-border"
                 />
                 <label htmlFor="isPermanent" className="text-sm text-foreground">
-                  Permanent Ban
+                  Ban Permanen
                 </label>
               </div>
 
               {!form.isPermanent && (
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
-                    Expires At
+                    Berakhir Pada
                   </label>
                   <input
                     type="datetime-local"
@@ -271,10 +285,10 @@ export default function DeviceBansPage() {
 
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>
-                  Cancel
+                  Batal
                 </Button>
                 <Button type="submit" disabled={createAction.loading}>
-                  {createAction.loading ? "Creating..." : "Create Ban"}
+                  {createAction.loading ? "Membuat..." : "Buat Ban"}
                 </Button>
               </div>
             </form>

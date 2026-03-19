@@ -78,7 +78,7 @@ describe("MarketChatGPTClient", () => {
   it("menampilkan modal konfirmasi sebelum checkout dijalankan", async () => {
     render(<MarketChatGPTClient />);
 
-    await screen.findByText("1 akun tersedia");
+    await screen.findByText("Menampilkan 1 dari 1 akun");
     const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
     fireEvent.click(buyButtons[0]);
 
@@ -93,7 +93,7 @@ describe("MarketChatGPTClient", () => {
 
     render(<MarketChatGPTClient />);
 
-    await screen.findByText("1 akun tersedia");
+    await screen.findByText("Menampilkan 1 dari 1 akun");
     const buyButtons = await screen.findAllByRole("button", { name: "Beli" });
     fireEvent.click(buyButtons[0]);
     const confirmButton = await screen.findByRole("button", { name: /Ya, beli/i });
@@ -108,7 +108,7 @@ describe("MarketChatGPTClient", () => {
   it("memuat ulang listing dari tombol refresh", async () => {
     render(<MarketChatGPTClient />);
 
-    await screen.findByText("1 akun tersedia");
+    await screen.findByText("Menampilkan 1 dari 1 akun");
 
     const refreshButton = screen.getByRole("button", { name: /muat ulang/i });
     fireEvent.click(refreshButton);
@@ -123,7 +123,7 @@ describe("MarketChatGPTClient", () => {
 
     render(<MarketChatGPTClient />);
 
-    await screen.findByText("1 akun tersedia");
+    await screen.findByText("Menampilkan 1 dari 1 akun");
 
     await act(async () => {
       jest.advanceTimersByTime(60000);
@@ -163,7 +163,7 @@ describe("MarketChatGPTClient", () => {
 
     render(<MarketChatGPTClient />);
 
-    expect(await screen.findByText("15 akun tersedia")).toBeInTheDocument();
+    expect(await screen.findByText("Menampilkan 15 dari 15 akun")).toBeInTheDocument();
     expect(screen.getAllByText(/ChatGPT Plus Account 15/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ChatGPT Plus Account 1/).length).toBeGreaterThan(0);
   });
@@ -186,7 +186,7 @@ describe("MarketChatGPTClient", () => {
   it("menampilkan empty state tanpa crash saat search tidak menemukan hasil", async () => {
     render(<MarketChatGPTClient />);
 
-    await screen.findByText("1 akun tersedia");
+    await screen.findByText("Menampilkan 1 dari 1 akun");
 
     const searchInput = screen.getByPlaceholderText("Cari akun...");
     fireEvent.change(searchInput, { target: { value: "xyznotfound999" } });
@@ -197,7 +197,7 @@ describe("MarketChatGPTClient", () => {
     const clearButton = screen.getByRole("button", { name: "Hapus pencarian" });
     fireEvent.click(clearButton);
 
-    expect(await screen.findByText("1 akun tersedia")).toBeInTheDocument();
+    expect(await screen.findByText("Menampilkan 1 dari 1 akun")).toBeInTheDocument();
   });
 
   it("menampilkan skeleton cards saat loading", async () => {

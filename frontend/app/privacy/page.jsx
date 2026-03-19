@@ -12,8 +12,8 @@ import {
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Kebijakan Privasi - AIvalid",
-  description: "Kebijakan privasi dan perlindungan data pribadi pengguna AIvalid.",
+  title: "Kebijakan Privasi - AIValid",
+  description: "Kebijakan privasi dan perlindungan data pribadi pengguna AIValid.",
   alternates: {
     canonical: "https://aivalid.id/privacy",
   },
@@ -96,7 +96,7 @@ export default function PrivacyPage() {
     <main className="container max-w-3xl py-10">
       <header className="mb-8">
         <p className="mb-2 text-sm text-muted-foreground">Kebijakan Privasi</p>
-        <h1 className="mb-2 text-2xl font-bold">Perlindungan data pengguna AIvalid</h1>
+        <h1 className="mb-2 text-2xl font-bold">Perlindungan data pengguna AIValid</h1>
         <p className="text-muted-foreground">
           Kami berkomitmen menjaga data pribadi pengguna secara bertanggung jawab sesuai prinsip
           keamanan digital dan ketentuan hukum yang berlaku.
@@ -137,9 +137,8 @@ export default function PrivacyPage() {
           <article className="rounded-lg border bg-card p-4">
             <h3 className="mb-2 text-sm font-semibold">Lokasi dan Retensi Data</h3>
             <p className="text-sm text-muted-foreground">
-              Data disimpan pada infrastruktur yang digunakan AIvalid dan hanya dipertahankan
-              selama diperlukan untuk operasional, kepatuhan hukum, serta perlindungan hak
-              pengguna.
+              Data disimpan pada infrastruktur yang digunakan AIValid dan hanya dipertahankan selama
+              diperlukan untuk operasional, kepatuhan hukum, serta perlindungan hak pengguna.
             </p>
           </article>
         </div>
@@ -175,7 +174,10 @@ export default function PrivacyPage() {
         </h2>
         <p className="text-sm text-muted-foreground">
           Untuk pertanyaan tentang privasi dan data pribadi, hubungi
-          <a href="mailto:ops@aivalid.id" className="ml-1 font-medium text-foreground hover:underline">
+          <a
+            href="mailto:ops@aivalid.id"
+            className="ml-1 font-medium text-foreground hover:underline"
+          >
             ops@aivalid.id
           </a>
           .

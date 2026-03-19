@@ -40,9 +40,9 @@ export const metadata = {
     "cek keaslian AI",
     "AIValid",
   ],
-  authors: [{ name: "AIvalid Team" }],
-  creator: "AIvalid",
-  publisher: "AIvalid",
+  authors: [{ name: "AIValid Team" }],
+  creator: "AIValid",
+  publisher: "AIValid",
 
   // Open Graph
   openGraph: {
@@ -88,7 +88,7 @@ export const metadata = {
   // Other
   other: {
     heleket: "a08412d3",
-    "apple-mobile-web-app-title": "AIvalid",
+    "apple-mobile-web-app-title": "AIValid",
   },
 };
 

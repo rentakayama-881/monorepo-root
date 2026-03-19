@@ -49,19 +49,19 @@ function statusStyle(statusRaw) {
     .trim();
   switch (s) {
     case "completed":
-      return "border-emerald-200 bg-emerald-50 text-emerald-900";
+      return "border-status-success-border bg-status-success-bg text-status-success-text";
     case "disputed":
-      return "border-red-200 bg-red-50 text-red-900";
+      return "border-status-danger-border bg-status-danger-bg text-status-danger-text";
     case "on_hold_owner_inactive":
-      return "border-orange-200 bg-orange-50 text-orange-900";
+      return "border-status-orange-border bg-status-orange-bg text-status-orange-text";
     case "waiting_owner_response":
-      return "border-blue-200 bg-blue-50 text-blue-900";
+      return "border-status-info-border bg-status-info-bg text-status-info-text";
     case "funds_locked":
-      return "border-amber-200 bg-amber-50 text-amber-900";
+      return "border-status-amber-border bg-status-amber-bg text-status-amber-text";
     case "artifact_submitted":
-      return "border-sky-200 bg-sky-50 text-sky-900";
+      return "border-status-sky-border bg-status-sky-bg text-status-sky-text";
     case "offer_accepted":
-      return "border-violet-200 bg-violet-50 text-violet-950";
+      return "border-status-violet-border bg-status-violet-bg text-status-violet-text";
     case "open":
     default:
       return "border-border bg-card text-foreground";
@@ -169,7 +169,7 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
         <div
           role="status"
           aria-live="polite"
-          className="rounded-[var(--radius)] border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+          className="rounded-[var(--radius)] border border-status-amber-border bg-status-amber-bg px-3 py-2 text-sm text-status-amber-text"
         >
           {fetchError}
         </div>

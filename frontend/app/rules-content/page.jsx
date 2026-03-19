@@ -11,8 +11,8 @@ import {
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Syarat dan Ketentuan - AIvalid",
-  description: "Syarat dan ketentuan penggunaan platform AIvalid.",
+  title: "Syarat dan Ketentuan - AIValid",
+  description: "Syarat dan ketentuan penggunaan platform AIValid.",
   alternates: {
     canonical: "https://aivalid.id/rules-content",
   },
@@ -22,7 +22,7 @@ const accountRules = [
   "Pengguna wajib memberikan informasi yang benar saat pendaftaran.",
   "Pengguna bertanggung jawab atas keamanan akun, termasuk kata sandi dan perangkat login.",
   "Satu pengguna tidak diperkenankan membuat akun ganda untuk menghindari sanksi.",
-  "Pelanggaran keamanan akun harus segera dilaporkan ke tim AIvalid.",
+  "Pelanggaran keamanan akun harus segera dilaporkan ke tim AIValid.",
 ];
 
 const prohibitedContent = [
@@ -33,10 +33,10 @@ const prohibitedContent = [
 ];
 
 const transactionRules = [
-  "AIvalid menyediakan mekanisme perlindungan transaksi untuk mengurangi risiko antara pihak yang bertransaksi.",
+  "AIValid menyediakan mekanisme perlindungan transaksi untuk mengurangi risiko antara pihak yang bertransaksi.",
   "Pihak penjual wajib mengirimkan hasil sesuai deskripsi yang disepakati.",
   "Pihak pembeli berhak memeriksa hasil dan mengajukan sengketa jika ada ketidaksesuaian.",
-  "Keputusan akhir penyelesaian sengketa mengikuti kebijakan internal AIvalid.",
+  "Keputusan akhir penyelesaian sengketa mengikuti kebijakan internal AIValid.",
 ];
 
 const sanctions = [
@@ -80,10 +80,13 @@ export default function TermsPage() {
     <main className="container max-w-3xl py-10">
       <header className="mb-8">
         <p className="mb-2 text-sm text-muted-foreground">Syarat dan Ketentuan</p>
-        <h1 className="mb-2 text-2xl font-bold">Aturan penggunaan platform AIvalid</h1>
+        <h1 className="mb-2 text-2xl font-bold">Aturan penggunaan platform AIValid</h1>
         <p className="text-muted-foreground">
-          Dengan menggunakan <Link href="/" className="underline hover:text-foreground">aivalid.id</Link>,
-          Anda menyetujui aturan penggunaan layanan, perlindungan pengguna, dan mekanisme
+          Dengan menggunakan{" "}
+          <Link href="/" className="underline hover:text-foreground">
+            aivalid.id
+          </Link>
+          , Anda menyetujui aturan penggunaan layanan, perlindungan pengguna, dan mekanisme
           penegakan kebijakan yang berlaku.
         </p>
       </header>
@@ -99,8 +102,8 @@ export default function TermsPage() {
           <article className="rounded-lg border bg-card p-4">
             <h3 className="mb-2 text-sm font-semibold">Yang Diharapkan</h3>
             <p className="text-sm text-muted-foreground">
-              Diskusi yang sopan, kontribusi yang relevan, dan penggunaan platform secara bertanggung
-              jawab.
+              Diskusi yang sopan, kontribusi yang relevan, dan penggunaan platform secara
+              bertanggung jawab.
             </p>
           </article>
           <article className="rounded-lg border bg-card p-4">
@@ -120,11 +123,11 @@ export default function TermsPage() {
         <article className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
           <p className="mb-2">
             Pengguna tetap memiliki hak atas konten yang diunggah. Dengan mengunggah konten,
-            pengguna memberikan izin terbatas kepada AIvalid untuk menampilkan konten tersebut di
+            pengguna memberikan izin terbatas kepada AIValid untuk menampilkan konten tersebut di
             dalam platform.
           </p>
           <p>
-            Merek dagang dan identitas visual AIvalid merupakan hak milik AIvalid dan tidak boleh
+            Merek dagang dan identitas visual AIValid merupakan hak milik AIValid dan tidak boleh
             digunakan tanpa izin.
           </p>
         </article>

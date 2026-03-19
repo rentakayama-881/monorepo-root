@@ -18,7 +18,7 @@ export default function UserDetail({
     <Modal
       open={showAssignModal}
       onClose={onClose}
-      title={`Berikan Badge ke ${selectedUser?.username || selectedUser?.email || "User"}`}
+      title={`Berikan Badge ke ${selectedUser?.username || selectedUser?.email || "Pengguna"}`}
     >
       <form onSubmit={onAssign} className="space-y-4">
         {assignError && (

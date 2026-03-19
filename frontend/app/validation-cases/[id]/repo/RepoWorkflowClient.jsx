@@ -242,7 +242,7 @@ export default function RepoWorkflowClient({
     <main className="container py-10 space-y-6">
       <nav className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="hover:underline">
-          Home
+          Beranda
         </Link>
         <span>/</span>
         <Link href="/validation-cases" className="hover:underline" prefetch={false}>

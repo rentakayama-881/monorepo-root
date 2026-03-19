@@ -29,7 +29,7 @@ export default function MediationChat({
         {dispute.messages?.length === 0 && (
           <div className="text-center text-muted-foreground py-8">
             <div className="text-4xl mb-2">💬</div>
-            <p>Belum ada pesan dalam dispute ini.</p>
+            <p>Belum ada pesan dalam sengketa ini.</p>
           </div>
         )}
 

@@ -32,8 +32,8 @@ describe("useKeyboardShortcuts.js", () => {
       });
     });
 
-    it("should have Go to Home shortcut", () => {
-      const goHome = KEYBOARD_SHORTCUTS.navigation.find((s) => s.description.includes("Home"));
+    it("should have beranda shortcut", () => {
+      const goHome = KEYBOARD_SHORTCUTS.navigation.find((s) => s.description.includes("Beranda"));
       expect(goHome).toBeDefined();
       expect(goHome.keys).toEqual(["G", "H"]);
     });

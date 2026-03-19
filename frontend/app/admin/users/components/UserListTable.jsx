@@ -37,7 +37,7 @@ export default function UserListTable({
                   {user.avatar_url ? (
                     <Image
                       src={user.avatar_url}
-                      alt={user.username || user.email || "User"}
+                      alt={user.username || user.email || "Pengguna"}
                       width={48}
                       height={48}
                       className="w-full h-full object-cover"
@@ -53,7 +53,7 @@ export default function UserListTable({
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-foreground truncate">
-                      {user.username || "No username"}
+                      {user.username || "Tanpa username"}
                     </span>
                     {user.primary_badge && (
                       <span
@@ -113,7 +113,7 @@ export default function UserListTable({
               </div>
 
               <Button variant="secondary" size="sm" onClick={() => onAssign(user)}>
-                + Badge
+                + Tambah Badge
               </Button>
             </div>
           </Card>

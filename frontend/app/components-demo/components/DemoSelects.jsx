@@ -17,15 +17,15 @@ export default function DemoSelects({
 }) {
   return (
     <section className="space-y-6">
-      <h2 className="text-2xl font-semibold border-b pb-2">Select Component</h2>
-      
+      <h2 className="text-2xl font-semibold border-b pb-2">Komponen Select</h2>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Basic Select */}
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">Basic Select</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">Select Dasar</h3>
           <Select
             label="Framework"
-            placeholder="Select a framework"
+            placeholder="Pilih framework"
             options={sampleOptions}
             value={selectValue}
             onChange={(e) => setSelectValue(e.target.value)}
@@ -34,10 +34,10 @@ export default function DemoSelects({
 
         {/* Searchable Select */}
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">Searchable</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">Dengan Pencarian</h3>
           <Select
-            label="Technology"
-            placeholder="Search technology..."
+            label="Teknologi"
+            placeholder="Cari teknologi..."
             options={sampleOptions}
             searchable
           />
@@ -47,8 +47,8 @@ export default function DemoSelects({
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-4">Multi-select</h3>
           <Select
-            label="Skills"
-            placeholder="Select multiple skills"
+            label="Keahlian"
+            placeholder="Pilih beberapa keahlian"
             options={sampleOptions}
             multiSelect
             searchable
@@ -59,10 +59,10 @@ export default function DemoSelects({
 
         {/* With Groups */}
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">With Option Groups</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">Dengan Grup Opsi</h3>
           <Select
             label="Tech Stack"
-            placeholder="Select from groups"
+            placeholder="Pilih dari grup"
             options={sampleOptions}
             searchable
           />
@@ -70,23 +70,18 @@ export default function DemoSelects({
 
         {/* Loading State */}
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">Loading State</h3>
-          <Select
-            label="Loading..."
-            placeholder="Fetching options..."
-            options={[]}
-            loading
-          />
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">State Memuat</h3>
+          <Select label="Memuat..." placeholder="Mengambil opsi..." options={[]} loading />
         </div>
 
         {/* Empty State */}
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">Empty State</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">State Kosong</h3>
           <Select
-            label="No Options"
-            placeholder="No options available"
+            label="Tidak Ada Opsi"
+            placeholder="Tidak ada opsi tersedia"
             options={[]}
-            emptyMessage="No technologies found"
+            emptyMessage="Tidak ada teknologi ditemukan"
           />
         </div>
       </div>

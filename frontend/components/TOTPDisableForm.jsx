@@ -16,24 +16,21 @@ export default function TOTPDisableForm({
     <form onSubmit={onDisable} className="space-y-4 pt-2">
       <div className="p-4 bg-destructive/5 rounded-lg border border-destructive/20">
         <p className="text-sm text-destructive mb-3">
-          Menonaktifkan 2FA akan mengurangi keamanan akun Anda. Pastikan Anda yakin ingin melanjutkan.
+          Menonaktifkan 2FA akan mengurangi keamanan akun Anda. Pastikan Anda yakin ingin
+          melanjutkan.
         </p>
         <div className="space-y-3">
           <div>
-            <label className="text-sm font-medium text-foreground block mb-1">
-              Password
-            </label>
+            <label className="text-sm font-medium text-foreground block mb-1">Password</label>
             <Input
               type="password"
-              placeholder="Enter your password"
+              placeholder="Masukkan password Anda"
               value={disablePassword}
               onChange={(e) => onPasswordChange(e.target.value)}
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground block mb-1">
-              Kode 2FA
-            </label>
+            <label className="text-sm font-medium text-foreground block mb-1">Kode 2FA</label>
             <Input
               type="text"
               inputMode="numeric"
@@ -56,7 +53,7 @@ export default function TOTPDisableForm({
           {disableLoading ? "Menonaktifkan..." : "Nonaktifkan 2FA"}
         </Button>
         <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancel
+          Batal
         </Button>
       </div>
     </form>

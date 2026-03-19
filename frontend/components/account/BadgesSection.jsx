@@ -20,7 +20,7 @@ export default function BadgesSection({ badges, primaryBadgeId, savingBadge, onS
 
   return (
     <section className="settings-section">
-      <h3 className="settings-section-title mb-3">Badges</h3>
+      <h3 className="settings-section-title mb-3">Badge</h3>
       <div className="mt-3 space-y-3">
         {badges.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -35,7 +35,7 @@ export default function BadgesSection({ badges, primaryBadgeId, savingBadge, onS
               ))}
             </div>
             <div className="mt-4">
-              <label className="text-sm font-medium text-foreground">Display Badge</label>
+              <label className="text-sm font-medium text-foreground">Badge Tampilan</label>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Pilih badge yang ingin ditampilkan di samping username Anda.
               </p>

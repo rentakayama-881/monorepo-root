@@ -5,7 +5,7 @@ export const dynamic = "force-static";
 export const metadata = {
   title: "Tentang AIValid",
   description:
-    "Kisah di balik AIvalid.id, platform validasi keluaran AI untuk pekerjaan berskala besar yang menuntut akurasi dan dapat dipertanggungjawabkan.",
+    "Kisah di balik AIValid.id, platform validasi keluaran AI untuk pekerjaan berskala besar yang menuntut akurasi dan dapat dipertanggungjawabkan.",
   alternates: {
     canonical: "https://aivalid.id/about-content",
   },
@@ -47,7 +47,7 @@ export default function AboutPage() {
   return (
     <main className="container max-w-3xl py-10">
       <header className="mb-8">
-        <p className="mb-2 text-sm text-muted-foreground">Tentang AIvalid.id</p>
+        <p className="mb-2 text-sm text-muted-foreground">Tentang AIValid.id</p>
         <h1 className="mb-2 text-2xl font-bold">Membawa validasi manusia ke keluaran AI</h1>
         <p className="text-muted-foreground">
           Kisah di balik platform validasi keluaran AI untuk tugas berskala besar yang menuntut
@@ -55,9 +55,9 @@ export default function AboutPage() {
         </p>
       </header>
 
-      <Section title="Kisah di Balik AIvalid.id" icon={TargetIcon}>
+      <Section title="Kisah di Balik AIValid.id" icon={TargetIcon}>
         <p className="text-muted-foreground">
-          AIvalid.id lahir dari kebutuhan nyata di lapangan. Banyak pekerjaan penting sudah
+          AIValid.id lahir dari kebutuhan nyata di lapangan. Banyak pekerjaan penting sudah
           menggunakan AI, tetapi tidak semua keluaran AI aman dipakai langsung tanpa pemeriksaan.
         </p>
         <p className="text-muted-foreground">
@@ -69,7 +69,7 @@ export default function AboutPage() {
 
       <Section title="Yang Ingin Kami Sampaikan" icon={ShieldIcon}>
         <p className="text-muted-foreground">
-          AIvalid.id adalah dedikasi kami untuk menjawab persoalan yang sering terjadi dalam
+          AIValid.id adalah dedikasi kami untuk menjawab persoalan yang sering terjadi dalam
           penggunaan AI sehari-hari.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -84,8 +84,8 @@ export default function AboutPage() {
 
       <Section title="Harapan Kami" icon={UsersIcon}>
         <p className="text-muted-foreground">
-          Kami berharap platform ini membantu lebih banyak orang menyelesaikan tugas, pekerjaan,
-          dan proyek yang melibatkan AI secara lebih aman dan efisien.
+          Kami berharap platform ini membantu lebih banyak orang menyelesaikan tugas, pekerjaan, dan
+          proyek yang melibatkan AI secara lebih aman dan efisien.
         </p>
         <ul className="space-y-2 text-sm text-muted-foreground">
           {hopes.map((item) => (
@@ -109,9 +109,9 @@ export default function AboutPage() {
             instruksi dengan benar.
           </p>
           <p>
-            Jika hasil AI tetap tidak akurat, risikonya sangat besar. AIvalid.id hadir untuk
-            menutup celah itu: membantu memastikan keluaran AI lebih terjaga kualitasnya sebelum
-            dipakai untuk keputusan penting.
+            Jika hasil AI tetap tidak akurat, risikonya sangat besar. AIValid.id hadir untuk menutup
+            celah itu: membantu memastikan keluaran AI lebih terjaga kualitasnya sebelum dipakai
+            untuk keputusan penting.
           </p>
         </div>
       </Section>

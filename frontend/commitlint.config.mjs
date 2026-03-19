@@ -1,5 +1,5 @@
 /** @type {import('@commitlint/types').UserConfig} */
-export default {
+const config = {
   extends: ["@commitlint/config-conventional"],
   rules: {
     "scope-enum": [
@@ -9,3 +9,5 @@ export default {
     ],
   },
 };
+
+export default config;

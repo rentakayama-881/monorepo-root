@@ -12,12 +12,12 @@ export default function PasskeyLoginButton({ loading, disabled, onClick }) {
       {loading ? (
         <>
           <span className="inline-block h-4 w-4 mr-2 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-          Verifying...
+          Memverifikasi...
         </>
       ) : (
         <>
           <KeyRound className="w-4 h-4 mr-2" />
-          Continue with passkey
+          Lanjutkan dengan passkey
         </>
       )}
     </button>

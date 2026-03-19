@@ -32,13 +32,13 @@ export default function LoginTotpForm({
   return (
     <AuthContainer>
       <AuthHeader
-        title="Two-Factor Verification"
-        description="Enter the code from your authenticator app."
+        title="Verifikasi Dua Faktor"
+        description="Masukkan kode dari aplikasi autentikator Anda."
       />
 
       <AuthCard>
         <form className="space-y-4" onSubmit={onSubmit}>
-          <AuthField label={useBackupCode ? "Backup Code" : "6-Digit Code"} htmlFor="totp-code">
+          <AuthField label={useBackupCode ? "Kode Cadangan" : "Kode 6 Digit"} htmlFor="totp-code">
             <input
               id="totp-code"
               data-testid="totp-code-input"
@@ -63,7 +63,7 @@ export default function LoginTotpForm({
             disabled={loading || totpCode.length < minCodeLength}
             className={AUTH_PRIMARY_BUTTON_CLASS}
           >
-            {loading ? "Verifying..." : "Verify"}
+            {loading ? "Memverifikasi..." : "Verifikasi"}
           </button>
 
           <div className="text-center">
@@ -72,7 +72,7 @@ export default function LoginTotpForm({
               onClick={onToggleCodeType}
               className="text-sm text-muted-foreground hover:text-foreground hover:underline"
             >
-              {useBackupCode ? "Use authenticator code" : "Use backup code"}
+              {useBackupCode ? "Gunakan kode autentikator" : "Gunakan kode cadangan"}
             </button>
           </div>
 
@@ -82,7 +82,7 @@ export default function LoginTotpForm({
               onClick={onBackToLogin}
               className="text-sm text-muted-foreground hover:text-foreground hover:underline"
             >
-              Back to login
+              Kembali ke login
             </button>
           </div>
         </form>

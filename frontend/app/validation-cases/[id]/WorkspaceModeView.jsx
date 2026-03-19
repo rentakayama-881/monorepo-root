@@ -23,7 +23,7 @@ export default function WorkspaceModeView({
     <main className="container py-10 space-y-6">
       <nav className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="hover:underline">
-          Home
+          Beranda
         </Link>
         <span>/</span>
         <Link href="/validation-cases" prefetch={false} className="hover:underline">

@@ -54,7 +54,7 @@ export function generateWebsiteStructuredData() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "AIvalid",
+    name: "AIValid",
     url: baseUrl,
     potentialAction: {
       "@type": "SearchAction",
@@ -77,7 +77,7 @@ export function generateWebApplicationStructuredData() {
   return {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "AIvalid",
+    name: "AIValid",
     url: baseUrl,
     description:
       "Platform validasi hasil kerja AI oleh validator ahli manusia dari berbagai bidang.",
@@ -91,7 +91,7 @@ export function generateWebApplicationStructuredData() {
     },
     publisher: {
       "@type": "Organization",
-      name: "AIvalid",
+      name: "AIValid",
       url: baseUrl,
     },
   };

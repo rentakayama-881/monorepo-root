@@ -195,7 +195,7 @@ export default async function CategoryLandingPage({ params }) {
     description: cat.metaDescription,
     provider: {
       "@type": "Organization",
-      name: "AIvalid",
+      name: "AIValid",
       url: "https://aivalid.id",
     },
     url: `https://aivalid.id/validasi/${category}`,

@@ -14,7 +14,7 @@ export default function CaseListFilters({ error }) {
       </header>
 
       {error ? (
-        <div className="mb-5 rounded-[var(--radius)] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900">
+        <div className="mb-5 rounded-[var(--radius)] border border-status-danger-border bg-status-danger-bg px-5 py-4 text-sm text-status-danger-text">
           {error}
         </div>
       ) : null}

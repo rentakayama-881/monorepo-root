@@ -30,7 +30,7 @@ export default function VerifyEmailClient() {
   const [verification, setVerification] = useState(() => ({
     token,
     status: token ? "pending" : "idle",
-    message: token ? "Verifying token..." : "",
+    message: token ? "Memverifikasi token..." : "",
   }));
 
   // Resend state
@@ -41,10 +41,10 @@ export default function VerifyEmailClient() {
 
   const status = !token ? "error" : verification.token === token ? verification.status : "pending";
   const message = !token
-    ? "Verification token was not found."
+    ? "Token verifikasi tidak ditemukan."
     : verification.token === token
       ? verification.message
-      : "Verifying token...";
+      : "Memverifikasi token...";
 
   useEffect(() => {
     if (!token) return;
@@ -62,7 +62,7 @@ export default function VerifyEmailClient() {
         setVerification({
           token,
           status: "success",
-          message: data.message || "Email verified successfully. You may now sign in.",
+          message: data.message || "Email berhasil diverifikasi. Anda sekarang bisa masuk.",
         });
       })
       .catch((err) => {
@@ -70,7 +70,7 @@ export default function VerifyEmailClient() {
         setVerification({
           token,
           status: "error",
-          message: err?.message || "Invalid verification token.",
+          message: err?.message || "Token verifikasi tidak valid.",
         });
       });
 
@@ -104,7 +104,7 @@ export default function VerifyEmailClient() {
       });
 
       setResendStatus("success");
-      setResendMessage(data.message || "A new verification email has been sent.");
+      setResendMessage(data.message || "Email verifikasi baru berhasil dikirim.");
       const retryAfter = parseRetryAfterSeconds(data?.retry_after_seconds);
       setCooldown(retryAfter > 0 ? retryAfter : 60);
     } catch (err) {
@@ -112,11 +112,11 @@ export default function VerifyEmailClient() {
       const retryAfter = extractRetryAfterFromError(err);
       if (err?.code === "RATE001" || err?.code === "AUTH016" || err?.code === "AUTH018") {
         setResendMessage(
-          err?.details || err?.message || "Too many requests. Please try again shortly."
+          err?.details || err?.message || "Terlalu banyak permintaan. Coba lagi sebentar lagi."
         );
         setCooldown(retryAfter > 0 ? retryAfter : 60);
       } else {
-        setResendMessage(err?.message || "Unable to send a verification email.");
+        setResendMessage(err?.message || "Tidak dapat mengirim email verifikasi.");
       }
     }
   };
@@ -138,7 +138,7 @@ export default function VerifyEmailClient() {
     <div className="w-full max-w-lg mx-auto space-y-4">
       {/* Verification status */}
       <div className="space-y-3 rounded-lg border border-border bg-card p-6">
-        <h1 className="text-lg font-semibold text-foreground">Email Verification</h1>
+        <h1 className="text-lg font-semibold text-foreground">Verifikasi Email</h1>
 
         <div className={`rounded-md border px-4 py-3 text-sm ${styles[status] || styles.pending}`}>
           {message}
@@ -149,7 +149,7 @@ export default function VerifyEmailClient() {
             href="/login"
             className="inline-flex items-center gap-2 text-sm font-medium text-foreground underline"
           >
-            Continue to sign in →
+            Lanjut ke halaman masuk →
           </Link>
         )}
       </div>
@@ -158,9 +158,11 @@ export default function VerifyEmailClient() {
       {status === "error" && (
         <div className="space-y-4 rounded-lg border border-border bg-card p-6">
           <div>
-            <h2 className="text-base font-semibold text-foreground">Resend Verification Email</h2>
+            <h2 className="text-base font-semibold text-foreground">
+              Kirim Ulang Email Verifikasi
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Enter your email address to receive a new verification link.
+              Masukkan email Anda untuk menerima tautan verifikasi baru.
             </p>
           </div>
 
@@ -181,10 +183,10 @@ export default function VerifyEmailClient() {
               className="w-full"
             >
               {resendStatus === "loading"
-                ? "Sending..."
+                ? "Mengirim..."
                 : cooldown > 0
-                  ? `Wait ${cooldown} seconds`
-                  : "Resend Email"}
+                  ? `Tunggu ${cooldown} detik`
+                  : "Kirim Ulang Email"}
             </Button>
           </form>
 

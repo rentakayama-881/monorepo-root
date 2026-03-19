@@ -61,7 +61,7 @@ export default function AdminLZTIntegrationPage() {
   const [contentType, setContentType] = useState("form");
   const [queryInput, setQueryInput] = useState(DEFAULT_QUERY);
   const [formInput, setFormInput] = useState(DEFAULT_FORM);
-  const [jsonInput, setJsonInput] = useState("{\n  \"tag_id\": 10\n}");
+  const [jsonInput, setJsonInput] = useState('{\n  "tag_id": 10\n}');
 
   const apiBase = useMemo(() => getApiBase(), []);
 
@@ -166,15 +166,12 @@ export default function AdminLZTIntegrationPage() {
     }
   };
 
-  const chatgptAccounts = useMemo(
-    () => extractAccounts(chatgptResult?.json),
-    [chatgptResult]
-  );
+  const chatgptAccounts = useMemo(() => extractAccounts(chatgptResult?.json), [chatgptResult]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">LZT Integration</h1>
+        <h1 className="text-2xl font-semibold">Integrasi LZT</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Panel uji koneksi API LZT dari backend. Token tetap aman di server.
         </p>
@@ -182,36 +179,50 @@ export default function AdminLZTIntegrationPage() {
 
       <section className="rounded-lg border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Backend Configuration</h2>
+          <h2 className="text-sm font-semibold">Konfigurasi Backend</h2>
           <button
             type="button"
             onClick={loadConfig}
             disabled={loadingConfig}
             className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted/50 disabled:opacity-60"
           >
-            {loadingConfig ? "Loading..." : "Refresh"}
+            {loadingConfig ? "Memuat..." : "Muat Ulang"}
           </button>
         </div>
 
         {config ? (
           <div className="grid gap-2 text-sm">
-            <div>Enabled: <span className="font-medium">{String(config.enabled)}</span></div>
-            <div>Token Configured: <span className="font-medium">{String(config.token_configured)}</span></div>
-            <div>Base URL: <span className="font-mono text-xs">{config.base_url}</span></div>
-            <div>Timeout: <span className="font-medium">{config.timeout_seconds}s</span></div>
-            <div>Min Interval: <span className="font-medium">{config.min_interval_millis}ms</span></div>
+            <div>
+              Aktif: <span className="font-medium">{String(config.enabled)}</span>
+            </div>
+            <div>
+              Token Terkonfigurasi:{" "}
+              <span className="font-medium">{String(config.token_configured)}</span>
+            </div>
+            <div>
+              Base URL: <span className="font-mono text-xs">{config.base_url}</span>
+            </div>
+            <div>
+              Timeout: <span className="font-medium">{config.timeout_seconds}s</span>
+            </div>
+            <div>
+              Interval Minimum: <span className="font-medium">{config.min_interval_millis}ms</span>
+            </div>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">Belum ada data konfigurasi.</p>
         )}
       </section>
 
-      <form onSubmit={handleSubmit} className="rounded-lg border border-border bg-card p-4 space-y-4">
-        <h2 className="text-sm font-semibold">Send Request</h2>
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-lg border border-border bg-card p-4 space-y-4"
+      >
+        <h2 className="text-sm font-semibold">Kirim Request</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <label className="text-sm space-y-1">
-            <span className="text-muted-foreground">Method</span>
+            <span className="text-muted-foreground">Metode</span>
             <select
               value={method}
               onChange={(e) => setMethod(e.target.value)}
@@ -225,7 +236,7 @@ export default function AdminLZTIntegrationPage() {
           </label>
 
           <label className="text-sm space-y-1">
-            <span className="text-muted-foreground">Content Type</span>
+            <span className="text-muted-foreground">Tipe Konten</span>
             <select
               value={contentType}
               onChange={(e) => setContentType(e.target.value)}
@@ -248,7 +259,9 @@ export default function AdminLZTIntegrationPage() {
         </div>
 
         <label className="text-sm space-y-1 block">
-          <span className="text-muted-foreground">Query (format `key=value`, satu baris satu key)</span>
+          <span className="text-muted-foreground">
+            Query, format `key=value` satu baris per key
+          </span>
           <textarea
             value={queryInput}
             onChange={(e) => setQueryInput(e.target.value)}
@@ -259,7 +272,9 @@ export default function AdminLZTIntegrationPage() {
 
         {contentType === "form" ? (
           <label className="text-sm space-y-1 block">
-            <span className="text-muted-foreground">Form Body (format `key=value`, satu baris satu key)</span>
+            <span className="text-muted-foreground">
+              Form body, format `key=value` satu baris per key
+            </span>
             <textarea
               value={formInput}
               onChange={(e) => setFormInput(e.target.value)}
@@ -284,27 +299,27 @@ export default function AdminLZTIntegrationPage() {
           disabled={submitting}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
         >
-          {submitting ? "Sending..." : "Send to LZT"}
+          {submitting ? "Mengirim..." : "Kirim ke LZT"}
         </button>
       </form>
 
       <section className="rounded-lg border border-border bg-card p-4 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">ChatGPT Accounts (LZT)</h2>
+          <h2 className="text-sm font-semibold">Akun ChatGPT (LZT)</h2>
           <button
             type="button"
             disabled={loadingChatGPT}
             onClick={handleLoadChatGPT}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
           >
-            {loadingChatGPT ? "Loading..." : "Load ChatGPT Accounts"}
+            {loadingChatGPT ? "Memuat..." : "Ambil Akun ChatGPT"}
           </button>
         </div>
 
         {chatgptResult ? (
           <div className="space-y-3">
             <div className="text-sm">
-              Upstream status:{" "}
+              Status upstream:{" "}
               <span className="font-semibold">{chatgptResult.upstream_status}</span>
             </div>
 
@@ -314,8 +329,8 @@ export default function AdminLZTIntegrationPage() {
                   <thead className="bg-muted/40">
                     <tr>
                       <th className="px-3 py-2 text-left font-medium">#</th>
-                      <th className="px-3 py-2 text-left font-medium">Title/Name</th>
-                      <th className="px-3 py-2 text-left font-medium">Price</th>
+                      <th className="px-3 py-2 text-left font-medium">Judul/Nama</th>
+                      <th className="px-3 py-2 text-left font-medium">Harga</th>
                       <th className="px-3 py-2 text-left font-medium">Status</th>
                       <th className="px-3 py-2 text-left font-medium">ID</th>
                     </tr>
@@ -347,7 +362,7 @@ export default function AdminLZTIntegrationPage() {
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Data akun tidak terdeteksi sebagai array terstruktur. Cek raw response di bawah.
+                Data akun tidak terdeteksi sebagai array terstruktur. Periksa raw response di bawah.
               </p>
             )}
 
@@ -357,7 +372,7 @@ export default function AdminLZTIntegrationPage() {
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Klik tombol di atas untuk ambil daftar akun ChatGPT dari LZT.
+            Klik tombol di atas untuk mengambil daftar akun ChatGPT dari LZT.
           </p>
         )}
       </section>

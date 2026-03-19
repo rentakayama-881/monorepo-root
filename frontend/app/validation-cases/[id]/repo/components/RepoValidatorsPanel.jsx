@@ -57,7 +57,7 @@ export default function RepoValidatorsPanel({
             <div className="text-xs text-primary">Request apply sedang diproses...</div>
           ) : null}
           {repoTree && !stakeEligible ? (
-            <div className="text-xs text-amber-700">
+            <div className="text-xs text-status-amber-text">
               Stake kamu belum memenuhi syarat untuk apply case ini.
             </div>
           ) : null}

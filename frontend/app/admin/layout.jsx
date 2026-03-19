@@ -57,17 +57,17 @@ export default function AdminLayout({ children }) {
   }
 
   const navItems = [
-    { href: "/admin", label: "Dashboard" },
-    { href: "/admin/users", label: "Users" },
-    { href: "/admin/badges", label: "Badges" },
-    { href: "/admin/integrations/lzt", label: "LZT Integration" },
-    { href: "/admin/disputes", label: "Dispute Center" },
-    { href: "/admin/observed-devices", label: "Observed Devices" },
-    { href: "/admin/device-bans", label: "Device Bans" },
-    { href: "/admin/warnings", label: "Warnings" },
-    { href: "/admin/content", label: "Hidden Records" },
-    { href: "/admin/validation-cases", label: "Validation Cases" },
-    { href: "/admin/audit-logs", label: "Audit Logs" },
+    { href: "/admin", label: "Dasbor" },
+    { href: "/admin/users", label: "Pengguna" },
+    { href: "/admin/badges", label: "Badge" },
+    { href: "/admin/integrations/lzt", label: "Integrasi LZT" },
+    { href: "/admin/disputes", label: "Pusat Sengketa" },
+    { href: "/admin/observed-devices", label: "Perangkat Terpantau" },
+    { href: "/admin/device-bans", label: "Ban Perangkat" },
+    { href: "/admin/warnings", label: "Peringatan" },
+    { href: "/admin/content", label: "Data Tersembunyi" },
+    { href: "/admin/validation-cases", label: "Case Validasi" },
+    { href: "/admin/audit-logs", label: "Log Audit" },
   ];
 
   return (
@@ -77,7 +77,7 @@ export default function AdminLayout({ children }) {
         <div className="flex h-full items-center justify-between px-4">
           <div className="flex items-center gap-4">
             <Link href="/admin" className="text-lg font-semibold text-foreground">
-              Admin Panel
+              Panel Admin
             </Link>
             <span className="text-xs px-2 py-0.5 rounded-sm border border-warning/20 bg-warning/10 text-warning">
               Admin
@@ -87,7 +87,7 @@ export default function AdminLayout({ children }) {
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">{admin?.name}</span>
             <button onClick={handleLogout} className="text-sm text-destructive hover:opacity-80">
-              Logout
+              Keluar
             </button>
           </div>
         </div>
