@@ -43,7 +43,7 @@ public class OxaPayCallbackSecurityTests
     // ═══════════════════════════════════════════════════════════════
 
     [Fact]
-    public async Task PaymentCallback_SilentlyRejects_WhenHmacInvalid()
+    public async Task PaymentCallback_ReturnsUnauthorized_WhenHmacInvalid()
     {
         var oxaPay = new Mock<IOxaPayService>();
         oxaPay
@@ -63,8 +63,7 @@ public class OxaPayCallbackSecurityTests
 
         var result = await controller.PaymentCallback(payload);
 
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.NotNull(okResult.Value);
+        Assert.IsType<UnauthorizedObjectResult>(result);
 
         // CRITICAL: deposit service should NOT be called when HMAC fails
         depositService.Verify(
@@ -104,13 +103,10 @@ public class OxaPayCallbackSecurityTests
     }
 
     [Fact]
-    public async Task PaymentCallback_SkipsHmacCheck_WhenHmacFieldEmpty()
+    public async Task PaymentCallback_RejectsWhenHmacFieldEmpty()
     {
         var oxaPay = new Mock<IOxaPayService>();
         var depositService = new Mock<IDepositService>();
-        depositService
-            .Setup(s => s.HandleCallbackAsync(It.IsAny<OxaPayCallbackPayload>()))
-            .ReturnsAsync((true, (string?)null));
 
         var controller = CreateController(depositService: depositService, oxaPayService: oxaPay);
 
@@ -123,14 +119,11 @@ public class OxaPayCallbackSecurityTests
 
         var result = await controller.PaymentCallback(payload);
 
-        Assert.IsType<OkObjectResult>(result);
-        // HMAC check is skipped when Hmac is null
-        oxaPay.Verify(
-            s => s.ValidateCallbackHmac(It.IsAny<OxaPayCallbackPayload>()),
-            Times.Never);
+        // Missing HMAC MUST be rejected (security hardening)
+        Assert.IsType<UnauthorizedObjectResult>(result);
         depositService.Verify(
             s => s.HandleCallbackAsync(It.IsAny<OxaPayCallbackPayload>()),
-            Times.Once);
+            Times.Never);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -253,7 +246,7 @@ public class OxaPayCallbackSecurityTests
     // ═══════════════════════════════════════════════════════════════
 
     [Fact]
-    public async Task PayoutCallback_SilentlyRejects_WhenHmacInvalid()
+    public async Task PayoutCallback_ReturnsUnauthorized_WhenHmacInvalid()
     {
         var oxaPay = new Mock<IOxaPayService>();
         oxaPay
@@ -273,7 +266,7 @@ public class OxaPayCallbackSecurityTests
 
         var result = await controller.PayoutCallback(payload);
 
-        Assert.IsType<OkObjectResult>(result);
+        Assert.IsType<UnauthorizedObjectResult>(result);
         // CRITICAL: withdrawal service NOT called when HMAC fails
         withdrawalService.Verify(
             s => s.HandlePayoutCallbackAsync(It.IsAny<OxaPayCallbackPayload>()),
@@ -287,6 +280,9 @@ public class OxaPayCallbackSecurityTests
         oxaPay
             .Setup(s => s.ValidateCallbackHmac(It.IsAny<OxaPayCallbackPayload>()))
             .Returns(true);
+        oxaPay
+            .Setup(s => s.VerifyPayoutAsync("payout-track-2"))
+            .ReturnsAsync(new OxaPayPaymentInfo { TrackId = "payout-track-2", Status = "Complete" });
 
         var withdrawalService = new Mock<IWithdrawalService>();
         withdrawalService
@@ -305,6 +301,7 @@ public class OxaPayCallbackSecurityTests
         var result = await controller.PayoutCallback(payload);
 
         Assert.IsType<OkObjectResult>(result);
+        oxaPay.Verify(s => s.VerifyPayoutAsync("payout-track-2"), Times.Once);
         withdrawalService.Verify(
             s => s.HandlePayoutCallbackAsync(It.IsAny<OxaPayCallbackPayload>()),
             Times.Once);
@@ -314,6 +311,13 @@ public class OxaPayCallbackSecurityTests
     public async Task PayoutCallback_HandlesException_GracefullyReturns200()
     {
         var oxaPay = new Mock<IOxaPayService>();
+        oxaPay
+            .Setup(s => s.ValidateCallbackHmac(It.IsAny<OxaPayCallbackPayload>()))
+            .Returns(true);
+        oxaPay
+            .Setup(s => s.VerifyPayoutAsync("payout-err"))
+            .ReturnsAsync(new OxaPayPaymentInfo { TrackId = "payout-err", Status = "Complete" });
+
         var withdrawalService = new Mock<IWithdrawalService>();
         withdrawalService
             .Setup(s => s.HandlePayoutCallbackAsync(It.IsAny<OxaPayCallbackPayload>()))
@@ -325,7 +329,7 @@ public class OxaPayCallbackSecurityTests
         {
             TrackId = "payout-err",
             Status = "Complete",
-            Hmac = null
+            Hmac = "valid-hmac"
         };
 
         var result = await controller.PayoutCallback(payload);

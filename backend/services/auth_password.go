@@ -172,6 +172,17 @@ func (s *EntAuthService) ResetPassword(ctx context.Context, token, newPassword s
 		return apperrors.ErrDatabase.WithDetails("Gagal menyimpan password baru")
 	}
 
+	// SECURITY: Revoke ALL existing sessions after password reset.
+	// If the reset was triggered because the account was compromised,
+	// any stolen session tokens must be invalidated immediately.
+	sessionService := NewEntSessionService()
+	if err := sessionService.RevokeAllUserSessions(ctx, record.UserID, "Password reset - all sessions invalidated"); err != nil {
+		logger.Error("Failed to revoke sessions after password reset",
+			zap.Error(err), zap.Int("user_id", record.UserID))
+		// Don't fail the password reset itself — the password IS changed.
+		// Session revocation failure is logged for ops follow-up.
+	}
+
 	logger.Info("Password reset successfully", zap.Int("user_id", record.UserID))
 	return nil
 }

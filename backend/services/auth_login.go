@@ -89,6 +89,17 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 		return nil, apperrors.ErrAccountLocked.WithDetails("Akun terkunci hingga " + lock.ExpiresAt.Format("02 Jan 2006 15:04"))
 	}
 
+	// Check email verification BEFORE password verification.
+	// SECURITY: Checking after password would leak password correctness
+	// (different error for wrong-password vs correct-password-unverified)
+	// and would reset the brute-force counter on correct password,
+	// giving attackers unlimited attempts against unverified accounts.
+	if !u.EmailVerified {
+		// Still run bcrypt on dummy hash to normalize timing
+		_ = bcrypt.CompareHashAndPassword(dummyHash, []byte(input.Password))
+		return nil, apperrors.ErrEmailNotVerified
+	}
+
 	// Device ban checks BEFORE password verification:
 	// 1. Avoids expensive bcrypt on banned devices
 	// 2. Prevents banned devices from testing passwords (info leak)
@@ -161,11 +172,6 @@ func (s *EntAuthService) LoginWithSession(ctx context.Context, input validators.
 			securityAudit.LogLoginFailed(email, ipAddress, userAgent, "Invalid password")
 		}
 		return nil, apperrors.ErrInvalidCredentials
-	}
-
-	// Check email verification
-	if !u.EmailVerified {
-		return nil, apperrors.ErrEmailNotVerified
 	}
 
 	// Successful password verification - reset failed attempts

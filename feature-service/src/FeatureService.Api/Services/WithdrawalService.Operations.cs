@@ -152,6 +152,12 @@ public partial class WithdrawalService
         _logger.LogInformation("OxaPay payout callback: withdrawal {WithdrawalId} status={Status} txId={TxId}",
             withdrawal.Id, payload.Status, payload.TxId);
 
+        // All status transitions use atomic filter (Status == Processing)
+        // to prevent double-processing from concurrent callbacks.
+        var atomicFilter = Builders<Withdrawal>.Filter.And(
+            Builders<Withdrawal>.Filter.Eq(w => w.Id, withdrawal.Id),
+            Builders<Withdrawal>.Filter.Eq(w => w.Status, WithdrawalStatus.Processing));
+
         switch (callbackStatus)
         {
             case "complete":
@@ -164,13 +170,33 @@ public partial class WithdrawalService
                     .Set(w => w.CompletedAt, DateTime.UtcNow)
                     .Set(w => w.UpdatedAt, DateTime.UtcNow);
 
-                await _withdrawals.UpdateOneAsync(w => w.Id == withdrawal.Id, completeUpdate);
+                var completeResult = await _withdrawals.UpdateOneAsync(atomicFilter, completeUpdate);
+                if (completeResult.ModifiedCount == 0)
+                {
+                    _logger.LogInformation("Withdrawal {WithdrawalId} already processed (race prevented)", withdrawal.Id);
+                    break;
+                }
                 _logger.LogInformation("Withdrawal completed: {WithdrawalId} txHash={TxHash}", withdrawal.Id, payload.TxId);
                 break;
 
             case "failed":
             case "rejected":
-                // Refund wallet
+                // CRITICAL: Atomic status update FIRST, then refund.
+                // Prevents double-refund from concurrent callbacks.
+                var failUpdate = Builders<Withdrawal>.Update
+                    .Set(w => w.Status, WithdrawalStatus.Failed)
+                    .Set(w => w.OxaPayStatus, payload.Status)
+                    .Set(w => w.FailureReason, $"Payout crypto {callbackStatus}")
+                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
+
+                var failResult = await _withdrawals.UpdateOneAsync(atomicFilter, failUpdate);
+                if (failResult.ModifiedCount == 0)
+                {
+                    _logger.LogInformation("Withdrawal {WithdrawalId} already processed (race prevented)", withdrawal.Id);
+                    break;
+                }
+
+                // Refund wallet AFTER atomic status transition succeeded
                 var totalRefund = withdrawal.Amount + withdrawal.Fee;
                 try
                 {
@@ -189,23 +215,16 @@ public partial class WithdrawalService
                         withdrawal.Id, withdrawal.UserId, totalRefund);
                 }
 
-                var failUpdate = Builders<Withdrawal>.Update
-                    .Set(w => w.Status, WithdrawalStatus.Failed)
-                    .Set(w => w.OxaPayStatus, payload.Status)
-                    .Set(w => w.FailureReason, $"Payout crypto {callbackStatus}")
-                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
-
-                await _withdrawals.UpdateOneAsync(w => w.Id == withdrawal.Id, failUpdate);
                 _logger.LogWarning("Withdrawal failed: {WithdrawalId}, refunded user {UserId}", withdrawal.Id, withdrawal.UserId);
                 break;
 
             default:
-                // Update OxaPay status for tracking
+                // Update OxaPay status for tracking (only if still Processing)
                 var statusUpdate = Builders<Withdrawal>.Update
                     .Set(w => w.OxaPayStatus, payload.Status)
                     .Set(w => w.UpdatedAt, DateTime.UtcNow);
 
-                await _withdrawals.UpdateOneAsync(w => w.Id == withdrawal.Id, statusUpdate);
+                await _withdrawals.UpdateOneAsync(atomicFilter, statusUpdate);
                 break;
         }
 

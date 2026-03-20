@@ -41,16 +41,13 @@ public class OxaPayCallbackController : ControllerBase
             "Payment callback received: trackId={TrackId}, status={Status}, orderId={OrderId}",
             payload.TrackId, payload.Status, payload.OrderId);
 
-        // Layer 1: HMAC signature verification
-        if (!string.IsNullOrEmpty(payload.Hmac))
+        // Layer 1: HMAC signature verification (MANDATORY)
+        if (string.IsNullOrEmpty(payload.Hmac) || !_oxaPayService.ValidateCallbackHmac(payload))
         {
-            if (!_oxaPayService.ValidateCallbackHmac(payload))
-            {
-                _logger.LogWarning(
-                    "SECURITY: Payment callback HMAC validation failed. trackId={TrackId}, IP={IP}",
-                    payload.TrackId, HttpContext.Connection.RemoteIpAddress);
-                return Ok(new { received = true });
-            }
+            _logger.LogWarning(
+                "SECURITY: Payment callback HMAC missing or invalid. trackId={TrackId}, IP={IP}",
+                payload.TrackId, HttpContext.Connection.RemoteIpAddress);
+            return Unauthorized(new { error = "invalid_signature" });
         }
 
         // Layer 2: Server-side verification for credit-worthy statuses
@@ -110,14 +107,40 @@ public class OxaPayCallbackController : ControllerBase
             "Payout callback received: trackId={TrackId}, status={Status}, txId={TxId}",
             payload.TrackId, payload.Status, payload.TxId);
 
-        // Layer 1: HMAC signature verification
-        if (!string.IsNullOrEmpty(payload.Hmac))
+        // Layer 1: HMAC signature verification (MANDATORY)
+        if (string.IsNullOrEmpty(payload.Hmac) || !_oxaPayService.ValidateCallbackHmac(payload))
         {
-            if (!_oxaPayService.ValidateCallbackHmac(payload))
+            _logger.LogWarning(
+                "SECURITY: Payout callback HMAC missing or invalid. trackId={TrackId}, IP={IP}",
+                payload.TrackId, HttpContext.Connection.RemoteIpAddress);
+            return Unauthorized(new { error = "invalid_signature" });
+        }
+
+        // Layer 2: Server-side verification for payout status
+        var payoutStatus = payload.Status?.ToLowerInvariant() ?? "";
+        if (payoutStatus is "complete" or "failed")
+        {
+            if (string.IsNullOrEmpty(payload.TrackId))
+            {
+                _logger.LogWarning("SECURITY: Payout callback missing trackId");
+                return Unauthorized(new { error = "missing_track_id" });
+            }
+
+            var verified = await _oxaPayService.VerifyPayoutAsync(payload.TrackId);
+            if (verified == null)
             {
                 _logger.LogWarning(
-                    "SECURITY: Payout callback HMAC validation failed. trackId={TrackId}, IP={IP}",
-                    payload.TrackId, HttpContext.Connection.RemoteIpAddress);
+                    "SECURITY: Payout verification failed for trackId={TrackId}. Rejecting.",
+                    payload.TrackId);
+                return Ok(new { received = true });
+            }
+
+            var verifiedStatus = verified.Status?.ToLowerInvariant() ?? "";
+            if (verifiedStatus != payoutStatus)
+            {
+                _logger.LogWarning(
+                    "SECURITY: Payout status mismatch. Callback={CallbackStatus}, Verified={VerifiedStatus}, trackId={TrackId}",
+                    payload.Status, verified.Status, payload.TrackId);
                 return Ok(new { received = true });
             }
         }

@@ -35,8 +35,10 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Validate token type - must be access token
-		if claims.TokenType != "" && claims.TokenType != TokenTypeAccess {
+		// Validate token type - must be access token.
+		// Reject any token that is not explicitly an access token, including
+		// tokens with an empty type field (legacy or malformed tokens).
+		if claims.TokenType != TokenTypeAccess {
 			abortWithAppError(c, apperrors.ErrInvalidToken.WithDetails("Token type tidak valid"), nil)
 			return
 		}

@@ -21,6 +21,12 @@ public interface IOxaPayService
     Task<OxaPayPaymentInfo?> VerifyPaymentAsync(string trackId);
 
     /// <summary>
+    /// Verify a payout by calling OxaPay GET /payout/{trackId}.
+    /// Returns the actual payout status from OxaPay, or null if verification fails.
+    /// </summary>
+    Task<OxaPayPaymentInfo?> VerifyPayoutAsync(string trackId);
+
+    /// <summary>
     /// Validate HMAC signature of an OxaPay callback payload.
     /// Computes HMAC-SHA512 of the payload using MerchantApiKey and compares with the provided hmac.
     /// </summary>
@@ -144,6 +150,35 @@ public class OxaPayService : IOxaPayService
         catch (Exception ex)
         {
             _logger.LogError(ex, "OxaPay payment verification error for trackId={TrackId}", trackId);
+            return null;
+        }
+    }
+
+    public async Task<OxaPayPaymentInfo?> VerifyPayoutAsync(string trackId)
+    {
+        try
+        {
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"payout/{trackId}");
+            httpRequest.Headers.Add("payout_api_key", _settings.PayoutApiKey);
+
+            var response = await _httpClient.SendAsync(httpRequest);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            _logger.LogDebug("OxaPay verify payout response: {StatusCode} {Body}", response.StatusCode, responseBody);
+
+            var result = JsonSerializer.Deserialize<OxaPayPaymentInfoResponse>(responseBody, JsonOptions);
+            if (result?.Status != 200 || result.Data == null)
+            {
+                _logger.LogWarning("OxaPay payout verification failed for trackId={TrackId}: status={Status}",
+                    trackId, result?.Status);
+                return null;
+            }
+
+            return result.Data;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "OxaPay payout verification error for trackId={TrackId}", trackId);
             return null;
         }
     }

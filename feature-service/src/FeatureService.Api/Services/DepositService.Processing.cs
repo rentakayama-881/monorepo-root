@@ -119,6 +119,17 @@ public partial class DepositService
             }
         }
 
+        // Defense-in-depth: cap credit to 120% of original requested amount.
+        // Prevents inflated credit even if HMAC is somehow compromised.
+        var maxAllowedIdr = (long)(deposit.Amount * 1.2m);
+        if (creditAmountIdr > maxAllowedIdr)
+        {
+            _logger.LogWarning(
+                "SECURITY: Deposit {DepositId} computed credit {Credit} IDR exceeds 120% of requested {Requested} IDR. Capping to {Max}.",
+                deposit.Id, creditAmountIdr, deposit.Amount, maxAllowedIdr);
+            creditAmountIdr = maxAllowedIdr;
+        }
+
         var update = Builders<DepositRequest>.Update
             .Set(d => d.Status, DepositStatus.Approved)
             .Set(d => d.OxaPayStatus, payload.Status)

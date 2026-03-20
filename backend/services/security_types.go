@@ -191,8 +191,9 @@ func hashRefreshToken(token string) string {
 func generateTokenFamily() string {
 	b := make([]byte, TokenFamilyLength)
 	if _, err := rand.Read(b); err != nil {
-		// Fallback to timestamp-based generation
-		return fmt.Sprintf("%d", time.Now().UnixNano())
+		// crypto/rand failure indicates a fatally compromised system.
+		// Never fall back to predictable values for security-critical tokens.
+		panic("crypto/rand unavailable: " + err.Error())
 	}
 	return hex.EncodeToString(b)
 }
