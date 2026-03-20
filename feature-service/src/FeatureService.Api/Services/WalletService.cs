@@ -129,28 +129,46 @@ public partial class WalletService : IWalletService
 
         if (!isValid)
         {
-            var newFailedAttempts = wallet.FailedPinAttempts + 1;
-            var remainingAttempts = MaxPinAttempts - newFailedAttempts;
-            
-            var update = Builders<UserWallet>.Update
-                .Set(w => w.FailedPinAttempts, newFailedAttempts)
+            // Atomic $inc to prevent race condition where concurrent requests
+            // read the same FailedPinAttempts and both compute the same +1.
+            // Filter ensures we only increment if not already locked.
+            var incFilter = Builders<UserWallet>.Filter.And(
+                Builders<UserWallet>.Filter.Eq(w => w.UserId, userId),
+                Builders<UserWallet>.Filter.Or(
+                    Builders<UserWallet>.Filter.Eq(w => w.PinLockedUntil, null),
+                    Builders<UserWallet>.Filter.Lt(w => w.PinLockedUntil, DateTime.UtcNow)));
+
+            var incUpdate = Builders<UserWallet>.Update
+                .Inc(w => w.FailedPinAttempts, 1)
                 .Set(w => w.UpdatedAt, DateTime.UtcNow);
 
-            // Lock PIN if max attempts reached
-            if (newFailedAttempts >= MaxPinAttempts)
+            var updated = await _wallets.FindOneAndUpdateAsync(
+                incFilter, incUpdate,
+                new FindOneAndUpdateOptions<UserWallet> { ReturnDocument = ReturnDocument.After });
+
+            if (updated == null)
             {
-                var lockUntil = DateTime.UtcNow.AddHours(PinLockHours);
-                update = update
-                    .Set(w => w.PinLockedUntil, lockUntil)
-                    .Set(w => w.FailedPinAttempts, 0);
-                    
-                await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
-                _logger.LogWarning("PIN locked for user {UserId} after {Attempts} failed attempts", userId, newFailedAttempts);
-                
+                // Already locked by a concurrent request
                 return new VerifyPinResponse(false, $"PIN salah. Akun terkunci selama {PinLockHours} jam.", 0);
             }
 
-            await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
+            // Check if this increment crossed the threshold → lock
+            if (updated.FailedPinAttempts >= MaxPinAttempts)
+            {
+                var lockUntil = DateTime.UtcNow.AddHours(PinLockHours);
+                var lockUpdate = Builders<UserWallet>.Update
+                    .Set(w => w.PinLockedUntil, lockUntil)
+                    .Set(w => w.FailedPinAttempts, 0)
+                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
+
+                await _wallets.UpdateOneAsync(w => w.UserId == userId, lockUpdate);
+                _logger.LogWarning("PIN locked for user {UserId} after {Attempts} failed attempts",
+                    userId, updated.FailedPinAttempts);
+
+                return new VerifyPinResponse(false, $"PIN salah. Akun terkunci selama {PinLockHours} jam.", 0);
+            }
+
+            var remainingAttempts = MaxPinAttempts - updated.FailedPinAttempts;
             return new VerifyPinResponse(false, $"PIN salah. Sisa percobaan: {remainingAttempts}", remainingAttempts);
         }
 

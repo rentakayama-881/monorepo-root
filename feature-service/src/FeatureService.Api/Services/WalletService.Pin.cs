@@ -61,26 +61,6 @@ public partial class WalletService
         }
     }
 
-    private async Task IncrementFailedAttemptsAsync(uint userId, UserWallet wallet)
-    {
-        var newFailedAttempts = wallet.FailedPinAttempts + 1;
-        
-        var update = Builders<UserWallet>.Update
-            .Set(w => w.FailedPinAttempts, newFailedAttempts)
-            .Set(w => w.UpdatedAt, DateTime.UtcNow);
-
-        if (newFailedAttempts >= MaxPinAttempts)
-        {
-            update = update
-                .Set(w => w.PinLockedUntil, DateTime.UtcNow.AddHours(PinLockHours))
-                .Set(w => w.FailedPinAttempts, 0);
-                
-            _logger.LogWarning("PIN locked for user {UserId} after {Attempts} failed attempts", userId, newFailedAttempts);
-        }
-
-        await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
-    }
-
     /// <summary>
     /// Hashes PIN using PBKDF2 with 310,000 iterations and SHA256
     /// </summary>
