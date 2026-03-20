@@ -1,0 +1,15 @@
+---
+# ==============================================================================
+# Monitoring Setup
+# ==============================================================================
+# Ensures Prometheus and Grafana config directories exist.
+#
+# Usage:
+#   ansible-playbook playbooks/setup-monitoring.yml
+# ==============================================================================
+
+- name: Monitoring Setup
+  hosts: all
+  become: true
+  roles:
+    - monitoring

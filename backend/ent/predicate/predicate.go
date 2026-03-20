@@ -33,6 +33,9 @@ type DeviceUserMapping func(*sql.Selector)
 // EmailVerificationToken is the predicate function for emailverificationtoken builders.
 type EmailVerificationToken func(*sql.Selector)
 
+// FeatureFlag is the predicate function for featureflag builders.
+type FeatureFlag func(*sql.Selector)
+
 // FinalOffer is the predicate function for finaloffer builders.
 type FinalOffer func(*sql.Selector)
 

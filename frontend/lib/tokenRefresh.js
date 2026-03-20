@@ -35,7 +35,7 @@ export async function refreshAccessToken() {
   refreshPromise = (async () => {
     try {
       const payload = refreshToken ? JSON.stringify({ refresh_token: refreshToken }) : null;
-      const res = await fetch(`${getApiBase()}/api/auth/refresh`, {
+      const res = await fetch(`${getApiBase()}/api/v1/auth/refresh`, {
         method: "POST",
         credentials: "include",
         headers: payload

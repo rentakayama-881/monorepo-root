@@ -1,0 +1,17 @@
+---
+# ==============================================================================
+# Nginx + SSL Setup
+# ==============================================================================
+# Installs host nginx for SSL termination + certbot for Let's Encrypt certs.
+# The host nginx proxies to local systemd services.
+#
+# Usage:
+#   ansible-playbook playbooks/setup-nginx.yml
+# ==============================================================================
+
+- name: Nginx + SSL Setup
+  hosts: all
+  become: true
+  roles:
+    - nginx
+    - certbot

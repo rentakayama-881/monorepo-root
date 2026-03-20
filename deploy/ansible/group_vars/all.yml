@@ -1,0 +1,59 @@
+---
+# ==============================================================================
+# AIValid — Ansible Group Variables
+# ==============================================================================
+# All configurable values for the infrastructure.
+# Override per-host in inventory or via --extra-vars at runtime.
+# ==============================================================================
+
+# --- Application -------------------------------------------------------------
+app_name: aivalid
+app_user: alephdraad
+app_group: alephdraad
+app_dir: /opt/alephdraad
+repo_dir: "/home/{{ app_user }}/monorepo-root"
+backup_dir: "/opt/alephdraad/backups"
+
+# --- Domains -----------------------------------------------------------------
+domain_api: api.aivalid.id
+domain_feature: feature.aivalid.id
+domain_grafana: grafana.aivalid.id
+certbot_email: admin@aivalid.id
+
+# --- SSL / Let's Encrypt -----------------------------------------------------
+# All domains share a single cert (SAN) under the api domain name
+ssl_cert_path: "/etc/letsencrypt/live/{{ domain_api }}/fullchain.pem"
+ssl_key_path: "/etc/letsencrypt/live/{{ domain_api }}/privkey.pem"
+acme_webroot: /var/www/html
+
+# --- Upstream Ports (host nginx → systemd services) --------------------------
+upstream_backend_port: 8080
+upstream_feature_port: 5000
+upstream_grafana_port: 3001
+
+# --- Nginx -------------------------------------------------------------------
+nginx_rate_limit_rate: "10r/s"
+nginx_rate_limit_burst: 20
+nginx_worker_connections: 1024
+
+# --- Firewall (UFW) ----------------------------------------------------------
+allowed_ports:
+  - { port: 22, proto: tcp }
+  - { port: 80, proto: tcp }
+  - { port: 443, proto: tcp }
+
+# --- Timezone ----------------------------------------------------------------
+server_timezone: UTC
+
+# --- Monitoring --------------------------------------------------------------
+grafana_admin_password: "{{ vault_grafana_admin_password | default('changeme') }}"
+
+# --- Sops + Age (secrets) ----------------------------------------------------
+sops_age_key_path: "~/.config/sops/age/keys.txt"
+
+# --- System Tuning ------------------------------------------------------------
+sysctl_settings:
+  net.core.somaxconn: 1024
+  vm.swappiness: 10
+  net.ipv4.tcp_tw_reuse: 1
+  net.ipv4.ip_local_port_range: "1024 65535"

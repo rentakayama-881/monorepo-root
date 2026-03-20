@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func registerAdminRoutes(router *gin.Engine, enhancedRateLimiter *middleware.EnhancedRateLimiter, lztMarketHandler *handlers.LZTMarketHandler) {
+func registerAdminRoutes(router *gin.Engine, enhancedRateLimiter *middleware.EnhancedRateLimiter, lztMarketHandler *handlers.LZTMarketHandler, featureFlagHandler *handlers.FeatureFlagHandler) {
 	admin := router.Group("/admin")
 	admin.Use(enhancedRateLimiter.Middleware())
 	{
@@ -37,6 +37,12 @@ func registerAdminRoutes(router *gin.Engine, enhancedRateLimiter *middleware.Enh
 
 			// Observed devices (read-only)
 			adminProtected.GET("/observed-devices", handlers.AdminListObservedDevices)
+
+			// Feature flag management
+			adminProtected.GET("/feature-flags", featureFlagHandler.ListFlags)
+			adminProtected.POST("/feature-flags", featureFlagHandler.CreateFlag)
+			adminProtected.PUT("/feature-flags/:key", featureFlagHandler.UpdateFlag)
+			adminProtected.DELETE("/feature-flags/:key", featureFlagHandler.DeleteFlag)
 
 			// External integration (LZT Market API)
 			adminProtected.GET("/integrations/lzt/config", lztMarketHandler.GetConfig)

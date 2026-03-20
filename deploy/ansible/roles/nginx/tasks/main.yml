@@ -1,0 +1,61 @@
+---
+# ==============================================================================
+# Role: nginx — Host Nginx for SSL termination
+# ==============================================================================
+# This installs nginx on the HOST. It handles SSL termination
+# and proxies to systemd services on 127.0.0.1.
+# ==============================================================================
+
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+
+- name: Remove default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: Ensure nginx conf.d directory exists
+  ansible.builtin.file:
+    path: /etc/nginx/conf.d
+    state: directory
+    mode: "0755"
+
+- name: Ensure nginx sites-available directory exists
+  ansible.builtin.file:
+    path: /etc/nginx/sites-available
+    state: directory
+    mode: "0755"
+
+- name: Ensure nginx sites-enabled directory exists
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled
+    state: directory
+    mode: "0755"
+
+- name: Deploy AIValid nginx configuration
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/sites-available/aivalid.conf
+    mode: "0644"
+    validate: "nginx -t -c /dev/null || true"
+  notify: reload nginx
+
+- name: Enable AIValid nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/aivalid.conf
+    dest: /etc/nginx/sites-enabled/aivalid.conf
+    state: link
+  notify: reload nginx
+
+- name: Test nginx configuration
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+- name: Enable and start nginx
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started

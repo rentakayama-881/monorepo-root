@@ -10,7 +10,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SetPrimaryBadge allows user to set their primary (display) badge
+// SetPrimaryBadge godoc
+// @Summary      Set primary badge
+// @Description  Set or clear the authenticated user's primary (display) badge. Send badge_id=null to clear.
+// @Tags         Account
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      SwaggerSetPrimaryBadgeRequest  true  "Badge ID to set as primary (null to clear)"
+// @Success      200   {object}  handlers.SwaggerMessageResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      500   {object}  handlers.SwaggerErrorResponse
+// @Router       /account/primary-badge [put]
 func SetPrimaryBadge(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -65,7 +77,15 @@ func SetPrimaryBadge(c *gin.Context) {
 	})
 }
 
-// GetUserBadgesPublic returns a user's active badges (public endpoint)
+// GetUserBadgesPublic godoc
+// @Summary      Get user's public badges
+// @Description  Returns all active badges and primary badge for a user by username.
+// @Tags         User
+// @Produce      json
+// @Param        username  path      string  true  "Username"
+// @Success      200       {object}  handlers.SwaggerUserBadgesPublicResponse
+// @Failure      404       {object}  handlers.SwaggerErrorResponse
+// @Router       /user/{username}/badges [get]
 func GetUserBadgesPublic(c *gin.Context) {
 	username := c.Param("username")
 
@@ -121,7 +141,15 @@ func GetUserBadgesPublic(c *gin.Context) {
 	})
 }
 
-// GetMyBadges returns current user's badges
+// GetMyBadges godoc
+// @Summary      Get my badges
+// @Description  Returns all active badges and primary badge ID for the authenticated user.
+// @Tags         Account
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerMyBadgesResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /account/badges [get]
 func GetMyBadges(c *gin.Context) {
 	userID := c.GetUint("user_id")
 

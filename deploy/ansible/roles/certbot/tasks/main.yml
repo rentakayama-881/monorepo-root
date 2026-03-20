@@ -1,0 +1,63 @@
+---
+# ==============================================================================
+# Role: certbot — Let's Encrypt SSL certificates
+# ==============================================================================
+# Obtains/renews SSL certificates for all domains.
+# Uses webroot challenge via the host nginx ACME location blocks.
+#
+# Prerequisites:
+#   - nginx role must be applied first (serves ACME challenges)
+#   - DNS for all domains must point to the VPS IP
+# ==============================================================================
+
+- name: Install certbot and nginx plugin
+  ansible.builtin.apt:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+
+- name: Check if SSL certificate already exists
+  ansible.builtin.stat:
+    path: "{{ ssl_cert_path }}"
+  register: ssl_cert_stat
+
+- name: Obtain Let's Encrypt certificate (webroot method)
+  ansible.builtin.command: >-
+    certbot certonly
+    --webroot
+    --webroot-path {{ acme_webroot }}
+    --email {{ certbot_email }}
+    --agree-tos
+    --no-eff-email
+    --non-interactive
+    -d {{ domain_api }}
+    -d {{ domain_feature }}
+    -d {{ domain_grafana }}
+  when: not ssl_cert_stat.stat.exists
+  notify: reload nginx
+
+- name: Ensure certbot auto-renewal timer is enabled
+  ansible.builtin.systemd:
+    name: certbot.timer
+    enabled: true
+    state: started
+
+- name: Configure certbot renewal hook to reload nginx
+  ansible.builtin.copy:
+    dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+    content: |
+      #!/bin/bash
+      # Reload nginx after certificate renewal
+      systemctl reload nginx
+    mode: "0755"
+
+- name: Verify certificate renewal dry-run
+  ansible.builtin.command: certbot renew --dry-run
+  changed_when: false
+  register: certbot_dryrun
+  failed_when: false
+
+- name: Report certbot dry-run result
+  ansible.builtin.debug:
+    msg: "Certbot renewal dry-run: {{ 'OK' if certbot_dryrun.rc == 0 else 'FAILED — check certbot logs' }}"

@@ -82,7 +82,20 @@ func (h *LZTMarketHandler) applyOrderItemSnapshot(ctx context.Context, orderID s
 	}
 }
 
-// CreatePublicChatGPTOrder creates and executes a direct buy using backend LZT token.
+// CreatePublicChatGPTOrder godoc
+// @Summary      Create purchase order
+// @Description  Creates and executes a direct purchase of a ChatGPT account. Requires authenticated user with sufficient wallet balance.
+// @Tags         Market
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      handlers.SwaggerMarketCreateOrderRequest  true  "Order request"
+// @Success      202   {object}  handlers.SwaggerMarketOrderResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      502   {object}  handlers.SwaggerErrorResponse
+// @Failure      503   {object}  handlers.SwaggerErrorResponse
+// @Router       /market/chatgpt/orders [post]
 func (h *LZTMarketHandler) CreatePublicChatGPTOrder(c *gin.Context) {
 	if h == nil || h.client == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Layanan marketplace tidak tersedia"})

@@ -57,6 +57,17 @@ func NewPasskeyHandler(passkeyService *services.EntPasskeyService, authService *
 }
 
 
+// DeletePasskey godoc
+// @Summary      Delete a passkey
+// @Description  Remove a specific passkey by its ID. The passkey must belong to the authenticated user.
+// @Tags         Auth-Passkeys
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Passkey ID"
+// @Success      200  {object}  handlers.SwaggerMessageResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/passkeys/{id} [delete]
 // DeletePasskey removes a passkey
 func (h *PasskeyHandler) DeletePasskey(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -81,6 +92,19 @@ func (h *PasskeyHandler) DeletePasskey(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Passkey deleted"})
 }
 
+// RenamePasskey godoc
+// @Summary      Rename a passkey
+// @Description  Update the display name of a specific passkey.
+// @Tags         Auth-Passkeys
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path      int                    true  "Passkey ID"
+// @Param        body  body      dto.PasskeyRenameRequest  true  "New name"
+// @Success      200   {object}  handlers.SwaggerMessageResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/passkeys/{id}/name [put]
 // RenamePasskey updates a passkey name
 func (h *PasskeyHandler) RenamePasskey(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -111,6 +135,16 @@ func (h *PasskeyHandler) RenamePasskey(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Passkey renamed"})
 }
 
+// CheckPasskeys godoc
+// @Summary      Check if user has passkeys
+// @Description  Check if the given email address has passkeys registered. Used by the login UI to show passkey option.
+// @Tags         Auth-Passkeys
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.PasskeyCheckRequest  true  "Email to check"
+// @Success      200   {object}  dto.PasskeyCheckResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/passkeys/check [post]
 // CheckPasskeys checks if an email has passkeys registered (public endpoint)
 func (h *PasskeyHandler) CheckPasskeys(c *gin.Context) {
 	var req dto.PasskeyCheckRequest
@@ -131,6 +165,16 @@ func (h *PasskeyHandler) CheckPasskeys(c *gin.Context) {
 	})
 }
 
+// BeginLogin godoc
+// @Summary      Begin passkey login
+// @Description  Start a passkey login ceremony. Send email for non-discoverable login, or empty body for discoverable (usernameless) login.
+// @Tags         Auth-Passkeys
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.PasskeyLoginBeginRequest  false  "Email (optional for discoverable login)"
+// @Success      200   {object}  dto.PasskeyLoginBeginResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/passkeys/login/begin [post]
 // BeginLogin starts passkey login
 func (h *PasskeyHandler) BeginLogin(c *gin.Context) {
 	var req dto.PasskeyLoginBeginRequest
@@ -169,6 +213,17 @@ func (h *PasskeyHandler) BeginLogin(c *gin.Context) {
 	})
 }
 
+// FinishLogin godoc
+// @Summary      Complete passkey login
+// @Description  Complete the passkey login ceremony with the credential from the browser's WebAuthn API. Returns JWT tokens on success.
+// @Tags         Auth-Passkeys
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.PasskeyLoginFinishRequest  true  "Login credential"
+// @Success      200   {object}  handlers.SwaggerLoginResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/passkeys/login/finish [post]
 // FinishLogin completes passkey login
 func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	var rawRequest struct {

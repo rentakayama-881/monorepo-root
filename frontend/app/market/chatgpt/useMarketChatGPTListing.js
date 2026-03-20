@@ -35,7 +35,7 @@ export default function useMarketChatGPTListing() {
       }
 
       try {
-        const res = await fetch(`${apiBase}/api/market/chatgpt?i18n=en-US`, {
+        const res = await fetch(`${apiBase}/api/v1/market/chatgpt?i18n=en-US`, {
           method: "GET",
           cache: "no-store",
         });

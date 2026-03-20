@@ -12,6 +12,7 @@ import (
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
+	"backend-gin/ent/featureflag"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/ipgeocache"
 	"backend-gin/ent/marketpurchaseorder"
@@ -353,6 +354,67 @@ func init() {
 		return func(token_hash string) error {
 			for _, fn := range fns {
 				if err := fn(token_hash); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	featureflagMixin := schema.FeatureFlag{}.Mixin()
+	featureflagMixinFields0 := featureflagMixin[0].Fields()
+	_ = featureflagMixinFields0
+	featureflagFields := schema.FeatureFlag{}.Fields()
+	_ = featureflagFields
+	// featureflagDescCreatedAt is the schema descriptor for created_at field.
+	featureflagDescCreatedAt := featureflagMixinFields0[0].Descriptor()
+	// featureflag.DefaultCreatedAt holds the default value on creation for the created_at field.
+	featureflag.DefaultCreatedAt = featureflagDescCreatedAt.Default.(func() time.Time)
+	// featureflagDescUpdatedAt is the schema descriptor for updated_at field.
+	featureflagDescUpdatedAt := featureflagMixinFields0[1].Descriptor()
+	// featureflag.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	featureflag.DefaultUpdatedAt = featureflagDescUpdatedAt.Default.(func() time.Time)
+	// featureflag.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	featureflag.UpdateDefaultUpdatedAt = featureflagDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// featureflagDescKey is the schema descriptor for key field.
+	featureflagDescKey := featureflagFields[0].Descriptor()
+	// featureflag.KeyValidator is a validator for the "key" field. It is called by the builders before save.
+	featureflag.KeyValidator = func() func(string) error {
+		validators := featureflagDescKey.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(key string) error {
+			for _, fn := range fns {
+				if err := fn(key); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// featureflagDescEnabled is the schema descriptor for enabled field.
+	featureflagDescEnabled := featureflagFields[1].Descriptor()
+	// featureflag.DefaultEnabled holds the default value on creation for the enabled field.
+	featureflag.DefaultEnabled = featureflagDescEnabled.Default.(bool)
+	// featureflagDescDescription is the schema descriptor for description field.
+	featureflagDescDescription := featureflagFields[2].Descriptor()
+	// featureflag.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
+	featureflag.DescriptionValidator = featureflagDescDescription.Validators[0].(func(string) error)
+	// featureflagDescRolloutPercentage is the schema descriptor for rollout_percentage field.
+	featureflagDescRolloutPercentage := featureflagFields[3].Descriptor()
+	// featureflag.DefaultRolloutPercentage holds the default value on creation for the rollout_percentage field.
+	featureflag.DefaultRolloutPercentage = featureflagDescRolloutPercentage.Default.(int)
+	// featureflag.RolloutPercentageValidator is a validator for the "rollout_percentage" field. It is called by the builders before save.
+	featureflag.RolloutPercentageValidator = func() func(int) error {
+		validators := featureflagDescRolloutPercentage.Validators
+		fns := [...]func(int) error{
+			validators[0].(func(int) error),
+			validators[1].(func(int) error),
+		}
+		return func(rollout_percentage int) error {
+			for _, fn := range fns {
+				if err := fn(rollout_percentage); err != nil {
 					return err
 				}
 			}

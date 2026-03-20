@@ -154,7 +154,7 @@ public partial class TransferService
         {
             var request = new HttpRequestMessage(
                 HttpMethod.Post,
-                $"{baseUrl}/api/internal/validation-cases/escrow/released");
+                $"{baseUrl}/api/v1/internal/validation-cases/escrow/released");
 
             request.Headers.Add("X-Internal-Api-Key", internalKey);
             request.Content = new StringContent(

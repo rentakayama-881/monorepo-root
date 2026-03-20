@@ -1,0 +1,11 @@
+---
+all:
+  hosts:
+    aivalid-vps:
+      ansible_host: "{{ vps_ip }}"
+      ansible_user: "{{ deploy_user }}"
+      ansible_ssh_private_key_file: "{{ ssh_key_path }}"
+  vars:
+    vps_ip: "YOUR_VPS_IP"
+    deploy_user: "alephdraad"
+    ssh_key_path: "~/.ssh/id_ed25519"

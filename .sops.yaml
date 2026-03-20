@@ -1,0 +1,17 @@
+# ─────────────────────────────────────────────────────────────
+# .sops.yaml — SOPS encryption rules (age backend)
+#
+# All .env.enc files are encrypted with the age public key(s)
+# listed below. The corresponding private key must be present
+# at ~/.config/sops/age/keys.txt on the machine that decrypts.
+#
+# To add a new developer / server:
+#   1. They run:  age-keygen -o ~/.config/sops/age/keys.txt
+#   2. They share their PUBLIC key (age1…)
+#   3. Add it to the comma-separated list below
+#   4. Re-encrypt all secrets:  bash ops/secrets-encrypt.sh all
+# ─────────────────────────────────────────────────────────────
+creation_rules:
+  - path_regex: \.env\.enc$
+    age: >-
+      age1fnlmhk45f27yyew7w0qe9cx6lfw5e6xysvm7fepjvua5wtfypyps43jqug

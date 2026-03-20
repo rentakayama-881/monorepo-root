@@ -49,6 +49,15 @@ type ChangeUsernameRequest struct {
 	NewUsername string `json:"new_username" binding:"required"`
 }
 
+// GetMyAccountHandler godoc
+// @Summary      Get current user account
+// @Description  Returns profile information for the authenticated user.
+// @Tags         Account
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerAccountMeResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /account/me [get]
 // GET /api/account/me
 func GetMyAccountHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)
@@ -75,6 +84,19 @@ func GetMyAccountHandler(c *gin.Context) {
 	})
 }
 
+// UpdateMyAccountHandler godoc
+// @Summary      Update current user account
+// @Description  Update profile fields (full_name, bio, pronouns, company, social_accounts) for the authenticated user.
+// @Tags         Account
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      SwaggerUpdateAccountRequest  true  "Fields to update"
+// @Success      200   {object}  handlers.SwaggerStatusResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      500   {object}  handlers.SwaggerErrorResponse
+// @Router       /account [put]
 // PUT /api/account
 func UpdateMyAccountHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)

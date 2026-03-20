@@ -1,0 +1,15 @@
+---
+# ==============================================================================
+# Base Server Setup
+# ==============================================================================
+# Installs essential packages, configures firewall, SSH hardening, fail2ban.
+#
+# Usage:
+#   ansible-playbook playbooks/setup-server.yml
+# ==============================================================================
+
+- name: Base Server Setup
+  hosts: all
+  become: true
+  roles:
+    - base

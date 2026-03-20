@@ -25,6 +25,17 @@ type AdminLoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// AdminLogin godoc
+// @Summary      Admin login
+// @Description  Authenticate admin user with email and password. Returns admin JWT token.
+// @Tags         Admin
+// @Accept       json
+// @Produce      json
+// @Param        body  body      AdminLoginRequest  true  "Admin login credentials"
+// @Success      200   {object}  handlers.SwaggerAdminLoginResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Router       /admin/auth/login [post]
 func AdminLogin(c *gin.Context) {
 	var req AdminLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

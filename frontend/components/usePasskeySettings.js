@@ -32,7 +32,7 @@ export default function usePasskeySettings() {
   const [deleting, setDeleting] = useState(null);
   const [webAuthnSupported, setWebAuthnSupported] = useState(true);
 
-  const API = `${getApiBase()}/api/auth/passkeys`;
+  const API = `${getApiBase()}/api/v1/auth/passkeys`;
 
   const fetchPasskeys = useCallback(async () => {
     setLoading(true);

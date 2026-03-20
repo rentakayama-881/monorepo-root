@@ -1,0 +1,5670 @@
+basePath: /api/v1
+definitions:
+  dto.CreateUsernameRequest:
+    properties:
+      username:
+        type: string
+    required:
+    - username
+    type: object
+  dto.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  dto.LoginRequest:
+    properties:
+      device_fingerprint:
+        description: Optional device fingerprint from frontend
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  dto.PasskeyCheckRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  dto.PasskeyCheckResponse:
+    properties:
+      has_passkeys:
+        type: boolean
+    type: object
+  dto.PasskeyListResponse:
+    properties:
+      count:
+        type: integer
+      passkeys:
+        items:
+          $ref: '#/definitions/dto.PasskeyResponse'
+        type: array
+    type: object
+  dto.PasskeyLoginBeginRequest:
+    properties:
+      email:
+        description: Optional for discoverable login
+        type: string
+    type: object
+  dto.PasskeyLoginBeginResponse:
+    properties:
+      options: {}
+      session_id:
+        description: For login ceremonies
+        type: string
+    type: object
+  dto.PasskeyLoginFinishRequest:
+    properties:
+      credential: {}
+      email:
+        description: For non-discoverable login
+        type: string
+      session_id:
+        description: For login ceremonies
+        type: string
+    type: object
+  dto.PasskeyRegisterBeginRequest:
+    properties:
+      pin:
+        type: string
+    required:
+    - pin
+    type: object
+  dto.PasskeyRegisterBeginResponse:
+    properties:
+      options: {}
+      session_id:
+        type: string
+    type: object
+  dto.PasskeyRegisterFinishRequest:
+    properties:
+      credential: {}
+      name:
+        type: string
+      session_id:
+        type: string
+    type: object
+  dto.PasskeyRenameRequest:
+    properties:
+      name:
+        maxLength: 50
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  dto.PasskeyResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      last_used_at:
+        type: string
+      name:
+        type: string
+      transports:
+        items:
+          type: string
+        type: array
+    type: object
+  dto.PasskeyStatusResponse:
+    properties:
+      count:
+        type: integer
+      has_passkeys:
+        type: boolean
+    type: object
+  dto.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  dto.RegisterRequest:
+    properties:
+      device_fingerprint:
+        description: Optional device fingerprint from frontend
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.ResetPasswordRequest:
+    properties:
+      new_password:
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
+    type: object
+  dto.SudoExtendResponse:
+    properties:
+      expires_at:
+        type: string
+      expires_in:
+        type: integer
+      message:
+        type: string
+    type: object
+  dto.SudoStatusResponse:
+    properties:
+      expires_at:
+        type: string
+      expires_in:
+        description: seconds remaining
+        type: integer
+      is_active:
+        description: Whether sudo mode is active
+        type: boolean
+      requires_totp:
+        description: Whether TOTP is needed for sudo
+        type: boolean
+    type: object
+  dto.SudoVerifyRequest:
+    properties:
+      backup_code:
+        description: Alternative to TOTP
+        type: string
+      password:
+        type: string
+      totp_code:
+        description: Required if TOTP enabled
+        type: string
+    required:
+    - password
+    type: object
+  dto.SudoVerifyResponse:
+    properties:
+      expires_at:
+        type: string
+      expires_in:
+        description: seconds
+        type: integer
+      message:
+        type: string
+      sudo_token:
+        type: string
+    type: object
+  dto.TOTPDisableRequest:
+    properties:
+      code:
+        description: Current TOTP code
+        type: string
+      password:
+        description: Current password for confirmation
+        type: string
+    required:
+    - code
+    - password
+    type: object
+  dto.TOTPSetupResponse:
+    properties:
+      account:
+        description: User identifier (email)
+        type: string
+      issuer:
+        description: App name shown in authenticator
+        type: string
+      qr_code_url:
+        description: otpauth:// URL for QR code generation
+        type: string
+      secret:
+        description: Base32 encoded secret (for manual entry)
+        type: string
+    type: object
+  dto.TOTPStatusResponse:
+    properties:
+      enabled:
+        type: boolean
+      verified_at:
+        description: ISO8601 timestamp
+        type: string
+    type: object
+  dto.TOTPVerifyRequest:
+    properties:
+      code:
+        description: 6-digit TOTP code
+        type: string
+    required:
+    - code
+    type: object
+  dto.VerifyConfirmRequest:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
+  dto.VerifyRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  handlers.AdminLoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handlers.AdminMoveValidationCaseRequest:
+    properties:
+      dry_run:
+        type: boolean
+      new_category_id:
+        type: integer
+      new_owner_user_id:
+        type: integer
+      reason:
+        type: string
+    required:
+    - new_owner_user_id
+    - reason
+    type: object
+  handlers.AssignBadgeRequest:
+    properties:
+      badge_id:
+        type: integer
+      reason:
+        type: string
+    required:
+    - badge_id
+    type: object
+  handlers.CreateBadgeRequest:
+    properties:
+      color:
+        type: string
+      description:
+        type: string
+      icon_type:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  handlers.SwaggerAccountMeResponse:
+    properties:
+      avatar_url:
+        example: https://example.com/avatar.jpg
+        type: string
+      bio:
+        example: Software engineer
+        type: string
+      company:
+        example: AIValid
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      full_name:
+        example: John Doe
+        type: string
+      pronouns:
+        example: he/him
+        type: string
+      social_accounts: {}
+      telegram:
+        example: '@johndoe'
+        type: string
+      telegram_auth: {}
+      username:
+        example: johndoe
+        type: string
+    type: object
+  handlers.SwaggerAddTagsRequest:
+    properties:
+      tag_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  handlers.SwaggerAdminLoginAdminObj:
+    properties:
+      email:
+        example: admin@aivalid.id
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Admin
+        type: string
+    type: object
+  handlers.SwaggerAdminLoginResponse:
+    properties:
+      admin:
+        $ref: '#/definitions/handlers.SwaggerAdminLoginAdminObj'
+      token:
+        example: eyJhbGciOi...
+        type: string
+    type: object
+  handlers.SwaggerAdminMoveCategorySnapshot:
+    properties:
+      description:
+        example: AI-generated text validation
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: AI Text
+        type: string
+      slug:
+        example: ai-text
+        type: string
+    type: object
+  handlers.SwaggerAdminMoveUserSnapshot:
+    properties:
+      id:
+        example: 42
+        type: integer
+      username:
+        example: johndoe
+        type: string
+    type: object
+  handlers.SwaggerAdminMoveValidationCaseDataObj:
+    properties:
+      changed_category:
+        example: false
+        type: boolean
+      changed_owner:
+        example: true
+        type: boolean
+      dry_run:
+        example: false
+        type: boolean
+      new_category:
+        $ref: '#/definitions/handlers.SwaggerAdminMoveCategorySnapshot'
+      new_owner:
+        $ref: '#/definitions/handlers.SwaggerAdminMoveUserSnapshot'
+      old_category:
+        $ref: '#/definitions/handlers.SwaggerAdminMoveCategorySnapshot'
+      old_owner:
+        $ref: '#/definitions/handlers.SwaggerAdminMoveUserSnapshot'
+      request_id:
+        example: req_abc123
+        type: string
+      validation_case_id:
+        example: 42
+        type: integer
+    type: object
+  handlers.SwaggerAdminMoveValidationCaseResponse:
+    properties:
+      data:
+        $ref: '#/definitions/handlers.SwaggerAdminMoveValidationCaseDataObj'
+      message:
+        example: Validation Case berhasil dipindahkan
+        type: string
+    type: object
+  handlers.SwaggerAdminObservedDevicesResponse:
+    properties:
+      devices:
+        items:
+          $ref: '#/definitions/handlers.SwaggerObservedDeviceItem'
+        type: array
+      page:
+        example: 1
+        type: integer
+      pageSize:
+        example: 50
+        type: integer
+      total:
+        example: 100
+        type: integer
+    type: object
+  handlers.SwaggerAdminUserBadgeBrief:
+    properties:
+      color:
+        example: '#6366f1'
+        type: string
+      description:
+        example: Verified member
+        type: string
+      icon_type:
+        example: verified
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Verified
+        type: string
+      slug:
+        example: verified
+        type: string
+    type: object
+  handlers.SwaggerAdminUserBadgeDetail:
+    properties:
+      badge_id:
+        example: 3
+        type: integer
+      granted_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      granted_by:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      reason:
+        example: Excellent contributor
+        type: string
+      revoked_at:
+        example: ""
+        type: string
+      user_id:
+        example: 42
+        type: integer
+    type: object
+  handlers.SwaggerAdminUserDetailObj:
+    properties:
+      avatar_url:
+        example: https://example.com/avatar.jpg
+        type: string
+      bio:
+        example: Software engineer
+        type: string
+      company:
+        example: AIValid
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      full_name:
+        example: John Doe
+        type: string
+      id:
+        example: 42
+        type: integer
+      primary_badge_id:
+        example: 3
+        type: integer
+      pronouns:
+        example: he/him
+        type: string
+      telegram:
+        example: '@johndoe'
+        type: string
+      username:
+        example: johndoe
+        type: string
+    type: object
+  handlers.SwaggerAdminUserDetailResponse:
+    properties:
+      badges:
+        items:
+          $ref: '#/definitions/handlers.SwaggerAdminUserBadgeDetail'
+        type: array
+      user:
+        $ref: '#/definitions/handlers.SwaggerAdminUserDetailObj'
+    type: object
+  handlers.SwaggerAdminUserItem:
+    properties:
+      avatar_url:
+        example: https://example.com/avatar.jpg
+        type: string
+      badges:
+        items:
+          $ref: '#/definitions/handlers.SwaggerAdminUserBadgeBrief'
+        type: array
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      primary_badge:
+        $ref: '#/definitions/handlers.SwaggerAdminUserBadgeBrief'
+      username:
+        example: johndoe
+        type: string
+    type: object
+  handlers.SwaggerAdminUserListResponse:
+    properties:
+      limit:
+        example: 20
+        type: integer
+      page:
+        example: 1
+        type: integer
+      total:
+        example: 150
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/handlers.SwaggerAdminUserItem'
+        type: array
+    type: object
+  handlers.SwaggerArtifactSubmitRequest:
+    properties:
+      document_id:
+        example: doc_abc123
+        type: string
+    type: object
+  handlers.SwaggerAssignValidatorsRequest:
+    properties:
+      panel_size:
+        example: 3
+        type: integer
+      validator_user_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  handlers.SwaggerAttachRepoFileRequest:
+    properties:
+      document_id:
+        example: doc_abc123
+        type: string
+      kind:
+        example: evidence
+        type: string
+      label:
+        example: Screenshot bukti
+        type: string
+      visibility:
+        example: public
+        type: string
+    type: object
+  handlers.SwaggerAutoAssignValidatorsRequest:
+    properties:
+      panel_size:
+        example: 3
+        type: integer
+    type: object
+  handlers.SwaggerBackupCodeCountResponse:
+    properties:
+      count:
+        example: 8
+        type: integer
+    type: object
+  handlers.SwaggerBackupCodesGenerateResponse:
+    properties:
+      codes:
+        example:
+        - ABCD-1234
+        items:
+          type: string
+        type: array
+    type: object
+  handlers.SwaggerBadgeBrief:
+    properties:
+      color:
+        example: '#FFD700'
+        type: string
+      icon_type:
+        example: emoji
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Early Adopter
+        type: string
+      slug:
+        example: early-adopter
+        type: string
+    type: object
+  handlers.SwaggerBadgeCreateResponse:
+    properties:
+      badge:
+        $ref: '#/definitions/handlers.SwaggerBadgeObj'
+      message:
+        example: Badge berhasil dibuat
+        type: string
+    type: object
+  handlers.SwaggerBadgeDetailResponse:
+    properties:
+      badge:
+        $ref: '#/definitions/handlers.SwaggerBadgeObj'
+    type: object
+  handlers.SwaggerBadgeItem:
+    properties:
+      color:
+        example: '#FFD700'
+        type: string
+      description:
+        example: Joined during beta
+        type: string
+      granted_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      icon_type:
+        example: emoji
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Early Adopter
+        type: string
+      reason:
+        example: Beta participant
+        type: string
+      slug:
+        example: early-adopter
+        type: string
+    type: object
+  handlers.SwaggerBadgeListResponse:
+    properties:
+      badges:
+        items:
+          $ref: '#/definitions/handlers.SwaggerBadgeObj'
+        type: array
+    type: object
+  handlers.SwaggerBadgeObj:
+    properties:
+      color:
+        example: '#6366f1'
+        type: string
+      description:
+        example: Verified member
+        type: string
+      icon_type:
+        example: verified
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Verified
+        type: string
+      slug:
+        example: verified
+        type: string
+    type: object
+  handlers.SwaggerCanDeleteResponse:
+    properties:
+      blocking_reasons:
+        items:
+          type: string
+        type: array
+      can_delete:
+        example: true
+        type: boolean
+      disputed_transfers:
+        example: 0
+        type: integer
+      pending_transfers:
+        example: 0
+        type: integer
+      pending_withdrawals:
+        example: 0
+        type: integer
+      wallet_balance:
+        example: 0
+        type: integer
+      warnings:
+        items:
+          type: string
+        type: array
+    type: object
+  handlers.SwaggerCaseLogResponse:
+    properties:
+      case_log:
+        items: {}
+        type: array
+    type: object
+  handlers.SwaggerCategoryBrowseResponse:
+    properties:
+      category: {}
+      validation_cases:
+        items: {}
+        type: array
+    type: object
+  handlers.SwaggerCategoryListResponse:
+    properties:
+      categories:
+        items: {}
+        type: array
+    type: object
+  handlers.SwaggerChangeUsernameRequest:
+    properties:
+      new_username:
+        example: newusername
+        type: string
+    type: object
+  handlers.SwaggerChangeUsernameResponse:
+    properties:
+      new_username:
+        example: newusername
+        type: string
+      status:
+        example: ok
+        type: string
+    type: object
+  handlers.SwaggerConsensusResponse:
+    properties:
+      consensus: {}
+    type: object
+  handlers.SwaggerConsultationRequestListResponse:
+    properties:
+      consultation_requests:
+        items: {}
+        type: array
+    type: object
+  handlers.SwaggerConsultationRequestSingleResponse:
+    properties:
+      consultation_request: {}
+    type: object
+  handlers.SwaggerContactRevealResponse:
+    properties:
+      telegram:
+        example: '@username'
+        type: string
+    type: object
+  handlers.SwaggerCreateUsernameResponse:
+    properties:
+      setup_completed:
+        example: true
+        type: boolean
+      user:
+        $ref: '#/definitions/handlers.SwaggerCreateUsernameUser'
+    type: object
+  handlers.SwaggerCreateUsernameUser:
+    properties:
+      avatar_url:
+        example: https://example.com/avatar.jpg
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      name:
+        example: johndoe
+        type: string
+    type: object
+  handlers.SwaggerDeleteAccountRequest:
+    properties:
+      confirmation:
+        example: DELETE
+        type: string
+    type: object
+  handlers.SwaggerDisputeAttachRequest:
+    properties:
+      dispute_id:
+        example: dispute_abc123
+        type: string
+    type: object
+  handlers.SwaggerErrorResponse:
+    properties:
+      code:
+        example: AUTH001
+        type: string
+      details:
+        example: Detail tambahan
+        type: string
+      message:
+        example: Email atau password salah
+        type: string
+    type: object
+  handlers.SwaggerEscrowDraftResponse:
+    properties:
+      escrow_draft: {}
+    type: object
+  handlers.SwaggerFeatureFlagCheckResponse:
+    properties:
+      enabled:
+        example: true
+        type: boolean
+    type: object
+  handlers.SwaggerFeatureFlagCreateRequest:
+    properties:
+      description:
+        example: Enable dark mode UI
+        type: string
+      enabled:
+        example: false
+        type: boolean
+      key:
+        example: dark_mode
+        type: string
+      rollout_percentage:
+        example: 100
+        type: integer
+    type: object
+  handlers.SwaggerFeatureFlagCreateResponse:
+    properties:
+      feature_flag:
+        $ref: '#/definitions/handlers.SwaggerFeatureFlagItem'
+      message:
+        example: Feature flag berhasil dibuat
+        type: string
+    type: object
+  handlers.SwaggerFeatureFlagItem:
+    properties:
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      description:
+        example: Enable dark mode UI
+        type: string
+      enabled:
+        example: true
+        type: boolean
+      id:
+        example: 1
+        type: integer
+      key:
+        example: dark_mode
+        type: string
+      rollout_percentage:
+        example: 100
+        type: integer
+      updated_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+    type: object
+  handlers.SwaggerFeatureFlagListResponse:
+    properties:
+      feature_flags:
+        items:
+          $ref: '#/definitions/handlers.SwaggerFeatureFlagItem'
+        type: array
+    type: object
+  handlers.SwaggerFeatureFlagUpdateRequest:
+    properties:
+      description:
+        example: Enable dark mode UI
+        type: string
+      enabled:
+        example: true
+        type: boolean
+      rollout_percentage:
+        example: 50
+        type: integer
+    type: object
+  handlers.SwaggerFinalOfferListResponse:
+    properties:
+      final_offers:
+        items: {}
+        type: array
+    type: object
+  handlers.SwaggerFinalOfferSubmitRequest:
+    properties:
+      hold_hours:
+        example: 24
+        type: integer
+      terms:
+        example: Syarat dan ketentuan penawaran
+        type: string
+    type: object
+  handlers.SwaggerHealthResponse:
+    properties:
+      ok:
+        example: true
+        type: boolean
+      time:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      version:
+        example: 1.0.0
+        type: string
+    type: object
+  handlers.SwaggerHealthVersionResponse:
+    properties:
+      build_time_utc:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      git_sha:
+        example: abc123def
+        type: string
+      service:
+        example: backend-gin
+        type: string
+      status:
+        example: ok
+        type: string
+      timestamp:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      version:
+        example: 1.0.0
+        type: string
+    type: object
+  handlers.SwaggerIDResponse:
+    properties:
+      id:
+        example: 42
+        type: integer
+    type: object
+  handlers.SwaggerInternalCallbackResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+      validation_case_id:
+        example: 42
+        type: integer
+    type: object
+  handlers.SwaggerInternalConsultationLocksResponse:
+    properties:
+      has_active_consultation_lock:
+        example: false
+        type: boolean
+      locks: {}
+      validator_user_id:
+        example: 1
+        type: integer
+    type: object
+  handlers.SwaggerInternalDisputeSettledRequest:
+    properties:
+      dispute_id:
+        example: dsp_abc123
+        type: string
+      outcome:
+        example: refund
+        type: string
+      source:
+        example: admin
+        type: string
+      transfer_id:
+        example: txn_abc123
+        type: string
+    type: object
+  handlers.SwaggerInternalEscrowReleasedRequest:
+    properties:
+      transfer_id:
+        example: txn_abc123
+        type: string
+    type: object
+  handlers.SwaggerInternalUpdateGuaranteeRequest:
+    properties:
+      guarantee_amount:
+        example: 100000
+        type: integer
+    type: object
+  handlers.SwaggerLZTConfigResponse:
+    properties:
+      base_url:
+        example: https://api.lzt.market
+        type: string
+      enabled:
+        example: true
+        type: boolean
+      integration_instructions:
+        example: Gunakan endpoint POST /admin/integrations/lzt/request ...
+        type: string
+      min_interval_millis:
+        example: 1000
+        type: integer
+      search_min_interval_millis:
+        example: 3000
+        type: integer
+      timeout_seconds:
+        example: 30
+        type: integer
+      token_configured:
+        example: true
+        type: boolean
+    type: object
+  handlers.SwaggerLZTProxyRequest:
+    properties:
+      content_type:
+        example: application/json
+        type: string
+      form_body:
+        additionalProperties:
+          type: string
+        type: object
+      json_body: {}
+      method:
+        example: GET
+        type: string
+      path:
+        example: /chatgpt
+        type: string
+      query:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  handlers.SwaggerLZTProxyResponse:
+    properties:
+      json: {}
+      raw:
+        type: string
+      upstream_headers:
+        additionalProperties:
+          type: string
+        type: object
+      upstream_status:
+        example: 200
+        type: integer
+    type: object
+  handlers.SwaggerLockFundsRequest:
+    properties:
+      transfer_id:
+        example: transfer_abc123
+        type: string
+    type: object
+  handlers.SwaggerLoginBackupCodeRequest:
+    properties:
+      code:
+        example: ABCD-1234-EFGH
+        type: string
+      device_fingerprint:
+        example: fp_abc123
+        type: string
+      totp_pending:
+        example: pending-token-string
+        type: string
+    type: object
+  handlers.SwaggerLoginResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOi...
+        type: string
+      expires_in:
+        example: 300
+        type: integer
+      refresh_token:
+        example: dGhpcyBpcyBh...
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+      user:
+        $ref: '#/definitions/handlers.SwaggerLoginUserBrief'
+    type: object
+  handlers.SwaggerLoginTOTPRequest:
+    properties:
+      code:
+        example: "123456"
+        type: string
+      device_fingerprint:
+        example: fp_abc123
+        type: string
+      totp_pending:
+        example: pending-token-string
+        type: string
+    type: object
+  handlers.SwaggerLoginTOTPRequiredResponse:
+    properties:
+      requires_totp:
+        example: true
+        type: boolean
+      totp_pending:
+        example: pending-token-string
+        type: string
+      user:
+        $ref: '#/definitions/handlers.SwaggerLoginUserBrief'
+    type: object
+  handlers.SwaggerLoginUserBrief:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      full_name:
+        example: John Doe
+        type: string
+      username:
+        example: johndoe
+        type: string
+    type: object
+  handlers.SwaggerMarketCheckoutResponse:
+    properties:
+      checkout_url:
+        example: https://lzt.market/12345
+        type: string
+      item_id:
+        example: "12345"
+        type: string
+      note:
+        example: Gunakan endpoint POST /api/market/chatgpt/orders untuk checkout internal.
+        type: string
+    type: object
+  handlers.SwaggerMarketCreateOrderRequest:
+    properties:
+      i18n:
+        example: en-US
+        type: string
+      item_id:
+        example: "12345"
+        type: string
+    type: object
+  handlers.SwaggerMarketListingResponse:
+    properties:
+      cached:
+        example: true
+        type: boolean
+      json: {}
+      stale:
+        example: false
+        type: boolean
+    type: object
+  handlers.SwaggerMarketOrderItem:
+    properties:
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      id:
+        example: mpo_abc123
+        type: string
+      item_id:
+        example: "12345"
+        type: string
+      price:
+        example: Rp 50.000
+        type: string
+      price_display:
+        example: Rp 50.000
+        type: string
+      price_idr:
+        example: 50000
+        type: integer
+      seller:
+        example: seller123
+        type: string
+      source_currency:
+        example: USD
+        type: string
+      source_display:
+        example: $3.50
+        type: string
+      source_price:
+        example: 3.5
+        type: number
+      status:
+        example: fulfilled
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/handlers.SwaggerMarketOrderStep'
+        type: array
+      title:
+        example: ChatGPT Plus Account
+        type: string
+      updated_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+    type: object
+  handlers.SwaggerMarketOrderListResponse:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/handlers.SwaggerMarketOrderItem'
+        type: array
+    type: object
+  handlers.SwaggerMarketOrderResponse:
+    properties:
+      order:
+        $ref: '#/definitions/handlers.SwaggerMarketOrderItem'
+    type: object
+  handlers.SwaggerMarketOrderStep:
+    properties:
+      at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      code:
+        example: INIT
+        type: string
+      label:
+        example: Order dibuat
+        type: string
+      message:
+        example: ""
+        type: string
+      status:
+        example: done
+        type: string
+    type: object
+  handlers.SwaggerMessageResponse:
+    properties:
+      message:
+        example: Operasi berhasil
+        type: string
+    type: object
+  handlers.SwaggerMyBadgesResponse:
+    properties:
+      badges:
+        items:
+          $ref: '#/definitions/handlers.SwaggerBadgeItem'
+        type: array
+      primary_badge_id:
+        example: 1
+        type: integer
+    type: object
+  handlers.SwaggerObservedDeviceItem:
+    properties:
+      account_count:
+        example: 2
+        type: integer
+      block_reason:
+        example: ""
+        type: string
+      blocked:
+        example: false
+        type: boolean
+      fingerprint_hash:
+        example: abc123def456
+        type: string
+      ip_address:
+        example: 192.168.1.1
+        type: string
+      last_seen_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      user_agent:
+        example: Mozilla/5.0
+        type: string
+      user_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  handlers.SwaggerPublicBadgeDetailResponse:
+    properties:
+      color:
+        example: '#FFD700'
+        type: string
+      created_at:
+        example: 1700000000
+        type: integer
+      description:
+        example: Joined during beta
+        type: string
+      icon_type:
+        example: emoji
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Early Adopter
+        type: string
+      slug:
+        example: early-adopter
+        type: string
+    type: object
+  handlers.SwaggerPublicUserByIDResponse:
+    properties:
+      avatar_url:
+        example: https://example.com/avatar.jpg
+        type: string
+      id:
+        example: 1
+        type: integer
+      username:
+        example: johndoe
+        type: string
+    type: object
+  handlers.SwaggerPublicUserProfileResponse:
+    properties:
+      avatar_url:
+        example: https://example.com/avatar.jpg
+        type: string
+      badges: {}
+      bio:
+        example: Software engineer
+        type: string
+      company:
+        example: AIValid
+        type: string
+      full_name:
+        example: John Doe
+        type: string
+      guarantee_amount:
+        example: 100000
+        type: integer
+      id:
+        example: 1
+        type: integer
+      primary_badge: {}
+      pronouns:
+        example: he/him
+        type: string
+      social_accounts: {}
+      username:
+        example: johndoe
+        type: string
+      validation_case_count:
+        example: 5
+        type: integer
+    type: object
+  handlers.SwaggerReadinessResponse:
+    properties:
+      checks:
+        additionalProperties:
+          type: string
+        type: object
+      mode:
+        example: release
+        type: string
+      ok:
+        example: true
+        type: boolean
+      time:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      version:
+        example: 1.0.0
+        type: string
+    type: object
+  handlers.SwaggerRefreshResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOi...
+        type: string
+      expires_in:
+        example: 300
+        type: integer
+      refresh_token:
+        example: dGhpcyBpcyBh...
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+    type: object
+  handlers.SwaggerRegisterResponse:
+    properties:
+      message:
+        example: Registrasi berhasil
+        type: string
+      verification:
+        $ref: '#/definitions/handlers.SwaggerRegisterVerificationObj'
+    type: object
+  handlers.SwaggerRegisterVerificationObj:
+    properties:
+      required:
+        example: true
+        type: boolean
+    type: object
+  handlers.SwaggerRejectConsultationRequest:
+    properties:
+      reason:
+        example: Alasan penolakan yang valid
+        type: string
+    type: object
+  handlers.SwaggerRepoTreeResponse:
+    properties:
+      repo_tree: {}
+    type: object
+  handlers.SwaggerSessionItem:
+    properties:
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      expires_at:
+        example: "2024-01-08T00:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      ip_address:
+        example: 127.0.0.1
+        type: string
+      last_used_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      user_agent:
+        example: Mozilla/5.0
+        type: string
+    type: object
+  handlers.SwaggerSessionListResponse:
+    properties:
+      sessions:
+        items:
+          $ref: '#/definitions/handlers.SwaggerSessionItem'
+        type: array
+    type: object
+  handlers.SwaggerSetPrimaryBadgeRequest:
+    properties:
+      badge_id:
+        example: 1
+        type: integer
+    type: object
+  handlers.SwaggerStatusIDResponse:
+    properties:
+      id:
+        example: 42
+        type: integer
+      status:
+        example: ok
+        type: string
+    type: object
+  handlers.SwaggerStatusMessageResponse:
+    properties:
+      message:
+        example: Operasi berhasil
+        type: string
+      status:
+        example: ok
+        type: string
+    type: object
+  handlers.SwaggerStatusResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  handlers.SwaggerTOTPDisableResponse:
+    properties:
+      enabled:
+        example: false
+        type: boolean
+      message:
+        example: 2FA berhasil dinonaktifkan
+        type: string
+    type: object
+  handlers.SwaggerTOTPVerifyCodeResponse:
+    properties:
+      message:
+        example: Kode valid
+        type: string
+      valid:
+        example: true
+        type: boolean
+    type: object
+  handlers.SwaggerTOTPVerifyEnabledResponse:
+    properties:
+      backup_codes:
+        example:
+        - ABCD-1234
+        items:
+          type: string
+        type: array
+      enabled:
+        example: true
+        type: boolean
+      message:
+        example: 2FA berhasil diaktifkan
+        type: string
+    type: object
+  handlers.SwaggerTagItem:
+    properties:
+      color:
+        example: '#3B82F6'
+        type: string
+      description:
+        example: Source code artifacts
+        type: string
+      icon:
+        example: "\U0001F4BB"
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Code Artifact
+        type: string
+      slug:
+        example: artifact-code
+        type: string
+    type: object
+  handlers.SwaggerTagListResponse:
+    properties:
+      tags:
+        items:
+          $ref: '#/definitions/handlers.SwaggerTagItem'
+        type: array
+    type: object
+  handlers.SwaggerTagValidationCaseBrief:
+    properties:
+      avatar_url:
+        example: https://example.com/avatar.jpg
+        type: string
+      bounty_amount:
+        example: 50000
+        type: integer
+      category_name:
+        example: AI Text
+        type: string
+      category_slug:
+        example: ai-text
+        type: string
+      created_at:
+        example: 1700000000
+        type: integer
+      id:
+        example: 42
+        type: integer
+      status:
+        example: published
+        type: string
+      summary:
+        example: Perlu validasi output AI
+        type: string
+      tags: {}
+      title:
+        example: Review GPT-4 Output
+        type: string
+      username:
+        example: johndoe
+        type: string
+    type: object
+  handlers.SwaggerTagWithCasesResponse:
+    properties:
+      tag:
+        $ref: '#/definitions/handlers.SwaggerTagItem'
+      validation_cases:
+        items:
+          $ref: '#/definitions/handlers.SwaggerTagValidationCaseBrief'
+        type: array
+    type: object
+  handlers.SwaggerTelegramAuthInfo:
+    properties:
+      connected:
+        example: true
+        type: boolean
+      deep_link:
+        example: https://t.me/johndoe
+        type: string
+      display_username:
+        example: '@johndoe'
+        type: string
+      first_name:
+        example: John
+        type: string
+      last_name:
+        example: Doe
+        type: string
+      photo_url:
+        example: https://t.me/i/userpic/photo.jpg
+        type: string
+      telegram_user_id:
+        example: "123456789"
+        type: string
+      username:
+        example: johndoe
+        type: string
+      verified_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+    type: object
+  handlers.SwaggerTelegramConnectRequest:
+    properties:
+      auth_date:
+        example: 1700000000
+        type: integer
+      first_name:
+        example: John
+        type: string
+      hash:
+        example: abc123def456
+        type: string
+      id:
+        example: 123456789
+        type: integer
+      last_name:
+        example: Doe
+        type: string
+      photo_url:
+        example: https://t.me/i/userpic/photo.jpg
+        type: string
+      username:
+        example: johndoe
+        type: string
+    type: object
+  handlers.SwaggerTelegramConnectResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+      telegram_auth:
+        $ref: '#/definitions/handlers.SwaggerTelegramAuthInfo'
+    type: object
+  handlers.SwaggerUpdateAccountRequest:
+    properties:
+      bio:
+        example: Software engineer
+        type: string
+      company:
+        example: AIValid
+        type: string
+      full_name:
+        example: John Doe
+        type: string
+      pronouns:
+        example: he/him
+        type: string
+      social_accounts: {}
+      telegram:
+        example: '@johndoe'
+        type: string
+    type: object
+  handlers.SwaggerUploadAvatarResponse:
+    properties:
+      avatar_url:
+        example: https://storage.example.com/avatars/u1_1700000000.jpg
+        type: string
+    type: object
+  handlers.SwaggerUserBadgeAssignObj:
+    properties:
+      badge_id:
+        example: 3
+        type: integer
+      granted_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      granted_by:
+        example: 1
+        type: integer
+      id:
+        example: 1
+        type: integer
+      reason:
+        example: Excellent contributor
+        type: string
+      user_id:
+        example: 42
+        type: integer
+    type: object
+  handlers.SwaggerUserBadgeAssignResponse:
+    properties:
+      message:
+        example: Badge berhasil diberikan
+        type: string
+      user_badge:
+        $ref: '#/definitions/handlers.SwaggerUserBadgeAssignObj'
+    type: object
+  handlers.SwaggerUserBadgesListResponse:
+    properties:
+      badges:
+        items:
+          $ref: '#/definitions/handlers.SwaggerBadgeItem'
+        type: array
+    type: object
+  handlers.SwaggerUserBadgesPublicResponse:
+    properties:
+      badges:
+        items:
+          $ref: '#/definitions/handlers.SwaggerBadgeItem'
+        type: array
+      primary_badge:
+        $ref: '#/definitions/handlers.SwaggerBadgeBrief'
+    type: object
+  handlers.SwaggerUserInfoResponse:
+    properties:
+      avatar_url:
+        example: https://example.com/avatar.jpg
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: johndoe
+        type: string
+      username:
+        example: johndoe
+        type: string
+    type: object
+  handlers.SwaggerValidationCaseCreateRequest:
+    properties:
+      bounty_amount:
+        example: 50000
+        type: integer
+      category_slug:
+        example: ai-text
+        type: string
+      content: {}
+      content_type:
+        example: text
+        type: string
+      meta: {}
+      summary:
+        example: Perlu validasi output AI
+        type: string
+      tag_slugs:
+        items:
+          type: string
+        type: array
+      title:
+        example: Review GPT-4 Output
+        type: string
+    type: object
+  handlers.SwaggerValidationCaseCreateResponse:
+    properties:
+      id:
+        example: 42
+        type: integer
+    type: object
+  handlers.SwaggerValidationCaseListResponse:
+    properties:
+      validation_cases:
+        items: {}
+        type: array
+    type: object
+  handlers.SwaggerValidationCaseUpdateRequest:
+    properties:
+      bounty_amount:
+        example: 100000
+        type: integer
+      content: {}
+      content_type:
+        example: text
+        type: string
+      meta: {}
+      summary:
+        example: Updated summary
+        type: string
+      tag_slugs:
+        items:
+          type: string
+        type: array
+      title:
+        example: Updated Title
+        type: string
+    type: object
+  handlers.SwaggerValidationCasesByUsernameResponse:
+    properties:
+      validation_cases:
+        items: {}
+        type: array
+    type: object
+  handlers.SwaggerVerdictSubmitRequest:
+    properties:
+      confidence:
+        example: 85
+        type: integer
+      document_id:
+        example: doc_abc123
+        type: string
+      notes:
+        example: Bukti sesuai dengan klaim
+        type: string
+      verdict:
+        example: valid
+        type: string
+    type: object
+  handlers.SwaggerVerifyRequestResponse:
+    properties:
+      message:
+        example: Jika email terdaftar, tautan verifikasi telah dikirim.
+        type: string
+      retry_after_seconds:
+        example: 60
+        type: integer
+    type: object
+  handlers.SwaggerVoteConfidenceRequest:
+    properties:
+      validator_user_id:
+        example: 1
+        type: integer
+    type: object
+host: api.aivalid.id
+info:
+  contact:
+    name: AIValid Support
+    url: https://aivalid.id/contact-support
+  description: API untuk platform validasi hasil kerja AI oleh ahli manusia.
+  license:
+    name: Proprietary
+  termsOfService: https://aivalid.id/rules-content
+  title: AIValid API
+  version: "1.0"
+paths:
+  /account:
+    delete:
+      consumes:
+      - application/json
+      description: Permanently delete the authenticated user's account. Requires active
+        sudo session (identity re-verification). Validates wallet balance and pending
+        transactions before proceeding.
+      parameters:
+      - description: Confirmation (must be 'DELETE')
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerDeleteAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Validation failed or confirmation incorrect
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Sudo session required
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "503":
+          description: Wallet verification service unavailable
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete account
+      tags:
+      - Account
+    put:
+      consumes:
+      - application/json
+      description: Update profile fields (full_name, bio, pronouns, company, social_accounts)
+        for the authenticated user.
+      parameters:
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerUpdateAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update current user account
+      tags:
+      - Account
+  /account/avatar:
+    delete:
+      description: Remove the authenticated user's profile avatar.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete avatar
+      tags:
+      - Account
+    put:
+      consumes:
+      - multipart/form-data
+      description: Upload a new profile avatar image. Accepts JPG/PNG up to 2 MB.
+      parameters:
+      - description: Avatar image file (JPG or PNG, max 2 MB)
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerUploadAvatarResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload avatar
+      tags:
+      - Account
+  /account/badges:
+    get:
+      description: Returns all active badges and primary badge ID for the authenticated
+        user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMyBadgesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my badges
+      tags:
+      - Account
+  /account/can-delete:
+    get:
+      description: Returns whether the authenticated user can delete their account,
+        along with any blocking reasons (wallet balance, pending transfers, disputes).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerCanDeleteResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Check if account can be deleted
+      tags:
+      - Account
+  /account/change-username:
+    post:
+      consumes:
+      - application/json
+      description: Change the authenticated user's username. The new username must
+        be unique.
+      parameters:
+      - description: New username
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerChangeUsernameRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerChangeUsernameResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: Username already taken
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change username
+      tags:
+      - Account
+  /account/me:
+    get:
+      description: Returns profile information for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerAccountMeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user account
+      tags:
+      - Account
+  /account/primary-badge:
+    put:
+      consumes:
+      - application/json
+      description: Set or clear the authenticated user's primary (display) badge.
+        Send badge_id=null to clear.
+      parameters:
+      - description: Badge ID to set as primary (null to clear)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerSetPrimaryBadgeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set primary badge
+      tags:
+      - Account
+  /account/telegram/connect:
+    post:
+      consumes:
+      - application/json
+      description: Link a Telegram account to the authenticated user using Telegram
+        Login Widget data. The payload is verified against the bot token.
+      parameters:
+      - description: Telegram login widget payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerTelegramConnectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerTelegramConnectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: Telegram account already linked to another user
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Connect Telegram account
+      tags:
+      - Account
+  /account/telegram/disconnect:
+    post:
+      description: Unlink the connected Telegram account from the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerTelegramConnectResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Disconnect Telegram account
+      tags:
+      - Account
+  /admin/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate admin user with email and password. Returns admin
+        JWT token.
+      parameters:
+      - description: Admin login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AdminLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerAdminLoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Admin login
+      tags:
+      - Admin
+  /admin/badges:
+    get:
+      description: Returns all badge definitions ordered by name. Admin authentication
+        required.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerBadgeListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: List all badges
+      tags:
+      - Admin-Badges
+    post:
+      consumes:
+      - application/json
+      description: Create a new badge definition. Admin authentication required.
+      parameters:
+      - description: Badge data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateBadgeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.SwaggerBadgeCreateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: Slug already exists
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Create a new badge
+      tags:
+      - Admin-Badges
+  /admin/badges/{id}:
+    delete:
+      description: Delete a badge by ID. Fails if badge is still assigned to users.
+        Admin authentication required.
+      parameters:
+      - description: Badge ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: Badge still assigned to users
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Delete a badge
+      tags:
+      - Admin-Badges
+    get:
+      description: Returns a single badge by ID. Admin authentication required.
+      parameters:
+      - description: Badge ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerBadgeDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Get badge detail
+      tags:
+      - Admin-Badges
+    put:
+      consumes:
+      - application/json
+      description: Update an existing badge by ID. Admin authentication required.
+      parameters:
+      - description: Badge ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Badge data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateBadgeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerBadgeCreateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: Slug already exists
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Update a badge
+      tags:
+      - Admin-Badges
+  /admin/categories:
+    get:
+      description: Returns all validation case categories ordered by name. Admin authentication
+        required.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerCategoryListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: List categories
+      tags:
+      - Admin-ValidationCases
+  /admin/feature-flags:
+    get:
+      description: Returns all feature flags. Admin authentication required.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerFeatureFlagListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: List all feature flags
+      tags:
+      - Admin-FeatureFlags
+    post:
+      consumes:
+      - application/json
+      description: Create a new feature flag. Admin authentication required.
+      parameters:
+      - description: Feature flag data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerFeatureFlagCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.SwaggerFeatureFlagCreateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: Key already exists
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Create a feature flag
+      tags:
+      - Admin-FeatureFlags
+  /admin/feature-flags/{key}:
+    delete:
+      description: Soft-delete a feature flag by key. Admin authentication required.
+      parameters:
+      - description: Feature flag key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Delete a feature flag
+      tags:
+      - Admin-FeatureFlags
+    put:
+      consumes:
+      - application/json
+      description: Update an existing feature flag by key. Admin authentication required.
+      parameters:
+      - description: Feature flag key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerFeatureFlagUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerFeatureFlagCreateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Update a feature flag
+      tags:
+      - Admin-FeatureFlags
+  /admin/integrations/lzt/chatgpt:
+    get:
+      description: Fetch ChatGPT account listings from LZT Market API. Admin authentication
+        required.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerLZTProxyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "502":
+          description: Upstream error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "503":
+          description: LZT client not initialized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Get LZT ChatGPT listings
+      tags:
+      - Admin-Integrations
+  /admin/integrations/lzt/config:
+    get:
+      description: Returns the current LZT Market integration configuration and status.
+        Admin authentication required.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerLZTConfigResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "503":
+          description: LZT client not initialized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Get LZT integration config
+      tags:
+      - Admin-Integrations
+  /admin/integrations/lzt/request:
+    post:
+      consumes:
+      - application/json
+      description: Forward an arbitrary request to the LZT Market API. Admin authentication
+        required.
+      parameters:
+      - description: LZT proxy request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerLZTProxyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerLZTProxyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "502":
+          description: Upstream error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "503":
+          description: LZT client not initialized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Proxy LZT Market API request
+      tags:
+      - Admin-Integrations
+  /admin/observed-devices:
+    get:
+      description: Returns a paginated list of observed device fingerprints with associated
+        user mappings. Admin authentication required.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 50
+        description: Items per page
+        in: query
+        name: pageSize
+        type: integer
+      - description: Search by fingerprint hash or user ID
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerAdminObservedDevicesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: List observed devices
+      tags:
+      - Admin-Devices
+  /admin/users:
+    get:
+      description: Returns a paginated list of users with their badges. Supports search
+        by email, username, or full name. Admin authentication required.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search by email, username, or full name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerAdminUserListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: List users
+      tags:
+      - Admin-Users
+  /admin/users/{userId}:
+    get:
+      description: Returns detailed user info including all badges (active and revoked).
+        Admin authentication required.
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerAdminUserDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Get user detail
+      tags:
+      - Admin-Users
+  /admin/users/{userId}/badges:
+    post:
+      consumes:
+      - application/json
+      description: Assign a badge to a user by user ID. Admin authentication required.
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Badge assignment data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AssignBadgeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.SwaggerUserBadgeAssignResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: User or badge not found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: Badge already assigned
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Assign badge to user
+      tags:
+      - Admin-Users
+  /admin/users/{userId}/badges/{badgeId}:
+    delete:
+      consumes:
+      - application/json
+      description: Revoke (remove) a badge from a user. Admin authentication required.
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Badge ID
+        in: path
+        name: badgeId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: User badge not found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Revoke badge from user
+      tags:
+      - Admin-Users
+  /admin/validation-cases/{id}/move:
+    post:
+      consumes:
+      - application/json
+      description: Transfer ownership and/or change category of a validation case.
+        Supports dry-run mode. Admin authentication required.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Move request data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AdminMoveValidationCaseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerAdminMoveValidationCaseResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Validation case, user, or category not found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: No changes or user locked
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - AdminAuth: []
+      summary: Move validation case
+      tags:
+      - Admin-ValidationCases
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Send a password reset email to the specified address.
+      parameters:
+      - description: Email address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Request password reset
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password. Returns JWT tokens on
+        success, or requires TOTP if 2FA is enabled.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: When 2FA is enabled
+          schema:
+            $ref: '#/definitions/handlers.SwaggerLoginTOTPRequiredResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: User login
+      tags:
+      - Auth
+  /auth/login/backup-code:
+    post:
+      consumes:
+      - application/json
+      description: Use a backup code to complete two-factor authentication during
+        login. Requires the totp_pending token from the initial login response.
+      parameters:
+      - description: Backup code verification
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerLoginBackupCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerLoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Complete login with backup code
+      tags:
+      - Auth
+  /auth/login/totp:
+    post:
+      consumes:
+      - application/json
+      description: Verify a TOTP code to complete two-factor authentication during
+        login. Requires the totp_pending token from the initial login response.
+      parameters:
+      - description: TOTP verification
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerLoginTOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerLoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Complete login with TOTP code
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revoke the current session and clear refresh token cookie.
+      parameters:
+      - description: Refresh token (optional)
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/dto.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+      summary: Logout user
+      tags:
+      - Auth
+  /auth/logout-all:
+    post:
+      description: Revoke all active sessions for the current user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout from all devices
+      tags:
+      - Auth
+  /auth/passkeys:
+    get:
+      description: Returns all passkeys registered by the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PasskeyListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List user's passkeys
+      tags:
+      - Auth-Passkeys
+  /auth/passkeys/{id}:
+    delete:
+      description: Remove a specific passkey by its ID. The passkey must belong to
+        the authenticated user.
+      parameters:
+      - description: Passkey ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a passkey
+      tags:
+      - Auth-Passkeys
+  /auth/passkeys/{id}/name:
+    put:
+      consumes:
+      - application/json
+      description: Update the display name of a specific passkey.
+      parameters:
+      - description: Passkey ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New name
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PasskeyRenameRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Rename a passkey
+      tags:
+      - Auth-Passkeys
+  /auth/passkeys/check:
+    post:
+      consumes:
+      - application/json
+      description: Check if the given email address has passkeys registered. Used
+        by the login UI to show passkey option.
+      parameters:
+      - description: Email to check
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PasskeyCheckRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PasskeyCheckResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Check if user has passkeys
+      tags:
+      - Auth-Passkeys
+  /auth/passkeys/login/begin:
+    post:
+      consumes:
+      - application/json
+      description: Start a passkey login ceremony. Send email for non-discoverable
+        login, or empty body for discoverable (usernameless) login.
+      parameters:
+      - description: Email (optional for discoverable login)
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/dto.PasskeyLoginBeginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PasskeyLoginBeginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Begin passkey login
+      tags:
+      - Auth-Passkeys
+  /auth/passkeys/login/finish:
+    post:
+      consumes:
+      - application/json
+      description: Complete the passkey login ceremony with the credential from the
+        browser's WebAuthn API. Returns JWT tokens on success.
+      parameters:
+      - description: Login credential
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PasskeyLoginFinishRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerLoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Complete passkey login
+      tags:
+      - Auth-Passkeys
+  /auth/passkeys/register/begin:
+    post:
+      consumes:
+      - application/json
+      description: Start a passkey registration ceremony. Requires PIN verification
+        before WebAuthn options are issued.
+      parameters:
+      - description: PIN for verification
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PasskeyRegisterBeginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PasskeyRegisterBeginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: PIN not set or 2FA required
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Begin passkey registration
+      tags:
+      - Auth-Passkeys
+  /auth/passkeys/register/finish:
+    post:
+      consumes:
+      - application/json
+      description: Complete the passkey registration ceremony with the credential
+        from the browser's WebAuthn API.
+      parameters:
+      - description: Registration credential
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PasskeyRegisterFinishRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PasskeyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: PIN not set
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Complete passkey registration
+      tags:
+      - Auth-Passkeys
+  /auth/passkeys/status:
+    get:
+      description: Returns whether the authenticated user has passkeys registered
+        and their count.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PasskeyStatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get passkey status
+      tags:
+      - Auth-Passkeys
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchange a valid refresh token for a new access/refresh token pair.
+        Accepts token from cookie or JSON body.
+      parameters:
+      - description: Refresh token (optional if sent via cookie)
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/dto.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerRefreshResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Refresh access token
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account. A verification email will be sent.
+      parameters:
+      - description: Registration data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.SwaggerRegisterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: Email or username already exists
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Register new user
+      tags:
+      - Auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Reset the user password using a valid reset token received via
+        email.
+      parameters:
+      - description: Reset token and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Reset password with token
+      tags:
+      - Auth
+  /auth/sessions:
+    get:
+      description: Returns all active sessions for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerSessionListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List active sessions
+      tags:
+      - Auth
+  /auth/sessions/{id}:
+    delete:
+      description: Revoke a specific active session by its ID. The session must belong
+        to the authenticated user.
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke specific session
+      tags:
+      - Auth
+  /auth/sudo:
+    delete:
+      description: End the current sudo session. If a sudo token is provided, it will
+        be specifically revoked.
+      parameters:
+      - description: Sudo token
+        in: header
+        name: X-Sudo-Token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke sudo mode
+      tags:
+      - Auth-Sudo
+  /auth/sudo/extend:
+    post:
+      description: Extend the current sudo session duration. Requires a valid sudo
+        token in the X-Sudo-Token header.
+      parameters:
+      - description: Sudo token
+        in: header
+        name: X-Sudo-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SudoExtendResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Extend sudo session
+      tags:
+      - Auth-Sudo
+  /auth/sudo/status:
+    get:
+      description: Check whether sudo mode is currently active for the authenticated
+        user.
+      parameters:
+      - description: Sudo token
+        in: header
+        name: X-Sudo-Token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SudoStatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Check sudo mode status
+      tags:
+      - Auth-Sudo
+  /auth/sudo/verify:
+    post:
+      consumes:
+      - application/json
+      description: Re-authenticate to enter sudo mode. Requires password, and optionally
+        TOTP code or backup code if 2FA is enabled.
+      parameters:
+      - description: Sudo credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SudoVerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SudoVerifyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Verify sudo mode
+      tags:
+      - Auth-Sudo
+  /auth/totp/backup-codes:
+    post:
+      description: Generate a new set of backup codes. Previous codes are invalidated.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerBackupCodesGenerateResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Generate new backup codes
+      tags:
+      - Auth-TOTP
+  /auth/totp/backup-codes/count:
+    get:
+      description: Returns the number of remaining unused backup codes.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerBackupCodeCountResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get backup codes count
+      tags:
+      - Auth-TOTP
+  /auth/totp/disable:
+    post:
+      consumes:
+      - application/json
+      description: Disable two-factor authentication. Requires current password and
+        a valid TOTP code.
+      parameters:
+      - description: Password and TOTP code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TOTPDisableRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerTOTPDisableResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Disable TOTP 2FA
+      tags:
+      - Auth-TOTP
+  /auth/totp/setup:
+    post:
+      description: Generate a new TOTP secret and return the QR code URL for the authenticator
+        app.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TOTPSetupResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Begin TOTP setup
+      tags:
+      - Auth-TOTP
+  /auth/totp/status:
+    get:
+      description: Returns the current 2FA/TOTP status for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TOTPStatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Check TOTP enabled status
+      tags:
+      - Auth-TOTP
+  /auth/totp/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify a TOTP code to complete 2FA setup. Returns backup codes
+        (shown only once).
+      parameters:
+      - description: TOTP code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TOTPVerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerTOTPVerifyEnabledResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Verify TOTP setup and enable 2FA
+      tags:
+      - Auth-TOTP
+  /auth/totp/verify-code:
+    post:
+      consumes:
+      - application/json
+      description: Verify a TOTP code without enabling 2FA. Used for sudo mode and
+        other verification flows.
+      parameters:
+      - description: TOTP code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TOTPVerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerTOTPVerifyCodeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Verify a TOTP code
+      tags:
+      - Auth-TOTP
+  /auth/username:
+    post:
+      consumes:
+      - application/json
+      description: Set the username for the first time. Can only be called once per
+        user — username cannot be changed afterward.
+      parameters:
+      - description: Username
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateUsernameRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerCreateUsernameResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Username already set
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: Username taken
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set initial username
+      tags:
+      - Auth
+  /auth/verify/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirm email verification using the token received via email.
+      parameters:
+      - description: Verification token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VerifyConfirmRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Confirm email verification
+      tags:
+      - Auth
+  /auth/verify/request:
+    post:
+      consumes:
+      - application/json
+      description: Send a verification email to the specified address. Always returns
+        success to prevent email enumeration.
+      parameters:
+      - description: Email address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerVerifyRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Request email verification
+      tags:
+      - Auth
+  /badges/{id}:
+    get:
+      description: Returns details of a specific badge by its numeric ID.
+      parameters:
+      - description: Badge ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerPublicBadgeDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Get badge detail
+      tags:
+      - Badges
+  /feature-flags/check/{key}:
+    get:
+      description: Returns whether a feature flag is enabled. No authentication required.
+      parameters:
+      - description: Feature flag key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerFeatureFlagCheckResponse'
+      summary: Check feature flag status
+      tags:
+      - FeatureFlags
+  /health:
+    get:
+      description: Returns backend readiness information without touching the database.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerHealthResponse'
+      summary: Health check
+      tags:
+      - Health
+  /health/version:
+    get:
+      description: Returns deploy metadata including git SHA and build time, used
+        to verify runtime version drift.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerHealthVersionResponse'
+      summary: Get version info
+      tags:
+      - Health
+  /internal/users/{id}/consultation-locks:
+    get:
+      description: Returns active consultation guarantee locks for a validator user.
+        Protected by X-Internal-Api-Key.
+      parameters:
+      - description: Validator user ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerInternalConsultationLocksResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get consultation locks
+      tags:
+      - Internal
+  /internal/users/{id}/guarantee:
+    put:
+      consumes:
+      - application/json
+      description: Sets the guarantee amount for a user. Service-to-service endpoint
+        protected by X-Internal-Api-Key.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Guarantee amount
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerInternalUpdateGuaranteeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update user guarantee amount
+      tags:
+      - Internal
+  /internal/validation-cases/disputes/settled:
+    post:
+      consumes:
+      - application/json
+      description: Called by Feature Service after a dispute is settled (refund or
+        release). Protected by X-Internal-Api-Key.
+      parameters:
+      - description: Dispute settlement info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerInternalDisputeSettledRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerInternalCallbackResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Dispute settled callback
+      tags:
+      - Internal
+  /internal/validation-cases/escrow/released:
+    post:
+      consumes:
+      - application/json
+      description: Called by Feature Service when escrow funds are auto-released.
+        Protected by X-Internal-Api-Key.
+      parameters:
+      - description: Transfer info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerInternalEscrowReleasedRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerInternalCallbackResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Escrow released callback
+      tags:
+      - Internal
+  /market/chatgpt:
+    get:
+      description: Returns cached marketplace listing of available ChatGPT accounts
+        with pricing in IDR.
+      parameters:
+      - default: en-US
+        description: Locale code
+        in: query
+        name: i18n
+        type: string
+      - description: Force cache refresh
+        enum:
+        - "true"
+        - "false"
+        in: query
+        name: refresh
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMarketListingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: List ChatGPT accounts
+      tags:
+      - Market
+  /market/chatgpt/{itemId}/checkout:
+    get:
+      deprecated: true
+      description: Returns checkout URL for a selected item. Deprecated — use POST
+        /market/chatgpt/orders instead.
+      parameters:
+      - description: Marketplace item ID
+        in: path
+        name: itemId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMarketCheckoutResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Get checkout info (deprecated)
+      tags:
+      - Market
+  /market/chatgpt/orders:
+    get:
+      description: Returns the authenticated user's fulfilled market purchase orders.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMarketOrderListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List my orders
+      tags:
+      - Market
+    post:
+      consumes:
+      - application/json
+      description: Creates and executes a direct purchase of a ChatGPT account. Requires
+        authenticated user with sufficient wallet balance.
+      parameters:
+      - description: Order request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerMarketCreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMarketOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create purchase order
+      tags:
+      - Market
+  /market/chatgpt/orders/{orderId}:
+    get:
+      description: Returns details of a single market purchase order for the authenticated
+        user.
+      parameters:
+      - description: Order ID
+        in: path
+        name: orderId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMarketOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get order detail
+      tags:
+      - Market
+  /metrics:
+    get:
+      description: Exposes Prometheus-format metrics for monitoring. Served by promhttp.Handler().
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Prometheus metrics output
+          schema:
+            type: string
+      summary: Prometheus metrics
+      tags:
+      - Health
+  /ready:
+    get:
+      description: Provides detailed health status including database connectivity.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerReadinessResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/handlers.SwaggerReadinessResponse'
+      summary: Readiness check
+      tags:
+      - Health
+  /tags:
+    get:
+      description: Returns all active tags ordered by priority and name.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerTagListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: List all tags
+      tags:
+      - Tags
+  /tags/{slug}:
+    get:
+      description: Returns a single active tag by its slug.
+      parameters:
+      - description: Tag slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerTagItem'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Get tag by slug
+      tags:
+      - Tags
+  /tags/{slug}/validation-cases:
+    get:
+      description: Returns all validation cases that have the specified tag, along
+        with the tag details.
+      parameters:
+      - description: Tag slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerTagWithCasesResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Get validation cases by tag
+      tags:
+      - Tags
+  /user/{username}:
+    get:
+      description: Returns the public profile of a user by username, including badges,
+        validation case count, and guarantee amount.
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerPublicUserProfileResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Get public user profile
+      tags:
+      - User
+  /user/{username}/badges:
+    get:
+      description: Returns all active badges and primary badge for a user by username.
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerUserBadgesPublicResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Get user's public badges
+      tags:
+      - User
+  /user/{username}/validation-cases:
+    get:
+      description: Returns all public validation cases submitted by the specified
+        user.
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerValidationCasesByUsernameResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Get user's public validation cases
+      tags:
+      - User
+  /user/me:
+    get:
+      description: Returns basic identity info (id, email, username, avatar) for the
+        authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerUserInfoResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user info
+      tags:
+      - User
+  /users/{id}/public:
+    get:
+      description: Returns minimal public info (id, username, avatar) for a user by
+        their numeric ID. Intended for internal service-to-service lookups.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerPublicUserByIDResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Get public user info by ID
+      tags:
+      - User
+  /validation-cases:
+    post:
+      consumes:
+      - application/json
+      description: Create a new validation case. Requires authentication.
+      parameters:
+      - description: Validation case data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerValidationCaseCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerValidationCaseCreateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a validation case
+      tags:
+      - ValidationCases
+  /validation-cases/{id}:
+    delete:
+      description: Delete a validation case. Only the owner can delete. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerStatusMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a validation case
+      tags:
+      - ValidationCases
+    get:
+      description: Returns full detail of a validation case. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get validation case detail
+      tags:
+      - ValidationCases
+    put:
+      consumes:
+      - application/json
+      description: Update an existing validation case. Only the owner can update.
+        Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerValidationCaseUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerStatusIDResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a validation case
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/artifact-submission:
+    post:
+      consumes:
+      - application/json
+      description: Submit an artifact (evidence document) for a validation case. Requires
+        authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Artifact document ID
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerArtifactSubmitRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit artifact
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/case-log:
+    get:
+      description: Get the audit log for a validation case. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerCaseLogResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get case audit log
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/consultation-requests:
+    get:
+      description: List all consultation requests for a validation case. Only the
+        case owner can view.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerConsultationRequestListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List consultation requests
+      tags:
+      - ValidationCases
+    post:
+      description: Submit a consultation request for a validation case. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerIDResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit consultation request
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/consultation-requests/{requestId}/approve:
+    post:
+      description: Approve a consultation request. Only the case owner can approve.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Consultation Request ID
+        in: path
+        name: requestId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve consultation request
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/consultation-requests/{requestId}/reject:
+    post:
+      consumes:
+      - application/json
+      description: Reject a consultation request with a reason. Only the case owner
+        can reject.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Consultation Request ID
+        in: path
+        name: requestId
+        required: true
+        type: integer
+      - description: Rejection reason
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerRejectConsultationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject consultation request
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/consultation-requests/me:
+    get:
+      description: Get the current user's consultation request for a validation case.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerConsultationRequestSingleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my consultation request
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/contact:
+    get:
+      description: Reveal the case owner's Telegram contact. Only approved validators
+        can access.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerContactRevealResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get case contact info
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/dispute/attach:
+    post:
+      consumes:
+      - application/json
+      description: Attach a dispute to a validation case. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dispute ID
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerDisputeAttachRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Attach dispute
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/escrow/released:
+    post:
+      description: Mark escrow as released for a validation case. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Release escrow
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/final-offers:
+    get:
+      description: List all final offers for a validation case. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerFinalOfferListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List final offers
+      tags:
+      - ValidationCases
+    post:
+      consumes:
+      - application/json
+      description: Submit a final offer for a validation case. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Offer details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerFinalOfferSubmitRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerIDResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit final offer
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/final-offers/{offerId}/accept:
+    post:
+      description: Accept a final offer, generating an escrow draft. Only the case
+        owner can accept.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Final Offer ID
+        in: path
+        name: offerId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerEscrowDraftResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Accept final offer
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/lock-funds:
+    post:
+      consumes:
+      - application/json
+      description: Confirm fund locking for a validation case escrow. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Transfer ID
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerLockFundsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Lock funds in escrow
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/public:
+    get:
+      description: Returns public detail of a validation case. No authentication required.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Get public validation case detail
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/tags:
+    get:
+      description: Returns all tags attached to a specific validation case.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerTagListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Get case tags
+      tags:
+      - ValidationCases
+    post:
+      consumes:
+      - application/json
+      description: Set tags on a validation case (replaces existing). Owner only.
+        Min 2, max 4 tags.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Tag IDs to set
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerAddTagsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerTagListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add tags to case
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/tags/{tagSlug}:
+    delete:
+      description: Remove a specific tag from a validation case by tag slug. Owner
+        only. Min 2 tags enforced.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Tag slug to remove
+        in: path
+        name: tagSlug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove tag from case
+      tags:
+      - ValidationCases
+  /validation-cases/{id}/workspace/apply:
+    post:
+      description: Apply as a validator for a validation case. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerRepoTreeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Apply to validate
+      tags:
+      - ValidationCases-Workspace
+  /validation-cases/{id}/workspace/confidence/vote:
+    post:
+      consumes:
+      - application/json
+      description: Vote confidence for a validator in a validation case workspace.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Validator user ID
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerVoteConfidenceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerRepoTreeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Vote confidence
+      tags:
+      - ValidationCases-Workspace
+  /validation-cases/{id}/workspace/consensus:
+    get:
+      description: Get the current consensus status for a validation case workspace.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerConsensusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get consensus status
+      tags:
+      - ValidationCases-Workspace
+  /validation-cases/{id}/workspace/files:
+    post:
+      consumes:
+      - application/json
+      description: Attach a file to the validation case workspace. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: File details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerAttachRepoFileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerRepoTreeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload workspace files
+      tags:
+      - ValidationCases-Workspace
+  /validation-cases/{id}/workspace/finalize:
+    post:
+      description: Finalize the validation process for a case. Only the case owner
+        can finalize.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerRepoTreeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Finalize validation
+      tags:
+      - ValidationCases-Workspace
+  /validation-cases/{id}/workspace/publish:
+    post:
+      description: Publish the workspace for a validation case. Only the case owner
+        can publish.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerRepoTreeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Publish workspace
+      tags:
+      - ValidationCases-Workspace
+  /validation-cases/{id}/workspace/tree:
+    get:
+      description: Get the file tree for a validation case workspace. Requires authentication.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerRepoTreeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get workspace file tree
+      tags:
+      - ValidationCases-Workspace
+  /validation-cases/{id}/workspace/validators/assign:
+    post:
+      consumes:
+      - application/json
+      description: Assign specific validators to a validation case. Only the case
+        owner can assign.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Validator IDs and panel size
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerAssignValidatorsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerRepoTreeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign validators
+      tags:
+      - ValidationCases-Workspace
+  /validation-cases/{id}/workspace/validators/auto-assign:
+    post:
+      consumes:
+      - application/json
+      description: Automatically assign validators to a validation case. Only the
+        case owner can trigger.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Panel size (optional)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerAutoAssignValidatorsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerRepoTreeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Auto-assign validators
+      tags:
+      - ValidationCases-Workspace
+  /validation-cases/{id}/workspace/verdicts:
+    post:
+      consumes:
+      - application/json
+      description: Submit a validation verdict for a case. Only assigned validators
+        can submit.
+      parameters:
+      - description: Validation Case ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Verdict details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SwaggerVerdictSubmitRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerConsensusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit verdicts
+      tags:
+      - ValidationCases-Workspace
+  /validation-cases/categories:
+    get:
+      description: Returns all available validation case categories.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerCategoryListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: List validation case categories
+      tags:
+      - ValidationCases
+  /validation-cases/category/{slug}:
+    get:
+      description: Returns all validation cases belonging to a specific category slug.
+      parameters:
+      - description: Category slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerCategoryBrowseResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: Get validation cases by category
+      tags:
+      - ValidationCases
+  /validation-cases/latest:
+    get:
+      description: Returns the latest validation cases, optionally filtered by category.
+      parameters:
+      - default: 20
+        description: Number of results
+        in: query
+        name: limit
+        type: integer
+      - description: Category slug filter
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerValidationCaseListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      summary: List latest validation cases
+      tags:
+      - ValidationCases
+  /validation-cases/me:
+    get:
+      description: Returns validation cases created by the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SwaggerValidationCaseListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List my validation cases
+      tags:
+      - ValidationCases
+securityDefinitions:
+  AdminAuth:
+    description: Admin JWT token. Type "Bearer" followed by a space and admin JWT
+      token.
+    in: header
+    name: Authorization
+    type: apiKey
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

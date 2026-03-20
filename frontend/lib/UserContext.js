@@ -82,7 +82,7 @@ export function UserProvider({ children }) {
       const token = getToken();
       if (token) {
         // Call logout endpoint
-        await fetch(`${getApiBase()}/api/auth/logout`, {
+        await fetch(`${getApiBase()}/api/v1/auth/logout`, {
           method: "POST",
           credentials: "include",
           headers: {

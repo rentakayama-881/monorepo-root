@@ -76,6 +76,13 @@ func effectiveBuildTimeUTC() string {
 	return "unknown"
 }
 
+// HealthHandler godoc
+// @Summary      Health check
+// @Description  Returns backend readiness information without touching the database.
+// @Tags         Health
+// @Produce      json
+// @Success      200  {object}  handlers.SwaggerHealthResponse
+// @Router       /health [get]
 // HealthHandler responds with backend readiness information without touching the database.
 func HealthHandler(c *gin.Context) {
 	version := effectiveVersion()
@@ -87,6 +94,14 @@ func HealthHandler(c *gin.Context) {
 	})
 }
 
+// ReadinessHandler godoc
+// @Summary      Readiness check
+// @Description  Provides detailed health status including database connectivity.
+// @Tags         Health
+// @Produce      json
+// @Success      200  {object}  handlers.SwaggerReadinessResponse
+// @Failure      503  {object}  handlers.SwaggerReadinessResponse
+// @Router       /ready [get]
 // ReadinessHandler provides detailed health status including dependencies
 func ReadinessHandler(c *gin.Context) {
 	version := effectiveVersion()
@@ -116,7 +131,13 @@ func ReadinessHandler(c *gin.Context) {
 	})
 }
 
-// HealthVersionHandler responds with deploy metadata used to verify runtime SHA drift.
+// HealthVersionHandler godoc
+// @Summary      Get version info
+// @Description  Returns deploy metadata including git SHA and build time, used to verify runtime version drift.
+// @Tags         Health
+// @Produce      json
+// @Success      200  {object}  handlers.SwaggerHealthVersionResponse
+// @Router       /health/version [get]
 func HealthVersionHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":         "ok",
@@ -127,3 +148,12 @@ func HealthVersionHandler(c *gin.Context) {
 		"timestamp":      time.Now().UTC().Format(time.RFC3339),
 	})
 }
+
+// MetricsEndpoint godoc
+// @Summary      Prometheus metrics
+// @Description  Exposes Prometheus-format metrics for monitoring. Served by promhttp.Handler().
+// @Tags         Health
+// @Produce      text/plain
+// @Success      200  {string}  string  "Prometheus metrics output"
+// @Router       /metrics [get]
+func _metricsSwaggerDoc() {} // doc-only — actual handler is gin.WrapH(promhttp.Handler()) in main.go

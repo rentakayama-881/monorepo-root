@@ -1,0 +1,129 @@
+---
+# ==============================================================================
+# Role: deploy — Deploy application via systemd
+# ==============================================================================
+# Decrypts secrets, restarts systemd services, verifies health.
+# ==============================================================================
+
+# --- Ensure repo is present ---------------------------------------------------
+- name: Verify repo directory exists
+  ansible.builtin.stat:
+    path: "{{ repo_dir }}/.git"
+  register: repo_stat
+
+- name: Fail if repo not found
+  ansible.builtin.fail:
+    msg: >
+      Repository not found at {{ repo_dir }}.
+      Clone the repo first: git clone <repo-url> {{ repo_dir }}
+  when: not repo_stat.stat.exists
+
+# --- Decrypt secrets ----------------------------------------------------------
+- name: Check if sops is available
+  ansible.builtin.command: which sops
+  register: sops_check
+  changed_when: false
+  failed_when: false
+
+- name: Check if age key exists
+  ansible.builtin.stat:
+    path: "{{ sops_age_key_path }}"
+  register: age_key_stat
+
+- name: Decrypt backend secrets
+  ansible.builtin.command:
+    cmd: bash {{ repo_dir }}/ops/secrets-decrypt.sh backend
+    chdir: "{{ repo_dir }}"
+  environment:
+    SOPS_AGE_KEY_FILE: "{{ sops_age_key_path }}"
+  when:
+    - sops_check.rc == 0
+    - age_key_stat.stat.exists
+  changed_when: false
+  failed_when: false
+
+- name: Decrypt feature-service secrets
+  ansible.builtin.command:
+    cmd: bash {{ repo_dir }}/ops/secrets-decrypt.sh feature-service
+    chdir: "{{ repo_dir }}"
+  environment:
+    SOPS_AGE_KEY_FILE: "{{ sops_age_key_path }}"
+  when:
+    - sops_check.rc == 0
+    - age_key_stat.stat.exists
+  changed_when: false
+  failed_when: false
+
+# --- Verify .env files exist --------------------------------------------------
+- name: Check backend .env exists
+  ansible.builtin.stat:
+    path: "{{ repo_dir }}/backend/.env"
+  register: backend_env_stat
+
+- name: Warn if backend .env is missing
+  ansible.builtin.debug:
+    msg: >
+      WARNING: {{ repo_dir }}/backend/.env not found.
+      Backend service may fail to start. Decrypt secrets or create .env manually.
+  when: not backend_env_stat.stat.exists
+
+- name: Check feature-service .env exists
+  ansible.builtin.stat:
+    path: "{{ repo_dir }}/feature-service/.env"
+  register: feature_env_stat
+
+- name: Warn if feature-service .env is missing
+  ansible.builtin.debug:
+    msg: >
+      WARNING: {{ repo_dir }}/feature-service/.env not found.
+      Feature service may fail to start. Decrypt secrets or create .env manually.
+  when: not feature_env_stat.stat.exists
+
+# --- Restart systemd services -------------------------------------------------
+- name: Restart backend service
+  ansible.builtin.systemd:
+    name: alephdraad-backend
+    state: restarted
+    daemon_reload: true
+  register: backend_restart
+  failed_when: false
+
+- name: Restart feature-service
+  ansible.builtin.systemd:
+    name: feature-service
+    state: restarted
+    daemon_reload: true
+  register: feature_restart
+  failed_when: false
+
+# --- Health checks ------------------------------------------------------------
+- name: Wait for backend health check
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ upstream_backend_port }}/health"
+    method: GET
+    status_code: 200
+  register: backend_health
+  retries: 10
+  delay: 5
+  until: backend_health.status == 200
+
+- name: Wait for feature-service health check
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ upstream_feature_port }}/api/v1/health"
+    method: GET
+    status_code: 200
+  register: feature_health
+  retries: 10
+  delay: 5
+  until: feature_health.status == 200
+
+# --- Report status ------------------------------------------------------------
+- name: Report deployment status
+  ansible.builtin.debug:
+    msg: |
+      ============================================================
+      AIValid Deployment Complete (systemd)
+      ============================================================
+      Backend:         {{ 'HEALTHY' if backend_health.status == 200 else 'UNHEALTHY' }}
+      Feature Service: {{ 'HEALTHY' if feature_health.status == 200 else 'UNHEALTHY' }}
+      ============================================================

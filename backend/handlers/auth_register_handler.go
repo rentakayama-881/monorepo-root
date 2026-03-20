@@ -12,6 +12,18 @@ import (
 	"go.uber.org/zap"
 )
 
+// Register godoc
+// @Summary      Register new user
+// @Description  Create a new user account. A verification email will be sent.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.RegisterRequest  true  "Registration data"
+// @Success      201   {object}  handlers.SwaggerRegisterResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      409   {object}  handlers.SwaggerErrorResponse  "Email or username already exists"
+// @Failure      429   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/register [post]
 // POST /api/auth/register
 func (h *AuthHandler) Register(c *gin.Context) {
 	if !h.registerLimiter.Allow(c.ClientIP()) {
@@ -48,6 +60,17 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	})
 }
 
+// RequestVerification godoc
+// @Summary      Request email verification
+// @Description  Send a verification email to the specified address. Always returns success to prevent email enumeration.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.VerifyRequest  true  "Email address"
+// @Success      200   {object}  handlers.SwaggerVerifyRequestResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      429   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/verify/request [post]
 // POST /api/auth/verify/request
 func (h *AuthHandler) RequestVerification(c *gin.Context) {
 	if !h.verifyLimiter.Allow(c.ClientIP()) {
@@ -87,6 +110,16 @@ func (h *AuthHandler) RequestVerification(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// ConfirmVerification godoc
+// @Summary      Confirm email verification
+// @Description  Confirm email verification using the token received via email.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.VerifyConfirmRequest  true  "Verification token"
+// @Success      200   {object}  handlers.SwaggerMessageResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/verify/confirm [post]
 // POST /api/auth/verify/confirm
 func (h *AuthHandler) ConfirmVerification(c *gin.Context) {
 	var req dto.VerifyConfirmRequest
@@ -108,6 +141,17 @@ func (h *AuthHandler) ConfirmVerification(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Email berhasil diverifikasi"})
 }
 
+// ForgotPassword godoc
+// @Summary      Request password reset
+// @Description  Send a password reset email to the specified address.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.ForgotPasswordRequest  true  "Email address"
+// @Success      200   {object}  handlers.SwaggerMessageResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      429   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/forgot-password [post]
 // POST /api/auth/forgot-password
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	if !h.verifyLimiter.Allow(c.ClientIP()) {
@@ -133,6 +177,16 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	})
 }
 
+// ResetPassword godoc
+// @Summary      Reset password with token
+// @Description  Reset the user password using a valid reset token received via email.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.ResetPasswordRequest  true  "Reset token and new password"
+// @Success      200   {object}  handlers.SwaggerMessageResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/reset-password [post]
 // POST /api/auth/reset-password
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req dto.ResetPasswordRequest

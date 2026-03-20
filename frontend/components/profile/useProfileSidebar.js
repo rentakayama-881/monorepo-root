@@ -43,7 +43,7 @@ export default function useProfileSidebar({ onClose, triggerRef }) {
       setIsLoading(true);
       setLoadError("");
       try {
-        const res = await fetchWithAuth(`${getApiBase()}/api/user/me`, { signal });
+        const res = await fetchWithAuth(`${getApiBase()}/api/v1/user/me`, { signal });
         if (res.status === 401) {
           clearToken();
           onClose?.();
@@ -213,7 +213,7 @@ export default function useProfileSidebar({ onClose, triggerRef }) {
     const token = getToken();
     if (token) {
       try {
-        await fetch(`${getApiBase()}/api/auth/logout`, {
+        await fetch(`${getApiBase()}/api/v1/auth/logout`, {
           method: "POST",
           credentials: "include",
           headers: {

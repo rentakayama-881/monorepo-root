@@ -80,8 +80,21 @@ func BuildPublicProfileFromEnt(c *gin.Context, u *ent.User) gin.H {
 	}
 }
 
+// ChangeUsernamePaidHandler godoc
+// @Summary      Change username
+// @Description  Change the authenticated user's username. The new username must be unique.
+// @Tags         Account
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      SwaggerChangeUsernameRequest  true  "New username"
+// @Success      200   {object}  handlers.SwaggerChangeUsernameResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      409   {object}  handlers.SwaggerErrorResponse  "Username already taken"
+// @Failure      500   {object}  handlers.SwaggerErrorResponse
+// @Router       /account/change-username [post]
 // POST /api/account/change-username
-// Updates unique username without balance deductions
 func ChangeUsernamePaidHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)
 	if !ok {

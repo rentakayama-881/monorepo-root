@@ -41,6 +41,20 @@ func buildTelegramAuthResponse(u *ent.User) gin.H {
 	return response
 }
 
+// ConnectTelegramAuthHandler godoc
+// @Summary      Connect Telegram account
+// @Description  Link a Telegram account to the authenticated user using Telegram Login Widget data. The payload is verified against the bot token.
+// @Tags         Account
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      SwaggerTelegramConnectRequest  true  "Telegram login widget payload"
+// @Success      200   {object}  handlers.SwaggerTelegramConnectResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      409   {object}  handlers.SwaggerErrorResponse  "Telegram account already linked to another user"
+// @Failure      500   {object}  handlers.SwaggerErrorResponse
+// @Router       /account/telegram/connect [post]
 // POST /api/account/telegram/connect
 func ConnectTelegramAuthHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)
@@ -105,6 +119,16 @@ func ConnectTelegramAuthHandler(c *gin.Context) {
 	})
 }
 
+// DisconnectTelegramAuthHandler godoc
+// @Summary      Disconnect Telegram account
+// @Description  Unlink the connected Telegram account from the authenticated user.
+// @Tags         Account
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerTelegramConnectResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      500  {object}  handlers.SwaggerErrorResponse
+// @Router       /account/telegram/disconnect [post]
 // POST /api/account/telegram/disconnect
 func DisconnectTelegramAuthHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)

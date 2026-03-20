@@ -32,6 +32,19 @@ var validIconTypes = map[string]bool{
 	"checkmark": true, "default": true,
 }
 
+// CreateBadge godoc
+// @Summary      Create a new badge
+// @Description  Create a new badge definition. Admin authentication required.
+// @Tags         Admin-Badges
+// @Accept       json
+// @Produce      json
+// @Security     AdminAuth
+// @Param        body  body      CreateBadgeRequest  true  "Badge data"
+// @Success      201   {object}  handlers.SwaggerBadgeCreateResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      409   {object}  handlers.SwaggerErrorResponse  "Slug already exists"
+// @Router       /admin/badges [post]
 func CreateBadge(c *gin.Context) {
 	var req CreateBadgeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -100,6 +113,15 @@ func CreateBadge(c *gin.Context) {
 	})
 }
 
+// ListBadges godoc
+// @Summary      List all badges
+// @Description  Returns all badge definitions ordered by name. Admin authentication required.
+// @Tags         Admin-Badges
+// @Produce      json
+// @Security     AdminAuth
+// @Success      200  {object}  handlers.SwaggerBadgeListResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /admin/badges [get]
 func ListBadges(c *gin.Context) {
 	// Query all badges using Ent, ordered by name
 	badges, err := database.GetEntClient().Badge.Query().
@@ -129,6 +151,18 @@ func ListBadges(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"badges": mappedBadges})
 }
 
+// GetBadge godoc
+// @Summary      Get badge detail
+// @Description  Returns a single badge by ID. Admin authentication required.
+// @Tags         Admin-Badges
+// @Produce      json
+// @Security     AdminAuth
+// @Param        id   path      int  true  "Badge ID"
+// @Success      200  {object}  handlers.SwaggerBadgeDetailResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Router       /admin/badges/{id} [get]
 func GetBadge(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
@@ -160,6 +194,21 @@ func GetBadge(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"badge": mappedBadge})
 }
 
+// UpdateBadge godoc
+// @Summary      Update a badge
+// @Description  Update an existing badge by ID. Admin authentication required.
+// @Tags         Admin-Badges
+// @Accept       json
+// @Produce      json
+// @Security     AdminAuth
+// @Param        id    path      int                 true  "Badge ID"
+// @Param        body  body      CreateBadgeRequest  true  "Badge data"
+// @Success      200   {object}  handlers.SwaggerBadgeCreateResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      404   {object}  handlers.SwaggerErrorResponse
+// @Failure      409   {object}  handlers.SwaggerErrorResponse  "Slug already exists"
+// @Router       /admin/badges/{id} [put]
 func UpdateBadge(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
@@ -245,6 +294,19 @@ func UpdateBadge(c *gin.Context) {
 	})
 }
 
+// DeleteBadge godoc
+// @Summary      Delete a badge
+// @Description  Delete a badge by ID. Fails if badge is still assigned to users. Admin authentication required.
+// @Tags         Admin-Badges
+// @Produce      json
+// @Security     AdminAuth
+// @Param        id   path      int  true  "Badge ID"
+// @Success      200  {object}  handlers.SwaggerMessageResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Failure      409  {object}  handlers.SwaggerErrorResponse  "Badge still assigned to users"
+// @Router       /admin/badges/{id} [delete]
 func DeleteBadge(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {

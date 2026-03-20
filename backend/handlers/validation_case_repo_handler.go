@@ -20,6 +20,20 @@ func NewValidationCaseRepoWorkflowHandler(repo *services.EntValidationCaseRepoWo
 	return &ValidationCaseRepoWorkflowHandler{repo: repo}
 }
 
+// AttachRepoFile godoc
+// @Summary      Upload workspace files
+// @Description  Attach a file to the validation case workspace. Requires authentication.
+// @Tags         ValidationCases-Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  int                                   true  "Validation Case ID"
+// @Param        body  body  handlers.SwaggerAttachRepoFileRequest  true  "File details"
+// @Success      200  {object}  handlers.SwaggerRepoTreeResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/workspace/files [post]
 func (h *ValidationCaseRepoWorkflowHandler) AttachRepoFile(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -58,6 +72,17 @@ func (h *ValidationCaseRepoWorkflowHandler) AttachRepoFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"repo_tree": tree})
 }
 
+// GetRepoTree godoc
+// @Summary      Get workspace file tree
+// @Description  Get the file tree for a validation case workspace. Requires authentication.
+// @Tags         ValidationCases-Workspace
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerRepoTreeResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/workspace/tree [get]
 func (h *ValidationCaseRepoWorkflowHandler) GetRepoTree(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -76,6 +101,18 @@ func (h *ValidationCaseRepoWorkflowHandler) GetRepoTree(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"repo_tree": tree})
 }
 
+// PublishRepoCase godoc
+// @Summary      Publish workspace
+// @Description  Publish the workspace for a validation case. Only the case owner can publish.
+// @Tags         ValidationCases-Workspace
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerRepoTreeResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/workspace/publish [post]
 func (h *ValidationCaseRepoWorkflowHandler) PublishRepoCase(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -94,6 +131,18 @@ func (h *ValidationCaseRepoWorkflowHandler) PublishRepoCase(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"repo_tree": tree})
 }
 
+// ApplyForRepoCase godoc
+// @Summary      Apply to validate
+// @Description  Apply as a validator for a validation case. Requires authentication.
+// @Tags         ValidationCases-Workspace
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerRepoTreeResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      409  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/workspace/apply [post]
 func (h *ValidationCaseRepoWorkflowHandler) ApplyForRepoCase(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -112,6 +161,20 @@ func (h *ValidationCaseRepoWorkflowHandler) ApplyForRepoCase(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"repo_tree": tree})
 }
 
+// AssignValidators godoc
+// @Summary      Assign validators
+// @Description  Assign specific validators to a validation case. Only the case owner can assign.
+// @Tags         ValidationCases-Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  int                                      true  "Validation Case ID"
+// @Param        body  body  handlers.SwaggerAssignValidatorsRequest   true  "Validator IDs and panel size"
+// @Success      200  {object}  handlers.SwaggerRepoTreeResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/workspace/validators/assign [post]
 func (h *ValidationCaseRepoWorkflowHandler) AssignValidators(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -146,6 +209,19 @@ func (h *ValidationCaseRepoWorkflowHandler) AssignValidators(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"repo_tree": tree})
 }
 
+// VoteConfidence godoc
+// @Summary      Vote confidence
+// @Description  Vote confidence for a validator in a validation case workspace.
+// @Tags         ValidationCases-Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  int                                    true  "Validation Case ID"
+// @Param        body  body  handlers.SwaggerVoteConfidenceRequest   true  "Validator user ID"
+// @Success      200  {object}  handlers.SwaggerRepoTreeResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/workspace/confidence/vote [post]
 func (h *ValidationCaseRepoWorkflowHandler) VoteConfidence(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -177,6 +253,18 @@ func (h *ValidationCaseRepoWorkflowHandler) VoteConfidence(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"repo_tree": tree})
 }
 
+// FinalizeRepoCase godoc
+// @Summary      Finalize validation
+// @Description  Finalize the validation process for a case. Only the case owner can finalize.
+// @Tags         ValidationCases-Workspace
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerRepoTreeResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/workspace/finalize [post]
 func (h *ValidationCaseRepoWorkflowHandler) FinalizeRepoCase(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -200,6 +288,20 @@ func (h *ValidationCaseRepoWorkflowHandler) FinalizeRepoCase(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"repo_tree": tree})
 }
 
+// AutoAssignValidators godoc
+// @Summary      Auto-assign validators
+// @Description  Automatically assign validators to a validation case. Only the case owner can trigger.
+// @Tags         ValidationCases-Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  int                                          true  "Validation Case ID"
+// @Param        body  body  handlers.SwaggerAutoAssignValidatorsRequest   true  "Panel size (optional)"
+// @Success      200  {object}  handlers.SwaggerRepoTreeResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/workspace/validators/auto-assign [post]
 func (h *ValidationCaseRepoWorkflowHandler) AutoAssignValidators(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -232,6 +334,20 @@ func (h *ValidationCaseRepoWorkflowHandler) AutoAssignValidators(c *gin.Context)
 	c.JSON(http.StatusOK, gin.H{"repo_tree": tree})
 }
 
+// SubmitVerdict godoc
+// @Summary      Submit verdicts
+// @Description  Submit a validation verdict for a case. Only assigned validators can submit.
+// @Tags         ValidationCases-Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  int                                   true  "Validation Case ID"
+// @Param        body  body  handlers.SwaggerVerdictSubmitRequest   true  "Verdict details"
+// @Success      200  {object}  handlers.SwaggerConsensusResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/workspace/verdicts [post]
 func (h *ValidationCaseRepoWorkflowHandler) SubmitVerdict(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -269,6 +385,17 @@ func (h *ValidationCaseRepoWorkflowHandler) SubmitVerdict(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"consensus": consensus})
 }
 
+// GetConsensus godoc
+// @Summary      Get consensus status
+// @Description  Get the current consensus status for a validation case workspace.
+// @Tags         ValidationCases-Workspace
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerConsensusResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/workspace/consensus [get]
 func (h *ValidationCaseRepoWorkflowHandler) GetConsensus(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {

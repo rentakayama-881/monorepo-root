@@ -342,6 +342,35 @@ var (
 			},
 		},
 	}
+	// FeatureFlagsColumns holds the columns for the "feature_flags" table.
+	FeatureFlagsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "key", Type: field.TypeString, Unique: true},
+		{Name: "enabled", Type: field.TypeBool, Default: false},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "rollout_percentage", Type: field.TypeInt, Default: 100},
+	}
+	// FeatureFlagsTable holds the schema information for the "feature_flags" table.
+	FeatureFlagsTable = &schema.Table{
+		Name:       "feature_flags",
+		Columns:    FeatureFlagsColumns,
+		PrimaryKey: []*schema.Column{FeatureFlagsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "featureflag_key",
+				Unique:  true,
+				Columns: []*schema.Column{FeatureFlagsColumns[4]},
+			},
+			{
+				Name:    "featureflag_enabled",
+				Unique:  false,
+				Columns: []*schema.Column{FeatureFlagsColumns[5]},
+			},
+		},
+	}
 	// FinalOffersColumns holds the columns for the "final_offers" table.
 	FinalOffersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -1129,6 +1158,7 @@ var (
 		DeviceFingerprintsTable,
 		DeviceUserMappingsTable,
 		EmailVerificationTokensTable,
+		FeatureFlagsTable,
 		FinalOffersTable,
 		IPGeoCacheTable,
 		MarketPurchaseOrdersTable,
@@ -1184,6 +1214,9 @@ func init() {
 	EmailVerificationTokensTable.ForeignKeys[0].RefTable = UsersTable
 	EmailVerificationTokensTable.Annotation = &entsql.Annotation{
 		Table: "email_verification_tokens",
+	}
+	FeatureFlagsTable.Annotation = &entsql.Annotation{
+		Table: "feature_flags",
 	}
 	FinalOffersTable.ForeignKeys[0].RefTable = UsersTable
 	FinalOffersTable.ForeignKeys[1].RefTable = ValidationCasesTable

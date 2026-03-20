@@ -207,6 +207,25 @@ func getEnvBool(key string, fallback bool) bool {
 	return value
 }
 
+func getEnvFloat64(key string, fallback float64) float64 {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+
+	value, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		logger.Warn("Invalid float env value, using default",
+			zap.String("key", key),
+			zap.String("value", raw),
+			zap.Float64("default", fallback),
+		)
+		return fallback
+	}
+
+	return value
+}
+
 func getEnvCSV(key string) []string {
 	raw := strings.TrimSpace(os.Getenv(key))
 	if raw == "" {

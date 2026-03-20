@@ -74,8 +74,22 @@ func callFeatureServiceCleanup(c *gin.Context, userID uint) (*FeatureServiceClea
 	return &result, nil
 }
 
-// DELETE /api/account - Delete user account permanently
-// Protected by RequireSudo middleware which already validates user identity
+// DeleteAccountHandler godoc
+// @Summary      Delete account
+// @Description  Permanently delete the authenticated user's account. Requires active sudo session (identity re-verification). Validates wallet balance and pending transactions before proceeding.
+// @Tags         Account
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      SwaggerDeleteAccountRequest  true  "Confirmation (must be 'DELETE')"
+// @Success      200   {object}  handlers.SwaggerMessageResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse  "Validation failed or confirmation incorrect"
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      403   {object}  handlers.SwaggerErrorResponse  "Sudo session required"
+// @Failure      500   {object}  handlers.SwaggerErrorResponse
+// @Failure      503   {object}  handlers.SwaggerErrorResponse  "Wallet verification service unavailable"
+// @Router       /account [delete]
+// DELETE /api/account
 func DeleteAccountHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)
 	if !ok {

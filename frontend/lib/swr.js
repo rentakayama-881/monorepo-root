@@ -87,7 +87,7 @@ export function useUser() {
   const token = useAuthToken();
 
   const { data, error, isLoading, isValidating, mutate } = useSWR(
-    token ? `${getApiBase()}/api/account/me` : null,
+    token ? `${getApiBase()}/api/v1/account/me` : null,
     authFetcher,
     {
       ...swrConfig,
@@ -129,7 +129,7 @@ export function useWallet() {
 
 export function useValidationCase(validationCaseId) {
   const { data, error, isLoading, mutate } = useSWR(
-    validationCaseId ? `${getApiBase()}/api/validation-cases/${validationCaseId}/public` : null,
+    validationCaseId ? `${getApiBase()}/api/v1/validation-cases/${validationCaseId}/public` : null,
     publicFetcher,
     {
       ...swrConfig,
@@ -149,7 +149,7 @@ export function useMyValidationCases() {
   const token = useAuthToken();
 
   const { data, error, isLoading, mutate } = useSWR(
-    token ? `${getApiBase()}/api/validation-cases/me` : null,
+    token ? `${getApiBase()}/api/v1/validation-cases/me` : null,
     authFetcher,
     {
       ...swrConfig,
@@ -167,7 +167,7 @@ export function useMyValidationCases() {
 
 export function useValidationCaseCategories() {
   const { data, error, isLoading } = useSWR(
-    `${getApiBase()}/api/validation-cases/categories`,
+    `${getApiBase()}/api/v1/validation-cases/categories`,
     publicFetcher,
     {
       ...swrConfig,
@@ -187,7 +187,7 @@ export function useCanDeleteAccount() {
   const token = useAuthToken();
 
   const { data, error, isLoading, mutate } = useSWR(
-    token ? `${getApiBase()}/api/account/can-delete` : null,
+    token ? `${getApiBase()}/api/v1/account/can-delete` : null,
     authFetcher,
     {
       ...swrConfig,
@@ -211,7 +211,7 @@ export function useTOTPStatus() {
   const token = useAuthToken();
 
   const { data, error, isLoading, mutate } = useSWR(
-    token ? `${getApiBase()}/api/auth/totp/status` : null,
+    token ? `${getApiBase()}/api/v1/auth/totp/status` : null,
     authFetcher,
     {
       ...swrConfig,
@@ -239,18 +239,18 @@ export function invalidateCache(keyOrKeys) {
 export function invalidateUserData() {
   const base = getApiBase();
   const featureBase = process.env.NEXT_PUBLIC_FEATURE_SERVICE_URL || "https://feature.aivalid.id";
-  globalMutate(`${base}/api/account/me`);
+  globalMutate(`${base}/api/v1/account/me`);
   globalMutate(`${featureBase}/api/v1/wallets/me`);
-  globalMutate(`${base}/api/validation-cases/me`);
-  globalMutate(`${base}/api/auth/totp/status`);
-  globalMutate(`${base}/api/account/can-delete`);
+  globalMutate(`${base}/api/v1/validation-cases/me`);
+  globalMutate(`${base}/api/v1/auth/totp/status`);
+  globalMutate(`${base}/api/v1/account/can-delete`);
 }
 
 export function invalidateValidationCases() {
   const base = getApiBase();
-  globalMutate(`${base}/api/validation-cases/me`);
+  globalMutate(`${base}/api/v1/validation-cases/me`);
   globalMutate(
-    (key) => typeof key === "string" && key.includes("/api/validation-cases"),
+    (key) => typeof key === "string" && key.includes("/api/v1/validation-cases"),
     undefined,
     { revalidate: true }
   );

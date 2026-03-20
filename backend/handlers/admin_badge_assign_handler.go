@@ -19,6 +19,21 @@ type AssignBadgeRequest struct {
 	Reason  string `json:"reason"`
 }
 
+// AssignBadgeToUser godoc
+// @Summary      Assign badge to user
+// @Description  Assign a badge to a user by user ID. Admin authentication required.
+// @Tags         Admin-Users
+// @Accept       json
+// @Produce      json
+// @Security     AdminAuth
+// @Param        userId  path      int                  true  "User ID"
+// @Param        body    body      AssignBadgeRequest   true  "Badge assignment data"
+// @Success      201     {object}  handlers.SwaggerUserBadgeAssignResponse
+// @Failure      400     {object}  handlers.SwaggerErrorResponse
+// @Failure      401     {object}  handlers.SwaggerErrorResponse
+// @Failure      404     {object}  handlers.SwaggerErrorResponse  "User or badge not found"
+// @Failure      409     {object}  handlers.SwaggerErrorResponse  "Badge already assigned"
+// @Router       /admin/users/{userId}/badges [post]
 func AssignBadgeToUser(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("userId"), 10, 32)
 	if err != nil {
@@ -110,6 +125,20 @@ type RevokeBadgeRequest struct {
 	Reason string `json:"reason"`
 }
 
+// RevokeBadgeFromUser godoc
+// @Summary      Revoke badge from user
+// @Description  Revoke (remove) a badge from a user. Admin authentication required.
+// @Tags         Admin-Users
+// @Accept       json
+// @Produce      json
+// @Security     AdminAuth
+// @Param        userId   path      int  true  "User ID"
+// @Param        badgeId  path      int  true  "Badge ID"
+// @Success      200      {object}  handlers.SwaggerMessageResponse
+// @Failure      400      {object}  handlers.SwaggerErrorResponse
+// @Failure      401      {object}  handlers.SwaggerErrorResponse
+// @Failure      404      {object}  handlers.SwaggerErrorResponse  "User badge not found"
+// @Router       /admin/users/{userId}/badges/{badgeId} [delete]
 func RevokeBadgeFromUser(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("userId"), 10, 32)
 	if err != nil {

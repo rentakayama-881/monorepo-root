@@ -1,0 +1,16 @@
+---
+# ==============================================================================
+# Deploy Application Services
+# ==============================================================================
+# Decrypts secrets, restarts systemd services, verifies health.
+#
+# Usage:
+#   ansible-playbook playbooks/deploy-services.yml
+# ==============================================================================
+
+- name: Deploy Application Services
+  hosts: all
+  become: true
+  become_user: "{{ app_user }}"
+  roles:
+    - deploy

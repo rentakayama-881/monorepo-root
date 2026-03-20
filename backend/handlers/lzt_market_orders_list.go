@@ -11,7 +11,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ListMyPublicChatGPTOrders returns user's own market orders.
+// ListMyPublicChatGPTOrders godoc
+// @Summary      List my orders
+// @Description  Returns the authenticated user's fulfilled market purchase orders.
+// @Tags         Market
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerMarketOrderListResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      500  {object}  handlers.SwaggerErrorResponse
+// @Failure      503  {object}  handlers.SwaggerErrorResponse
+// @Router       /market/chatgpt/orders [get]
 func (h *LZTMarketHandler) ListMyPublicChatGPTOrders(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -91,7 +101,18 @@ func (h *LZTMarketHandler) ListMyPublicChatGPTOrders(c *gin.Context) {
 	})
 }
 
-// GetMyPublicChatGPTOrderDetail returns one order detail for the authenticated user.
+// GetMyPublicChatGPTOrderDetail godoc
+// @Summary      Get order detail
+// @Description  Returns details of a single market purchase order for the authenticated user.
+// @Tags         Market
+// @Produce      json
+// @Security     BearerAuth
+// @Param        orderId  path      string  true  "Order ID"
+// @Success      200      {object}  handlers.SwaggerMarketOrderResponse
+// @Failure      400      {object}  handlers.SwaggerErrorResponse
+// @Failure      401      {object}  handlers.SwaggerErrorResponse
+// @Failure      404      {object}  handlers.SwaggerErrorResponse
+// @Router       /market/chatgpt/orders/{orderId} [get]
 func (h *LZTMarketHandler) GetMyPublicChatGPTOrderDetail(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {

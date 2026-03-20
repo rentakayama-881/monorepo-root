@@ -1,7 +1,7 @@
 [Unit]
 Description=Alephdraad Baseline Firewall Rules
-After=network-online.target docker.service
-Wants=network-online.target docker.service
+After=network-online.target
+Wants=network-online.target
 Before=nginx.service alephdraad-backend.service feature-service.service
 ConditionPathExists=/usr/local/sbin/alephdraad-firewall-ensure.sh
 

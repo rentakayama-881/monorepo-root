@@ -84,7 +84,7 @@ export default async function sitemap() {
   // Dynamic validation cases
   let casePages = [];
   try {
-    const res = await fetch(`${API_BASE}/api/validation-cases/latest?limit=50`, {
+    const res = await fetch(`${API_BASE}/api/v1/validation-cases/latest?limit=50`, {
       next: { revalidate: 3600 },
     });
     if (res.ok) {

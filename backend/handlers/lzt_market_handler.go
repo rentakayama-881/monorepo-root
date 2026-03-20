@@ -84,6 +84,16 @@ func (h *LZTMarketHandler) StartBackgroundRefresh() {
 	}()
 }
 
+// GetConfig godoc
+// @Summary      Get LZT integration config
+// @Description  Returns the current LZT Market integration configuration and status. Admin authentication required.
+// @Tags         Admin-Integrations
+// @Produce      json
+// @Security     AdminAuth
+// @Success      200  {object}  handlers.SwaggerLZTConfigResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      503  {object}  handlers.SwaggerErrorResponse  "LZT client not initialized"
+// @Router       /admin/integrations/lzt/config [get]
 func (h *LZTMarketHandler) GetConfig(c *gin.Context) {
 	if h == nil || h.client == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
@@ -104,6 +114,20 @@ func (h *LZTMarketHandler) GetConfig(c *gin.Context) {
 	})
 }
 
+// ProxyRequest godoc
+// @Summary      Proxy LZT Market API request
+// @Description  Forward an arbitrary request to the LZT Market API. Admin authentication required.
+// @Tags         Admin-Integrations
+// @Accept       json
+// @Produce      json
+// @Security     AdminAuth
+// @Param        body  body      handlers.SwaggerLZTProxyRequest  true  "LZT proxy request"
+// @Success      200   {object}  handlers.SwaggerLZTProxyResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      502   {object}  handlers.SwaggerErrorResponse  "Upstream error"
+// @Failure      503   {object}  handlers.SwaggerErrorResponse  "LZT client not initialized"
+// @Router       /admin/integrations/lzt/request [post]
 func (h *LZTMarketHandler) ProxyRequest(c *gin.Context) {
 	if h == nil || h.client == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "LZT client not initialized"})
@@ -150,6 +174,18 @@ func (h *LZTMarketHandler) ProxyRequest(c *gin.Context) {
 	})
 }
 
+// GetChatGPTAccounts godoc
+// @Summary      Get LZT ChatGPT listings
+// @Description  Fetch ChatGPT account listings from LZT Market API. Admin authentication required.
+// @Tags         Admin-Integrations
+// @Produce      json
+// @Security     AdminAuth
+// @Success      200  {object}  handlers.SwaggerLZTProxyResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      502  {object}  handlers.SwaggerErrorResponse  "Upstream error"
+// @Failure      503  {object}  handlers.SwaggerErrorResponse  "LZT client not initialized"
+// @Router       /admin/integrations/lzt/chatgpt [get]
 // GetChatGPTAccounts fetches /chatgpt from LZT Market API via backend.
 func (h *LZTMarketHandler) GetChatGPTAccounts(c *gin.Context) {
 	if h == nil || h.client == nil {

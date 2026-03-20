@@ -1,6 +1,7 @@
 using Serilog;
 using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Middleware;
+using Prometheus;
 
 namespace FeatureService.Api;
 
@@ -74,6 +75,9 @@ public static class MiddlewareConfiguration
     
         app.MapControllers();
         app.MapHealthChecks("/health");
+
+        // Prometheus metrics endpoint (no auth required).
+        app.MapMetrics();
     
 
         return app;

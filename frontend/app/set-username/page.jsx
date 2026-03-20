@@ -70,7 +70,7 @@ export default function SetUsernamePage() {
         return;
       }
 
-      const res = await fetch(`${getApiBase()}/api/auth/username`, {
+      const res = await fetch(`${getApiBase()}/api/v1/auth/username`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -22,6 +22,18 @@ func NewEntSudoHandler(sudoService *services.EntSudoService, logger *zap.Logger)
 	}
 }
 
+// Verify godoc
+// @Summary      Verify sudo mode
+// @Description  Re-authenticate to enter sudo mode. Requires password, and optionally TOTP code or backup code if 2FA is enabled.
+// @Tags         Auth-Sudo
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      dto.SudoVerifyRequest  true  "Sudo credentials"
+// @Success      200   {object}  dto.SudoVerifyResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/sudo/verify [post]
 // POST /sudo/verify
 func (h *SudoHandler) Verify(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -61,6 +73,17 @@ func (h *SudoHandler) Verify(c *gin.Context) {
 	})
 }
 
+// GetStatus godoc
+// @Summary      Check sudo mode status
+// @Description  Check whether sudo mode is currently active for the authenticated user.
+// @Tags         Auth-Sudo
+// @Produce      json
+// @Security     BearerAuth
+// @Param        X-Sudo-Token  header    string  false  "Sudo token"
+// @Success      200  {object}  dto.SudoStatusResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      500  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/sudo/status [get]
 // GET /sudo/status
 func (h *SudoHandler) GetStatus(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -98,6 +121,17 @@ func (h *SudoHandler) GetStatus(c *gin.Context) {
 	})
 }
 
+// Extend godoc
+// @Summary      Extend sudo session
+// @Description  Extend the current sudo session duration. Requires a valid sudo token in the X-Sudo-Token header.
+// @Tags         Auth-Sudo
+// @Produce      json
+// @Security     BearerAuth
+// @Param        X-Sudo-Token  header    string  true  "Sudo token"
+// @Success      200  {object}  dto.SudoExtendResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/sudo/extend [post]
 // POST /sudo/extend
 func (h *SudoHandler) Extend(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -125,6 +159,16 @@ func (h *SudoHandler) Extend(c *gin.Context) {
 	})
 }
 
+// Revoke godoc
+// @Summary      Revoke sudo mode
+// @Description  End the current sudo session. If a sudo token is provided, it will be specifically revoked.
+// @Tags         Auth-Sudo
+// @Produce      json
+// @Security     BearerAuth
+// @Param        X-Sudo-Token  header    string  false  "Sudo token"
+// @Success      200  {object}  handlers.SwaggerMessageResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/sudo [delete]
 // DELETE /sudo
 func (h *SudoHandler) Revoke(c *gin.Context) {
 	userID := c.GetUint("user_id")

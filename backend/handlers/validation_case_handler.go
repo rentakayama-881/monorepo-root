@@ -21,6 +21,14 @@ func NewValidationCaseHandler(caseService services.ValidationCaseServiceInterfac
 	}
 }
 
+// GetCategories godoc
+// @Summary      List validation case categories
+// @Description  Returns all available validation case categories.
+// @Tags         ValidationCases
+// @Produce      json
+// @Success      200  {object}  handlers.SwaggerCategoryListResponse
+// @Failure      500  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/categories [get]
 // GET /api/categories
 func (h *ValidationCaseHandler) GetCategories(c *gin.Context) {
 	categories, err := h.caseService.GetCategories(c.Request.Context())
@@ -32,7 +40,16 @@ func (h *ValidationCaseHandler) GetCategories(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"categories": categories})
 }
 
-// GET /api/validation-cases/category/:slug
+// GetValidationCasesByCategory godoc
+// @Summary      Get validation cases by category
+// @Description  Returns all validation cases belonging to a specific category slug.
+// @Tags         ValidationCases
+// @Produce      json
+// @Param        slug  path  string  true  "Category slug"
+// @Success      200  {object}  handlers.SwaggerCategoryBrowseResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Failure      500  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/category/{slug} [get]
 func (h *ValidationCaseHandler) GetValidationCasesByCategory(c *gin.Context) {
 	slug := c.Param("slug")
 
@@ -48,6 +65,16 @@ func (h *ValidationCaseHandler) GetValidationCasesByCategory(c *gin.Context) {
 	})
 }
 
+// GetLatestValidationCases godoc
+// @Summary      List latest validation cases
+// @Description  Returns the latest validation cases, optionally filtered by category.
+// @Tags         ValidationCases
+// @Produce      json
+// @Param        limit     query  int     false  "Number of results"  default(20)
+// @Param        category  query  string  false  "Category slug filter"
+// @Success      200  {object}  handlers.SwaggerValidationCaseListResponse
+// @Failure      500  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/latest [get]
 // GET /api/validation-cases/latest
 func (h *ValidationCaseHandler) GetLatestValidationCases(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "20")
@@ -67,6 +94,18 @@ func (h *ValidationCaseHandler) GetLatestValidationCases(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"validation_cases": cases})
 }
 
+// GetValidationCaseDetail godoc
+// @Summary      Get validation case detail
+// @Description  Returns full detail of a validation case. Requires authentication.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id} [get]
 // GET /api/validation-cases/:id (auth required)
 func (h *ValidationCaseHandler) GetValidationCaseDetail(c *gin.Context) {
 	idStr := c.Param("id")
@@ -90,7 +129,16 @@ func (h *ValidationCaseHandler) GetValidationCaseDetail(c *gin.Context) {
 	c.JSON(http.StatusOK, vc)
 }
 
-// GET /api/validation-cases/:id/public (no auth)
+// GetPublicValidationCaseDetail godoc
+// @Summary      Get public validation case detail
+// @Description  Returns public detail of a validation case. No authentication required.
+// @Tags         ValidationCases
+// @Produce      json
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/public [get]
 func (h *ValidationCaseHandler) GetPublicValidationCaseDetail(c *gin.Context) {
 	idStr := c.Param("id")
 	validationCaseID, err := strconv.ParseUint(idStr, 10, 32)
@@ -108,6 +156,18 @@ func (h *ValidationCaseHandler) GetPublicValidationCaseDetail(c *gin.Context) {
 	c.JSON(http.StatusOK, vc)
 }
 
+// CreateValidationCase godoc
+// @Summary      Create a validation case
+// @Description  Create a new validation case. Requires authentication.
+// @Tags         ValidationCases
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      handlers.SwaggerValidationCaseCreateRequest  true  "Validation case data"
+// @Success      200   {object}  handlers.SwaggerValidationCaseCreateResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases [post]
 // POST /api/validation-cases (auth required)
 func (h *ValidationCaseHandler) CreateValidationCase(c *gin.Context) {
 	user, ok := mustGetUser(c)
@@ -168,7 +228,21 @@ func (h *ValidationCaseHandler) CreateValidationCase(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": vc.ID})
 }
 
-// PUT /api/validation-cases/:id (auth required)
+// UpdateValidationCase godoc
+// @Summary      Update a validation case
+// @Description  Update an existing validation case. Only the owner can update. Requires authentication.
+// @Tags         ValidationCases
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  int                                          true  "Validation Case ID"
+// @Param        body  body  handlers.SwaggerValidationCaseUpdateRequest  true  "Fields to update"
+// @Success      200  {object}  handlers.SwaggerStatusIDResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id} [put]
 func (h *ValidationCaseHandler) UpdateValidationCase(c *gin.Context) {
 	user, ok := mustGetUser(c)
 	if !ok {
@@ -216,6 +290,15 @@ func (h *ValidationCaseHandler) UpdateValidationCase(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "id": validationCaseID})
 }
 
+// GetMyValidationCases godoc
+// @Summary      List my validation cases
+// @Description  Returns validation cases created by the authenticated user.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerValidationCaseListResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/me [get]
 // GET /api/validation-cases/me (auth required)
 func (h *ValidationCaseHandler) GetUserValidationCases(c *gin.Context) {
 	user, ok := mustGetUser(c)
@@ -236,7 +319,16 @@ func (h *ValidationCaseHandler) GetMyValidationCases(c *gin.Context) {
 	h.GetUserValidationCases(c)
 }
 
-// GET /api/user/:username/validation-cases
+// GetValidationCasesByUsername godoc
+// @Summary      Get user's public validation cases
+// @Description  Returns all public validation cases submitted by the specified user.
+// @Tags         User
+// @Produce      json
+// @Param        username  path      string  true  "Username"
+// @Success      200       {object}  handlers.SwaggerValidationCasesByUsernameResponse
+// @Failure      400       {object}  handlers.SwaggerErrorResponse
+// @Failure      404       {object}  handlers.SwaggerErrorResponse
+// @Router       /user/{username}/validation-cases [get]
 func (h *ValidationCaseHandler) GetValidationCasesByUsername(c *gin.Context) {
 	username := c.Param("username")
 
@@ -249,7 +341,19 @@ func (h *ValidationCaseHandler) GetValidationCasesByUsername(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"validation_cases": cases})
 }
 
-// DELETE /api/validation-cases/:id (auth required)
+// DeleteValidationCase godoc
+// @Summary      Delete a validation case
+// @Description  Delete a validation case. Only the owner can delete. Requires authentication.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerStatusMessageResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id} [delete]
 func (h *ValidationCaseHandler) DeleteValidationCase(c *gin.Context) {
 	user, ok := mustGetUser(c)
 	if !ok {

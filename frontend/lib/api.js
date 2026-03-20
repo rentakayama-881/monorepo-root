@@ -3,6 +3,18 @@ import { clearToken } from "./auth";
 
 // Shared helpers for fetchJson / fetchJsonAuth
 
+/**
+ * Prepend API version prefix to Go backend paths.
+ * Converts /api/... to /api/v1/... but leaves other paths unchanged
+ * (e.g. /admin/... stays as-is).
+ */
+export function versionedPath(path) {
+  if (path.startsWith("/api/") && !path.startsWith("/api/v1/")) {
+    return path.replace(/^\/api\//, "/api/v1/");
+  }
+  return path;
+}
+
 function createTimeoutSignal(timeout, externalSignal) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(new Error("timeout")), timeout);
@@ -94,7 +106,8 @@ export async function fetchJson(path, options = {}) {
   const { controller, timeoutId } = createTimeoutSignal(timeout, signal);
 
   try {
-    const res = await fetch(`${getApiBase()}${path}`, {
+    const url = `${getApiBase()}${versionedPath(path)}`;
+    const res = await fetch(url, {
       ...rest,
       credentials,
       signal: controller.signal,
@@ -145,8 +158,9 @@ export async function fetchJsonAuth(path, options = {}) {
       throw error;
     }
 
+    const vPath = versionedPath(path);
     const performAuthedRequest = async (accessToken) =>
-      fetch(`${getApiBase()}${path}`, {
+      fetch(`${getApiBase()}${vPath}`, {
         ...rest,
         credentials,
         headers: { ...headers, Authorization: `Bearer ${accessToken}` },

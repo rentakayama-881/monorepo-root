@@ -61,7 +61,7 @@ export default function SudoVerifyForm({
         }
       }
 
-      const res = await fetch(`${getApiBase()}/api/auth/sudo/verify`, {
+      const res = await fetch(`${getApiBase()}/api/v1/auth/sudo/verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

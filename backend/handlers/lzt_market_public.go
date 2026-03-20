@@ -11,7 +11,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetPublicChatGPTAccounts exposes public listing with cache + graceful stale fallback.
+// GetPublicChatGPTAccounts godoc
+// @Summary      List ChatGPT accounts
+// @Description  Returns cached marketplace listing of available ChatGPT accounts with pricing in IDR.
+// @Tags         Market
+// @Produce      json
+// @Param        i18n     query     string  false  "Locale code"    default(en-US)
+// @Param        refresh  query     string  false  "Force cache refresh"  Enums(true,false)
+// @Success      200  {object}  handlers.SwaggerMarketListingResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      502  {object}  handlers.SwaggerErrorResponse
+// @Failure      503  {object}  handlers.SwaggerErrorResponse
+// @Router       /market/chatgpt [get]
 func (h *LZTMarketHandler) GetPublicChatGPTAccounts(c *gin.Context) {
 	if h == nil || h.client == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Layanan marketplace tidak tersedia"})
@@ -49,7 +60,16 @@ var itemIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
 
 const publicChatGPTCheckoutSunsetHeader = "Mon, 04 May 2026 00:00:00 GMT"
 
-// GetPublicChatGPTCheckout returns checkout URL for a selected item.
+// GetPublicChatGPTCheckout godoc
+// @Summary      Get checkout info (deprecated)
+// @Description  Returns checkout URL for a selected item. Deprecated — use POST /market/chatgpt/orders instead.
+// @Tags         Market
+// @Produce      json
+// @Deprecated
+// @Param        itemId  path      string  true  "Marketplace item ID"
+// @Success      200     {object}  handlers.SwaggerMarketCheckoutResponse
+// @Failure      400     {object}  handlers.SwaggerErrorResponse
+// @Router       /market/chatgpt/{itemId}/checkout [get]
 func (h *LZTMarketHandler) GetPublicChatGPTCheckout(c *gin.Context) {
 	itemID := strings.TrimSpace(c.Param("itemId"))
 	if !itemIDPattern.MatchString(itemID) {

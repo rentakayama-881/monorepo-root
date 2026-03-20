@@ -18,6 +18,7 @@ type routeDeps struct {
 	sudoHandler         *handlers.SudoHandler
 	sudoValidator       middleware.SudoValidator
 	lztMarketHandler    *handlers.LZTMarketHandler
+	featureFlagHandler  *handlers.FeatureFlagHandler
 }
 
 func registerPublicRoutes(api *gin.RouterGroup, enhancedRateLimiter *middleware.EnhancedRateLimiter, deps routeDeps) {
@@ -200,6 +201,12 @@ func registerPublicRoutes(api *gin.RouterGroup, enhancedRateLimiter *middleware.
 		badges := apiRateLimited.Group("/badges")
 		{
 			badges.GET("/:id", handlers.GetBadgeDetailHandler)
+		}
+
+		// Feature flags public check
+		featureFlags := apiRateLimited.Group("/feature-flags")
+		{
+			featureFlags.GET("/check/:key", deps.featureFlagHandler.CheckFlag)
 		}
 
 		// Account badge settings (authenticated)

@@ -39,6 +39,19 @@ func NewAuthHandler(authService *services.EntAuthService, sessionService *servic
 	}
 }
 
+// Login godoc
+// @Summary      User login
+// @Description  Authenticate user with email and password. Returns JWT tokens on success, or requires TOTP if 2FA is enabled.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.LoginRequest  true  "Login credentials"
+// @Success      200   {object}  handlers.SwaggerLoginResponse
+// @Success      200   {object}  handlers.SwaggerLoginTOTPRequiredResponse  "When 2FA is enabled"
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      429   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/login [post]
 // POST /api/auth/login
 func (h *AuthHandler) Login(c *gin.Context) {
 	if !h.loginLimiter.Allow(c.ClientIP()) {
@@ -96,6 +109,18 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	})
 }
 
+// RefreshToken godoc
+// @Summary      Refresh access token
+// @Description  Exchange a valid refresh token for a new access/refresh token pair. Accepts token from cookie or JSON body.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.RefreshTokenRequest  false  "Refresh token (optional if sent via cookie)"
+// @Success      200   {object}  handlers.SwaggerRefreshResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      429   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/refresh [post]
 // POST /api/auth/refresh
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	if !h.refreshLimiter.Allow(c.ClientIP()) {
@@ -136,6 +161,15 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	})
 }
 
+// Logout godoc
+// @Summary      Logout user
+// @Description  Revoke the current session and clear refresh token cookie.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      dto.LogoutRequest  false  "Refresh token (optional)"
+// @Success      200   {object}  handlers.SwaggerMessageResponse
+// @Router       /auth/logout [post]
 // POST /api/auth/logout
 func (h *AuthHandler) Logout(c *gin.Context) {
 	var req dto.LogoutRequest
@@ -156,6 +190,15 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Berhasil logout"})
 }
 
+// LogoutAll godoc
+// @Summary      Logout from all devices
+// @Description  Revoke all active sessions for the current user.
+// @Tags         Auth
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerMessageResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/logout-all [post]
 // POST /api/auth/logout-all
 func (h *AuthHandler) LogoutAll(c *gin.Context) {
 	user, ok := mustGetUser(c)
@@ -172,6 +215,15 @@ func (h *AuthHandler) LogoutAll(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Berhasil logout dari semua perangkat"})
 }
 
+// GetActiveSessions godoc
+// @Summary      List active sessions
+// @Description  Returns all active sessions for the authenticated user.
+// @Tags         Auth
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerSessionListResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/sessions [get]
 // GET /api/auth/sessions
 func (h *AuthHandler) GetActiveSessions(c *gin.Context) {
 	user, ok := mustGetUser(c)
@@ -201,6 +253,17 @@ func (h *AuthHandler) GetActiveSessions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"sessions": response})
 }
 
+// RevokeSession godoc
+// @Summary      Revoke specific session
+// @Description  Revoke a specific active session by its ID. The session must belong to the authenticated user.
+// @Tags         Auth
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Session ID"
+// @Success      200  {object}  handlers.SwaggerMessageResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/sessions/{id} [delete]
 // DELETE /api/auth/sessions/:id
 func (h *AuthHandler) RevokeSession(c *gin.Context) {
 	user, ok := mustGetUser(c)
@@ -232,6 +295,18 @@ func (h *AuthHandler) RevokeSession(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Session berhasil dicabut"})
 }
 
+// LoginTOTP godoc
+// @Summary      Complete login with TOTP code
+// @Description  Verify a TOTP code to complete two-factor authentication during login. Requires the totp_pending token from the initial login response.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      handlers.SwaggerLoginTOTPRequest  true  "TOTP verification"
+// @Success      200   {object}  handlers.SwaggerLoginResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      429   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/login/totp [post]
 // POST /api/auth/login/totp
 func (h *AuthHandler) LoginTOTP(c *gin.Context) {
 	if !h.loginLimiter.Allow(c.ClientIP()) {
@@ -273,6 +348,18 @@ func (h *AuthHandler) LoginTOTP(c *gin.Context) {
 	})
 }
 
+// LoginBackupCode godoc
+// @Summary      Complete login with backup code
+// @Description  Use a backup code to complete two-factor authentication during login. Requires the totp_pending token from the initial login response.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      handlers.SwaggerLoginBackupCodeRequest  true  "Backup code verification"
+// @Success      200   {object}  handlers.SwaggerLoginResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      429   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/login/backup-code [post]
 // POST /api/auth/login/backup-code
 func (h *AuthHandler) LoginBackupCode(c *gin.Context) {
 	if !h.loginLimiter.Allow(c.ClientIP()) {

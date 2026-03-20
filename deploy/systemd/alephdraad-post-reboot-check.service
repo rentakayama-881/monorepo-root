@@ -1,6 +1,6 @@
 [Unit]
 Description=Alephdraad Post-Reboot Health Check
-After=network-online.target docker.service nginx.service alephdraad-backend.service feature-service.service
+After=network-online.target nginx.service alephdraad-backend.service feature-service.service
 Wants=network-online.target
 ConditionPathExists=/usr/local/sbin/alephdraad-post-reboot-check.sh
 

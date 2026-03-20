@@ -33,8 +33,16 @@ type FeatureServiceCleanupResult struct {
 	DeletedCounts  map[string]int64 `json:"deletedCounts"`
 }
 
-// GET /api/account/can-delete - Check if user can delete their account
-// Returns blocking reasons and warnings
+// CanDeleteAccountHandler godoc
+// @Summary      Check if account can be deleted
+// @Description  Returns whether the authenticated user can delete their account, along with any blocking reasons (wallet balance, pending transfers, disputes).
+// @Tags         Account
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerCanDeleteResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /account/can-delete [get]
+// GET /api/account/can-delete
 func CanDeleteAccountHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)
 	if !ok {

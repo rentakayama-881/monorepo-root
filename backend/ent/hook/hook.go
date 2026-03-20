@@ -116,6 +116,18 @@ func (f EmailVerificationTokenFunc) Mutate(ctx context.Context, m ent.Mutation) 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EmailVerificationTokenMutation", m)
 }
 
+// The FeatureFlagFunc type is an adapter to allow the use of ordinary
+// function as FeatureFlag mutator.
+type FeatureFlagFunc func(context.Context, *ent.FeatureFlagMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FeatureFlagFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FeatureFlagMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FeatureFlagMutation", m)
+}
+
 // The FinalOfferFunc type is an adapter to allow the use of ordinary
 // function as FinalOffer mutator.
 type FinalOfferFunc func(context.Context, *ent.FinalOfferMutation) (ent.Value, error)

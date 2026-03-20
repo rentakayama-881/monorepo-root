@@ -106,7 +106,7 @@ public partial class GuaranteeService
         {
             var request = new HttpRequestMessage(
                 HttpMethod.Get,
-                $"{baseUrl}/api/internal/users/{userId}/consultation-locks");
+                $"{baseUrl}/api/v1/internal/users/{userId}/consultation-locks");
 
             request.Headers.Add("X-Internal-Api-Key", internalKey);
             response = await _httpClient.SendAsync(request);
@@ -197,7 +197,7 @@ public partial class GuaranteeService
         {
             var request = new HttpRequestMessage(
                 HttpMethod.Put,
-                $"{baseUrl}/api/internal/users/{userId}/guarantee");
+                $"{baseUrl}/api/v1/internal/users/{userId}/guarantee");
 
             request.Headers.Add("X-Internal-Api-Key", internalKey);
             // Ensure guarantee_amount is always present, even when amount=0.

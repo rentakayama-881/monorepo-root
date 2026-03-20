@@ -84,8 +84,8 @@ export default function UserProfilePage() {
   useEffect(() => {
     setLoading(true);
     Promise.allSettled([
-      fetch(`${API}/api/user/${username}`).then((r) => r.json()),
-      fetch(`${API}/api/user/${username}/badges`).then((r) => r.json()),
+      fetch(`${API}/api/v1/user/${username}`).then((r) => r.json()),
+      fetch(`${API}/api/v1/user/${username}/badges`).then((r) => r.json()),
     ])
       .then(([userResult, badgeResult]) => {
         const user = userResult.status === "fulfilled" ? userResult.value : null;
@@ -106,7 +106,7 @@ export default function UserProfilePage() {
       setLoadingContent(true);
       try {
         if (activeTab === "validation_cases") {
-          const res = await fetch(`${API}/api/user/${username}/validation-cases`);
+          const res = await fetch(`${API}/api/v1/user/${username}/validation-cases`);
           if (res.ok) {
             const data = await res.json();
             setValidationCases(data.validation_cases || []);

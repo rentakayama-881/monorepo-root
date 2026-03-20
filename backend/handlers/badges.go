@@ -11,7 +11,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetUserBadgesHandler returns all active badges for a user by username
+// GetUserBadgesHandler godoc
+// @Summary      Get user's badges by username
+// @Description  Returns all active (non-revoked) badges for a user by username, ordered by grant date descending.
+// @Tags         User
+// @Produce      json
+// @Param        username  path      string  true  "Username"
+// @Success      200       {object}  handlers.SwaggerUserBadgesListResponse
+// @Failure      404       {object}  handlers.SwaggerErrorResponse
+// @Failure      500       {object}  handlers.SwaggerErrorResponse
+// @Router       /user/{username}/badges [get]
 func GetUserBadgesHandler(c *gin.Context) {
 	username := c.Param("username")
 	ctx := c.Request.Context()

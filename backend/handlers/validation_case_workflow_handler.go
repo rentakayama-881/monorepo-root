@@ -18,6 +18,18 @@ func NewValidationCaseWorkflowHandler(workflow *services.EntValidationCaseWorkfl
 	return &ValidationCaseWorkflowHandler{workflow: workflow}
 }
 
+// RequestConsultation godoc
+// @Summary      Submit consultation request
+// @Description  Submit a consultation request for a validation case. Requires authentication.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerIDResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      409  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/consultation-requests [post]
 func (h *ValidationCaseWorkflowHandler) RequestConsultation(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -36,6 +48,18 @@ func (h *ValidationCaseWorkflowHandler) RequestConsultation(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": id})
 }
 
+// ListConsultationRequests godoc
+// @Summary      List consultation requests
+// @Description  List all consultation requests for a validation case. Only the case owner can view.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerConsultationRequestListResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/consultation-requests [get]
 func (h *ValidationCaseWorkflowHandler) ListConsultationRequests(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -54,6 +78,18 @@ func (h *ValidationCaseWorkflowHandler) ListConsultationRequests(c *gin.Context)
 	c.JSON(http.StatusOK, gin.H{"consultation_requests": items})
 }
 
+// GetMyConsultationRequest godoc
+// @Summary      Get my consultation request
+// @Description  Get the current user's consultation request for a validation case.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerConsultationRequestSingleResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/consultation-requests/me [get]
 func (h *ValidationCaseWorkflowHandler) GetMyConsultationRequest(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -72,6 +108,19 @@ func (h *ValidationCaseWorkflowHandler) GetMyConsultationRequest(c *gin.Context)
 	c.JSON(http.StatusOK, gin.H{"consultation_request": item})
 }
 
+// ApproveConsultationRequest godoc
+// @Summary      Approve consultation request
+// @Description  Approve a consultation request. Only the case owner can approve.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id         path  int  true  "Validation Case ID"
+// @Param        requestId  path  int  true  "Consultation Request ID"
+// @Success      200  {object}  handlers.SwaggerStatusResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/consultation-requests/{requestId}/approve [post]
 func (h *ValidationCaseWorkflowHandler) ApproveConsultationRequest(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -93,6 +142,21 @@ func (h *ValidationCaseWorkflowHandler) ApproveConsultationRequest(c *gin.Contex
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// RejectConsultationRequest godoc
+// @Summary      Reject consultation request
+// @Description  Reject a consultation request with a reason. Only the case owner can reject.
+// @Tags         ValidationCases
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id         path  int                                       true  "Validation Case ID"
+// @Param        requestId  path  int                                       true  "Consultation Request ID"
+// @Param        body       body  handlers.SwaggerRejectConsultationRequest  true  "Rejection reason"
+// @Success      200  {object}  handlers.SwaggerStatusResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/consultation-requests/{requestId}/reject [post]
 func (h *ValidationCaseWorkflowHandler) RejectConsultationRequest(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -127,6 +191,18 @@ func (h *ValidationCaseWorkflowHandler) RejectConsultationRequest(c *gin.Context
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// RevealContact godoc
+// @Summary      Get case contact info
+// @Description  Reveal the case owner's Telegram contact. Only approved validators can access.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerContactRevealResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/contact [get]
 func (h *ValidationCaseWorkflowHandler) RevealContact(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {

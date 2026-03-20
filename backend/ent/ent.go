@@ -12,6 +12,7 @@ import (
 	"backend-gin/ent/devicefingerprint"
 	"backend-gin/ent/deviceusermapping"
 	"backend-gin/ent/emailverificationtoken"
+	"backend-gin/ent/featureflag"
 	"backend-gin/ent/finaloffer"
 	"backend-gin/ent/ipgeocache"
 	"backend-gin/ent/marketpurchaseorder"
@@ -106,6 +107,7 @@ func checkColumn(t, c string) error {
 			devicefingerprint.Table:       devicefingerprint.ValidColumn,
 			deviceusermapping.Table:       deviceusermapping.ValidColumn,
 			emailverificationtoken.Table:  emailverificationtoken.ValidColumn,
+			featureflag.Table:             featureflag.ValidColumn,
 			finaloffer.Table:              finaloffer.ValidColumn,
 			ipgeocache.Table:              ipgeocache.ValidColumn,
 			marketpurchaseorder.Table:     marketpurchaseorder.ValidColumn,

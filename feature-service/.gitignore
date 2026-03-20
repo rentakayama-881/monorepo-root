@@ -34,7 +34,9 @@ artifacts/
 
 # Environment variables
 .env
-.env.local
+.env.*
+!.env.example
+!.env.enc
 
 # IDEs
 .idea/

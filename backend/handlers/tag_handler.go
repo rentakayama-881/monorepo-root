@@ -29,8 +29,14 @@ func tagGroupBySlug(slug string) string {
 	}
 }
 
-// GetAllTagsHandler returns all active tags
-// GET /api/tags
+// GetAllTagsHandler godoc
+// @Summary      List all tags
+// @Description  Returns all active tags ordered by priority and name.
+// @Tags         Tags
+// @Produce      json
+// @Success      200  {object}  handlers.SwaggerTagListResponse
+// @Failure      500  {object}  handlers.SwaggerErrorResponse
+// @Router       /tags [get]
 func GetAllTagsHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	client := database.GetEntClient()
@@ -59,8 +65,15 @@ func GetAllTagsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": res})
 }
 
-// GetTagBySlugHandler returns a specific tag by slug
-// GET /api/tags/:slug
+// GetTagBySlugHandler godoc
+// @Summary      Get tag by slug
+// @Description  Returns a single active tag by its slug.
+// @Tags         Tags
+// @Produce      json
+// @Param        slug  path      string  true  "Tag slug"
+// @Success      200   {object}  handlers.SwaggerTagItem
+// @Failure      404   {object}  handlers.SwaggerErrorResponse
+// @Router       /tags/{slug} [get]
 func GetTagBySlugHandler(c *gin.Context) {
 	slug := c.Param("slug")
 	ctx := c.Request.Context()
@@ -84,8 +97,16 @@ func GetTagBySlugHandler(c *gin.Context) {
 	})
 }
 
-// GetValidationCasesByTagHandler returns all Validation Cases with a specific tag
-// GET /api/tags/:slug/validation-cases
+// GetValidationCasesByTagHandler godoc
+// @Summary      Get validation cases by tag
+// @Description  Returns all validation cases that have the specified tag, along with the tag details.
+// @Tags         Tags
+// @Produce      json
+// @Param        slug  path      string  true  "Tag slug"
+// @Success      200   {object}  handlers.SwaggerTagWithCasesResponse
+// @Failure      404   {object}  handlers.SwaggerErrorResponse
+// @Failure      500   {object}  handlers.SwaggerErrorResponse
+// @Router       /tags/{slug}/validation-cases [get]
 func GetValidationCasesByTagHandler(c *gin.Context) {
 	slug := c.Param("slug")
 	ctx := c.Request.Context()
@@ -173,8 +194,16 @@ func GetValidationCasesByTagHandler(c *gin.Context) {
 	})
 }
 
-// GetValidationCaseTagsHandler returns tags for a specific Validation Case
-// GET /api/validation-cases/:id/tags
+// GetValidationCaseTagsHandler godoc
+// @Summary      Get case tags
+// @Description  Returns all tags attached to a specific validation case.
+// @Tags         ValidationCases
+// @Produce      json
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerTagListResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/tags [get]
 func GetValidationCaseTagsHandler(c *gin.Context) {
 	idStr := c.Param("id")
 	validationCaseID, err := strconv.Atoi(idStr)
@@ -216,8 +245,21 @@ type AddTagToValidationCaseRequest struct {
 	TagIDs []int `json:"tag_ids" binding:"required"`
 }
 
-// AddTagsToValidationCaseHandler adds tags to a Validation Case (owner only)
-// POST /api/validation-cases/:id/tags
+// AddTagsToValidationCaseHandler godoc
+// @Summary      Add tags to case
+// @Description  Set tags on a validation case (replaces existing). Owner only. Min 2, max 4 tags.
+// @Tags         ValidationCases
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  int                             true  "Validation Case ID"
+// @Param        body  body  handlers.SwaggerAddTagsRequest  true  "Tag IDs to set"
+// @Success      200  {object}  handlers.SwaggerTagListResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/tags [post]
 func AddTagsToValidationCaseHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)
 	if !ok {
@@ -320,8 +362,20 @@ func AddTagsToValidationCaseHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": res})
 }
 
-// RemoveTagFromValidationCaseHandler removes a tag from a Validation Case (owner only)
-// DELETE /api/validation-cases/:id/tags/:tagSlug
+// RemoveTagFromValidationCaseHandler godoc
+// @Summary      Remove tag from case
+// @Description  Remove a specific tag from a validation case by tag slug. Owner only. Min 2 tags enforced.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id       path  int     true  "Validation Case ID"
+// @Param        tagSlug  path  string  true  "Tag slug to remove"
+// @Success      200  {object}  handlers.SwaggerMessageResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/tags/{tagSlug} [delete]
 func RemoveTagFromValidationCaseHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)
 	if !ok {

@@ -15,6 +15,19 @@ import (
 	"go.uber.org/zap"
 )
 
+// UploadAvatarHandler godoc
+// @Summary      Upload avatar
+// @Description  Upload a new profile avatar image. Accepts JPG/PNG up to 2 MB.
+// @Tags         Account
+// @Accept       multipart/form-data
+// @Produce      json
+// @Security     BearerAuth
+// @Param        file  formData  file  true  "Avatar image file (JPG or PNG, max 2 MB)"
+// @Success      200   {object}  handlers.SwaggerUploadAvatarResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      500   {object}  handlers.SwaggerErrorResponse
+// @Router       /account/avatar [put]
 // PUT /api/account/avatar
 func UploadAvatarHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)
@@ -79,6 +92,17 @@ func UploadAvatarHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"avatar_url": avatarURL})
 }
 
+// DeleteAvatarHandler godoc
+// @Summary      Delete avatar
+// @Description  Remove the authenticated user's profile avatar.
+// @Tags         Account
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerMessageResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      500  {object}  handlers.SwaggerErrorResponse
+// @Router       /account/avatar [delete]
 // DELETE /api/account/avatar
 func DeleteAvatarHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)

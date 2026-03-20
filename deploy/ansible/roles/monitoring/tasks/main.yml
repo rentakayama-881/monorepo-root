@@ -1,0 +1,50 @@
+---
+# ==============================================================================
+# Role: monitoring — Prometheus + Grafana preparation
+# ==============================================================================
+# Ensures config directories and files exist on the host.
+# ==============================================================================
+
+- name: Ensure prometheus config directory exists in repo
+  ansible.builtin.file:
+    path: "{{ repo_dir }}/deploy/prometheus"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0755"
+
+- name: Ensure grafana provisioning directory exists in repo
+  ansible.builtin.file:
+    path: "{{ repo_dir }}/deploy/grafana/provisioning"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0755"
+
+- name: Ensure grafana dashboards provisioning directory exists
+  ansible.builtin.file:
+    path: "{{ repo_dir }}/deploy/grafana/provisioning/dashboards"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0755"
+
+- name: Ensure grafana datasources provisioning directory exists
+  ansible.builtin.file:
+    path: "{{ repo_dir }}/deploy/grafana/provisioning/datasources"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0755"
+
+- name: Verify prometheus.yml exists
+  ansible.builtin.stat:
+    path: "{{ repo_dir }}/deploy/prometheus/prometheus.yml"
+  register: prometheus_config
+
+- name: Warn if prometheus config is missing
+  ansible.builtin.debug:
+    msg: >
+      WARNING: {{ repo_dir }}/deploy/prometheus/prometheus.yml not found.
+      Prometheus will fail to start. Ensure the repo is cloned with configs.
+  when: not prometheus_config.stat.exists

@@ -84,7 +84,7 @@ export function SudoProvider({ children }) {
   const fetchSudoStatus = useCallback(async () => {
     try {
       const token = await requireValidTokenOrThrow();
-      const res = await fetch(`${getApiBase()}/api/auth/sudo/status`, {
+      const res = await fetch(`${getApiBase()}/api/v1/auth/sudo/status`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "X-Sudo-Token": sudoToken || "",

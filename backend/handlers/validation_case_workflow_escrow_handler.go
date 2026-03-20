@@ -10,6 +10,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// SubmitFinalOffer godoc
+// @Summary      Submit final offer
+// @Description  Submit a final offer for a validation case. Requires authentication.
+// @Tags         ValidationCases
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  int                                     true  "Validation Case ID"
+// @Param        body  body  handlers.SwaggerFinalOfferSubmitRequest  true  "Offer details"
+// @Success      200  {object}  handlers.SwaggerIDResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/final-offers [post]
 func (h *ValidationCaseWorkflowHandler) SubmitFinalOffer(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -37,6 +50,17 @@ func (h *ValidationCaseWorkflowHandler) SubmitFinalOffer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": id})
 }
 
+// ListFinalOffers godoc
+// @Summary      List final offers
+// @Description  List all final offers for a validation case. Requires authentication.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerFinalOfferListResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/final-offers [get]
 func (h *ValidationCaseWorkflowHandler) ListFinalOffers(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -55,6 +79,19 @@ func (h *ValidationCaseWorkflowHandler) ListFinalOffers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"final_offers": items})
 }
 
+// AcceptFinalOffer godoc
+// @Summary      Accept final offer
+// @Description  Accept a final offer, generating an escrow draft. Only the case owner can accept.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id       path  int  true  "Validation Case ID"
+// @Param        offerId  path  int  true  "Final Offer ID"
+// @Success      200  {object}  handlers.SwaggerEscrowDraftResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Failure      403  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/final-offers/{offerId}/accept [post]
 func (h *ValidationCaseWorkflowHandler) AcceptFinalOffer(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -77,6 +114,19 @@ func (h *ValidationCaseWorkflowHandler) AcceptFinalOffer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"escrow_draft": draft})
 }
 
+// ConfirmLockFunds godoc
+// @Summary      Lock funds in escrow
+// @Description  Confirm fund locking for a validation case escrow. Requires authentication.
+// @Tags         ValidationCases
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  int                              true  "Validation Case ID"
+// @Param        body  body  handlers.SwaggerLockFundsRequest  true  "Transfer ID"
+// @Success      200  {object}  handlers.SwaggerStatusResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/lock-funds [post]
 func (h *ValidationCaseWorkflowHandler) ConfirmLockFunds(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -103,6 +153,19 @@ func (h *ValidationCaseWorkflowHandler) ConfirmLockFunds(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// SubmitArtifact godoc
+// @Summary      Submit artifact
+// @Description  Submit an artifact (evidence document) for a validation case. Requires authentication.
+// @Tags         ValidationCases
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  int                                   true  "Validation Case ID"
+// @Param        body  body  handlers.SwaggerArtifactSubmitRequest  true  "Artifact document ID"
+// @Success      200  {object}  handlers.SwaggerStatusResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/artifact-submission [post]
 func (h *ValidationCaseWorkflowHandler) SubmitArtifact(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -129,6 +192,17 @@ func (h *ValidationCaseWorkflowHandler) SubmitArtifact(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// MarkEscrowReleased godoc
+// @Summary      Release escrow
+// @Description  Mark escrow as released for a validation case. Requires authentication.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerStatusResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/escrow/released [post]
 func (h *ValidationCaseWorkflowHandler) MarkEscrowReleased(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -147,8 +221,18 @@ func (h *ValidationCaseWorkflowHandler) MarkEscrowReleased(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// Called by Feature Service (auto-release worker).
-// Protected by InternalServiceAuth middleware (X-Internal-Api-Key).
+// InternalMarkEscrowReleasedByTransfer godoc
+// @Summary      Escrow released callback
+// @Description  Called by Feature Service when escrow funds are auto-released. Protected by X-Internal-Api-Key.
+// @Tags         Internal
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        body  body      handlers.SwaggerInternalEscrowReleasedRequest  true  "Transfer info"
+// @Success      200   {object}  handlers.SwaggerInternalCallbackResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      404   {object}  handlers.SwaggerErrorResponse
+// @Router       /internal/validation-cases/escrow/released [post]
 func (h *ValidationCaseWorkflowHandler) InternalMarkEscrowReleasedByTransfer(c *gin.Context) {
 	var req struct {
 		TransferID string `json:"transfer_id" binding:"required"`
@@ -171,8 +255,18 @@ func (h *ValidationCaseWorkflowHandler) InternalMarkEscrowReleasedByTransfer(c *
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "validation_case_id": validationCaseID})
 }
 
-// Called by Feature Service after dispute settlement (refund/release).
-// Protected by InternalServiceAuth middleware (X-Internal-Api-Key).
+// InternalSettleDisputeByTransfer godoc
+// @Summary      Dispute settled callback
+// @Description  Called by Feature Service after a dispute is settled (refund or release). Protected by X-Internal-Api-Key.
+// @Tags         Internal
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        body  body      handlers.SwaggerInternalDisputeSettledRequest  true  "Dispute settlement info"
+// @Success      200   {object}  handlers.SwaggerInternalCallbackResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      404   {object}  handlers.SwaggerErrorResponse
+// @Router       /internal/validation-cases/disputes/settled [post]
 func (h *ValidationCaseWorkflowHandler) InternalSettleDisputeByTransfer(c *gin.Context) {
 	var req struct {
 		TransferID string `json:"transfer_id" binding:"required"`
@@ -207,8 +301,17 @@ func (h *ValidationCaseWorkflowHandler) InternalSettleDisputeByTransfer(c *gin.C
 	})
 }
 
-// Called by Feature Service before guarantee release.
-// Protected by InternalServiceAuth middleware (X-Internal-Api-Key).
+// InternalGetValidatorConsultationLocks godoc
+// @Summary      Get consultation locks
+// @Description  Returns active consultation guarantee locks for a validator user. Protected by X-Internal-Api-Key.
+// @Tags         Internal
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id   path      int  true  "Validator user ID"
+// @Success      200  {object}  handlers.SwaggerInternalConsultationLocksResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      500  {object}  handlers.SwaggerErrorResponse
+// @Router       /internal/users/{id}/consultation-locks [get]
 func (h *ValidationCaseWorkflowHandler) InternalGetValidatorConsultationLocks(c *gin.Context) {
 	validatorUserID, ok := parseUintParam(c, "id", "validator_user_id")
 	if !ok {
@@ -228,6 +331,19 @@ func (h *ValidationCaseWorkflowHandler) InternalGetValidatorConsultationLocks(c 
 	})
 }
 
+// AttachDispute godoc
+// @Summary      Attach dispute
+// @Description  Attach a dispute to a validation case. Requires authentication.
+// @Tags         ValidationCases
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path  int                                  true  "Validation Case ID"
+// @Param        body  body  handlers.SwaggerDisputeAttachRequest  true  "Dispute ID"
+// @Success      200  {object}  handlers.SwaggerStatusResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/dispute/attach [post]
 func (h *ValidationCaseWorkflowHandler) AttachDispute(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {
@@ -254,6 +370,17 @@ func (h *ValidationCaseWorkflowHandler) AttachDispute(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// GetCaseLog godoc
+// @Summary      Get case audit log
+// @Description  Get the audit log for a validation case. Requires authentication.
+// @Tags         ValidationCases
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id  path  int  true  "Validation Case ID"
+// @Success      200  {object}  handlers.SwaggerCaseLogResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /validation-cases/{id}/case-log [get]
 func (h *ValidationCaseWorkflowHandler) GetCaseLog(c *gin.Context) {
 	validationCaseID, ok := parseUintParam(c, "id", "validation_case_id")
 	if !ok {

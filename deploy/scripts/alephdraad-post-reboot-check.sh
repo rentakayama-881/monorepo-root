@@ -43,7 +43,6 @@ main() {
 
   for svc in \
     alephdraad-firewall.service \
-    docker.service \
     nginx.service \
     alephdraad-backend.service \
     feature-service.service; do

@@ -63,6 +63,15 @@ func generateRequestID() string {
 	return "req_" + hex.EncodeToString(buf)
 }
 
+// AdminListCategories godoc
+// @Summary      List categories
+// @Description  Returns all validation case categories ordered by name. Admin authentication required.
+// @Tags         Admin-ValidationCases
+// @Produce      json
+// @Security     AdminAuth
+// @Success      200  {object}  handlers.SwaggerCategoryListResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /admin/categories [get]
 // AdminListCategories handles GET /admin/categories (admin auth required)
 func AdminListCategories(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -90,6 +99,21 @@ func AdminListCategories(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"categories": out})
 }
 
+// AdminMoveValidationCase godoc
+// @Summary      Move validation case
+// @Description  Transfer ownership and/or change category of a validation case. Supports dry-run mode. Admin authentication required.
+// @Tags         Admin-ValidationCases
+// @Accept       json
+// @Produce      json
+// @Security     AdminAuth
+// @Param        id    path      int                              true  "Validation Case ID"
+// @Param        body  body      AdminMoveValidationCaseRequest   true  "Move request data"
+// @Success      200   {object}  handlers.SwaggerAdminMoveValidationCaseResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      404   {object}  handlers.SwaggerErrorResponse  "Validation case, user, or category not found"
+// @Failure      409   {object}  handlers.SwaggerErrorResponse  "No changes or user locked"
+// @Router       /admin/validation-cases/{id}/move [post]
 // AdminMoveValidationCase handles POST /admin/validation-cases/:id/move (admin auth required)
 //
 // Body:

@@ -1,0 +1,170 @@
+---
+# ==============================================================================
+# Role: base — Server hardening & essential packages
+# ==============================================================================
+# Mirrors existing deploy/scripts/alephdraad-firewall-ensure.sh logic,
+# but uses UFW for idempotent management instead of raw iptables.
+# ==============================================================================
+
+# --- Package management -------------------------------------------------------
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  tags: packages
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: safe
+  tags: packages
+
+- name: Install essential packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - git
+      - ufw
+      - fail2ban
+      - htop
+      - jq
+      - unzip
+      - rsync
+      - logrotate
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - python3-pip
+    state: present
+  tags: packages
+
+# --- User & group -------------------------------------------------------------
+- name: Ensure app group exists
+  ansible.builtin.group:
+    name: "{{ app_group }}"
+    state: present
+
+- name: Ensure app user exists
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    shell: /bin/bash
+    create_home: true
+    state: present
+
+- name: Ensure app directory exists
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0755"
+
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: "{{ backup_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0755"
+
+# --- Timezone -----------------------------------------------------------------
+- name: Set timezone to {{ server_timezone }}
+  community.general.timezone:
+    name: "{{ server_timezone }}"
+
+# --- SSH hardening ------------------------------------------------------------
+- name: Disable root login via SSH
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin'
+    line: 'PermitRootLogin no'
+    validate: '/usr/sbin/sshd -t -f %s'
+  notify: restart sshd
+
+- name: Disable password authentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+    validate: '/usr/sbin/sshd -t -f %s'
+  notify: restart sshd
+
+- name: Disable challenge-response authentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?ChallengeResponseAuthentication'
+    line: 'ChallengeResponseAuthentication no'
+    validate: '/usr/sbin/sshd -t -f %s'
+  notify: restart sshd
+
+# --- Firewall (UFW) ----------------------------------------------------------
+# Replaces the iptables logic from deploy/scripts/alephdraad-firewall-ensure.sh
+# with idempotent UFW rules: allow SSH (22), HTTP (80), HTTPS (443), drop rest.
+- name: Reset UFW to default (deny incoming, allow outgoing)
+  community.general.ufw:
+    state: reset
+  when: ufw_reset | default(false) | bool
+
+- name: Set UFW default policy — deny incoming
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+
+- name: Set UFW default policy — allow outgoing
+  community.general.ufw:
+    direction: outgoing
+    policy: allow
+
+- name: Allow required ports through UFW
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port | string }}"
+    proto: "{{ item.proto }}"
+  loop: "{{ allowed_ports }}"
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+
+# --- Fail2ban ----------------------------------------------------------------
+- name: Ensure fail2ban is enabled and running
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started
+
+- name: Configure fail2ban SSH jail
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/sshd.conf
+    content: |
+      [sshd]
+      enabled = true
+      port = ssh
+      filter = sshd
+      logpath = /var/log/auth.log
+      maxretry = 5
+      bantime = 3600
+      findtime = 600
+    mode: "0644"
+  notify: restart fail2ban
+
+# --- Sysctl tuning -----------------------------------------------------------
+- name: Apply sysctl performance settings
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_set: true
+    state: present
+    reload: true
+  loop: "{{ sysctl_settings | dict2items }}"
+
+# --- ACME webroot directory ---------------------------------------------------
+- name: Ensure ACME webroot directory exists
+  ansible.builtin.file:
+    path: "{{ acme_webroot }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"

@@ -21,6 +21,18 @@ import (
 
 // ==================== Admin User List ====================
 
+// AdminListUsers godoc
+// @Summary      List users
+// @Description  Returns a paginated list of users with their badges. Supports search by email, username, or full name. Admin authentication required.
+// @Tags         Admin-Users
+// @Produce      json
+// @Security     AdminAuth
+// @Param        page    query     int     false  "Page number"      default(1)
+// @Param        limit   query     int     false  "Items per page"   default(20)
+// @Param        search  query     string  false  "Search by email, username, or full name"
+// @Success      200     {object}  handlers.SwaggerAdminUserListResponse
+// @Failure      401     {object}  handlers.SwaggerErrorResponse
+// @Router       /admin/users [get]
 func AdminListUsers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
@@ -160,6 +172,18 @@ func AdminListUsers(c *gin.Context) {
 	})
 }
 
+// AdminGetUser godoc
+// @Summary      Get user detail
+// @Description  Returns detailed user info including all badges (active and revoked). Admin authentication required.
+// @Tags         Admin-Users
+// @Produce      json
+// @Security     AdminAuth
+// @Param        userId  path      int  true  "User ID"
+// @Success      200     {object}  handlers.SwaggerAdminUserDetailResponse
+// @Failure      400     {object}  handlers.SwaggerErrorResponse
+// @Failure      401     {object}  handlers.SwaggerErrorResponse
+// @Failure      404     {object}  handlers.SwaggerErrorResponse
+// @Router       /admin/users/{userId} [get]
 func AdminGetUser(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("userId"), 10, 32)
 	if err != nil {
@@ -221,6 +245,18 @@ func AdminGetUser(c *gin.Context) {
 
 // ==================== Observed Devices ====================
 
+// AdminListObservedDevices godoc
+// @Summary      List observed devices
+// @Description  Returns a paginated list of observed device fingerprints with associated user mappings. Admin authentication required.
+// @Tags         Admin-Devices
+// @Produce      json
+// @Security     AdminAuth
+// @Param        page      query     int     false  "Page number"      default(1)
+// @Param        pageSize  query     int     false  "Items per page"   default(50)
+// @Param        search    query     string  false  "Search by fingerprint hash or user ID"
+// @Success      200       {object}  handlers.SwaggerAdminObservedDevicesResponse
+// @Failure      401       {object}  handlers.SwaggerErrorResponse
+// @Router       /admin/observed-devices [get]
 // AdminListObservedDevices returns a paginated list of observed device fingerprints.
 // GET /admin/observed-devices?page=1&pageSize=50&search=...
 func AdminListObservedDevices(c *gin.Context) {

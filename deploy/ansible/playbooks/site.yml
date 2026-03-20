@@ -1,0 +1,40 @@
+---
+# ==============================================================================
+# AIValid — Full Infrastructure Setup (Master Playbook)
+# ==============================================================================
+# Runs all roles in order. Safe to re-run (idempotent).
+#
+# Usage:
+#   ansible-playbook playbooks/site.yml
+#   ansible-playbook playbooks/site.yml --tags deploy
+#   ansible-playbook playbooks/site.yml --skip-tags certbot
+# ==============================================================================
+
+- name: AIValid Full Infrastructure Setup
+  hosts: all
+  become: true
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - vps_ip != "YOUR_VPS_IP"
+          - deploy_user is defined
+          - domain_api is defined
+          - domain_feature is defined
+        fail_msg: >
+          Required variables not set. Update inventory/production.yml
+          with your VPS IP before running.
+      tags: always
+
+  roles:
+    - role: base
+      tags: [base, setup]
+    - role: nginx
+      tags: [nginx, setup]
+    - role: certbot
+      tags: [certbot, ssl, setup]
+    - role: monitoring
+      tags: [monitoring, setup]
+    - role: deploy
+      tags: [deploy]

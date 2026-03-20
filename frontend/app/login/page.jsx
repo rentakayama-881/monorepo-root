@@ -81,7 +81,7 @@ function LoginContent() {
       const API = getApiBase();
       const deviceFingerprint = await getDeviceFingerprintWithTimeout(3000);
 
-      const beginRes = await fetch(`${API}/api/auth/passkeys/login/begin`, {
+      const beginRes = await fetch(`${API}/api/v1/auth/passkeys/login/begin`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -115,7 +115,7 @@ function LoginContent() {
         throw new Error("Login passkey dibatalkan.");
       }
 
-      const finishRes = await fetch(`${API}/api/auth/passkeys/login/finish`, {
+      const finishRes = await fetch(`${API}/api/v1/auth/passkeys/login/finish`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -186,7 +186,7 @@ function LoginContent() {
 
     try {
       const deviceFingerprint = await getDeviceFingerprintWithTimeout(3000);
-      const endpoint = useBackupCode ? "/api/auth/login/backup-code" : "/api/auth/login/totp";
+      const endpoint = useBackupCode ? "/api/v1/auth/login/backup-code" : "/api/v1/auth/login/totp";
 
       const response = await fetch(`${getApiBase()}${endpoint}`, {
         method: "POST",

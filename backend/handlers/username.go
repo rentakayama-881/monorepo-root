@@ -12,6 +12,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CreateUsernameHandler godoc
+// @Summary      Set initial username
+// @Description  Set the username for the first time. Can only be called once per user — username cannot be changed afterward.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      dto.CreateUsernameRequest  true  "Username"
+// @Success      200   {object}  handlers.SwaggerCreateUsernameResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      403   {object}  handlers.SwaggerErrorResponse  "Username already set"
+// @Failure      409   {object}  handlers.SwaggerErrorResponse  "Username taken"
+// @Router       /auth/username [post]
 func CreateUsernameHandler(c *gin.Context) {
 	user, ok := mustGetUser(c)
 	if !ok {

@@ -152,6 +152,15 @@ func (h *PasskeyHandler) verifyPinForPasskeyRegistration(c *gin.Context, userID 
 	return true
 }
 
+// GetStatus godoc
+// @Summary      Get passkey status
+// @Description  Returns whether the authenticated user has passkeys registered and their count.
+// @Tags         Auth-Passkeys
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  dto.PasskeyStatusResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/passkeys/status [get]
 // GetStatus returns passkey status for current user
 func (h *PasskeyHandler) GetStatus(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -173,6 +182,15 @@ func (h *PasskeyHandler) GetStatus(c *gin.Context) {
 	})
 }
 
+// ListPasskeys godoc
+// @Summary      List user's passkeys
+// @Description  Returns all passkeys registered by the authenticated user.
+// @Tags         Auth-Passkeys
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  dto.PasskeyListResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/passkeys [get]
 // ListPasskeys returns all passkeys for current user
 func (h *PasskeyHandler) ListPasskeys(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -205,6 +223,19 @@ func (h *PasskeyHandler) ListPasskeys(c *gin.Context) {
 	})
 }
 
+// BeginRegistration godoc
+// @Summary      Begin passkey registration
+// @Description  Start a passkey registration ceremony. Requires PIN verification before WebAuthn options are issued.
+// @Tags         Auth-Passkeys
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      dto.PasskeyRegisterBeginRequest  true  "PIN for verification"
+// @Success      200   {object}  dto.PasskeyRegisterBeginResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      403   {object}  handlers.SwaggerErrorResponse  "PIN not set or 2FA required"
+// @Router       /auth/passkeys/register/begin [post]
 // BeginRegistration starts passkey registration
 func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -255,6 +286,19 @@ func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {
 	})
 }
 
+// FinishRegistration godoc
+// @Summary      Complete passkey registration
+// @Description  Complete the passkey registration ceremony with the credential from the browser's WebAuthn API.
+// @Tags         Auth-Passkeys
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      dto.PasskeyRegisterFinishRequest  true  "Registration credential"
+// @Success      200   {object}  dto.PasskeyResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Failure      403   {object}  handlers.SwaggerErrorResponse  "PIN not set"
+// @Router       /auth/passkeys/register/finish [post]
 // FinishRegistration completes passkey registration
 func (h *PasskeyHandler) FinishRegistration(c *gin.Context) {
 	userID := c.GetUint("user_id")

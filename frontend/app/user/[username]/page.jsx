@@ -7,7 +7,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.aivalid.id
 
 async function fetchUserPublic(username) {
   try {
-    const res = await fetch(`${API_BASE}/api/user/${username}`, {
+    const res = await fetch(`${API_BASE}/api/v1/user/${username}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;

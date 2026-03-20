@@ -30,6 +30,8 @@ type Tx struct {
 	DeviceUserMapping *DeviceUserMappingClient
 	// EmailVerificationToken is the client for interacting with the EmailVerificationToken builders.
 	EmailVerificationToken *EmailVerificationTokenClient
+	// FeatureFlag is the client for interacting with the FeatureFlag builders.
+	FeatureFlag *FeatureFlagClient
 	// FinalOffer is the client for interacting with the FinalOffer builders.
 	FinalOffer *FinalOfferClient
 	// IPGeoCache is the client for interacting with the IPGeoCache builders.
@@ -202,6 +204,7 @@ func (tx *Tx) init() {
 	tx.DeviceFingerprint = NewDeviceFingerprintClient(tx.config)
 	tx.DeviceUserMapping = NewDeviceUserMappingClient(tx.config)
 	tx.EmailVerificationToken = NewEmailVerificationTokenClient(tx.config)
+	tx.FeatureFlag = NewFeatureFlagClient(tx.config)
 	tx.FinalOffer = NewFinalOfferClient(tx.config)
 	tx.IPGeoCache = NewIPGeoCacheClient(tx.config)
 	tx.MarketPurchaseOrder = NewMarketPurchaseOrderClient(tx.config)

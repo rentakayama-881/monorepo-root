@@ -11,11 +11,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"backend-gin/buildinfo"
 	"backend-gin/config"
 	"backend-gin/database"
+	_ "backend-gin/docs" // Swagger generated docs
 	"backend-gin/handlers"
 	"backend-gin/logger"
 	"backend-gin/middleware"
@@ -23,6 +27,8 @@ import (
 	"backend-gin/utils"
 
 	"github.com/joho/godotenv"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
 )
 
@@ -36,6 +42,28 @@ func init() {
 	gin.SetMode(mode)
 }
 
+// @title           AIValid API
+// @version         1.0
+// @description     API untuk platform validasi hasil kerja AI oleh ahli manusia.
+// @termsOfService  https://aivalid.id/rules-content
+
+// @contact.name   AIValid Support
+// @contact.url    https://aivalid.id/contact-support
+
+// @license.name  Proprietary
+
+// @host      api.aivalid.id
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
+
+// @securityDefinitions.apikey AdminAuth
+// @in header
+// @name Authorization
+// @description Admin JWT token. Type "Bearer" followed by a space and admin JWT token.
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -51,6 +79,27 @@ func main() {
 	// Initialize logger
 	logger.InitLogger()
 	defer func() { _ = logger.Log.Sync() }()
+
+	// Initialize Sentry error tracking (optional — skipped when SENTRY_DSN is empty).
+	if dsn := os.Getenv("SENTRY_DSN"); dsn != "" {
+		sentryEnv := os.Getenv("SENTRY_ENVIRONMENT")
+		if sentryEnv == "" {
+			sentryEnv = os.Getenv("APP_ENV")
+		}
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:              dsn,
+			Environment:      sentryEnv,
+			Release:          buildinfo.Version,
+			TracesSampleRate: getEnvFloat64("SENTRY_TRACES_SAMPLE_RATE", 0.1),
+			EnableTracing:    true,
+		})
+		if err != nil {
+			logger.Error("Sentry initialization failed", zap.Error(err))
+		} else {
+			defer sentry.Flush(2 * time.Second)
+			logger.Info("Sentry initialized", zap.String("environment", sentryEnv))
+		}
+	}
 
 	logger.Info("Starting AIValid Backend Server")
 
@@ -146,6 +195,10 @@ func main() {
 	lztMarketHandler.StartBackgroundRefresh()
 	// Financial features are handled by the ASP.NET service; keep Go focused on core identity/content.
 
+	// Feature flag service + handler
+	featureFlagService := services.NewFeatureFlagService()
+	featureFlagHandler := handlers.NewFeatureFlagHandler(featureFlagService)
+
 	// Verify all handlers are properly initialized
 	if authHandler == nil || caseHandler == nil || workflowHandler == nil || repoWorkflowHandler == nil || userHandler == nil {
 		logger.Fatal("Failed to initialize handlers")
@@ -175,6 +228,13 @@ func main() {
 	}
 	logger.Info("Trusted proxies configured", zap.Strings("trusted_proxies", trustedProxies))
 
+	// Sentry request tracking (must be first so it wraps the entire chain).
+	router.Use(middleware.SentryMiddleware())
+	router.Use(middleware.SentryUserEnrich())
+
+	// Prometheus metrics (after Sentry so panics are recovered before recording).
+	router.Use(middleware.PrometheusMiddleware())
+
 	// Basic request size limits to reduce DoS blast-radius (per-endpoint checks still apply).
 	router.Use(middleware.JSONRequestSizeLimitMiddleware())
 	router.Use(middleware.SecurityHeadersMiddleware())
@@ -201,27 +261,44 @@ func main() {
 	router.GET("/health/version", handlers.HealthVersionHandler)
 	router.GET("/ready", handlers.ReadinessHandler)
 
-	api := router.Group("/api")
-	{
-		api.GET("/health", handlers.HealthHandler)
-		api.GET("/health/version", handlers.HealthVersionHandler)
-		api.GET("/ready", handlers.ReadinessHandler)
+	// Prometheus metrics endpoint (outside rate limits, no auth required).
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-		registerPublicRoutes(api, enhancedRateLimiter, routeDeps{
-			authHandler:         authHandler,
-			caseHandler:         caseHandler,
-			workflowHandler:     workflowHandler,
-			repoWorkflowHandler: repoWorkflowHandler,
-			userHandler:         userHandler,
-			totpHandler:         totpHandler,
-			passkeyHandler:      passkeyHandler,
-			sudoHandler:         sudoHandler,
-			sudoValidator:       sudoValidator,
-			lztMarketHandler:    lztMarketHandler,
-		})
+	// Swagger API documentation (disabled in production by default).
+	if os.Getenv("ENABLE_SWAGGER") == "true" || os.Getenv("GIN_MODE") != "release" {
+		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 
-	registerAdminRoutes(router, enhancedRateLimiter, lztMarketHandler)
+	deps := routeDeps{
+		authHandler:         authHandler,
+		caseHandler:         caseHandler,
+		workflowHandler:     workflowHandler,
+		repoWorkflowHandler: repoWorkflowHandler,
+		userHandler:         userHandler,
+		totpHandler:         totpHandler,
+		passkeyHandler:      passkeyHandler,
+		sudoHandler:         sudoHandler,
+		sudoValidator:       sudoValidator,
+		lztMarketHandler:    lztMarketHandler,
+		featureFlagHandler:  featureFlagHandler,
+	}
+
+	// registerAPIGroup wires health probes and public routes onto a router group.
+	// Used to dual-mount routes under both /api/v1 (versioned) and /api (legacy).
+	registerAPIGroup := func(g *gin.RouterGroup) {
+		g.GET("/health", handlers.HealthHandler)
+		g.GET("/health/version", handlers.HealthVersionHandler)
+		g.GET("/ready", handlers.ReadinessHandler)
+		registerPublicRoutes(g, enhancedRateLimiter, deps)
+	}
+
+	// Versioned API — new clients should target /api/v1.
+	registerAPIGroup(router.Group("/api/v1"))
+
+	// Legacy unversioned API — kept for backward compatibility; will be deprecated.
+	registerAPIGroup(router.Group("/api"))
+
+	registerAdminRoutes(router, enhancedRateLimiter, lztMarketHandler, featureFlagHandler)
 
 	// Get port from environment variable
 	port := os.Getenv("PORT")

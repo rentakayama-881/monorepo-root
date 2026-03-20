@@ -7,7 +7,7 @@ import logger from "@/lib/logger";
 async function getLatestValidationCases() {
   const API = getApiBase();
   try {
-    const res = await fetch(`${API}/api/validation-cases/latest?limit=6`, {
+    const res = await fetch(`${API}/api/v1/validation-cases/latest?limit=6`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return { cases: [], error: true };

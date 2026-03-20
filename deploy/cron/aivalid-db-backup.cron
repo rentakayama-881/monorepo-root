@@ -1,0 +1,4 @@
+# AIValid MongoDB Backup — daily at 02:00 UTC
+# Install: crontab deploy/cron/aivalid-db-backup.cron
+# Verify:  crontab -l
+0 2 * * * /home/alep/monorepo-root/ops/db-backup.sh >> /var/log/aivalid-db-backup.log 2>&1

@@ -158,7 +158,7 @@ public partial class DisputeService
         {
             var request = new HttpRequestMessage(
                 HttpMethod.Post,
-                $"{baseUrl}/api/internal/validation-cases/disputes/settled");
+                $"{baseUrl}/api/v1/internal/validation-cases/disputes/settled");
 
             request.Headers.Add("X-Internal-Api-Key", internalKey);
             request.Content = new StringContent(

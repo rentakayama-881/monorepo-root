@@ -19,6 +19,15 @@ func NewTOTPHandler(totpService *services.EntTOTPService) *TOTPHandler {
 	return &TOTPHandler{totpService: totpService}
 }
 
+// GetStatus godoc
+// @Summary      Check TOTP enabled status
+// @Description  Returns the current 2FA/TOTP status for the authenticated user.
+// @Tags         Auth-TOTP
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  dto.TOTPStatusResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/totp/status [get]
 // GET /api/auth/totp/status
 func (h *TOTPHandler) GetStatus(c *gin.Context) {
 	userID, exists := c.Get("user_id")
@@ -37,6 +46,15 @@ func (h *TOTPHandler) GetStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, status)
 }
 
+// Setup godoc
+// @Summary      Begin TOTP setup
+// @Description  Generate a new TOTP secret and return the QR code URL for the authenticator app.
+// @Tags         Auth-TOTP
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  dto.TOTPSetupResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/totp/setup [post]
 // POST /api/auth/totp/setup
 func (h *TOTPHandler) Setup(c *gin.Context) {
 	userID, exists := c.Get("user_id")
@@ -55,6 +73,18 @@ func (h *TOTPHandler) Setup(c *gin.Context) {
 	c.JSON(http.StatusOK, setup)
 }
 
+// Verify godoc
+// @Summary      Verify TOTP setup and enable 2FA
+// @Description  Verify a TOTP code to complete 2FA setup. Returns backup codes (shown only once).
+// @Tags         Auth-TOTP
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      dto.TOTPVerifyRequest  true  "TOTP code"
+// @Success      200   {object}  handlers.SwaggerTOTPVerifyEnabledResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/totp/verify [post]
 // Enables 2FA after verifying code. Returns backup codes (shown ONLY ONCE).
 // POST /api/auth/totp/verify
 func (h *TOTPHandler) Verify(c *gin.Context) {
@@ -84,6 +114,18 @@ func (h *TOTPHandler) Verify(c *gin.Context) {
 	})
 }
 
+// Disable godoc
+// @Summary      Disable TOTP 2FA
+// @Description  Disable two-factor authentication. Requires current password and a valid TOTP code.
+// @Tags         Auth-TOTP
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      dto.TOTPDisableRequest  true  "Password and TOTP code"
+// @Success      200   {object}  handlers.SwaggerTOTPDisableResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/totp/disable [post]
 // POST /api/auth/totp/disable
 func (h *TOTPHandler) Disable(c *gin.Context) {
 	userID, exists := c.Get("user_id")
@@ -114,6 +156,15 @@ func (h *TOTPHandler) Disable(c *gin.Context) {
 	})
 }
 
+// GenerateBackupCodes godoc
+// @Summary      Generate new backup codes
+// @Description  Generate a new set of backup codes. Previous codes are invalidated.
+// @Tags         Auth-TOTP
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerBackupCodesGenerateResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/totp/backup-codes [post]
 // POST /api/auth/totp/backup-codes
 func (h *TOTPHandler) GenerateBackupCodes(c *gin.Context) {
 	userID, exists := c.Get("user_id")
@@ -132,6 +183,15 @@ func (h *TOTPHandler) GenerateBackupCodes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"codes": codes})
 }
 
+// GetBackupCodeCount godoc
+// @Summary      Get backup codes count
+// @Description  Returns the number of remaining unused backup codes.
+// @Tags         Auth-TOTP
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerBackupCodeCountResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/totp/backup-codes/count [get]
 // GET /api/auth/totp/backup-codes/count
 func (h *TOTPHandler) GetBackupCodeCount(c *gin.Context) {
 	userID, exists := c.Get("user_id")
@@ -152,6 +212,17 @@ func (h *TOTPHandler) GetBackupCodeCount(c *gin.Context) {
 	})
 }
 
+// VerifyCode godoc
+// @Summary      Verify a TOTP code
+// @Description  Verify a TOTP code without enabling 2FA. Used for sudo mode and other verification flows.
+// @Tags         Auth-TOTP
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      dto.TOTPVerifyRequest  true  "TOTP code"
+// @Success      200   {object}  handlers.SwaggerTOTPVerifyCodeResponse
+// @Failure      401   {object}  handlers.SwaggerErrorResponse
+// @Router       /auth/totp/verify-code [post]
 // Verifies a TOTP code without enabling (for sudo mode, etc).
 // POST /api/auth/totp/verify-code
 func (h *TOTPHandler) VerifyCode(c *gin.Context) {

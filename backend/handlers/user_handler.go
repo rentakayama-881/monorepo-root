@@ -21,6 +21,15 @@ func NewUserHandler(userService *services.EntUserService) *UserHandler {
 	}
 }
 
+// GetUserInfo godoc
+// @Summary      Get current user info
+// @Description  Returns basic identity info (id, email, username, avatar) for the authenticated user.
+// @Tags         User
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  handlers.SwaggerUserInfoResponse
+// @Failure      401  {object}  handlers.SwaggerErrorResponse
+// @Router       /user/me [get]
 func (h *UserHandler) GetUserInfo(c *gin.Context) {
 	user, ok := mustGetUser(c)
 	if !ok {
@@ -39,6 +48,15 @@ func (h *UserHandler) GetUserInfo(c *gin.Context) {
 	})
 }
 
+// GetPublicUserProfile godoc
+// @Summary      Get public user profile
+// @Description  Returns the public profile of a user by username, including badges, validation case count, and guarantee amount.
+// @Tags         User
+// @Produce      json
+// @Param        username  path      string  true  "Username"
+// @Success      200       {object}  handlers.SwaggerPublicUserProfileResponse
+// @Failure      404       {object}  handlers.SwaggerErrorResponse
+// @Router       /user/{username} [get]
 func (h *UserHandler) GetPublicUserProfile(c *gin.Context) {
 	username := c.Param("username")
 
@@ -51,7 +69,16 @@ func (h *UserHandler) GetPublicUserProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, BuildPublicProfileFromEnt(c, u))
 }
 
-// GetPublicUserProfileByID returns public profile by user ID (for internal service calls)
+// GetPublicUserProfileByID godoc
+// @Summary      Get public user info by ID
+// @Description  Returns minimal public info (id, username, avatar) for a user by their numeric ID. Intended for internal service-to-service lookups.
+// @Tags         User
+// @Produce      json
+// @Param        id  path      int  true  "User ID"
+// @Success      200  {object}  handlers.SwaggerPublicUserByIDResponse
+// @Failure      400  {object}  handlers.SwaggerErrorResponse
+// @Failure      404  {object}  handlers.SwaggerErrorResponse
+// @Router       /users/{id}/public [get]
 func (h *UserHandler) GetPublicUserProfileByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -84,7 +111,20 @@ type UpdateGuaranteeAmountRequest struct {
 	GuaranteeAmount *int64 `json:"guarantee_amount" binding:"required"`
 }
 
-// PUT /api/internal/users/:id/guarantee (internal service auth required)
+// UpdateGuaranteeAmount godoc
+// @Summary      Update user guarantee amount
+// @Description  Sets the guarantee amount for a user. Service-to-service endpoint protected by X-Internal-Api-Key.
+// @Tags         Internal
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id    path      int                                            true  "User ID"
+// @Param        body  body      handlers.SwaggerInternalUpdateGuaranteeRequest  true  "Guarantee amount"
+// @Success      200   {object}  handlers.SwaggerStatusResponse
+// @Failure      400   {object}  handlers.SwaggerErrorResponse
+// @Failure      404   {object}  handlers.SwaggerErrorResponse
+// @Failure      500   {object}  handlers.SwaggerErrorResponse
+// @Router       /internal/users/{id}/guarantee [put]
 func (h *UserHandler) UpdateGuaranteeAmount(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
