@@ -1,0 +1,45 @@
+# =============================================================================
+# Alertmanager Configuration (TEMPLATE - DO NOT PUT REAL TOKENS HERE)
+# =============================================================================
+#
+# File ini adalah TEMPLATE yang di-commit ke git.
+# JANGAN masukkan bot_token atau chat_id asli di sini.
+#
+# Config aktif yang dipakai Alertmanager ada di:
+#   /etc/alertmanager/alertmanager.yml
+#
+# Setup:
+#   sudo cp deploy/alertmanager/alertmanager.yml /etc/alertmanager/alertmanager.yml
+#   # Edit /etc/alertmanager/alertmanager.yml dan ganti placeholder dengan nilai asli
+#   sudo systemctl restart alertmanager
+#
+# =============================================================================
+
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'telegram'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'telegram'
+      repeat_interval: 5m
+
+receivers:
+  - name: 'telegram'
+    telegram_configs:
+      - bot_token: '<TELEGRAM_BOT_TOKEN>'
+        chat_id: 0  # Replace with real chat_id
+        parse_mode: 'HTML'
+        message: |
+          🚨 <b>{{ .GroupLabels.alertname }}</b>
+          Severity: {{ .CommonLabels.severity }}
+          {{ range .Alerts }}
+          • {{ .Annotations.summary }}
+            {{ .Annotations.description }}
+          {{ end }}

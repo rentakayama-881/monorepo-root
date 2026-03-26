@@ -8,6 +8,7 @@ groups:
           severity: critical
         annotations:
           summary: "Service {{ $labels.job }} is down"
+          description: "Target {{ $labels.instance }} dari job {{ $labels.job }} tidak merespons selama lebih dari 1 menit."
 
       - alert: HighErrorRate
         expr: rate(http_requests_total{status_code=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
@@ -16,6 +17,7 @@ groups:
           severity: warning
         annotations:
           summary: "High error rate on {{ $labels.job }} ({{ $value | humanizePercentage }})"
+          description: "Error rate 5xx di {{ $labels.job }} melebihi 5% selama 5 menit terakhir."
 
       - alert: HighLatency
         expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
@@ -24,6 +26,7 @@ groups:
           severity: warning
         annotations:
           summary: "High p95 latency on {{ $labels.job }} ({{ $value }}s)"
+          description: "P95 latency di {{ $labels.job }} melebihi 2 detik selama 5 menit terakhir."
 
       - alert: HighMemoryUsage
         expr: process_resident_memory_bytes / 1024 / 1024 > 512
@@ -32,3 +35,4 @@ groups:
           severity: warning
         annotations:
           summary: "{{ $labels.job }} memory usage above 512MB"
+          description: "Service {{ $labels.job }} menggunakan memori di atas 512MB selama 10 menit terakhir."

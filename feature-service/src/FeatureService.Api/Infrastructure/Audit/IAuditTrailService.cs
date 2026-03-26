@@ -56,6 +56,23 @@ public interface IAuditTrailService
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Hash of last entry or genesis hash</returns>
     Task<string> GetLastEntryHashAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Mencatat perubahan field (before/after) sebagai audit event.
+    /// Otomatis menghitung delta untuk nilai numerik.
+    /// </summary>
+    /// <param name="request">Base audit event request (tanpa Details, akan di-override)</param>
+    /// <param name="fieldName">Nama field yang berubah</param>
+    /// <param name="beforeValue">Nilai sebelum perubahan</param>
+    /// <param name="afterValue">Nilai sesudah perubahan</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Audit trail entry yang dibuat</returns>
+    Task<ImmutableAuditTrail> RecordChangeAsync(
+        AuditEventRequest request,
+        string fieldName,
+        string beforeValue,
+        string afterValue,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

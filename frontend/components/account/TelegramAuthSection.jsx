@@ -130,7 +130,7 @@ export default function TelegramAuthSection({ telegramAuth, onTelegramAuthChange
             <div
               className={`text-sm ${connected ? "text-status-success-text" : "text-status-amber-text"}`}
             >
-              {connected ? "Connected (Verified)" : "Belum terhubung"}
+              {connected ? "Tersambung (Terverifikasi)" : "Belum terhubung"}
             </div>
           </div>
           {connected ? (

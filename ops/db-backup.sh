@@ -12,8 +12,8 @@ source "$SCRIPT_DIR/lib/common.sh"
 # ---------------------------------------------------------------------------
 # Defaults (overridable via environment)
 # ---------------------------------------------------------------------------
-MONGODB_URI="${MONGODB__CONNECTIONSTRING:-mongodb://127.0.0.1:27017}"
-MONGODB_DB="${MONGODB__DATABASENAME:-feature_service_db}"
+MONGODB_URI=""
+MONGODB_DB=""
 BACKUP_BASE="${BACKUP_BASE:-/opt/alephdraad/backups/mongodb}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
 BACKUP_MIN_SIZE_BYTES="${BACKUP_MIN_SIZE_BYTES:-1024}"   # 1 KB
@@ -50,14 +50,18 @@ if [[ -f "$FEATURE_ENV" ]]; then
     [[ -z "$key" || "$key" == \#* ]] && continue
     case "$key" in
       MONGODB__CONNECTIONSTRING)
-        MONGODB_URI="${MONGODB_URI:-$value}"
+        MONGODB_URI="$value"
         ;;
       MONGODB__DATABASENAME)
-        MONGODB_DB="${MONGODB_DB:-$value}"
+        MONGODB_DB="$value"
         ;;
     esac
   done < "$FEATURE_ENV"
 fi
+
+# Fallback defaults if .env didn't provide values
+MONGODB_URI="${MONGODB_URI:-mongodb://127.0.0.1:27017}"
+MONGODB_DB="${MONGODB_DB:-FeatureServiceDb}"
 
 # ---------------------------------------------------------------------------
 # Derived paths

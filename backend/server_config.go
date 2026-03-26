@@ -20,6 +20,9 @@ import (
 // Delete account rate limiter: 3 attempts per hour
 var deleteAccountLimiter = middleware.NewRateLimiter(3, time.Hour)
 
+// Data export rate limiter: 5 exports per hour per IP
+var dataExportLimiter = middleware.NewRateLimiter(5, time.Hour)
+
 // DeleteAccountRateLimit is a middleware that rate limits delete account requests
 func DeleteAccountRateLimit() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -27,6 +30,20 @@ func DeleteAccountRateLimit() gin.HandlerFunc {
 		if !deleteAccountLimiter.Allow(ip) {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"error": "Terlalu banyak percobaan. Silakan coba lagi dalam 1 jam.",
+			})
+			return
+		}
+		c.Next()
+	}
+}
+
+// DataExportRateLimit is a middleware that rate limits GDPR data export requests
+func DataExportRateLimit() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
+		if !dataExportLimiter.Allow(ip) {
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+				"error": "Terlalu banyak permintaan ekspor data. Silakan coba lagi dalam 1 jam.",
 			})
 			return
 		}

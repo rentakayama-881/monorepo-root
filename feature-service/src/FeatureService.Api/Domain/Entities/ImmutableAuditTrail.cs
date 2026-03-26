@@ -190,6 +190,17 @@ public enum AuditEventType
     DisputeResolved,
     DisputeEscalated,
 
+    // Deposit events
+    DepositCreated,
+    DepositCompleted,
+    DepositFailed,
+    DepositCancelled,
+
+    // Data lifecycle events
+    DataDeletionInitiated,
+    AccountDeleted,
+    DataExported,
+
     // System events
     IdempotencyKeyCreated,
     IdempotencyKeyUsed

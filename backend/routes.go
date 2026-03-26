@@ -103,6 +103,8 @@ func registerPublicRoutes(api *gin.RouterGroup, enhancedRateLimiter *middleware.
 			account.GET("/can-delete", middleware.AuthMiddleware(), handlers.CanDeleteAccountHandler)
 			// Delete account requires sudo mode
 			account.DELETE("", middleware.AuthMiddleware(), DeleteAccountRateLimit(), middleware.RequireSudo(deps.sudoValidator), handlers.DeleteAccountHandler)
+			// GDPR personal data export
+			account.GET("/data-export", middleware.AuthMiddleware(), DataExportRateLimit(), handlers.GDPRDataExportHandler)
 		}
 
 		user := apiRateLimited.Group("/user")

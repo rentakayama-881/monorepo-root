@@ -232,4 +232,47 @@ public class AuditTrailService : IAuditTrailService
 
         return (lastEntry.EntryHash, lastEntry.SequenceNumber + 1);
     }
+
+    /// <inheritdoc/>
+    public async Task<ImmutableAuditTrail> RecordChangeAsync(
+        AuditEventRequest request,
+        string fieldName,
+        string beforeValue,
+        string afterValue,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fieldName);
+
+        var details = new Dictionary<string, string>(request.Details ?? new Dictionary<string, string>())
+        {
+            ["field"] = fieldName,
+            ["before"] = beforeValue ?? "",
+            ["after"] = afterValue ?? ""
+        };
+
+        // Compute numeric delta if both values are numeric
+        if (long.TryParse(beforeValue, out var beforeNum) && long.TryParse(afterValue, out var afterNum))
+        {
+            var delta = afterNum - beforeNum;
+            details["change"] = delta.ToString();
+        }
+
+        var changeRequest = new AuditEventRequest
+        {
+            TransactionId = request.TransactionId,
+            TransactionType = request.TransactionType,
+            EventType = request.EventType,
+            ActorUserId = request.ActorUserId,
+            ActorUsername = request.ActorUsername,
+            Amount = request.Amount,
+            Details = details,
+            PqcKeyId = request.PqcKeyId,
+            IpAddress = request.IpAddress,
+            UserAgent = request.UserAgent,
+            IdempotencyKey = request.IdempotencyKey
+        };
+
+        return await RecordEventAsync(changeRequest, cancellationToken);
+    }
 }

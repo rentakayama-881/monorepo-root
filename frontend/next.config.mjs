@@ -40,11 +40,18 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              // 'unsafe-inline' is required for Next.js hydration inline scripts
+              // when using static rendering (force-static, generateStaticParams,
+              // revalidate). Nonce-based CSP would force all pages to dynamic
+              // rendering, breaking SSG/ISR for 8+ routes. Removing 'unsafe-eval'
+              // is the high-value security improvement — it blocks eval(),
+              // Function(), and similar dynamic code execution vectors.
+              "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://*.supabase.co https://i.ibb.co",
               "font-src 'self'",
               "connect-src 'self' https://api.aivalid.id https://feature.aivalid.id https://*.sentry.io",
+              "object-src 'none'",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

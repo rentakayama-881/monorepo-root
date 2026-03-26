@@ -52,14 +52,22 @@ export const metadata = {
     siteName: "AIValid",
     title: siteName,
     description: siteDescription,
-    images: [],
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "AIValid - Platform Validasi AI #1 di Indonesia",
+      },
+    ],
   },
 
   // Twitter Card
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: siteName,
     description: siteDescription,
+    images: ["/twitter-image"],
   },
 
   // Robots

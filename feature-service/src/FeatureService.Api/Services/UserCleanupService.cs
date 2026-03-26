@@ -1,6 +1,8 @@
 using MongoDB.Driver;
 using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.Audit;
 using FeatureService.Api.Models.Entities;
+using FeatureService.Api.Domain.Entities;
 
 namespace FeatureService.Api.Services;
 
@@ -50,11 +52,16 @@ public class UserCleanupService : IUserCleanupService
     private readonly IMongoCollection<Transfer> _transfers;
     private readonly IMongoCollection<TransactionLedger> _ledger;
     private readonly IMongoCollection<Withdrawal> _withdrawals;
+    private readonly IAuditTrailService _auditService;
     private readonly ILogger<UserCleanupService> _logger;
 
-    public UserCleanupService(MongoDbContext context, ILogger<UserCleanupService> logger)
+    public UserCleanupService(
+        MongoDbContext context,
+        IAuditTrailService auditService,
+        ILogger<UserCleanupService> logger)
     {
         _context = context;
+        _auditService = auditService;
         _transfers = context.GetCollection<Transfer>("transfers");
         _ledger = context.GetCollection<TransactionLedger>("transaction_ledger");
         _withdrawals = context.Withdrawals;
@@ -161,6 +168,23 @@ public class UserCleanupService : IUserCleanupService
                 );
             }
 
+            var auditTransactionId = $"cleanup_{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}";
+
+            // Record data deletion initiated
+            await _auditService.RecordEventAsync(new AuditEventRequest
+            {
+                TransactionId = auditTransactionId,
+                TransactionType = AuditTransactionTypes.AccountLifecycle,
+                EventType = AuditEventType.DataDeletionInitiated,
+                ActorUserId = userId,
+                ActorUsername = $"user_{userId}",
+                Details = new Dictionary<string, string>
+                {
+                    ["action"] = AuditActions.DeletionValidated,
+                    ["walletBalance"] = validation.WalletBalance.ToString()
+                }
+            });
+
             // Hard delete all user data
             var stats = new UserCleanupStatsBuilder();
 
@@ -182,16 +206,38 @@ public class UserCleanupService : IUserCleanupService
             stats.TransactionsDeleted = (int)txResult.DeletedCount;
 
             // 7. Delete transaction ledger entries
-            await _ledger.DeleteManyAsync(l => l.UserId == (int)userId);
+            var ledgerResult = await _ledger.DeleteManyAsync(l => l.UserId == (int)userId);
 
             // 8. Delete guarantee locks (historical)
-            await _context.GuaranteeLocks.DeleteManyAsync(g => g.UserId == userId);
+            var guaranteeResult = await _context.GuaranteeLocks.DeleteManyAsync(g => g.UserId == userId);
 
             // 9. Delete user warnings (where user is the target)
-            await _context.UserWarnings.DeleteManyAsync(w => w.UserId == userId);
+            var warningsResult = await _context.UserWarnings.DeleteManyAsync(w => w.UserId == userId);
 
             // 10. Delete device bans for this user
-            await _context.DeviceBans.DeleteManyAsync(d => d.UserId == userId);
+            var deviceBansResult = await _context.DeviceBans.DeleteManyAsync(d => d.UserId == userId);
+
+            // Record account deleted with full deletion stats
+            await _auditService.RecordEventAsync(new AuditEventRequest
+            {
+                TransactionId = auditTransactionId,
+                TransactionType = AuditTransactionTypes.AccountLifecycle,
+                EventType = AuditEventType.AccountDeleted,
+                ActorUserId = userId,
+                ActorUsername = $"user_{userId}",
+                Details = new Dictionary<string, string>
+                {
+                    ["action"] = AuditActions.DeletionCompleted,
+                    ["reportsDeleted"] = stats.ReportsClosed.ToString(),
+                    ["documentsDeleted"] = stats.DocumentsDeleted.ToString(),
+                    ["walletsDeleted"] = stats.WalletsDeleted.ToString(),
+                    ["transactionsDeleted"] = stats.TransactionsDeleted.ToString(),
+                    ["ledgerEntriesDeleted"] = ledgerResult.DeletedCount.ToString(),
+                    ["guaranteeLocksDeleted"] = guaranteeResult.DeletedCount.ToString(),
+                    ["userWarningsDeleted"] = warningsResult.DeletedCount.ToString(),
+                    ["deviceBansDeleted"] = deviceBansResult.DeletedCount.ToString()
+                }
+            });
 
             _logger.LogInformation("Cleanup completed for user {UserId}: {@Stats}", userId, stats.Build());
 
@@ -204,6 +250,29 @@ public class UserCleanupService : IUserCleanupService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during cleanup for user {UserId}", userId);
+
+            // Record deletion failure in audit trail (best effort)
+            try
+            {
+                await _auditService.RecordEventAsync(new AuditEventRequest
+                {
+                    TransactionId = $"cleanup_{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}",
+                    TransactionType = AuditTransactionTypes.AccountLifecycle,
+                    EventType = AuditEventType.DataDeletionInitiated,
+                    ActorUserId = userId,
+                    ActorUsername = $"user_{userId}",
+                    Details = new Dictionary<string, string>
+                    {
+                        ["action"] = AuditActions.DeletionFailed,
+                        ["error"] = ex.Message
+                    }
+                });
+            }
+            catch (Exception auditEx)
+            {
+                _logger.LogWarning(auditEx, "Failed to record deletion failure audit for user {UserId}", userId);
+            }
+
             return new UserCleanupResult(
                 Success: false,
                 Error: "Internal error during cleanup. Please contact support.",
