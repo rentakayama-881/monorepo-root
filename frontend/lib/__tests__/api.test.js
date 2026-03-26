@@ -59,8 +59,9 @@ describe("api.js", () => {
 
       const result = await fetchJson("/api/health");
       expect(global.fetch).toHaveBeenCalledWith(
-        "https://api.test.com/api/health",
+        "https://api.test.com/api/v1/health",
         expect.objectContaining({
+          credentials: "include",
           signal: expect.any(AbortSignal),
         })
       );

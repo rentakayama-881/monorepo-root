@@ -33,7 +33,7 @@ describe("tokenRefresh.js", () => {
 
       expect(result).toBeNull();
       expect(global.fetch).toHaveBeenCalledWith(
-        "https://api.test.com/api/auth/refresh",
+        "https://api.test.com/api/v1/auth/refresh",
         expect.objectContaining({
           method: "POST",
           credentials: "include",
@@ -58,7 +58,7 @@ describe("tokenRefresh.js", () => {
       expect(result).toBe("new-access-token");
       expect(setTokens).toHaveBeenCalledWith("new-access-token", "new-refresh-token", 900);
       expect(global.fetch).toHaveBeenCalledWith(
-        "https://api.test.com/api/auth/refresh",
+        "https://api.test.com/api/v1/auth/refresh",
         expect.objectContaining({
           method: "POST",
           credentials: "include",
