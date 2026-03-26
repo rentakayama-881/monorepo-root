@@ -75,8 +75,10 @@ export const metadata = {
     },
   },
 
-  // Icons — TODO: ganti setelah logo system baru dibuat
-  icons: {},
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-touch-icon.svg", type: "image/svg+xml" }],
+  },
 
   // Manifest
   manifest: "/manifest.json",

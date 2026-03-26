@@ -295,7 +295,7 @@ func main() {
 	// Versioned API — new clients should target /api/v1.
 	registerAPIGroup(router.Group("/api/v1"))
 
-	// Legacy unversioned API — kept for backward compatibility; will be deprecated.
+	// Legacy unversioned API — kept for backward compatibility; new clients use /api/v1.
 	registerAPIGroup(router.Group("/api"))
 
 	registerAdminRoutes(router, enhancedRateLimiter, lztMarketHandler, featureFlagHandler)

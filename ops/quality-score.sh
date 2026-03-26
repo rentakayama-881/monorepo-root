@@ -390,10 +390,12 @@ score_deprecation() {
   local score=100 deductions=0
 
   # Count "deprecated" / "DEPRECATED" markers in backend .go files
+  # Exclude: vendor, ent (generated ORM), docs (generated Swagger), test files,
+  #          Swagger annotations (// @) which are API documentation metadata
   local deprecated_count
   deprecated_count=$(grep -rn -i 'deprecated' \
     "$OPS_ROOT/backend/" --include='*.go' \
-    2>/dev/null | grep -v vendor | grep -v '/ent/' | wc -l || true)
+    2>/dev/null | grep -v vendor | grep -v '/ent/' | grep -v '/docs/' | grep -v '_test.go' | grep -v '// @' | wc -l || true)
   if (( deprecated_count > 0 )); then
     deductions=$(( deprecated_count * 3 ))
     printf '  [Deprecation] -%d : %d deprecated markers in backend .go files\n' "$deductions" "$deprecated_count"

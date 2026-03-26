@@ -189,6 +189,8 @@ export default function useDeposit() {
   }
 
   const loadDataRef = useRef(false);
+  const loadDataFn = useRef(loadData);
+  loadDataFn.current = loadData;
 
   useEffect(() => {
     if (loadDataRef.current) return;
@@ -198,12 +200,12 @@ export default function useDeposit() {
       router.push("/login");
       return;
     }
-    loadData();
+    loadDataFn.current();
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only: loadData↔startPolling circular dep
+  }, [router]);
 
   useEffect(() => {
     if (availableNetworks.length === 1) {
