@@ -34,8 +34,8 @@ public static class ServiceRegistrationInfrastructure
         // Combines CRYSTALS-Dilithium3+Ed25519 for signatures and CRYSTALS-Kyber768+ECDH for key encapsulation
         builder.Services.AddSingleton<IHybridCryptoService, HybridCryptoService>();
 
-        // Idempotency service (in-memory, singleton to hold state)
-        builder.Services.AddSingleton<IIdempotencyService, InMemoryIdempotencyService>();
+        // Idempotency service (MongoDB-backed, singleton for index setup)
+        builder.Services.AddSingleton<IIdempotencyService, MongoIdempotencyService>();
 
         // Audit Trail service
         builder.Services.AddScoped<IAuditTrailService, AuditTrailService>();

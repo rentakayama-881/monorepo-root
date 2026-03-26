@@ -36,6 +36,20 @@ const nextConfig = {
             value:
               "camera=(), microphone=(), geolocation=(), usb=(), magnetometer=(), gyroscope=()",
           },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob: https://*.supabase.co https://i.ibb.co",
+              "font-src 'self'",
+              "connect-src 'self' https://api.aivalid.id https://feature.aivalid.id https://*.sentry.io",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
+          },
         ],
       },
     ];

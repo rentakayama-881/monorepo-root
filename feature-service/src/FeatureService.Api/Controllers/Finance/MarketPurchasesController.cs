@@ -1,3 +1,4 @@
+using FeatureService.Api.Attributes;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Infrastructure.Auth;
 using FeatureService.Api.Services;
@@ -62,6 +63,7 @@ public class MarketPurchasesController : ApiControllerBase
     }
 
     [HttpPost("reserve")]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
     [ProducesResponseType(typeof(ApiErrorResponse), 409)]
@@ -102,6 +104,7 @@ public class MarketPurchasesController : ApiControllerBase
     }
 
     [HttpPost("capture")]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
     [ProducesResponseType(typeof(ApiErrorResponse), 404)]
@@ -145,6 +148,7 @@ public class MarketPurchasesController : ApiControllerBase
     }
 
     [HttpPost("release")]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
     [ProducesResponseType(typeof(ApiErrorResponse), 404)]
@@ -188,6 +192,7 @@ public class MarketPurchasesController : ApiControllerBase
     }
 
     [HttpPost("distribute")]
+    [RequiresPqcSignature(RequireIdempotencyKey = true)]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(ApiErrorResponse), 400)]
     [ProducesResponseType(typeof(ApiErrorResponse), 404)]

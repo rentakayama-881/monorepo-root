@@ -168,6 +168,12 @@ public partial class MarketPurchaseWalletService : IMarketPurchaseWalletService
             return (false, "Reservasi sudah dilepas", reservation);
         }
 
+        // Atomic guard: only capture if status is still Reserved
+        var atomicFilter = Builders<MarketPurchaseReservation>.Filter.And(
+            filter,
+            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, ReservationStatus.Reserved)
+        );
+
         var now = DateTime.UtcNow;
         var update = Builders<MarketPurchaseReservation>.Update
             .Set(r => r.Status, ReservationStatus.Captured)
@@ -175,7 +181,14 @@ public partial class MarketPurchaseWalletService : IMarketPurchaseWalletService
             .Set(r => r.CapturedAt, now)
             .Set(r => r.UpdatedAt, now);
 
-        await _reservations.UpdateOneAsync(filter, update);
+        var result = await _reservations.UpdateOneAsync(atomicFilter, update);
+        if (result.ModifiedCount == 0)
+        {
+            var latest = await _reservations.Find(filter).FirstOrDefaultAsync();
+            _logger.LogWarning("Capture failed — reservation already modified for orderId={OrderId}, userId={UserId}", orderId, userId);
+            return (false, "Reservasi sudah diproses atau dimodifikasi", latest);
+        }
+
         var updated = await _reservations.Find(filter).FirstOrDefaultAsync();
         return (true, null, updated);
     }

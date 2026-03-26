@@ -12,7 +12,8 @@ public class CreateTransferRequestValidator : AbstractValidator<CreateTransferRe
             .MaximumLength(50).WithMessage("Username penerima maksimal 50 karakter");
 
         RuleFor(x => x.Amount)
-            .GreaterThan(0).WithMessage("Jumlah transfer harus lebih dari 0");
+            .GreaterThan(0).WithMessage("Jumlah transfer harus lebih dari 0")
+            .LessThanOrEqualTo(500_000_000).WithMessage("Maksimum transfer Rp 500.000.000");
 
         RuleFor(x => x.Pin)
             .NotEmpty().WithMessage("PIN wajib diisi")

@@ -13,7 +13,8 @@ public class CreateDepositRequestValidator : AbstractValidator<CreateDepositRequ
     public CreateDepositRequestValidator()
     {
         RuleFor(x => x.Amount)
-            .GreaterThanOrEqualTo(2_000).WithMessage("Minimum deposit Rp 2.000");
+            .GreaterThanOrEqualTo(2_000).WithMessage("Minimum deposit Rp 2.000")
+            .LessThanOrEqualTo(500_000_000).WithMessage("Maksimum deposit Rp 500.000.000");
 
         RuleFor(x => x.PayCurrency)
             .Must(c => ValidCryptoCurrencies.Contains(c!))

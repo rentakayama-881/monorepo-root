@@ -14,7 +14,7 @@ try
 
     builder.WebHost.ConfigureKestrel(options =>
     {
-        options.Limits.MaxRequestBodySize = 524_288_000; // 500 MB
+        options.Limits.MaxRequestBodySize = 10_485_760; // 10 MB
     });
 
     builder.WebHost.UseSentry(o =>
