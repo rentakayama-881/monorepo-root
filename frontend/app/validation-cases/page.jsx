@@ -7,8 +7,8 @@ import { ValidationCaseIndexContentSkeleton } from "./ValidationCaseIndexSkeleto
 export const revalidate = 30;
 
 export const metadata = {
-  title: "Daftar Case Validasi",
-  description: "Lihat semua case validasi di AIValid. Filter berdasarkan status, bounty, dan tag.",
+  title: "Daftar Kasus Validasi",
+  description: "Lihat semua kasus validasi di AIValid. Filter berdasarkan status, bounty, dan tag.",
   alternates: {
     canonical: "https://aivalid.id/validation-cases",
   },

@@ -229,11 +229,7 @@ function Toast({ title, description, variant, onClose, duration, action, index }
       {/* Progress bar */}
       {duration > 0 && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-border/30 rounded-b-lg overflow-hidden">
-          <div
-            ref={progressRef}
-            className="h-full bg-current opacity-50 origin-left"
-            style={{ transformOrigin: "left" }}
-          />
+          <div ref={progressRef} className="h-full bg-current opacity-50 origin-left" />
         </div>
       )}
 

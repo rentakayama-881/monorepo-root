@@ -9,13 +9,7 @@ export default function Hero() {
       <div className="hero-mesh-bg absolute inset-0 pointer-events-none" />
 
       {/* Dot pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage: `radial-gradient(circle, var(--foreground) 1px, transparent 1px)`,
-          backgroundSize: "24px 24px",
-        }}
-      />
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(circle,var(--foreground)_1px,transparent_1px)] [background-size:24px_24px]" />
 
       <div className="container relative z-10 py-16 md:py-24">
         <div className="mx-auto max-w-4xl">
@@ -69,8 +63,8 @@ export default function Hero() {
 
           {/* Flow Steps — numbered circles connected by rainbow line */}
           <div
-            className="mt-16 hero-animated animate-hero-in will-change-transform"
-            style={{ animationDelay: "0.3s", animationDuration: "0.8s" }}
+            className="mt-16 hero-animated animate-hero-in will-change-transform [animation-duration:0.8s]"
+            style={{ animationDelay: "0.3s" }}
           >
             <div className="relative">
               {/* Connecting line (desktop only) */}

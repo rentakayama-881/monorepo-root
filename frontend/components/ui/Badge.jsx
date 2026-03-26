@@ -28,29 +28,23 @@ export const Badge = memo(function Badge({
     return (
       <span
         className={cn(
-          "inline-flex items-center rounded-sm border font-medium animate-pulse-subtle",
+          "inline-flex items-center rounded-sm border font-medium animate-pulse-subtle bg-[var(--badge-bg)] border-[var(--badge-border)] text-[var(--badge-color)]",
           sizes.gap,
           sizes.text,
           sizes.padding,
           className
         )}
         style={{
-          backgroundColor: tone.backgroundColor,
-          borderColor: tone.borderColor,
-          color: tone.color,
+          "--badge-bg": tone.backgroundColor,
+          "--badge-border": tone.borderColor,
+          "--badge-color": tone.color,
         }}
         title={config.label}
         {...props}
       >
         <span className="relative flex h-2 w-2">
-          <span
-            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-            style={{ backgroundColor: config.color }}
-          ></span>
-          <span
-            className="relative inline-flex rounded-full h-2 w-2"
-            style={{ backgroundColor: config.color }}
-          ></span>
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-[var(--badge-color)]"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--badge-color)]"></span>
         </span>
         {renderBadgeIcon(config, sizes.icon)}
         {(showLabel || variant === "pulse") && <span>{config.label}</span>}
@@ -62,8 +56,8 @@ export const Badge = memo(function Badge({
   if (variant === "icon") {
     return (
       <span
-        className={cn("inline-flex items-center shrink-0", className)}
-        style={{ color: tone.color }}
+        className={cn("inline-flex items-center shrink-0 text-[var(--badge-color)]", className)}
+        style={{ "--badge-color": tone.color }}
         title={config.label}
         {...props}
       >
@@ -76,8 +70,13 @@ export const Badge = memo(function Badge({
   if (variant === "inline") {
     return (
       <span
-        className={cn("inline-flex items-center font-medium", sizes.gap, sizes.text, className)}
-        style={{ color: tone.color }}
+        className={cn(
+          "inline-flex items-center font-medium text-[var(--badge-color)]",
+          sizes.gap,
+          sizes.text,
+          className
+        )}
+        style={{ "--badge-color": tone.color }}
         title={config.label}
         {...props}
       >
@@ -91,16 +90,16 @@ export const Badge = memo(function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center rounded-[var(--radius)] border font-medium w-fit whitespace-nowrap shrink-0 overflow-hidden",
+        "inline-flex items-center justify-center rounded-[var(--radius)] border font-medium w-fit whitespace-nowrap shrink-0 overflow-hidden bg-[var(--badge-bg)] border-[var(--badge-border)] text-[var(--badge-color)]",
         sizes.gap,
         sizes.text,
         sizes.padding,
         className
       )}
       style={{
-        backgroundColor: tone.backgroundColor,
-        borderColor: tone.borderColor,
-        color: tone.color,
+        "--badge-bg": tone.backgroundColor,
+        "--badge-border": tone.borderColor,
+        "--badge-color": tone.color,
       }}
       title={config.label}
       {...props}
@@ -124,7 +123,7 @@ export const BadgeChip = memo(function BadgeChip({ badge, onRemove, size = "sm",
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-[var(--radius)] border font-medium transition-all w-fit whitespace-nowrap shrink-0 overflow-hidden",
+        "inline-flex items-center rounded-[var(--radius)] border font-medium transition-all w-fit whitespace-nowrap shrink-0 overflow-hidden bg-[var(--badge-bg)] border-[var(--badge-border)] text-[var(--badge-color)]",
         "border hover:shadow-sm",
         sizes.gap,
         sizes.text,
@@ -132,9 +131,9 @@ export const BadgeChip = memo(function BadgeChip({ badge, onRemove, size = "sm",
         className
       )}
       style={{
-        backgroundColor: tone.backgroundColor,
-        borderColor: tone.borderColor,
-        color: tone.color,
+        "--badge-bg": tone.backgroundColor,
+        "--badge-border": tone.borderColor,
+        "--badge-color": tone.color,
       }}
       title={badge?.description || badge?.Description || config.label}
     >

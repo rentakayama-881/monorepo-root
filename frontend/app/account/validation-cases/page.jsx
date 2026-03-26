@@ -78,7 +78,7 @@ export default function MyValidationCasesPage() {
           if (deletingId) return;
           setDeleteTarget(null);
         }}
-        title="Delete Validation Case"
+        title="Hapus Kasus Validasi"
         size="sm"
         closeOnBackdrop={!deletingId}
         closeOnEscape={!deletingId}

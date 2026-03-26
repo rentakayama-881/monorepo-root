@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Validation Case",
+  title: "Kasus Validasi",
   robots: { index: false, follow: false },
 };
 

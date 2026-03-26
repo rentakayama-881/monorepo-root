@@ -108,11 +108,11 @@ export default function Avatar({
     ) : (
       <div
         className={cn(
-          "flex shrink-0 items-center justify-center rounded-full border border-border font-semibold text-primary-foreground select-none aspect-square",
+          "flex shrink-0 items-center justify-center rounded-full border border-border font-semibold text-primary-foreground select-none aspect-square bg-[var(--avatar-bg)]",
           sizeClass,
           className
         )}
-        style={{ backgroundColor: bgColor }}
+        style={{ "--avatar-bg": bgColor }}
         title={name}
       >
         {initials ? initials : <FallbackUserIcon />}

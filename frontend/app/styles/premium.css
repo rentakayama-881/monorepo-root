@@ -1,0 +1,252 @@
+/* ===== Gradient Utilities ===== */
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent-foreground) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-border {
+  position: relative;
+  background: var(--card);
+  border: 1px solid transparent;
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent-foreground) 100%);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ===== Glass Effect ===== */
+.glass {
+  background-color: oklch(from var(--background) l c h / 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid oklch(from var(--border) l c h / 0.5);
+}
+
+/* ===== Home Page — Rainbow Utilities ===== */
+
+.rainbow-border {
+  position: relative;
+  background: var(--card);
+  border: 1px solid transparent;
+}
+
+.rainbow-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    oklch(0.65 0.22 10) 0%,
+    oklch(0.72 0.17 55) 17%,
+    oklch(0.8 0.14 95) 33%,
+    oklch(0.68 0.19 145) 50%,
+    oklch(0.62 0.17 235) 67%,
+    oklch(0.55 0.18 280) 83%,
+    oklch(0.62 0.2 330) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.rainbow-text {
+  background: linear-gradient(
+    135deg,
+    oklch(0.65 0.22 10) 0%,
+    oklch(0.72 0.17 55) 17%,
+    oklch(0.8 0.14 95) 33%,
+    oklch(0.68 0.19 145) 50%,
+    oklch(0.62 0.17 235) 67%,
+    oklch(0.55 0.18 280) 83%,
+    oklch(0.62 0.2 330) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.rainbow-glow {
+  box-shadow:
+    0 0 20px -5px oklch(0.55 0.15 280 / 15%),
+    0 0 40px -10px oklch(0.62 0.18 330 / 10%),
+    0 0 60px -15px oklch(0.68 0.15 145 / 8%);
+}
+
+.dark .rainbow-glow {
+  box-shadow:
+    0 0 20px -5px oklch(0.55 0.15 280 / 25%),
+    0 0 40px -10px oklch(0.62 0.18 330 / 18%),
+    0 0 60px -15px oklch(0.68 0.15 145 / 12%);
+}
+
+.hero-mesh-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 15% 40%, oklch(0.55 0.15 280 / 8%) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 55% at 85% 25%, oklch(0.62 0.18 330 / 6%) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 45% at 50% 85%, oklch(0.68 0.15 145 / 5%) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 70% 60%, oklch(0.72 0.12 55 / 4%) 0%, transparent 60%);
+}
+
+.dark .hero-mesh-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 15% 40%, oklch(0.45 0.15 280 / 15%) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 55% at 85% 25%, oklch(0.5 0.18 330 / 12%) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 45% at 50% 85%, oklch(0.55 0.15 145 / 10%) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 70% 60%, oklch(0.6 0.12 55 / 8%) 0%, transparent 60%);
+}
+
+.rainbow-line-h {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    oklch(0.65 0.22 10),
+    oklch(0.72 0.17 55),
+    oklch(0.8 0.14 95),
+    oklch(0.68 0.19 145),
+    oklch(0.62 0.17 235),
+    oklch(0.55 0.18 280),
+    oklch(0.62 0.2 330)
+  );
+}
+
+.rainbow-line-v {
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    oklch(0.65 0.22 10),
+    oklch(0.72 0.17 55),
+    oklch(0.8 0.14 95),
+    oklch(0.68 0.19 145),
+    oklch(0.62 0.17 235),
+    oklch(0.55 0.18 280),
+    oklch(0.62 0.2 330)
+  );
+}
+
+.rainbow-left-accent {
+  position: relative;
+  overflow: hidden;
+}
+
+.rainbow-left-accent::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(
+    180deg,
+    oklch(0.65 0.22 10),
+    oklch(0.62 0.17 235),
+    oklch(0.55 0.18 280)
+  );
+}
+
+/* ===== Gradient Utilities ===== */
+.gradient-subtle {
+  background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%);
+}
+
+/* ===== Payment Waiting — Premium Ambient Effects ===== */
+
+@keyframes ambient-glow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes pulse-ring {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes breathe-dot {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+
+.animate-ambient-glow {
+  animation: ambient-glow 4s ease-in-out infinite;
+}
+
+.animate-breathe-dot {
+  animation: breathe-dot 2s ease-in-out infinite;
+}
+
+/* Glass card for premium payment UI */
+.glass-card {
+  background: oklch(0.98 0.003 260 / 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid oklch(0.8 0.01 260 / 0.3);
+}
+
+/* Class-based (explicit user choice) */
+.dark .glass-card {
+  background: oklch(0.22 0.01 260 / 0.5);
+  border-color: oklch(0.4 0.02 260 / 0.3);
+}
+
+/* System preference fallback (only when no explicit choice) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) .glass-card {
+    background: oklch(0.22 0.01 260 / 0.5);
+    border-color: oklch(0.4 0.02 260 / 0.3);
+  }
+}
+
+/* Ambient glow background blob */
+.ambient-blob {
+  background: radial-gradient(ellipse at 50% 0%, oklch(0.65 0.12 250 / 0.12) 0%, transparent 70%);
+}
+
+/* Class-based (explicit user choice) */
+.dark .ambient-blob {
+  background: radial-gradient(ellipse at 50% 0%, oklch(0.45 0.1 250 / 0.15) 0%, transparent 70%);
+}
+
+/* System preference fallback (only when no explicit choice) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) .ambient-blob {
+    background: radial-gradient(ellipse at 50% 0%, oklch(0.45 0.1 250 / 0.15) 0%, transparent 70%);
+  }
+}
+
+/* Tree/rainbow-card-glass CSS removed — using clean panel design */

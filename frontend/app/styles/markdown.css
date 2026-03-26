@@ -1,0 +1,300 @@
+/* ===== GitHub-style Markdown Body ===== */
+.markdown-body {
+  font-size: 14px;
+  line-height: 1.6;
+  word-wrap: break-word;
+  color: var(--foreground);
+}
+
+/* Code block container */
+.markdown-body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.5;
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 16px 0;
+}
+
+.markdown-body pre code {
+  display: block;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: transparent;
+  border: 0;
+  font-size: 100%;
+  white-space: pre;
+  color: var(--foreground);
+}
+
+.markdown-body code {
+  font-family: var(--font-mono);
+}
+
+/* Inline code */
+.markdown-body :not(pre) > code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  white-space: break-spaces;
+  background-color: var(--secondary);
+  border-radius: var(--radius);
+  color: var(--foreground);
+}
+
+.markdown-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Blockquote */
+.markdown-body blockquote {
+  padding: 0 1em;
+  color: var(--muted-foreground);
+  border-left: 0.25em solid var(--border);
+  margin: 16px 0;
+}
+
+.markdown-body blockquote > :first-child {
+  margin-top: 0;
+}
+
+.markdown-body blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* ===== Syntax Highlighting (theme-aware) ===== */
+/* Light mode syntax colors */
+.markdown-body .hljs {
+  color: var(--foreground);
+  background: transparent;
+}
+
+.markdown-body .hljs-comment,
+.markdown-body .hljs-quote {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.markdown-body .hljs-keyword,
+.markdown-body .hljs-selector-tag,
+.markdown-body .hljs-addition {
+  color: #cf222e;
+}
+
+.markdown-body .hljs-string,
+.markdown-body .hljs-doctag {
+  color: #0a3069;
+}
+
+.markdown-body .hljs-number,
+.markdown-body .hljs-literal {
+  color: #0550ae;
+}
+
+.markdown-body .hljs-title,
+.markdown-body .hljs-section,
+.markdown-body .hljs-selector-id {
+  color: #8250df;
+}
+
+.markdown-body .hljs-built_in,
+.markdown-body .hljs-type {
+  color: #953800;
+}
+
+.markdown-body .hljs-attr,
+.markdown-body .hljs-attribute {
+  color: #0550ae;
+}
+
+.markdown-body .hljs-meta {
+  color: #1f2328;
+}
+
+.markdown-body .hljs-deletion {
+  color: #82071e;
+  background-color: #ffebe9;
+}
+
+.markdown-body .hljs-addition {
+  color: #116329;
+  background-color: #dafbe1;
+}
+
+/* Dark mode syntax colors (match theme toggle, not OS preference) */
+.dark .markdown-body .hljs-keyword,
+.dark .markdown-body .hljs-selector-tag {
+  color: #ff7b72;
+}
+
+.dark .markdown-body .hljs-string,
+.dark .markdown-body .hljs-doctag {
+  color: #a5d6ff;
+}
+
+.dark .markdown-body .hljs-number,
+.dark .markdown-body .hljs-literal {
+  color: #79c0ff;
+}
+
+.dark .markdown-body .hljs-title,
+.dark .markdown-body .hljs-section,
+.dark .markdown-body .hljs-selector-id {
+  color: #d2a8ff;
+}
+
+.dark .markdown-body .hljs-built_in,
+.dark .markdown-body .hljs-type {
+  color: #ffa657;
+}
+
+.dark .markdown-body .hljs-attr,
+.dark .markdown-body .hljs-attribute {
+  color: #79c0ff;
+}
+
+.dark .markdown-body .hljs-meta {
+  color: #c9d1d9;
+}
+
+.dark .markdown-body .hljs-deletion {
+  color: #ffdcd7;
+  background-color: #67060c;
+}
+
+.dark .markdown-body .hljs-addition {
+  color: #aff5b4;
+  background-color: #033a16;
+}
+
+/* ===== Additional Markdown Elements ===== */
+/* Headings */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  color: var(--foreground);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* Lists */
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 2em;
+}
+
+.markdown-body li {
+  color: var(--foreground);
+}
+
+.markdown-body li + li {
+  margin-top: 0.25em;
+}
+
+/* Task lists */
+.markdown-body .task-list-item {
+  list-style-type: none;
+}
+
+.markdown-body input[type="checkbox"] {
+  margin-right: 0.5em;
+}
+
+/* Tables */
+.markdown-body table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.markdown-body th,
+.markdown-body td {
+  padding: 6px 13px;
+  border: 1px solid var(--border);
+}
+
+.markdown-body th {
+  font-weight: 600;
+  background-color: var(--secondary);
+}
+
+.markdown-body tr {
+  background-color: var(--card);
+}
+
+.markdown-body tr:nth-child(2n) {
+  background-color: var(--secondary);
+}
+
+/* Links */
+.markdown-body a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+/* Images */
+.markdown-body img {
+  max-width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+/* Horizontal rule */
+.markdown-body hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: var(--border);
+  border: 0;
+}
+
+/* Strong and emphasis */
+.markdown-body strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.markdown-body em {
+  font-style: italic;
+}
+
+/* Strikethrough */
+.markdown-body del {
+  color: var(--muted-foreground);
+}
+
+/* Code block copy button */
+.code-block-wrapper {
+  position: relative;
+}
+
+.code-copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.code-block-wrapper:hover .code-copy-button {
+  opacity: 1;
+}
+
+/* Image zoom */
+.markdown-image {
+  cursor: zoom-in;
+  transition: transform 0.2s ease;
+}
