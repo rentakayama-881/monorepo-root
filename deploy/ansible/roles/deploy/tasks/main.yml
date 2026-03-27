@@ -54,6 +54,18 @@
   changed_when: false
   failed_when: false
 
+- name: Decrypt browser-service secrets
+  ansible.builtin.command:
+    cmd: bash {{ repo_dir }}/ops/secrets-decrypt.sh browser-service
+    chdir: "{{ repo_dir }}"
+  environment:
+    SOPS_AGE_KEY_FILE: "{{ sops_age_key_path }}"
+  when:
+    - sops_check.rc == 0
+    - age_key_stat.stat.exists
+  changed_when: false
+  failed_when: false
+
 # --- Verify .env files exist --------------------------------------------------
 - name: Check backend .env exists
   ansible.builtin.stat:
@@ -79,6 +91,18 @@
       Feature service may fail to start. Decrypt secrets or create .env manually.
   when: not feature_env_stat.stat.exists
 
+- name: Check browser-service .env exists
+  ansible.builtin.stat:
+    path: "{{ app_dir }}/browser-service/.env"
+  register: browser_env_stat
+
+- name: Warn if browser-service .env is missing
+  ansible.builtin.debug:
+    msg: >
+      WARNING: {{ app_dir }}/browser-service/.env not found.
+      Browser service may fail to start. Create .env manually.
+  when: not browser_env_stat.stat.exists
+
 # --- Restart systemd services -------------------------------------------------
 - name: Restart backend service
   ansible.builtin.systemd:
@@ -94,6 +118,14 @@
     state: restarted
     daemon_reload: true
   register: feature_restart
+  failed_when: false
+
+- name: Restart browser-service
+  ansible.builtin.systemd:
+    name: browser-service
+    state: restarted
+    daemon_reload: true
+  register: browser_restart
   failed_when: false
 
 # --- Health checks ------------------------------------------------------------
@@ -116,6 +148,16 @@
   retries: 10
   delay: 5
   until: feature_health.status == 200
+
+- name: Wait for browser-service health check
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ upstream_browser_port }}/health"
+    method: GET
+    status_code: 200
+  register: browser_health
+  retries: 10
+  delay: 5
+  until: browser_health.status == 200
 
 # --- Report status ------------------------------------------------------------
 - name: Report deployment status

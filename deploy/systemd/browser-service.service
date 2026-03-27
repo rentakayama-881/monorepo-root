@@ -1,0 +1,36 @@
+[Unit]
+Description=AIValid Smart Browser Service (Python FastAPI)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=alephdraad
+Group=alephdraad
+WorkingDirectory=/opt/alephdraad/browser-service
+EnvironmentFile=/opt/alephdraad/browser-service/.env
+ExecStart=/opt/alephdraad/browser-service/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 6100 --workers 1
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=browser-service
+LimitNOFILE=65535
+
+# Browser sessions need display access — less restrictive than other services
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+LockPersonality=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+UMask=0077
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target

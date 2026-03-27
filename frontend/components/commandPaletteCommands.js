@@ -30,6 +30,14 @@ export function buildCommands({ router, theme, setTheme, onClose }) {
       keywords: ["my", "cases", "validation", "docket"],
     },
     {
+      id: "nav-smart-browser",
+      group: "Navigasi",
+      title: "Ke Smart Browser",
+      icon: "BROWSER",
+      action: () => router.push("/cloud-browser"),
+      keywords: ["browser", "cloud", "anti-detect", "smart", "profil"],
+    },
+    {
       id: "nav-about",
       group: "Navigasi",
       title: "Ke Tentang",

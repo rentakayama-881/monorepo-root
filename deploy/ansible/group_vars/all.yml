@@ -17,6 +17,7 @@ backup_dir: "/opt/alephdraad/backups"
 # --- Domains -----------------------------------------------------------------
 domain_api: api.aivalid.id
 domain_feature: feature.aivalid.id
+domain_browser: browser.aivalid.id
 domain_grafana: grafana.aivalid.id
 certbot_email: admin@aivalid.id
 
@@ -29,6 +30,7 @@ acme_webroot: /var/www/html
 # --- Upstream Ports (host nginx → systemd services) --------------------------
 upstream_backend_port: 8080
 upstream_feature_port: 5000
+upstream_browser_port: 6100
 upstream_grafana_port: 3001
 
 # --- Nginx -------------------------------------------------------------------

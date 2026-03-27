@@ -50,6 +50,11 @@ public static class ServiceRegistrationFinancial
         builder.Services.AddScoped<ISecureTransferService, SecureTransferService>();
         builder.Services.AddScoped<ISecureWithdrawalService, SecureWithdrawalService>();
 
+        // Smart Browser services
+        builder.Services.AddScoped<IBrowserProfileService, BrowserProfileService>();
+        builder.Services.AddScoped<IBrowserSessionService, BrowserSessionService>();
+        builder.Services.AddScoped<IBrowserBillingService, BrowserBillingService>();
+
         return builder;
     }
 }

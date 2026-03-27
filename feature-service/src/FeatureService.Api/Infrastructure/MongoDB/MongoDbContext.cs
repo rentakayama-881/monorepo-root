@@ -67,6 +67,14 @@ public class MongoDbContext
 
     #endregion
 
+    #region Smart Browser Collections
+
+    public IMongoCollection<BrowserProfile> BrowserProfiles => _database.GetCollection<BrowserProfile>("browser_profiles");
+    public IMongoCollection<BrowserSession> BrowserSessions => _database.GetCollection<BrowserSession>("browser_sessions");
+    public IMongoCollection<BrowserPricing> BrowserPricings => _database.GetCollection<BrowserPricing>("browser_pricings");
+
+    #endregion
+
     private void CreateIndexes()
     {
         // Report indexes
@@ -356,6 +364,31 @@ public class MongoDbContext
             new CreateIndexModel<UserPqcKey>(Builders<UserPqcKey>.IndexKeys
                 .Ascending(k => k.UserId)
                 .Ascending(k => k.IsActive))
+        });
+
+        // Browser profile indexes
+        BrowserProfiles.Indexes.CreateMany(new[]
+        {
+            new CreateIndexModel<BrowserProfile>(Builders<BrowserProfile>.IndexKeys.Ascending(p => p.UserId)),
+            new CreateIndexModel<BrowserProfile>(Builders<BrowserProfile>.IndexKeys
+                .Ascending(p => p.UserId)
+                .Descending(p => p.CreatedAt))
+        });
+
+        // Browser session indexes
+        BrowserSessions.Indexes.CreateMany(new[]
+        {
+            new CreateIndexModel<BrowserSession>(Builders<BrowserSession>.IndexKeys
+                .Ascending(s => s.UserId)
+                .Descending(s => s.CreatedAt)),
+            new CreateIndexModel<BrowserSession>(Builders<BrowserSession>.IndexKeys
+                .Ascending(s => s.UserId)
+                .Ascending(s => s.Status)),
+            new CreateIndexModel<BrowserSession>(Builders<BrowserSession>.IndexKeys
+                .Ascending(s => s.ProfileId)
+                .Ascending(s => s.Status)),
+            new CreateIndexModel<BrowserSession>(Builders<BrowserSession>.IndexKeys
+                .Ascending(s => s.Status))
         });
     }
 }

@@ -107,6 +107,9 @@ export default function Header() {
           <Link href="/market/chatgpt" prefetch={false} className={navItem}>
             Marketplace
           </Link>
+          <Link href="/cloud-browser" prefetch={false} className={navItem}>
+            Smart Browser
+          </Link>
           <Link href="/validation-cases" prefetch={false} className={navItem}>
             Daftar Case
           </Link>
