@@ -6,51 +6,11 @@ every Chromium page context.
 """
 import hashlib
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Constants
-# ──────────────────────────────────────────────────────────────────────────────
+from ua_database import USER_AGENTS, GPU_RENDERERS  # noqa: F401 — re-exported
 
-USER_AGENTS = [
-    {
-        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        "platform": "Win32",
-        "vendor": "Google Inc.",
-        "oscpu": "",
-        "app_version": "5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    },
-    {
-        "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        "platform": "MacIntel",
-        "vendor": "Google Inc.",
-        "oscpu": "",
-        "app_version": "5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    },
-    {
-        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        "platform": "Linux x86_64",
-        "vendor": "Google Inc.",
-        "oscpu": "",
-        "app_version": "5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    },
-    {
-        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
-        "platform": "Win32",
-        "vendor": "Google Inc.",
-        "oscpu": "",
-        "app_version": "5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
-    },
-]
-
-GPU_RENDERERS = [
-    {"vendor": "Google Inc. (NVIDIA)", "renderer": "ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0, D3D11)"},
-    {"vendor": "Google Inc. (NVIDIA)", "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)"},
-    {"vendor": "Google Inc. (AMD)", "renderer": "ANGLE (AMD, AMD Radeon RX 580 Direct3D11 vs_5_0 ps_5_0, D3D11)"},
-    {"vendor": "Google Inc. (Intel)", "renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)"},
-    {"vendor": "Google Inc. (Apple)", "renderer": "ANGLE (Apple, Apple M1 Pro, OpenGL 4.1)"},
-    {"vendor": "Google Inc. (NVIDIA)", "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0, D3D11)"},
-    {"vendor": "Google Inc. (Intel)", "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)"},
-    {"vendor": "Google Inc. (AMD)", "renderer": "ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0, D3D11)"},
-]
+# ──────────────────────────────────────────────────────────────────────────────
+# Constants (UA + GPU imported from ua_database.py)
+# ──────────────────────────────────────────────────────────────────────────────
 
 STEALTH_CHROMIUM_ARGS = [
     "--disable-blink-features=AutomationControlled",
@@ -61,6 +21,9 @@ STEALTH_CHROMIUM_ARGS = [
     "--disable-background-timer-throttling",
     "--disable-backgrounding-occluded-windows",
     "--disable-renderer-backgrounding",
+    # WebRTC leak protection
+    "--webrtc-ip-handling-policy=disable_non_proxied_udp",
+    "--enforce-webrtc-ip-permission-check",
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -99,6 +62,8 @@ def build_stealth_script(
     nav_overrides: dict[str, str],
     identity: dict[str, str],
     gpu: dict[str, str],
+    timezone: str = "Asia/Jakarta",
+    languages: list[str] | None = None,
 ) -> str:
     """
     Generate unified stealth JavaScript — single IIFE yang mencakup semua hooking.
@@ -112,7 +77,11 @@ def build_stealth_script(
     6. ClientRects noise (getBoundingClientRect, getClientRects)
     7. Deep webdriver deletion + CDC marker cleanup
     8. Runtime.enable interception
+    9. WebRTC leak protection
+    10. Timezone spoof (Intl + Date)
     """
+    lang_list = languages or ["en-US", "en"]
+    lang_js = ", ".join(f"'{l}'" for l in lang_list)
     return f"""(() => {{
     'use strict';
 
@@ -145,7 +114,7 @@ def build_stealth_script(
         hardwareConcurrency: Math.max(2, Math.floor(prng() * 12) + 2),
         deviceMemory: [2, 4, 8, 16][Math.floor(prng() * 4)],
         maxTouchPoints: 0,
-        languages: ['en-US', 'en'],
+        languages: [{lang_js}],
     }};
 
     const navigatorHandler = {{
@@ -378,6 +347,269 @@ def build_stealth_script(
             get: () => proxiedScreen,
             configurable: true,
         }});
+    }} catch(e) {{}}
+
+    // ═══ 9. TIMEZONE SPOOF ═══
+    try {{
+        const targetTZ = '{timezone}';
+
+        // Override Intl.DateTimeFormat to always use target timezone
+        const OrigDTF = Intl.DateTimeFormat;
+        const ProxiedDTF = nativize(function(...args) {{
+            const opts = args[1] || {{}};
+            if (!opts.timeZone) opts.timeZone = targetTZ;
+            args[1] = opts;
+            return new OrigDTF(...args);
+        }}, 'DateTimeFormat');
+        ProxiedDTF.prototype = OrigDTF.prototype;
+        ProxiedDTF.supportedLocalesOf = OrigDTF.supportedLocalesOf;
+        Intl.DateTimeFormat = ProxiedDTF;
+
+        // Override resolvedOptions to always report target timezone
+        const origResolved = OrigDTF.prototype.resolvedOptions;
+        OrigDTF.prototype.resolvedOptions = nativize(function() {{
+            const opts = origResolved.call(this);
+            opts.timeZone = targetTZ;
+            return opts;
+        }}, 'resolvedOptions');
+
+        // Override Date.prototype.getTimezoneOffset
+        // Compute offset for target timezone
+        const getOffsetForTZ = (tz) => {{
+            try {{
+                const now = new Date();
+                const utcStr = now.toLocaleString('en-US', {{ timeZone: 'UTC' }});
+                const tzStr = now.toLocaleString('en-US', {{ timeZone: tz }});
+                return (new Date(utcStr) - new Date(tzStr)) / 60000;
+            }} catch(e) {{ return new Date().getTimezoneOffset(); }}
+        }};
+        const tzOffset = getOffsetForTZ(targetTZ);
+        Date.prototype.getTimezoneOffset = nativize(function() {{
+            return tzOffset;
+        }}, 'getTimezoneOffset');
+    }} catch(e) {{}}
+
+    // ═══ 10. WEBRTC LEAK PROTECTION ═══
+    try {{
+        const origRTC = window.RTCPeerConnection || window.webkitRTCPeerConnection;
+        if (origRTC) {{
+            const wrappedRTC = nativize(function(...args) {{
+                const config = args[0] || {{}};
+                // Strip public STUN servers to prevent IP leak
+                if (config.iceServers) {{
+                    config.iceServers = config.iceServers.filter(s => {{
+                        const urls = Array.isArray(s.urls) ? s.urls : [s.urls || s.url || ''];
+                        return !urls.some(u => typeof u === 'string' && u.includes('stun:'));
+                    }});
+                }}
+                const pc = new origRTC(config, args[1]);
+                return pc;
+            }}, 'RTCPeerConnection');
+
+            wrappedRTC.prototype = origRTC.prototype;
+            wrappedRTC.generateCertificate = origRTC.generateCertificate;
+
+            if (window.RTCPeerConnection) window.RTCPeerConnection = wrappedRTC;
+            if (window.webkitRTCPeerConnection) window.webkitRTCPeerConnection = wrappedRTC;
+        }}
+    }} catch(e) {{}}
+
+    // ═══ 11. PLUGINS & MIMETYPES ═══
+    try {{
+        const fakePlugins = [
+            {{ name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format',
+               mimeTypes: [{{ type: 'application/x-google-chrome-pdf', suffixes: 'pdf', description: 'Portable Document Format' }}] }},
+            {{ name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '',
+               mimeTypes: [{{ type: 'application/pdf', suffixes: 'pdf', description: '' }}] }},
+            {{ name: 'Native Client', filename: 'internal-nacl-plugin', description: '',
+               mimeTypes: [
+                   {{ type: 'application/x-nacl', suffixes: '', description: 'Native Client Executable' }},
+                   {{ type: 'application/x-pnacl', suffixes: '', description: 'Portable Native Client Executable' }},
+               ] }},
+        ];
+
+        const allMimeTypes = [];
+        const pluginArray = [];
+
+        for (const p of fakePlugins) {{
+            const plugin = Object.create(Plugin.prototype);
+            const mts = [];
+            for (const m of p.mimeTypes) {{
+                const mt = Object.create(MimeType.prototype);
+                Object.defineProperties(mt, {{
+                    type: {{ value: m.type, enumerable: true }},
+                    suffixes: {{ value: m.suffixes, enumerable: true }},
+                    description: {{ value: m.description, enumerable: true }},
+                    enabledPlugin: {{ value: plugin, enumerable: true }},
+                }});
+                mts.push(mt);
+                allMimeTypes.push(mt);
+            }}
+            Object.defineProperties(plugin, {{
+                name: {{ value: p.name, enumerable: true }},
+                filename: {{ value: p.filename, enumerable: true }},
+                description: {{ value: p.description, enumerable: true }},
+                length: {{ value: mts.length, enumerable: true }},
+            }});
+            for (let i = 0; i < mts.length; i++) {{
+                Object.defineProperty(plugin, i, {{ value: mts[i], enumerable: true }});
+                Object.defineProperty(plugin, mts[i].type, {{ value: mts[i] }});
+            }}
+            plugin.item = nativize((i) => mts[i] || null, 'item');
+            plugin.namedItem = nativize((n) => mts.find(m => m.type === n) || null, 'namedItem');
+            plugin[Symbol.iterator] = function*() {{ for (const m of mts) yield m; }};
+            pluginArray.push(plugin);
+        }}
+
+        // Override navigator.plugins
+        const fakePluginArray = Object.create(PluginArray.prototype);
+        Object.defineProperty(fakePluginArray, 'length', {{ value: pluginArray.length, enumerable: true }});
+        for (let i = 0; i < pluginArray.length; i++) {{
+            Object.defineProperty(fakePluginArray, i, {{ value: pluginArray[i], enumerable: true }});
+            Object.defineProperty(fakePluginArray, pluginArray[i].name, {{ value: pluginArray[i] }});
+        }}
+        fakePluginArray.item = nativize((i) => pluginArray[i] || null, 'item');
+        fakePluginArray.namedItem = nativize((n) => pluginArray.find(p => p.name === n) || null, 'namedItem');
+        fakePluginArray.refresh = nativize(() => {{}}, 'refresh');
+        fakePluginArray[Symbol.iterator] = function*() {{ for (const p of pluginArray) yield p; }};
+
+        Object.defineProperty(Navigator.prototype, 'plugins', {{
+            get: nativize(() => fakePluginArray, 'get plugins'),
+            configurable: true,
+        }});
+
+        // Override navigator.mimeTypes
+        const fakeMimeArray = Object.create(MimeTypeArray.prototype);
+        Object.defineProperty(fakeMimeArray, 'length', {{ value: allMimeTypes.length, enumerable: true }});
+        for (let i = 0; i < allMimeTypes.length; i++) {{
+            Object.defineProperty(fakeMimeArray, i, {{ value: allMimeTypes[i], enumerable: true }});
+            Object.defineProperty(fakeMimeArray, allMimeTypes[i].type, {{ value: allMimeTypes[i] }});
+        }}
+        fakeMimeArray.item = nativize((i) => allMimeTypes[i] || null, 'item');
+        fakeMimeArray.namedItem = nativize((n) => allMimeTypes.find(m => m.type === n) || null, 'namedItem');
+        fakeMimeArray[Symbol.iterator] = function*() {{ for (const m of allMimeTypes) yield m; }};
+
+        Object.defineProperty(Navigator.prototype, 'mimeTypes', {{
+            get: nativize(() => fakeMimeArray, 'get mimeTypes'),
+            configurable: true,
+        }});
+
+        // navigator.pdfViewerEnabled
+        Object.defineProperty(Navigator.prototype, 'pdfViewerEnabled', {{
+            get: nativize(() => true, 'get pdfViewerEnabled'),
+            configurable: true,
+        }});
+    }} catch(e) {{}}
+
+    // ═══ 12. PERMISSIONS API ═══
+    try {{
+        const origQuery = navigator.permissions.query.bind(navigator.permissions);
+        const permMap = {{
+            'notifications': 'prompt',
+            'geolocation': 'prompt',
+            'camera': 'prompt',
+            'microphone': 'prompt',
+            'clipboard-read': 'prompt',
+            'clipboard-write': 'granted',
+            'persistent-storage': 'prompt',
+            'accelerometer': 'granted',
+            'gyroscope': 'granted',
+            'magnetometer': 'granted',
+        }};
+
+        navigator.permissions.query = nativize(async function(desc) {{
+            const name = desc && desc.name;
+            if (name && name in permMap) {{
+                return {{
+                    state: permMap[name],
+                    status: permMap[name],
+                    onchange: null,
+                    addEventListener: nativize(() => {{}}, 'addEventListener'),
+                    removeEventListener: nativize(() => {{}}, 'removeEventListener'),
+                    dispatchEvent: nativize(() => true, 'dispatchEvent'),
+                }};
+            }}
+            try {{ return await origQuery(desc); }} catch(e) {{
+                return {{ state: 'prompt', status: 'prompt', onchange: null,
+                    addEventListener: () => {{}}, removeEventListener: () => {{}}, dispatchEvent: () => true }};
+            }}
+        }}, 'query');
+    }} catch(e) {{}}
+
+    // ═══ 13. CONNECTION & BATTERY ═══
+    try {{
+        // navigator.connection (NetworkInformation)
+        const connInfo = {{
+            effectiveType: '4g',
+            downlink: 1.5 + prng() * 8.5,
+            rtt: 50 + Math.floor(prng() * 100),
+            saveData: false,
+            type: 'wifi',
+            onchange: null,
+            addEventListener: nativize(() => {{}}, 'addEventListener'),
+            removeEventListener: nativize(() => {{}}, 'removeEventListener'),
+            dispatchEvent: nativize(() => true, 'dispatchEvent'),
+        }};
+        Object.defineProperty(Navigator.prototype, 'connection', {{
+            get: nativize(() => connInfo, 'get connection'),
+            configurable: true,
+        }});
+
+        // navigator.getBattery()
+        const batteryInfo = {{
+            charging: prng() > 0.3,
+            chargingTime: prng() > 0.5 ? 0 : Math.floor(prng() * 3600),
+            dischargingTime: Infinity,
+            level: 0.5 + prng() * 0.5,
+            onchargingchange: null,
+            onchargingtimechange: null,
+            ondischargingtimechange: null,
+            onlevelchange: null,
+            addEventListener: nativize(() => {{}}, 'addEventListener'),
+            removeEventListener: nativize(() => {{}}, 'removeEventListener'),
+            dispatchEvent: nativize(() => true, 'dispatchEvent'),
+        }};
+        if (Navigator.prototype.getBattery) {{
+            Navigator.prototype.getBattery = nativize(
+                () => Promise.resolve(batteryInfo), 'getBattery'
+            );
+        }}
+    }} catch(e) {{}}
+
+    // ═══ 14. FONT ENUMERATION DEFENSE ═══
+    try {{
+        // Per-platform realistic font lists
+        const platformFonts = {{
+            'Win32': ['Arial', 'Arial Black', 'Calibri', 'Cambria', 'Cambria Math',
+                'Candara', 'Comic Sans MS', 'Consolas', 'Constantia', 'Corbel',
+                'Courier New', 'Georgia', 'Impact', 'Lucida Console', 'Lucida Sans Unicode',
+                'Microsoft Sans Serif', 'Palatino Linotype', 'Segoe Print', 'Segoe Script',
+                'Segoe UI', 'Segoe UI Symbol', 'Tahoma', 'Times New Roman', 'Trebuchet MS',
+                'Verdana', 'Wingdings'],
+            'MacIntel': ['Arial', 'Arial Black', 'Comic Sans MS', 'Courier New',
+                'Georgia', 'Helvetica', 'Helvetica Neue', 'Impact', 'Lucida Grande',
+                'Monaco', 'Palatino', 'San Francisco', 'Times', 'Times New Roman',
+                'Trebuchet MS', 'Verdana', 'Menlo', 'Avenir', 'Avenir Next',
+                'Futura', 'Gill Sans', 'Optima', 'Baskerville'],
+            'Linux x86_64': ['Arial', 'Courier New', 'DejaVu Sans', 'DejaVu Sans Mono',
+                'DejaVu Serif', 'FreeMono', 'FreeSans', 'FreeSerif', 'Georgia',
+                'Liberation Mono', 'Liberation Sans', 'Liberation Serif',
+                'Noto Sans', 'Times New Roman', 'Trebuchet MS', 'Verdana'],
+        }};
+        const platform = navOverrides.platform || 'Win32';
+        const myFonts = new Set(platformFonts[platform] || platformFonts['Win32']);
+
+        // Override document.fonts.check() to claim platform fonts exist
+        if (document.fonts && document.fonts.check) {{
+            const origCheck = document.fonts.check.bind(document.fonts);
+            document.fonts.check = nativize(function(font, text) {{
+                // Extract font family name from CSS font shorthand
+                const match = font.match(/['"]?([^'",$]+)['"]?\\s*$/);
+                const family = match ? match[1].trim() : '';
+                if (myFonts.has(family)) return true;
+                return origCheck(font, text);
+            }}, 'check');
+        }}
     }} catch(e) {{}}
 
 }})();"""

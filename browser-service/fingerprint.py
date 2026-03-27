@@ -1,7 +1,7 @@
 """Auto-generate browser fingerprint for profiles."""
 import hashlib
 import random
-from stealth import USER_AGENTS, GPU_RENDERERS
+from ua_database import USER_AGENTS, GPU_RENDERERS
 
 SCREEN_RESOLUTIONS = [
     (1920, 1080), (1366, 768), (1536, 864), (1440, 900),

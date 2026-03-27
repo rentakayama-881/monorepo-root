@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useSessionStatus, usePricing } from "../../useCloudBrowser";
 import { stopSession } from "@/lib/browserApi";
 import SessionToolbar from "./SessionToolbar";
+
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_INTERVAL_MS = 3000;
 
 export default function SessionViewerClient() {
   const params = useParams();
@@ -18,6 +21,10 @@ export default function SessionViewerClient() {
   const [stopping, setStopping] = useState(false);
   const [stopError, setStopError] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const reconnectCountRef = useRef(0);
+  const iframeRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
 
   // Determine VNC URL from session data
   const wsPort = session?.vnc_port || session?.ws_port;
@@ -35,6 +42,45 @@ export default function SessionViewerClient() {
       return () => clearTimeout(timer);
     }
   }, [session, isLoading, router]);
+
+  // Iframe load handler — detect connection success/failure
+  const handleIframeLoad = useCallback(() => {
+    reconnectCountRef.current = 0;
+    setConnectionStatus("connected");
+  }, []);
+
+  const handleIframeError = useCallback(() => {
+    if (reconnectCountRef.current >= MAX_RECONNECT_ATTEMPTS) {
+      setConnectionStatus("failed");
+      return;
+    }
+    setConnectionStatus("reconnecting");
+    reconnectCountRef.current += 1;
+
+    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+    reconnectTimerRef.current = setTimeout(() => {
+      if (iframeRef.current && vncUrl) {
+        iframeRef.current.src = vncUrl + "&_retry=" + reconnectCountRef.current;
+      }
+    }, RECONNECT_INTERVAL_MS);
+  }, [vncUrl]);
+
+  // Cleanup reconnect timer
+  useEffect(() => {
+    return () => {
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+    };
+  }, []);
+
+  // Redirect to dashboard if reconnection fully failed
+  useEffect(() => {
+    if (connectionStatus === "failed") {
+      const timer = setTimeout(() => {
+        router.replace("/cloud-browser");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [connectionStatus, router]);
 
   const handleStop = useCallback(async () => {
     if (!sessionId) return;
@@ -143,15 +189,32 @@ export default function SessionViewerClient() {
         </div>
       ) : null}
 
+      {/* Connection status overlay */}
+      {connectionStatus === "reconnecting" ? (
+        <div className="bg-amber-500/90 px-4 py-2 text-xs text-white text-center flex items-center justify-center gap-2">
+          <div className="size-3 animate-spin rounded-full border border-white border-t-transparent" />
+          Koneksi terputus, menghubungkan kembali... ({reconnectCountRef.current}/
+          {MAX_RECONNECT_ATTEMPTS})
+        </div>
+      ) : null}
+      {connectionStatus === "failed" ? (
+        <div className="bg-destructive/90 px-4 py-2 text-xs text-white text-center">
+          Koneksi gagal setelah {MAX_RECONNECT_ATTEMPTS} percobaan. Mengalihkan ke dashboard...
+        </div>
+      ) : null}
+
       {/* VNC Viewer */}
       <div className="flex-1 bg-black relative">
         {vncUrl ? (
           <iframe
+            ref={iframeRef}
             src={vncUrl}
             title="Browser Session"
             className="absolute inset-0 h-full w-full border-0"
             allow="clipboard-read; clipboard-write"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
           />
         ) : (
           <div className="flex h-full items-center justify-center">

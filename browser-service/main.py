@@ -21,8 +21,10 @@ async def lifespan(app: FastAPI):
     from session_manager import session_manager
 
     logger.info("Smart Browser Service starting on :%d", settings.port)
+    await session_manager.start_watchdog()
     yield
     logger.info("Smart Browser Service shutting down — cleaning up sessions...")
+    await session_manager.stop_watchdog()
     await session_manager.cleanup_all()
 
 

@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from config import settings
+from geo import lookup_proxy_geo
 
 logger = logging.getLogger("browser-service.session")
 
@@ -41,6 +42,7 @@ class SessionManager:
         )
         self._display_counter: int = 100
         self._playwright: object | None = None  # Reusable Playwright instance
+        self._watchdog_task: asyncio.Task | None = None
 
     @property
     def active_count(self) -> int:
@@ -51,6 +53,80 @@ class SessionManager:
 
     def get_user_sessions(self, user_id: int) -> list[SessionProcess]:
         return [s for s in self._sessions.values() if s.user_id == user_id]
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Process watchdog
+    # ──────────────────────────────────────────────────────────────────────
+
+    async def start_watchdog(self) -> None:
+        """Start background watchdog that monitors session processes."""
+        if self._watchdog_task is None or self._watchdog_task.done():
+            self._watchdog_task = asyncio.create_task(self._watchdog_loop())
+            logger.info("Process watchdog started")
+
+    async def stop_watchdog(self) -> None:
+        """Stop the background watchdog."""
+        if self._watchdog_task and not self._watchdog_task.done():
+            self._watchdog_task.cancel()
+            try:
+                await self._watchdog_task
+            except asyncio.CancelledError:
+                pass
+            logger.info("Process watchdog stopped")
+
+    async def _watchdog_loop(self) -> None:
+        """Check session processes every 15 seconds. Auto-stop crashed sessions."""
+        while True:
+            try:
+                await asyncio.sleep(15)
+                dead_sessions = []
+                for sid, session in list(self._sessions.items()):
+                    if self._is_session_dead(session):
+                        logger.warning(
+                            "Watchdog: sesi %s terdeteksi mati — auto-stopping",
+                            sid,
+                        )
+                        dead_sessions.append(sid)
+
+                for sid in dead_sessions:
+                    try:
+                        await self.stop_session(sid)
+                        await self._notify_billing_stop(sid)
+                    except Exception as e:
+                        logger.error("Watchdog gagal stop sesi %s: %s", sid, e)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error("Watchdog error: %s", e)
+
+    def _is_session_dead(self, session: SessionProcess) -> bool:
+        """Check if critical processes (Xvfb or Chromium) have died."""
+        for pid, label in [
+            (session.xvfb_pid, "Xvfb"),
+            (session.browser_pid, "browser"),
+        ]:
+            if pid is None:
+                continue
+            try:
+                os.kill(pid, 0)
+            except OSError:
+                logger.warning("Process %s (PID %d) tidak aktif", label, pid)
+                return True
+        return False
+
+    async def _notify_billing_stop(self, session_id: str) -> None:
+        """Notify Feature Service to stop billing for a crashed session."""
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                await client.post(
+                    f"{settings.feature_service_url}/api/v1/browser/sessions/{session_id}/stop",
+                    headers={"X-Service-Token": settings.feature_service_token},
+                    json={"reason": "process_crash"},
+                )
+                logger.info("Billing stop notified for session %s", session_id)
+        except Exception as e:
+            logger.error("Gagal notify billing stop untuk %s: %s", session_id, e)
 
     # ──────────────────────────────────────────────────────────────────────
     # Internal helpers
@@ -102,6 +178,59 @@ class SessionManager:
             pass
 
     # ──────────────────────────────────────────────────────────────────────
+    # Proxy health check
+    # ──────────────────────────────────────────────────────────────────────
+
+    async def _check_proxy(self, proxy_settings: dict) -> dict:
+        """Test proxy reachability. Returns {ok, external_ip, latency_ms, error}."""
+        import httpx
+        import time
+
+        server = proxy_settings.get("server", "")
+        username = proxy_settings.get("username")
+        password = proxy_settings.get("password")
+
+        # Build proxy URL with auth
+        if username and password:
+            # Insert auth into proxy URL: socks5://user:pass@host:port
+            proxy_url = server.replace("://", f"://{username}:{password}@", 1)
+        else:
+            proxy_url = server
+
+        start = time.monotonic()
+        try:
+            async with httpx.AsyncClient(
+                proxy=proxy_url,
+                timeout=10.0,
+                verify=False,
+            ) as client:
+                resp = await client.get("https://httpbin.org/ip")
+                latency = int((time.monotonic() - start) * 1000)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    return {
+                        "ok": True,
+                        "external_ip": data.get("origin", ""),
+                        "latency_ms": latency,
+                        "error": None,
+                    }
+                return {
+                    "ok": False,
+                    "external_ip": "",
+                    "latency_ms": latency,
+                    "error": f"Proxy returned HTTP {resp.status_code}",
+                }
+        except httpx.ProxyError as e:
+            return {"ok": False, "external_ip": "", "latency_ms": 0,
+                    "error": f"Proxy authentication gagal: {e}"}
+        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+            return {"ok": False, "external_ip": "", "latency_ms": 0,
+                    "error": f"Proxy tidak dapat dijangkau: {e}"}
+        except Exception as e:
+            return {"ok": False, "external_ip": "", "latency_ms": 0,
+                    "error": f"Proxy check gagal: {e}"}
+
+    # ──────────────────────────────────────────────────────────────────────
     # Session lifecycle
     # ──────────────────────────────────────────────────────────────────────
 
@@ -124,6 +253,19 @@ class SessionManager:
         4. Start x11vnc on the display
         5. Start websockify (VNC→WebSocket bridge)
         """
+        # ── 0. Pre-flight proxy check ─────────────────────────────────
+        if proxy_settings:
+            proxy_result = await self._check_proxy(proxy_settings)
+            if not proxy_result["ok"]:
+                raise RuntimeError(
+                    f"Proxy tidak dapat digunakan: {proxy_result['error']}"
+                )
+            logger.info(
+                "Proxy OK — external IP: %s, latency: %dms",
+                proxy_result.get("external_ip", "?"),
+                proxy_result.get("latency_ms", 0),
+            )
+
         # ── 1. Allocate resources ──────────────────────────────────────
         vnc_port = self._allocate_port()
         ws_port = vnc_port + 100  # e.g., VNC 6200 → WS 6300
@@ -184,7 +326,30 @@ class SessionManager:
             gpu = GPU_RENDERERS[seed % len(GPU_RENDERERS)]
             identity = USER_AGENTS[seed % len(USER_AGENTS)]
 
-            stealth_js = build_stealth_script(seed, nav_overrides, identity, gpu)
+            # Auto-detect geo from proxy if available
+            if proxy_settings:
+                geo = lookup_proxy_geo(proxy_settings["server"])
+                logger.info("Proxy geo: %s (%s)", geo.get("city", "?"), geo.get("country_code", "?"))
+            else:
+                geo = None
+
+            # Derive timezone and languages — proxy geo overrides fingerprint
+            if geo and geo.get("timezone"):
+                tz = geo["timezone"]
+                lang = geo.get("language", "id-ID")
+            else:
+                tz = fingerprint.get("timezone", "Asia/Jakarta") if fingerprint else "Asia/Jakarta"
+                lang = fingerprint.get("language", "id-ID") if fingerprint else "id-ID"
+
+            lang_base = lang.split("-")[0]  # "id-ID" → "id"
+            languages = [lang, lang_base] if lang_base != lang else [lang]
+            if "en" not in lang_base:
+                languages += ["en-US", "en"]
+
+            stealth_js = build_stealth_script(
+                seed, nav_overrides, identity, gpu,
+                timezone=tz, languages=languages,
+            )
 
             pw = await self._get_playwright()
 
@@ -192,8 +357,20 @@ class SessionManager:
                 user_data_dir=user_data_dir,
                 headless=False,         # headed mode for VNC viewing
                 accept_downloads=True,
-                args=STEALTH_CHROMIUM_ARGS,
+                args=STEALTH_CHROMIUM_ARGS + [f"--lang={lang}"],
             )
+
+            # Apply context settings from resolved geo/fingerprint
+            launch_kwargs["timezone_id"] = tz
+            launch_kwargs["locale"] = lang
+            if geo and geo.get("lat"):
+                launch_kwargs["geolocation"] = {
+                    "latitude": geo["lat"],
+                    "longitude": geo["lng"],
+                    "accuracy": 100,
+                }
+                launch_kwargs["permissions"] = ["geolocation"]
+
             if user_agent:
                 launch_kwargs["user_agent"] = user_agent
             if proxy_settings:
