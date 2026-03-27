@@ -66,76 +66,101 @@ func SendVerificationEmail(recipientEmail, verificationToken string) error {
 	return nil
 }
 
-// buildVerificationEmailHTML creates a nice HTML template for verification email
+// buildVerificationEmailHTML creates a branded HTML template for verification email
 func buildVerificationEmailHTML(verificationLink string) string {
 	return fmt.Sprintf(`
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verifikasi Email</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-    <table role="presentation" style="width: 100%%; border-collapse: collapse;">
+<body style="margin: 0; padding: 0; font-family: 'IBM Plex Sans', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f5f7; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" style="width: 100%%; border-collapse: collapse; background-color: #f4f5f7;">
         <tr>
-            <td align="center" style="padding: 40px 0;">
-                <table role="presentation" style="width: 600px; max-width: 100%%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <!-- Header -->
+            <td align="center" style="padding: 40px 16px;">
+                <table role="presentation" style="width: 520px; max-width: 100%%; border-collapse: collapse;">
+                    <!-- Brand Header -->
                     <tr>
-                        <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #111827;">
-                                Verifikasi Email Anda
-                            </h1>
+                        <td align="center" style="padding: 0 0 32px;">
+                            <span style="font-size: 22px; font-weight: 700; color: #4338ca; letter-spacing: -0.02em;">AIValid</span>
                         </td>
                     </tr>
-                    
-                    <!-- Body -->
+
+                    <!-- Card -->
                     <tr>
-                        <td style="padding: 40px;">
-                            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
-                                Terima kasih telah mendaftar! Untuk menyelesaikan pendaftaran Anda, silakan verifikasi alamat email Anda dengan mengklik tombol di bawah ini:
-                            </p>
-                            
-                            <!-- Button -->
-                            <table role="presentation" style="margin: 30px 0; width: 100%%;">
+                        <td style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e5ea; overflow: hidden;">
+                            <!-- Indigo accent top border -->
+                            <div style="height: 3px; background: linear-gradient(90deg, #4338ca 0%%, #6366f1 50%%, #818cf8 100%%);"></div>
+
+                            <!-- Content -->
+                            <table role="presentation" style="width: 100%%; border-collapse: collapse;">
                                 <tr>
-                                    <td align="center">
-                                        <a href="%s" style="display: inline-block; padding: 14px 32px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 16px;">
-                                            Verifikasi Email
-                                        </a>
+                                    <td style="padding: 40px 36px 12px;">
+                                        <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 600; color: #111827; line-height: 1.3;">
+                                            Verifikasi Email Anda
+                                        </h1>
+                                        <p style="margin: 0; font-size: 14px; color: #6b7280; line-height: 1.5;">
+                                            Selesaikan pendaftaran dengan mengklik tombol di bawah.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 20px 36px 32px;">
+                                        <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.7; color: #374151;">
+                                            Terima kasih telah mendaftar di AIValid! Untuk mengaktifkan akun Anda, silakan verifikasi alamat email dengan mengklik tombol berikut:
+                                        </p>
+
+                                        <!-- CTA Button -->
+                                        <table role="presentation" style="margin: 0 0 24px; width: 100%%;">
+                                            <tr>
+                                                <td align="center">
+                                                    <a href="%s" style="display: inline-block; padding: 13px 36px; background-color: #4338ca; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; line-height: 1; letter-spacing: 0.01em;">
+                                                        Verifikasi Email
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <p style="margin: 0 0 8px; font-size: 13px; line-height: 1.6; color: #6b7280;">
+                                            Link verifikasi ini berlaku selama <strong style="color: #374151;">24 jam</strong>.
+                                        </p>
+                                        <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280;">
+                                            Jika Anda tidak membuat akun ini, abaikan email ini.
+                                        </p>
+                                    </td>
+                                </tr>
+
+                                <!-- Fallback Link -->
+                                <tr>
+                                    <td style="padding: 0 36px 36px;">
+                                        <table role="presentation" style="width: 100%%; border-collapse: collapse;">
+                                            <tr>
+                                                <td style="padding: 16px; background-color: #f8f9fa; border-radius: 8px;">
+                                                    <p style="margin: 0 0 6px; font-size: 12px; font-weight: 500; color: #6b7280;">
+                                                        Tombol tidak bekerja? Salin link ini ke browser:
+                                                    </p>
+                                                    <p style="margin: 0; font-size: 12px; word-break: break-all; line-height: 1.5;">
+                                                        <a href="%s" style="color: #4338ca; text-decoration: underline;">%s</a>
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </td>
                                 </tr>
                             </table>
-                            
-                            <p style="margin: 20px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280;">
-                                Link verifikasi ini akan kedaluwarsa dalam <strong>24 jam</strong>.
-                            </p>
-                            
-                            <p style="margin: 20px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280;">
-                                Jika Anda tidak membuat akun ini, abaikan email ini.
-                            </p>
-                            
-                            <!-- Alternative Link -->
-                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                                <p style="margin: 0 0 10px; font-size: 13px; color: #6b7280;">
-                                    Jika tombol tidak bekerja, salin dan tempel link berikut ke browser Anda:
-                                </p>
-                                <p style="margin: 0; font-size: 12px; color: #3b82f6; word-break: break-all;">
-                                    <a href="%s" style="color: #3b82f6;">%s</a>
-                                </p>
-                            </div>
                         </td>
                     </tr>
-                    
+
                     <!-- Footer -->
                     <tr>
-                        <td style="padding: 30px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
-                            <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280; text-align: center;">
-                                © 2026 AIValid. All rights reserved.
+                        <td style="padding: 28px 16px 0; text-align: center;">
+                            <p style="margin: 0 0 6px; font-size: 12px; color: #9ca3af; line-height: 1.5;">
+                                © 2026 AIValid · Platform validasi hasil kerja AI
                             </p>
-                            <p style="margin: 10px 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
-                                Email ini dikirim secara otomatis. Mohon jangan membalas email ini.
+                            <p style="margin: 0; font-size: 11px; color: #b0b5bf; line-height: 1.5;">
+                                Email otomatis — mohon jangan membalas email ini.
                             </p>
                         </td>
                     </tr>
@@ -200,62 +225,101 @@ func SendPasswordResetEmail(recipientEmail, resetToken string) error {
 	return nil
 }
 
-// buildPasswordResetEmailHTML creates HTML template for password reset email
+// buildPasswordResetEmailHTML creates a branded HTML template for password reset email
 func buildPasswordResetEmailHTML(resetLink string) string {
 	return fmt.Sprintf(`
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-    <table role="presentation" style="width: 100%%; border-collapse: collapse;">
+<body style="margin: 0; padding: 0; font-family: 'IBM Plex Sans', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f5f7; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" style="width: 100%%; border-collapse: collapse; background-color: #f4f5f7;">
         <tr>
-            <td align="center" style="padding: 40px 0;">
-                <table role="presentation" style="width: 600px; max-width: 100%%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <td align="center" style="padding: 40px 16px;">
+                <table role="presentation" style="width: 520px; max-width: 100%%; border-collapse: collapse;">
+                    <!-- Brand Header -->
                     <tr>
-                        <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #111827;">
-                                Reset Password
-                            </h1>
+                        <td align="center" style="padding: 0 0 32px;">
+                            <span style="font-size: 22px; font-weight: 700; color: #4338ca; letter-spacing: -0.02em;">AIValid</span>
                         </td>
                     </tr>
+
+                    <!-- Card -->
                     <tr>
-                        <td style="padding: 40px;">
-                            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
-                                Kami menerima permintaan untuk mereset password akun Anda. Klik tombol di bawah untuk membuat password baru:
-                            </p>
-                            <table role="presentation" style="margin: 30px 0; width: 100%%;">
+                        <td style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e5ea; overflow: hidden;">
+                            <!-- Indigo accent top border -->
+                            <div style="height: 3px; background: linear-gradient(90deg, #4338ca 0%%, #6366f1 50%%, #818cf8 100%%);"></div>
+
+                            <!-- Content -->
+                            <table role="presentation" style="width: 100%%; border-collapse: collapse;">
                                 <tr>
-                                    <td align="center">
-                                        <a href="%s" style="display: inline-block; padding: 14px 32px; background-color: #dc2626; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 16px;">
-                                            Reset Password
-                                        </a>
+                                    <td style="padding: 40px 36px 12px;">
+                                        <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 600; color: #111827; line-height: 1.3;">
+                                            &#128274; Reset Password
+                                        </h1>
+                                        <p style="margin: 0; font-size: 14px; color: #6b7280; line-height: 1.5;">
+                                            Buat password baru untuk akun AIValid Anda.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 20px 36px 32px;">
+                                        <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.7; color: #374151;">
+                                            Kami menerima permintaan untuk mereset password akun Anda. Klik tombol di bawah untuk membuat password baru:
+                                        </p>
+
+                                        <!-- CTA Button -->
+                                        <table role="presentation" style="margin: 0 0 24px; width: 100%%;">
+                                            <tr>
+                                                <td align="center">
+                                                    <a href="%s" style="display: inline-block; padding: 13px 36px; background-color: #4338ca; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; line-height: 1; letter-spacing: 0.01em;">
+                                                        Reset Password
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <p style="margin: 0 0 8px; font-size: 13px; line-height: 1.6; color: #6b7280;">
+                                            Link ini berlaku selama <strong style="color: #374151;">1 jam</strong>.
+                                        </p>
+                                        <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280;">
+                                            Jika Anda tidak meminta reset password, abaikan email ini. Password Anda tidak akan berubah.
+                                        </p>
+                                    </td>
+                                </tr>
+
+                                <!-- Fallback Link -->
+                                <tr>
+                                    <td style="padding: 0 36px 36px;">
+                                        <table role="presentation" style="width: 100%%; border-collapse: collapse;">
+                                            <tr>
+                                                <td style="padding: 16px; background-color: #f8f9fa; border-radius: 8px;">
+                                                    <p style="margin: 0 0 6px; font-size: 12px; font-weight: 500; color: #6b7280;">
+                                                        Tombol tidak bekerja? Salin link ini ke browser:
+                                                    </p>
+                                                    <p style="margin: 0; font-size: 12px; word-break: break-all; line-height: 1.5;">
+                                                        <a href="%s" style="color: #4338ca; text-decoration: underline;">%s</a>
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </td>
                                 </tr>
                             </table>
-                            <p style="margin: 20px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280;">
-                                Link ini akan kedaluwarsa dalam <strong>1 jam</strong>.
-                            </p>
-                            <p style="margin: 20px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280;">
-                                Jika Anda tidak meminta reset password, abaikan email ini. Password Anda tidak akan berubah.
-                            </p>
-                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                                <p style="margin: 0 0 10px; font-size: 13px; color: #6b7280;">
-                                    Jika tombol tidak bekerja, salin dan tempel link berikut ke browser:
-                                </p>
-                                <p style="margin: 0; font-size: 12px; color: #dc2626; word-break: break-all;">
-                                    <a href="%s" style="color: #dc2626;">%s</a>
-                                </p>
-                            </div>
                         </td>
                     </tr>
+
+                    <!-- Footer -->
                     <tr>
-                        <td style="padding: 30px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
-                            <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280; text-align: center;">
-                                © 2026 AIValid. All rights reserved.
+                        <td style="padding: 28px 16px 0; text-align: center;">
+                            <p style="margin: 0 0 6px; font-size: 12px; color: #9ca3af; line-height: 1.5;">
+                                © 2026 AIValid · Platform validasi hasil kerja AI
+                            </p>
+                            <p style="margin: 0; font-size: 11px; color: #b0b5bf; line-height: 1.5;">
+                                Email otomatis — mohon jangan membalas email ini.
                             </p>
                         </td>
                     </tr>

@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # Billing
     billing_interval_seconds: int = 60
 
+    # WebSocket domain for VNC connections
+    browser_ws_domain: str = "browser.aivalid.id"
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 settings = Settings()

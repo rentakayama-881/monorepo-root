@@ -76,7 +76,7 @@ async def start_session(
         )
 
     # 7. Build VNC WebSocket URL
-    vnc_ws_url = f"wss://browser.aivalid.id/ws/{session.ws_port}"
+    vnc_ws_url = f"wss://{settings.browser_ws_domain}/ws/{session.ws_port}"
 
     return StartSessionResponse(
         session_id=session_id,
@@ -143,7 +143,7 @@ async def get_session_status(
             detail="Anda tidak memiliki akses ke sesi ini",
         )
 
-    vnc_ws_url = f"wss://browser.aivalid.id/ws/{session.ws_port}"
+    vnc_ws_url = f"wss://{settings.browser_ws_domain}/ws/{session.ws_port}"
 
     return SessionStatusResponse(
         session_id=session_id,
