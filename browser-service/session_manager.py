@@ -381,10 +381,19 @@ class SessionManager:
                     proxy["password"] = proxy_settings["password"]
                 launch_kwargs["proxy"] = proxy
 
-            logger.info(
-                "Meluncurkan Chromium untuk sesi %s (profile: %s)",
-                session_id, profile_id,
-            )
+            # Use real Chrome if available, fallback to Chromium
+            chrome_path = Path("/opt/alephdraad/.cache/ms-playwright/chrome-real/chrome-linux64/chrome")
+            if chrome_path.exists():
+                launch_kwargs["executable_path"] = str(chrome_path)
+                logger.info(
+                    "Meluncurkan Chrome real untuk sesi %s (profile: %s)",
+                    session_id, profile_id,
+                )
+            else:
+                logger.info(
+                    "Meluncurkan Chromium untuk sesi %s (profile: %s)",
+                    session_id, profile_id,
+                )
             context = await pw.chromium.launch_persistent_context(**launch_kwargs)
             await context.add_init_script(stealth_js)
 
