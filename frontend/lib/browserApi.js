@@ -2,26 +2,30 @@
  * Browser Service API Client
  * For the Smart Browser cloud anti-detect browser service.
  *
- * Browser Service: browser.aivalid.id (dedicated browser infra)
- * Feature Service: feature.aivalid.id (pricing/billing via existing featureApi)
+ * Browser Service: browser.aivalid.id (session lifecycle)
+ * Feature Service: feature.aivalid.id (profiles, pricing, billing)
  */
 
 import { getValidToken, refreshAccessToken } from "./tokenRefresh";
 import { clearToken } from "./auth";
 
 // ---------------------------------------------------------------------------
-// Base URL
+// Base URLs
 // ---------------------------------------------------------------------------
 
 function getBrowserApiBase() {
   return process.env.NEXT_PUBLIC_BROWSER_API_URL || "https://browser.aivalid.id";
 }
 
+function getFeatureApiBase() {
+  return process.env.NEXT_PUBLIC_FEATURE_API_URL || "https://feature.aivalid.id";
+}
+
 // ---------------------------------------------------------------------------
 // Core fetch helper (authenticated)
 // ---------------------------------------------------------------------------
 
-export async function fetchBrowserApi(path, options = {}) {
+export async function fetchBrowserApi(path, options = {}, baseUrl = getBrowserApiBase()) {
   const { timeout = 15000, signal, headers = {}, ...rest } = options;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(new Error("timeout")), timeout);
@@ -46,7 +50,7 @@ export async function fetchBrowserApi(path, options = {}) {
     }
 
     const performRequest = async (accessToken) =>
-      fetch(`${getBrowserApiBase()}${path}`, {
+      fetch(`${baseUrl}${path}`, {
         ...rest,
         headers: {
           "Content-Type": "application/json",
@@ -117,42 +121,54 @@ export async function fetchBrowserApi(path, options = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Profile CRUD
+// Profile CRUD (→ Feature Service)
 // ---------------------------------------------------------------------------
 
 export function getProfiles() {
-  return fetchBrowserApi("/api/v1/profiles");
+  return fetchBrowserApi("/api/v1/browser/profiles", {}, getFeatureApiBase());
 }
 
 export function createProfile(data) {
-  return fetchBrowserApi("/api/v1/profiles", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  return fetchBrowserApi(
+    "/api/v1/browser/profiles",
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+    getFeatureApiBase()
+  );
 }
 
 export function updateProfile(id, data) {
-  return fetchBrowserApi(`/api/v1/profiles/${encodeURIComponent(id)}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+  return fetchBrowserApi(
+    `/api/v1/browser/profiles/${encodeURIComponent(id)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    },
+    getFeatureApiBase()
+  );
 }
 
 export function deleteProfile(id) {
-  return fetchBrowserApi(`/api/v1/profiles/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
+  return fetchBrowserApi(
+    `/api/v1/browser/profiles/${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+    },
+    getFeatureApiBase()
+  );
 }
 
 // ---------------------------------------------------------------------------
-// Sessions
+// Sessions (→ Browser Service)
 // ---------------------------------------------------------------------------
 
 export function startSession(profileId) {
-  return fetchBrowserApi("/api/v1/sessions", {
+  return fetchBrowserApi("/api/v1/sessions/start", {
     method: "POST",
     body: JSON.stringify({ profile_id: profileId }),
-    timeout: 30000, // starting a session may take longer
+    timeout: 30000,
   });
 }
 
@@ -163,18 +179,18 @@ export function stopSession(sessionId) {
 }
 
 export function getSessionStatus(sessionId) {
-  return fetchBrowserApi(`/api/v1/sessions/${encodeURIComponent(sessionId)}`);
+  return fetchBrowserApi(`/api/v1/sessions/${encodeURIComponent(sessionId)}/status`);
 }
 
 export function getSessions(activeOnly = false) {
   const qs = activeOnly ? "?active=true" : "";
-  return fetchBrowserApi(`/api/v1/sessions${qs}`);
+  return fetchBrowserApi(`/api/v1/browser/sessions${qs}`, {}, getFeatureApiBase());
 }
 
 // ---------------------------------------------------------------------------
-// Pricing
+// Pricing (→ Feature Service)
 // ---------------------------------------------------------------------------
 
 export function getPricing() {
-  return fetchBrowserApi("/api/v1/pricing");
+  return fetchBrowserApi("/api/v1/browser/sessions/pricing", {}, getFeatureApiBase());
 }
