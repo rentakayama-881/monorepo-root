@@ -82,6 +82,20 @@
 - Check: retry logic has bounded attempts (no infinite retry loops)
 - Check: supplier balance checks prevent overselling
 
+## 15. Browser Service / Anti-Detect Security
+- **Session isolation:** Each session runs in isolated Xvfb display — no cross-session data leakage
+- **IDOR prevention:** Session start/stop requires JWT; session ownership verified by user_id
+- **Proxy SSRF:** Browser sessions make external requests through user-provided proxies — ensure proxy URLs are validated (no `127.0.0.1`, `localhost`, or internal IPs)
+- **Process isolation:** Each session spawns separate Xvfb + Chrome + x11vnc + websockify processes; watchdog auto-kills orphans every 15s
+- **WebSocket security:** noVNC connections through nginx with SSL termination; no direct VNC port exposure to public
+- **Billing integrity:** Per-minute billing ticks authenticated via SERVICE_TOKEN; auto-stop on insufficient balance
+- **Fingerprint data:** Profile fingerprints generated deterministically (mulberry32 PRNG) — no sensitive data stored
+- **Port exposure:** VNC ports (6200-6299) and WebSocket ports (6300-6399) bind to `0.0.0.0` but nginx only proxies authenticated WebSocket connections
+- Check: can user A access user B's VNC stream by guessing WebSocket port?
+- Check: proxy URLs do not point to internal services (SSRF via browser)
+- Check: session process cleanup on stop/crash (no zombie processes)
+- Check: billing cannot be bypassed by direct WebSocket connection
+
 ## Security Verification Commands
 
 ```bash
@@ -102,6 +116,12 @@ grep -rn 'password\|secret\|api_key\|apikey' backend/ frontend/lib/ --include='*
 
 # Check for open redirects in middleware:
 grep -rn 'redirect\|location' frontend/proxy.js
+
+# Check for print() in browser-service (should use logging):
+grep -rn 'print(' browser-service/ --include='*.py' | grep -v __pycache__ | grep -v test
+
+# Check for internal IP in proxy validation (browser service SSRF):
+grep -rn '127\.0\.0\.1\|localhost\|0\.0\.0\.0' browser-service/ --include='*.py' | grep -v config | grep -v __pycache__
 
 # Run full security CI:
 # (triggered automatically on push to main)

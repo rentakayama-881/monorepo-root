@@ -37,6 +37,7 @@ bash ops/quality-score.sh
 | Frontend | Test-to-source ratio target (quality script measured) | `npm test -- --ci` |
 | Backend (Go) | All handler + service tests pass, `go vet` clean | `go test -v ./...` |
 | Feature Service (.NET) | Build + test pass | `dotnet test -c Release` |
+| Browser Service (Python) | All pytest tests pass, no lint errors | `cd browser-service && python -m pytest -v` |
 | Critical paths | Auth and financial flows MUST have regression tests | Manual review |
 
 ## Merge Rules
@@ -45,6 +46,7 @@ bash ops/quality-score.sh
 - `go vet ./...` + `go test -v ./...`
 - `dotnet build -c Release` + `dotnet test -c Release`
 - `npm run lint` + `npm run typecheck` + `npm run test -- --ci`
+- `cd browser-service && python -m pytest -v`
 - No new critical security findings
 
 ### Full Lane (main / nightly)

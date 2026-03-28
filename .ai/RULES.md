@@ -15,7 +15,7 @@
 ### General
 - Follow `.editorconfig`: 2 spaces default, tabs for Go, LF, UTF-8
 - Conventional Commits: `type(scope): description`
-- Scopes: `frontend`, `backend`, `feature-svc`, `ops`, `ai`, `docs`, `ci`, `deps`
+- Scopes: `frontend`, `backend`, `feature-svc`, `browser-svc`, `ops`, `ai`, `docs`, `ci`, `deps`
 - Branch naming: `feature/*`, `fix/*`, `refactor/*`, `docs/*`, `test/*`
 
 ### Go Backend
@@ -34,6 +34,17 @@
 - Idempotency keys for all financial writes
 - Wallet PIN: PBKDF2, 310K iterations
 - Serilog structured logging
+
+### Browser Service (Python)
+- FastAPI routes → Service layer → Playwright automation
+- Pydantic models for request/response validation
+- Pydantic Settings for configuration (env vars)
+- Stealth injection via `page.add_init_script()` before navigation
+- Deterministic PRNG (mulberry32) seeded from profile path hash
+- httpx for async HTTP (billing ticks, geo-lookup)
+- Process lifecycle: Xvfb → Chrome → x11vnc → websockify (all managed per session)
+- Python logging module (structured, no `print()`)
+- `requirements.txt` for dependency management (no poetry/pipenv)
 
 ### Frontend
 - `.jsx` extension for all components

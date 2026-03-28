@@ -13,20 +13,21 @@ An institutional-grade Validation Protocol platform (academic/legal/financial to
 │                    Deployed on Vercel                               │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
-          ┌───────────────┼───────────────┐
-          │                               │
-          ▼                               ▼
-┌─────────────────────────┐   ┌───────────────────────────────────────┐
-│   GO BACKEND (Gin)      │   │   FEATURE SERVICE (ASP.NET Core 8)   │
-│   Ent ORM · JWT · TOTP  │   │   MongoDB · Wallet/Escrow/Dispute    │
-│                         │   │                                       │
-│   ▪ Authentication      │   │   ▪ Documents & Reports               │
-│   ▪ Users & Profiles    │   │   ▪ Wallet & PIN System               │
-│   ▪ Validation Cases    │   │   ▪ Escrow/P2P Transfers              │
-│   ▪ Admin & Moderation  │   │   ▪ Bank Withdrawals                  │
-│                         │   │   ▪ Dispute Resolution (Arbitration)  │
-│   PostgreSQL (Neon)     │   │   MongoDB Atlas                       │
-└─────────────────────────┘   └───────────────────────────────────────┘
+          ┌───────────────┼───────────────┬─────────────────────┐
+          │                               │                     │
+          ▼                               ▼                     ▼
+┌─────────────────────────┐   ┌─────────────────────────┐   ┌─────────────────────────┐
+│   GO BACKEND (Gin)      │   │   FEATURE SERVICE       │   │   BROWSER SERVICE       │
+│   Ent ORM · JWT · TOTP  │   │   ASP.NET Core 8        │   │   Python · FastAPI       │
+│                         │   │   MongoDB                │   │   Playwright · noVNC     │
+│   ▪ Authentication      │   │                         │   │                         │
+│   ▪ Users & Profiles    │   │   ▪ Wallet & PIN System │   │   ▪ Cloud Browser Sessions│
+│   ▪ Validation Cases    │   │   ▪ Escrow/P2P          │   │   ▪ Anti-Detect (14 vec) │
+│   ▪ Admin & Moderation  │   │   ▪ Dispute Resolution  │   │   ▪ Fingerprint Rotation │
+│   ▪ Market Proxy        │   │   ▪ Browser Profiles    │   │   ▪ noVNC Streaming      │
+│                         │   │   ▪ Browser Billing     │   │   ▪ Per-Minute Billing   │
+│   PostgreSQL (Neon)     │   │   MongoDB Atlas         │   │   Stateless (in-memory)  │
+└─────────────────────────┘   └─────────────────────────┘   └─────────────────────────┘
 ```
 
 ---
@@ -43,6 +44,9 @@ An institutional-grade Validation Protocol platform (academic/legal/financial to
 | | PostgreSQL | 16 (Neon) |
 | **Feature Service** | ASP.NET Core | 8.0 |
 | | MongoDB | 7.0 (Atlas) |
+| **Browser Service** | Python + FastAPI | 3.11+ |
+| | Playwright (Chrome) | Latest |
+| | Xvfb + x11vnc + websockify | noVNC streaming |
 | **Auth** | JWT + TOTP | RFC 6238 |
 | **Deployment** | Vercel (Frontend) | - |
 | | VPS (Backend) | Ubuntu 22.04 |
@@ -98,18 +102,35 @@ aivalid/
 ├── feature-service/         # ASP.NET Core microservice
 │   ├── src/
 │   │   └── FeatureService.Api/
-│   │       ├── Controllers/
-│   │       ├── Services/
-│   │       ├── Models/
+│   │       ├── Controllers/ # HTTP controllers (incl. Browser/)
+│   │       ├── Services/    # Business logic (incl. browser billing)
+│   │       ├── Models/      # Entities & DTOs
 │   │       └── Infrastructure/
 │   └── tests/
 │       └── FeatureService.Api.Tests/
 │
+├── browser-service/         # Python FastAPI — Cloud Anti-Detect Browser
+│   ├── main.py              # FastAPI app + lifespan
+│   ├── routes.py            # HTTP endpoints
+│   ├── session_manager.py   # Xvfb → Chrome → VNC → websockify lifecycle
+│   ├── stealth.py           # 14-vector anti-fingerprint injection
+│   ├── fingerprint.py       # Deterministic fingerprint generation
+│   ├── ua_database.py       # 50+ User-Agents, 16 GPU renderers
+│   ├── geo.py               # Proxy IP geo-lookup
+│   ├── auth.py              # JWT middleware
+│   ├── config.py            # Pydantic settings
+│   ├── models.py            # Request/response models
+│   └── requirements.txt     # Python dependencies
+│
 ├── frontend/                # Next.js application
-│   ├── app/                 # App router pages
+│   ├── app/                 # App router pages (incl. cloud-browser/)
 │   ├── components/          # Reusable UI components
 │   ├── lib/                 # Utilities & hooks
 │   └── public/              # Static assets
+│
+├── deploy/                  # Deployment configs
+│   ├── systemd/             # Service units (backend, feature, browser)
+│   └── nginx/               # Nginx server blocks
 │
 └── .github/
     └── workflows/           # CI/CD pipelines
@@ -123,6 +144,7 @@ aivalid/
 - Go 1.24+
 - Node.js 24.12+ (24.x)
 - .NET 8.0 SDK
+- Python 3.11+
 - PostgreSQL 16+
 - MongoDB 7.0+
 
@@ -151,6 +173,19 @@ npm install
 cp .env.example .env.local
 npm run dev
 ```
+
+### Browser Service Setup
+```bash
+cd browser-service
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# Configure JWT_SECRET, FEATURE_SERVICE_URL, FEATURE_SERVICE_TOKEN
+uvicorn main:app --host 0.0.0.0 --port 6100
+```
+
+> **System dependencies (Linux):** `xvfb`, `x11vnc`, `websockify`, Playwright Chromium or Chrome
 
 ---
 
@@ -207,7 +242,25 @@ npm run typecheck
 | POST | `/api/v1/disputes` | Create dispute |
 | POST | `/api/v1/reports` | Create report (moderation) |
 | POST | `/api/v1/documents` | Upload document (artifact) |
+| GET | `/api/v1/browser/profiles` | List user browser profiles |
+| POST | `/api/v1/browser/profiles` | Create browser profile |
+| PUT | `/api/v1/browser/profiles/{id}` | Update browser profile |
+| DELETE | `/api/v1/browser/profiles/{id}` | Delete browser profile |
+| GET | `/api/v1/browser/sessions` | List user browser sessions |
+| GET | `/api/v1/browser/sessions/pricing` | Get browser pricing (public) |
+| POST | `/api/v1/browser/sessions/billing/tick` | Billing tick (internal) |
 | GET | `/api/v1/health` | Health check |
+
+### Browser Service (`browser.aivalid.id`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/sessions/start` | Start browser session (launches Chrome + VNC) |
+| POST | `/api/sessions/{id}/stop` | Stop browser session |
+| GET | `/api/sessions/{id}/status` | Get session status + VNC URL |
+| GET | `/api/sessions/{id}/screenshot` | Capture session screenshot |
+| GET | `/health` | Health check |
+| WS | `/ws/{port}` | WebSocket proxy to VNC (noVNC) |
 
 ---
 
@@ -243,18 +296,31 @@ JWT_ISSUER=api.aivalid.id
 JWT_AUDIENCE=aivalid-users
 ```
 
+### Browser Service
+```env
+HOST=0.0.0.0
+PORT=6100
+JWT_SECRET=same-as-backend
+FEATURE_SERVICE_URL=http://127.0.0.1:5000
+FEATURE_SERVICE_TOKEN=same-as-service-token
+MAX_CONCURRENT_GLOBAL=50
+MAX_CONCURRENT_PER_USER=2
+BROWSER_WS_DOMAIN=browser.aivalid.id
+```
+
 ---
 
 ## Deployment
 
 ### GitHub Actions Workflows
 - **ci.yml** — Lint, typecheck, build, and test on push
-- **deploy.yml** — Deploy backend + feature-service on main branch push
+- **deploy.yml** — Deploy backend + feature-service + browser-service on main branch push
 
 ### Production URLs
 - Frontend: `https://aivalid.id`
 - Backend API: `https://api.aivalid.id`
 - Feature Service: `https://feature.aivalid.id`
+- Browser Service: `https://browser.aivalid.id`
 
 ---
 

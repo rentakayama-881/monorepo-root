@@ -148,6 +148,39 @@ This document lists all required and optional environment variables for the AIVa
 
 ---
 
+## 🐍 Browser Service (`browser-service/`)
+
+### Configuration (Pydantic Settings — auto-loaded from `.env`)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `HOST` | Bind address | `0.0.0.0` |
+| `PORT` | API server port | `6100` |
+| `LOG_LEVEL` | Logging level | `info` |
+| `JWT_SECRET` | JWT secret (must match Go backend) | `change-me-in-production` |
+| `JWT_ALGORITHM` | JWT algorithm | `HS256` |
+| `FEATURE_SERVICE_URL` | Feature Service URL for billing ticks | `http://127.0.0.1:5000` |
+| `FEATURE_SERVICE_TOKEN` | Token for authenticating billing calls to Feature Service (sent as `X-Service-Token`). Must match Feature Service's `SERVICE_TOKEN`. | - |
+| `MAX_CONCURRENT_GLOBAL` | Max simultaneous browser sessions (all users) | `50` |
+| `MAX_CONCURRENT_PER_USER` | Max concurrent sessions per user | `2` |
+| `VNC_PORT_RANGE_START` | Start of VNC port range | `6200` |
+| `VNC_PORT_RANGE_END` | End of VNC port range | `6299` |
+| `BROWSER_PROFILES_DIR` | Directory for browser profile data | `/opt/alephdraad/browser-service/profiles` |
+| `SCREENSHOT_DIR` | Directory for session screenshots | `/opt/alephdraad/browser-service/screenshots` |
+| `BILLING_INTERVAL_SECONDS` | Billing tick interval | `60` |
+| `BROWSER_WS_DOMAIN` | Public domain for WebSocket VNC connections | `browser.aivalid.id` |
+
+### System Dependencies (Linux)
+
+| Package | Purpose |
+|---------|---------|
+| `xvfb` | Virtual framebuffer (headless display) |
+| `x11vnc` | VNC server for Xvfb display |
+| `websockify` | WebSocket-to-TCP proxy (for noVNC) |
+| Playwright Chromium or Chrome | Browser engine |
+
+---
+
 ## ⚛️ Frontend (`frontend/`)
 
 ### Required Variables
@@ -156,6 +189,7 @@ This document lists all required and optional environment variables for the AIVa
 |----------|-------------|---------|
 | `NEXT_PUBLIC_API_BASE_URL` | Go backend API URL | `https://api.aivalid.id` |
 | `NEXT_PUBLIC_FEATURE_SERVICE_URL` | Feature Service URL | `https://feature.aivalid.id` |
+| `NEXT_PUBLIC_BROWSER_SERVICE_URL` | Browser Service URL | `https://browser.aivalid.id` |
 | `NEXT_PUBLIC_SITE_URL` | Frontend site URL | `https://aivalid.id` |
 
 ### Optional

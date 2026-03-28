@@ -90,21 +90,26 @@ Never trust hardcoded numbers — always discover state dynamically.
 | Service | Stack | Domain | Deploy |
 |---------|-------|--------|--------|
 | Go Backend (`backend/`) | Gin + Ent ORM + PostgreSQL | Auth, users, cases, workflow, market proxy | VPS systemd → :8080 |
-| Feature Service (`feature-service/`) | .NET 8 + MongoDB | Finance (wallets, escrow, disputes), PQC keys, FluentValidation | VPS systemd → :5000 |
+| Feature Service (`feature-service/`) | .NET 8 + MongoDB | Finance (wallets, escrow, disputes), PQC keys, FluentValidation, browser profiles/billing | VPS systemd → :5000 |
+| Browser Service (`browser-service/`) | Python 3.11 + FastAPI + Playwright + Xvfb + x11vnc | Cloud Anti-Detect Browser sessions, fingerprint rotation, noVNC streaming | VPS systemd → :6100 |
 | Frontend (`frontend/`) | Next.js App Router + React + SWR + Tailwind v4 | All user-facing UI | Vercel auto-deploy |
 
 ### Domains
 - `https://aivalid.id` — Frontend (Vercel)
 - `https://api.aivalid.id` — Go Backend (nginx → :8080)
 - `https://feature.aivalid.id` — Feature Service (nginx → :5000)
+- `https://browser.aivalid.id` — Browser Service (nginx → :6100)
 
 ### Communication Flow
 
 ```
 Frontend ─── REST ──→ Go Backend       (lib/api.js: fetchJson, fetchJsonAuth)
 Frontend ─── REST ──→ Feature Service  (lib/featureApi.js: fetchFeature, fetchFeatureAuth)
+Frontend ─── REST ──→ Browser Service  (lib/browserApi.js: sessions start/stop/status)
+Frontend ─── WSS ───→ Browser Service  (noVNC iframe via wss://browser.aivalid.id/ws/{port})
 Go Backend ── HTTP ──→ Feature Service (escrow operations)
 Feature Service ── callback ──→ Go Backend (/api/internal/* with INTERNAL_API_KEY)
+Browser Service ── HTTP ──→ Feature Service (billing ticks via SERVICE_TOKEN)
 ```
 
 ### Key Patterns
@@ -113,6 +118,7 @@ Feature Service ── callback ──→ Go Backend (/api/internal/* with INTER
 |-------|---------|-------|
 | Go Backend | Handler → Service → Ent ORM | Never raw SQL. Edit `ent/schema/` only. |
 | Feature Service | Controller → Service → MongoDB | Integers only for money. Idempotency keys (in-memory). FluentValidation for DTOs. |
+| Browser Service | Routes → Service → Playwright | Stealth injection, Xvfb+VNC pipeline, per-minute billing. |
 | Frontend | Page → Client Component → SWR + API | `.jsx` extension. `cn()` for class merging. |
 | Auth | JWT in localStorage + presence cookies | `has_session=1`, `has_admin=1` cookies for middleware |
 | Market handler | 5 files in `handlers/` package | types, helpers, listing, orders, handler |
@@ -123,6 +129,7 @@ Feature Service ── callback ──→ Go Backend (/api/internal/* with INTER
 |------|---------|
 | `lib/api.js` | Go backend HTTP client (single env var: `NEXT_PUBLIC_API_BASE_URL`) |
 | `lib/featureApi.js` | Feature Service HTTP client |
+| `lib/browserApi.js` | Browser Service client (profiles → Feature, sessions → Browser) |
 | `lib/auth.js` | Token storage + presence cookie management |
 | `lib/adminAuth.js` | Admin session + presence cookie management |
 | `lib/tokenRefresh.js` | JWT auto-refresh with race protection |
@@ -138,9 +145,9 @@ Feature Service ── callback ──→ Go Backend (/api/internal/* with INTER
 Read these for full context on specific topics:
 
 1. `.ai/RULES.md` — Coding conventions, commit format, design tokens, invariants
-2. `.ai/ARCHITECTURE.md` — Service boundaries, domain model, financial rules, middleware
+2. `.ai/ARCHITECTURE.md` — Service boundaries, domain model, financial rules, middleware, Smart Browser architecture
 3. `.ai/QUALITY.md` — 9-dimension quality scoring, coverage floors, merge rules
-4. `.ai/SECURITY.md` — 14-category defensive security checklist
+4. `.ai/SECURITY.md` — 15-category defensive security checklist (includes browser anti-detect)
 
 ## Workflow Prompts
 
@@ -200,7 +207,7 @@ For specific tasks, read the matching workflow in `.ai/prompts/`:
 bash ops/quality-score.sh
 ```
 
-Scopes for conventional commits: `frontend`, `backend`, `feature-svc`, `ops`, `ai`, `docs`, `ci`, `deps`
+Scopes for conventional commits: `frontend`, `backend`, `feature-svc`, `browser-svc`, `ops`, `ai`, `docs`, `ci`, `deps`
 
 ---
 
@@ -215,9 +222,10 @@ Scopes for conventional commits: `frontend`, `backend`, `feature-svc`, `ops`, `a
 | Logging | `lib/logger.js` — never raw `console.*` in app/lib code |
 | Images | Every `<img>` must have `alt` attribute |
 | SQL | Ent ORM only — never raw SQL |
-| Internal calls | Backend→Feature: `SERVICE_TOKEN`; Feature→Backend: `INTERNAL_API_KEY` (`X-Internal-Api-Key`) |
+| Internal calls | Backend→Feature: `SERVICE_TOKEN`; Feature→Backend: `INTERNAL_API_KEY` (`X-Internal-Api-Key`); Browser→Feature: `SERVICE_TOKEN` |
 | Wallet PIN | PBKDF2, 310K iterations, 4-fail lockout 4h |
 | Idempotency | Required for all financial write operations |
+| Browser sessions | Max 2 concurrent per user. Per-minute billing via wallet deduction. Auto-stop on insufficient balance. |
 
 ---
 

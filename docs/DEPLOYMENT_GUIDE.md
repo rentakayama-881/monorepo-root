@@ -10,6 +10,7 @@ Panduan deployment AIValid setelah perubahan kode.
 - VPS menjalankan dua backend:
   1. Go (Gin) backend
   2. .NET Feature Service
+  3. Python Browser Service (FastAPI)
 
 ## Ringkasan Runtime yang Teramati (Evidence-Based)
 
@@ -23,11 +24,13 @@ Sumber bukti:
 |---------|------------------|----------------|--------------|---------------|
 | Go Backend (Gin) | `api.aivalid.id` | `127.0.0.1:8080` | `alephdraad-backend.service` | `/opt/alephdraad/backend/app` |
 | Feature Service (.NET) | `feature.aivalid.id` | `127.0.0.1:5000` | `feature-service.service` | `/opt/alephdraad/feature-service/FeatureService.Api.dll` |
+| Browser Service (Python) | `browser.aivalid.id` | `127.0.0.1:6100` | `browser-service.service` | `/opt/alephdraad/browser-service/` |
 | Frontend (Next.js) | `UNKNOWN` | N/A | N/A | Vercel |
 
 Health endpoints (dari kode):
 - Go Backend: `GET /health` (juga tersedia `GET /api/v1/health`)
 - Feature Service: `GET /api/v1/health`
+- Browser Service: `GET /health`
 
 ## 1. Frontend (Next.js) - Vercel
 
@@ -133,10 +136,70 @@ sudo journalctl -u alephdraad-backend.service -n 200 --no-pager
 sudo journalctl -u feature-service.service -n 200 --no-pager
 ```
 
-## 3. Checklist Setelah Deploy
+## 3. Browser Service (Python FastAPI) - VPS
+
+### Opsi A: Manual Deploy
+
+Browser Service tidak perlu di-build — deploy langsung file Python source.
+
+1) Upload files ke VPS
+```bash
+rsync -av --exclude='.venv' --exclude='__pycache__' --exclude='.env' \
+  ./browser-service/ <user>@<host>:/tmp/browser-service-deploy/
+```
+
+2) Backup + replace (di VPS)
+```bash
+TS="$(date -u +%Y%m%dT%H%M%SZ)"
+sudo mkdir -p "/opt/alephdraad/backups/$TS"
+sudo cp -a /opt/alephdraad/browser-service/*.py "/opt/alephdraad/backups/$TS/"
+
+sudo cp /tmp/browser-service-deploy/*.py /opt/alephdraad/browser-service/
+sudo chown -R alephdraad:alephdraad /opt/alephdraad/browser-service/
+```
+
+3) Install dependencies (jika requirements.txt berubah)
+```bash
+sudo -u alephdraad bash -c 'cd /opt/alephdraad/browser-service && source .venv/bin/activate && pip install -r requirements.txt'
+```
+
+4) Restart service
+```bash
+sudo systemctl restart browser-service.service
+```
+
+5) Verifikasi
+```bash
+sudo systemctl status browser-service.service --no-pager
+curl -sf http://127.0.0.1:6100/health
+```
+
+6) Logs
+```bash
+sudo journalctl -u browser-service.service -n 200 --no-pager
+```
+
+### System Dependencies
+
+Browser Service membutuhkan package sistem berikut (sudah terinstall di VPS):
+- `xvfb` — Virtual framebuffer
+- `x11vnc` — VNC server
+- `websockify` — WebSocket proxy
+- Chrome real binary di `/opt/alephdraad/.cache/ms-playwright/chrome-real/chrome-linux64/chrome`
+
+### Port Allocation
+
+| Range | Purpose |
+|-------|---------|
+| 6100 | FastAPI HTTP server |
+| 6200-6299 | VNC ports (1 per session) |
+| 6300-6399 | WebSocket ports (VNC+100) |
+
+## 4. Checklist Setelah Deploy
 
 - Go Backend: `curl -sf https://api.aivalid.id/health`
 - Feature Service: `curl -sf https://feature.aivalid.id/api/v1/health`
+- Browser Service: `curl -sf https://browser.aivalid.id/health`
 - Frontend: verifikasi via Vercel domain yang aktif (`UNKNOWN` di repo ini)
 
 ---

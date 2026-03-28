@@ -4,10 +4,11 @@
 
 Before deploying, clarify:
 
-1. **What changed?** — Backend only? Frontend only? Both? Feature Service?
+1. **What changed?** — Backend only? Frontend only? Both? Feature Service? Browser Service?
 2. **Is this a hotfix or scheduled release?** — Hotfixes use `--scope backend-feature`
 3. **Any database migrations?** — If yes, coordinate migration timing with deploy
 4. **Any env var changes?** — If yes, update `.env` on VPS before deploying
+5. **Any system dependency changes for Browser Service?** — e.g., Chrome update, new apt packages
 
 ## Step 1: Discover
 ```bash
@@ -47,6 +48,17 @@ Untuk hotfix backend/feature yang tidak menyentuh frontend:
 ./ops/vps-sync-deploy.sh --env prod --ref <sha> --no-backend
 ```
 
+### Browser Service (VPS — Python, no build needed)
+```bash
+# Sync Python source files to VPS:
+sudo cp /home/alep/monorepo-root/browser-service/*.py /opt/alephdraad/browser-service/
+sudo chown -R alephdraad:alephdraad /opt/alephdraad/browser-service/
+sudo systemctl restart browser-service.service
+
+# If requirements.txt changed, update venv first:
+sudo -u alephdraad bash -c 'cd /opt/alephdraad/browser-service && source .venv/bin/activate && pip install -r requirements.txt'
+```
+
 Untuk backend hotfix:
 ```bash
 ./ops/commit-push.sh --scope backend-feature "fix(backend): message"
@@ -62,6 +74,7 @@ Evidence required (all must be confirmed):
 - Go version: `GET http://127.0.0.1:8080/health/version` → SHA matches
 - Feature Service health: `GET http://127.0.0.1:5000/api/v1/health` → OK
 - Feature Service version: `GET http://127.0.0.1:5000/api/v1/health/version` → SHA matches
+- Browser Service health: `GET http://127.0.0.1:6100/health` → OK
 
 **Note:** `verify-live.sh` checks BOTH services by default. If you only deployed one service (`--no-feature` or `--no-backend`), the SHA mismatch for the non-deployed service is expected.
 
@@ -81,13 +94,17 @@ sudo journalctl -u alephdraad-backend.service -f --no-pager -n 50
 
 # Feature Service logs:
 sudo journalctl -u feature-service.service -f --no-pager -n 50
+
+# Browser Service logs:
+sudo journalctl -u browser-service.service -f --no-pager -n 50
 ```
 
 ## Checklist
 - [ ] Scope confirmed (which services to deploy)
 - [ ] Preflight passed with appropriate scope
 - [ ] All CI checks green
-- [ ] Health endpoints return OK
+- [ ] Health endpoints return OK (Go, Feature Service, Browser Service)
 - [ ] Version endpoints match expected SHA
 - [ ] No error spikes in logs after deploy
 - [ ] If frontend changed: verify Vercel deployment succeeded
+- [ ] If browser-service changed: verify session start/stop works

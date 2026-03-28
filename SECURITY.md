@@ -66,6 +66,13 @@ We appreciate responsible disclosure and may recognize reporters in our changelo
 - Rate limiting on sensitive endpoints
 - Audit logging for security events
 
+### Browser Service Security
+- Session isolation via per-session Xvfb display (no cross-user data leakage)
+- WebSocket connections SSL-terminated at nginx (no direct VNC port exposure)
+- Process watchdog auto-kills orphaned browser/VNC processes every 15 seconds
+- Per-minute billing authenticated via SERVICE_TOKEN (cannot be bypassed)
+- Proxy URL validation (user-provided proxies must not target internal services)
+
 ---
 
 *Last updated: February 10, 2026*

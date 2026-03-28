@@ -7,6 +7,7 @@ Thank you for your interest in contributing to AIValid! This document provides g
 - Node.js 24+ (24.x LTS)
 - Go 1.24+
 - .NET 8.0 SDK
+- Python 3.11+ (for browser-service)
 - PostgreSQL 16+
 - MongoDB 7.0+
 
@@ -75,6 +76,9 @@ test(security): add 2FA requirement tests
    # Feature Service
    cd feature-service && dotnet test
    
+   # Browser Service
+   cd browser-service && python -m pytest -v
+   
    # Frontend
    cd frontend && npm run lint && npm run typecheck
    ```
@@ -129,6 +133,15 @@ test(security): add 2FA requirement tests
 - Use dependency injection
 - Async/await for I/O operations
 - FluentValidation for request validation
+
+### Python (Browser Service)
+
+- FastAPI routes → Service layer → Playwright automation
+- Pydantic models for request/response validation
+- Pydantic Settings for config (env vars via `.env`)
+- `requirements.txt` for dependency management
+- Python logging module (no `print()` in production code)
+- Type hints encouraged for function signatures
 
 ### TypeScript/JavaScript (Frontend)
 

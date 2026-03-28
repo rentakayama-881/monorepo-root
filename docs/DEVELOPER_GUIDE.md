@@ -49,6 +49,8 @@ LAKUKAN:
 
 ### 1.2 Separation of Concerns
 
+**Go Backend:**
+
 | Layer | Tanggung Jawab | Contoh File |
 |-------|----------------|-------------|
 | **Handler** | HTTP request/response | `handlers/*.go` |
@@ -56,6 +58,16 @@ LAKUKAN:
 | **Repository** | Data access | Ent ORM (generated) |
 | **DTO** | Data transfer | `dto/*.go` |
 | **Validator** | Input validation | `validators/*.go` |
+
+**Browser Service (Python):**
+
+| Layer | Tanggung Jawab | Contoh File |
+|-------|----------------|-------------|
+| **Routes** | HTTP request/response | `routes.py` |
+| **Service** | Session lifecycle | `session_manager.py` |
+| **Stealth** | Anti-fingerprint injection | `stealth.py`, `fingerprint.py` |
+| **Models** | Request/response DTOs | `models.py` |
+| **Config** | Environment settings | `config.py` |
 
 ```go
 // BENAR: Handler hanya handle HTTP
@@ -139,13 +151,26 @@ aivalid/
 ├── feature-service/         # .NET Feature Service
 │   └── src/
 │       └── FeatureService.Api/
-│           ├── Controllers/ # API endpoints
-│           ├── Services/    # Business logic
+│           ├── Controllers/ # API endpoints (incl. Browser/)
+│           ├── Services/    # Business logic (incl. browser billing)
 │           ├── Models/      # Entity models
 │           │   └── Entities/
 │           ├── DTOs/        # Request/Response
 │           ├── Validators/  # FluentValidation
 │           └── Infrastructure/
+│
+├── browser-service/         # Python FastAPI — Cloud Anti-Detect Browser
+│   ├── main.py              # FastAPI app + lifespan
+│   ├── routes.py            # HTTP endpoints
+│   ├── session_manager.py   # Xvfb → Chrome → VNC → websockify
+│   ├── stealth.py           # 14-vector anti-fingerprint injection
+│   ├── fingerprint.py       # Deterministic fingerprint generation
+│   ├── ua_database.py       # 50+ User-Agents, 16 GPU renderers
+│   ├── geo.py               # Proxy IP geo-lookup
+│   ├── auth.py              # JWT middleware
+│   ├── config.py            # Pydantic settings
+│   ├── models.py            # Request/response models
+│   └── requirements.txt     # Python dependencies
 │
 ├── frontend/                # Next.js Frontend
 │   ├── app/                 # App Router pages
@@ -784,6 +809,27 @@ JWT__AUDIENCE=aivalid-users
 CORS__ALLOWEDORIGINS__0=https://aivalid.id
 ```
 
+**Browser Service (.env):**
+```env
+# Server
+HOST=0.0.0.0
+PORT=6100
+
+# JWT (same as backend)
+JWT_SECRET=your-secret-key
+
+# Feature Service integration
+FEATURE_SERVICE_URL=http://127.0.0.1:5000
+FEATURE_SERVICE_TOKEN=your-service-token
+
+# Session limits
+MAX_CONCURRENT_GLOBAL=50
+MAX_CONCURRENT_PER_USER=2
+
+# WebSocket domain
+BROWSER_WS_DOMAIN=browser.aivalid.id
+```
+
 ### 9.2 Deployment Commands
 
 ```bash
@@ -804,6 +850,11 @@ cd feature-service/src/FeatureService.Api
 dotnet publish -c Release
 sudo systemctl restart <feature-service-name>
 
+# Browser Service (Python) — rsync source files, restart service
+rsync -av --exclude='.venv' --exclude='__pycache__' --exclude='.env' \
+  ./browser-service/ <user>@<host>:/opt/alephdraad/browser-service/
+sudo systemctl restart browser-service.service
+
 # Frontend (Vercel)
 # Auto-deploy dari GitHub push ke main
 ```
@@ -817,9 +868,13 @@ curl https://api.aivalid.id/health
 # Feature Service
 curl https://feature.aivalid.id/api/v1/health
 
+# Browser Service
+curl https://browser.aivalid.id/health
+
 # Check services
 sudo systemctl status <go-backend-service>
 sudo systemctl status <feature-service-name>
+sudo systemctl status browser-service.service
 ```
 
 ---
