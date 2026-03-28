@@ -90,13 +90,24 @@ export default function Header() {
           <Menu className="w-5 h-5 text-foreground" strokeWidth={2} />
         </button>
 
-        {/* Logo placeholder — akan diganti dengan sistem logo baru */}
+        {/* Logo — AV Glyph + wordmark */}
         <Link
           href="/"
           data-testid="logo"
           className="inline-flex items-center shrink-0 -ml-1 md:ml-0 rounded-lg focus:outline-none"
         >
-          <span className="leading-none font-bold tracking-tight text-xl">aivalid.id</span>
+          {/* Icon mark (always visible) */}
+          <svg viewBox="0 0 512 512" className="w-7 h-7 shrink-0" aria-hidden="true">
+            <path
+              d="M 239.7 68.1 Q 256.0 36.0 272.3 68.1 L 463.7 443.9 Q 480.0 476.0 444.0 476.0 L 68.0 476.0 Q 32.0 476.0 48.3 443.9 Z M 246.9 238.2 Q 256.0 216.0 265.1 238.2 L 338.9 417.8 Q 348.0 440.0 324.0 440.0 L 188.0 440.0 Q 164.0 440.0 173.1 417.8 Z"
+              fill="currentColor"
+              fillRule="evenodd"
+            />
+          </svg>
+          {/* Wordmark (hidden on small screens) */}
+          <span className="hidden sm:inline leading-none font-bold tracking-tight text-lg ml-2">
+            AIValid
+          </span>
         </Link>
 
         {/* Desktop nav */}

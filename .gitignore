@@ -110,3 +110,4 @@ temp_appsettings.json
 # ----- Debug files -----
 debug-*.sh
 *.debug
+backups/

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none">
-  <rect width="180" height="180" rx="32" fill="#4338ca"/>
-  <text x="90" y="120" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="700" font-size="92" fill="#fff">AV</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <rect width="180" height="180" fill="#4f46e5"/>
+  <path d="M 86.8 37.7 Q 90.0 30.9 93.2 37.7 L 144.0 146.3 Q 147.2 153.1 139.7 153.1 L 40.3 153.1 Q 32.8 153.1 36.0 146.3 Z M 91.9 86.2 Q 90.0 81.6 88.1 86.2 L 66.7 139.4 Q 64.8 144.0 69.8 144.0 L 110.2 144.0 Q 115.2 144.0 113.3 139.4 Z" fill="#fff" fill-rule="evenodd"/>
 </svg>

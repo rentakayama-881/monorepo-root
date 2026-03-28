@@ -84,7 +84,18 @@ func buildVerificationEmailHTML(verificationLink string) string {
                     <!-- Brand Header -->
                     <tr>
                         <td align="center" style="padding: 0 0 32px;">
-                            <span style="font-size: 22px; font-weight: 700; color: #4338ca; letter-spacing: -0.02em;">AIValid</span>
+                            <table role="presentation" style="border-collapse: collapse;">
+                                <tr>
+                                    <td style="vertical-align: middle; padding-right: 10px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="28" height="28" style="display: block;">
+                                            <path d="M 239.7 68.1 Q 256.0 36.0 272.3 68.1 L 463.7 443.9 Q 480.0 476.0 444.0 476.0 L 68.0 476.0 Q 32.0 476.0 48.3 443.9 Z M 246.9 238.2 Q 256.0 216.0 265.1 238.2 L 338.9 417.8 Q 348.0 440.0 324.0 440.0 L 188.0 440.0 Q 164.0 440.0 173.1 417.8 Z" fill="#4f46e5" fill-rule="evenodd"/>
+                                        </svg>
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        <span style="font-size: 22px; font-weight: 700; color: #4f46e5; letter-spacing: -0.02em;">AIValid</span>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
 
@@ -92,7 +103,7 @@ func buildVerificationEmailHTML(verificationLink string) string {
                     <tr>
                         <td style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e5ea; overflow: hidden;">
                             <!-- Indigo accent top border -->
-                            <div style="height: 3px; background: linear-gradient(90deg, #4338ca 0%%, #6366f1 50%%, #818cf8 100%%);"></div>
+                            <div style="height: 3px; background: linear-gradient(90deg, #4f46e5 0%%, #6366f1 50%%, #818cf8 100%%);"></div>
 
                             <!-- Content -->
                             <table role="presentation" style="width: 100%%; border-collapse: collapse;">
@@ -116,7 +127,7 @@ func buildVerificationEmailHTML(verificationLink string) string {
                                         <table role="presentation" style="margin: 0 0 24px; width: 100%%;">
                                             <tr>
                                                 <td align="center">
-                                                    <a href="%s" style="display: inline-block; padding: 13px 36px; background-color: #4338ca; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; line-height: 1; letter-spacing: 0.01em;">
+                                                    <a href="%s" style="display: inline-block; padding: 13px 36px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; line-height: 1; letter-spacing: 0.01em;">
                                                         Verifikasi Email
                                                     </a>
                                                 </td>
@@ -142,7 +153,7 @@ func buildVerificationEmailHTML(verificationLink string) string {
                                                         Tombol tidak bekerja? Salin link ini ke browser:
                                                     </p>
                                                     <p style="margin: 0; font-size: 12px; word-break: break-all; line-height: 1.5;">
-                                                        <a href="%s" style="color: #4338ca; text-decoration: underline;">%s</a>
+                                                        <a href="%s" style="color: #4f46e5; text-decoration: underline;">%s</a>
                                                     </p>
                                                 </td>
                                             </tr>
@@ -243,7 +254,18 @@ func buildPasswordResetEmailHTML(resetLink string) string {
                     <!-- Brand Header -->
                     <tr>
                         <td align="center" style="padding: 0 0 32px;">
-                            <span style="font-size: 22px; font-weight: 700; color: #4338ca; letter-spacing: -0.02em;">AIValid</span>
+                            <table role="presentation" style="border-collapse: collapse;">
+                                <tr>
+                                    <td style="vertical-align: middle; padding-right: 10px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="28" height="28" style="display: block;">
+                                            <path d="M 239.7 68.1 Q 256.0 36.0 272.3 68.1 L 463.7 443.9 Q 480.0 476.0 444.0 476.0 L 68.0 476.0 Q 32.0 476.0 48.3 443.9 Z M 246.9 238.2 Q 256.0 216.0 265.1 238.2 L 338.9 417.8 Q 348.0 440.0 324.0 440.0 L 188.0 440.0 Q 164.0 440.0 173.1 417.8 Z" fill="#4f46e5" fill-rule="evenodd"/>
+                                        </svg>
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        <span style="font-size: 22px; font-weight: 700; color: #4f46e5; letter-spacing: -0.02em;">AIValid</span>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
 
@@ -251,7 +273,7 @@ func buildPasswordResetEmailHTML(resetLink string) string {
                     <tr>
                         <td style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e5ea; overflow: hidden;">
                             <!-- Indigo accent top border -->
-                            <div style="height: 3px; background: linear-gradient(90deg, #4338ca 0%%, #6366f1 50%%, #818cf8 100%%);"></div>
+                            <div style="height: 3px; background: linear-gradient(90deg, #4f46e5 0%%, #6366f1 50%%, #818cf8 100%%);"></div>
 
                             <!-- Content -->
                             <table role="presentation" style="width: 100%%; border-collapse: collapse;">
@@ -275,7 +297,7 @@ func buildPasswordResetEmailHTML(resetLink string) string {
                                         <table role="presentation" style="margin: 0 0 24px; width: 100%%;">
                                             <tr>
                                                 <td align="center">
-                                                    <a href="%s" style="display: inline-block; padding: 13px 36px; background-color: #4338ca; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; line-height: 1; letter-spacing: 0.01em;">
+                                                    <a href="%s" style="display: inline-block; padding: 13px 36px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; line-height: 1; letter-spacing: 0.01em;">
                                                         Reset Password
                                                     </a>
                                                 </td>
@@ -301,7 +323,7 @@ func buildPasswordResetEmailHTML(resetLink string) string {
                                                         Tombol tidak bekerja? Salin link ini ke browser:
                                                     </p>
                                                     <p style="margin: 0; font-size: 12px; word-break: break-all; line-height: 1.5;">
-                                                        <a href="%s" style="color: #4338ca; text-decoration: underline;">%s</a>
+                                                        <a href="%s" style="color: #4f46e5; text-decoration: underline;">%s</a>
                                                     </p>
                                                 </td>
                                             </tr>
