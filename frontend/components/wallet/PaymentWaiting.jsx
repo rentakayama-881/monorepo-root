@@ -132,7 +132,7 @@ export default function PaymentWaiting({
           </div>
 
           {!showFullAddress && (
-            <p className="text-[11px] text-muted-foreground/60">
+            <p className="text-xs text-muted-foreground/60">
               Ketuk alamat untuk menampilkan selengkapnya
             </p>
           )}
@@ -151,7 +151,7 @@ export default function PaymentWaiting({
 
       {/* ── Waiting Pulse Indicator ── */}
       {countdown > 0 && (
-        <div className="flex items-center justify-center gap-2.5 py-1">
+        <div className="flex items-center justify-center gap-2 py-1">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-breathe-dot absolute inline-flex h-full w-full rounded-full bg-primary/60" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />

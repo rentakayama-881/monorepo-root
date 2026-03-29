@@ -43,13 +43,13 @@ export default function FinalOffersPanel({
             <div className="text-sm font-semibold text-foreground">Submit Final Offer</div>
             <div className="mt-3 space-y-3">
               <div className="rounded-[var(--radius)] border border-border bg-secondary/30 px-3 py-2">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Amount (locked funds)
                 </div>
                 <div className="mt-1 text-sm font-semibold text-foreground">
                   {formatIDR(bountyAmount)}
                 </div>
-                <div className="mt-1 text-[11px] text-muted-foreground">
+                <div className="mt-1 text-xs text-muted-foreground">
                   Sesuai bounty_amount (tidak dapat diubah di Final Offer).
                 </div>
               </div>
@@ -68,7 +68,7 @@ export default function FinalOffersPanel({
                     } disabled:cursor-not-allowed disabled:opacity-60`}
                   >
                     <div className="text-sm font-semibold">1 hari 8 jam</div>
-                    <div className="text-[11px] opacity-70">Tugas ringan</div>
+                    <div className="text-xs opacity-70">Tugas ringan</div>
                   </button>
                   <button
                     type="button"
@@ -81,7 +81,7 @@ export default function FinalOffersPanel({
                     } disabled:cursor-not-allowed disabled:opacity-60`}
                   >
                     <div className="text-sm font-semibold">7 hari</div>
-                    <div className="text-[11px] opacity-70">Standar</div>
+                    <div className="text-xs opacity-70">Standar</div>
                   </button>
                   <button
                     type="button"
@@ -94,10 +94,10 @@ export default function FinalOffersPanel({
                     } disabled:cursor-not-allowed disabled:opacity-60`}
                   >
                     <div className="text-sm font-semibold">30 hari</div>
-                    <div className="text-[11px] opacity-70">Kasus kompleks</div>
+                    <div className="text-xs opacity-70">Kasus kompleks</div>
                   </button>
                 </div>
-                <div className="mt-1 text-[11px] text-muted-foreground">
+                <div className="mt-1 text-xs text-muted-foreground">
                   Dana auto-release ketika hold berakhir jika tidak ada Dispute.
                 </div>
               </div>
@@ -162,23 +162,23 @@ export default function FinalOffersPanel({
           <table className="min-w-[860px] w-full text-sm" aria-label="Daftar penawaran akhir">
             <thead className="bg-secondary/60 text-muted-foreground">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                   Validator
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                   Amount
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                   Hold
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                   Terms
                 </th>
                 {isAuthed && isOwner ? (
-                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                  <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                     Action
                   </th>
                 ) : null}

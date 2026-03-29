@@ -88,7 +88,7 @@ export default function MyValidationCasesPage() {
             Case ini akan dihapus permanen dari daftar milik kamu.
           </div>
           <div className="rounded-[var(--radius)] border border-border bg-secondary/30 px-3 py-2">
-            <div className="font-mono text-[11px] text-muted-foreground">
+            <div className="font-mono text-xs text-muted-foreground">
               Case #{deleteTarget?.id || "-"}
             </div>
             <div className="mt-1 font-semibold text-foreground">

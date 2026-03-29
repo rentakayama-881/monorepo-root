@@ -3,7 +3,7 @@ import { statusBadgeClass, statusLabel } from "./validationCaseDetailUtils";
 export function StatusBadge({ status }) {
   return (
     <span
-      className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusBadgeClass(
+      className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${statusBadgeClass(
         status
       )}`}
     >

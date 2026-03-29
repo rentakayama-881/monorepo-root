@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 export default function ProfileCard({ user, displayName, onClose }) {
   return (
     <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 px-3 py-2.5">
-      <div className="flex items-center gap-2.5 overflow-hidden">
+      <div className="flex items-center gap-2 overflow-hidden">
         <div className="relative shrink-0">
           <Avatar src={user.avatar_url} name={displayName} size="sm" />
           <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-success" />

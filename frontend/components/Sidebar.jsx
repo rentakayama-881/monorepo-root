@@ -32,8 +32,7 @@ export default function Sidebar({ open, onClose }) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open, handleClose]);
 
-  const sectionHeading =
-    "text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground";
+  const sectionHeading = "text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground";
 
   return (
     <>

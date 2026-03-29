@@ -149,12 +149,9 @@ function Toast({ title, description, variant, onClose, duration, action, index }
   const progressRef = useRef(null);
 
   const variantStyles = {
-    success:
-      "bg-success/10 border-success/30 text-success dark:bg-success/10 dark:border-success/30 dark:text-success",
-    error:
-      "bg-destructive/10 border-destructive/30 text-destructive dark:bg-destructive/10 dark:border-destructive/30 dark:text-destructive",
-    warning:
-      "bg-warning/10 border-warning/30 text-warning dark:bg-warning/10 dark:border-warning/30 dark:text-warning",
+    success: "bg-success/10 border-success/30 text-success",
+    error: "bg-destructive/10 border-destructive/30 text-destructive",
+    warning: "bg-warning/10 border-warning/30 text-warning",
     info: "bg-muted/50 border-border text-foreground",
   };
 

@@ -21,14 +21,14 @@ export default function GlobalError({ error, reset }) {
 
   return (
     <html lang="id">
-      <body className="min-h-dvh bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 text-gray-900 dark:text-gray-100 antialiased">
+      <body className="min-h-dvh bg-background text-foreground antialiased">
         <div className="min-h-screen flex items-center justify-center px-4">
           <div className="text-center max-w-md">
             {/* Critical error icon with animation */}
-            <div className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/20 dark:to-red-800/20 flex items-center justify-center mb-8 relative">
-              <div className="absolute inset-0 rounded-full bg-red-500/10 animate-ping" />
+            <div className="mx-auto w-24 h-24 rounded-full bg-destructive/10 flex items-center justify-center mb-8 relative">
+              <div className="absolute inset-0 rounded-full bg-destructive/10 animate-ping" />
               <svg
-                className="w-12 h-12 text-red-600 dark:text-red-400 relative z-10"
+                className="w-12 h-12 text-destructive relative z-10"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -42,11 +42,11 @@ export default function GlobalError({ error, reset }) {
               </svg>
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+            <h1 className="text-3xl font-bold text-foreground mb-3">
               Terjadi Kesalahan Aplikasi Kritis
             </h1>
 
-            <p className="text-gray-600 dark:text-gray-400 mb-8">
+            <p className="text-muted-foreground mb-8">
               Aplikasi mengalami kendala yang tidak terduga. Silakan muat ulang halaman atau coba
               lagi beberapa saat lagi.
             </p>
@@ -54,7 +54,7 @@ export default function GlobalError({ error, reset }) {
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
               <button
                 onClick={reset}
-                className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all hover:scale-105 shadow-lg shadow-blue-500/20"
+                className="inline-flex items-center justify-center px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all hover:scale-105"
               >
                 <svg
                   className="w-5 h-5 mr-2"
@@ -73,7 +73,7 @@ export default function GlobalError({ error, reset }) {
               </button>
               <Link
                 href="/"
-                className="inline-flex items-center justify-center px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 font-medium rounded-lg transition-all hover:scale-105"
+                className="inline-flex items-center justify-center px-6 py-3 bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium rounded-lg transition-all hover:scale-105"
               >
                 <svg
                   className="w-5 h-5 mr-2"
@@ -93,13 +93,13 @@ export default function GlobalError({ error, reset }) {
             </div>
 
             {/* Support contact */}
-            <div className="pt-6 border-t border-gray-300 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            <div className="pt-6 border-t border-border">
+              <p className="text-sm text-muted-foreground mb-3">
                 Jika masalah terus berlanjut, silakan hubungi tim dukungan kami.
               </p>
               <Link
                 href="/contact-support"
-                className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                className="inline-flex items-center text-sm text-primary hover:underline"
               >
                 <svg
                   className="w-4 h-4 mr-2"
@@ -121,10 +121,10 @@ export default function GlobalError({ error, reset }) {
             {/* Error details for debugging */}
             {process.env.NODE_ENV === "development" && error?.message && (
               <details className="mt-8 text-left">
-                <summary className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
                   Error Details (Development Only)
                 </summary>
-                <pre className="mt-2 p-4 bg-gray-100 dark:bg-gray-800 rounded-md text-xs overflow-auto text-red-600 dark:text-red-400 max-h-48">
+                <pre className="mt-2 p-4 bg-muted rounded-md text-xs overflow-auto text-destructive max-h-48">
                   {error.message}
                   {error.digest && `\n\nDigest: ${error.digest}`}
                   {error.stack && `\n\n${error.stack}`}

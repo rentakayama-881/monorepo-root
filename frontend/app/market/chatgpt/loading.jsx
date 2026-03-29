@@ -18,7 +18,7 @@ export default function MarketChatGPTLoading() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="rounded-[var(--radius)] bg-card p-3" aria-hidden="true">
-              <div className="flex gap-2.5">
+              <div className="flex gap-2">
                 <div className="size-5 shrink-0 animate-pulse rounded bg-muted" />
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="h-3.5 w-3/4 animate-pulse rounded bg-muted" />

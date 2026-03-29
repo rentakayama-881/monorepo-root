@@ -222,7 +222,7 @@ export default function ProfileModal({ open, profile, onSave, onClose, saving })
           </div>
 
           {/* Info fingerprint */}
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Fingerprint browser (User-Agent, platform, WebGL, dll.) akan di-generate otomatis saat
             profil dibuat.
           </p>

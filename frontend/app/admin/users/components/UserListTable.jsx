@@ -1,6 +1,9 @@
 import Image from "next/image";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { hexToRgba } from "@/components/ui/badgeVariants";
+
+const BADGE_DEFAULT_COLOR = "#6366f1";
 
 function getUserBadges(user) {
   return Array.isArray(user?.badges) ? user.badges : [];
@@ -59,8 +62,10 @@ export default function UserListTable({
                       <span
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-xs"
                         style={{
-                          backgroundColor: (user.primary_badge.color || "#6366f1") + "20",
-                          color: user.primary_badge.color || "#6366f1",
+                          backgroundColor:
+                            hexToRgba(user.primary_badge.color || BADGE_DEFAULT_COLOR, 0.12) ||
+                            "var(--secondary)",
+                          color: user.primary_badge.color || BADGE_DEFAULT_COLOR,
                         }}
                       >
                         {user.primary_badge.icon_url && (

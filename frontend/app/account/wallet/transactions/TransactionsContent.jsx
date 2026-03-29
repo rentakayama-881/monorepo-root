@@ -291,7 +291,7 @@ export default function TransactionsContent() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-foreground">{title}</span>
                         <span
-                          className={`rounded-sm px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}
+                          className={`rounded-sm px-2 py-0.5 text-xs font-semibold ${badge.cls}`}
                         >
                           {badge.label}
                         </span>
@@ -300,7 +300,7 @@ export default function TransactionsContent() {
                         {formatDate(row.createdAt)}
                       </div>
                       {row.referenceId ? (
-                        <div className="text-[11px] text-muted-foreground">
+                        <div className="text-xs text-muted-foreground">
                           Ref: <span className="font-mono">{row.referenceId}</span>
                         </div>
                       ) : null}

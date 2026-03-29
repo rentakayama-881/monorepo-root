@@ -2,7 +2,7 @@ import Skeleton, { SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton
 
 export default function UserProfileSkeleton() {
   return (
-    <section className="max-w-4xl mx-auto px-4 py-6" aria-busy="true" aria-live="polite">
+    <section className="max-w-6xl mx-auto px-4 py-6" aria-busy="true" aria-live="polite">
       {/* Profile Header Skeleton */}
       <div className="flex flex-col gap-4 mb-8">
         <div className="flex items-start gap-4">

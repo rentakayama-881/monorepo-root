@@ -25,7 +25,7 @@ export default function MarketChatGPTOrderDetailClient() {
   return (
     <main className="container py-10 space-y-6">
       <header className="space-y-2">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Marketplace
         </div>
         <h1 className="text-2xl font-semibold text-foreground">Detail Pembelian</h1>

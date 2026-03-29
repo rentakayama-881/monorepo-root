@@ -188,22 +188,22 @@ export default function ConsultationPanel({
               >
                 <thead className="bg-secondary/60 text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                       Validator
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                       Match Score
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                       Filed
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                       SLA Due
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]">
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs">
                       Action
                     </th>
                   </tr>
@@ -235,7 +235,7 @@ export default function ConsultationPanel({
                               ) : null}
                             </div>
                             {Number(r?.validator?.guarantee_amount || 0) > 0 ? (
-                              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                              <div className="mt-0.5 text-xs text-muted-foreground">
                                 Stake: {formatIDR(r.validator.guarantee_amount)}
                               </div>
                             ) : null}
@@ -248,7 +248,7 @@ export default function ConsultationPanel({
                             <div className="font-mono text-xs font-semibold text-foreground">
                               {Number(r.matching_score.total || 0)}/100
                             </div>
-                            <div className="mt-1 text-[11px] text-muted-foreground">
+                            <div className="mt-1 text-xs text-muted-foreground">
                               D:{Number(r.matching_score.domain_fit || 0)} E:
                               {Number(r.matching_score.evidence_fit || 0)} H:
                               {Number(r.matching_score.history_dispute || 0)} R:
@@ -269,7 +269,7 @@ export default function ConsultationPanel({
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                         {r?.owner_response_due_at ? formatDateTime(r.owner_response_due_at) : "-"}
                         {Number(r?.reminder_count || 0) > 0 ? (
-                          <div className="mt-1 text-[11px] text-muted-foreground">
+                          <div className="mt-1 text-xs text-muted-foreground">
                             reminder: {Number(r.reminder_count)}
                           </div>
                         ) : null}

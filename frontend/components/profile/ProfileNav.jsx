@@ -26,7 +26,7 @@ function MenuItem({ href, label, Icon, isActive }) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${
+      className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
         isActive ? "bg-accent font-semibold text-foreground" : "text-foreground hover:bg-accent/60"
       }`}
       aria-current={isActive ? "page" : undefined}

@@ -114,7 +114,7 @@ function MobileCard({ vc, deletingId, onDeleteClick }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="font-mono text-[11px] text-muted-foreground">Case #{String(id)}</div>
+          <div className="font-mono text-xs text-muted-foreground">Case #{String(id)}</div>
           <Link
             href={href}
             prefetch={false}
@@ -195,9 +195,7 @@ function MobileCard({ vc, deletingId, onDeleteClick }) {
           {String(deletingId) === String(id) ? "Deleting..." : canDelete ? "Delete" : "Locked"}
         </button>
       </div>
-      {!canDelete ? (
-        <div className="mt-1 text-[11px] text-muted-foreground">{deleteHint}</div>
-      ) : null}
+      {!canDelete ? <div className="mt-1 text-xs text-muted-foreground">{deleteHint}</div> : null}
     </article>
   );
 }
@@ -270,9 +268,7 @@ function DesktopRow({ vc, deletingId, onDeleteClick }) {
             {String(deletingId) === String(id) ? "Deleting..." : canDelete ? "Delete" : "Locked"}
           </button>
         </div>
-        {!canDelete ? (
-          <div className="mt-1 text-[11px] text-muted-foreground">{deleteHint}</div>
-        ) : null}
+        {!canDelete ? <div className="mt-1 text-xs text-muted-foreground">{deleteHint}</div> : null}
 
         <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
           <Avatar src={owner?.avatar_url} name={owner?.username || ""} size="xs" />
@@ -307,43 +303,43 @@ export default function CaseListTable({ items, deletingId, onDeleteClick }) {
               <tr>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Case
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Title
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Status
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Sensitivity
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Bounty
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Filed
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Action
                 </th>

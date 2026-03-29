@@ -155,7 +155,7 @@ export default function UserProfilePage() {
 
   if (!profile || profile.error)
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="text-center py-12">
           <div
             className="mx-auto mb-4 h-12 w-12 rounded-full border border-border bg-secondary/60"
@@ -176,7 +176,7 @@ export default function UserProfilePage() {
   const pronouns = String(profile.pronouns || "").trim();
 
   return (
-    <section className="max-w-4xl mx-auto px-4 py-6">
+    <section className="max-w-6xl mx-auto px-4 py-6">
       {/* Profile Header */}
       <div className="flex flex-col gap-4 mb-8">
         {/* Avatar + Name row */}

@@ -6,7 +6,7 @@ export default function ProfileFooter({ isSigningOut, onLogout }) {
       data-testid="logout-button"
       onClick={onLogout}
       disabled={isSigningOut}
-      className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
       type="button"
     >
       {isSigningOut ? (

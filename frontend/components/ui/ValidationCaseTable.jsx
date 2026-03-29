@@ -28,51 +28,51 @@ export default function ValidationCaseTable({
               <tr>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Kasus
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Judul
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Status
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Sensitivitas
                 </th>
                 {showCategory && (
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                    className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                   >
                     Jenis
                   </th>
                 )}
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Bounty
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Owner
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-[11px]"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-[0.12em] text-xs"
                 >
                   Dibuat
                 </th>
@@ -166,7 +166,7 @@ export default function ValidationCaseTable({
                               {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
                             </div>
                             {Number(owner?.guarantee_amount || owner?.guaranteeAmount || 0) > 0 ? (
-                              <div className="mt-0.5 text-[11px] text-muted-foreground whitespace-nowrap">
+                              <div className="mt-0.5 text-xs text-muted-foreground whitespace-nowrap">
                                 Stake:{" "}
                                 {formatIDR(owner?.guarantee_amount || owner?.guaranteeAmount)}
                               </div>

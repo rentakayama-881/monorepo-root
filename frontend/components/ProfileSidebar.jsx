@@ -55,14 +55,14 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
               <button
                 type="button"
                 onClick={handleRetry}
-                className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                className="rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
                 Coba Lagi
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-md border px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary"
+                className="rounded-md border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
               >
                 Tutup
               </button>
@@ -94,7 +94,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
           <div className="rainbow-line-h shrink-0" />
           <div className="space-y-3 p-3" aria-busy="true" aria-live="polite">
             {/* Profile skeleton */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <SkeletonCircle size="h-8 w-8" className="bg-secondary" />
               <div className="min-w-0 flex-1 space-y-1.5">
                 <SkeletonText width="w-24" className="bg-secondary" />
@@ -151,7 +151,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
           {/* Wallet section */}
           <div className="px-1.5 pb-1.5">
             <ProfileStats wallet={wallet} guarantee={guarantee} />
-            <div className="mt-0.5 px-1 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <div className="mt-0.5 px-1 pb-0.5 pt-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Wallet
             </div>
             <ProfileNav pathname={pathname} section="wallet" />
@@ -161,7 +161,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
 
           {/* Account section */}
           <div className="px-1.5 py-1.5">
-            <div className="px-1 pb-0.5 pt-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <div className="px-1 pb-0.5 pt-0.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Account
             </div>
             <ProfileNav pathname={pathname} section="account" />

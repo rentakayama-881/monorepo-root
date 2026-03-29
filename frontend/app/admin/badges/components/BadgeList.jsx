@@ -1,5 +1,8 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { BadgePresets, hexToRgba } from "@/components/ui/badgeVariants";
+
+const DEFAULT_BADGE_COLOR = BadgePresets.verified.color;
 
 const BadgeIconPreview = ({ type, color, size = "h-6 w-6" }) => {
   const icons = {
@@ -84,11 +87,14 @@ export default function BadgeList({ badges, onEdit, onDelete, onCreateClick }) {
           <div className="flex items-start gap-3">
             <div
               className="w-12 h-12 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: (badge.color || "#3b82f6") + "20" }}
+              style={{
+                backgroundColor:
+                  hexToRgba(badge.color || DEFAULT_BADGE_COLOR, 0.12) || "var(--secondary)",
+              }}
             >
               <BadgeIconPreview
                 type={badge.icon_type || "verified"}
-                color={badge.color || "#3b82f6"}
+                color={badge.color || DEFAULT_BADGE_COLOR}
                 size="h-7 w-7"
               />
             </div>

@@ -22,7 +22,7 @@ export function ChatGPTIcon({ className }) {
 function SubscriptionBadge({ label }) {
   if (!label) return null;
   return (
-    <span className="inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">
+    <span className="inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
       {label}
     </span>
   );
@@ -31,7 +31,7 @@ function SubscriptionBadge({ label }) {
 function InfoPill({ children }) {
   if (!children) return null;
   return (
-    <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+    <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
       {children}
     </span>
   );
@@ -46,7 +46,7 @@ export function MarketAccountCard({ item, checkingOut, onDetail, onBuy }) {
         "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
       )}
     >
-      <div className="flex gap-2.5">
+      <div className="flex gap-2">
         <ChatGPTIcon className="mt-0.5" />
 
         <div className="min-w-0 flex-1">
@@ -63,7 +63,7 @@ export function MarketAccountCard({ item, checkingOut, onDetail, onBuy }) {
           <div className="mt-2 flex items-end justify-between gap-2">
             <div>
               <div className="text-sm font-bold text-foreground">{item.displayPriceIDR}</div>
-              <div className="mt-0.5 text-[10px] text-muted-foreground">
+              <div className="mt-0.5 text-xs text-muted-foreground">
                 {item.seller !== "-" ? `${item.seller}` : ""}
                 {item.seller !== "-" && item.uploadedAtLabel !== "-" ? " · " : ""}
                 {item.uploadedAtLabel !== "-" ? item.uploadedAtLabel : ""}
@@ -74,7 +74,7 @@ export function MarketAccountCard({ item, checkingOut, onDetail, onBuy }) {
               <button
                 type="button"
                 onClick={onDetail}
-                className="rounded-[var(--radius)] px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="rounded-[var(--radius)] px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 Detail
               </button>
@@ -82,7 +82,7 @@ export function MarketAccountCard({ item, checkingOut, onDetail, onBuy }) {
                 type="button"
                 onClick={onBuy}
                 disabled={Boolean(checkingOut) || !item.canBuy}
-                className="rounded-[var(--radius)] bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-[0.97] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="rounded-[var(--radius)] bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-[0.97] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 {checkingOut === item.id ? "Memproses..." : item.canBuy ? "Beli" : "Belum siap"}
               </button>
@@ -92,7 +92,7 @@ export function MarketAccountCard({ item, checkingOut, onDetail, onBuy }) {
       </div>
 
       {!item.idValid ? (
-        <div className="mt-1.5 rounded-[var(--radius)] bg-warning/10 px-2.5 py-1 text-[10px] text-foreground">
+        <div className="mt-1.5 rounded-[var(--radius)] bg-warning/10 px-2.5 py-1 text-xs text-foreground">
           ID akun belum valid. Silakan muat ulang daftar.
         </div>
       ) : null}
@@ -103,7 +103,7 @@ export function MarketAccountCard({ item, checkingOut, onDetail, onBuy }) {
 export function MarketAccountCardSkeleton() {
   return (
     <div className="rounded-[var(--radius)] bg-card p-3" aria-hidden="true">
-      <div className="flex gap-2.5">
+      <div className="flex gap-2">
         <div className="size-5 shrink-0 animate-pulse rounded bg-muted" />
         <div className="min-w-0 flex-1 space-y-2">
           <div className="h-3.5 w-3/4 animate-pulse rounded bg-muted" />
@@ -167,7 +167,7 @@ export function SpecDrawer({ item, onClose }) {
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <span className="text-xs font-bold text-foreground">{item.displayPriceIDR}</span>
               {item.seller !== "-" ? (
-                <span className="text-[10px] text-muted-foreground">· {item.seller}</span>
+                <span className="text-xs text-muted-foreground">· {item.seller}</span>
               ) : null}
             </div>
           </div>
@@ -190,7 +190,7 @@ export function SpecDrawer({ item, onClose }) {
                 key={label}
                 className="flex items-baseline justify-between gap-3 rounded-[var(--radius)] px-2.5 py-2 transition-colors hover:bg-muted/30"
               >
-                <span className="text-[10px] text-muted-foreground">{label}</span>
+                <span className="text-xs text-muted-foreground">{label}</span>
                 <span className="text-xs font-medium text-foreground text-right break-all">
                   {String(value)}
                 </span>

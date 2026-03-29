@@ -10,7 +10,7 @@ export default function ProfileStats({ wallet, guarantee }) {
     <div className="rounded-lg bg-secondary/50 px-3 py-2">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Saldo
           </div>
           <div
@@ -22,7 +22,7 @@ export default function ProfileStats({ wallet, guarantee }) {
           </div>
           {guarantee.amount > 0 && (
             <div
-              className="truncate text-[10px] text-muted-foreground"
+              className="truncate text-xs text-muted-foreground"
               title={`Garansi: ${guaranteeText}`}
             >
               Garansi: <span className="font-medium text-success">{guaranteeText}</span>

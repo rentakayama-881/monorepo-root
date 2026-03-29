@@ -5,6 +5,8 @@ import { getApiBase } from "@/lib/api";
 import { clearAdminSession, getAdminToken } from "@/lib/adminAuth";
 import { unwrapFeatureData } from "@/lib/featureApi";
 
+const BADGE_DEFAULT_COLOR = "#6366f1";
+
 const PAGE_SIZE = 20;
 
 function readErrorMessage(payload, fallback) {
@@ -36,7 +38,7 @@ function normalizeBadge(item) {
     description: item?.description ?? item?.Description ?? "",
     icon_type: item?.icon_type ?? item?.iconType ?? item?.IconType ?? "verified",
     icon_url: item?.icon_url ?? item?.iconUrl ?? item?.IconUrl ?? "",
-    color: item?.color ?? item?.Color ?? "#6366f1",
+    color: item?.color ?? item?.Color ?? BADGE_DEFAULT_COLOR,
   };
 }
 

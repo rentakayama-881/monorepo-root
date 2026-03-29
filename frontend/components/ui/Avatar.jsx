@@ -51,8 +51,8 @@ export default function Avatar({
   const bgColor = getAvatarColor(name);
 
   const sizes = {
-    xxs: "h-5 w-5 text-[9px]", // 20px - untuk inline mentions
-    xs: "h-6 w-6 text-[10px]", // 24px - untuk header, Validation Case Index
+    xxs: "h-5 w-5 text-xs", // 20px - untuk inline mentions
+    xs: "h-6 w-6 text-xs", // 24px - untuk header, Validation Case Index
     sm: "h-8 w-8 text-xs", // 32px - untuk Case Log rows / tables
     md: "h-10 w-10 text-sm", // 40px - default
     lg: "h-16 w-16 text-lg", // 64px - untuk cards/hero
@@ -165,7 +165,7 @@ export function AvatarGroup({ avatars = [], max = 5, size = "sm", className = ""
         <div
           className={cn(
             "flex items-center justify-center rounded-full bg-secondary text-muted-foreground font-semibold ring-2 ring-background",
-            size === "xs" && "h-6 w-6 text-[10px]",
+            size === "xs" && "h-6 w-6 text-xs",
             size === "sm" && "h-8 w-8 text-xs",
             size === "md" && "h-10 w-10 text-sm",
             size === "lg" && "h-16 w-16 text-lg"

@@ -31,7 +31,7 @@ export default function ValidationCaseMobileList({ items, baseHref, showCategory
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="font-mono text-[11px] text-muted-foreground">Case #{String(id)}</div>
+            <div className="font-mono text-xs text-muted-foreground">Case #{String(id)}</div>
             <Link
               href={href}
               prefetch={false}
@@ -99,7 +99,7 @@ export default function ValidationCaseMobileList({ items, baseHref, showCategory
               {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
             </div>
             {Number(owner?.guarantee_amount || owner?.guaranteeAmount || 0) > 0 ? (
-              <div className="mt-0.5 text-[11px] text-muted-foreground">
+              <div className="mt-0.5 text-xs text-muted-foreground">
                 Stake: {formatIDR(owner?.guarantee_amount || owner?.guaranteeAmount)}
               </div>
             ) : null}

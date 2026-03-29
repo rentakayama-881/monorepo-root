@@ -119,7 +119,10 @@ export const BadgeIcons = {
   ),
 };
 
-// Preset badge types with colors
+// Default badge fallback color (indigo)
+const BADGE_DEFAULT_COLOR = "#6366f1";
+
+// Preset badge types with colors (hex for API compatibility)
 export const BadgePresets = {
   verified: { color: "#3b82f6", icon: "checkmark", label: "Verified" },
   admin: { color: "#ef4444", icon: "admin", label: "Admin" },
@@ -131,7 +134,7 @@ export const BadgePresets = {
 
 // Size configurations
 export const sizeConfig = {
-  xs: { icon: "h-3 w-3", text: "text-[10px]", gap: "gap-0.5", padding: "px-1 py-0.5" },
+  xs: { icon: "h-3 w-3", text: "text-xs", gap: "gap-0.5", padding: "px-1 py-0.5" },
   sm: { icon: "h-3.5 w-3.5", text: "text-xs", gap: "gap-1", padding: "px-1.5 py-0.5" },
   md: { icon: "h-4 w-4", text: "text-sm", gap: "gap-1", padding: "px-2 py-1" },
   lg: { icon: "h-5 w-5", text: "text-sm", gap: "gap-1.5", padding: "px-2.5 py-1" },
@@ -191,7 +194,7 @@ export function renderBadgeIcon(config, iconClassName) {
 }
 
 export function getBadgeTone(config) {
-  const color = config?.color || "#6366f1";
+  const color = config?.color || BADGE_DEFAULT_COLOR;
   return {
     color,
     borderColor: hexToRgba(color, 0.3) || "var(--border)",
@@ -214,7 +217,7 @@ export function getBadgeConfig(badge, type) {
     );
     const iconUrl = pickFirst(badge.icon_url, badge.iconUrl, badge.IconURL);
     const preset = BadgePresets[iconType];
-    const color = pickFirst(badge.color, badge.Color, preset?.color, "#6366f1");
+    const color = pickFirst(badge.color, badge.Color, preset?.color, BADGE_DEFAULT_COLOR);
     const label = pickFirst(badge.name, badge.Name, badge.label, preset?.label, "Badge");
 
     if (preset) {
@@ -243,5 +246,5 @@ export function getBadgeConfig(badge, type) {
     };
   }
 
-  return { color: "#6366f1", icon: "default", label: "Badge", iconUrl: undefined };
+  return { color: BADGE_DEFAULT_COLOR, icon: "default", label: "Badge", iconUrl: undefined };
 }

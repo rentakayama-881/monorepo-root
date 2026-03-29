@@ -154,7 +154,7 @@ export default function MarketChatGPTClient() {
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-xl font-semibold text-foreground">Akun ChatGPT</h1>
           {isLive ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
+            <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">
               <span
                 className="inline-block size-1.5 rounded-full bg-success animate-pulse"
                 aria-hidden="true"
@@ -277,7 +277,7 @@ export default function MarketChatGPTClient() {
                 <ChevronDown className="size-3.5" />
                 Tampilkan {Math.min(ITEMS_PER_BATCH, totalItems - visibleCount)} akun lagi
               </button>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {visibleCount} dari {totalItems}
               </span>
             </div>

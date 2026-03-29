@@ -35,7 +35,7 @@ export default function CaseMetadataSidebar({
               {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
             </div>
             <div className="text-xs text-muted-foreground">Pemilik Case</div>
-            <div className="mt-0.5 text-[11px] text-muted-foreground">
+            <div className="mt-0.5 text-xs text-muted-foreground">
               Stake: {formatIDR(owner?.guarantee_amount ?? owner?.guaranteeAmount ?? 0)}
             </div>
           </div>

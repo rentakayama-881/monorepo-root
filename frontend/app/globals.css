@@ -124,6 +124,10 @@
   --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
   --font-serif: "Georgia", "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --color-brand-usdt: var(--color-brand-usdt);
+  --color-brand-bnb: var(--color-brand-bnb);
 }
 
 /* ===== Base reset ===== */
@@ -191,6 +195,14 @@
     /* Radius token */
     --radius: 0.5rem;
     --header-height: 3rem;
+
+    /* Easing curves */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+    /* Brand colors (third-party) */
+    --color-brand-usdt: oklch(0.65 0.12 165);
+    --color-brand-bnb: oklch(0.72 0.16 82);
 
     /* =========================
      Brand Palette (V4)
@@ -483,7 +495,7 @@
   }
 
   ::selection {
-    background-color: oklch(0.6 0.15 250 / 0.3);
+    background-color: oklch(from var(--primary) l c h / 0.2);
   }
 
   a {
@@ -559,31 +571,6 @@ h6 {
 p {
   margin-top: 0;
   margin-bottom: 16px;
-}
-
-/* ===== Utility classes ===== */
-.text-github-sm {
-  font-size: 12px;
-}
-
-.text-github-base {
-  font-size: 14px;
-}
-
-.text-github-lg {
-  font-size: 16px;
-}
-
-.text-github-xl {
-  font-size: 20px;
-}
-
-.text-github-2xl {
-  font-size: 24px;
-}
-
-.text-github-3xl {
-  font-size: 32px;
 }
 
 /* ===== Focus Ring Improvements ===== */
@@ -884,11 +871,11 @@ html {
 }
 
 .password-strength-medium {
-  color: rgb(217 119 6); /* amber-600 */
+  color: var(--warning);
 }
 
 .password-strength-strong {
-  color: rgb(22 163 74); /* emerald-600 */
+  color: var(--success);
 }
 
 /* Login/Register page background */

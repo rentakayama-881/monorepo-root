@@ -4,6 +4,9 @@ import logger from "@/lib/logger";
 import { getApiBase } from "@/lib/api";
 import { clearAdminSession, getAdminToken } from "@/lib/adminAuth";
 import { unwrapFeatureData } from "@/lib/featureApi";
+import { BadgePresets } from "@/components/ui/badgeVariants";
+
+const DEFAULT_BADGE_COLOR = BadgePresets.verified.color;
 
 function readErrorMessage(payload, fallback) {
   return (
@@ -33,7 +36,7 @@ function normalizeBadge(item) {
     slug: item?.slug ?? item?.Slug ?? "",
     description: item?.description ?? item?.Description ?? "",
     icon_type: item?.icon_type ?? item?.iconType ?? item?.IconType ?? "verified",
-    color: item?.color ?? item?.Color ?? "#3b82f6",
+    color: item?.color ?? item?.Color ?? DEFAULT_BADGE_COLOR,
   };
 }
 
@@ -56,7 +59,7 @@ export default function useAdminBadges() {
     slug: "",
     description: "",
     icon_type: "verified",
-    color: "#3b82f6",
+    color: DEFAULT_BADGE_COLOR,
   });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -109,7 +112,7 @@ export default function useAdminBadges() {
       slug: "",
       description: "",
       icon_type: "verified",
-      color: "#3b82f6",
+      color: DEFAULT_BADGE_COLOR,
     });
     setError("");
     setShowModal(true);
@@ -122,7 +125,7 @@ export default function useAdminBadges() {
       slug: badge.slug,
       description: badge.description || "",
       icon_type: badge.icon_type || "verified",
-      color: badge.color || "#3b82f6",
+      color: badge.color || DEFAULT_BADGE_COLOR,
     });
     setError("");
     setShowModal(true);

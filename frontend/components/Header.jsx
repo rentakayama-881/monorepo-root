@@ -66,7 +66,7 @@ export default function Header() {
   }, []);
 
   const navItem =
-    "inline-flex h-8 items-center rounded-[var(--radius)] px-3 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
+    "inline-flex h-8 items-center rounded-[var(--radius)] px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
 
   const iconButton =
     "inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius)] transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";

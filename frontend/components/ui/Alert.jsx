@@ -45,12 +45,12 @@ export default function Alert({
       iconPath: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
     },
     success: {
-      container: "border-success/30 bg-success/10 text-success dark:text-success",
+      container: "border-success/30 bg-success/10 text-success",
       icon: "text-success",
       iconPath: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
     },
     warning: {
-      container: "border-warning/30 bg-warning/10 text-warning dark:text-warning",
+      container: "border-warning/30 bg-warning/10 text-warning",
       icon: "text-warning",
       iconPath:
         "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",

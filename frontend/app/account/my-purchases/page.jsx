@@ -52,7 +52,7 @@ export default function MyPurchasesPage() {
   return (
     <main className="container py-8 space-y-4">
       <header className="space-y-1">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           Account
         </div>
         <h1 className="text-2xl font-semibold text-foreground">Riwayat Pembelian</h1>
@@ -104,7 +104,7 @@ export default function MyPurchasesPage() {
                       {String(order?.pricing_note || "")
                         .toLowerCase()
                         .includes("dipulihkan") ? (
-                        <div className="mt-1 text-[11px] text-muted-foreground">
+                        <div className="mt-1 text-xs text-muted-foreground">
                           Riwayat lama (detail terbatas)
                         </div>
                       ) : null}
@@ -141,20 +141,20 @@ function StatusBadge({ status }) {
   const normalized = String(status || "").toLowerCase();
   if (normalized === "fulfilled") {
     return (
-      <span className="rounded-sm border border-status-success-border bg-status-success-bg px-2 py-0.5 text-[11px] text-status-success-text">
+      <span className="rounded-sm border border-status-success-border bg-status-success-bg px-2 py-0.5 text-xs text-status-success-text">
         Selesai
       </span>
     );
   }
   if (normalized === "failed") {
     return (
-      <span className="rounded-sm border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">
+      <span className="rounded-sm border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
         Gagal
       </span>
     );
   }
   return (
-    <span className="rounded-sm border border-status-amber-border bg-status-amber-bg px-2 py-0.5 text-[11px] text-status-amber-text">
+    <span className="rounded-sm border border-status-amber-border bg-status-amber-bg px-2 py-0.5 text-xs text-status-amber-text">
       Diproses
     </span>
   );

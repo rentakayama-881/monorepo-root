@@ -20,7 +20,7 @@ export default function QualityGateSection({
         </div>
         <div className="mt-3 space-y-2.5">
           {checklistItems.map((item) => (
-            <label key={item.key} className="flex items-start gap-2.5 text-sm text-foreground">
+            <label key={item.key} className="flex items-start gap-2 text-sm text-foreground">
               <input
                 type="checkbox"
                 checked={Boolean(checklist?.[item.key])}

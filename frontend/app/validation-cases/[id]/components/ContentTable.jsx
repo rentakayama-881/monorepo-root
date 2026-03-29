@@ -178,7 +178,7 @@ function OverviewCellRows({ rows }) {
     <dl className="space-y-2">
       {rows.map((row, idx) => (
         <div key={idx} className="rounded-[4px] border border-border/50 bg-background/40 p-2.5">
-          <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             {prettifyKey(row.label)}
           </dt>
           <dd className="mt-1 text-sm text-foreground">{renderValue(row.value)}</dd>
@@ -330,7 +330,7 @@ export default function ContentTable({ content }) {
   return (
     <div className="overflow-hidden rounded-[var(--radius)] border border-border/70 bg-background">
       <div className="border-b border-border/70 bg-secondary/35 px-4 py-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Ringkasan Case
         </div>
         <div className="mt-1 text-xs text-muted-foreground">
@@ -350,7 +350,7 @@ export default function ContentTable({ content }) {
                   key={`${col.key}-head`}
                   className={`border-r border-border/70 px-3 py-2.5 text-left align-top last:border-r-0 ${col.width || defaultColWidth}`}
                 >
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                     {col.title}
                   </div>
                   {col.subtitle ? (

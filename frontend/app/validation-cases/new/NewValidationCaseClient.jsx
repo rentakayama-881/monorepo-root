@@ -78,7 +78,7 @@ export default function NewValidationCaseClient() {
       </nav>
 
       <header className="mb-4 md:mb-6">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Pembangun Case Berbasis README
         </div>
         <h1 className="mt-1.5 text-xl md:text-2xl font-semibold text-foreground">
@@ -136,7 +136,7 @@ export default function NewValidationCaseClient() {
       <section className="mb-4 rounded-[var(--radius)] border border-primary/20 gradient-subtle px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               Kesiapan Workspace
             </div>
             <div className="mt-1 text-sm font-semibold text-foreground">
@@ -216,7 +216,7 @@ export default function NewValidationCaseClient() {
                 maxLength={15}
                 disabled={formDisabled}
               />
-              <div className="mt-1 text-[11px] text-muted-foreground">
+              <div className="mt-1 text-xs text-muted-foreground">
                 Minimal Rp 10.000. Estimasi saat ini:{" "}
                 {form.bounty_amount ? `Rp ${formatIDR(form.bounty_amount)}` : "-"}.
               </div>
@@ -250,7 +250,7 @@ export default function NewValidationCaseClient() {
               onSnippetInserted={handleSnippetInserted}
             />
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             Gunakan markdown secukupnya. Jangan masukkan kontak langsung di Case Record.
           </p>
         </section>

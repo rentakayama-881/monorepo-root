@@ -127,7 +127,7 @@ export default function SessionToolbar({
           type="button"
           onClick={onStop}
           disabled={stopping}
-          className="inline-flex items-center gap-1 rounded-[var(--radius)] bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive transition-colors hover:bg-destructive/20 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="inline-flex items-center gap-1 rounded-[var(--radius)] bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/20 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <Square className="size-3" aria-hidden="true" />
           {stopping ? "Menghentikan..." : "Hentikan Sesi"}

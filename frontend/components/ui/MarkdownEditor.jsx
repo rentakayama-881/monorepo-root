@@ -225,21 +225,11 @@ export default function MarkdownEditor({
       <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/50">
         <p className="text-xs text-muted-foreground">
           Markdown didukung •{" "}
-          <kbd className="px-1 py-0.5 text-[10px] bg-background rounded border border-border">
-            Ctrl
-          </kbd>
-          +
-          <kbd className="px-1 py-0.5 text-[10px] bg-background rounded border border-border">
-            B
-          </kbd>{" "}
+          <kbd className="px-1 py-0.5 text-xs bg-background rounded border border-border">Ctrl</kbd>
+          +<kbd className="px-1 py-0.5 text-xs bg-background rounded border border-border">B</kbd>{" "}
           bold,{" "}
-          <kbd className="px-1 py-0.5 text-[10px] bg-background rounded border border-border">
-            Ctrl
-          </kbd>
-          +
-          <kbd className="px-1 py-0.5 text-[10px] bg-background rounded border border-border">
-            I
-          </kbd>{" "}
+          <kbd className="px-1 py-0.5 text-xs bg-background rounded border border-border">Ctrl</kbd>
+          +<kbd className="px-1 py-0.5 text-xs bg-background rounded border border-border">I</kbd>{" "}
           italic
         </p>
         <span className="text-xs text-muted-foreground">{value.length} karakter</span>

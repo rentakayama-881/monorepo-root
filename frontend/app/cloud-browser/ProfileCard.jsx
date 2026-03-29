@@ -59,7 +59,7 @@ export default function ProfileCard({
     >
       <div className="space-y-3">
         {/* Header: icon + name */}
-        <div className="flex items-start gap-2.5">
+        <div className="flex items-start gap-2">
           <div
             className={cn(
               "flex size-8 shrink-0 items-center justify-center rounded-full",
@@ -73,7 +73,7 @@ export default function ProfileCard({
               {profile.name || "Profil Tanpa Nama"}
             </h3>
             {isActive ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success">
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
                 <span
                   className="inline-block size-1.5 rounded-full bg-success animate-pulse"
                   aria-hidden="true"
@@ -89,7 +89,7 @@ export default function ProfileCard({
           {/* Proxy badge */}
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
               hasProxy ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
             )}
           >
@@ -102,14 +102,14 @@ export default function ProfileCard({
           </span>
 
           {/* Platform badge */}
-          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
             {platformLabel}
           </span>
         </div>
 
         {/* Last used */}
         {lastUsed ? (
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="size-2.5" aria-hidden="true" />
             <span>Terakhir digunakan {lastUsed}</span>
           </div>
@@ -121,7 +121,7 @@ export default function ProfileCard({
             <button
               type="button"
               onClick={() => onViewSession?.(activeSession)}
-              className="inline-flex items-center gap-1 rounded-[var(--radius)] bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success transition-colors hover:bg-success/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="inline-flex items-center gap-1 rounded-[var(--radius)] bg-success/10 px-2.5 py-1 text-xs font-semibold text-success transition-colors hover:bg-success/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               <Eye className="size-3" aria-hidden="true" />
               Lihat Sesi
@@ -131,7 +131,7 @@ export default function ProfileCard({
               type="button"
               onClick={() => onStart?.(profile)}
               disabled={starting}
-              className="inline-flex items-center gap-1 rounded-[var(--radius)] bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-[0.97] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="inline-flex items-center gap-1 rounded-[var(--radius)] bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-[0.97] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               <Play className="size-3" aria-hidden="true" />
               {starting ? "Memulai..." : "Mulai Sesi"}
@@ -165,7 +165,7 @@ export function ProfileCardSkeleton() {
   return (
     <div className="rounded-[var(--radius)] bg-card p-4" aria-hidden="true">
       <div className="space-y-3">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <div className="size-8 shrink-0 animate-pulse rounded-full bg-muted" />
           <div className="h-4 w-32 animate-pulse rounded bg-muted" />
         </div>

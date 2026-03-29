@@ -86,7 +86,7 @@ function sensitivityText(levelRaw) {
 function StatusPill({ status }) {
   return (
     <span
-      className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${statusStyle(status)}`}
+      className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${statusStyle(status)}`}
     >
       {statusLabel(status)}
     </span>
@@ -161,7 +161,7 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
     setLoadMoreClicks((prev) => prev + 1);
   }, []);
 
-  const fieldLabel = "text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground";
+  const fieldLabel = "text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground";
 
   return (
     <div className="space-y-4">
@@ -271,7 +271,7 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="font-mono text-[11px] text-muted-foreground">
+                      <div className="font-mono text-xs text-muted-foreground">
                         Case #{String(vc.id)}
                       </div>
                       <span className="mt-1 block text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
@@ -333,7 +333,7 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
                           {ownerBadge ? <Badge badge={ownerBadge} size="xs" /> : null}
                         </div>
                         {Number(owner.guarantee_amount || owner.guaranteeAmount || 0) > 0 ? (
-                          <div className="mt-0.5 text-[11px] text-muted-foreground">
+                          <div className="mt-0.5 text-xs text-muted-foreground">
                             Stake: {formatIDR(owner.guarantee_amount || owner.guaranteeAmount)}
                           </div>
                         ) : null}

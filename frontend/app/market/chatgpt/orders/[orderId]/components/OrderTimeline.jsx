@@ -6,20 +6,20 @@ function StepBadge({ status }) {
   const normalized = String(status || "").toLowerCase();
   if (normalized === "done") {
     return (
-      <span className="rounded-sm border border-status-success-border bg-status-success-bg px-2 py-0.5 text-[11px] text-status-success-text">
+      <span className="rounded-sm border border-status-success-border bg-status-success-bg px-2 py-0.5 text-xs text-status-success-text">
         Selesai
       </span>
     );
   }
   if (normalized === "failed") {
     return (
-      <span className="rounded-sm border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">
+      <span className="rounded-sm border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
         Gagal
       </span>
     );
   }
   return (
-    <span className="rounded-sm border border-status-amber-border bg-status-amber-bg px-2 py-0.5 text-[11px] text-status-amber-text">
+    <span className="rounded-sm border border-status-amber-border bg-status-amber-bg px-2 py-0.5 text-xs text-status-amber-text">
       Diproses
     </span>
   );
@@ -48,7 +48,7 @@ export default function OrderTimeline({ open, lock, order, onClose }) {
         <div className="w-full max-w-lg rounded-xl border border-border bg-card p-4 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
                 Progress Pembelian
               </div>
               <h2 className="mt-1 text-base font-semibold text-foreground">
@@ -100,7 +100,7 @@ export default function OrderTimeline({ open, lock, order, onClose }) {
                       {normalizeFailure(step.message)}
                     </div>
                   ) : null}
-                  <div className="mt-1 text-[11px] text-muted-foreground">
+                  <div className="mt-1 text-xs text-muted-foreground">
                     {formatDateTime(step?.at)}
                   </div>
                 </div>

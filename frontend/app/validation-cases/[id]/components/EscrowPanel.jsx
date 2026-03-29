@@ -38,7 +38,7 @@ export default function EscrowPanel({
                   <table className="w-full text-sm" aria-label="Detail eskro">
                     <tbody className="divide-y divide-border">
                       <tr>
-                        <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Receiver
                         </th>
                         <td className="px-4 py-3 font-semibold text-foreground">
@@ -52,7 +52,7 @@ export default function EscrowPanel({
                         </td>
                       </tr>
                       <tr>
-                        <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Jumlah
                         </th>
                         <td className="px-4 py-3 font-semibold text-foreground">
@@ -60,7 +60,7 @@ export default function EscrowPanel({
                         </td>
                       </tr>
                       <tr>
-                        <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Hold
                         </th>
                         <td className="px-4 py-3 text-muted-foreground">
@@ -68,7 +68,7 @@ export default function EscrowPanel({
                         </td>
                       </tr>
                       <tr>
-                        <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        <th className="w-40 bg-secondary/40 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Pesan
                         </th>
                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
