@@ -116,7 +116,7 @@ export default function WarningsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Peringatan Pengguna</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Peringatan Pengguna</h1>
         <Button onClick={() => setShowCreateModal(true)}>+ Buat Peringatan</Button>
       </div>
 

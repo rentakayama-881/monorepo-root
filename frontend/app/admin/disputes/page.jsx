@@ -79,7 +79,7 @@ export default function AdminDisputesPage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Kelola Sengketa</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Kelola Sengketa</h1>
         <p className="text-muted-foreground">Tinjau dan selesaikan sengketa transaksi</p>
       </div>
 

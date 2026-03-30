@@ -49,7 +49,7 @@ export default function AdminDisputeDetailPage() {
       <div className="p-6">
         <div className="bg-card rounded-lg border border-border p-8 text-center">
           <div className="text-6xl mb-4">⚠️</div>
-          <h1 className="text-xl font-bold text-foreground mb-2">Sengketa Tidak Ditemukan</h1>
+          <h1 className="text-xl font-semibold text-foreground mb-2">Sengketa Tidak Ditemukan</h1>
           <Link href="/admin/disputes" className="text-primary hover:underline">
             ← Kembali
           </Link>
@@ -70,7 +70,9 @@ export default function AdminDisputeDetailPage() {
           Kembali ke Daftar Sengketa
         </Link>
         <div className="flex items-center justify-between mt-2">
-          <h1 className="text-2xl font-bold text-foreground">Sengketa #{disputeId?.slice(-6)}</h1>
+          <h1 className="text-2xl font-semibold text-foreground">
+            Sengketa #{disputeId?.slice(-6)}
+          </h1>
           <span
             className={`inline-flex items-center rounded-sm border px-3 py-1 text-xs font-medium ${getStatusColor(dispute.status)}`}
           >

@@ -139,7 +139,7 @@ export default function AuditLogsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-foreground mb-6">Log Audit</h1>
+      <h1 className="text-2xl font-semibold text-foreground mb-6">Log Audit</h1>
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap gap-3">

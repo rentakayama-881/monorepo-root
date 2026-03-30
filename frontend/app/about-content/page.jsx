@@ -48,7 +48,7 @@ export default function AboutPage() {
     <main className="container max-w-3xl py-10">
       <header className="mb-8">
         <p className="mb-2 text-sm text-muted-foreground">Tentang AIValid.id</p>
-        <h1 className="mb-2 text-2xl font-bold">Membawa validasi manusia ke keluaran AI</h1>
+        <h1 className="mb-2 text-2xl font-semibold">Membawa validasi manusia ke keluaran AI</h1>
         <p className="text-muted-foreground">
           Kisah di balik platform validasi keluaran AI untuk tugas berskala besar yang menuntut
           keakuratan dan hasil yang dapat dipertanggungjawabkan.

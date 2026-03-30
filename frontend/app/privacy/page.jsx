@@ -96,7 +96,7 @@ export default function PrivacyPage() {
     <main className="container max-w-3xl py-10">
       <header className="mb-8">
         <p className="mb-2 text-sm text-muted-foreground">Kebijakan Privasi</p>
-        <h1 className="mb-2 text-2xl font-bold">Perlindungan data pengguna AIValid</h1>
+        <h1 className="mb-2 text-2xl font-semibold">Perlindungan data pengguna AIValid</h1>
         <p className="text-muted-foreground">
           Kami berkomitmen menjaga data pribadi pengguna secara bertanggung jawab sesuai prinsip
           keamanan digital dan ketentuan hukum yang berlaku.

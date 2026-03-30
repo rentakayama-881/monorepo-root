@@ -5,7 +5,7 @@ export default function UserFilters({ search, setSearch, onSearch }) {
   return (
     <>
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Pengguna</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Pengguna</h1>
         <p className="mt-1 text-muted-foreground">Cari pengguna dan kelola badge mereka</p>
       </div>
 

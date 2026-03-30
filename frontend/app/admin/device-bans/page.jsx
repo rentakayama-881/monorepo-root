@@ -121,7 +121,7 @@ export default function DeviceBansPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Ban Perangkat</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Ban Perangkat</h1>
         <Button onClick={() => setShowCreateModal(true)}>+ Buat Ban Perangkat</Button>
       </div>
 

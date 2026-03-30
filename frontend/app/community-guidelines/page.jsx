@@ -83,7 +83,7 @@ export default function CommunityGuidelinesPage() {
     <main className="container max-w-3xl py-10">
       <header className="mb-8">
         <p className="mb-2 text-sm text-muted-foreground">Pedoman Komunitas</p>
-        <h1 className="mb-2 text-2xl font-bold">Standar interaksi di AIValid</h1>
+        <h1 className="mb-2 text-2xl font-semibold">Standar interaksi di AIValid</h1>
         <p className="text-muted-foreground">
           Pedoman ini membantu menjaga AIValid sebagai ruang yang aman, adil, dan produktif untuk
           seluruh pengguna.

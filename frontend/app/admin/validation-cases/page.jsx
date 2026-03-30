@@ -207,7 +207,7 @@ export default function ValidationCaseManagementPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-foreground mb-6">Kelola Case Validasi</h1>
+      <h1 className="text-2xl font-semibold text-foreground mb-6">Kelola Case Validasi</h1>
 
       {result ? (
         <div

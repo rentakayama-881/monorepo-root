@@ -184,7 +184,7 @@ export default function UserProfilePage() {
           <Avatar src={profile.avatar_url} name={displayName} size="md" className="shrink-0" />
           <div className="min-w-0 flex-1 pt-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold text-foreground">
+              <h1 className="text-2xl font-semibold text-foreground">
                 {displayName || "(Tanpa Nama)"}
               </h1>
               {profile.primary_badge && <Badge badge={profile.primary_badge} size="sm" />}

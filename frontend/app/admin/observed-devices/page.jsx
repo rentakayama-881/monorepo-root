@@ -136,7 +136,7 @@ export default function ObservedDevicesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Perangkat Terpantau</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Perangkat Terpantau</h1>
       </div>
 
       {/* Search */}

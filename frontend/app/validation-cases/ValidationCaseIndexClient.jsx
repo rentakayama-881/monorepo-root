@@ -165,7 +165,7 @@ export default function ValidationCaseIndexClient({ cases, fetchError = "" }) {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold sm:text-3xl">Kasus Validasi</h1>
+      <h1 className="text-2xl font-semibold sm:text-3xl">Kasus Validasi</h1>
 
       {fetchError ? (
         <div

@@ -77,7 +77,7 @@ export default function ChangelogPage() {
     <main className="container max-w-3xl py-10">
       <header className="mb-8">
         <p className="mb-2 text-sm text-muted-foreground">Catatan Perubahan</p>
-        <h1 className="mb-2 text-2xl font-bold">Catatan perubahan AIValid</h1>
+        <h1 className="mb-2 text-2xl font-semibold">Catatan perubahan AIValid</h1>
         <p className="text-muted-foreground">
           Riwayat pembaruan fitur dan perbaikan produk dari waktu ke waktu.
         </p>

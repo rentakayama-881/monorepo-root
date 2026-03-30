@@ -34,7 +34,7 @@ export default function SendMoneyPage() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-lg px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Send Funds</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Kirim Dana</h1>
           <p className="text-sm text-muted-foreground">
             Transfer uang ke pengguna lain dengan sistem escrow
           </p>

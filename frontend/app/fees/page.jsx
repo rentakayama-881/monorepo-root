@@ -132,7 +132,7 @@ export default function FeesPage() {
       <main className="container max-w-3xl py-10">
         <header className="mb-8">
           <p className="mb-2 text-sm text-muted-foreground">Biaya Layanan</p>
-          <h1 className="mb-2 text-2xl font-bold">Struktur biaya AIValid</h1>
+          <h1 className="mb-2 text-2xl font-semibold">Struktur biaya AIValid</h1>
           <p className="text-muted-foreground">
             Halaman ini menjelaskan biaya utama penggunaan platform, batas minimum penarikan, dan
             informasi waktu settlement.

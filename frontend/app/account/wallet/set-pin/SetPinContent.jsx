@@ -173,7 +173,7 @@ export default function SetPinContent() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Lock className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Buat PIN Transaksi</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Buat PIN Transaksi</h1>
           <p className="text-sm text-muted-foreground mt-1">
             PIN ini melindungi transaksi finansial Anda
           </p>
