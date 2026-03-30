@@ -1,12 +1,9 @@
+import PageLayout from "@/components/ui/PageLayout";
 import Skeleton, { SkeletonText } from "@/components/ui/Skeleton";
 
 export default function AccountLoading() {
   return (
-    <main
-      className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8"
-      aria-busy="true"
-      aria-live="polite"
-    >
+    <PageLayout aria-busy="true" aria-live="polite">
       <div className="mb-8">
         <SkeletonText width="w-56" height="h-8" />
         <SkeletonText width="w-72" className="mt-2" />
@@ -45,6 +42,6 @@ export default function AccountLoading() {
           </div>
         </div>
       </div>
-    </main>
+    </PageLayout>
   );
 }

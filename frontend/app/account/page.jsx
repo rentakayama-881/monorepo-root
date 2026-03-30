@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import Alert from "@/components/ui/Alert";
+import PageLayout from "@/components/ui/PageLayout";
+import PageHeader from "@/components/ui/PageHeader";
 import { useAccountPage } from "./components/useAccountPage";
 import Setup2faBanner from "./components/Setup2faBanner";
 import ProfileIdentitySection from "./components/ProfileIdentitySection";
@@ -72,24 +74,22 @@ function AccountPageContent() {
 
   if (!authed) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      <PageLayout maxWidth="narrow">
         <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
           Anda harus login untuk mengelola akun.
         </div>
-      </main>
+      </PageLayout>
     );
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <PageLayout>
       {setup2fa === "true" && <Setup2faBanner />}
 
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">Account Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Kelola pengaturan akun dan preferensi Anda
-        </p>
-      </div>
+      <PageHeader
+        title="Pengaturan Akun"
+        description="Kelola pengaturan akun dan preferensi Anda"
+      />
 
       {loading ? (
         <div className="space-y-10">
@@ -183,7 +183,7 @@ function AccountPageContent() {
           <DeleteAccountSection apiBase={apiBase} />
         </div>
       )}
-    </main>
+    </PageLayout>
   );
 }
 
