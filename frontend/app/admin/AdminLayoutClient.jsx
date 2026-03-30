@@ -45,7 +45,7 @@ export default function AdminLayoutClient({ children }) {
   if (!isClient || !admin) {
     return (
       <div className="min-h-screen bg-background p-6">
-        <div className="mx-auto max-w-6xl space-y-4">
+        <div className="mx-auto max-w-7xl space-y-4">
           <Skeleton className="h-12 w-full rounded-xl" />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-[14rem_1fr]">
             <Skeleton className="h-[72vh] w-full rounded-2xl" />
@@ -123,7 +123,9 @@ export default function AdminLayoutClient({ children }) {
         </aside>
 
         {/* Main Content */}
-        <main className="ml-56 flex-1 p-6">{children}</main>
+        <main className="ml-56 flex-1 p-6">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </main>
       </div>
     </div>
   );
