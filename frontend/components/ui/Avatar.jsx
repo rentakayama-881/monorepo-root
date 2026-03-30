@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { resolveAvatarSrc, getInitials, getAvatarColor } from "@/lib/avatar";
-import { useState } from "react";
+import { memo, useState } from "react";
 
 const PIXEL_SIZES = { xxs: 20, xs: 24, sm: 32, md: 40, lg: 64, xl: 80, "2xl": 256 };
 
@@ -35,7 +35,7 @@ function FallbackUserIcon({ className = "" }) {
  * @param {boolean} props.showStatus - Show status indicator (default: false)
  * @param {string} props.className - Additional classes
  */
-export default function Avatar({
+const Avatar = memo(function Avatar({
   src,
   name,
   size = "md",
@@ -137,7 +137,9 @@ export default function Avatar({
   }
 
   return avatarContent;
-}
+});
+
+export default Avatar;
 
 /**
  * AvatarGroup - Display multiple avatars stacked

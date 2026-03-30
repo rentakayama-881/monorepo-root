@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef, memo } from "react";
 import PropTypes from "prop-types";
 import { cn } from "@/lib/utils";
 
-export default function Modal({
+const Modal = memo(function Modal({
   open = false,
   onClose,
   title = "",
@@ -183,7 +183,7 @@ export default function Modal({
       </div>
     </div>
   );
-}
+});
 
 Modal.propTypes = {
   open: PropTypes.bool,
@@ -197,6 +197,8 @@ Modal.propTypes = {
   closeOnEscape: PropTypes.bool,
   className: PropTypes.string,
 };
+
+export default Modal;
 
 export function ModalHeader({ children, className = "" }) {
   return <div className={cn("border-b px-4 py-3", className)}>{children}</div>;

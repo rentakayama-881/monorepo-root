@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import PropTypes from "prop-types";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
  * - icon: boolean (show/hide icon, default true)
  * - className: string (additional classes)
  */
-export default function Alert({
+const Alert = memo(function Alert({
   variant = "info",
   title = "",
   message = "",
@@ -146,7 +146,7 @@ export default function Alert({
       </div>
     </div>
   );
-}
+});
 
 Alert.propTypes = {
   variant: PropTypes.oneOf(["info", "success", "warning", "error"]),
@@ -163,3 +163,5 @@ Alert.propTypes = {
   icon: PropTypes.bool,
   className: PropTypes.string,
 };
+
+export default Alert;

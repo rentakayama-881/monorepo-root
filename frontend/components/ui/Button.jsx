@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, forwardRef } from "react";
 import { cva } from "class-variance-authority";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -42,70 +42,82 @@ const buttonVariants = cva(
   }
 );
 
-const Button = memo(function Button({
-  variant = "default",
-  size = "default",
-  loading = false,
-  disabled = false,
-  href,
-  className = "",
-  children,
-  iconLeft,
-  iconRight,
-  type = "button",
-  ...props
-}) {
-  const isDisabled = disabled || loading;
+const Button = memo(
+  forwardRef(function Button(
+    {
+      variant = "default",
+      size = "default",
+      loading = false,
+      disabled = false,
+      href,
+      className = "",
+      children,
+      iconLeft,
+      iconRight,
+      type = "button",
+      ...props
+    },
+    ref
+  ) {
+    const isDisabled = disabled || loading;
 
-  const content = (
-    <>
-      {loading && (
-        <span
-          className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
-          aria-hidden="true"
-        />
-      )}
-      {!loading && iconLeft && <span className="inline-flex shrink-0">{iconLeft}</span>}
-      {children}
-      {!loading && iconRight && <span className="inline-flex shrink-0">{iconRight}</span>}
-    </>
-  );
+    const content = (
+      <>
+        {loading && (
+          <span
+            className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+            aria-hidden="true"
+          />
+        )}
+        {!loading && iconLeft && <span className="inline-flex shrink-0">{iconLeft}</span>}
+        {children}
+        {!loading && iconRight && <span className="inline-flex shrink-0">{iconRight}</span>}
+      </>
+    );
 
-  if (href) {
-    if (isDisabled) {
+    if (href) {
+      if (isDisabled) {
+        return (
+          <span
+            ref={ref}
+            className={cn(
+              buttonVariants({ variant, size }),
+              "opacity-50 pointer-events-none",
+              className
+            )}
+            aria-disabled="true"
+            role="link"
+            {...props}
+          >
+            {content}
+          </span>
+        );
+      }
       return (
-        <span
-          className={cn(
-            buttonVariants({ variant, size }),
-            "opacity-50 pointer-events-none",
-            className
-          )}
-          aria-disabled="true"
-          role="link"
+        <Link
+          ref={ref}
+          href={href}
+          className={cn(buttonVariants({ variant, size }), className)}
           {...props}
         >
           {content}
-        </span>
+        </Link>
       );
     }
-    return (
-      <Link href={href} className={cn(buttonVariants({ variant, size }), className)} {...props}>
-        {content}
-      </Link>
-    );
-  }
 
-  return (
-    <button
-      type={type}
-      disabled={isDisabled}
-      className={cn(buttonVariants({ variant, size }), className)}
-      {...props}
-    >
-      {content}
-    </button>
-  );
-});
+    return (
+      <button
+        ref={ref}
+        type={type}
+        disabled={isDisabled}
+        className={cn(buttonVariants({ variant, size }), className)}
+        {...props}
+      >
+        {content}
+      </button>
+    );
+  })
+);
 
 export default Button;
 export { buttonVariants };
