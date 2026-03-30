@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import {
   AUTH_INPUT_CLASS,
   AUTH_PRIMARY_BUTTON_CLASS,
-  AuthCard,
   AuthContainer,
   AuthField,
   AuthHeader,
@@ -95,95 +94,93 @@ export default function RegisterPage() {
           description="Daftar dengan email, pilih username, dan mulai alur validasi pertama Anda."
         />
 
-        <AuthCard>
-          <form className="space-y-4" onSubmit={onSubmit}>
-            <AuthField label="Email" htmlFor="register-email">
-              <input
-                id="register-email"
-                data-testid="register-email-input"
-                type="email"
-                required
-                autoComplete="email"
-                value={form.email}
-                onChange={(event) => update("email", event.target.value)}
-                className={AUTH_INPUT_CLASS}
-                placeholder="name@example.com"
-              />
-            </AuthField>
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <AuthField label="Email" htmlFor="register-email">
+            <input
+              id="register-email"
+              data-testid="register-email-input"
+              type="email"
+              required
+              autoComplete="email"
+              value={form.email}
+              onChange={(event) => update("email", event.target.value)}
+              className={AUTH_INPUT_CLASS}
+              placeholder="name@example.com"
+            />
+          </AuthField>
 
-            <AuthField label="Password" htmlFor="register-password">
-              <input
-                id="register-password"
-                data-testid="register-password-input"
-                type="password"
-                required
-                autoComplete="new-password"
-                value={form.password}
-                minLength={8}
-                onChange={(event) => update("password", event.target.value)}
-                className={AUTH_INPUT_CLASS}
-                placeholder="Minimal 8 karakter"
-              />
+          <AuthField label="Password" htmlFor="register-password">
+            <input
+              id="register-password"
+              data-testid="register-password-input"
+              type="password"
+              required
+              autoComplete="new-password"
+              value={form.password}
+              minLength={8}
+              onChange={(event) => update("password", event.target.value)}
+              className={AUTH_INPUT_CLASS}
+              placeholder="Minimal 8 karakter"
+            />
 
-              {form.password ? (
-                <>
-                  <div className="password-strength">
-                    <div
-                      className={`password-strength-bar ${passwordStrength >= 1 ? "active password-strength-weak" : ""}`}
-                    />
-                    <div
-                      className={`password-strength-bar ${passwordStrength >= 2 ? "active password-strength-medium" : ""}`}
-                    />
-                    <div
-                      className={`password-strength-bar ${passwordStrength >= 3 ? "active password-strength-strong" : ""}`}
-                    />
-                  </div>
+            {form.password ? (
+              <>
+                <div className="password-strength">
+                  <div
+                    className={`password-strength-bar ${passwordStrength >= 1 ? "active password-strength-weak" : ""}`}
+                  />
+                  <div
+                    className={`password-strength-bar ${passwordStrength >= 2 ? "active password-strength-medium" : ""}`}
+                  />
+                  <div
+                    className={`password-strength-bar ${passwordStrength >= 3 ? "active password-strength-strong" : ""}`}
+                  />
+                </div>
 
-                  <p className={`text-xs ${strengthToneClassName[passwordStrengthTone]}`}>
-                    {passwordStrengthLabel}
-                  </p>
-                </>
-              ) : null}
-            </AuthField>
+                <p className={`text-xs ${strengthToneClassName[passwordStrengthTone]}`}>
+                  {passwordStrengthLabel}
+                </p>
+              </>
+            ) : null}
+          </AuthField>
 
-            <AuthField label="Username" htmlFor="register-username">
-              <input
-                id="register-username"
-                type="text"
-                required
-                autoComplete="username"
-                value={form.username}
-                onChange={(event) => update("username", event.target.value)}
-                className={AUTH_INPUT_CLASS}
-                placeholder="nama_pengguna"
-              />
-            </AuthField>
+          <AuthField label="Username" htmlFor="register-username">
+            <input
+              id="register-username"
+              type="text"
+              required
+              autoComplete="username"
+              value={form.username}
+              onChange={(event) => update("username", event.target.value)}
+              className={AUTH_INPUT_CLASS}
+              placeholder="nama_pengguna"
+            />
+          </AuthField>
 
-            <AuthField label="Nama tampilan (opsional)" htmlFor="register-display-name">
-              <input
-                id="register-display-name"
-                type="text"
-                autoComplete="name"
-                value={form.full_name}
-                onChange={(event) => update("full_name", event.target.value)}
-                className={AUTH_INPUT_CLASS}
-                placeholder="Nama Anda"
-              />
-            </AuthField>
+          <AuthField label="Nama tampilan (opsional)" htmlFor="register-display-name">
+            <input
+              id="register-display-name"
+              type="text"
+              autoComplete="name"
+              value={form.full_name}
+              onChange={(event) => update("full_name", event.target.value)}
+              className={AUTH_INPUT_CLASS}
+              placeholder="Nama Anda"
+            />
+          </AuthField>
 
-            {error ? <AuthNotice variant="error">{error}</AuthNotice> : null}
-            {info ? <AuthNotice variant="success">{info}</AuthNotice> : null}
+          {error ? <AuthNotice variant="error">{error}</AuthNotice> : null}
+          {info ? <AuthNotice variant="success">{info}</AuthNotice> : null}
 
-            <button
-              type="submit"
-              data-testid="register-submit-button"
-              disabled={loading}
-              className={AUTH_PRIMARY_BUTTON_CLASS}
-            >
-              {loading ? "Membuat akun..." : "Buat akun"}
-            </button>
-          </form>
-        </AuthCard>
+          <button
+            type="submit"
+            data-testid="register-submit-button"
+            disabled={loading}
+            className={AUTH_PRIMARY_BUTTON_CLASS}
+          >
+            {loading ? "Membuat akun..." : "Buat akun"}
+          </button>
+        </form>
 
         <div className="text-center text-sm text-muted-foreground">
           Sudah punya akun?{" "}

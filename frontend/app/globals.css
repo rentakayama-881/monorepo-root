@@ -884,6 +884,20 @@ html {
   @apply items-start pt-12 pb-8;
   @apply md:items-center md:pt-0 md:py-6;
   min-height: calc(100dvh - var(--header-height));
+  background-image: radial-gradient(circle, var(--foreground) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  background-blend-mode: overlay;
+  --tw-bg-opacity: 1;
+}
+
+.auth-page-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--foreground) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  opacity: 0.03;
+  pointer-events: none;
 }
 
 /* Divider with text */

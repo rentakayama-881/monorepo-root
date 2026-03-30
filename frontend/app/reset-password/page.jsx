@@ -5,6 +5,14 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import AuthPageLoading from "@/components/auth/AuthPageLoading";
 import { fetchJson } from "@/lib/api";
+import {
+  AUTH_INPUT_CLASS,
+  AUTH_PRIMARY_BUTTON_CLASS,
+  AuthContainer,
+  AuthField,
+  AuthHeader,
+  AuthNotice,
+} from "@/components/auth/AuthPrimitives";
 
 export default function ResetPasswordPage() {
   return (
@@ -24,11 +32,6 @@ function ResetPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("idle"); // idle | success | error
   const [message, setMessage] = useState("");
-
-  const inputClass =
-    "w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
-  const primaryButton =
-    "w-full inline-flex justify-center items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -59,7 +62,6 @@ function ResetPasswordForm() {
       setStatus("success");
       setMessage(data.message || "Password berhasil direset.");
 
-      // Redirect to login after 2 seconds
       setTimeout(() => {
         router.push("/login?reset=1");
       }, 2000);
@@ -73,83 +75,72 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <div className="w-full max-w-md mx-auto space-y-4">
-        <div className="rounded-lg border border-border bg-card p-6">
-          <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            Token reset password tidak ditemukan.
-          </div>
+      <div className="auth-page-bg relative">
+        <AuthContainer>
+          <AuthNotice variant="error">Token reset password tidak ditemukan.</AuthNotice>
           <Link
             href="/forgot-password"
-            className="mt-4 block text-center text-sm font-medium text-primary hover:underline"
+            className="block text-center text-sm font-medium text-primary hover:underline"
           >
             Minta link reset baru
           </Link>
-        </div>
+        </AuthContainer>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6">
-      <div className="text-center space-y-1">
-        <h1 className="text-xl font-semibold text-foreground">Atur Ulang Password</h1>
-        <p className="text-sm text-muted-foreground">Masukkan password baru Anda.</p>
-      </div>
+    <div className="auth-page-bg relative">
+      <AuthContainer>
+        <AuthHeader title="Atur Ulang Password" description="Masukkan password baru Anda." />
 
-      <div className="rounded-lg border border-border bg-card p-6">
         {status === "success" ? (
           <div className="space-y-4">
-            <div className="rounded-lg border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
-              {message}
-            </div>
+            <AuthNotice variant="success">{message}</AuthNotice>
             <p className="text-sm text-muted-foreground">Mengalihkan ke halaman masuk...</p>
           </div>
         ) : (
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Password Baru</label>
+            <AuthField label="Password Baru" htmlFor="reset-password">
               <input
+                id="reset-password"
                 type="password"
                 required
                 minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
+                className={AUTH_INPUT_CLASS}
                 placeholder="Minimal 8 karakter"
               />
-            </div>
+            </AuthField>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Konfirmasi Password</label>
+            <AuthField label="Konfirmasi Password" htmlFor="reset-confirm">
               <input
+                id="reset-confirm"
                 type="password"
                 required
                 minLength={8}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className={inputClass}
+                className={AUTH_INPUT_CLASS}
                 placeholder="Ulangi password baru"
               />
-            </div>
+            </AuthField>
 
-            {status === "error" && (
-              <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {message}
-              </div>
-            )}
+            {status === "error" && <AuthNotice variant="error">{message}</AuthNotice>}
 
-            <button type="submit" disabled={loading} className={primaryButton}>
+            <button type="submit" disabled={loading} className={AUTH_PRIMARY_BUTTON_CLASS}>
               {loading ? "Menyimpan..." : "Simpan Password Baru"}
             </button>
           </form>
         )}
-      </div>
 
-      <div className="text-center text-sm text-muted-foreground">
-        <Link href="/login" className="font-medium text-foreground underline">
-          Kembali ke halaman masuk
-        </Link>
-      </div>
+        <div className="text-center text-sm text-muted-foreground">
+          <Link href="/login" className="font-medium text-foreground underline">
+            Kembali ke halaman masuk
+          </Link>
+        </div>
+      </AuthContainer>
     </div>
   );
 }

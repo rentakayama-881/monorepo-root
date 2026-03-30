@@ -16,7 +16,7 @@ const noticeVariants = {
 };
 
 export function AuthContainer({ children, className = "" }) {
-  return <div className={cn("mx-auto w-full max-w-sm space-y-4", className)}>{children}</div>;
+  return <div className={cn("mx-auto w-full max-w-md space-y-6", className)}>{children}</div>;
 }
 
 export function AuthHeader({ title, description }) {
