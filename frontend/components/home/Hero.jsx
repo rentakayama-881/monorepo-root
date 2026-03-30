@@ -15,7 +15,7 @@ export default function Hero() {
         <div className="mx-auto max-w-4xl">
           {/* Badge */}
           <div className="flex justify-center hero-animated animate-hero-in will-change-transform">
-            <span className="rainbow-border inline-flex items-center gap-2 rounded-sm px-4 py-1.5 text-xs font-medium text-foreground">
+            <span className="inline-flex items-center gap-2 rounded-sm border border-border bg-muted px-4 py-1.5 text-xs font-medium text-foreground">
               Platform Validasi AI oleh Ahli Manusia
             </span>
           </div>
@@ -27,12 +27,12 @@ export default function Hero() {
           >
             Validasi Karya AI oleh Ahli Manusia,
             <br />
-            <span className="rainbow-text">Raih Penghasilan, Pastikan Kualitas</span>
+            <span className="accent-text">Raih Penghasilan, Pastikan Kualitas</span>
           </h1>
 
-          {/* Rainbow divider */}
+          {/* Accent divider */}
           <div
-            className="mx-auto mt-6 rainbow-line-h w-24 rounded-full hero-animated animate-hero-in will-change-transform"
+            className="mx-auto mt-6 accent-line-h w-24 rounded-full hero-animated animate-hero-in will-change-transform"
             style={{ animationDelay: "0.14s" }}
           />
 
@@ -57,24 +57,24 @@ export default function Hero() {
               variant="gradient"
               iconRight={<ArrowRight className="size-4" />}
             >
-              Lihat Daftar Case
+              Mulai Validasi
             </Button>
           </div>
 
-          {/* Flow Steps — numbered circles connected by rainbow line */}
+          {/* Flow Steps — numbered circles connected by accent line */}
           <div
             className="mt-16 hero-animated animate-hero-in will-change-transform [animation-duration:0.8s]"
             style={{ animationDelay: "0.3s" }}
           >
             <div className="relative">
               {/* Connecting line (desktop only) */}
-              <div className="absolute top-6 left-[16.67%] right-[16.67%] rainbow-line-h hidden md:block" />
+              <div className="absolute top-6 left-[16.67%] right-[16.67%] accent-line-h hidden md:block" />
 
               <div className="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
                 {STEPS.map((step) => (
                   <div key={step.num} className="relative text-center">
                     <div
-                      className="mx-auto flex h-12 w-12 items-center justify-center rounded-full rainbow-border bg-card font-mono text-sm font-bold text-foreground rainbow-glow"
+                      className="mx-auto flex h-12 w-12 items-center justify-center rounded-full accent-border bg-card font-mono text-sm font-bold text-foreground accent-glow"
                       role="img"
                       aria-label={`Langkah ${step.num}: ${step.title}`}
                     >

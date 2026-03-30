@@ -35,30 +35,22 @@
   border: 1px solid oklch(from var(--border) l c h / 0.5);
 }
 
-/* ===== Home Page — Rainbow Utilities ===== */
+/* ===== Home Page — Monochrome Accent Utilities ===== */
+/* Replaced rainbow (7-stop) gradients with primary → warm plum dual-tone */
 
-.rainbow-border {
+.accent-border {
   position: relative;
   background: var(--card);
   border: 1px solid transparent;
 }
 
-.rainbow-border::before {
+.accent-border::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(
-    135deg,
-    oklch(0.65 0.22 10) 0%,
-    oklch(0.72 0.17 55) 17%,
-    oklch(0.8 0.14 95) 33%,
-    oklch(0.68 0.19 145) 50%,
-    oklch(0.62 0.17 235) 67%,
-    oklch(0.55 0.18 280) 83%,
-    oklch(0.62 0.2 330) 100%
-  );
+  background: linear-gradient(135deg, var(--primary) 0%, oklch(0.55 0.18 295) 100%);
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -67,98 +59,78 @@
   pointer-events: none;
 }
 
-.rainbow-text {
-  background: linear-gradient(
-    135deg,
-    oklch(0.65 0.22 10) 0%,
-    oklch(0.72 0.17 55) 17%,
-    oklch(0.8 0.14 95) 33%,
-    oklch(0.68 0.19 145) 50%,
-    oklch(0.62 0.17 235) 67%,
-    oklch(0.55 0.18 280) 83%,
-    oklch(0.62 0.2 330) 100%
-  );
+.accent-text {
+  background: linear-gradient(135deg, var(--primary) 0%, oklch(0.55 0.18 295) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.rainbow-glow {
+.accent-glow {
   box-shadow:
-    0 0 20px -5px oklch(0.55 0.15 280 / 15%),
-    0 0 40px -10px oklch(0.62 0.18 330 / 10%),
-    0 0 60px -15px oklch(0.68 0.15 145 / 8%);
+    0 0 20px -5px oklch(from var(--primary) l c h / 15%),
+    0 0 40px -10px oklch(0.55 0.15 295 / 10%);
 }
 
-.dark .rainbow-glow {
+.dark .accent-glow {
   box-shadow:
-    0 0 20px -5px oklch(0.55 0.15 280 / 25%),
-    0 0 40px -10px oklch(0.62 0.18 330 / 18%),
-    0 0 60px -15px oklch(0.68 0.15 145 / 12%);
+    0 0 20px -5px oklch(from var(--primary) l c h / 25%),
+    0 0 40px -10px oklch(0.55 0.15 295 / 18%);
 }
 
 .hero-mesh-bg {
   background:
-    radial-gradient(ellipse 80% 50% at 15% 40%, oklch(0.55 0.15 280 / 8%) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 55% at 85% 25%, oklch(0.62 0.18 330 / 6%) 0%, transparent 70%),
-    radial-gradient(ellipse 70% 45% at 50% 85%, oklch(0.68 0.15 145 / 5%) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 30% at 70% 60%, oklch(0.72 0.12 55 / 4%) 0%, transparent 60%);
+    radial-gradient(
+      ellipse 80% 50% at 15% 40%,
+      oklch(from var(--primary) l c h / 8%) 0%,
+      transparent 70%
+    ),
+    radial-gradient(ellipse 60% 55% at 85% 25%, oklch(0.55 0.15 295 / 6%) 0%, transparent 70%),
+    radial-gradient(
+      ellipse 70% 45% at 50% 85%,
+      oklch(from var(--primary) l c h / 4%) 0%,
+      transparent 70%
+    );
 }
 
 .dark .hero-mesh-bg {
   background:
-    radial-gradient(ellipse 80% 50% at 15% 40%, oklch(0.45 0.15 280 / 15%) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 55% at 85% 25%, oklch(0.5 0.18 330 / 12%) 0%, transparent 70%),
-    radial-gradient(ellipse 70% 45% at 50% 85%, oklch(0.55 0.15 145 / 10%) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 30% at 70% 60%, oklch(0.6 0.12 55 / 8%) 0%, transparent 60%);
+    radial-gradient(
+      ellipse 80% 50% at 15% 40%,
+      oklch(from var(--primary) l c h / 15%) 0%,
+      transparent 70%
+    ),
+    radial-gradient(ellipse 60% 55% at 85% 25%, oklch(0.45 0.15 295 / 12%) 0%, transparent 70%),
+    radial-gradient(
+      ellipse 70% 45% at 50% 85%,
+      oklch(from var(--primary) l c h / 8%) 0%,
+      transparent 70%
+    );
 }
 
-.rainbow-line-h {
+.accent-line-h {
   height: 2px;
-  background: linear-gradient(
-    90deg,
-    oklch(0.65 0.22 10),
-    oklch(0.72 0.17 55),
-    oklch(0.8 0.14 95),
-    oklch(0.68 0.19 145),
-    oklch(0.62 0.17 235),
-    oklch(0.55 0.18 280),
-    oklch(0.62 0.2 330)
-  );
+  background: linear-gradient(90deg, var(--primary), oklch(0.55 0.18 295));
 }
 
-.rainbow-line-v {
+.accent-line-v {
   width: 2px;
-  background: linear-gradient(
-    180deg,
-    oklch(0.65 0.22 10),
-    oklch(0.72 0.17 55),
-    oklch(0.8 0.14 95),
-    oklch(0.68 0.19 145),
-    oklch(0.62 0.17 235),
-    oklch(0.55 0.18 280),
-    oklch(0.62 0.2 330)
-  );
+  background: linear-gradient(180deg, var(--primary), oklch(0.55 0.18 295));
 }
 
-.rainbow-left-accent {
+.accent-left-accent {
   position: relative;
   overflow: hidden;
 }
 
-.rainbow-left-accent::before {
+.accent-left-accent::before {
   content: "";
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(
-    180deg,
-    oklch(0.65 0.22 10),
-    oklch(0.62 0.17 235),
-    oklch(0.55 0.18 280)
-  );
+  background: linear-gradient(180deg, var(--primary), oklch(0.55 0.18 295));
 }
 
 /* ===== Gradient Utilities ===== */

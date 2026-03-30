@@ -41,7 +41,7 @@ export default function FocusAreas() {
         {AREAS.map((area) => (
           <div
             key={area.title}
-            className="rainbow-left-accent rounded-[var(--radius)] bg-card pl-5 pr-4 py-4 transition-shadow hover:shadow-sm"
+            className="accent-left-accent rounded-[var(--radius)] bg-card pl-5 pr-4 py-4 transition-shadow hover:shadow-sm"
           >
             <div className="font-semibold text-foreground">{area.title}</div>
             <p className="mt-1 text-sm text-muted-foreground">{area.description}</p>

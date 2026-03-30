@@ -14,15 +14,15 @@ export default function HowItWorks() {
 
       {/* Timeline */}
       <div className="relative">
-        {/* Rainbow vertical line */}
-        <div className="absolute left-4 md:left-5 top-1 bottom-1 rainbow-line-v" />
+        {/* Accent vertical line */}
+        <div className="absolute left-4 md:left-5 top-1 bottom-1 accent-line-v" />
 
         <div className="space-y-8">
           {STEPS.map((step, i) => (
             <div key={step.fullTitle} className="flex items-start gap-4 md:gap-5">
               {/* Number circle */}
               <div
-                className="relative z-10 flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full rainbow-border bg-card font-mono text-xs md:text-sm font-bold text-foreground"
+                className="relative z-10 flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full accent-border bg-card font-mono text-xs md:text-sm font-bold text-foreground"
                 aria-label={`Langkah ${i + 1}: ${step.fullTitle}`}
               >
                 {i + 1}
@@ -41,7 +41,7 @@ export default function HowItWorks() {
       </div>
 
       {/* CTA banner */}
-      <div className="mt-8 flex flex-col gap-3 rounded-[var(--radius)] p-4 sm:flex-row sm:items-center sm:justify-between rainbow-border bg-card">
+      <div className="mt-8 flex flex-col gap-3 rounded-[var(--radius)] p-4 sm:flex-row sm:items-center sm:justify-between accent-border bg-card">
         <div>
           <div className="font-semibold text-foreground">Mulai sekarang</div>
           <p className="mt-1 text-sm text-muted-foreground">

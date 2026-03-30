@@ -48,7 +48,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
           tabIndex={-1}
         >
           {/* Rainbow accent bar */}
-          <div className="rainbow-line-h shrink-0" />
+          <div className="accent-line-h shrink-0" />
           <div className="p-3">
             <p className="text-xs text-muted-foreground">{loadError}</p>
             <div className="mt-2 flex items-center gap-1.5">
@@ -91,7 +91,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
           tabIndex={-1}
         >
           {/* Rainbow accent bar */}
-          <div className="rainbow-line-h shrink-0" />
+          <div className="accent-line-h shrink-0" />
           <div className="space-y-3 p-3" aria-busy="true" aria-live="polite">
             {/* Profile skeleton */}
             <div className="flex items-center gap-2">
@@ -138,7 +138,7 @@ export default function ProfileSidebar({ onClose, triggerRef }) {
         onClickCapture={handlePanelNavigation}
       >
         {/* Rainbow accent bar at top */}
-        <div className="rainbow-line-h shrink-0" />
+        <div className="accent-line-h shrink-0" />
 
         {/* Profile header */}
         <ProfileCard user={user} displayName={displayName} onClose={onClose} />
