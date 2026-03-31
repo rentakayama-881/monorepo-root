@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Maximize, Minimize, Square, ArrowLeft, Clock, Wallet } from "lucide-react";
+import { Maximize, Minimize, Square, ArrowLeft, Clock, Wallet, Keyboard, KeyboardOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWallet } from "@/lib/swr";
 
@@ -27,7 +27,9 @@ export default function SessionToolbar({
   pricing,
   onStop,
   onToggleFullscreen,
+  onToggleKeyboard,
   isFullscreen,
+  showKeyboard,
   stopping,
 }) {
   const router = useRouter();
@@ -71,54 +73,74 @@ export default function SessionToolbar({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b bg-card px-4 py-2",
-        "text-xs"
+        "flex items-center gap-1 sm:gap-x-4 sm:gap-y-1.5 border-b bg-card px-2 sm:px-4 py-1.5 sm:py-2",
+        "text-[10px] sm:text-xs",
+        "flex-nowrap overflow-x-auto scrollbar-none"
       )}
     >
       {/* Back + Profile name */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         <button
           type="button"
           onClick={() => router.push("/cloud-browser")}
           className="rounded-[var(--radius)] p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           aria-label="Kembali ke dashboard"
         >
-          <ArrowLeft className="size-4" />
+          <ArrowLeft className="size-3.5 sm:size-4" />
         </button>
-        <span className="font-semibold text-foreground truncate max-w-[140px] sm:max-w-[200px]">
+        <span className="font-semibold text-foreground truncate max-w-[80px] sm:max-w-[200px]">
           {profileName}
         </span>
       </div>
 
       {/* Timer */}
-      <div className="flex items-center gap-1 text-muted-foreground">
-        <Clock className="size-3" aria-hidden="true" />
+      <div className="flex items-center gap-0.5 sm:gap-1 text-muted-foreground shrink-0">
+        <Clock className="size-2.5 sm:size-3" aria-hidden="true" />
         <span className="font-mono tabular-nums">{formatDuration(elapsed)}</span>
       </div>
 
-      {/* Running cost */}
-      <div className="flex items-center gap-1 text-muted-foreground">
-        <span>Biaya:</span>
+      {/* Running cost — hidden on very small screens */}
+      <div className="hidden xs:flex items-center gap-0.5 sm:gap-1 text-muted-foreground shrink-0">
         <span className="font-semibold text-foreground">{formatCurrency(runningCost)}</span>
       </div>
 
-      {/* Remaining balance */}
-      <div className="flex items-center gap-1 text-muted-foreground">
+      {/* Remaining balance — hidden on mobile */}
+      <div className="hidden sm:flex items-center gap-1 text-muted-foreground shrink-0">
         <Wallet className="size-3" aria-hidden="true" />
         <span>Sisa:</span>
         <span className="font-medium text-foreground">{formatCurrency(balance - runningCost)}</span>
       </div>
 
       {/* Spacer */}
-      <div className="flex-1" />
+      <div className="flex-1 min-w-0" />
 
       {/* Actions */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        {/* Keyboard toggle — mobile only */}
+        {onToggleKeyboard ? (
+          <button
+            type="button"
+            onClick={onToggleKeyboard}
+            className={cn(
+              "rounded-[var(--radius)] p-1 sm:p-1.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              showKeyboard
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+            aria-label={showKeyboard ? "Sembunyikan keyboard" : "Tampilkan keyboard"}
+          >
+            {showKeyboard
+              ? <KeyboardOff className="size-3.5" />
+              : <Keyboard className="size-3.5" />
+            }
+          </button>
+        ) : null}
+
         {/* Fullscreen */}
         <button
           type="button"
           onClick={onToggleFullscreen}
-          className="rounded-[var(--radius)] p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="rounded-[var(--radius)] p-1 sm:p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           aria-label={isFullscreen ? "Keluar layar penuh" : "Layar penuh"}
         >
           {isFullscreen ? <Minimize className="size-3.5" /> : <Maximize className="size-3.5" />}
@@ -129,10 +151,11 @@ export default function SessionToolbar({
           type="button"
           onClick={onStop}
           disabled={stopping}
-          className="inline-flex items-center gap-1 rounded-[var(--radius)] bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/20 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="inline-flex items-center gap-0.5 sm:gap-1 rounded-[var(--radius)] bg-destructive/10 px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-semibold text-destructive transition-colors hover:bg-destructive/20 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <Square className="size-3" aria-hidden="true" />
-          {stopping ? "Menghentikan..." : "Hentikan Sesi"}
+          <Square className="size-2.5 sm:size-3" aria-hidden="true" />
+          <span className="hidden sm:inline">{stopping ? "Menghentikan..." : "Hentikan Sesi"}</span>
+          <span className="sm:hidden">{stopping ? "..." : "Stop"}</span>
         </button>
       </div>
     </div>

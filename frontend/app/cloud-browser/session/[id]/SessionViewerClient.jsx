@@ -6,9 +6,25 @@ import { cn } from "@/lib/utils";
 import { useSessionStatus, usePricing } from "../../useCloudBrowser";
 import { stopSession } from "@/lib/browserApi";
 import SessionToolbar from "./SessionToolbar";
+import { Keyboard, KeyboardOff } from "lucide-react";
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_INTERVAL_MS = 3000;
+
+// Map common special keys from InputEvent/KeyboardEvent to X11 keysyms
+const KEY_TO_KEYSYM = {
+  Backspace: 0xff08,
+  Tab: 0xff09,
+  Enter: 0xff0d,
+  Escape: 0xff1b,
+  ArrowLeft: 0xff51,
+  ArrowUp: 0xff52,
+  ArrowRight: 0xff53,
+  ArrowDown: 0xff54,
+  Delete: 0xffff,
+  Home: 0xff50,
+  End: 0xff57,
+};
 
 export default function SessionViewerClient() {
   const params = useParams();
@@ -22,9 +38,14 @@ export default function SessionViewerClient() {
   const [stopError, setStopError] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const [showKeyboard, setShowKeyboard] = useState(false);
   const reconnectCountRef = useRef(0);
   const rfbRef = useRef(null);
   const containerRef = useRef(null);
+  const kbInputRef = useRef(null);
+
+  // Detect mobile/touch device
+  const isTouchDevice = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0);
 
   // Extract WebSocket URL from session data
   const vncWsUrl = session?.vnc_ws_url ?? null;
@@ -37,10 +58,14 @@ export default function SessionViewerClient() {
     let destroyed = false;
 
     async function connect() {
-      // Dynamic import — @novnc/novnc requires browser globals (window, document)
       const { default: RFB } = await import("@novnc/novnc/lib/rfb");
 
       if (destroyed) return;
+
+      // Clear container before creating new RFB instance
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
+      }
 
       try {
         rfb = new RFB(containerRef.current, vncWsUrl, {
@@ -49,6 +74,9 @@ export default function SessionViewerClient() {
         rfb.scaleViewport = true;
         rfb.resizeSession = false;
         rfb.showDotCursor = true;
+        rfb.clipViewport = true;
+        rfb.qualityLevel = 6;
+        rfb.compressionLevel = 2;
 
         rfb.addEventListener("connect", () => {
           if (!destroyed) {
@@ -63,7 +91,6 @@ export default function SessionViewerClient() {
             setConnectionStatus("disconnected");
             return;
           }
-          // Unclean disconnect — try to reconnect
           if (reconnectCountRef.current >= MAX_RECONNECT_ATTEMPTS) {
             setConnectionStatus("failed");
             return;
@@ -76,12 +103,11 @@ export default function SessionViewerClient() {
         });
 
         rfb.addEventListener("credentialsrequired", () => {
-          // No password set on x11vnc (-nopw)
           if (rfb) rfb.sendCredentials({ password: "" });
         });
 
         rfbRef.current = rfb;
-      } catch (err) {
+      } catch (_err) {
         if (!destroyed) setConnectionStatus("failed");
       }
     }
@@ -163,12 +189,56 @@ export default function SessionViewerClient() {
     if (!session || session.status !== "running") return;
     const handler = (e) => {
       e.preventDefault();
-      // Modern browsers ignore custom messages; the standard prompt is shown
       e.returnValue = "";
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [session]);
+
+  // ── Mobile keyboard: capture input events and send to RFB ──
+  const handleKbInput = useCallback((e) => {
+    const rfb = rfbRef.current;
+    if (!rfb) return;
+    const inputType = e.nativeEvent?.inputType || "";
+
+    if (inputType === "deleteContentBackward") {
+      rfb.sendKey(KEY_TO_KEYSYM.Backspace);
+    } else if (inputType === "insertLineBreak") {
+      rfb.sendKey(KEY_TO_KEYSYM.Enter);
+    } else {
+      const text = e.nativeEvent?.data;
+      if (text) {
+        for (const ch of text) {
+          rfb.sendKey(ch.codePointAt(0));
+        }
+      }
+    }
+    // Reset the input value so we keep getting events
+    if (kbInputRef.current) kbInputRef.current.value = "";
+  }, []);
+
+  const handleKbKeyDown = useCallback((e) => {
+    const rfb = rfbRef.current;
+    if (!rfb) return;
+    const sym = KEY_TO_KEYSYM[e.key];
+    if (sym) {
+      e.preventDefault();
+      rfb.sendKey(sym);
+    }
+  }, []);
+
+  const toggleKeyboard = useCallback(() => {
+    setShowKeyboard((prev) => {
+      const next = !prev;
+      if (next) {
+        // Focus the hidden input after state update to trigger mobile keyboard
+        setTimeout(() => kbInputRef.current?.focus(), 50);
+      } else {
+        kbInputRef.current?.blur();
+      }
+      return next;
+    });
+  }, []);
 
   // Loading
   if (isLoading) {
@@ -229,7 +299,9 @@ export default function SessionViewerClient() {
         pricing={pricing}
         onStop={handleStop}
         onToggleFullscreen={toggleFullscreen}
+        onToggleKeyboard={isTouchDevice ? toggleKeyboard : null}
         isFullscreen={isFullscreen}
+        showKeyboard={showKeyboard}
         stopping={stopping}
       />
 
@@ -254,8 +326,8 @@ export default function SessionViewerClient() {
         </div>
       ) : null}
 
-      {/* VNC Viewer — noVNC renders its canvas into this div */}
-      <div className="flex-1 bg-black relative">
+      {/* VNC Viewer */}
+      <div className="flex-1 bg-black relative overflow-hidden touch-none">
         {vncWsUrl ? (
           <div ref={containerRef} className="absolute inset-0 h-full w-full" />
         ) : (
@@ -270,6 +342,40 @@ export default function SessionViewerClient() {
           </div>
         )}
       </div>
+
+      {/* Hidden input for mobile keyboard — positioned off-screen */}
+      {isTouchDevice ? (
+        <input
+          ref={kbInputRef}
+          type="text"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          className="fixed -left-[9999px] top-0 opacity-0 w-0 h-0"
+          aria-label="Keyboard input untuk sesi browser"
+          onInput={handleKbInput}
+          onKeyDown={handleKbKeyDown}
+        />
+      ) : null}
+
+      {/* Mobile keyboard toggle FAB — only shown on touch devices when connected */}
+      {isTouchDevice && connectionStatus === "connected" ? (
+        <button
+          type="button"
+          onClick={toggleKeyboard}
+          className={cn(
+            "fixed bottom-4 right-4 z-50 flex items-center justify-center",
+            "size-12 rounded-full shadow-lg transition-all active:scale-95",
+            showKeyboard
+              ? "bg-primary text-primary-foreground"
+              : "bg-card text-muted-foreground border border-border"
+          )}
+          aria-label={showKeyboard ? "Sembunyikan keyboard" : "Tampilkan keyboard"}
+        >
+          {showKeyboard ? <KeyboardOff className="size-5" /> : <Keyboard className="size-5" />}
+        </button>
+      ) : null}
     </div>
   );
 }

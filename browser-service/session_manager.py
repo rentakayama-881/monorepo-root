@@ -501,6 +501,8 @@ class SessionManager:
                 "-cursor", "most",
                 "-noscr",           # disable scrollcopyrect
                 "-nowf",            # disable wireframe
+                "-threads",         # threaded encoding for better mobile perf
+                "-wait", "20",      # lower polling interval (ms) for responsiveness
             ]
             logger.info(
                 "Memulai x11vnc di port %d untuk display :%d",
