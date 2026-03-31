@@ -1,6 +1,6 @@
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
-using MongoDB.Driver;
 
 namespace FeatureService.Api.Services;
 
@@ -14,12 +14,8 @@ public partial class MarketPurchaseWalletService
             return (false, "OrderId wajib diisi", null);
         }
 
-        var filter = Builders<MarketPurchaseReservation>.Filter.And(
-            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.OrderId, orderId),
-            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.UserId, userId)
-        );
-
-        var reservation = await _reservations.Find(filter).FirstOrDefaultAsync();
+        var reservation = await _db.MarketPurchaseReservations
+            .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
         if (reservation == null)
         {
             return (false, "Reservasi tidak ditemukan", null);
@@ -36,17 +32,16 @@ public partial class MarketPurchaseWalletService
         }
 
         var claimNow = DateTime.UtcNow;
-        var claimReservedFilter = Builders<MarketPurchaseReservation>.Filter.And(
-            filter,
-            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, ReservationStatus.Reserved));
-        var claimUpdate = Builders<MarketPurchaseReservation>.Update
-            .Set(r => r.Status, ReservationStatus.Releasing)
-            .Set(r => r.UpdatedAt, claimNow);
+        var claimUpdated = await _db.MarketPurchaseReservations
+            .Where(r => r.OrderId == orderId && r.UserId == userId && r.Status == ReservationStatus.Reserved)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.Status, ReservationStatus.Releasing)
+                .SetProperty(r => r.UpdatedAt, claimNow));
 
-        var claimResult = await _reservations.UpdateOneAsync(claimReservedFilter, claimUpdate);
-        if (claimResult.ModifiedCount == 0)
+        if (claimUpdated == 0)
         {
-            var latest = await _reservations.Find(filter).FirstOrDefaultAsync();
+            var latest = await _db.MarketPurchaseReservations
+                .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
             var latestStatus = latest?.Status ?? "missing";
 
             _logger.LogWarning(
@@ -86,15 +81,14 @@ public partial class MarketPurchaseWalletService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to release reservation for orderId={OrderId}, userId={UserId}", orderId, userId);
-            var rollbackResult = await _reservations.UpdateOneAsync(
-                Builders<MarketPurchaseReservation>.Filter.And(
-                    filter,
-                    Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, ReservationStatus.Releasing)),
-                Builders<MarketPurchaseReservation>.Update
-                    .Set(r => r.Status, ReservationStatus.Reserved)
-                    .Set(r => r.UpdatedAt, DateTime.UtcNow));
 
-            if (rollbackResult.ModifiedCount == 0)
+            var rollbackUpdated = await _db.MarketPurchaseReservations
+                .Where(r => r.OrderId == orderId && r.UserId == userId && r.Status == ReservationStatus.Releasing)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(r => r.Status, ReservationStatus.Reserved)
+                    .SetProperty(r => r.UpdatedAt, DateTime.UtcNow));
+
+            if (rollbackUpdated == 0)
             {
                 _logger.LogCritical(
                     "Failed to rollback reservation status after release credit failure. orderId={OrderId}, userId={UserId}",
@@ -102,24 +96,22 @@ public partial class MarketPurchaseWalletService
                     userId);
             }
 
-            var latest = await _reservations.Find(filter).FirstOrDefaultAsync();
-            return (false, "Gagal mengembalikan saldo", latest ?? reservation);
+            var latestAfterRollback = await _db.MarketPurchaseReservations
+                .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
+            return (false, "Gagal mengembalikan saldo", latestAfterRollback ?? reservation);
         }
 
         var now = DateTime.UtcNow;
-        var update = Builders<MarketPurchaseReservation>.Update
-            .Set(r => r.Status, ReservationStatus.Released)
-            .Set(r => r.Reason, string.IsNullOrWhiteSpace(reason) ? null : reason.Trim())
-            .Set(r => r.ReleasedAt, now)
-            .Set(r => r.UpdatedAt, now)
-            .Set(r => r.ReleaseTransactionId, transactionId);
+        var finalizeUpdated = await _db.MarketPurchaseReservations
+            .Where(r => r.OrderId == orderId && r.UserId == userId && r.Status == ReservationStatus.Releasing)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.Status, ReservationStatus.Released)
+                .SetProperty(r => r.Reason, string.IsNullOrWhiteSpace(reason) ? null : reason.Trim())
+                .SetProperty(r => r.ReleasedAt, now)
+                .SetProperty(r => r.UpdatedAt, now)
+                .SetProperty(r => r.ReleaseTransactionId, transactionId));
 
-        var finalizeFilter = Builders<MarketPurchaseReservation>.Filter.And(
-            filter,
-            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, ReservationStatus.Releasing));
-
-        var finalizeResult = await _reservations.UpdateOneAsync(finalizeFilter, update);
-        if (finalizeResult.ModifiedCount == 0)
+        if (finalizeUpdated == 0)
         {
             _logger.LogCritical(
                 "Failed to finalize reservation release because state ownership was lost. orderId={OrderId}, userId={UserId}, transactionId={TransactionId}",
@@ -127,11 +119,13 @@ public partial class MarketPurchaseWalletService
                 userId,
                 transactionId);
 
-            var latest = await _reservations.Find(filter).FirstOrDefaultAsync();
-            return (false, "Gagal finalize release reservation", latest ?? reservation);
+            var latestAfterFinalize = await _db.MarketPurchaseReservations
+                .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
+            return (false, "Gagal finalize release reservation", latestAfterFinalize ?? reservation);
         }
 
-        var updated = await _reservations.Find(filter).FirstOrDefaultAsync();
+        var updated = await _db.MarketPurchaseReservations
+            .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
         return (true, null, updated);
     }
 
@@ -145,21 +139,20 @@ public partial class MarketPurchaseWalletService
         pageSize = Math.Clamp(pageSize, 1, 100);
         var skip = (page - 1) * pageSize;
 
-        var filter = Builders<MarketPurchaseReservation>.Filter.Eq(r => r.UserId, userId);
+        IQueryable<MarketPurchaseReservation> query = _db.MarketPurchaseReservations
+            .Where(r => r.UserId == userId);
+
         var normalizedStatus = (status ?? string.Empty).Trim().ToLowerInvariant();
         if (!string.IsNullOrWhiteSpace(normalizedStatus))
         {
-            filter = Builders<MarketPurchaseReservation>.Filter.And(
-                filter,
-                Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, normalizedStatus));
+            query = query.Where(r => r.Status == normalizedStatus);
         }
 
-        var total = await _reservations.CountDocumentsAsync(filter);
-        var items = await _reservations
-            .Find(filter)
-            .SortByDescending(r => r.UpdatedAt)
+        var total = await query.LongCountAsync();
+        var items = await query
+            .OrderByDescending(r => r.UpdatedAt)
             .Skip(skip)
-            .Limit(pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         return (items, total);
@@ -201,12 +194,8 @@ public partial class MarketPurchaseWalletService
             uniqueRecipients[recipientUserId] = amountIdr;
         }
 
-        var filter = Builders<MarketPurchaseReservation>.Filter.And(
-            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.OrderId, orderId),
-            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.UserId, userId)
-        );
-
-        var reservation = await _reservations.Find(filter).FirstOrDefaultAsync();
+        var reservation = await _db.MarketPurchaseReservations
+            .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
         if (reservation == null)
         {
             return (false, "Reservasi tidak ditemukan", null);
@@ -229,16 +218,16 @@ public partial class MarketPurchaseWalletService
         }
 
         var claimNow = DateTime.UtcNow;
-        var claimFilter = Builders<MarketPurchaseReservation>.Filter.And(
-            filter,
-            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, ReservationStatus.Reserved));
-        var claimUpdate = Builders<MarketPurchaseReservation>.Update
-            .Set(r => r.Status, ReservationStatus.Releasing)
-            .Set(r => r.UpdatedAt, claimNow);
-        var claimResult = await _reservations.UpdateOneAsync(claimFilter, claimUpdate);
-        if (claimResult.ModifiedCount == 0)
+        var claimUpdated = await _db.MarketPurchaseReservations
+            .Where(r => r.OrderId == orderId && r.UserId == userId && r.Status == ReservationStatus.Reserved)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.Status, ReservationStatus.Releasing)
+                .SetProperty(r => r.UpdatedAt, claimNow));
+
+        if (claimUpdated == 0)
         {
-            var latest = await _reservations.Find(filter).FirstOrDefaultAsync();
+            var latest = await _db.MarketPurchaseReservations
+                .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
             return (false, "Reservasi sedang diproses", latest);
         }
 
@@ -291,40 +280,39 @@ public partial class MarketPurchaseWalletService
                 }
             }
 
-            await _reservations.UpdateOneAsync(
-                Builders<MarketPurchaseReservation>.Filter.And(
-                    filter,
-                    Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, ReservationStatus.Releasing)),
-                Builders<MarketPurchaseReservation>.Update
-                    .Set(r => r.Status, ReservationStatus.Reserved)
-                    .Set(r => r.UpdatedAt, DateTime.UtcNow));
+            await _db.MarketPurchaseReservations
+                .Where(r => r.OrderId == orderId && r.UserId == userId && r.Status == ReservationStatus.Releasing)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(r => r.Status, ReservationStatus.Reserved)
+                    .SetProperty(r => r.UpdatedAt, DateTime.UtcNow));
 
-            var latest = await _reservations.Find(filter).FirstOrDefaultAsync();
-            return (false, "Gagal distribusi payout", latest ?? reservation);
+            var latestAfterRollback = await _db.MarketPurchaseReservations
+                .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
+            return (false, "Gagal distribusi payout", latestAfterRollback ?? reservation);
         }
 
         var now = DateTime.UtcNow;
-        var finalizeFilter = Builders<MarketPurchaseReservation>.Filter.And(
-            filter,
-            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, ReservationStatus.Releasing));
-        var finalizeUpdate = Builders<MarketPurchaseReservation>.Update
-            .Set(r => r.Status, ReservationStatus.Captured)
-            .Set(r => r.CapturedAt, now)
-            .Set(r => r.UpdatedAt, now)
-            .Set(r => r.Reason, normalizedReason);
+        var finalizeUpdated = await _db.MarketPurchaseReservations
+            .Where(r => r.OrderId == orderId && r.UserId == userId && r.Status == ReservationStatus.Releasing)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.Status, ReservationStatus.Captured)
+                .SetProperty(r => r.CapturedAt, now)
+                .SetProperty(r => r.UpdatedAt, now)
+                .SetProperty(r => r.Reason, normalizedReason));
 
-        var finalizeResult = await _reservations.UpdateOneAsync(finalizeFilter, finalizeUpdate);
-        if (finalizeResult.ModifiedCount == 0)
+        if (finalizeUpdated == 0)
         {
             _logger.LogCritical(
                 "Failed finalizing reservation distribution. orderId={OrderId}, userId={UserId}",
                 orderId,
                 userId);
-            var latest = await _reservations.Find(filter).FirstOrDefaultAsync();
-            return (false, "Gagal finalize distribusi payout", latest ?? reservation);
+            var latestAfterFinalize = await _db.MarketPurchaseReservations
+                .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
+            return (false, "Gagal finalize distribusi payout", latestAfterFinalize ?? reservation);
         }
 
-        var updated = await _reservations.Find(filter).FirstOrDefaultAsync();
+        var updated = await _db.MarketPurchaseReservations
+            .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
         return (true, null, updated);
     }
 }
