@@ -21,6 +21,7 @@ def get_current_user(
             credentials.credentials,
             settings.jwt_secret,
             algorithms=[settings.jwt_algorithm],
+            audience="aivalid-clients",
         )
         user_id = payload.get("user_id") or payload.get("sub")
         username = payload.get("username", "")
