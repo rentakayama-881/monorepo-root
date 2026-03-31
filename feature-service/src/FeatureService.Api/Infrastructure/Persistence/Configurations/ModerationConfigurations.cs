@@ -91,7 +91,6 @@ public class HiddenContentConfiguration : IEntityTypeConfiguration<HiddenContent
         builder.Property(h => h.HiddenByAdminId).IsRequired();
         builder.Property(h => h.Reason).HasMaxLength(1000);
         builder.Property(h => h.UnhiddenByAdminId);
-        builder.Property(h => h.UnhidReason).HasMaxLength(1000);
 
         builder.HasIndex(h => new { h.ContentType, h.ContentId });
         builder.HasIndex(h => h.IsActive);

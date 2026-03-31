@@ -63,14 +63,13 @@ public partial class WalletService
     {
         var salt = RandomNumberGenerator.GetBytes(SaltSize);
         
-        using var pbkdf2 = new Rfc2898DeriveBytes(
+        var hash = Rfc2898DeriveBytes.Pbkdf2(
             Encoding.UTF8.GetBytes(pin),
             salt,
             PbkdfIterations,
-            HashAlgorithmName.SHA256
+            HashAlgorithmName.SHA256,
+            HashSize
         );
-        
-        var hash = pbkdf2.GetBytes(HashSize);
         
         // Combine salt + hash for storage
         var hashBytes = new byte[SaltSize + HashSize];
@@ -97,14 +96,13 @@ public partial class WalletService
             var salt = new byte[SaltSize];
             Array.Copy(hashBytes, 0, salt, 0, SaltSize);
             
-            using var pbkdf2 = new Rfc2898DeriveBytes(
+            var hash = Rfc2898DeriveBytes.Pbkdf2(
                 Encoding.UTF8.GetBytes(pin),
                 salt,
                 PbkdfIterations,
-                HashAlgorithmName.SHA256
+                HashAlgorithmName.SHA256,
+                HashSize
             );
-            
-            var hash = pbkdf2.GetBytes(HashSize);
             
             // Constant-time comparison to prevent timing attacks
             return CryptographicOperations.FixedTimeEquals(

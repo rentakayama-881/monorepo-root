@@ -151,7 +151,7 @@ public partial class WithdrawalService
                         .SetProperty(w => w.Status, WithdrawalStatus.Completed)
                         .SetProperty(w => w.OxaPayStatus, payload.Status)
                         .SetProperty(w => w.TxHash, payload.TxId)
-                        .SetProperty(w => w.CryptoAmount, payload.Amount != null ? payload.Amount.Value.ToString("G") : w.CryptoAmount)
+                        .SetProperty(w => w.CryptoAmount, payload.Amount != null ? payload.Amount.Value.ToString("G") : withdrawal.CryptoAmount)
                         .SetProperty(w => w.CompletedAt, DateTime.UtcNow)
                         .SetProperty(w => w.UpdatedAt, DateTime.UtcNow));
 

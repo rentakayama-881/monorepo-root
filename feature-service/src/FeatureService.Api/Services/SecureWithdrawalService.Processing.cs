@@ -1,7 +1,7 @@
 using System.Text.Json;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Models.Entities;
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 
 namespace FeatureService.Api.Services;
 
@@ -192,8 +192,7 @@ public partial class SecureWithdrawalService
 
     private async Task<Withdrawal?> FindWithdrawalByIdAsync(string withdrawalId)
     {
-        var cursor = await _withdrawals.FindAsync(w => w.Id == withdrawalId);
-        return await cursor.FirstOrDefaultAsync();
+        return await _db.Withdrawals.FirstOrDefaultAsync(w => w.Id == withdrawalId);
     }
 
     private string BuildUserScopedIdempotencyKey(string operation, uint userId, string? providedKey)

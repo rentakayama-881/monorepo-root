@@ -1,6 +1,6 @@
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Infrastructure.Audit;
@@ -11,7 +11,7 @@ namespace FeatureService.Api.Services;
 
 /// <summary>
 /// Enhanced secure withdrawal service dengan idempotency dan audit trail.
-/// Menggunakan in-memory idempotency dan MongoDB untuk immutable audit log.
+/// Menggunakan in-memory idempotency dan PostgreSQL untuk immutable audit log.
 /// </summary>
 public interface ISecureWithdrawalService
 {
@@ -40,7 +40,7 @@ public partial class SecureWithdrawalService : ISecureWithdrawalService
     private readonly IWithdrawalService _innerService;
     private readonly IIdempotencyService _idempotencyService;
     private readonly IAuditTrailService _auditService;
-    private readonly IMongoCollection<Withdrawal> _withdrawals;
+    private readonly AppDbContext _db;
     private readonly ILogger<SecureWithdrawalService> _logger;
     private readonly IConfiguration _configuration;
 
@@ -54,31 +54,14 @@ public partial class SecureWithdrawalService : ISecureWithdrawalService
         IWithdrawalService innerService,
         IIdempotencyService idempotencyService,
         IAuditTrailService auditService,
-        MongoDbContext dbContext,
-        IConfiguration configuration,
-        ILogger<SecureWithdrawalService> logger)
-        : this(
-            innerService,
-            idempotencyService,
-            auditService,
-            dbContext.GetCollection<Withdrawal>("withdrawals"),
-            configuration,
-            logger)
-    {
-    }
-
-    internal SecureWithdrawalService(
-        IWithdrawalService innerService,
-        IIdempotencyService idempotencyService,
-        IAuditTrailService auditService,
-        IMongoCollection<Withdrawal> withdrawals,
+        AppDbContext db,
         IConfiguration configuration,
         ILogger<SecureWithdrawalService> logger)
     {
         _innerService = innerService;
         _idempotencyService = idempotencyService;
         _auditService = auditService;
-        _withdrawals = withdrawals;
+        _db = db;
         _configuration = configuration;
         _logger = logger;
     }
