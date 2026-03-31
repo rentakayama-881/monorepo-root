@@ -108,10 +108,25 @@ export default function CloudBrowserClient() {
           router.push(`/cloud-browser/session/${encodeURIComponent(sessionId)}`);
         }
       } catch (err) {
-        setFeedback({
-          message: err?.message || "Gagal memulai sesi browser.",
-          variant: "error",
-        });
+        // Handle 409 Conflict — user already has active sessions
+        if (err?.status === 409) {
+          await mutateSessions();
+          const activeIds = err?.data?.detail?.active_session_ids;
+          if (activeIds?.length) {
+            // Redirect to the first active session
+            router.push(`/cloud-browser/session/${encodeURIComponent(activeIds[0])}`);
+            return;
+          }
+          setFeedback({
+            message: "Anda sudah punya sesi aktif. Gunakan tombol \"Lihat Sesi\" pada profil yang aktif.",
+            variant: "error",
+          });
+        } else {
+          setFeedback({
+            message: err?.message || "Gagal memulai sesi browser.",
+            variant: "error",
+          });
+        }
       } finally {
         setStartingId("");
       }

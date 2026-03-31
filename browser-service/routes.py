@@ -37,9 +37,14 @@ async def start_session(
     # 2. Check per-user concurrent limit
     user_sessions = session_manager.get_user_sessions(user.user_id)
     if len(user_sessions) >= settings.max_concurrent_per_user:
+        # Return active session IDs so client can redirect instead of showing error
+        active_ids = [s.session_id for s in user_sessions]
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Anda sudah mencapai batas maksimal sesi aktif",
+            detail={
+                "message": "Anda sudah mencapai batas maksimal sesi aktif",
+                "active_session_ids": active_ids,
+            },
         )
 
     # 3. Generate session ID
