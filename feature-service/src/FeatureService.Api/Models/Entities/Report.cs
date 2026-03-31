@@ -1,103 +1,81 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-
 namespace FeatureService.Api.Models.Entities;
 
 /// <summary>
 /// Represents a user report for Validation Cases.
 /// Reports are reviewed by admins who can take moderation actions.
 /// </summary>
-[BsonIgnoreExtraElements]
 public class Report
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.String)]
     public string Id { get; set; } = string.Empty; // rpt_xxx format using Ulid
 
     /// <summary>
     /// Type of content being reported: "validation_case"
     /// </summary>
-    [BsonElement("targetType")]
     public string TargetType { get; set; } = string.Empty;
 
     /// <summary>
     /// ID of the reported content (Validation Case ID as string)
     /// </summary>
-    [BsonElement("targetId")]
     public string TargetId { get; set; } = string.Empty;
 
     /// <summary>
     /// Validation Case ID for context.
     /// </summary>
-    [BsonElement("validationCaseId")]
     public uint ValidationCaseId { get; set; }
 
     /// <summary>
     /// Legacy field: "threadId" from the old forum/thread domain.
-    /// Kept to preserve existing MongoDB documents during migration.
+    /// Kept to preserve existing records during migration.
     /// </summary>
-    [BsonElement("threadId")]
-    [BsonIgnoreIfDefault]
     public uint LegacyThreadId { get; set; }
 
     /// <summary>
     /// User ID of the person being reported (content owner)
     /// </summary>
-    [BsonElement("reportedUserId")]
     public uint ReportedUserId { get; set; }
 
     /// <summary>
     /// User ID of the reporter
     /// </summary>
-    [BsonElement("reporterUserId")]
     public uint ReporterUserId { get; set; }
 
     /// <summary>
     /// Report reason: harassment, spam, inappropriate, hate_speech, misinformation, other
     /// </summary>
-    [BsonElement("reason")]
     public string Reason { get; set; } = string.Empty;
 
     /// <summary>
     /// Additional description provided by the reporter
     /// </summary>
-    [BsonElement("description")]
     public string? Description { get; set; }
 
     /// <summary>
     /// Report status: pending, reviewing, resolved, dismissed
     /// </summary>
-    [BsonElement("status")]
     public string Status { get; set; } = ReportStatus.Pending;
 
     /// <summary>
     /// Action taken by admin: none, warning, hide, delete, ban_user, ban_device
     /// </summary>
-    [BsonElement("actionTaken")]
     public string? ActionTaken { get; set; }
 
     /// <summary>
     /// Admin notes for internal reference
     /// </summary>
-    [BsonElement("adminNotes")]
     public string? AdminNotes { get; set; }
 
     /// <summary>
     /// Admin user ID who reviewed this report
     /// </summary>
-    [BsonElement("reviewedByAdminId")]
     public uint? ReviewedByAdminId { get; set; }
 
     /// <summary>
     /// Timestamp when the report was reviewed
     /// </summary>
-    [BsonElement("reviewedAt")]
     public DateTime? ReviewedAt { get; set; }
 
-    [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 

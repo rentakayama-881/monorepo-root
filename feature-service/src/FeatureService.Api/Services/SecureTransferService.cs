@@ -1,6 +1,6 @@
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Infrastructure.Audit;
@@ -11,7 +11,7 @@ namespace FeatureService.Api.Services;
 
 /// <summary>
 /// Enhanced secure transfer service dengan idempotency dan audit trail.
-/// Menggunakan in-memory idempotency dan MongoDB untuk immutable audit log.
+/// Menggunakan in-memory idempotency dan EF Core for data access.
 /// </summary>
 public interface ISecureTransferService
 {
@@ -58,7 +58,7 @@ public partial class SecureTransferService : ISecureTransferService
     private readonly ITransferService _innerService;
     private readonly IIdempotencyService _idempotencyService;
     private readonly IAuditTrailService _auditService;
-    private readonly IMongoCollection<Transfer> _transfers;
+    private readonly AppDbContext _db;
     private readonly ILogger<SecureTransferService> _logger;
     private readonly IConfiguration _configuration;
 
@@ -72,31 +72,14 @@ public partial class SecureTransferService : ISecureTransferService
         ITransferService innerService,
         IIdempotencyService idempotencyService,
         IAuditTrailService auditService,
-        MongoDbContext dbContext,
-        IConfiguration configuration,
-        ILogger<SecureTransferService> logger)
-        : this(
-            innerService,
-            idempotencyService,
-            auditService,
-            dbContext.GetCollection<Transfer>("transfers"),
-            configuration,
-            logger)
-    {
-    }
-
-    internal SecureTransferService(
-        ITransferService innerService,
-        IIdempotencyService idempotencyService,
-        IAuditTrailService auditService,
-        IMongoCollection<Transfer> transfers,
+        AppDbContext db,
         IConfiguration configuration,
         ILogger<SecureTransferService> logger)
     {
         _innerService = innerService;
         _idempotencyService = idempotencyService;
         _auditService = auditService;
-        _transfers = transfers;
+        _db = db;
         _configuration = configuration;
         _logger = logger;
     }

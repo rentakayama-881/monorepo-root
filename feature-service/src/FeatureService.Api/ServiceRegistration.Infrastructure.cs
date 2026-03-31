@@ -1,10 +1,11 @@
 using Serilog;
-using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Infrastructure.PQC;
 using FeatureService.Api.Infrastructure.Idempotency;
 using FeatureService.Api.Infrastructure.Audit;
 using FeatureService.Api.Infrastructure.Security;
 using FeatureService.Api.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace FeatureService.Api;
 
@@ -12,20 +13,13 @@ public static class ServiceRegistrationInfrastructure
 {
     public static WebApplicationBuilder AddInfrastructureServices(this WebApplicationBuilder builder)
     {
-        // MongoDB
-        var mongoSettings = new MongoDbSettings();
-        builder.Configuration.GetSection("MongoDB").Bind(mongoSettings);
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MONGODB__CONNECTIONSTRING")))
-        {
-            mongoSettings.ConnectionString = Environment.GetEnvironmentVariable("MONGODB__CONNECTIONSTRING")!;
-        }
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MONGODB__DATABASENAME")))
-        {
-            mongoSettings.DatabaseName = Environment.GetEnvironmentVariable("MONGODB__DATABASENAME")!;
-        }
-    
-        builder.Services.AddSingleton(mongoSettings);
-        builder.Services.AddSingleton<MongoDbContext>();
+        // PostgreSQL + EF Core
+        var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+            ?? builder.Configuration.GetConnectionString("DefaultConnection")
+            ?? "Host=127.0.0.1;Port=5432;Database=aivalid;Username=aivalid;Password=aivalid_local_dev_2026";
+
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(connectionString));
 
         // Post-Quantum Cryptography service
         builder.Services.AddSingleton<IPostQuantumCryptoService, PostQuantumCryptoService>();
@@ -34,8 +28,8 @@ public static class ServiceRegistrationInfrastructure
         // Combines CRYSTALS-Dilithium3+Ed25519 for signatures and CRYSTALS-Kyber768+ECDH for key encapsulation
         builder.Services.AddSingleton<IHybridCryptoService, HybridCryptoService>();
 
-        // Idempotency service (MongoDB-backed, singleton for index setup)
-        builder.Services.AddSingleton<IIdempotencyService, MongoIdempotencyService>();
+        // Idempotency service (EF Core-backed, scoped because DbContext is scoped)
+        builder.Services.AddScoped<IIdempotencyService, EfCoreIdempotencyService>();
 
         // Audit Trail service
         builder.Services.AddScoped<IAuditTrailService, AuditTrailService>();
@@ -82,11 +76,11 @@ public static class ServiceRegistrationInfrastructure
 
         // Health Checks
         builder.Services.AddHealthChecks()
-            .AddMongoDb(
-                mongoSettings.ConnectionString,
-                name: "mongodb",
+            .AddNpgSql(
+                connectionString,
+                name: "postgresql",
                 timeout: TimeSpan.FromSeconds(3),
-                tags: new[] { "db", "mongodb" }
+                tags: new[] { "db", "postgresql" }
             );
 
         return builder;

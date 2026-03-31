@@ -1,8 +1,8 @@
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using System.Net;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
-using System.Net;
 using System.Text.Json;
 
 namespace FeatureService.Api.Services;
@@ -19,18 +19,18 @@ public interface IReportService
 
 public class ReportService : IReportService
 {
-    private readonly MongoDbContext _context;
+    private readonly AppDbContext _db;
     private readonly ILogger<ReportService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
 
     public ReportService(
-        MongoDbContext context,
+        AppDbContext db,
         ILogger<ReportService> logger,
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration)
     {
-        _context = context;
+        _db = db;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
@@ -101,7 +101,8 @@ public class ReportService : IReportService
             UpdatedAt = DateTime.UtcNow
         };
 
-        await _context.Reports.InsertOneAsync(report);
+        _db.Reports.Add(report);
+        await _db.SaveChangesAsync();
         _logger.LogInformation("Report created: {ReportId} by user {UserId} for {TargetType} {TargetId}", 
             report.Id, reporterUserId, targetType, targetId);
 
@@ -148,25 +149,20 @@ public class ReportService : IReportService
 
     public async Task<Report?> GetReportByIdAsync(string reportId)
     {
-        return await _context.Reports
-            .Find(r => r.Id == reportId)
-            .FirstOrDefaultAsync();
+        return await _db.Reports.FirstOrDefaultAsync(r => r.Id == reportId);
     }
 
     public async Task<PaginatedReportsResponse> GetPendingReportsAsync(int page, int pageSize, string? status = null)
     {
-        var filterBuilder = Builders<Report>.Filter;
-        var filter = status != null 
-            ? filterBuilder.Eq(r => r.Status, status)
-            : filterBuilder.Eq(r => r.Status, ReportStatus.Pending);
+        var filterStatus = status ?? ReportStatus.Pending;
+
+        var totalCount = await _db.Reports.CountAsync(r => r.Status == filterStatus);
         
-        var totalCount = await _context.Reports.CountDocumentsAsync(filter);
-        
-        var reports = await _context.Reports
-            .Find(filter)
-            .SortByDescending(r => r.CreatedAt)
+        var reports = await _db.Reports
+            .Where(r => r.Status == filterStatus)
+            .OrderByDescending(r => r.CreatedAt)
             .Skip((page - 1) * pageSize)
-            .Limit(pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var summaries = reports.Select(r => new ReportSummaryDto(
@@ -185,20 +181,18 @@ public class ReportService : IReportService
             r.CreatedAt
         )).ToList();
 
-        return new PaginatedReportsResponse(summaries, (int)totalCount, page, pageSize);
+        return new PaginatedReportsResponse(summaries, totalCount, page, pageSize);
     }
 
     public async Task<PaginatedReportsResponse> GetUserReportsAsync(uint userId, int page, int pageSize)
     {
-        var filter = Builders<Report>.Filter.Eq(r => r.ReporterUserId, userId);
+        var totalCount = await _db.Reports.CountAsync(r => r.ReporterUserId == userId);
         
-        var totalCount = await _context.Reports.CountDocumentsAsync(filter);
-        
-        var reports = await _context.Reports
-            .Find(filter)
-            .SortByDescending(r => r.CreatedAt)
+        var reports = await _db.Reports
+            .Where(r => r.ReporterUserId == userId)
+            .OrderByDescending(r => r.CreatedAt)
             .Skip((page - 1) * pageSize)
-            .Limit(pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var summaries = reports.Select(r => new ReportSummaryDto(
@@ -217,7 +211,7 @@ public class ReportService : IReportService
             r.CreatedAt
         )).ToList();
 
-        return new PaginatedReportsResponse(summaries, (int)totalCount, page, pageSize);
+        return new PaginatedReportsResponse(summaries, totalCount, page, pageSize);
     }
 
     public async Task TakeActionAsync(string reportId, uint adminId, string action, string? adminNotes, string? ipAddress, string? userAgent)
@@ -233,15 +227,15 @@ public class ReportService : IReportService
             throw new InvalidOperationException("Report has already been processed");
         }
 
-        var update = Builders<Report>.Update
-            .Set(r => r.ActionTaken, action)
-            .Set(r => r.AdminNotes, adminNotes)
-            .Set(r => r.ReviewedByAdminId, adminId)
-            .Set(r => r.ReviewedAt, DateTime.UtcNow)
-            .Set(r => r.Status, action == ReportAction.None ? ReportStatus.Dismissed : ReportStatus.Resolved)
-            .Set(r => r.UpdatedAt, DateTime.UtcNow);
-
-        await _context.Reports.UpdateOneAsync(r => r.Id == reportId, update);
+        await _db.Reports
+            .Where(r => r.Id == reportId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.ActionTaken, action)
+                .SetProperty(r => r.AdminNotes, adminNotes)
+                .SetProperty(r => r.ReviewedByAdminId, adminId)
+                .SetProperty(r => r.ReviewedAt, DateTime.UtcNow)
+                .SetProperty(r => r.Status, action == ReportAction.None ? ReportStatus.Dismissed : ReportStatus.Resolved)
+                .SetProperty(r => r.UpdatedAt, DateTime.UtcNow));
 
         _logger.LogInformation("Report {ReportId} processed by admin {AdminId} with action {Action}", 
             reportId, adminId, action);
@@ -257,13 +251,11 @@ public class ReportService : IReportService
             ? new[] { ReportTargetType.ValidationCase, ReportTargetType.Thread }
             : new[] { targetType };
 
-        var filter = Builders<Report>.Filter.And(
-            Builders<Report>.Filter.Eq(r => r.ReporterUserId, userId),
-            Builders<Report>.Filter.In(r => r.TargetType, targetTypes),
-            Builders<Report>.Filter.Eq(r => r.TargetId, targetId)
-        );
+        var count = await _db.Reports.CountAsync(r =>
+            r.ReporterUserId == userId &&
+            targetTypes.Contains(r.TargetType) &&
+            r.TargetId == targetId);
 
-        var count = await _context.Reports.CountDocumentsAsync(filter);
         return count > 0;
     }
 

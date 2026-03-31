@@ -1,5 +1,5 @@
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 
@@ -17,21 +17,20 @@ public interface IDeviceBanService
 
 public class DeviceBanService : IDeviceBanService
 {
-    private readonly MongoDbContext _context;
+    private readonly AppDbContext _db;
     private readonly ILogger<DeviceBanService> _logger;
 
-    public DeviceBanService(MongoDbContext context, ILogger<DeviceBanService> logger)
+    public DeviceBanService(AppDbContext db, ILogger<DeviceBanService> logger)
     {
-        _context = context;
+        _db = db;
         _logger = logger;
     }
 
     public async Task<string> BanDeviceAsync(string deviceFingerprint, uint? userId, string reason, uint adminId, string? reportId = null, bool isPermanent = true, DateTime? expiresAt = null)
     {
         // Check if device is already banned
-        var existingBan = await _context.DeviceBans
-            .Find(b => b.DeviceFingerprint == deviceFingerprint && b.IsActive)
-            .FirstOrDefaultAsync();
+        var existingBan = await _db.DeviceBans
+            .FirstOrDefaultAsync(b => b.DeviceFingerprint == deviceFingerprint && b.IsActive);
 
         if (existingBan != null)
         {
@@ -56,7 +55,8 @@ public class DeviceBanService : IDeviceBanService
             UpdatedAt = DateTime.UtcNow
         };
 
-        await _context.DeviceBans.InsertOneAsync(ban);
+        _db.DeviceBans.Add(ban);
+        await _db.SaveChangesAsync();
         var banTypeStr = isPermanent ? "permanently" : "temporarily";
         _logger.LogWarning("Device banned {BanType}: {BanId} for user {UserId} by admin {AdminId}. Reason: {Reason}",
             banTypeStr, ban.Id, userId, adminId, reason);
@@ -66,7 +66,7 @@ public class DeviceBanService : IDeviceBanService
 
     public async Task UnbanDeviceAsync(string banId, uint adminId)
     {
-        var banEntity = await _context.DeviceBans.Find(b => b.Id == banId).FirstOrDefaultAsync();
+        var banEntity = await _db.DeviceBans.FirstOrDefaultAsync(b => b.Id == banId);
         if (banEntity == null)
         {
             throw new KeyNotFoundException("Device ban not found");
@@ -77,28 +77,27 @@ public class DeviceBanService : IDeviceBanService
             throw new InvalidOperationException("Device is not currently banned");
         }
 
-        var update = Builders<DeviceBan>.Update
-            .Set(b => b.IsActive, false)
-            .Set(b => b.UnbannedByAdminId, adminId)
-            .Set(b => b.UnbannedAt, DateTime.UtcNow)
-            .Set(b => b.UpdatedAt, DateTime.UtcNow);
+        await _db.DeviceBans
+            .Where(b => b.Id == banId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(b => b.IsActive, false)
+                .SetProperty(b => b.UnbannedByAdminId, adminId)
+                .SetProperty(b => b.UnbannedAt, DateTime.UtcNow)
+                .SetProperty(b => b.UpdatedAt, DateTime.UtcNow));
 
-        await _context.DeviceBans.UpdateOneAsync(b => b.Id == banId, update);
         _logger.LogInformation("Device unbanned: {BanId} by admin {AdminId}", banId, adminId);
     }
 
     public async Task<bool> IsDeviceBannedAsync(string deviceFingerprint)
     {
-        var count = await _context.DeviceBans
-            .CountDocumentsAsync(b => b.DeviceFingerprint == deviceFingerprint && b.IsActive);
-        return count > 0;
+        return await _db.DeviceBans
+            .AnyAsync(b => b.DeviceFingerprint == deviceFingerprint && b.IsActive);
     }
 
     public async Task<(bool IsBanned, string? Message)> CheckDeviceBanAsync(string deviceFingerprint)
     {
-        var ban = await _context.DeviceBans
-            .Find(b => b.DeviceFingerprint == deviceFingerprint && b.IsActive)
-            .FirstOrDefaultAsync();
+        var ban = await _db.DeviceBans
+            .FirstOrDefaultAsync(b => b.DeviceFingerprint == deviceFingerprint && b.IsActive);
 
         if (ban == null)
         {
@@ -123,18 +122,16 @@ public class DeviceBanService : IDeviceBanService
 
     public async Task<PaginatedDeviceBansResponse> GetDeviceBansAsync(int page, int pageSize, bool activeOnly = true)
     {
-        var filterBuilder = Builders<DeviceBan>.Filter;
-        var filter = activeOnly 
-            ? filterBuilder.Eq(b => b.IsActive, true)
-            : filterBuilder.Empty;
+        var query = activeOnly
+            ? _db.DeviceBans.Where(b => b.IsActive)
+            : _db.DeviceBans.AsQueryable();
 
-        var totalCount = await _context.DeviceBans.CountDocumentsAsync(filter);
+        var totalCount = await query.CountAsync();
 
-        var bans = await _context.DeviceBans
-            .Find(filter)
-            .SortByDescending(b => b.CreatedAt)
+        var bans = await query
+            .OrderByDescending(b => b.CreatedAt)
             .Skip((page - 1) * pageSize)
-            .Limit(pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var dtos = bans.Select(b => new DeviceBanDto(
@@ -151,14 +148,13 @@ public class DeviceBanService : IDeviceBanService
             b.ExpiresAt
         )).ToList();
 
-        return new PaginatedDeviceBansResponse(dtos, (int)totalCount, page, pageSize);
+        return new PaginatedDeviceBansResponse(dtos, totalCount, page, pageSize);
     }
 
     public async Task<DeviceBanDto?> GetBanByIdAsync(string banId)
     {
-        var ban = await _context.DeviceBans
-            .Find(b => b.Id == banId)
-            .FirstOrDefaultAsync();
+        var ban = await _db.DeviceBans
+            .FirstOrDefaultAsync(b => b.Id == banId);
 
         if (ban == null) return null;
 

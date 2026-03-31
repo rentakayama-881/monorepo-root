@@ -1,4 +1,4 @@
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 using FeatureService.Api.Models.Entities;
 
 namespace FeatureService.Api.Services;
@@ -6,71 +6,57 @@ namespace FeatureService.Api.Services;
 public partial class WalletService
 {
     private async Task<string> AddBalanceInternalAsync(
-        IClientSessionHandle? session,
         uint userId,
         long amount,
         string description,
         TransactionType type,
         string? referenceId,
-        string? referenceType,
-        bool bestEffortAudit)
+        string? referenceType)
     {
         var now = DateTime.UtcNow;
 
-        var filter = Builders<UserWallet>.Filter.Eq(w => w.UserId, userId);
-        var update = Builders<UserWallet>.Update
-            .Inc(w => w.Balance, amount)
-            .Set(w => w.UpdatedAt, now);
-
-        var options = new FindOneAndUpdateOptions<UserWallet, UserWallet>
-        {
-            ReturnDocument = ReturnDocument.Before
-        };
-
-        var walletBefore = session == null
-            ? await _wallets.FindOneAndUpdateAsync(filter, update, options)
-            : await _wallets.FindOneAndUpdateAsync(session, filter, update, options);
-
-        if (walletBefore == null)
-        {
-            throw new InvalidOperationException("Wallet tidak ditemukan");
-        }
-
-        var balanceBefore = walletBefore.Balance;
-        checked
-        {
-            _ = balanceBefore + amount;
-        }
-
-        var balanceAfter = balanceBefore + amount;
-
-        var transaction = new Transaction
-        {
-            Id = $"txn_{Ulid.NewUlid()}",
-            UserId = userId,
-            Type = type,
-            Amount = amount,
-            BalanceBefore = balanceBefore,
-            BalanceAfter = balanceAfter,
-            Description = description,
-            ReferenceId = referenceId,
-            ReferenceType = referenceType,
-            CreatedAt = now
-        };
-
+        await using var tx = await _db.Database.BeginTransactionAsync();
         try
         {
-            if (session == null)
+            // Atomic balance addition
+            var updated = await _db.Wallets
+                .Where(w => w.UserId == userId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(w => w.Balance, w => w.Balance + amount)
+                    .SetProperty(w => w.UpdatedAt, now));
+
+            if (updated == 0)
             {
-                await _transactions.InsertOneAsync(transaction);
-            }
-            else
-            {
-                await _transactions.InsertOneAsync(session, transaction);
+                throw new InvalidOperationException("Wallet tidak ditemukan");
             }
 
-            await InsertLedgerEntryAsync(
-                session,
+            // Read updated wallet to determine balance before/after
+            var wallet = await _db.Wallets.AsNoTracking().FirstAsync(w => w.UserId == userId);
+            var balanceAfter = wallet.Balance;
+            var balanceBefore = balanceAfter - amount;
+
+            checked
+            {
+                _ = balanceBefore + amount;
+            }
+
+            var transaction = new Transaction
+            {
+                Id = $"txn_{Ulid.NewUlid()}",
+                UserId = userId,
+                Type = type,
+                Amount = amount,
+                BalanceBefore = balanceBefore,
+                BalanceAfter = balanceAfter,
+                Description = description,
+                ReferenceId = referenceId,
+                ReferenceType = referenceType,
+                CreatedAt = now
+            };
+
+            _db.Transactions.Add(transaction);
+
+            InsertLedgerEntry(
                 userId,
                 LedgerEntryType.Credit,
                 amount,
@@ -79,50 +65,28 @@ public partial class WalletService
                 referenceId ?? transaction.Id,
                 referenceType,
                 transaction.Id,
-                description,
-                bestEffortAudit);
+                description);
+
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+
+            _logger.LogInformation(
+                "Added {Amount} to user {UserId}. Balance: {Before} -> {After}",
+                amount,
+                userId,
+                balanceBefore,
+                balanceAfter);
+
+            return transaction.Id;
         }
-        catch (Exception ex)
+        catch
         {
-            _logger.LogError(ex, "Failed to write transaction records for user {UserId}", userId);
-
-            if (session == null)
-            {
-                try
-                {
-                    var compensationUpdate = Builders<UserWallet>.Update
-                        .Inc(w => w.Balance, -amount)
-                        .Set(w => w.UpdatedAt, DateTime.UtcNow);
-
-                    await _wallets.UpdateOneAsync(
-                        Builders<UserWallet>.Filter.Eq(w => w.UserId, userId),
-                        compensationUpdate);
-                }
-                catch (Exception compensationEx)
-                {
-                    _logger.LogCritical(
-                        compensationEx,
-                        "CRITICAL: Failed to compensate wallet balance after audit write failure. UserId: {UserId}, Amount: {Amount}",
-                        userId,
-                        amount);
-                }
-            }
-
+            await tx.RollbackAsync();
             throw;
         }
-
-        _logger.LogInformation(
-            "Added {Amount} to user {UserId}. Balance: {Before} -> {After}",
-            amount,
-            userId,
-            balanceBefore,
-            balanceAfter);
-
-        return transaction.Id;
     }
 
-    private async Task InsertLedgerEntryAsync(
-        IClientSessionHandle? session,
+    private void InsertLedgerEntry(
         uint userId,
         LedgerEntryType entryType,
         long amount,
@@ -131,53 +95,34 @@ public partial class WalletService
         string referenceId,
         string? referenceType,
         string transactionId,
-        string description,
-        bool bestEffort)
+        string description)
     {
-        try
+        var metadata = new Dictionary<string, string>
         {
-            var metadata = new Dictionary<string, string>
-            {
-                ["transaction_id"] = transactionId
-            };
+            ["transaction_id"] = transactionId
+        };
 
-            if (!string.IsNullOrEmpty(referenceType))
-            {
-                metadata["reference_type"] = referenceType;
-            }
-
-            var ledgerEntry = new TransactionLedger
-            {
-                UserId = userId,
-                EntryType = entryType,
-                Amount = amount,
-                BalanceAfter = balanceAfter,
-                TransactionType = MapLedgerTransactionType(type),
-                ReferenceId = referenceId,
-                ExternalReference = referenceType,
-                Description = description,
-                Metadata = metadata,
-                CreatedAt = DateTime.UtcNow,
-                Status = TransactionStatus.Completed
-            };
-
-            if (session == null)
-            {
-                await _ledger.InsertOneAsync(ledgerEntry);
-            }
-            else
-            {
-                await _ledger.InsertOneAsync(session, ledgerEntry);
-            }
-        }
-        catch (Exception ex)
+        if (!string.IsNullOrEmpty(referenceType))
         {
-            _logger.LogError(ex, "Failed to write transaction ledger for user {UserId}", userId);
-            if (!bestEffort)
-            {
-                throw;
-            }
+            metadata["reference_type"] = referenceType;
         }
+
+        var ledgerEntry = new TransactionLedger
+        {
+            UserId = userId,
+            EntryType = entryType,
+            Amount = amount,
+            BalanceAfter = balanceAfter,
+            TransactionType = MapLedgerTransactionType(type),
+            ReferenceId = referenceId,
+            ExternalReference = referenceType,
+            Description = description,
+            Metadata = metadata,
+            CreatedAt = DateTime.UtcNow,
+            Status = TransactionStatus.Completed
+        };
+
+        _db.TransactionLedger.Add(ledgerEntry);
     }
 
     private static string MapLedgerTransactionType(TransactionType type)

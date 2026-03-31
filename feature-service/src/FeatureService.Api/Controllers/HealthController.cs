@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
-using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.Persistence;
 using System.Reflection;
 
 namespace FeatureService.Api.Controllers;
@@ -13,14 +12,14 @@ namespace FeatureService.Api.Controllers;
 [Produces("application/json")]
 public class HealthController : ControllerBase
 {
-    private readonly MongoDbContext _mongoDbContext;
+    private readonly AppDbContext _db;
     private readonly ILogger<HealthController> _logger;
 
     public HealthController(
-        MongoDbContext mongoDbContext,
+        AppDbContext db,
         ILogger<HealthController> logger)
     {
-        _mongoDbContext = mongoDbContext;
+        _db = db;
         _logger = logger;
     }
 
@@ -74,19 +73,19 @@ public class HealthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> GetReadiness()
     {
-        var mongoHealthy = await CheckMongoAsync();
+        var dbHealthy = await CheckDatabaseAsync();
 
-        var status = mongoHealthy ? "ready" : "not_ready";
+        var status = dbHealthy ? "ready" : "not_ready";
         var response = new
         {
             status,
             checks = new
             {
-                mongodb = mongoHealthy ? "healthy" : "unhealthy"
+                database = dbHealthy ? "healthy" : "unhealthy"
             }
         };
 
-        if (mongoHealthy)
+        if (dbHealthy)
         {
             return Ok(response);
         }
@@ -94,17 +93,15 @@ public class HealthController : ControllerBase
         return StatusCode(StatusCodes.Status503ServiceUnavailable, response);
     }
 
-    private async Task<bool> CheckMongoAsync()
+    private async Task<bool> CheckDatabaseAsync()
     {
         try
         {
-            var command = new BsonDocument("ping", 1);
-            await _mongoDbContext.Database.RunCommandAsync<BsonDocument>(command);
-            return true;
+            return await _db.Database.CanConnectAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "MongoDB readiness check failed");
+            _logger.LogError(ex, "Database readiness check failed");
             return false;
         }
     }

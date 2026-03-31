@@ -1,5 +1,5 @@
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 
@@ -17,12 +17,12 @@ public interface IUserWarningService
 
 public class UserWarningService : IUserWarningService
 {
-    private readonly MongoDbContext _context;
+    private readonly AppDbContext _db;
     private readonly ILogger<UserWarningService> _logger;
 
-    public UserWarningService(MongoDbContext context, ILogger<UserWarningService> logger)
+    public UserWarningService(AppDbContext db, ILogger<UserWarningService> logger)
     {
-        _context = context;
+        _db = db;
         _logger = logger;
     }
 
@@ -47,7 +47,8 @@ public class UserWarningService : IUserWarningService
             CreatedAt = DateTime.UtcNow
         };
 
-        await _context.UserWarnings.InsertOneAsync(warning);
+        _db.UserWarnings.Add(warning);
+        await _db.SaveChangesAsync();
         _logger.LogInformation("Warning issued to user {UserId} by admin {AdminId}. Severity: {Severity}", 
             userId, adminId, severity);
 
@@ -56,9 +57,9 @@ public class UserWarningService : IUserWarningService
 
     public async Task<List<UserWarningDto>> GetUserWarningsAsync(uint userId)
     {
-        var warnings = await _context.UserWarnings
-            .Find(w => w.UserId == userId)
-            .SortByDescending(w => w.CreatedAt)
+        var warnings = await _db.UserWarnings
+            .Where(w => w.UserId == userId)
+            .OrderByDescending(w => w.CreatedAt)
             .ToListAsync();
 
         return warnings.Select(w => new UserWarningDto(
@@ -74,9 +75,8 @@ public class UserWarningService : IUserWarningService
 
     public async Task<UserWarningDto?> GetWarningByIdAsync(string warningId)
     {
-        var warning = await _context.UserWarnings
-            .Find(w => w.Id == warningId)
-            .FirstOrDefaultAsync();
+        var warning = await _db.UserWarnings
+            .FirstOrDefaultAsync(w => w.Id == warningId);
 
         if (warning == null) return null;
 
@@ -93,9 +93,8 @@ public class UserWarningService : IUserWarningService
 
     public async Task AcknowledgeWarningAsync(string warningId, uint userId)
     {
-        var warning = await _context.UserWarnings
-            .Find(w => w.Id == warningId && w.UserId == userId)
-            .FirstOrDefaultAsync();
+        var warning = await _db.UserWarnings
+            .FirstOrDefaultAsync(w => w.Id == warningId && w.UserId == userId);
 
         if (warning == null)
         {
@@ -107,34 +106,33 @@ public class UserWarningService : IUserWarningService
             throw new InvalidOperationException("Warning has already been acknowledged");
         }
 
-        var update = Builders<UserWarning>.Update
-            .Set(w => w.Acknowledged, true)
-            .Set(w => w.AcknowledgedAt, DateTime.UtcNow);
+        await _db.UserWarnings
+            .Where(w => w.Id == warningId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(w => w.Acknowledged, true)
+                .SetProperty(w => w.AcknowledgedAt, DateTime.UtcNow));
 
-        await _context.UserWarnings.UpdateOneAsync(w => w.Id == warningId, update);
         _logger.LogInformation("Warning {WarningId} acknowledged by user {UserId}", warningId, userId);
     }
 
     public async Task<int> GetUnacknowledgedCountAsync(uint userId)
     {
-        var count = await _context.UserWarnings
-            .CountDocumentsAsync(w => w.UserId == userId && !w.Acknowledged);
-        return (int)count;
+        return await _db.UserWarnings
+            .CountAsync(w => w.UserId == userId && !w.Acknowledged);
     }
 
     public async Task<PaginatedWarningsResponse> GetAllWarningsAsync(int page, int pageSize, uint? userId = null)
     {
-        var filter = userId.HasValue 
-            ? Builders<UserWarning>.Filter.Eq(w => w.UserId, userId.Value)
-            : Builders<UserWarning>.Filter.Empty;
+        var query = userId.HasValue
+            ? _db.UserWarnings.Where(w => w.UserId == userId.Value)
+            : _db.UserWarnings.AsQueryable();
 
-        var totalCount = await _context.UserWarnings.CountDocumentsAsync(filter);
+        var totalCount = await query.CountAsync();
         
-        var warnings = await _context.UserWarnings
-            .Find(filter)
-            .SortByDescending(w => w.CreatedAt)
+        var warnings = await query
+            .OrderByDescending(w => w.CreatedAt)
             .Skip((page - 1) * pageSize)
-            .Limit(pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var items = warnings.Select(w => new UserWarningDto(
@@ -149,6 +147,6 @@ public class UserWarningService : IUserWarningService
             w.IssuedByAdminId
         )).ToList();
 
-        return new PaginatedWarningsResponse(items, (int)totalCount, page, pageSize);
+        return new PaginatedWarningsResponse(items, totalCount, page, pageSize);
     }
 }

@@ -1,5 +1,5 @@
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 
@@ -15,20 +15,18 @@ public interface IBrowserBillingService
 
 public class BrowserBillingService : IBrowserBillingService
 {
-    private readonly IMongoCollection<BrowserPricing> _pricing;
-    private readonly IMongoCollection<BrowserSession> _sessions;
+    private readonly AppDbContext _db;
     private readonly IWalletService _walletService;
     private readonly IBrowserSessionService _sessionService;
     private readonly ILogger<BrowserBillingService> _logger;
 
     public BrowserBillingService(
-        MongoDbContext dbContext,
+        AppDbContext db,
         IWalletService walletService,
         IBrowserSessionService sessionService,
         ILogger<BrowserBillingService> logger)
     {
-        _pricing = dbContext.BrowserPricings;
-        _sessions = dbContext.BrowserSessions;
+        _db = db;
         _walletService = walletService;
         _sessionService = sessionService;
         _logger = logger;
@@ -37,11 +35,11 @@ public class BrowserBillingService : IBrowserBillingService
     public async Task<BrowserBillingTickResponse> ProcessBillingTickAsync(BrowserBillingTickRequest request)
     {
         // 1. Ambil pricing
-        var pricing = await _pricing.Find(p => p.Id == "pricing_default").FirstOrDefaultAsync();
+        var pricing = await _db.BrowserPricings.FirstOrDefaultAsync(p => p.Id == "pricing_default");
         if (pricing == null)
         {
             await EnsureDefaultPricingAsync();
-            pricing = await _pricing.Find(p => p.Id == "pricing_default").FirstOrDefaultAsync();
+            pricing = await _db.BrowserPricings.FirstOrDefaultAsync(p => p.Id == "pricing_default");
         }
 
         if (pricing == null)
@@ -80,12 +78,14 @@ public class BrowserBillingService : IBrowserBillingService
         }
 
         // 4. Update billed minutes dan total cost di sesi
-        var sessionUpdate = Builders<BrowserSession>.Update
-            .Inc(s => s.BilledMinutes, request.MinutesToBill)
-            .Inc(s => s.TotalCost, cost)
-            .Set(s => s.LastBilledAt, DateTime.UtcNow);
-
-        await _sessions.UpdateOneAsync(s => s.Id == request.SessionId, sessionUpdate);
+        var session = await _db.BrowserSessions.FirstOrDefaultAsync(s => s.Id == request.SessionId);
+        if (session != null)
+        {
+            session.BilledMinutes += request.MinutesToBill;
+            session.TotalCost += cost;
+            session.LastBilledAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
 
         // 5. Cek sisa saldo
         var wallet = await _walletService.GetOrCreateWalletAsync(request.UserId);
@@ -104,12 +104,12 @@ public class BrowserBillingService : IBrowserBillingService
 
     public async Task<BrowserPricingDto> GetPricingAsync()
     {
-        var pricing = await _pricing.Find(p => p.Id == "pricing_default").FirstOrDefaultAsync();
+        var pricing = await _db.BrowserPricings.FirstOrDefaultAsync(p => p.Id == "pricing_default");
 
         if (pricing == null)
         {
             await EnsureDefaultPricingAsync();
-            pricing = await _pricing.Find(p => p.Id == "pricing_default").FirstOrDefaultAsync();
+            pricing = await _db.BrowserPricings.FirstOrDefaultAsync(p => p.Id == "pricing_default");
         }
 
         // Fallback jika masih null (seharusnya tidak terjadi)
@@ -134,11 +134,11 @@ public class BrowserBillingService : IBrowserBillingService
 
     public async Task<bool> CanStartSessionAsync(uint userId)
     {
-        var pricing = await _pricing.Find(p => p.Id == "pricing_default").FirstOrDefaultAsync();
+        var pricing = await _db.BrowserPricings.FirstOrDefaultAsync(p => p.Id == "pricing_default");
         if (pricing == null)
         {
             await EnsureDefaultPricingAsync();
-            pricing = await _pricing.Find(p => p.Id == "pricing_default").FirstOrDefaultAsync();
+            pricing = await _db.BrowserPricings.FirstOrDefaultAsync(p => p.Id == "pricing_default");
         }
 
         if (pricing == null || !pricing.IsActive)
@@ -159,19 +159,31 @@ public class BrowserBillingService : IBrowserBillingService
 
     public async Task EnsureDefaultPricingAsync()
     {
-        var filter = Builders<BrowserPricing>.Filter.Eq(p => p.Id, "pricing_default");
+        var exists = await _db.BrowserPricings.AnyAsync(p => p.Id == "pricing_default");
+        if (!exists)
+        {
+            var defaultPricing = new BrowserPricing
+            {
+                Id = "pricing_default",
+                PricePerHourIdr = 10000,
+                BillingIntervalMinutes = 1,
+                MinBalanceToStartIdr = 5000,
+                MaxConcurrentSessions = 2,
+                MaxSessionDurationMinutes = 720,
+                IsActive = true,
+                UpdatedAt = DateTime.UtcNow
+            };
 
-        var update = Builders<BrowserPricing>.Update
-            .SetOnInsert(p => p.Id, "pricing_default")
-            .SetOnInsert(p => p.PricePerHourIdr, 10000)
-            .SetOnInsert(p => p.BillingIntervalMinutes, 1)
-            .SetOnInsert(p => p.MinBalanceToStartIdr, 5000)
-            .SetOnInsert(p => p.MaxConcurrentSessions, 2)
-            .SetOnInsert(p => p.MaxSessionDurationMinutes, 720)
-            .SetOnInsert(p => p.IsActive, true)
-            .SetOnInsert(p => p.UpdatedAt, DateTime.UtcNow);
-
-        await _pricing.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true });
+            _db.BrowserPricings.Add(defaultPricing);
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // Another request may have inserted it concurrently
+            }
+        }
         _logger.LogInformation("Default pricing browser dipastikan tersedia");
     }
 }

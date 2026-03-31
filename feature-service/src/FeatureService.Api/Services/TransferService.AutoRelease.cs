@@ -1,4 +1,4 @@
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Models.Entities;
 
@@ -41,8 +41,8 @@ public partial class TransferService
     public async Task AutoReleaseExpiredTransfersAsync()
     {
         // Find all pending transfers past their hold time
-        var expiredTransfers = await _transfers
-            .Find(t => t.Status == TransferStatus.Pending && t.HoldUntil < DateTime.UtcNow)
+        var expiredTransfers = await _db.Transfers
+            .Where(t => t.Status == TransferStatus.Pending && t.HoldUntil < DateTime.UtcNow)
             .ToListAsync();
 
         foreach (var transfer in expiredTransfers)
@@ -52,18 +52,16 @@ public partial class TransferService
                 var now = DateTime.UtcNow;
 
                 // Mark as released first to ensure exactly-once crediting
-                var updateFilter = Builders<Transfer>.Filter.And(
-                    Builders<Transfer>.Filter.Eq(t => t.Id, transfer.Id),
-                    Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Pending),
-                    Builders<Transfer>.Filter.Lt(t => t.HoldUntil, now));
+                var updated = await _db.Transfers
+                    .Where(t => t.Id == transfer.Id
+                        && t.Status == TransferStatus.Pending
+                        && t.HoldUntil < now)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(t => t.Status, TransferStatus.Released)
+                        .SetProperty(t => t.ReleasedAt, now)
+                        .SetProperty(t => t.UpdatedAt, now));
 
-                var statusUpdate = Builders<Transfer>.Update
-                    .Set(t => t.Status, TransferStatus.Released)
-                    .Set(t => t.ReleasedAt, now)
-                    .Set(t => t.UpdatedAt, now);
-
-                var updateResult = await _transfers.UpdateOneAsync(updateFilter, statusUpdate);
-                if (updateResult.ModifiedCount == 0)
+                if (updated == 0)
                 {
                     continue;
                 }
@@ -90,16 +88,12 @@ public partial class TransferService
 
                     try
                     {
-                        var rollback = Builders<Transfer>.Update
-                            .Set(t => t.Status, TransferStatus.Pending)
-                            .Unset(t => t.ReleasedAt)
-                            .Set(t => t.UpdatedAt, DateTime.UtcNow);
-
-                        await _transfers.UpdateOneAsync(
-                            Builders<Transfer>.Filter.And(
-                                Builders<Transfer>.Filter.Eq(t => t.Id, transfer.Id),
-                                Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Released)),
-                            rollback);
+                        await _db.Transfers
+                            .Where(t => t.Id == transfer.Id && t.Status == TransferStatus.Released)
+                            .ExecuteUpdateAsync(s => s
+                                .SetProperty(t => t.Status, TransferStatus.Pending)
+                                .SetProperty(t => t.ReleasedAt, (DateTime?)null)
+                                .SetProperty(t => t.UpdatedAt, DateTime.UtcNow));
                     }
                     catch (Exception rollbackEx)
                     {
@@ -222,7 +216,7 @@ public partial class TransferService
         do
         {
             code = random.Next(10000000, 99999999).ToString();
-            exists = await _transfers.Find(t => t.Code == code).AnyAsync();
+            exists = await _db.Transfers.AnyAsync(t => t.Code == code);
         } while (exists);
 
         return code;

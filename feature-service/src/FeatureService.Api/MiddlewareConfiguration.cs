@@ -1,6 +1,7 @@
 using Serilog;
-using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Middleware;
+using Microsoft.EntityFrameworkCore;
 using Prometheus;
 
 namespace FeatureService.Api;
@@ -16,25 +17,24 @@ public static class MiddlewareConfiguration
                 "true",
                 StringComparison.OrdinalIgnoreCase);
 
-        // Ensure MongoDbContext is initialized at startup so index creation runs
-        // before the first request hits financial/admin endpoints.
+        // Verify database connectivity at startup
         using (var scope = app.Services.CreateScope())
         {
-            var mongoContext = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
-            Log.Information("MongoDB context initialized and indexes ensured");
-    
-            if (app.Environment.IsProduction() || app.Environment.IsStaging())
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            try
             {
-                try
+                var canConnect = await dbContext.Database.CanConnectAsync();
+                if (!canConnect)
                 {
-                    using var session = await mongoContext.Client.StartSessionAsync();
-                    Log.Information("MongoDB replica set verified - transactions supported");
+                    Log.Fatal("FATAL: Cannot connect to PostgreSQL database at startup.");
+                    throw new InvalidOperationException("Database connection failed at startup.");
                 }
-                catch (Exception ex)
-                {
-                    Log.Fatal(ex, "FATAL: MongoDB does not support transactions. Production requires a replica set.");
-                    throw;
-                }
+                Log.Information("PostgreSQL database connection verified");
+            }
+            catch (Exception ex) when (ex is not InvalidOperationException)
+            {
+                Log.Fatal(ex, "FATAL: Failed to verify PostgreSQL database connection at startup.");
+                throw;
             }
         }
     

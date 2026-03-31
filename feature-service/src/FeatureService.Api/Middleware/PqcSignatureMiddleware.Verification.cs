@@ -4,10 +4,10 @@ using System.Text;
 using FeatureService.Api.Attributes;
 using FeatureService.Api.Domain.Entities;
 using FeatureService.Api.Infrastructure.Audit;
-using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Infrastructure.PQC;
 using FeatureService.Api.Models.Entities;
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 
 namespace FeatureService.Api.Middleware;
 
@@ -16,7 +16,7 @@ public partial class PqcSignatureMiddleware
     private async Task<SignatureValidationResult> ValidateSignatureAsync(
         HttpContext context,
         IPostQuantumCryptoService pqcService,
-        MongoDbContext dbContext,
+        AppDbContext dbContext,
         RequiresPqcSignatureAttribute attribute)
     {
         // Get required headers
@@ -93,8 +93,7 @@ public partial class PqcSignatureMiddleware
         // Get user's PQC key
         var keyId = keyIdHeader.ToString();
         var pqcKey = await dbContext.UserPqcKeys
-            .Find(k => k.KeyId == keyId && k.UserId == userId && k.IsActive)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(k => k.KeyId == keyId && k.UserId == userId && k.IsActive);
 
         if (pqcKey == null)
         {
@@ -228,13 +227,13 @@ public partial class PqcSignatureMiddleware
         return true;
     }
 
-    private async Task UpdateKeyUsageAsync(MongoDbContext dbContext, string keyId)
+    private async Task UpdateKeyUsageAsync(AppDbContext dbContext, string keyId)
     {
-        var update = Builders<UserPqcKey>.Update
-            .Inc(k => k.UsageCount, 1)
-            .Set(k => k.LastUsedAt, DateTime.UtcNow);
-
-        await dbContext.UserPqcKeys.UpdateOneAsync(k => k.KeyId == keyId, update);
+        await dbContext.UserPqcKeys
+            .Where(k => k.KeyId == keyId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(k => k.UsageCount, k => k.UsageCount + 1)
+                .SetProperty(k => k.LastUsedAt, DateTime.UtcNow));
     }
 
     private async Task RecordSignatureFailureAsync(

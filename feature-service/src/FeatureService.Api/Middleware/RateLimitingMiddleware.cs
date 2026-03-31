@@ -1,37 +1,20 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 
 namespace FeatureService.Api.Middleware;
 
-[BsonIgnoreExtraElements]
-internal class RateLimitRecord
-{
-    [BsonId]
-    [BsonRepresentation(BsonType.String)]
-    public string Id { get; set; } = string.Empty;
-
-    [BsonElement("count")]
-    public int Count { get; set; }
-
-    [BsonElement("windowStart")]
-    public DateTime WindowStart { get; set; }
-
-    [BsonElement("expiresAt")]
-    public DateTime ExpiresAt { get; set; }
-}
-
 /// <summary>
-/// MongoDB-backed rate limiter with per-route policy support.
-/// Uses fixed window counters with atomic increments.
+/// PostgreSQL-backed rate limiter with per-route policy support.
+/// Uses in-memory fixed window counters (rate limit records are ephemeral).
 /// </summary>
 public class RateLimitingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<RateLimitingMiddleware> _logger;
     private readonly RateLimitOptions _options;
-    private readonly IMongoCollection<RateLimitRecord> _collection;
+
+    // In-memory concurrent dictionary for rate limiting (no need to persist in DB)
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, RateLimitEntry> _counters = new();
 
     private static readonly string[] FinancialPrefixes =
     [
@@ -49,23 +32,11 @@ public class RateLimitingMiddleware
     ];
 
     public RateLimitingMiddleware(RequestDelegate next, ILogger<RateLimitingMiddleware> logger,
-        RateLimitOptions options, MongoDbContext db)
+        RateLimitOptions options)
     {
         _next = next;
         _logger = logger;
         _options = options;
-        _collection = db.GetCollection<RateLimitRecord>("rate_limit_counters");
-
-        try
-        {
-            _collection.Indexes.CreateOne(new CreateIndexModel<RateLimitRecord>(
-                Builders<RateLimitRecord>.IndexKeys.Ascending(r => r.ExpiresAt),
-                new CreateIndexOptions { ExpireAfter = TimeSpan.Zero, Name = "ttl_expiresAt" }));
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to create rate limit TTL index (may already exist)");
-        }
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -91,21 +62,27 @@ public class RateLimitingMiddleware
         var windowStart = new DateTime(now.Ticks - (now.Ticks % (TimeSpan.TicksPerSecond * windowSeconds)), DateTimeKind.Utc);
         var bucketKey = $"{policy}:{clientId}:{windowStart:yyyyMMddHHmmss}";
 
-        var filter = Builders<RateLimitRecord>.Filter.Eq(r => r.Id, bucketKey);
-        var update = Builders<RateLimitRecord>.Update
-            .Inc(r => r.Count, 1)
-            .SetOnInsert(r => r.WindowStart, windowStart)
-            .SetOnInsert(r => r.ExpiresAt, windowStart.AddSeconds(windowSeconds * 2));
-
-        var result = await _collection.FindOneAndUpdateAsync(
-            filter, update,
-            new FindOneAndUpdateOptions<RateLimitRecord>
+        var entry = _counters.AddOrUpdate(
+            bucketKey,
+            _ => new RateLimitEntry { Count = 1, WindowStart = windowStart },
+            (_, existing) =>
             {
-                IsUpsert = true,
-                ReturnDocument = ReturnDocument.After
+                if (existing.WindowStart < windowStart)
+                {
+                    // Window has rolled over, reset
+                    return new RateLimitEntry { Count = 1, WindowStart = windowStart };
+                }
+                existing.Count++;
+                return existing;
             });
 
-        var currentCount = result?.Count ?? 1;
+        var currentCount = entry.Count;
+
+        // Periodically clean up old entries
+        if (_counters.Count > 10000)
+        {
+            CleanupExpiredEntries(windowStart);
+        }
 
         if (currentCount > maxRequests)
         {
@@ -125,6 +102,17 @@ public class RateLimitingMiddleware
             Math.Max(0, maxRequests - currentCount).ToString());
 
         await _next(context);
+    }
+
+    private static void CleanupExpiredEntries(DateTime currentWindowStart)
+    {
+        foreach (var kvp in _counters)
+        {
+            if (kvp.Value.WindowStart < currentWindowStart.AddMinutes(-5))
+            {
+                _counters.TryRemove(kvp.Key, out _);
+            }
+        }
     }
 
     private static RateLimitPolicy ClassifyRequest(string path, string method)
@@ -176,6 +164,12 @@ public class RateLimitingMiddleware
     }
 
     private enum RateLimitPolicy { Global, Financial, Callback }
+
+    private class RateLimitEntry
+    {
+        public int Count { get; set; }
+        public DateTime WindowStart { get; set; }
+    }
 }
 
 /// <summary>

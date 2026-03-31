@@ -1,5 +1,5 @@
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 
 namespace FeatureService.Api.Services;
@@ -18,95 +18,90 @@ public record LedgerBackfillResult(
 
 public class LedgerBackfillService : ILedgerBackfillService
 {
-    private readonly IMongoCollection<Transaction> _transactions;
-    private readonly IMongoCollection<TransactionLedger> _ledger;
+    private readonly AppDbContext _db;
     private readonly ILogger<LedgerBackfillService> _logger;
 
-    public LedgerBackfillService(MongoDbContext dbContext, ILogger<LedgerBackfillService> logger)
+    public LedgerBackfillService(AppDbContext db, ILogger<LedgerBackfillService> logger)
     {
-        _transactions = dbContext.GetCollection<Transaction>("transactions");
-        _ledger = dbContext.GetCollection<TransactionLedger>("transaction_ledger");
+        _db = db;
         _logger = logger;
     }
 
     public async Task<LedgerBackfillResult> BackfillAsync(uint? userId, int? limit, bool dryRun)
     {
-        var filter = Builders<Transaction>.Filter.Empty;
+        var query = _db.Transactions.AsQueryable();
         if (userId.HasValue && userId.Value > 0)
         {
-            filter = Builders<Transaction>.Filter.Eq(t => t.UserId, userId.Value);
+            query = query.Where(t => t.UserId == userId.Value);
         }
 
-        IFindFluent<Transaction, Transaction> find = _transactions.Find(filter);
-        find = find.SortBy(t => t.CreatedAt);
+        query = query.OrderBy(t => t.CreatedAt);
         if (limit.HasValue && limit.Value > 0)
         {
-            find = find.Limit(limit.Value);
+            query = query.Take(limit.Value);
         }
+
+        var transactions = await query.ToListAsync();
 
         var scanned = 0;
         var inserted = 0;
         var skippedExisting = 0;
         var skippedInvalid = 0;
 
-        using var cursor = await find.ToCursorAsync();
-        while (await cursor.MoveNextAsync())
+        foreach (var txn in transactions)
         {
-            foreach (var txn in cursor.Current)
+            scanned++;
+
+            if (txn.Amount == 0)
             {
-                scanned++;
-
-                if (txn.Amount == 0)
-                {
-                    skippedInvalid++;
-                    continue;
-                }
-
-                var exists = await _ledger.Find(l => l.Metadata != null &&
-                                                    l.Metadata.ContainsKey("transaction_id") &&
-                                                    l.Metadata["transaction_id"] == txn.Id)
-                                           .AnyAsync();
-                if (exists)
-                {
-                    skippedExisting++;
-                    continue;
-                }
-
-                var entryType = txn.Amount < 0 ? LedgerEntryType.Debit : LedgerEntryType.Credit;
-                var amount = Math.Abs(txn.Amount);
-
-                var metadata = new Dictionary<string, string>
-                {
-                    ["transaction_id"] = txn.Id
-                };
-
-                if (!string.IsNullOrEmpty(txn.ReferenceType))
-                {
-                    metadata["reference_type"] = txn.ReferenceType!;
-                }
-
-                var ledgerEntry = new TransactionLedger
-                {
-                    UserId = txn.UserId,
-                    EntryType = entryType,
-                    Amount = amount,
-                    BalanceAfter = txn.BalanceAfter,
-                    TransactionType = MapLedgerTransactionType(txn.Type),
-                    ReferenceId = txn.ReferenceId ?? txn.Id,
-                    ExternalReference = txn.ReferenceType,
-                    Description = txn.Description,
-                    Metadata = metadata,
-                    CreatedAt = txn.CreatedAt,
-                    Status = TransactionStatus.Completed
-                };
-
-                if (!dryRun)
-                {
-                    await _ledger.InsertOneAsync(ledgerEntry);
-                }
-
-                inserted++;
+                skippedInvalid++;
+                continue;
             }
+
+            var exists = await _db.TransactionLedger
+                .AnyAsync(l => l.ReferenceId == txn.Id);
+
+            if (exists)
+            {
+                skippedExisting++;
+                continue;
+            }
+
+            var entryType = txn.Amount < 0 ? LedgerEntryType.Debit : LedgerEntryType.Credit;
+            var amount = Math.Abs(txn.Amount);
+
+            var metadata = new Dictionary<string, string>
+            {
+                ["transaction_id"] = txn.Id
+            };
+
+            if (!string.IsNullOrEmpty(txn.ReferenceType))
+            {
+                metadata["reference_type"] = txn.ReferenceType!;
+            }
+
+            var ledgerEntry = new TransactionLedger
+            {
+                UserId = txn.UserId,
+                EntryType = entryType,
+                Amount = amount,
+                BalanceAfter = txn.BalanceAfter,
+                TransactionType = MapLedgerTransactionType(txn.Type),
+                ReferenceId = txn.ReferenceId ?? txn.Id,
+                ExternalReference = txn.ReferenceType,
+                Description = txn.Description,
+                Metadata = metadata,
+                CreatedAt = txn.CreatedAt,
+                Status = TransactionStatus.Completed
+            };
+
+            if (!dryRun)
+            {
+                _db.TransactionLedger.Add(ledgerEntry);
+                await _db.SaveChangesAsync();
+            }
+
+            inserted++;
         }
 
         _logger.LogInformation(

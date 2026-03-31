@@ -1,4 +1,4 @@
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 
@@ -8,34 +8,30 @@ public partial class TransferService
 {
     public async Task<List<TransferDto>> GetTransfersAsync(uint userId, TransferFilter? filter = null)
     {
-        var filterBuilder = Builders<Transfer>.Filter;
-        FilterDefinition<Transfer> query;
+        IQueryable<Transfer> query;
 
         if (filter?.Role == "sender")
         {
-            query = filterBuilder.Eq(t => t.SenderId, userId);
+            query = _db.Transfers.Where(t => t.SenderId == userId);
         }
         else if (filter?.Role == "receiver")
         {
-            query = filterBuilder.Eq(t => t.ReceiverId, userId);
+            query = _db.Transfers.Where(t => t.ReceiverId == userId);
         }
         else
         {
-            query = filterBuilder.Or(
-                filterBuilder.Eq(t => t.SenderId, userId),
-                filterBuilder.Eq(t => t.ReceiverId, userId)
-            );
+            query = _db.Transfers.Where(t => t.SenderId == userId || t.ReceiverId == userId);
         }
 
         if (filter?.Status.HasValue == true)
         {
-            query = filterBuilder.And(query, filterBuilder.Eq(t => t.Status, filter.Status.Value));
+            var statusValue = filter.Status.Value;
+            query = query.Where(t => t.Status == statusValue);
         }
 
-        var transfers = await _transfers
-            .Find(query)
-            .SortByDescending(t => t.CreatedAt)
-            .Limit(filter?.Limit ?? 50)
+        var transfers = await query
+            .OrderByDescending(t => t.CreatedAt)
+            .Take(filter?.Limit ?? 50)
             .ToListAsync();
 
         return transfers.Select(MapToDto).ToList();
@@ -43,7 +39,7 @@ public partial class TransferService
 
     public async Task<TransferDto?> GetTransferByIdAsync(string transferId, uint userId)
     {
-        var transfer = await _transfers.Find(t => t.Id == transferId).FirstOrDefaultAsync();
+        var transfer = await _db.Transfers.FirstOrDefaultAsync(t => t.Id == transferId);
 
         if (transfer == null)
             return null;
@@ -57,7 +53,7 @@ public partial class TransferService
 
     public async Task<TransferDto?> GetTransferByCodeAsync(string code, uint userId)
     {
-        var transfer = await _transfers.Find(t => t.Code == code).FirstOrDefaultAsync();
+        var transfer = await _db.Transfers.FirstOrDefaultAsync(t => t.Code == code);
 
         if (transfer == null)
             return null;

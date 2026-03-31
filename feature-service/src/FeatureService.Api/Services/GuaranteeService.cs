@@ -1,5 +1,5 @@
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 
 namespace FeatureService.Api.Services;
@@ -17,20 +17,20 @@ public partial class GuaranteeService : IGuaranteeService
 {
     private const long MinGuaranteeAmount = 100_000;
 
-    private readonly MongoDbContext _context;
+    private readonly AppDbContext _db;
     private readonly IWalletService _walletService;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<GuaranteeService> _logger;
 
     public GuaranteeService(
-        MongoDbContext context,
+        AppDbContext db,
         IWalletService walletService,
         HttpClient httpClient,
         IConfiguration configuration,
         ILogger<GuaranteeService> logger)
     {
-        _context = context;
+        _db = db;
         _walletService = walletService;
         _httpClient = httpClient;
         _configuration = configuration;
@@ -92,19 +92,15 @@ public partial class GuaranteeService : IGuaranteeService
 
         try
         {
-            await _context.GuaranteeLocks.InsertOneAsync(guarantee);
+            _db.GuaranteeLocks.Add(guarantee);
+            await _db.SaveChangesAsync();
         }
-        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        catch (DbUpdateException ex)
         {
+            _db.Entry(guarantee).State = EntityState.Detached;
             _logger.LogWarning(ex, "Duplicate active guarantee detected for user {UserId} after deduction; attempting refund. GuaranteeId: {GuaranteeId}", userId, guarantee.Id);
             await BestEffortRefundAsync(userId, amount, guarantee.Id);
             throw new InvalidOperationException("Anda sudah memiliki jaminan aktif. Lepaskan terlebih dahulu.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to insert guarantee lock {GuaranteeId} after deduction; attempting refund. UserId: {UserId}", guarantee.Id, userId);
-            await BestEffortRefundAsync(userId, amount, guarantee.Id);
-            throw;
         }
 
         await BestEffortSyncGuaranteeAmountAsync(userId, amount);
@@ -131,17 +127,14 @@ public partial class GuaranteeService : IGuaranteeService
         var now = DateTime.UtcNow;
 
         // Update status first to prevent double-credit (server-side), then refund wallet.
-        var updateFilter = Builders<GuaranteeLock>.Filter.And(
-            Builders<GuaranteeLock>.Filter.Eq(g => g.Id, active.Id),
-            Builders<GuaranteeLock>.Filter.Eq(g => g.Status, GuaranteeStatus.Active));
+        var updated = await _db.GuaranteeLocks
+            .Where(g => g.Id == active.Id && g.Status == GuaranteeStatus.Active)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(g => g.Status, GuaranteeStatus.Released)
+                .SetProperty(g => g.ReleasedAt, now)
+                .SetProperty(g => g.UpdatedAt, now));
 
-        var statusUpdate = Builders<GuaranteeLock>.Update
-            .Set(g => g.Status, GuaranteeStatus.Released)
-            .Set(g => g.ReleasedAt, now)
-            .Set(g => g.UpdatedAt, now);
-
-        var updateResult = await _context.GuaranteeLocks.UpdateOneAsync(updateFilter, statusUpdate);
-        if (updateResult.ModifiedCount == 0)
+        if (updated == 0)
         {
             throw new InvalidOperationException("Jaminan sudah diproses oleh request lain");
         }
@@ -163,16 +156,12 @@ public partial class GuaranteeService : IGuaranteeService
 
             try
             {
-                var rollback = Builders<GuaranteeLock>.Update
-                    .Set(g => g.Status, GuaranteeStatus.Active)
-                    .Unset(g => g.ReleasedAt)
-                    .Set(g => g.UpdatedAt, DateTime.UtcNow);
-
-                await _context.GuaranteeLocks.UpdateOneAsync(
-                    Builders<GuaranteeLock>.Filter.And(
-                        Builders<GuaranteeLock>.Filter.Eq(g => g.Id, active.Id),
-                        Builders<GuaranteeLock>.Filter.Eq(g => g.Status, GuaranteeStatus.Released)),
-                    rollback);
+                await _db.GuaranteeLocks
+                    .Where(g => g.Id == active.Id && g.Status == GuaranteeStatus.Released)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(g => g.Status, GuaranteeStatus.Active)
+                        .SetProperty(g => g.ReleasedAt, (DateTime?)null)
+                        .SetProperty(g => g.UpdatedAt, DateTime.UtcNow));
             }
             catch (Exception rollbackEx)
             {

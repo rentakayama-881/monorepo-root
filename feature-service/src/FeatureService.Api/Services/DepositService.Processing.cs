@@ -1,4 +1,4 @@
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Infrastructure.OxaPay;
 using FeatureService.Api.Models.Entities;
@@ -16,11 +16,11 @@ public partial class DepositService
         DepositRequest? deposit = null;
         if (!string.IsNullOrEmpty(payload.TrackId))
         {
-            deposit = await _deposits.Find(d => d.TrackId == payload.TrackId).FirstOrDefaultAsync();
+            deposit = await _db.DepositRequests.FirstOrDefaultAsync(d => d.TrackId == payload.TrackId);
         }
         if (deposit == null && !string.IsNullOrEmpty(payload.OrderId))
         {
-            deposit = await _deposits.Find(d => d.Id == payload.OrderId).FirstOrDefaultAsync();
+            deposit = await _db.DepositRequests.FirstOrDefaultAsync(d => d.Id == payload.OrderId);
         }
 
         if (deposit == null)
@@ -93,11 +93,6 @@ public partial class DepositService
 
     private async Task CreditWalletForDeposit(DepositRequest deposit, OxaPayCallbackPayload payload)
     {
-        // Atomically update status to Approved to prevent double-credit
-        var filter = Builders<DepositRequest>.Filter.And(
-            Builders<DepositRequest>.Filter.Eq(d => d.Id, deposit.Id),
-            Builders<DepositRequest>.Filter.Ne(d => d.Status, DepositStatus.Approved));
-
         var now = DateTime.UtcNow;
 
         // Calculate credit amount based on actual received crypto
@@ -130,15 +125,17 @@ public partial class DepositService
             creditAmountIdr = maxAllowedIdr;
         }
 
-        var update = Builders<DepositRequest>.Update
-            .Set(d => d.Status, DepositStatus.Approved)
-            .Set(d => d.OxaPayStatus, payload.Status)
-            .Set(d => d.Amount, creditAmountIdr)
-            .Set(d => d.UpdatedAt, now)
-            .Set(d => d.CreditedAt, now);
+        // Atomically update status to Approved to prevent double-credit
+        var updated = await _db.DepositRequests
+            .Where(d => d.Id == deposit.Id && d.Status != DepositStatus.Approved)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(d => d.Status, DepositStatus.Approved)
+                .SetProperty(d => d.OxaPayStatus, payload.Status)
+                .SetProperty(d => d.Amount, creditAmountIdr)
+                .SetProperty(d => d.UpdatedAt, now)
+                .SetProperty(d => d.CreditedAt, now));
 
-        var result = await _deposits.UpdateOneAsync(filter, update);
-        if (result.ModifiedCount == 0)
+        if (updated == 0)
         {
             _logger.LogInformation("Deposit {DepositId} already processed (race condition prevented)", deposit.Id);
             return;
@@ -166,15 +163,13 @@ public partial class DepositService
             // Rollback status
             try
             {
-                var rollback = Builders<DepositRequest>.Update
-                    .Set(d => d.Status, DepositStatus.Paid)
-                    .Set(d => d.OxaPayStatus, "paid_wallet_error")
-                    .Set(d => d.UpdatedAt, DateTime.UtcNow)
-                    .Unset(d => d.CreditedAt);
-
-                await _deposits.UpdateOneAsync(
-                    Builders<DepositRequest>.Filter.Eq(d => d.Id, deposit.Id),
-                    rollback);
+                await _db.DepositRequests
+                    .Where(d => d.Id == deposit.Id)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(d => d.Status, DepositStatus.Paid)
+                        .SetProperty(d => d.OxaPayStatus, "paid_wallet_error")
+                        .SetProperty(d => d.UpdatedAt, DateTime.UtcNow)
+                        .SetProperty(d => d.CreditedAt, (DateTime?)null));
             }
             catch (Exception rollbackEx)
             {
@@ -188,11 +183,11 @@ public partial class DepositService
         // Store wallet transaction ID
         try
         {
-            var txUpdate = Builders<DepositRequest>.Update
-                .Set(d => d.WalletTransactionId, walletTransactionId)
-                .Set(d => d.UpdatedAt, DateTime.UtcNow);
-
-            await _deposits.UpdateOneAsync(d => d.Id == deposit.Id, txUpdate);
+            await _db.DepositRequests
+                .Where(d => d.Id == deposit.Id)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(d => d.WalletTransactionId, walletTransactionId)
+                    .SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
         }
         catch (Exception ex)
         {
@@ -206,19 +201,18 @@ public partial class DepositService
 
     private async Task UpdateDepositStatusAsync(string depositId, DepositStatus status, string? oxaPayStatus)
     {
-        var update = Builders<DepositRequest>.Update
-            .Set(d => d.Status, status)
-            .Set(d => d.OxaPayStatus, oxaPayStatus)
-            .Set(d => d.UpdatedAt, DateTime.UtcNow);
-
-        await _deposits.UpdateOneAsync(d => d.Id == depositId, update);
+        await _db.DepositRequests
+            .Where(d => d.Id == depositId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(d => d.Status, status)
+                .SetProperty(d => d.OxaPayStatus, oxaPayStatus)
+                .SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
     }
 
     public async Task<(bool success, string? error)> CancelDepositAsync(string depositId, uint userId)
     {
-        var deposit = await _deposits
-            .Find(d => d.Id == depositId && d.UserId == userId)
-            .FirstOrDefaultAsync();
+        var deposit = await _db.DepositRequests
+            .FirstOrDefaultAsync(d => d.Id == depositId && d.UserId == userId);
 
         if (deposit == null)
             return (false, "Deposit tidak ditemukan");
@@ -226,17 +220,14 @@ public partial class DepositService
         if (deposit.Status != DepositStatus.WaitingPayment)
             return (false, $"Deposit tidak dapat dibatalkan (status: {deposit.Status})");
 
-        var filter = Builders<DepositRequest>.Filter.And(
-            Builders<DepositRequest>.Filter.Eq(d => d.Id, depositId),
-            Builders<DepositRequest>.Filter.Eq(d => d.Status, DepositStatus.WaitingPayment));
+        var updated = await _db.DepositRequests
+            .Where(d => d.Id == depositId && d.Status == DepositStatus.WaitingPayment)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(d => d.Status, DepositStatus.Cancelled)
+                .SetProperty(d => d.OxaPayStatus, "cancelled_by_user")
+                .SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
 
-        var update = Builders<DepositRequest>.Update
-            .Set(d => d.Status, DepositStatus.Cancelled)
-            .Set(d => d.OxaPayStatus, "cancelled_by_user")
-            .Set(d => d.UpdatedAt, DateTime.UtcNow);
-
-        var result = await _deposits.UpdateOneAsync(filter, update);
-        if (result.ModifiedCount == 0)
+        if (updated == 0)
         {
             _logger.LogWarning("Cancel deposit {DepositId} failed: status changed during cancel (race condition)", depositId);
             return (false, "Deposit sudah berubah status, tidak dapat dibatalkan");

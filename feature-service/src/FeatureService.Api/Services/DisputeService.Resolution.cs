@@ -1,5 +1,5 @@
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 using System.Text;
@@ -12,7 +12,7 @@ public partial class DisputeService
     public async Task<(bool success, string? error)> ResolveDisputeAsync(
         string disputeId, uint adminId, string adminUsername, ResolveDisputeRequest request)
     {
-        var dispute = await _disputes.Find(d => d.Id == disputeId).FirstOrDefaultAsync();
+        var dispute = await _db.Disputes.AsNoTracking().FirstOrDefaultAsync(d => d.Id == disputeId);
         if (dispute == null)
             return (false, "Dispute tidak ditemukan");
 
@@ -23,7 +23,7 @@ public partial class DisputeService
             return (false, "Dispute sudah dibatalkan");
 
         // Get the transfer for fund operations
-        var transfer = await _transfers.Find(t => t.Id == dispute.TransferId).FirstOrDefaultAsync();
+        var transfer = await _db.Transfers.AsNoTracking().FirstOrDefaultAsync(t => t.Id == dispute.TransferId);
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
 
@@ -69,36 +69,37 @@ public partial class DisputeService
         var now = DateTime.UtcNow;
 
         // Update transfer status first to ensure exactly-once settlement
-        var transferFilter = Builders<Transfer>.Filter.And(
-            Builders<Transfer>.Filter.Eq(t => t.Id, transfer.Id),
-            Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Disputed));
-
-        UpdateDefinition<Transfer> transferUpdate;
+        int transferUpdated;
         if (refundToSender > 0 && releaseToReceiver == 0)
         {
-            transferUpdate = Builders<Transfer>.Update
-                .Set(t => t.Status, TransferStatus.Cancelled)
-                .Set(t => t.CancelReason, "Dispute resolved: refund to sender")
-                .Set(t => t.CancelledAt, now)
-                .Set(t => t.UpdatedAt, now);
+            transferUpdated = await _db.Transfers
+                .Where(t => t.Id == transfer.Id && t.Status == TransferStatus.Disputed)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.Status, TransferStatus.Cancelled)
+                    .SetProperty(t => t.CancelReason, "Dispute resolved: refund to sender")
+                    .SetProperty(t => t.CancelledAt, now)
+                    .SetProperty(t => t.UpdatedAt, now));
         }
         else if (releaseToReceiver > 0)
         {
-            transferUpdate = Builders<Transfer>.Update
-                .Set(t => t.Status, TransferStatus.Released)
-                .Set(t => t.ReleasedAt, now)
-                .Set(t => t.UpdatedAt, now);
+            transferUpdated = await _db.Transfers
+                .Where(t => t.Id == transfer.Id && t.Status == TransferStatus.Disputed)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.Status, TransferStatus.Released)
+                    .SetProperty(t => t.ReleasedAt, now)
+                    .SetProperty(t => t.UpdatedAt, now));
         }
         else
         {
             // NoAction: restore to pending, normal hold rules apply
-            transferUpdate = Builders<Transfer>.Update
-                .Set(t => t.Status, TransferStatus.Pending)
-                .Set(t => t.UpdatedAt, now);
+            transferUpdated = await _db.Transfers
+                .Where(t => t.Id == transfer.Id && t.Status == TransferStatus.Disputed)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.Status, TransferStatus.Pending)
+                    .SetProperty(t => t.UpdatedAt, now));
         }
 
-        var transferUpdateResult = await _transfers.UpdateOneAsync(transferFilter, transferUpdate);
-        if (transferUpdateResult.ModifiedCount == 0)
+        if (transferUpdated == 0)
             return (false, "Transfer sudah diproses oleh request lain");
 
         // Execute fund transfers
@@ -165,15 +166,15 @@ public partial class DisputeService
             Note = request.Note
         };
 
-        var update = Builders<Dispute>.Update
-            .Set(d => d.Status, DisputeStatus.Resolved)
-            .Set(d => d.Resolution, resolution)
-            .Set(d => d.ResolvedById, adminId)
-            .Set(d => d.ResolvedByUsername, adminUsername)
-            .Set(d => d.ResolvedAt, now)
-            .Set(d => d.UpdatedAt, now);
-
-        await _disputes.UpdateOneAsync(d => d.Id == disputeId, update);
+        await _db.Disputes
+            .Where(d => d.Id == disputeId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(d => d.Status, DisputeStatus.Resolved)
+                .SetProperty(d => d.Resolution, resolution)
+                .SetProperty(d => d.ResolvedById, adminId)
+                .SetProperty(d => d.ResolvedByUsername, adminUsername)
+                .SetProperty(d => d.ResolvedAt, now)
+                .SetProperty(d => d.UpdatedAt, now));
 
         _logger.LogInformation(
             "Dispute resolved: {DisputeId} by admin {AdminId}, type: {Type}, sender: {RefundToSender}, receiver: {ReleaseToReceiver}",
@@ -207,7 +208,7 @@ public partial class DisputeService
     public async Task<(bool success, string? error)> UpdateStatusAsync(
         string disputeId, uint adminId, DisputeStatus newStatus)
     {
-        var dispute = await _disputes.Find(d => d.Id == disputeId).FirstOrDefaultAsync();
+        var dispute = await _db.Disputes.AsNoTracking().FirstOrDefaultAsync(d => d.Id == disputeId);
         if (dispute == null)
             return (false, "Dispute tidak ditemukan");
 
@@ -215,11 +216,11 @@ public partial class DisputeService
         if (dispute.Status == DisputeStatus.Resolved || dispute.Status == DisputeStatus.Cancelled)
             return (false, "Dispute sudah ditutup");
 
-        var update = Builders<Dispute>.Update
-            .Set(d => d.Status, newStatus)
-            .Set(d => d.UpdatedAt, DateTime.UtcNow);
-
-        await _disputes.UpdateOneAsync(d => d.Id == disputeId, update);
+        await _db.Disputes
+            .Where(d => d.Id == disputeId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(d => d.Status, newStatus)
+                .SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
 
         return (true, null);
     }
@@ -227,7 +228,7 @@ public partial class DisputeService
     public async Task<(bool success, string? error)> ContinueTransactionAsync(
         string disputeId, uint adminId, string adminUsername, string? note)
     {
-        var dispute = await _disputes.Find(d => d.Id == disputeId).FirstOrDefaultAsync();
+        var dispute = await _db.Disputes.AsNoTracking().FirstOrDefaultAsync(d => d.Id == disputeId);
         if (dispute == null)
             return (false, "Dispute tidak ditemukan");
 
@@ -238,7 +239,7 @@ public partial class DisputeService
             return (false, "Dispute sudah dibatalkan");
 
         // Get the transfer
-        var transfer = await _transfers.Find(t => t.Id == dispute.TransferId).FirstOrDefaultAsync();
+        var transfer = await _db.Transfers.AsNoTracking().FirstOrDefaultAsync(t => t.Id == dispute.TransferId);
         if (transfer == null)
             return (false, "Transfer tidak ditemukan");
         if (transfer.Status != TransferStatus.Disputed)
@@ -248,6 +249,8 @@ public partial class DisputeService
         var now = DateTime.UtcNow;
         var message = new DisputeMessage
         {
+            Id = Guid.NewGuid().ToString(),
+            DisputeId = disputeId,
             SenderId = adminId,
             SenderUsername = adminUsername,
             IsAdmin = true,
@@ -264,37 +267,37 @@ public partial class DisputeService
             Note = note ?? "Transaksi dilanjutkan sesuai hold time normal"
         };
 
-        var disputeUpdateFilter = Builders<Dispute>.Filter.And(
-            Builders<Dispute>.Filter.Eq(d => d.Id, disputeId),
-            Builders<Dispute>.Filter.Eq(d => d.Status, dispute.Status));
-        var disputeUpdate = Builders<Dispute>.Update
-            .Set(d => d.Status, DisputeStatus.Resolved)
-            .Set(d => d.Resolution, resolution)
-            .Set(d => d.ResolvedById, adminId)
-            .Set(d => d.ResolvedByUsername, adminUsername)
-            .Set(d => d.ResolvedAt, now)
-            .Set(d => d.UpdatedAt, now)
-            .Push(d => d.Messages, message);
-
         // Restore transfer to Pending status (will follow hold time), CAS-protected.
-        var transferUpdateFilter = Builders<Transfer>.Filter.And(
-            Builders<Transfer>.Filter.Eq(t => t.Id, dispute.TransferId),
-            Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Disputed));
-        var transferUpdate = Builders<Transfer>.Update
-            .Set(t => t.Status, TransferStatus.Pending)
-            .Unset(t => t.CancelledAt)
-            .Unset(t => t.CancelReason)
-            .Set(t => t.UpdatedAt, now);
-        var transferUpdateResult = await _transfers.UpdateOneAsync(transferUpdateFilter, transferUpdate);
-        if (transferUpdateResult.ModifiedCount == 0)
+        var transferUpdated = await _db.Transfers
+            .Where(t => t.Id == dispute.TransferId && t.Status == TransferStatus.Disputed)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(t => t.Status, TransferStatus.Pending)
+                .SetProperty(t => t.CancelledAt, (DateTime?)null)
+                .SetProperty(t => t.CancelReason, (string?)null)
+                .SetProperty(t => t.UpdatedAt, now));
+
+        if (transferUpdated == 0)
             return (false, await BuildTransferDisputeConflictMessageAsync(dispute.TransferId));
 
-        var disputeUpdateResult = await _disputes.UpdateOneAsync(disputeUpdateFilter, disputeUpdate);
-        if (disputeUpdateResult.ModifiedCount == 0)
+        _db.DisputeMessages.Add(message);
+
+        var disputeUpdated = await _db.Disputes
+            .Where(d => d.Id == disputeId && d.Status == dispute.Status)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(d => d.Status, DisputeStatus.Resolved)
+                .SetProperty(d => d.Resolution, resolution)
+                .SetProperty(d => d.ResolvedById, adminId)
+                .SetProperty(d => d.ResolvedByUsername, adminUsername)
+                .SetProperty(d => d.ResolvedAt, now)
+                .SetProperty(d => d.UpdatedAt, now));
+
+        if (disputeUpdated == 0)
         {
             await TryRollbackTransferToDisputedAsync(dispute.TransferId);
             return (false, await BuildDisputeConflictMessageAsync(disputeId));
         }
+
+        await _db.SaveChangesAsync();
 
         _logger.LogInformation(
             "Dispute continued: {DisputeId} by admin {AdminId}, transfer restored to Pending",

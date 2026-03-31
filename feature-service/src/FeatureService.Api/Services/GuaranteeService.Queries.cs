@@ -1,5 +1,5 @@
 using System.Text.Json;
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 using FeatureService.Api.Models.Entities;
 
 namespace FeatureService.Api.Services;
@@ -8,9 +8,8 @@ public partial class GuaranteeService
 {
     public async Task<GuaranteeLock?> GetActiveGuaranteeAsync(uint userId)
     {
-        return await _context.GuaranteeLocks
-            .Find(g => g.UserId == userId && g.Status == GuaranteeStatus.Active)
-            .FirstOrDefaultAsync();
+        return await _db.GuaranteeLocks
+            .FirstOrDefaultAsync(g => g.UserId == userId && g.Status == GuaranteeStatus.Active);
     }
 
     public async Task<long> GetGuaranteeAmountAsync(uint userId)
@@ -53,8 +52,8 @@ public partial class GuaranteeService
             return;
         }
 
-        var transfers = await _context.Transfers
-            .Find(Builders<Transfer>.Filter.In(t => t.Id, transferIds))
+        var transfers = await _db.Transfers
+            .Where(t => transferIds.Contains(t.Id))
             .ToListAsync();
 
         var transferById = transfers.ToDictionary(t => t.Id, t => t, StringComparer.Ordinal);
@@ -145,7 +144,7 @@ public partial class GuaranteeService
                 throw new InvalidOperationException("Respons consultation lock tidak valid.");
             }
 
-            var locks = new List<ConsultationLockInfo>();
+            var locksList = new List<ConsultationLockInfo>();
             foreach (var item in locksEl.EnumerateArray())
             {
                 uint validationCaseId = 0;
@@ -161,10 +160,10 @@ public partial class GuaranteeService
                     escrowTransferId = transferIdEl.GetString()?.Trim() ?? string.Empty;
                 }
 
-                locks.Add(new ConsultationLockInfo(validationCaseId, escrowTransferId));
+                locksList.Add(new ConsultationLockInfo(validationCaseId, escrowTransferId));
             }
 
-            return locks;
+            return locksList;
         }
         catch (Exception ex)
         {

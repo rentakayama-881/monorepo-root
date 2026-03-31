@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 
@@ -19,8 +19,7 @@ public interface IBrowserProfileService
 
 public class BrowserProfileService : IBrowserProfileService
 {
-    private readonly IMongoCollection<BrowserProfile> _profiles;
-    private readonly IMongoCollection<BrowserSession> _sessions;
+    private readonly AppDbContext _db;
     private readonly ILogger<BrowserProfileService> _logger;
 
     // Preset arrays for deterministic fingerprint generation
@@ -84,10 +83,9 @@ public class BrowserProfileService : IBrowserProfileService
         "ko-KR"
     };
 
-    public BrowserProfileService(MongoDbContext dbContext, ILogger<BrowserProfileService> logger)
+    public BrowserProfileService(AppDbContext db, ILogger<BrowserProfileService> logger)
     {
-        _profiles = dbContext.BrowserProfiles;
-        _sessions = dbContext.BrowserSessions;
+        _db = db;
         _logger = logger;
     }
 
@@ -112,7 +110,8 @@ public class BrowserProfileService : IBrowserProfileService
             UpdatedAt = DateTime.UtcNow
         };
 
-        await _profiles.InsertOneAsync(profile);
+        _db.BrowserProfiles.Add(profile);
+        await _db.SaveChangesAsync();
         _logger.LogInformation("Profil browser {ProfileId} dibuat untuk user {UserId}", profileId, userId);
 
         return MapToDto(profile);
@@ -120,9 +119,9 @@ public class BrowserProfileService : IBrowserProfileService
 
     public async Task<BrowserProfileListResponse> GetProfilesAsync(uint userId)
     {
-        var profiles = await _profiles
-            .Find(p => p.UserId == userId)
-            .SortByDescending(p => p.CreatedAt)
+        var profiles = await _db.BrowserProfiles
+            .Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
 
         var dtos = profiles.Select(MapToDto).ToList();
@@ -131,83 +130,69 @@ public class BrowserProfileService : IBrowserProfileService
 
     public async Task<BrowserProfileDto?> GetProfileByIdAsync(string profileId, uint userId)
     {
-        var profile = await _profiles
-            .Find(p => p.Id == profileId && p.UserId == userId)
-            .FirstOrDefaultAsync();
+        var profile = await _db.BrowserProfiles
+            .FirstOrDefaultAsync(p => p.Id == profileId && p.UserId == userId);
 
         return profile == null ? null : MapToDto(profile);
     }
 
     public async Task<BrowserProfileDto?> UpdateProfileAsync(string profileId, uint userId, UpdateBrowserProfileRequest request)
     {
-        var filter = Builders<BrowserProfile>.Filter.And(
-            Builders<BrowserProfile>.Filter.Eq(p => p.Id, profileId),
-            Builders<BrowserProfile>.Filter.Eq(p => p.UserId, userId));
+        var profile = await _db.BrowserProfiles
+            .FirstOrDefaultAsync(p => p.Id == profileId && p.UserId == userId);
 
-        var updateDef = Builders<BrowserProfile>.Update
-            .Set(p => p.UpdatedAt, DateTime.UtcNow);
+        if (profile == null) return null;
 
         if (request.Name != null)
-            updateDef = updateDef.Set(p => p.Name, request.Name);
+            profile.Name = request.Name;
         if (request.ProxyServer != null)
-            updateDef = updateDef.Set(p => p.ProxyServer, request.ProxyServer);
+            profile.ProxyServer = request.ProxyServer;
         if (request.ProxyUsername != null)
-            updateDef = updateDef.Set(p => p.ProxyUsername, request.ProxyUsername);
+            profile.ProxyUsername = request.ProxyUsername;
         if (request.ProxyPassword != null)
-            updateDef = updateDef.Set(p => p.ProxyPassword, request.ProxyPassword);
+            profile.ProxyPassword = request.ProxyPassword;
         if (request.Notes != null)
-            updateDef = updateDef.Set(p => p.Notes, request.Notes);
+            profile.Notes = request.Notes;
 
-        var result = await _profiles.FindOneAndUpdateAsync(
-            filter,
-            updateDef,
-            new FindOneAndUpdateOptions<BrowserProfile> { ReturnDocument = ReturnDocument.After });
-
-        if (result == null) return null;
+        profile.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
 
         _logger.LogInformation("Profil browser {ProfileId} diperbarui oleh user {UserId}", profileId, userId);
-        return MapToDto(result);
+        return MapToDto(profile);
     }
 
     public async Task<bool> DeleteProfileAsync(string profileId, uint userId)
     {
         // Cek apakah ada sesi aktif yang menggunakan profil ini
-        var activeSessionFilter = Builders<BrowserSession>.Filter.And(
-            Builders<BrowserSession>.Filter.Eq(s => s.ProfileId, profileId),
-            Builders<BrowserSession>.Filter.In(s => s.Status, new[]
-            {
-                BrowserSessionStatus.Starting,
-                BrowserSessionStatus.Active
-            }));
+        var activeStatuses = new[] { BrowserSessionStatus.Starting, BrowserSessionStatus.Active };
+        var activeCount = await _db.BrowserSessions
+            .CountAsync(s => s.ProfileId == profileId && activeStatuses.Contains(s.Status));
 
-        var activeCount = await _sessions.CountDocumentsAsync(activeSessionFilter);
         if (activeCount > 0)
         {
             _logger.LogWarning("Gagal hapus profil {ProfileId}: masih ada {Count} sesi aktif", profileId, activeCount);
             throw new InvalidOperationException("Profil tidak dapat dihapus karena masih ada sesi aktif yang menggunakan profil ini");
         }
 
-        var filter = Builders<BrowserProfile>.Filter.And(
-            Builders<BrowserProfile>.Filter.Eq(p => p.Id, profileId),
-            Builders<BrowserProfile>.Filter.Eq(p => p.UserId, userId));
+        var deleted = await _db.BrowserProfiles
+            .Where(p => p.Id == profileId && p.UserId == userId)
+            .ExecuteDeleteAsync();
 
-        var result = await _profiles.DeleteOneAsync(filter);
-
-        if (result.DeletedCount > 0)
+        if (deleted > 0)
         {
             _logger.LogInformation("Profil browser {ProfileId} dihapus oleh user {UserId}", profileId, userId);
         }
 
-        return result.DeletedCount > 0;
+        return deleted > 0;
     }
 
     public async Task UpdateLastSessionAsync(string profileId)
     {
-        var update = Builders<BrowserProfile>.Update
-            .Set(p => p.LastSessionAt, DateTime.UtcNow)
-            .Set(p => p.UpdatedAt, DateTime.UtcNow);
-
-        await _profiles.UpdateOneAsync(p => p.Id == profileId, update);
+        await _db.BrowserProfiles
+            .Where(p => p.Id == profileId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(p => p.LastSessionAt, DateTime.UtcNow)
+                .SetProperty(p => p.UpdatedAt, DateTime.UtcNow));
     }
 
     // ──────────────────────────────────────────────────────────────

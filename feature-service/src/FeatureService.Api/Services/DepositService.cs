@@ -1,7 +1,6 @@
-using MongoDB.Bson;
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 using FeatureService.Api.DTOs;
-using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Infrastructure.OxaPay;
 using FeatureService.Api.Models.Entities;
 
@@ -19,7 +18,7 @@ public interface IDepositService
 
 public partial class DepositService : IDepositService
 {
-    private readonly IMongoCollection<DepositRequest> _deposits;
+    private readonly AppDbContext _db;
     private readonly IWalletService _walletService;
     private readonly IOxaPayService _oxaPayService;
     private readonly OxaPaySettings _oxaPaySettings;
@@ -29,28 +28,13 @@ public partial class DepositService : IDepositService
     private const long MaxDeposit = 4_000_000; // Rp 4 juta
 
     public DepositService(
-        MongoDbContext dbContext,
-        IWalletService walletService,
-        IOxaPayService oxaPayService,
-        OxaPaySettings oxaPaySettings,
-        ILogger<DepositService> logger)
-        : this(
-            dbContext.GetCollection<DepositRequest>("deposit_requests"),
-            walletService,
-            oxaPayService,
-            oxaPaySettings,
-            logger)
-    {
-    }
-
-    internal DepositService(
-        IMongoCollection<DepositRequest> deposits,
+        AppDbContext db,
         IWalletService walletService,
         IOxaPayService oxaPayService,
         OxaPaySettings oxaPaySettings,
         ILogger<DepositService> logger)
     {
-        _deposits = deposits;
+        _db = db;
         _walletService = walletService;
         _oxaPayService = oxaPayService;
         _oxaPaySettings = oxaPaySettings;
@@ -67,11 +51,11 @@ public partial class DepositService : IDepositService
 
         // Check for existing unexpired deposit for this user (skip cancelled)
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var existingPending = await _deposits
-            .Find(d => d.UserId == userId
+        var existingPending = await _db.DepositRequests
+            .Where(d => d.UserId == userId
                 && d.Status == DepositStatus.WaitingPayment
                 && d.ExpiredAt > now)
-            .SortByDescending(d => d.CreatedAt)
+            .OrderByDescending(d => d.CreatedAt)
             .FirstOrDefaultAsync();
 
         if (existingPending != null)
@@ -93,7 +77,7 @@ public partial class DepositService : IDepositService
 
         var payCurrency = request.PayCurrency ?? _oxaPaySettings.DefaultPayCurrency;
         var network = request.Network ?? _oxaPaySettings.DefaultNetwork;
-        var depositId = ObjectId.GenerateNewId().ToString();
+        var depositId = Ulid.NewUlid().ToString();
 
         // Call OxaPay White Label API
         var oxaPayRequest = new OxaPayWhiteLabelRequest
@@ -145,7 +129,8 @@ public partial class DepositService : IDepositService
             UpdatedAt = DateTime.UtcNow
         };
 
-        await _deposits.InsertOneAsync(deposit);
+        _db.DepositRequests.Add(deposit);
+        await _db.SaveChangesAsync();
 
         _logger.LogInformation(
             "Deposit created: {DepositId} user {UserId} amount {Amount} IDR → {PayAmount} {PayCurrency} trackId {TrackId}",
@@ -156,10 +141,11 @@ public partial class DepositService : IDepositService
 
     public async Task<DepositHistoryResponse> GetUserDepositsAsync(uint userId, int limit = 50)
     {
-        var deposits = await _deposits
-            .Find(d => d.UserId == userId)
-            .SortByDescending(d => d.CreatedAt)
-            .Limit(Math.Clamp(limit, 1, 100))
+        var clampedLimit = Math.Clamp(limit, 1, 100);
+        var deposits = await _db.DepositRequests
+            .Where(d => d.UserId == userId)
+            .OrderByDescending(d => d.CreatedAt)
+            .Take(clampedLimit)
             .ToListAsync();
 
         var items = deposits.Select(d => new DepositRequestResponse(
@@ -180,11 +166,11 @@ public partial class DepositService : IDepositService
     public async Task<CreateDepositResponse?> GetPendingDepositAsync(uint userId)
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var deposit = await _deposits
-            .Find(d => d.UserId == userId
+        var deposit = await _db.DepositRequests
+            .Where(d => d.UserId == userId
                 && d.Status == DepositStatus.WaitingPayment
                 && d.ExpiredAt > now)
-            .SortByDescending(d => d.CreatedAt)
+            .OrderByDescending(d => d.CreatedAt)
             .FirstOrDefaultAsync();
 
         if (deposit == null)
@@ -207,9 +193,8 @@ public partial class DepositService : IDepositService
 
     public async Task<DepositStatusResponse?> GetDepositStatusAsync(string depositId, uint userId)
     {
-        var deposit = await _deposits
-            .Find(d => d.Id == depositId && d.UserId == userId)
-            .FirstOrDefaultAsync();
+        var deposit = await _db.DepositRequests
+            .FirstOrDefaultAsync(d => d.Id == depositId && d.UserId == userId);
 
         if (deposit == null)
             return null;

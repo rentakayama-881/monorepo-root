@@ -1,121 +1,96 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-
 namespace FeatureService.Api.Models.Entities;
 
 /// <summary>
 /// Represents a document stored in user's profile.
 /// Documents are standalone files like white papers, articles, research papers.
 /// </summary>
-[BsonIgnoreExtraElements]
 public class Document
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.String)]
     public string Id { get; set; } = string.Empty; // doc_xxx format using Ulid
 
     /// <summary>
     /// User ID who owns this document
     /// </summary>
-    [BsonElement("userId")]
     public uint UserId { get; set; }
 
     /// <summary>
     /// Original filename
     /// </summary>
-    [BsonElement("fileName")]
     public string FileName { get; set; } = string.Empty;
 
     /// <summary>
     /// Display title for the document
     /// </summary>
-    [BsonElement("title")]
     public string Title { get; set; } = string.Empty;
 
     /// <summary>
     /// Optional description
     /// </summary>
-    [BsonElement("description")]
     public string? Description { get; set; }
 
     /// <summary>
     /// File type: pdf, docx, txt, md, csv, xlsx, xls, zip
     /// </summary>
-    [BsonElement("fileType")]
     public string FileType { get; set; } = string.Empty;
 
     /// <summary>
     /// MIME type
     /// </summary>
-    [BsonElement("mimeType")]
     public string MimeType { get; set; } = string.Empty;
 
     /// <summary>
     /// File size in bytes
     /// </summary>
-    [BsonElement("fileSize")]
     public long FileSize { get; set; }
 
     /// <summary>
     /// Storage path/key in object storage (Supabase)
     /// </summary>
-    [BsonElement("storagePath")]
     public string StoragePath { get; set; } = string.Empty;
 
     /// <summary>
     /// Public URL for download
     /// </summary>
-    [BsonElement("publicUrl")]
     public string? PublicUrl { get; set; }
 
     /// <summary>
     /// Visibility: public or private
     /// </summary>
-    [BsonElement("visibility")]
     public string Visibility { get; set; } = DocumentVisibility.Private;
 
     /// <summary>
     /// Explicit share list for private documents (in addition to owner/admin).
     /// Used for Validation Case workflows (Artifact Submission, arbitration access).
     /// </summary>
-    [BsonElement("sharedWithUserIds")]
     public List<uint> SharedWithUserIds { get; set; } = new();
 
     /// <summary>
     /// Document category: whitepaper, article, research, other
     /// </summary>
-    [BsonElement("category")]
     public string Category { get; set; } = DocumentCategory.Other;
 
     /// <summary>
     /// Tags for organization
     /// </summary>
-    [BsonElement("tags")]
     public List<string> Tags { get; set; } = new();
 
     /// <summary>
     /// Download count
     /// </summary>
-    [BsonElement("downloadCount")]
     public int DownloadCount { get; set; } = 0;
 
     /// <summary>
     /// Whether the document is soft deleted
     /// </summary>
-    [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; } = false;
 
     /// <summary>
-    /// File data stored in MongoDB (for simplicity, use GridFS or external storage in production)
+    /// File data stored in the database (consider external storage for production)
     /// </summary>
-    [BsonElement("fileData")]
-    [BsonIgnoreIfNull]
     public byte[]? FileData { get; set; }
 
-    [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 

@@ -1,6 +1,6 @@
 using System.Net;
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 
@@ -20,7 +20,7 @@ public interface IAdminModerationService
 
 public partial class AdminModerationService : IAdminModerationService
 {
-    private readonly MongoDbContext _context;
+    private readonly AppDbContext _db;
     private readonly IReportService _reportService;
     private readonly IDeviceBanService _deviceBanService;
     private readonly IUserWarningService _warningService;
@@ -29,7 +29,7 @@ public partial class AdminModerationService : IAdminModerationService
     private readonly ILogger<AdminModerationService> _logger;
 
     public AdminModerationService(
-        MongoDbContext context,
+        AppDbContext db,
         IReportService reportService,
         IDeviceBanService deviceBanService,
         IUserWarningService warningService,
@@ -37,7 +37,7 @@ public partial class AdminModerationService : IAdminModerationService
         IConfiguration configuration,
         ILogger<AdminModerationService> logger)
     {
-        _context = context;
+        _db = db;
         _reportService = reportService;
         _deviceBanService = deviceBanService;
         _warningService = warningService;
@@ -51,27 +51,27 @@ public partial class AdminModerationService : IAdminModerationService
         var today = DateTime.UtcNow.Date;
         var tomorrow = today.AddDays(1);
 
-        var pendingReports = await _context.Reports
-            .CountDocumentsAsync(r => r.Status == ReportStatus.Pending);
+        var pendingReports = await _db.Reports
+            .CountAsync(r => r.Status == ReportStatus.Pending);
 
-        var reportsToday = await _context.Reports
-            .CountDocumentsAsync(r => r.CreatedAt >= today && r.CreatedAt < tomorrow);
+        var reportsToday = await _db.Reports
+            .CountAsync(r => r.CreatedAt >= today && r.CreatedAt < tomorrow);
 
-        var activeBans = await _context.DeviceBans
-            .CountDocumentsAsync(b => b.IsActive);
+        var activeBans = await _db.DeviceBans
+            .CountAsync(b => b.IsActive);
 
-        var warningsToday = await _context.UserWarnings
-            .CountDocumentsAsync(w => w.CreatedAt >= today && w.CreatedAt < tomorrow);
+        var warningsToday = await _db.UserWarnings
+            .CountAsync(w => w.CreatedAt >= today && w.CreatedAt < tomorrow);
 
-        var hiddenContent = await _context.HiddenContents
-            .CountDocumentsAsync(h => h.IsActive);
+        var hiddenContent = await _db.HiddenContents
+            .CountAsync(h => h.IsActive);
 
         return new AdminDashboardStatsDto(
-            (int)pendingReports,
-            (int)reportsToday,
-            (int)activeBans,
-            (int)warningsToday,
-            (int)hiddenContent
+            pendingReports,
+            reportsToday,
+            activeBans,
+            warningsToday,
+            hiddenContent
         );
     }
 
@@ -113,9 +113,8 @@ public partial class AdminModerationService : IAdminModerationService
         }
 
         // Check if already hidden
-        var existing = await _context.HiddenContents
-            .Find(h => h.ContentType == normalizedType && h.ContentId == contentId && h.IsActive)
-            .FirstOrDefaultAsync();
+        var existing = await _db.HiddenContents
+            .FirstOrDefaultAsync(h => h.ContentType == normalizedType && h.ContentId == contentId && h.IsActive);
 
         if (existing != null)
         {
@@ -137,7 +136,8 @@ public partial class AdminModerationService : IAdminModerationService
             UpdatedAt = DateTime.UtcNow
         };
 
-        await _context.HiddenContents.InsertOneAsync(hidden);
+        _db.HiddenContents.Add(hidden);
+        await _db.SaveChangesAsync();
 
         // Log admin action
         await LogAdminActionAsync(adminId, null, AdminActionType.HideContent, AdminActionTargetType.Content, hidden.Id,
@@ -184,9 +184,8 @@ public partial class AdminModerationService : IAdminModerationService
 
     public async Task UnhideContentAsync(string hiddenContentId, uint adminId)
     {
-        var hidden = await _context.HiddenContents
-            .Find(h => h.Id == hiddenContentId)
-            .FirstOrDefaultAsync();
+        var hidden = await _db.HiddenContents
+            .FirstOrDefaultAsync(h => h.Id == hiddenContentId);
 
         if (hidden == null)
         {
@@ -198,13 +197,13 @@ public partial class AdminModerationService : IAdminModerationService
             throw new InvalidOperationException("Content is not currently hidden");
         }
 
-        var update = Builders<HiddenContent>.Update
-            .Set(h => h.IsActive, false)
-            .Set(h => h.UnhiddenByAdminId, adminId)
-            .Set(h => h.UnhiddenAt, DateTime.UtcNow)
-            .Set(h => h.UpdatedAt, DateTime.UtcNow);
-
-        await _context.HiddenContents.UpdateOneAsync(h => h.Id == hiddenContentId, update);
+        await _db.HiddenContents
+            .Where(h => h.Id == hiddenContentId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(h => h.IsActive, false)
+                .SetProperty(h => h.UnhiddenByAdminId, adminId)
+                .SetProperty(h => h.UnhiddenAt, DateTime.UtcNow)
+                .SetProperty(h => h.UpdatedAt, DateTime.UtcNow));
 
         // Log admin action
         await LogAdminActionAsync(adminId, null, AdminActionType.UnhideContent, AdminActionTargetType.Content, hiddenContentId,
@@ -215,15 +214,13 @@ public partial class AdminModerationService : IAdminModerationService
 
     public async Task<PaginatedHiddenContentResponse> GetHiddenContentAsync(int page, int pageSize)
     {
-        var filter = Builders<HiddenContent>.Filter.Eq(h => h.IsActive, true);
+        var totalCount = await _db.HiddenContents.CountAsync(h => h.IsActive);
 
-        var totalCount = await _context.HiddenContents.CountDocumentsAsync(filter);
-
-        var items = await _context.HiddenContents
-            .Find(filter)
-            .SortByDescending(h => h.CreatedAt)
+        var items = await _db.HiddenContents
+            .Where(h => h.IsActive)
+            .OrderByDescending(h => h.CreatedAt)
             .Skip((page - 1) * pageSize)
-            .Limit(pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var dtos = items.Select(h => new HiddenContentDto(
@@ -240,6 +237,6 @@ public partial class AdminModerationService : IAdminModerationService
             null // Content preview fetched from Go backend
         )).ToList();
 
-        return new PaginatedHiddenContentResponse(dtos, (int)totalCount, page, pageSize);
+        return new PaginatedHiddenContentResponse(dtos, totalCount, page, pageSize);
     }
 }

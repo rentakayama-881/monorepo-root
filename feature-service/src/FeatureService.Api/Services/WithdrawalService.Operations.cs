@@ -1,6 +1,4 @@
-using MongoDB.Bson;
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
 using FeatureService.Api.Infrastructure.OxaPay;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
@@ -12,19 +10,16 @@ public partial class WithdrawalService
     public async Task<List<WithdrawalSummaryDto>> GetUserWithdrawalsAsync(
         uint userId, WithdrawalStatus? status = null, int limit = 50)
     {
-        var filter = Builders<Withdrawal>.Filter.Eq(w => w.UserId, userId);
+        var query = _db.Withdrawals.Where(w => w.UserId == userId);
 
         if (status.HasValue)
         {
-            filter = Builders<Withdrawal>.Filter.And(
-                filter,
-                Builders<Withdrawal>.Filter.Eq(w => w.Status, status.Value));
+            query = query.Where(w => w.Status == status.Value);
         }
 
-        var withdrawals = await _withdrawals
-            .Find(filter)
-            .SortByDescending(w => w.CreatedAt)
-            .Limit(limit)
+        var withdrawals = await query
+            .OrderByDescending(w => w.CreatedAt)
+            .Take(limit)
             .ToListAsync();
 
         return withdrawals.Select(w => new WithdrawalSummaryDto(
@@ -40,7 +35,7 @@ public partial class WithdrawalService
 
     public async Task<WithdrawalDto?> GetWithdrawalAsync(string withdrawalId, uint userId)
     {
-        var withdrawal = await _withdrawals.Find(w => w.Id == withdrawalId).FirstOrDefaultAsync();
+        var withdrawal = await _db.Withdrawals.FirstOrDefaultAsync(w => w.Id == withdrawalId);
         
         if (withdrawal == null || withdrawal.UserId != userId)
             return null;
@@ -51,7 +46,7 @@ public partial class WithdrawalService
     public async Task<(bool success, string? error)> CancelWithdrawalAsync(
         string withdrawalId, uint userId, string pin)
     {
-        var withdrawal = await _withdrawals.Find(w => w.Id == withdrawalId).FirstOrDefaultAsync();
+        var withdrawal = await _db.Withdrawals.FirstOrDefaultAsync(w => w.Id == withdrawalId);
         
         if (withdrawal == null || withdrawal.UserId != userId)
             return (false, "Penarikan tidak ditemukan");
@@ -68,17 +63,13 @@ public partial class WithdrawalService
         var now = DateTime.UtcNow;
 
         // Update status first to prevent double-refund
-        var updateFilter = Builders<Withdrawal>.Filter.And(
-            Builders<Withdrawal>.Filter.Eq(w => w.Id, withdrawalId),
-            Builders<Withdrawal>.Filter.Eq(w => w.UserId, userId),
-            Builders<Withdrawal>.Filter.Eq(w => w.Status, WithdrawalStatus.Processing));
+        var updated = await _db.Withdrawals
+            .Where(w => w.Id == withdrawalId && w.UserId == userId && w.Status == WithdrawalStatus.Processing)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(w => w.Status, WithdrawalStatus.Cancelled)
+                .SetProperty(w => w.UpdatedAt, now));
 
-        var statusUpdate = Builders<Withdrawal>.Update
-            .Set(w => w.Status, WithdrawalStatus.Cancelled)
-            .Set(w => w.UpdatedAt, now);
-
-        var updateResult = await _withdrawals.UpdateOneAsync(updateFilter, statusUpdate);
-        if (updateResult.ModifiedCount == 0)
+        if (updated == 0)
             return (false, "Penarikan sudah diproses oleh request lain");
 
         // Refund full amount (including fee)
@@ -99,15 +90,11 @@ public partial class WithdrawalService
 
             try
             {
-                var rollback = Builders<Withdrawal>.Update
-                    .Set(w => w.Status, WithdrawalStatus.Processing)
-                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
-
-                await _withdrawals.UpdateOneAsync(
-                    Builders<Withdrawal>.Filter.And(
-                        Builders<Withdrawal>.Filter.Eq(w => w.Id, withdrawalId),
-                        Builders<Withdrawal>.Filter.Eq(w => w.Status, WithdrawalStatus.Cancelled)),
-                    rollback);
+                await _db.Withdrawals
+                    .Where(w => w.Id == withdrawalId && w.Status == WithdrawalStatus.Cancelled)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(w => w.Status, WithdrawalStatus.Processing)
+                        .SetProperty(w => w.UpdatedAt, DateTime.UtcNow));
             }
             catch (Exception rollbackEx)
             {
@@ -133,7 +120,7 @@ public partial class WithdrawalService
         if (string.IsNullOrEmpty(payload.TrackId))
             return (false, "Missing trackId");
 
-        var withdrawal = await _withdrawals.Find(w => w.TrackId == payload.TrackId).FirstOrDefaultAsync();
+        var withdrawal = await _db.Withdrawals.FirstOrDefaultAsync(w => w.TrackId == payload.TrackId);
         if (withdrawal == null)
         {
             _logger.LogWarning("OxaPay payout callback: withdrawal not found for trackId={TrackId}", payload.TrackId);
@@ -154,24 +141,21 @@ public partial class WithdrawalService
 
         // All status transitions use atomic filter (Status == Processing)
         // to prevent double-processing from concurrent callbacks.
-        var atomicFilter = Builders<Withdrawal>.Filter.And(
-            Builders<Withdrawal>.Filter.Eq(w => w.Id, withdrawal.Id),
-            Builders<Withdrawal>.Filter.Eq(w => w.Status, WithdrawalStatus.Processing));
-
         switch (callbackStatus)
         {
             case "complete":
             case "completed":
-                var completeUpdate = Builders<Withdrawal>.Update
-                    .Set(w => w.Status, WithdrawalStatus.Completed)
-                    .Set(w => w.OxaPayStatus, payload.Status)
-                    .Set(w => w.TxHash, payload.TxId)
-                    .Set(w => w.CryptoAmount, payload.Amount?.ToString("G"))
-                    .Set(w => w.CompletedAt, DateTime.UtcNow)
-                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
+                var completeCount = await _db.Withdrawals
+                    .Where(w => w.Id == withdrawal.Id && w.Status == WithdrawalStatus.Processing)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(w => w.Status, WithdrawalStatus.Completed)
+                        .SetProperty(w => w.OxaPayStatus, payload.Status)
+                        .SetProperty(w => w.TxHash, payload.TxId)
+                        .SetProperty(w => w.CryptoAmount, payload.Amount != null ? payload.Amount.Value.ToString("G") : w.CryptoAmount)
+                        .SetProperty(w => w.CompletedAt, DateTime.UtcNow)
+                        .SetProperty(w => w.UpdatedAt, DateTime.UtcNow));
 
-                var completeResult = await _withdrawals.UpdateOneAsync(atomicFilter, completeUpdate);
-                if (completeResult.ModifiedCount == 0)
+                if (completeCount == 0)
                 {
                     _logger.LogInformation("Withdrawal {WithdrawalId} already processed (race prevented)", withdrawal.Id);
                     break;
@@ -183,14 +167,15 @@ public partial class WithdrawalService
             case "rejected":
                 // CRITICAL: Atomic status update FIRST, then refund.
                 // Prevents double-refund from concurrent callbacks.
-                var failUpdate = Builders<Withdrawal>.Update
-                    .Set(w => w.Status, WithdrawalStatus.Failed)
-                    .Set(w => w.OxaPayStatus, payload.Status)
-                    .Set(w => w.FailureReason, $"Payout crypto {callbackStatus}")
-                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
+                var failCount = await _db.Withdrawals
+                    .Where(w => w.Id == withdrawal.Id && w.Status == WithdrawalStatus.Processing)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(w => w.Status, WithdrawalStatus.Failed)
+                        .SetProperty(w => w.OxaPayStatus, payload.Status)
+                        .SetProperty(w => w.FailureReason, $"Payout crypto {callbackStatus}")
+                        .SetProperty(w => w.UpdatedAt, DateTime.UtcNow));
 
-                var failResult = await _withdrawals.UpdateOneAsync(atomicFilter, failUpdate);
-                if (failResult.ModifiedCount == 0)
+                if (failCount == 0)
                 {
                     _logger.LogInformation("Withdrawal {WithdrawalId} already processed (race prevented)", withdrawal.Id);
                     break;
@@ -220,11 +205,11 @@ public partial class WithdrawalService
 
             default:
                 // Update OxaPay status for tracking (only if still Processing)
-                var statusUpdate = Builders<Withdrawal>.Update
-                    .Set(w => w.OxaPayStatus, payload.Status)
-                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
-
-                await _withdrawals.UpdateOneAsync(atomicFilter, statusUpdate);
+                await _db.Withdrawals
+                    .Where(w => w.Id == withdrawal.Id && w.Status == WithdrawalStatus.Processing)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(w => w.OxaPayStatus, payload.Status)
+                        .SetProperty(w => w.UpdatedAt, DateTime.UtcNow));
                 break;
         }
 

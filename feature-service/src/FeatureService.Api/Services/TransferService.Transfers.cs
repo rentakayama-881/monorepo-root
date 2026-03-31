@@ -1,4 +1,4 @@
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Models.Entities;
 
@@ -46,23 +46,31 @@ public partial class TransferService
             return (false, pinResult.Message);
 
         // Update transfer status first to prevent double-credit (server-side)
-        var filterBuilder = Builders<Transfer>.Filter;
-        var updateFilter = filterBuilder.And(
-            filterBuilder.Eq(t => t.Id, transferId),
-            filterBuilder.Eq(t => t.Status, TransferStatus.Pending),
-            holdExpired
-                ? filterBuilder.Or(
-                    filterBuilder.Lte(t => t.HoldUntil, now),
-                    filterBuilder.Eq(t => t.HoldUntil, null))
-                : filterBuilder.Gt(t => t.HoldUntil, now));
+        int updated;
+        if (holdExpired)
+        {
+            updated = await _db.Transfers
+                .Where(t => t.Id == transferId
+                    && t.Status == TransferStatus.Pending
+                    && (t.HoldUntil <= now || t.HoldUntil == null))
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.Status, TransferStatus.Released)
+                    .SetProperty(t => t.ReleasedAt, now)
+                    .SetProperty(t => t.UpdatedAt, now));
+        }
+        else
+        {
+            updated = await _db.Transfers
+                .Where(t => t.Id == transferId
+                    && t.Status == TransferStatus.Pending
+                    && t.HoldUntil > now)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.Status, TransferStatus.Released)
+                    .SetProperty(t => t.ReleasedAt, now)
+                    .SetProperty(t => t.UpdatedAt, now));
+        }
 
-        var statusUpdate = Builders<Transfer>.Update
-            .Set(t => t.Status, TransferStatus.Released)
-            .Set(t => t.ReleasedAt, now)
-            .Set(t => t.UpdatedAt, now);
-
-        var updateResult = await _transfers.UpdateOneAsync(updateFilter, statusUpdate);
-        if (updateResult.ModifiedCount == 0)
+        if (updated == 0)
             return (false, await BuildReleaseConflictMessageAsync(transferId, userId, now));
 
         // Calculate fee (2% from transfer amount, integer arithmetic - no precision loss)
@@ -87,16 +95,12 @@ public partial class TransferService
 
             try
             {
-                var rollback = Builders<Transfer>.Update
-                    .Set(t => t.Status, TransferStatus.Pending)
-                    .Unset(t => t.ReleasedAt)
-                    .Set(t => t.UpdatedAt, DateTime.UtcNow);
-
-                await _transfers.UpdateOneAsync(
-                    Builders<Transfer>.Filter.And(
-                        Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
-                        Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Released)),
-                    rollback);
+                await _db.Transfers
+                    .Where(t => t.Id == transferId && t.Status == TransferStatus.Released)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(t => t.Status, TransferStatus.Pending)
+                        .SetProperty(t => t.ReleasedAt, (DateTime?)null)
+                        .SetProperty(t => t.UpdatedAt, DateTime.UtcNow));
             }
             catch (Exception rollbackEx)
             {
@@ -152,22 +156,17 @@ public partial class TransferService
             return (false, pinResult.Message);
 
         // Update status first to prevent double refund
-        var filterBuilder = Builders<Transfer>.Filter;
-        var updateFilter = filterBuilder.And(
-            filterBuilder.Eq(t => t.Id, transferId),
-            filterBuilder.Eq(t => t.Status, TransferStatus.Pending),
-            filterBuilder.Or(
-                filterBuilder.Gt(t => t.HoldUntil, now),
-                filterBuilder.Eq(t => t.HoldUntil, null)));
+        var updated = await _db.Transfers
+            .Where(t => t.Id == transferId
+                && t.Status == TransferStatus.Pending
+                && (t.HoldUntil > now || t.HoldUntil == null))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(t => t.Status, TransferStatus.Cancelled)
+                .SetProperty(t => t.CancelledAt, now)
+                .SetProperty(t => t.CancelReason, reason)
+                .SetProperty(t => t.UpdatedAt, now));
 
-        var statusUpdate = Builders<Transfer>.Update
-            .Set(t => t.Status, TransferStatus.Cancelled)
-            .Set(t => t.CancelledAt, now)
-            .Set(t => t.CancelReason, reason)
-            .Set(t => t.UpdatedAt, now);
-
-        var updateResult = await _transfers.UpdateOneAsync(updateFilter, statusUpdate);
-        if (updateResult.ModifiedCount == 0)
+        if (updated == 0)
             return (false, await BuildCancelConflictMessageAsync(transferId, now));
 
         // Refund to sender
@@ -188,17 +187,13 @@ public partial class TransferService
 
             try
             {
-                var rollback = Builders<Transfer>.Update
-                    .Set(t => t.Status, TransferStatus.Pending)
-                    .Unset(t => t.CancelledAt)
-                    .Unset(t => t.CancelReason)
-                    .Set(t => t.UpdatedAt, DateTime.UtcNow);
-
-                await _transfers.UpdateOneAsync(
-                    Builders<Transfer>.Filter.And(
-                        Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
-                        Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Cancelled)),
-                    rollback);
+                await _db.Transfers
+                    .Where(t => t.Id == transferId && t.Status == TransferStatus.Cancelled)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(t => t.Status, TransferStatus.Pending)
+                        .SetProperty(t => t.CancelledAt, (DateTime?)null)
+                        .SetProperty(t => t.CancelReason, (string?)null)
+                        .SetProperty(t => t.UpdatedAt, DateTime.UtcNow));
             }
             catch (Exception rollbackEx)
             {
@@ -241,18 +236,16 @@ public partial class TransferService
         var now = DateTime.UtcNow;
 
         // Update status first to prevent double refund
-        var updateFilter = Builders<Transfer>.Filter.And(
-            Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
-            Builders<Transfer>.Filter.In(t => t.Status, new[] { TransferStatus.Pending, TransferStatus.Disputed }));
+        var updated = await _db.Transfers
+            .Where(t => t.Id == transferId
+                && (t.Status == TransferStatus.Pending || t.Status == TransferStatus.Disputed))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(t => t.Status, TransferStatus.Rejected)
+                .SetProperty(t => t.CancelledAt, now)
+                .SetProperty(t => t.CancelReason, reason)
+                .SetProperty(t => t.UpdatedAt, now));
 
-        var statusUpdate = Builders<Transfer>.Update
-            .Set(t => t.Status, TransferStatus.Rejected)
-            .Set(t => t.CancelledAt, now)
-            .Set(t => t.CancelReason, reason)
-            .Set(t => t.UpdatedAt, now);
-
-        var updateResult = await _transfers.UpdateOneAsync(updateFilter, statusUpdate);
-        if (updateResult.ModifiedCount == 0)
+        if (updated == 0)
             return (false, await BuildRejectConflictMessageAsync(transferId));
 
         // Refund to sender (full amount, no fee for rejection)
@@ -273,17 +266,13 @@ public partial class TransferService
 
             try
             {
-                var rollback = Builders<Transfer>.Update
-                    .Set(t => t.Status, TransferStatus.Pending)
-                    .Unset(t => t.CancelledAt)
-                    .Unset(t => t.CancelReason)
-                    .Set(t => t.UpdatedAt, DateTime.UtcNow);
-
-                await _transfers.UpdateOneAsync(
-                    Builders<Transfer>.Filter.And(
-                        Builders<Transfer>.Filter.Eq(t => t.Id, transferId),
-                        Builders<Transfer>.Filter.Eq(t => t.Status, TransferStatus.Rejected)),
-                    rollback);
+                await _db.Transfers
+                    .Where(t => t.Id == transferId && t.Status == TransferStatus.Rejected)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(t => t.Status, TransferStatus.Pending)
+                        .SetProperty(t => t.CancelledAt, (DateTime?)null)
+                        .SetProperty(t => t.CancelReason, (string?)null)
+                        .SetProperty(t => t.UpdatedAt, DateTime.UtcNow));
             }
             catch (Exception rollbackEx)
             {
@@ -356,12 +345,6 @@ public partial class TransferService
 
     private async Task<Transfer?> FindTransferByIdAsync(string transferId)
     {
-        using var cursor = await _transfers.FindAsync(
-            Builders<Transfer>.Filter.Eq(t => t.Id, transferId));
-
-        if (!await cursor.MoveNextAsync())
-            return null;
-
-        return cursor.Current.FirstOrDefault();
+        return await _db.Transfers.AsNoTracking().FirstOrDefaultAsync(t => t.Id == transferId);
     }
 }

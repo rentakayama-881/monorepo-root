@@ -1,137 +1,98 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-
 namespace FeatureService.Api.Models.Entities;
 
 /// <summary>
 /// Dispute for transfer conflicts - when sender or receiver disagrees
 /// </summary>
-[BsonIgnoreExtraElements]
 public class Dispute
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; } = null!;
 
-    [BsonElement("transferId")]
     public string TransferId { get; set; } = null!;
 
-    [BsonElement("initiatorId")]
     public uint InitiatorId { get; set; }
 
-    [BsonElement("initiatorUsername")]
     public string InitiatorUsername { get; set; } = null!;
 
-    [BsonElement("respondentId")]
     public uint RespondentId { get; set; }
 
-    [BsonElement("respondentUsername")]
     public string RespondentUsername { get; set; } = null!;
 
     // Transfer party info - always track original sender/receiver
-    [BsonElement("senderId")]
     public uint SenderId { get; set; }
 
-    [BsonElement("senderUsername")]
     public string SenderUsername { get; set; } = null!;
 
-    [BsonElement("receiverId")]
     public uint ReceiverId { get; set; }
 
-    [BsonElement("receiverUsername")]
     public string ReceiverUsername { get; set; } = null!;
 
-    [BsonElement("reason")]
     public string Reason { get; set; } = null!;
 
-    [BsonElement("category")]
     public DisputeCategory Category { get; set; }
 
-    [BsonElement("status")]
     public DisputeStatus Status { get; set; }
 
-    [BsonElement("amount")]
     public long Amount { get; set; }
 
-    [BsonElement("evidence")]
-    public List<DisputeEvidence> Evidence { get; set; } = new();
+    public ICollection<DisputeEvidence> Evidence { get; set; } = new List<DisputeEvidence>();
 
-    [BsonElement("messages")]
-    public List<DisputeMessage> Messages { get; set; } = new();
+    public ICollection<DisputeMessage> Messages { get; set; } = new List<DisputeMessage>();
 
-    [BsonElement("resolution")]
     public DisputeResolution? Resolution { get; set; }
 
-    [BsonElement("resolvedById")]
     public uint? ResolvedById { get; set; }
 
-    [BsonElement("resolvedByUsername")]
     public string? ResolvedByUsername { get; set; }
 
-    [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; }
 
-    [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; }
 
-    [BsonElement("resolvedAt")]
     public DateTime? ResolvedAt { get; set; }
 }
 
-[BsonIgnoreExtraElements]
 public class DisputeEvidence
 {
-    [BsonElement("type")]
+    public string Id { get; set; } = string.Empty;
+
+    public string DisputeId { get; set; } = string.Empty;
+
     public string Type { get; set; } = null!; // "image", "document", "screenshot"
 
-    [BsonElement("url")]
     public string Url { get; set; } = null!;
 
-    [BsonElement("description")]
     public string? Description { get; set; }
 
-    [BsonElement("uploadedAt")]
     public DateTime UploadedAt { get; set; }
 
-    [BsonElement("uploadedById")]
     public uint UploadedById { get; set; }
 }
 
-[BsonIgnoreExtraElements]
 public class DisputeMessage
 {
-    [BsonElement("id")]
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
-    [BsonElement("senderId")]
+    public string DisputeId { get; set; } = string.Empty;
+
     public uint SenderId { get; set; }
 
-    [BsonElement("senderUsername")]
     public string SenderUsername { get; set; } = null!;
 
-    [BsonElement("isAdmin")]
     public bool IsAdmin { get; set; }
 
-    [BsonElement("content")]
     public string Content { get; set; } = null!;
 
-    [BsonElement("sentAt")]
     public DateTime SentAt { get; set; }
 }
 
-[BsonIgnoreExtraElements]
 public class DisputeResolution
 {
-    [BsonElement("type")]
     public ResolutionType Type { get; set; }
 
-    [BsonElement("refundToSender")]
     public long RefundToSender { get; set; }
 
-    [BsonElement("releaseToReceiver")]
     public long ReleaseToReceiver { get; set; }
 
-    [BsonElement("note")]
     public string? Note { get; set; }
 }
 

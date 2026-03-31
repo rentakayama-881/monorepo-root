@@ -4,13 +4,13 @@ using System.Text;
 using FeatureService.Api.Attributes;
 using FeatureService.Api.Domain.Entities;
 using FeatureService.Api.Infrastructure.Audit;
-using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Infrastructure.PQC;
 using FeatureService.Api.Infrastructure.Security;
 using FeatureService.Api.Models.Entities;
 using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using MongoDB.Driver;
 
 namespace FeatureService.Api.Middleware;
 
@@ -43,7 +43,7 @@ public partial class PqcSignatureMiddleware
     public async Task InvokeAsync(
         HttpContext context,
         IPostQuantumCryptoService pqcService,
-        MongoDbContext dbContext,
+        AppDbContext dbContext,
         IAuditTrailService auditService)
     {
         // Check if endpoint requires PQC signature
@@ -147,7 +147,7 @@ public partial class PqcSignatureMiddleware
         return uint.TryParse(userIdClaim, out var userId) ? userId : 0u;
     }
 
-    private async Task<bool> HasActivePqcKeyAsync(MongoDbContext dbContext, uint userId)
+    private async Task<bool> HasActivePqcKeyAsync(AppDbContext dbContext, uint userId)
     {
         var cacheKey = PqcCacheKeys.UserHasActivePqcKey(userId);
 
@@ -158,12 +158,9 @@ public partial class PqcSignatureMiddleware
 
         try
         {
-            var keyId = await dbContext.UserPqcKeys
-                .Find(k => k.UserId == userId && k.IsActive)
-                .Project(k => k.KeyId)
-                .FirstOrDefaultAsync();
+            var hasKey = await dbContext.UserPqcKeys
+                .AnyAsync(k => k.UserId == userId && k.IsActive);
 
-            var hasKey = !string.IsNullOrWhiteSpace(keyId);
             if (hasKey)
             {
                 _pqcKeyCache.Set(cacheKey, true, PqcKeyCacheTTL);

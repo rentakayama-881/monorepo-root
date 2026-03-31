@@ -1,6 +1,5 @@
-using MongoDB.Bson;
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Infrastructure.OxaPay;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
@@ -19,7 +18,7 @@ public interface IWithdrawalService
 
 public partial class WithdrawalService : IWithdrawalService
 {
-    private readonly IMongoCollection<Withdrawal> _withdrawals;
+    private readonly AppDbContext _db;
     private readonly IWalletService _walletService;
     private readonly IOxaPayService _oxaPayService;
     private readonly ICryptoPricingService _cryptoPricingService;
@@ -40,14 +39,14 @@ public partial class WithdrawalService : IWithdrawalService
     };
 
     public WithdrawalService(
-        MongoDbContext dbContext,
+        AppDbContext db,
         IWalletService walletService,
         IOxaPayService oxaPayService,
         ICryptoPricingService cryptoPricingService,
         OxaPaySettings oxaPaySettings,
         ILogger<WithdrawalService> logger)
     {
-        _withdrawals = dbContext.GetCollection<Withdrawal>("withdrawals");
+        _db = db;
         _walletService = walletService;
         _oxaPayService = oxaPayService;
         _cryptoPricingService = cryptoPricingService;
@@ -92,7 +91,7 @@ public partial class WithdrawalService : IWithdrawalService
                 $"Saldo tidak cukup. Diperlukan Rp{totalDeduction:N0} (termasuk fee Rp{fee:N0})");
 
         // Check for pending withdrawal
-        var pendingCount = await _withdrawals.CountDocumentsAsync(
+        var pendingCount = await _db.Withdrawals.CountAsync(
             w => w.UserId == userId && w.Status == WithdrawalStatus.Processing);
         if (pendingCount > 0)
             return new CreateWithdrawalResponse(false, null, null,
@@ -100,12 +99,11 @@ public partial class WithdrawalService : IWithdrawalService
 
         // Check daily withdrawal limit
         var todayStart = DateTime.UtcNow.Date;
-        var todayFilter = Builders<Withdrawal>.Filter.And(
-            Builders<Withdrawal>.Filter.Eq(w => w.UserId, userId),
-            Builders<Withdrawal>.Filter.In(w => w.Status, new[] { WithdrawalStatus.Processing, WithdrawalStatus.Completed }),
-            Builders<Withdrawal>.Filter.Gte(w => w.CreatedAt, todayStart));
-        var todayWithdrawals = await _withdrawals.Find(todayFilter).ToListAsync();
-        var todayTotal = todayWithdrawals.Sum(w => w.Amount);
+        var todayTotal = await _db.Withdrawals
+            .Where(w => w.UserId == userId
+                && (w.Status == WithdrawalStatus.Processing || w.Status == WithdrawalStatus.Completed)
+                && w.CreatedAt >= todayStart)
+            .SumAsync(w => w.Amount);
         if (todayTotal + request.Amount > DailyWithdrawalLimit)
         {
             var remaining = DailyWithdrawalLimit - todayTotal;
@@ -114,7 +112,7 @@ public partial class WithdrawalService : IWithdrawalService
                 $"Sisa kuota hari ini: Rp{(remaining > 0 ? remaining : 0):N0}");
         }
 
-        var withdrawalId = ObjectId.GenerateNewId().ToString();
+        var withdrawalId = Ulid.NewUlid().ToString();
         var reference = GenerateReference();
 
         // Deduct from wallet first
@@ -223,7 +221,8 @@ public partial class WithdrawalService : IWithdrawalService
 
         try
         {
-            await _withdrawals.InsertOneAsync(withdrawal);
+            _db.Withdrawals.Add(withdrawal);
+            await _db.SaveChangesAsync();
         }
         catch (Exception ex)
         {

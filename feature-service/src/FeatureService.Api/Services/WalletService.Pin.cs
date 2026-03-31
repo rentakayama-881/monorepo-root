@@ -1,11 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-using Microsoft.Extensions.Hosting;
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
 using FeatureService.Api.Models.Entities;
-using FeatureService.Api.DTOs;
 
 namespace FeatureService.Api.Services;
 

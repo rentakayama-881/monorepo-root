@@ -2,8 +2,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using MongoDB.Driver;
-using MongoDB.Bson;
+using Microsoft.EntityFrameworkCore;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 
@@ -21,33 +20,32 @@ public partial class AdminModerationService
             ActionType = actionType,
             TargetType = targetType,
             TargetId = targetId,
-            ActionDetails = actionDetails != null ? BsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(actionDetails)) : null,
+            ActionDetails = actionDetails != null ? System.Text.Json.JsonSerializer.Serialize(actionDetails) : null,
             IpAddress = ipAddress,
             UserAgent = userAgent,
             CreatedAt = DateTime.UtcNow
         };
 
-        await _context.AdminActionLogs.InsertOneAsync(log);
+        _db.AdminActionLogs.Add(log);
+        await _db.SaveChangesAsync();
         return log.Id;
     }
 
     public async Task<PaginatedAdminActionLogResponse> GetAdminActionLogsAsync(int page, int pageSize, string? actionType)
     {
-        var filterBuilder = Builders<AdminActionLog>.Filter;
-        var filter = filterBuilder.Empty;
+        var query = _db.AdminActionLogs.AsQueryable();
 
         if (!string.IsNullOrEmpty(actionType))
         {
-            filter = filterBuilder.Eq(l => l.ActionType, actionType);
+            query = query.Where(l => l.ActionType == actionType);
         }
 
-        var totalCount = await _context.AdminActionLogs.CountDocumentsAsync(filter);
+        var totalCount = await query.CountAsync();
 
-        var logs = await _context.AdminActionLogs
-            .Find(filter)
-            .SortByDescending(l => l.CreatedAt)
+        var logs = await query
+            .OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize)
-            .Limit(pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var dtos = logs.Select(l => new AdminActionLogDto(
@@ -57,11 +55,24 @@ public partial class AdminModerationService
             l.ActionType,
             l.TargetType,
             l.TargetId,
-            l.ActionDetails?.ToDictionary(),
+            DeserializeActionDetails(l.ActionDetails),
             l.CreatedAt
         )).ToList();
 
-        return new PaginatedAdminActionLogResponse(dtos, (int)totalCount, page, pageSize);
+        return new PaginatedAdminActionLogResponse(dtos, totalCount, page, pageSize);
+    }
+
+    private static Dictionary<string, object?>? DeserializeActionDetails(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object?>>(json);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<MoveValidationCaseResponse> MoveValidationCaseAsync(uint adminId, MoveValidationCaseRequest request, string? authorizationHeader, string? requestId)
@@ -107,7 +118,7 @@ public partial class AdminModerationService
 
         var previousOwnerUserId = goResult.Data.OldOwner?.Id ?? 0;
 
-        // Record move in MongoDB for audit (best-effort; do not block the upstream success).
+        // Record move in PostgreSQL for audit (best-effort; do not block the upstream success).
         try
         {
             var transfer = new ValidationCaseOwnershipTransfer
@@ -124,7 +135,8 @@ public partial class AdminModerationService
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _context.ValidationCaseOwnershipTransfers.InsertOneAsync(transfer);
+            _db.ValidationCaseOwnershipTransfers.Add(transfer);
+            await _db.SaveChangesAsync();
         }
         catch (Exception ex)
         {

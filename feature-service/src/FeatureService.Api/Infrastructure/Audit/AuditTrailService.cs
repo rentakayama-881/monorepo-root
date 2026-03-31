@@ -1,45 +1,26 @@
 using FeatureService.Api.Domain.Entities;
-using FeatureService.Api.Infrastructure.MongoDB;
-using MongoDB.Driver;
+using FeatureService.Api.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace FeatureService.Api.Infrastructure.Audit;
 
 /// <summary>
 /// Implementasi Audit Trail Service dengan chain-linked hashing.
-/// Menyimpan audit entries di MongoDB dengan integritas terjamin.
+/// Menyimpan audit entries di PostgreSQL dengan integritas terjamin.
 /// </summary>
 public class AuditTrailService : IAuditTrailService
 {
-    private readonly IMongoCollection<ImmutableAuditTrail> _auditCollection;
+    private readonly AppDbContext _db;
     private readonly ILogger<AuditTrailService> _logger;
     private static readonly SemaphoreSlim _sequenceLock = new(1, 1);
     private const string GenesisHash = "GENESIS_BLOCK_AIVALID_2026";
 
     public AuditTrailService(
-        MongoDbContext dbContext,
+        AppDbContext db,
         ILogger<AuditTrailService> logger)
     {
-        _auditCollection = dbContext.GetCollection<ImmutableAuditTrail>("audit_trails");
+        _db = db;
         _logger = logger;
-        
-        EnsureIndexes();
-    }
-
-    private void EnsureIndexes()
-    {
-        _auditCollection.Indexes.CreateMany(new[]
-        {
-            new CreateIndexModel<ImmutableAuditTrail>(
-                Builders<ImmutableAuditTrail>.IndexKeys.Ascending(a => a.TransactionId)),
-            new CreateIndexModel<ImmutableAuditTrail>(
-                Builders<ImmutableAuditTrail>.IndexKeys.Ascending(a => a.ActorUserId)),
-            new CreateIndexModel<ImmutableAuditTrail>(
-                Builders<ImmutableAuditTrail>.IndexKeys.Descending(a => a.SequenceNumber)),
-            new CreateIndexModel<ImmutableAuditTrail>(
-                Builders<ImmutableAuditTrail>.IndexKeys.Ascending(a => a.CreatedAt)),
-            new CreateIndexModel<ImmutableAuditTrail>(
-                Builders<ImmutableAuditTrail>.IndexKeys.Ascending(a => a.EventType))
-        });
     }
 
     /// <inheritdoc/>
@@ -104,7 +85,8 @@ public class AuditTrailService : IAuditTrailService
                 EntryHash = entryHash
             };
             
-            await _auditCollection.InsertOneAsync(entry, cancellationToken: cancellationToken);
+            _db.AuditTrails.Add(entry);
+            await _db.SaveChangesAsync(cancellationToken);
             
             _logger.LogInformation(
                 "Recorded audit event. Id: {AuditId}, Type: {EventType}, Transaction: {TransactionId}, Seq: {Seq}",
@@ -125,12 +107,9 @@ public class AuditTrailService : IAuditTrailService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(transactionId);
         
-        var filter = Builders<ImmutableAuditTrail>.Filter.Eq(a => a.TransactionId, transactionId);
-        var sort = Builders<ImmutableAuditTrail>.Sort.Ascending(a => a.SequenceNumber);
-        
-        return await _auditCollection
-            .Find(filter)
-            .Sort(sort)
+        return await _db.AuditTrails
+            .Where(a => a.TransactionId == transactionId)
+            .OrderBy(a => a.SequenceNumber)
             .ToListAsync(cancellationToken);
     }
 
@@ -140,13 +119,10 @@ public class AuditTrailService : IAuditTrailService
         int limit = 100,
         CancellationToken cancellationToken = default)
     {
-        var filter = Builders<ImmutableAuditTrail>.Filter.Eq(a => a.ActorUserId, userId);
-        var sort = Builders<ImmutableAuditTrail>.Sort.Descending(a => a.SequenceNumber);
-        
-        return await _auditCollection
-            .Find(filter)
-            .Sort(sort)
-            .Limit(limit)
+        return await _db.AuditTrails
+            .Where(a => a.ActorUserId == userId)
+            .OrderByDescending(a => a.SequenceNumber)
+            .Take(limit)
             .ToListAsync(cancellationToken);
     }
 
@@ -204,10 +180,8 @@ public class AuditTrailService : IAuditTrailService
     /// <inheritdoc/>
     public async Task<string> GetLastEntryHashAsync(CancellationToken cancellationToken = default)
     {
-        var lastEntry = await _auditCollection
-            .Find(_ => true)
-            .SortByDescending(a => a.SequenceNumber)
-            .Limit(1)
+        var lastEntry = await _db.AuditTrails
+            .OrderByDescending(a => a.SequenceNumber)
             .FirstOrDefaultAsync(cancellationToken);
 
         return lastEntry?.EntryHash ?? GenesisHash;
@@ -219,10 +193,8 @@ public class AuditTrailService : IAuditTrailService
     private async Task<(string previousHash, long nextSequence)> GetChainStateAsync(
         CancellationToken cancellationToken)
     {
-        var lastEntry = await _auditCollection
-            .Find(_ => true)
-            .SortByDescending(a => a.SequenceNumber)
-            .Limit(1)
+        var lastEntry = await _db.AuditTrails
+            .OrderByDescending(a => a.SequenceNumber)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (lastEntry == null)

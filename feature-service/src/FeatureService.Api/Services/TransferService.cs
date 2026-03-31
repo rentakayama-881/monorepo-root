@@ -1,6 +1,6 @@
-using MongoDB.Driver;
 using System.Text.RegularExpressions;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 
@@ -28,7 +28,7 @@ public class TransferFilter
 
 public partial class TransferService : ITransferService
 {
-    private readonly IMongoCollection<Transfer> _transfers;
+    private readonly AppDbContext _db;
     private readonly IWalletService _walletService;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
@@ -40,34 +40,18 @@ public partial class TransferService : ITransferService
     private const int HoursPerDay = 24;
     private const int DefaultHoldHours = 7 * HoursPerDay;
     private const int MaxHoldHours = 30 * HoursPerDay;
-    private const string PendingCaseLockIndexName = "caseLockKey_pending_unique";
     private static readonly Regex ValidationCaseLockMessageRegex = new(
         @"Validation\s*Case\s*#(?<caseId>\d+)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     public TransferService(
-        MongoDbContext dbContext,
-        IWalletService walletService,
-        HttpClient httpClient,
-        IConfiguration configuration,
-        ILogger<TransferService> logger)
-        : this(
-            dbContext.GetCollection<Transfer>("transfers"),
-            walletService,
-            httpClient,
-            configuration,
-            logger)
-    {
-    }
-
-    internal TransferService(
-        IMongoCollection<Transfer> transfers,
+        AppDbContext db,
         IWalletService walletService,
         HttpClient httpClient,
         IConfiguration configuration,
         ILogger<TransferService> logger)
     {
-        _transfers = transfers;
+        _db = db;
         _walletService = walletService;
         _httpClient = httpClient;
         _configuration = configuration;
@@ -192,12 +176,15 @@ public partial class TransferService : ITransferService
                 transfer.Code = await GenerateUniqueCodeAsync();
                 try
                 {
-                    await _transfers.InsertOneAsync(transfer);
+                    _db.Transfers.Add(transfer);
+                    await _db.SaveChangesAsync();
                     inserted = true;
                     break;
                 }
-                catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey && IsPendingCaseLockDuplicate(ex))
+                catch (DbUpdateException ex) when (IsCaseLockUniqueViolation(ex))
                 {
+                    _db.Entry(transfer).State = EntityState.Detached;
+
                     if (!string.IsNullOrWhiteSpace(caseLockKey))
                     {
                         var existingPendingLock = await FindPendingCaseLockByKeyAsync(caseLockKey);
@@ -226,8 +213,10 @@ public partial class TransferService : ITransferService
 
                     throw;
                 }
-                catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+                catch (DbUpdateException)
                 {
+                    _db.Entry(transfer).State = EntityState.Detached;
+
                     if (attempt == 2)
                     {
                         throw;
@@ -315,31 +304,33 @@ public partial class TransferService : ITransferService
             return pendingByLockKey;
         }
 
-        // Backward-compatibility for legacy documents before caseLockKey existed.
-        return await _transfers.Find(t =>
+        // Backward-compatibility for legacy rows before caseLockKey existed.
+        return await _db.Transfers
+            .Where(t =>
                 t.SenderId == senderId &&
                 t.ReceiverId == receiverId &&
                 t.Amount == amount &&
                 t.Status == TransferStatus.Pending &&
                 t.Message == transferMessage)
-            .SortByDescending(t => t.CreatedAt)
+            .OrderByDescending(t => t.CreatedAt)
             .FirstOrDefaultAsync();
     }
 
     private async Task<Transfer?> FindPendingCaseLockByKeyAsync(string caseLockKey)
     {
-        return await _transfers.Find(t =>
+        return await _db.Transfers
+            .Where(t =>
                 t.CaseLockKey == caseLockKey &&
                 t.Status == TransferStatus.Pending)
-            .SortByDescending(t => t.CreatedAt)
+            .OrderByDescending(t => t.CreatedAt)
             .FirstOrDefaultAsync();
     }
 
-    private static bool IsPendingCaseLockDuplicate(MongoWriteException ex)
+    private static bool IsCaseLockUniqueViolation(DbUpdateException ex)
     {
-        var msg = ex.WriteError?.Message ?? string.Empty;
-        return msg.Contains(PendingCaseLockIndexName, StringComparison.OrdinalIgnoreCase)
-            || msg.Contains("caseLockKey", StringComparison.OrdinalIgnoreCase);
+        var msg = ex.InnerException?.Message ?? ex.Message;
+        return msg.Contains("caseLockKey", StringComparison.OrdinalIgnoreCase)
+            || msg.Contains("case_lock_key", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<bool> TryRefundFailedTransferDeductionAsync(

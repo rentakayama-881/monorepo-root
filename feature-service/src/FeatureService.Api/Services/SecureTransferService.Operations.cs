@@ -1,6 +1,6 @@
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Infrastructure.Audit;
@@ -293,8 +293,7 @@ public partial class SecureTransferService
 
     private async Task<Transfer?> FindTransferByIdAsync(string transferId)
     {
-        var cursor = await _transfers.FindAsync(t => t.Id == transferId);
-        return await cursor.FirstOrDefaultAsync();
+        return await _db.Transfers.AsNoTracking().FirstOrDefaultAsync(t => t.Id == transferId);
     }
 
     private string BuildUserScopedIdempotencyKey(string operation, uint userId, string? providedKey)

@@ -58,7 +58,7 @@ public class UserCleanupController : ApiControllerBase
     }
 
     /// <summary>
-    /// Hard delete all user data from MongoDB.
+    /// Hard delete all user data from the database.
     /// Called by Go backend during account deletion process.
     /// Will re-validate before deleting and refuse if conditions not met.
     /// </summary>

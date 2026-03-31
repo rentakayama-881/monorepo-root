@@ -2,14 +2,14 @@ using System.Security.Cryptography;
 using FeatureService.Api.Domain.Entities;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Infrastructure.Audit;
-using FeatureService.Api.Infrastructure.MongoDB;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Infrastructure.PQC;
 using FeatureService.Api.Infrastructure.Security;
 using FeatureService.Api.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using MongoDB.Driver;
 using Org.BouncyCastle.Pqc.Crypto.Crystals.Dilithium;
 
 namespace FeatureService.Api.Controllers.Security;
@@ -22,14 +22,14 @@ namespace FeatureService.Api.Controllers.Security;
 [Authorize]
 public class PqcKeysController : ApiControllerBase
 {
-    private readonly MongoDbContext _dbContext;
+    private readonly AppDbContext _dbContext;
     private readonly IPostQuantumCryptoService _pqcService;
     private readonly IAuditTrailService _auditService;
     private readonly IMemoryCache _memoryCache;
     private readonly ILogger<PqcKeysController> _logger;
 
     public PqcKeysController(
-        MongoDbContext dbContext,
+        AppDbContext dbContext,
         IPostQuantumCryptoService pqcService,
         IAuditTrailService auditService,
         IMemoryCache memoryCache,
@@ -95,8 +95,7 @@ public class PqcKeysController : ApiControllerBase
 
         // Check if user already has an active key
         var existingKey = await _dbContext.UserPqcKeys
-            .Find(k => k.UserId == userId && k.IsActive)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(k => k.UserId == userId && k.IsActive);
 
         if (existingKey != null)
         {
@@ -123,7 +122,8 @@ public class PqcKeysController : ApiControllerBase
             UsageCount = 0
         };
 
-        await _dbContext.UserPqcKeys.InsertOneAsync(pqcKey);
+        _dbContext.UserPqcKeys.Add(pqcKey);
+        await _dbContext.SaveChangesAsync();
         _memoryCache.Remove(PqcCacheKeys.UserHasActivePqcKey(userId));
 
         // Record audit event
@@ -168,8 +168,7 @@ public class PqcKeysController : ApiControllerBase
         }
 
         var key = await _dbContext.UserPqcKeys
-            .Find(k => k.UserId == userId && k.IsActive)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(k => k.UserId == userId && k.IsActive);
 
         if (key == null)
         {
@@ -200,8 +199,7 @@ public class PqcKeysController : ApiControllerBase
         if (twoFaCheck != null) return twoFaCheck;
 
         var key = await _dbContext.UserPqcKeys
-            .Find(k => k.UserId == userId && k.IsActive)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(k => k.UserId == userId && k.IsActive);
 
         if (key == null)
         {
@@ -209,12 +207,12 @@ public class PqcKeysController : ApiControllerBase
         }
 
         // Update key status
-        var update = Builders<UserPqcKey>.Update
-            .Set(k => k.IsActive, false)
-            .Set(k => k.RevokedAt, DateTime.UtcNow)
-            .Set(k => k.RevokeReason, request.Reason);
-
-        await _dbContext.UserPqcKeys.UpdateOneAsync(k => k.Id == key.Id, update);
+        await _dbContext.UserPqcKeys
+            .Where(k => k.Id == key.Id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(k => k.IsActive, false)
+                .SetProperty(k => k.RevokedAt, DateTime.UtcNow)
+                .SetProperty(k => k.RevokeReason, request.Reason));
         _memoryCache.Remove(PqcCacheKeys.UserHasActivePqcKey(userId));
 
         // Record audit event

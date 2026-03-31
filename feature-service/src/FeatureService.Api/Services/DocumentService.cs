@@ -1,5 +1,5 @@
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 using FeatureService.Api.Controllers;
@@ -23,12 +23,12 @@ public interface IDocumentService
 
 public class DocumentService : IDocumentService
 {
-    private readonly MongoDbContext _context;
+    private readonly AppDbContext _db;
     private readonly ILogger<DocumentService> _logger;
 
-    public DocumentService(MongoDbContext context, ILogger<DocumentService> logger)
+    public DocumentService(AppDbContext db, ILogger<DocumentService> logger)
     {
-        _context = context;
+        _db = db;
         _logger = logger;
     }
 
@@ -66,8 +66,6 @@ public class DocumentService : IDocumentService
         var documentId = $"doc_{Ulid.NewUlid()}";
         var storagePath = $"documents/{userId}/{documentId}{extension}";
 
-        // Current implementation stores file bytes in MongoDB.
-        // Storage backends can be swapped later without changing public service contract.
         var publicUrl = request.Visibility == DocumentVisibility.Public 
             ? $"/api/v1/documents/{documentId}/download"
             : null;
@@ -82,7 +80,7 @@ public class DocumentService : IDocumentService
             FileType = request.FileType.ToLowerInvariant(),
             MimeType = mimeType,
             FileSize = request.FileData.Length,
-            FileData = request.FileData, // Store in document for simplicity
+            FileData = request.FileData,
             StoragePath = storagePath,
             PublicUrl = publicUrl,
             Visibility = request.Visibility,
@@ -95,7 +93,8 @@ public class DocumentService : IDocumentService
             UpdatedAt = DateTime.UtcNow
         };
 
-        await _context.Documents.InsertOneAsync(document);
+        _db.Documents.Add(document);
+        await _db.SaveChangesAsync();
         _logger.LogInformation("Document uploaded: {DocumentId} by user {UserId}. Size: {Size} bytes", 
             document.Id, userId, request.FileData.Length);
 
@@ -104,9 +103,8 @@ public class DocumentService : IDocumentService
 
     public async Task<DocumentDetailDto?> GetDocumentByIdAsync(string documentId)
     {
-        var doc = await _context.Documents
-            .Find(d => d.Id == documentId && !d.IsDeleted)
-            .FirstOrDefaultAsync();
+        var doc = await _db.Documents
+            .FirstOrDefaultAsync(d => d.Id == documentId && !d.IsDeleted);
 
         if (doc == null) return null;
 
@@ -129,9 +127,9 @@ public class DocumentService : IDocumentService
 
     public async Task<DocumentAccessDto?> GetDocumentAccessAsync(string documentId)
     {
-        var doc = await _context.Documents
-            .Find(d => d.Id == documentId && !d.IsDeleted)
-            .Project(d => new DocumentAccessDto(
+        var doc = await _db.Documents
+            .Where(d => d.Id == documentId && !d.IsDeleted)
+            .Select(d => new DocumentAccessDto(
                 d.Id,
                 d.UserId,
                 d.Visibility,
@@ -143,7 +141,7 @@ public class DocumentService : IDocumentService
 
         if (doc == null) return null;
 
-        // Older documents may not have sharedWithUserIds in MongoDB yet.
+        // Older documents may not have sharedWithUserIds yet.
         if (doc.SharedWithUserIds == null)
         {
             return doc with { SharedWithUserIds = new List<uint>() };
@@ -154,24 +152,20 @@ public class DocumentService : IDocumentService
 
     public async Task<PaginatedDocumentsResponse> GetUserDocumentsAsync(uint userId, int page, int pageSize, string? category = null)
     {
-        var filterBuilder = Builders<Document>.Filter;
-        var filter = filterBuilder.And(
-            filterBuilder.Eq(d => d.UserId, userId),
-            filterBuilder.Eq(d => d.IsDeleted, false)
-        );
+        var query = _db.Documents
+            .Where(d => d.UserId == userId && !d.IsDeleted);
 
         if (!string.IsNullOrEmpty(category))
         {
-            filter = filterBuilder.And(filter, filterBuilder.Eq(d => d.Category, category));
+            query = query.Where(d => d.Category == category);
         }
 
-        var totalCount = await _context.Documents.CountDocumentsAsync(filter);
+        var totalCount = await query.CountAsync();
 
-        var documents = await _context.Documents
-            .Find(filter)
-            .SortByDescending(d => d.CreatedAt)
+        var documents = await query
+            .OrderByDescending(d => d.CreatedAt)
             .Skip((page - 1) * pageSize)
-            .Limit(pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var summaries = documents.Select(d => new DocumentSummaryDto(
@@ -189,30 +183,25 @@ public class DocumentService : IDocumentService
             d.UpdatedAt
         )).ToList();
 
-        return new PaginatedDocumentsResponse(summaries, (int)totalCount, page, pageSize);
+        return new PaginatedDocumentsResponse(summaries, totalCount, page, pageSize);
     }
 
     public async Task<PaginatedDocumentsResponse> GetPublicDocumentsAsync(uint userId, int page, int pageSize, string? category = null)
     {
-        var filterBuilder = Builders<Document>.Filter;
-        var filter = filterBuilder.And(
-            filterBuilder.Eq(d => d.UserId, userId),
-            filterBuilder.Eq(d => d.Visibility, DocumentVisibility.Public),
-            filterBuilder.Eq(d => d.IsDeleted, false)
-        );
+        var query = _db.Documents
+            .Where(d => d.UserId == userId && d.Visibility == DocumentVisibility.Public && !d.IsDeleted);
 
         if (!string.IsNullOrEmpty(category))
         {
-            filter = filterBuilder.And(filter, filterBuilder.Eq(d => d.Category, category));
+            query = query.Where(d => d.Category == category);
         }
 
-        var totalCount = await _context.Documents.CountDocumentsAsync(filter);
+        var totalCount = await query.CountAsync();
 
-        var documents = await _context.Documents
-            .Find(filter)
-            .SortByDescending(d => d.CreatedAt)
+        var documents = await query
+            .OrderByDescending(d => d.CreatedAt)
             .Skip((page - 1) * pageSize)
-            .Limit(pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var summaries = documents.Select(d => new DocumentSummaryDto(
@@ -230,54 +219,60 @@ public class DocumentService : IDocumentService
             d.UpdatedAt
         )).ToList();
 
-        return new PaginatedDocumentsResponse(summaries, (int)totalCount, page, pageSize);
+        return new PaginatedDocumentsResponse(summaries, totalCount, page, pageSize);
     }
 
     public async Task UpdateDocumentAsync(string documentId, UpdateDocumentRequest request)
     {
-        var updateBuilder = Builders<Document>.Update.Set(d => d.UpdatedAt, DateTime.UtcNow);
+        var doc = await _db.Documents.FirstOrDefaultAsync(d => d.Id == documentId);
+        if (doc == null) return;
 
         if (request.Title != null)
-            updateBuilder = updateBuilder.Set(d => d.Title, request.Title);
+            doc.Title = request.Title;
         if (request.Description != null)
-            updateBuilder = updateBuilder.Set(d => d.Description, request.Description);
+            doc.Description = request.Description;
         if (request.Visibility != null)
-            updateBuilder = updateBuilder.Set(d => d.Visibility, request.Visibility);
+            doc.Visibility = request.Visibility;
         if (request.Category != null)
-            updateBuilder = updateBuilder.Set(d => d.Category, request.Category);
+            doc.Category = request.Category;
         if (request.Tags != null)
-            updateBuilder = updateBuilder.Set(d => d.Tags, request.Tags);
+            doc.Tags = request.Tags;
 
-        await _context.Documents.UpdateOneAsync(d => d.Id == documentId, updateBuilder);
+        doc.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
     }
 
     public async Task UpdateDocumentSharingAsync(string documentId, List<uint> sharedWithUserIds)
     {
         var normalized = NormalizeSharedWith(sharedWithUserIds);
-        var update = Builders<Document>.Update
-            .Set(d => d.SharedWithUserIds, normalized)
-            .Set(d => d.UpdatedAt, DateTime.UtcNow);
-
-        await _context.Documents.UpdateOneAsync(d => d.Id == documentId && !d.IsDeleted, update);
+        var doc = await _db.Documents.FirstOrDefaultAsync(d => d.Id == documentId && !d.IsDeleted);
+        if (doc != null)
+        {
+            doc.SharedWithUserIds = normalized;
+            doc.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
     }
 
     public async Task DeleteDocumentAsync(string documentId)
     {
-        var update = Builders<Document>.Update
-            .Set(d => d.IsDeleted, true)
-            .Set(d => d.UpdatedAt, DateTime.UtcNow);
+        await _db.Documents
+            .Where(d => d.Id == documentId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(d => d.IsDeleted, true)
+                .SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
 
-        await _context.Documents.UpdateOneAsync(d => d.Id == documentId, update);
         _logger.LogInformation("Document deleted: {DocumentId}", documentId);
     }
 
     public async Task<StorageQuotaDto> GetUserQuotaAsync(uint userId)
     {
-        var documents = await _context.Documents
-            .Find(d => d.UserId == userId && !d.IsDeleted)
+        var documents = await _db.Documents
+            .Where(d => d.UserId == userId && !d.IsDeleted)
+            .Select(d => d.FileSize)
             .ToListAsync();
 
-        var usedBytes = documents.Sum(d => d.FileSize);
+        var usedBytes = documents.Sum(s => (long)s);
         var maxBytes = DocumentFileType.MaxUserStorageBytes;
         var usedPercentage = (decimal)usedBytes / maxBytes * 100m;
 
@@ -286,15 +281,18 @@ public class DocumentService : IDocumentService
 
     public async Task IncrementDownloadCountAsync(string documentId)
     {
-        var update = Builders<Document>.Update.Inc(d => d.DownloadCount, 1);
-        await _context.Documents.UpdateOneAsync(d => d.Id == documentId, update);
+        var doc = await _db.Documents.FirstOrDefaultAsync(d => d.Id == documentId);
+        if (doc != null)
+        {
+            doc.DownloadCount++;
+            await _db.SaveChangesAsync();
+        }
     }
 
     public async Task<byte[]?> GetDocumentFileAsync(string documentId)
     {
-        var doc = await _context.Documents
-            .Find(d => d.Id == documentId && !d.IsDeleted)
-            .FirstOrDefaultAsync();
+        var doc = await _db.Documents
+            .FirstOrDefaultAsync(d => d.Id == documentId && !d.IsDeleted);
 
         return doc?.FileData;
     }

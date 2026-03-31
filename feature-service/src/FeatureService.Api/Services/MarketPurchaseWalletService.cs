@@ -1,6 +1,6 @@
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
-using MongoDB.Driver;
 
 namespace FeatureService.Api.Services;
 
@@ -20,21 +20,13 @@ public interface IMarketPurchaseWalletService
 
 public partial class MarketPurchaseWalletService : IMarketPurchaseWalletService
 {
-    private readonly IMongoCollection<MarketPurchaseReservation> _reservations;
+    private readonly AppDbContext _db;
     private readonly IWalletService _walletService;
     private readonly ILogger<MarketPurchaseWalletService> _logger;
 
-    public MarketPurchaseWalletService(MongoDbContext dbContext, IWalletService walletService, ILogger<MarketPurchaseWalletService> logger)
-        : this(dbContext.GetCollection<MarketPurchaseReservation>("market_purchase_reservations"), walletService, logger)
+    public MarketPurchaseWalletService(AppDbContext db, IWalletService walletService, ILogger<MarketPurchaseWalletService> logger)
     {
-    }
-
-    internal MarketPurchaseWalletService(
-        IMongoCollection<MarketPurchaseReservation> reservations,
-        IWalletService walletService,
-        ILogger<MarketPurchaseWalletService> logger)
-    {
-        _reservations = reservations;
+        _db = db;
         _walletService = walletService;
         _logger = logger;
     }
@@ -57,9 +49,8 @@ public partial class MarketPurchaseWalletService : IMarketPurchaseWalletService
             return (false, "OrderId wajib diisi", null);
         }
 
-        var existing = await _reservations
-            .Find(r => r.OrderId == orderId && r.UserId == userId)
-            .FirstOrDefaultAsync();
+        var existing = await _db.MarketPurchaseReservations
+            .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
 
         if (existing != null)
         {
@@ -108,14 +99,15 @@ public partial class MarketPurchaseWalletService : IMarketPurchaseWalletService
 
         try
         {
-            await _reservations.InsertOneAsync(reservation);
+            _db.MarketPurchaseReservations.Add(reservation);
+            await _db.SaveChangesAsync();
             return (true, null, reservation);
         }
-        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        catch (DbUpdateException ex)
         {
             _logger.LogWarning(ex, "Duplicate reservation orderId={OrderId} userId={UserId}", orderId, userId);
+            _db.Entry(reservation).State = EntityState.Detached;
 
-            // Compensate if another request already created reservation.
             try
             {
                 _ = await _walletService.AddBalanceAsync(
@@ -131,9 +123,8 @@ public partial class MarketPurchaseWalletService : IMarketPurchaseWalletService
                 _logger.LogCritical(refundEx, "Failed to compensate duplicate reservation for orderId={OrderId}, userId={UserId}", orderId, userId);
             }
 
-            var duplicate = await _reservations
-                .Find(r => r.OrderId == orderId && r.UserId == userId)
-                .FirstOrDefaultAsync();
+            var duplicate = await _db.MarketPurchaseReservations
+                .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
 
             return (duplicate != null, duplicate == null ? "Gagal membuat reservasi" : null, duplicate);
         }
@@ -147,12 +138,9 @@ public partial class MarketPurchaseWalletService : IMarketPurchaseWalletService
             return (false, "OrderId wajib diisi", null);
         }
 
-        var filter = Builders<MarketPurchaseReservation>.Filter.And(
-            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.OrderId, orderId),
-            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.UserId, userId)
-        );
+        var reservation = await _db.MarketPurchaseReservations
+            .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
 
-        var reservation = await _reservations.Find(filter).FirstOrDefaultAsync();
         if (reservation == null)
         {
             return (false, "Reservasi tidak ditemukan", null);
@@ -168,28 +156,25 @@ public partial class MarketPurchaseWalletService : IMarketPurchaseWalletService
             return (false, "Reservasi sudah dilepas", reservation);
         }
 
-        // Atomic guard: only capture if status is still Reserved
-        var atomicFilter = Builders<MarketPurchaseReservation>.Filter.And(
-            filter,
-            Builders<MarketPurchaseReservation>.Filter.Eq(r => r.Status, ReservationStatus.Reserved)
-        );
-
         var now = DateTime.UtcNow;
-        var update = Builders<MarketPurchaseReservation>.Update
-            .Set(r => r.Status, ReservationStatus.Captured)
-            .Set(r => r.Reason, string.IsNullOrWhiteSpace(reason) ? null : reason.Trim())
-            .Set(r => r.CapturedAt, now)
-            .Set(r => r.UpdatedAt, now);
+        var updated = await _db.MarketPurchaseReservations
+            .Where(r => r.OrderId == orderId && r.UserId == userId && r.Status == ReservationStatus.Reserved)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.Status, ReservationStatus.Captured)
+                .SetProperty(r => r.Reason, string.IsNullOrWhiteSpace(reason) ? null : reason.Trim())
+                .SetProperty(r => r.CapturedAt, now)
+                .SetProperty(r => r.UpdatedAt, now));
 
-        var result = await _reservations.UpdateOneAsync(atomicFilter, update);
-        if (result.ModifiedCount == 0)
+        if (updated == 0)
         {
-            var latest = await _reservations.Find(filter).FirstOrDefaultAsync();
+            var latest = await _db.MarketPurchaseReservations
+                .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
             _logger.LogWarning("Capture failed — reservation already modified for orderId={OrderId}, userId={UserId}", orderId, userId);
             return (false, "Reservasi sudah diproses atau dimodifikasi", latest);
         }
 
-        var updated = await _reservations.Find(filter).FirstOrDefaultAsync();
-        return (true, null, updated);
+        var result = await _db.MarketPurchaseReservations
+            .FirstOrDefaultAsync(r => r.OrderId == orderId && r.UserId == userId);
+        return (true, null, result);
     }
 }

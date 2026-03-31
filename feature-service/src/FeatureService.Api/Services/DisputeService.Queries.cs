@@ -1,5 +1,5 @@
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 using System.Text;
@@ -15,14 +15,17 @@ public partial class DisputeService
 
     public async Task<List<DisputeSummaryDto>> GetAllDisputesAsync(DisputeStatus? status = null, int limit = 50)
     {
-        var filter = status.HasValue
-            ? Builders<Dispute>.Filter.Eq(d => d.Status, status.Value)
-            : Builders<Dispute>.Filter.Empty;
+        IQueryable<Dispute> query = _db.Disputes;
 
-        var disputes = await _disputes
-            .Find(filter)
-            .SortByDescending(d => d.CreatedAt)
-            .Limit(limit)
+        if (status.HasValue)
+        {
+            var statusValue = status.Value;
+            query = query.Where(d => d.Status == statusValue);
+        }
+
+        var disputes = await query
+            .OrderByDescending(d => d.CreatedAt)
+            .Take(limit)
             .ToListAsync();
 
         return disputes.Select(MapToSummary).ToList();
@@ -30,7 +33,10 @@ public partial class DisputeService
 
     public async Task<DisputeDto?> GetDisputeForAdminAsync(string disputeId)
     {
-        var dispute = await _disputes.Find(d => d.Id == disputeId).FirstOrDefaultAsync();
+        var dispute = await _db.Disputes
+            .Include(d => d.Evidence)
+            .Include(d => d.Messages)
+            .FirstOrDefaultAsync(d => d.Id == disputeId);
         if (dispute == null)
             return null;
 
@@ -56,10 +62,10 @@ public partial class DisputeService
         d.Category.ToString(),
         d.Status.ToString(),
         d.Amount,
-        d.Evidence.Select(e => new DisputeEvidenceDto(
+        (d.Evidence ?? new List<DisputeEvidence>()).Select(e => new DisputeEvidenceDto(
             e.Type, e.Url, e.Description, e.UploadedAt, e.UploadedById
         )).ToList(),
-        d.Messages.Select(m => new DisputeMessageDto(
+        (d.Messages ?? new List<DisputeMessage>()).Select(m => new DisputeMessageDto(
             m.Id, m.SenderId, m.SenderUsername, m.IsAdmin, m.Content, m.SentAt
         )).ToList(),
         d.Resolution != null ? new DisputeResolutionDto(

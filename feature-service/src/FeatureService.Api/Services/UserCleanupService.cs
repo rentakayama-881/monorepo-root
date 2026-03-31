@@ -1,5 +1,5 @@
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Infrastructure.Audit;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.Domain.Entities;
@@ -15,7 +15,7 @@ public interface IUserCleanupService
     Task<UserDeleteValidationResult> ValidateAccountDeletionAsync(uint userId);
 
     /// <summary>
-    /// Hard delete all user data from MongoDB.
+    /// Hard delete all user data from PostgreSQL.
     /// Should only be called after Go backend has validated and is ready to delete.
     /// </summary>
     Task<UserCleanupResult> CleanupUserDataAsync(uint userId);
@@ -48,23 +48,17 @@ public record UserCleanupStats(
 
 public class UserCleanupService : IUserCleanupService
 {
-    private readonly MongoDbContext _context;
-    private readonly IMongoCollection<Transfer> _transfers;
-    private readonly IMongoCollection<TransactionLedger> _ledger;
-    private readonly IMongoCollection<Withdrawal> _withdrawals;
+    private readonly AppDbContext _db;
     private readonly IAuditTrailService _auditService;
     private readonly ILogger<UserCleanupService> _logger;
 
     public UserCleanupService(
-        MongoDbContext context,
+        AppDbContext db,
         IAuditTrailService auditService,
         ILogger<UserCleanupService> logger)
     {
-        _context = context;
+        _db = db;
         _auditService = auditService;
-        _transfers = context.GetCollection<Transfer>("transfers");
-        _ledger = context.GetCollection<TransactionLedger>("transaction_ledger");
-        _withdrawals = context.Withdrawals;
         _logger = logger;
     }
 
@@ -74,18 +68,16 @@ public class UserCleanupService : IUserCleanupService
         var warnings = new List<string>();
 
         // 0. Check active profile guarantee (money is frozen, must be released first)
-        var activeGuarantee = await _context.GuaranteeLocks
-            .Find(g => g.UserId == userId && g.Status == GuaranteeStatus.Active)
-            .FirstOrDefaultAsync();
+        var activeGuarantee = await _db.GuaranteeLocks
+            .FirstOrDefaultAsync(g => g.UserId == userId && g.Status == GuaranteeStatus.Active);
         if (activeGuarantee != null)
         {
             blockingReasons.Add($"Anda masih memiliki jaminan aktif Rp {activeGuarantee.Amount:N0}. Lepaskan jaminan terlebih dahulu.");
         }
 
         // 1. Check wallet balance
-        var wallet = await _context.Wallets
-            .Find(w => w.UserId == userId)
-            .FirstOrDefaultAsync();
+        var wallet = await _db.Wallets
+            .FirstOrDefaultAsync(w => w.UserId == userId);
 
         long walletBalance = wallet?.Balance ?? 0;
         if (walletBalance > 0)
@@ -94,7 +86,7 @@ public class UserCleanupService : IUserCleanupService
         }
 
         // 2. Check pending transfers (as sender - money is held)
-        var pendingAsSender = await _transfers.CountDocumentsAsync(t =>
+        var pendingAsSender = await _db.Transfers.CountAsync(t =>
             t.SenderId == userId &&
             (t.Status == TransferStatus.Pending || t.Status == TransferStatus.Disputed));
 
@@ -104,7 +96,7 @@ public class UserCleanupService : IUserCleanupService
         }
 
         // 3. Check pending transfers (as receiver - waiting to receive)
-        var pendingAsReceiver = await _transfers.CountDocumentsAsync(t =>
+        var pendingAsReceiver = await _db.Transfers.CountAsync(t =>
             t.ReceiverId == userId &&
             (t.Status == TransferStatus.Pending || t.Status == TransferStatus.Disputed));
 
@@ -114,12 +106,12 @@ public class UserCleanupService : IUserCleanupService
         }
 
         // 4. Check disputed transfers specifically
-        var disputedCount = await _transfers.CountDocumentsAsync(t =>
+        var disputedCount = await _db.Transfers.CountAsync(t =>
             (t.SenderId == userId || t.ReceiverId == userId) &&
             t.Status == TransferStatus.Disputed);
 
         // 5. Check pending transactions in ledger
-        var pendingLedger = await _ledger.CountDocumentsAsync(l =>
+        var pendingLedger = await _db.TransactionLedger.CountAsync(l =>
             l.UserId == (int)userId &&
             l.Status == TransactionStatus.Pending);
 
@@ -129,7 +121,7 @@ public class UserCleanupService : IUserCleanupService
         }
 
         // 6. Check pending withdrawals (critical - money is being processed)
-        var pendingWithdrawals = await _withdrawals.CountDocumentsAsync(w =>
+        var pendingWithdrawals = await _db.Withdrawals.CountAsync(w =>
             w.UserId == userId &&
             w.Status == WithdrawalStatus.Processing);
 
@@ -143,11 +135,11 @@ public class UserCleanupService : IUserCleanupService
             BlockingReasons: blockingReasons,
             Warnings: warnings,
             WalletBalance: walletBalance,
-            PendingTransfersAsSender: (int)pendingAsSender,
-            PendingTransfersAsReceiver: (int)pendingAsReceiver,
-            DisputedTransfers: (int)disputedCount,
-            PendingTransactions: (int)pendingLedger,
-            PendingWithdrawals: (int)pendingWithdrawals
+            PendingTransfersAsSender: pendingAsSender,
+            PendingTransfersAsReceiver: pendingAsReceiver,
+            DisputedTransfers: disputedCount,
+            PendingTransactions: pendingLedger,
+            PendingWithdrawals: pendingWithdrawals
         );
     }
 
@@ -189,33 +181,32 @@ public class UserCleanupService : IUserCleanupService
             var stats = new UserCleanupStatsBuilder();
 
             // 1. Close/delete reports (where user is reporter)
-            var reportsResult = await _context.Reports.DeleteManyAsync(r => r.ReporterUserId == userId);
-            stats.ReportsClosed = (int)reportsResult.DeletedCount;
+            var reportsDeleted = await _db.Reports.Where(r => r.ReporterUserId == userId).ExecuteDeleteAsync();
+            stats.ReportsClosed = reportsDeleted;
 
             // 4. Delete documents
-            var docsResult = await _context.Documents.DeleteManyAsync(d => d.UserId == userId);
-            stats.DocumentsDeleted = (int)docsResult.DeletedCount;
+            var docsDeleted = await _db.Documents.Where(d => d.UserId == userId).ExecuteDeleteAsync();
+            stats.DocumentsDeleted = docsDeleted;
 
             // 5. Delete wallets
-            var walletResult = await _context.Wallets.DeleteManyAsync(w => w.UserId == userId);
-            stats.WalletsDeleted = (int)walletResult.DeletedCount;
+            var walletDeleted = await _db.Wallets.Where(w => w.UserId == userId).ExecuteDeleteAsync();
+            stats.WalletsDeleted = walletDeleted;
 
             // 6. Delete transactions
-            var transactionsColl = _context.GetCollection<Transaction>("transactions");
-            var txResult = await transactionsColl.DeleteManyAsync(t => t.UserId == userId);
-            stats.TransactionsDeleted = (int)txResult.DeletedCount;
+            var txDeleted = await _db.Transactions.Where(t => t.UserId == userId).ExecuteDeleteAsync();
+            stats.TransactionsDeleted = txDeleted;
 
             // 7. Delete transaction ledger entries
-            var ledgerResult = await _ledger.DeleteManyAsync(l => l.UserId == (int)userId);
+            var ledgerDeleted = await _db.TransactionLedger.Where(l => l.UserId == (int)userId).ExecuteDeleteAsync();
 
             // 8. Delete guarantee locks (historical)
-            var guaranteeResult = await _context.GuaranteeLocks.DeleteManyAsync(g => g.UserId == userId);
+            var guaranteeDeleted = await _db.GuaranteeLocks.Where(g => g.UserId == userId).ExecuteDeleteAsync();
 
             // 9. Delete user warnings (where user is the target)
-            var warningsResult = await _context.UserWarnings.DeleteManyAsync(w => w.UserId == userId);
+            var warningsDeleted = await _db.UserWarnings.Where(w => w.UserId == userId).ExecuteDeleteAsync();
 
             // 10. Delete device bans for this user
-            var deviceBansResult = await _context.DeviceBans.DeleteManyAsync(d => d.UserId == userId);
+            var deviceBansDeleted = await _db.DeviceBans.Where(d => d.UserId == userId).ExecuteDeleteAsync();
 
             // Record account deleted with full deletion stats
             await _auditService.RecordEventAsync(new AuditEventRequest
@@ -232,10 +223,10 @@ public class UserCleanupService : IUserCleanupService
                     ["documentsDeleted"] = stats.DocumentsDeleted.ToString(),
                     ["walletsDeleted"] = stats.WalletsDeleted.ToString(),
                     ["transactionsDeleted"] = stats.TransactionsDeleted.ToString(),
-                    ["ledgerEntriesDeleted"] = ledgerResult.DeletedCount.ToString(),
-                    ["guaranteeLocksDeleted"] = guaranteeResult.DeletedCount.ToString(),
-                    ["userWarningsDeleted"] = warningsResult.DeletedCount.ToString(),
-                    ["deviceBansDeleted"] = deviceBansResult.DeletedCount.ToString()
+                    ["ledgerEntriesDeleted"] = ledgerDeleted.ToString(),
+                    ["guaranteeLocksDeleted"] = guaranteeDeleted.ToString(),
+                    ["userWarningsDeleted"] = warningsDeleted.ToString(),
+                    ["deviceBansDeleted"] = deviceBansDeleted.ToString()
                 }
             });
 

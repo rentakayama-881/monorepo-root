@@ -1,9 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-using Microsoft.Extensions.Hosting;
-using MongoDB.Driver;
-using FeatureService.Api.Infrastructure.MongoDB;
+using Microsoft.EntityFrameworkCore;
+using FeatureService.Api.Infrastructure.Persistence;
 using FeatureService.Api.Models.Entities;
 using FeatureService.Api.DTOs;
 
@@ -24,13 +22,8 @@ public interface IWalletService
 
 public partial class WalletService : IWalletService
 {
-    private readonly IMongoCollection<UserWallet> _wallets;
-    private readonly IMongoCollection<Transaction> _transactions;
-    private readonly IMongoCollection<TransactionLedger> _ledger;
+    private readonly AppDbContext _db;
     private readonly ILogger<WalletService> _logger;
-    private readonly IHostEnvironment _environment;
-    // 0 = unknown, 1 = supported, -1 = unsupported (standalone/non-replica MongoDB)
-    private int _transactionSupportState = 0;
 
     // Security constants - PBKDF2 with high iteration count
     private const int PbkdfIterations = 310000;
@@ -39,18 +32,15 @@ public partial class WalletService : IWalletService
     private const int SaltSize = 32;
     private const int HashSize = 32;
 
-    public WalletService(MongoDbContext dbContext, ILogger<WalletService> logger, IHostEnvironment environment)
+    public WalletService(AppDbContext db, ILogger<WalletService> logger)
     {
-        _wallets = dbContext.GetCollection<UserWallet>("wallets");
-        _transactions = dbContext.GetCollection<Transaction>("transactions");
-        _ledger = dbContext.GetCollection<TransactionLedger>("transaction_ledger");
+        _db = db;
         _logger = logger;
-        _environment = environment;
     }
 
     public async Task<UserWallet> GetOrCreateWalletAsync(uint userId)
     {
-        var wallet = await _wallets.Find(w => w.UserId == userId).FirstOrDefaultAsync();
+        var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
         
         if (wallet == null)
         {
@@ -68,13 +58,15 @@ public partial class WalletService : IWalletService
 
             try
             {
-                await _wallets.InsertOneAsync(wallet);
+                _db.Wallets.Add(wallet);
+                await _db.SaveChangesAsync();
                 _logger.LogInformation("Created new wallet {WalletId} for user {UserId}", wallet.Id, userId);
             }
-            catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+            catch (DbUpdateException)
             {
                 // Race condition - wallet was created by another request
-                wallet = await _wallets.Find(w => w.UserId == userId).FirstOrDefaultAsync();
+                _db.ChangeTracker.Clear();
+                wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
             }
         }
 
@@ -87,21 +79,16 @@ public partial class WalletService : IWalletService
         ValidatePin(pin);
         var pinHash = HashPin(pin);
 
-        var filter = Builders<UserWallet>.Filter.And(
-            Builders<UserWallet>.Filter.Eq(w => w.UserId, userId),
-            Builders<UserWallet>.Filter.Eq(w => w.PinSet, false)
-        );
+        var updated = await _db.Wallets
+            .Where(w => w.UserId == userId && w.PinSet == false)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(w => w.PinHash, pinHash)
+                .SetProperty(w => w.PinSet, true)
+                .SetProperty(w => w.FailedPinAttempts, 0)
+                .SetProperty(w => w.PinLockedUntil, (DateTime?)null)
+                .SetProperty(w => w.UpdatedAt, DateTime.UtcNow));
 
-        var update = Builders<UserWallet>.Update
-            .Set(w => w.PinHash, pinHash)
-            .Set(w => w.PinSet, true)
-            .Set(w => w.FailedPinAttempts, 0)
-            .Set(w => w.PinLockedUntil, null)
-            .Set(w => w.UpdatedAt, DateTime.UtcNow);
-
-        var result = await _wallets.UpdateOneAsync(filter, update);
-
-        if (result.MatchedCount == 0)
+        if (updated == 0)
             throw new InvalidOperationException("PIN sudah diset sebelumnya. PIN tidak dapat diubah.");
 
         _logger.LogInformation("PIN set for user {UserId}", userId);
@@ -129,58 +116,55 @@ public partial class WalletService : IWalletService
 
         if (!isValid)
         {
-            // Atomic $inc to prevent race condition where concurrent requests
+            // Atomic increment to prevent race condition where concurrent requests
             // read the same FailedPinAttempts and both compute the same +1.
             // Filter ensures we only increment if not already locked.
-            var incFilter = Builders<UserWallet>.Filter.And(
-                Builders<UserWallet>.Filter.Eq(w => w.UserId, userId),
-                Builders<UserWallet>.Filter.Or(
-                    Builders<UserWallet>.Filter.Eq(w => w.PinLockedUntil, null),
-                    Builders<UserWallet>.Filter.Lt(w => w.PinLockedUntil, DateTime.UtcNow)));
+            var updated = await _db.Wallets
+                .Where(w => w.UserId == userId &&
+                    (w.PinLockedUntil == null || w.PinLockedUntil < DateTime.UtcNow))
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(w => w.FailedPinAttempts, w => w.FailedPinAttempts + 1)
+                    .SetProperty(w => w.UpdatedAt, DateTime.UtcNow));
 
-            var incUpdate = Builders<UserWallet>.Update
-                .Inc(w => w.FailedPinAttempts, 1)
-                .Set(w => w.UpdatedAt, DateTime.UtcNow);
-
-            var updated = await _wallets.FindOneAndUpdateAsync(
-                incFilter, incUpdate,
-                new FindOneAndUpdateOptions<UserWallet> { ReturnDocument = ReturnDocument.After });
-
-            if (updated == null)
+            if (updated == 0)
             {
                 // Already locked by a concurrent request
                 return new VerifyPinResponse(false, $"PIN salah. Akun terkunci selama {PinLockHours} jam.", 0);
             }
 
+            // Re-fetch to get the updated FailedPinAttempts value
+            var updatedWallet = await _db.Wallets.AsNoTracking().FirstAsync(w => w.UserId == userId);
+
             // Check if this increment crossed the threshold → lock
-            if (updated.FailedPinAttempts >= MaxPinAttempts)
+            if (updatedWallet.FailedPinAttempts >= MaxPinAttempts)
             {
                 var lockUntil = DateTime.UtcNow.AddHours(PinLockHours);
-                var lockUpdate = Builders<UserWallet>.Update
-                    .Set(w => w.PinLockedUntil, lockUntil)
-                    .Set(w => w.FailedPinAttempts, 0)
-                    .Set(w => w.UpdatedAt, DateTime.UtcNow);
+                await _db.Wallets
+                    .Where(w => w.UserId == userId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(w => w.PinLockedUntil, lockUntil)
+                        .SetProperty(w => w.FailedPinAttempts, 0)
+                        .SetProperty(w => w.UpdatedAt, DateTime.UtcNow));
 
-                await _wallets.UpdateOneAsync(w => w.UserId == userId, lockUpdate);
                 _logger.LogWarning("PIN locked for user {UserId} after {Attempts} failed attempts",
-                    userId, updated.FailedPinAttempts);
+                    userId, updatedWallet.FailedPinAttempts);
 
                 return new VerifyPinResponse(false, $"PIN salah. Akun terkunci selama {PinLockHours} jam.", 0);
             }
 
-            var remainingAttempts = MaxPinAttempts - updated.FailedPinAttempts;
+            var remainingAttempts = MaxPinAttempts - updatedWallet.FailedPinAttempts;
             return new VerifyPinResponse(false, $"PIN salah. Sisa percobaan: {remainingAttempts}", remainingAttempts);
         }
 
         // Reset failed attempts on successful verification
         if (wallet.FailedPinAttempts > 0 || wallet.PinLockedUntil.HasValue)
         {
-            var update = Builders<UserWallet>.Update
-                .Set(w => w.FailedPinAttempts, 0)
-                .Set(w => w.PinLockedUntil, null)
-                .Set(w => w.UpdatedAt, DateTime.UtcNow);
-                
-            await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
+            await _db.Wallets
+                .Where(w => w.UserId == userId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(w => w.FailedPinAttempts, 0)
+                    .SetProperty(w => w.PinLockedUntil, (DateTime?)null)
+                    .SetProperty(w => w.UpdatedAt, DateTime.UtcNow));
         }
 
         _logger.LogDebug("PIN verified for user {UserId}", userId);
@@ -218,11 +202,7 @@ public partial class WalletService : IWalletService
         // Ensure wallet exists before attempting atomic operations
         await GetOrCreateWalletAsync(userId);
 
-        return await TryWithMongoTransactionAsync(
-            session => DeductBalanceInternalAsync(
-                session, userId, amount, description, type, referenceId, referenceType, bestEffortAudit: false),
-            () => DeductBalanceInternalAsync(
-                session: null, userId, amount, description, type, referenceId, referenceType, bestEffortAudit: true));
+        return await DeductBalanceInternalAsync(userId, amount, description, type, referenceId, referenceType);
     }
 
     public async Task<string> AddBalanceAsync(
@@ -241,28 +221,24 @@ public partial class WalletService : IWalletService
         // Ensure wallet exists before attempting atomic operations
         await GetOrCreateWalletAsync(userId);
 
-        return await TryWithMongoTransactionAsync(
-            session => AddBalanceInternalAsync(
-                session, userId, amount, description, type, referenceId, referenceType, bestEffortAudit: false),
-            () => AddBalanceInternalAsync(
-                session: null, userId, amount, description, type, referenceId, referenceType, bestEffortAudit: true));
+        return await AddBalanceInternalAsync(userId, amount, description, type, referenceId, referenceType);
     }
 
     public async Task<List<Transaction>> GetTransactionsAsync(uint userId, int page = 1, int pageSize = 20)
     {
         var skip = (page - 1) * pageSize;
 
-        return await _transactions
-            .Find(t => t.UserId == userId)
-            .SortByDescending(t => t.CreatedAt)
+        return await _db.Transactions
+            .Where(t => t.UserId == userId)
+            .OrderByDescending(t => t.CreatedAt)
             .Skip(skip)
-            .Limit(pageSize)
+            .Take(pageSize)
             .ToListAsync();
     }
 
     public async Task<int> GetTransactionCountAsync(uint userId)
     {
-        return (int)await _transactions.CountDocumentsAsync(t => t.UserId == userId);
+        return await _db.Transactions.CountAsync(t => t.UserId == userId);
     }
 
     /// <summary>
@@ -271,15 +247,13 @@ public partial class WalletService : IWalletService
     /// </summary>
     public async Task<long> RecalculateBalanceFromLedgerAsync(uint userId)
     {
-        var filter = Builders<TransactionLedger>.Filter.And(
-            Builders<TransactionLedger>.Filter.Eq(l => l.UserId, userId),
-            Builders<TransactionLedger>.Filter.Eq(l => l.Status, TransactionStatus.Completed)
-        );
-
-        var entries = await _ledger.Find(filter).ToListAsync();
+        var entries = await _db.TransactionLedger
+            .Where(l => l.UserId == userId && l.Status == TransactionStatus.Completed)
+            .OrderBy(e => e.CreatedAt)
+            .ToListAsync();
 
         long balance = 0;
-        foreach (var entry in entries.OrderBy(e => e.CreatedAt))
+        foreach (var entry in entries)
         {
             if (entry.EntryType == LedgerEntryType.Credit)
             {
@@ -300,11 +274,11 @@ public partial class WalletService : IWalletService
                 userId, wallet.Balance, balance
             );
 
-            var update = Builders<UserWallet>.Update
-                .Set(w => w.Balance, balance)
-                .Set(w => w.UpdatedAt, DateTime.UtcNow);
-                
-            await _wallets.UpdateOneAsync(w => w.UserId == userId, update);
+            await _db.Wallets
+                .Where(w => w.UserId == userId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(w => w.Balance, balance)
+                    .SetProperty(w => w.UpdatedAt, DateTime.UtcNow));
         }
 
         return balance;
