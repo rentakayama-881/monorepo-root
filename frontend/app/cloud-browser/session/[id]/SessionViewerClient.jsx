@@ -120,6 +120,10 @@ export default function SessionViewerClient() {
         try { rfbRef.current.disconnect(); } catch {}
         rfbRef.current = null;
       }
+      // Clear the canvas container to release touch event handlers
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
+      }
     };
   }, [vncWsUrl]);
 
@@ -182,6 +186,15 @@ export default function SessionViewerClient() {
     };
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  // Exit fullscreen on component unmount (e.g., navigation away)
+  useEffect(() => {
+    return () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+      }
+    };
   }, []);
 
   // Warn user when navigating away with active session

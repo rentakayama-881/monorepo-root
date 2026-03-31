@@ -82,7 +82,12 @@ export default function SessionToolbar({
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         <button
           type="button"
-          onClick={() => router.push("/cloud-browser")}
+          onClick={() => {
+            if (document.fullscreenElement) {
+              document.exitFullscreen?.().catch(() => {});
+            }
+            router.push("/cloud-browser");
+          }}
           className="rounded-[var(--radius)] p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           aria-label="Kembali ke dashboard"
         >
