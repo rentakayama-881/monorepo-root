@@ -360,11 +360,18 @@ class SessionManager:
 
             pw = await self._get_playwright()
 
+            # Explicitly pass DISPLAY to Chrome — the Playwright Node.js
+            # driver is a long-lived singleton whose own env still holds the
+            # DISPLAY from its very first launch.  Without this override every
+            # session after the first one would target a dead X server.
+            browser_env = {**os.environ, "DISPLAY": f":{display_num}"}
+
             launch_kwargs: dict = dict(
                 user_data_dir=user_data_dir,
                 headless=False,         # headed mode for VNC viewing
                 accept_downloads=True,
                 args=STEALTH_CHROMIUM_ARGS + [f"--lang={lang}"],
+                env=browser_env,
             )
 
             # Apply context settings from resolved geo/fingerprint
