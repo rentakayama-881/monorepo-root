@@ -443,7 +443,6 @@ class SessionManager:
             # ── 5. Start websockify ───────────────────────────────────
             ws_cmd = [
                 "websockify",
-                "--web", "/usr/share/novnc",
                 str(ws_port),
                 f"localhost:{vnc_port}",
             ]
